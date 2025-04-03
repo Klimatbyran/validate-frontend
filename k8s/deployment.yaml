@@ -21,10 +21,7 @@ spec:
         - containerPort: 80
         env:
         - name: VITE_API_URL
-          valueFrom:
-            configMapKeyRef:
-              name: frontend-config
-              key: API_URL
+          value: "http://backend-service:3000"
         resources:
           limits:
             cpu: "0.5"
