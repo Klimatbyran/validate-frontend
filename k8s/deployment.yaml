@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
+  namespace: garbo-stage
   labels:
     app: frontend
 spec:
@@ -21,7 +22,7 @@ spec:
         - containerPort: 80
         env:
         - name: VITE_API_URL
-          value: "http://backend-service:3000"
+          value: "http://garbo:80"
         resources:
           limits:
             cpu: "0.5"
