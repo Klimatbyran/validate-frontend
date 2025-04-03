@@ -20,7 +20,7 @@ spec:
         ports:
         - containerPort: 80
         env:
-        - name: API_URL
+        - name: VITE_API_URL
           valueFrom:
             configMapKeyRef:
               name: frontend-config

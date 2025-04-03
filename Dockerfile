@@ -1,26 +1,23 @@
-FROM docker.io/library/node:20-alpine AS builder
+FROM docker.io/library/node:20-alpine
 
 WORKDIR /app
 
+# Install dependencies
 COPY package*.json ./
 RUN npm ci
 
+# Copy source code
 COPY . .
+
+# Build the app
 RUN npm run build
 
-FROM docker.io/library/nginx:alpine
-
-# Copy the built app to nginx serve directory
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration as a template
-COPY nginx.conf /etc/nginx/conf.d/default.conf.template
-
-# Copy entrypoint script
-COPY docker-entrypoint.sh /
-RUN chmod +x /docker-entrypoint.sh
-
+# Expose port
 EXPOSE 80
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["nginx", "-g", "daemon off;"]
+# Set environment variables
+ENV HOST=0.0.0.0
+ENV PORT=80
+
+# Start the app
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "80"]
