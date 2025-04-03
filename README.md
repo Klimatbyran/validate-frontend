@@ -1,6 +1,6 @@
-# Workflow Queue Dashboard
+# Garbo Validation Tool
 
-A modern React-based dashboard for monitoring and managing workflow queues with real-time updates and interactive visualizations.
+A modern React-based tool for validating and managing workflow queues with real-time updates and interactive visualizations.
 
 ## Features
 
@@ -74,12 +74,12 @@ yarn build
 
 Build the Docker image:
 ```bash
-docker build -t workflow-dashboard .
+docker build -t garbo-validation-tool .
 ```
 
 Run the container:
 ```bash
-docker run -p 80:80 workflow-dashboard
+docker run -p 80:80 garbo-validation-tool
 ```
 
 ## Kubernetes Deployment
