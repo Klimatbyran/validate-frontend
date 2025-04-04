@@ -8,8 +8,7 @@ import { toast } from 'sonner';
 // VIKTIGT: Använd endast reaktiva RxJS-metoder. Statiska objekt, globala variabler 
 // och blockerande metoder som toArray() är FÖRBJUDNA.
 import { from, forkJoin, of, EMPTY } from 'rxjs';
-import { mergeMap, map, catchError, delay, reduce, scan } from 'rxjs/operators';
-import { tap } from 'rxjs/operators';
+import { mergeMap, map, catchError, delay, reduce, scan, tap } from 'rxjs/operators';
 
 export function useQueues(page = 1, jobsPerPage = 20) {
   const { data, error, isLoading, mutate } = useSWR<QueuesResponse>(

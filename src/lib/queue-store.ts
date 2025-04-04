@@ -1,4 +1,5 @@
-import { BehaviorSubject, Observable, combineLatest, map, shareReplay, distinctUntilChanged, debounceTime } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest, map, shareReplay, distinctUntilChanged, debounceTime, EMPTY } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 import type { Queue, QueueJob, CompanyStatus, GroupedCompany, QueueStats, QueueStatsState } from './types';
 import { WORKFLOW_STAGES } from './constants';
 import { groupQueues, groupByCompany } from './operators';

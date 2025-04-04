@@ -1,4 +1,5 @@
-import { Observable, OperatorFunction, pipe, map, groupBy, mergeMap, reduce, from, min, scan, catchError, of, share, tap, BehaviorSubject, withLatestFrom, switchMap, distinctUntilChanged } from 'rxjs';
+import { Observable, OperatorFunction, pipe, from, of, share, BehaviorSubject, withLatestFrom, switchMap, distinctUntilChanged } from 'rxjs';
+import { map, groupBy, mergeMap, reduce, min, scan, catchError, tap } from 'rxjs/operators';
 import type { Queue, QueueJob, CompanyStatus, GroupedCompany } from './types';
 
 // Group queues into a stream of jobs with queue information
