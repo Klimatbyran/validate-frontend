@@ -28,18 +28,18 @@ class RxRateLimiter {
           // Execute the function
           from(item.fn()).pipe(
             tap(() => this.lastRequestTime = Date.now()),
-            map(result => ({ result, observer: item.observer })),
-            catchError(error => of({ error, observer: item.observer }))
+            map(result => ({ result, observer: item.observer, error: null })),
+            catchError(error => of({ result: null, observer: item.observer, error }))
           )
         );
       })
     ).subscribe(
-      ({ result, error, observer }) => {
-        if (error) {
-          observer.error(error);
+      (item) => {
+        if (item.error) {
+          item.observer.error(item.error);
         } else {
-          observer.next(result);
-          observer.complete();
+          item.observer.next(item.result);
+          item.observer.complete();
         }
       }
     );
@@ -47,6 +47,11 @@ class RxRateLimiter {
   
   throttle<T>(fn: () => Promise<T>): Observable<T> {
     return new Observable<T>(observer => {
+      if (!observer) {
+        console.error('Observer is undefined in throttle method');
+        return;
+      }
+      
       this.queue$.next({
         fn,
         observer: {
@@ -55,6 +60,11 @@ class RxRateLimiter {
           complete: () => observer.complete()
         }
       });
+      
+      // Return unsubscribe function
+      return () => {
+        // Nothing to clean up for this specific request
+      };
     }).pipe(
       share()
     );
