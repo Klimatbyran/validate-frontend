@@ -70,7 +70,6 @@ const api = axios.create({
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
-    'Connection': 'keep-alive',
   },
   timeout: 30000,
   validateStatus: (status) => {
