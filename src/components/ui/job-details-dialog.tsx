@@ -49,8 +49,6 @@ function isJsonString(str: string): boolean {
   }
 }
 
-import { WikidataPreview } from './wikidata-preview';
-
 // Renders a user-friendly view of JSON data
 function UserFriendlyDataView({ data }: { data: any }) {
   const processedData = typeof data === 'string' && isJsonString(data) 
