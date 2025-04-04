@@ -1,10 +1,15 @@
-import { BehaviorSubject, Observable, combineLatest, map, shareReplay, distinctUntilChanged, debounceTime } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest, map, shareReplay, distinctUntilChanged, debounceTime, EMPTY } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 import type { Queue, QueueJob, CompanyStatus, GroupedCompany, QueueStats, QueueStatsState } from './types';
 import { WORKFLOW_STAGES } from './constants';
 import { groupQueues, groupByCompany } from './operators';
+import { fetchQueueJobs, fetchAllHistoricalJobs } from './api';
 
 export class QueueStore {
   private queues: Record<string, BehaviorSubject<Queue | null>> = {};
+  private pollingIntervals: Record<string, NodeJS.Timeout> = {};
+  // Track which queues have completed historical loading
+  private historicallyLoaded = new Set<string>();
   private groupedCompanies$ = new BehaviorSubject<GroupedCompany[]>([]);
   private queueStats$ = new BehaviorSubject<QueueStatsState>({
     totals: {
@@ -104,11 +109,15 @@ export class QueueStore {
     });
   }
 
+  // VIKTIGT: Använd endast reaktiva RxJS-metoder. Statiska objekt, globala variabler 
+  // och blockerande metoder som toArray() är FÖRBJUDNA.
   private setupDataPipeline(queues$: Observable<{ queueId: string; queue: Queue | null }[]>) {
     queues$.pipe(
       debounceTime(100), // Debounce rapid updates
       groupQueues(),
       groupByCompany(),
+      // Använd shareReplay för att dela resultatet mellan flera subscribers
+      // utan att behöva köra om hela pipeline
       shareReplay(1)
     ).subscribe(
       companies => {
@@ -163,6 +172,66 @@ export class QueueStore {
 
   getQueueStats(): Observable<QueueStatsState> {
     return this.queueStats$.asObservable();
+  }
+  
+  // VIKTIGT: Använd endast reaktiva RxJS-metoder. Statiska objekt, globala variabler 
+  // och blockerande metoder som toArray() är FÖRBJUDNA.
+  
+  // Load historical data for a queue and then start polling for updates
+  loadQueueWithUpdates(queueId: string): void {
+    if (this.historicallyLoaded.has(queueId)) {
+      console.log(`🔄 Queue ${queueId} already loaded historically, skipping`);
+      return;
+    }
+    
+    console.log(`📚 Starting historical load for queue ${queueId}`);
+    
+    // Steg 1: Ladda alla historiska jobb (äldst först) reaktivt
+    fetchAllHistoricalJobs(queueId).pipe(
+      // När historisk laddning är klar, uppdatera kön och starta polling
+      tap(historicalData => {
+        this.updateQueue(queueId, historicalData.queue);
+        
+        // Markera som historiskt laddad
+        this.historicallyLoaded.add(queueId);
+        console.log(`✅ Completed historical load for queue ${queueId}`);
+        
+        // Steg 2: Starta polling för uppdateringar (nyast först)
+        this.pollQueueUpdates(queueId);
+      }),
+      catchError(error => {
+        console.error(`❌ Error in loadQueueWithUpdates for ${queueId}:`, error);
+        return EMPTY;
+      })
+    ).subscribe();
+  }
+  
+  // Poll for updates to a queue
+  private pollQueueUpdates(queueId: string): void {
+    console.log(`🔄 Starting update polling for queue ${queueId}`);
+    
+    // Use a separate interval for each queue to avoid overwhelming the server
+    const intervalId = setInterval(async () => {
+      try {
+        // Only fetch the most recent jobs (newest first)
+        const updates = await fetchQueueJobs(queueId, 'latest', 1, 10, 'desc');
+        this.updateQueue(queueId, updates.queue);
+      } catch (error) {
+        console.error(`❌ Error polling updates for ${queueId}:`, error);
+      }
+    }, 1000); // Poll every second
+    
+    // Store the interval ID so we can clear it later if needed
+    this.pollingIntervals[queueId] = intervalId;
+  }
+  
+  // Stop polling updates for a queue
+  stopPollingUpdates(queueId: string): void {
+    if (this.pollingIntervals[queueId]) {
+      clearInterval(this.pollingIntervals[queueId]);
+      delete this.pollingIntervals[queueId];
+      console.log(`⏹️ Stopped polling updates for queue ${queueId}`);
+    }
   }
 }
 

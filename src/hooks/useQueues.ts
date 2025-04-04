@@ -5,20 +5,26 @@ import { WORKFLOW_STAGES } from '@/lib/constants';
 import { queueStore } from '@/lib/queue-store';
 import { toast } from 'sonner';
 
-import { from, forkJoin } from 'rxjs';
-import { mergeMap, map, catchError, tap, toArray, delay } from 'rxjs/operators';
+// VIKTIGT: Använd endast reaktiva RxJS-metoder. Statiska objekt, globala variabler 
+// och blockerande metoder som toArray() är FÖRBJUDNA.
+import { from, forkJoin, of, EMPTY } from 'rxjs';
+import { mergeMap, map, catchError, delay, reduce, scan, tap } from 'rxjs/operators';
 
 export function useQueues(page = 1, jobsPerPage = 20) {
   const { data, error, isLoading, mutate } = useSWR<QueuesResponse>(
     ['queues', page, jobsPerPage],
-    async () => {
-      // Create a reactive pipeline to fetch all queues
+    () => {
+      // Skapa en reaktiv pipeline för att hämta alla köer
       return from(WORKFLOW_STAGES).pipe(
-        // Process in batches of 3 to reduce server load
+        // Bearbeta i batches om 3 för att minska serverbelastningen
         mergeMap((stage, index) => {
-          // Add a small delay between requests based on index to stagger them
+          // Lägg till en liten fördröjning baserad på index för att sprida ut förfrågningarna
           const staggerDelay = Math.floor(index / 3) * 300;
           
+          // Starta tvåstegsprocessen för att ladda denna kö
+          queueStore.loadQueueWithUpdates(stage.id);
+          
+          // Returnera initiala data för att snabbt populera UI
           return from(fetchQueueJobs(stage.id, 'latest', page, jobsPerPage)).pipe(
             delay(staggerDelay),
             map(response => ({
@@ -26,18 +32,23 @@ export function useQueues(page = 1, jobsPerPage = 20) {
               name: stage.id
             })),
             tap(queue => {
-              // Update the queue store immediately when data arrives
+              // Uppdatera queue store omedelbart när data anländer
               queueStore.updateQueue(stage.id, queue);
             }),
             catchError(error => {
               console.error(`❌ Failed to fetch queue ${stage.id}:`, error);
-              return from([null]); // Return null for failed queues
+              return of(null); // Returnera null för misslyckade köer
             })
           );
-        }, 3), // Concurrency limit of 3
-        toArray(),
+        }, 3), // Samtidighetsgräns på 3
+        // Använd scan istället för reduce/toArray för att bygga upp resultatet reaktivt
+        // scan emitterar värden för varje element, inte bara i slutet som reduce
+        scan((acc: any[], queue) => {
+          if (queue) return [...acc, queue];
+          return acc;
+        }, []),
         map(queues => ({
-          queues: queues.filter(Boolean) // Filter out nulls
+          queues // Filtrera bort nulls redan i reduce
         }))
       ).toPromise();
     },

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { timer, EMPTY } from 'rxjs';
-import { skip, delay, throttleTime, tap, catchError } from 'rxjs/operators';
+import { skip, delay, throttleTime, catchError, tap } from 'rxjs/operators';
 import { motion } from 'framer-motion';
 import { 
   Loader2, 

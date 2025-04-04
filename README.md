@@ -20,6 +20,18 @@ A modern React-based tool for validating and managing workflow queues with real-
 - **Containerization**: Docker for deployment
 - **Orchestration**: Kubernetes for container orchestration
 
+## RxJS Architecture
+
+This project uses RxJS for reactive data processing and state management. The application follows a reactive programming paradigm where data flows through streams (Observables) that can be transformed, combined, and consumed.
+
+Key aspects of our RxJS implementation:
+- **Reactive Data Flow**: Data flows through streams from API to UI
+- **Centralized State Management**: Using BehaviorSubjects in QueueStore
+- **Non-blocking Operations**: All data processing is asynchronous
+- **Declarative Transformations**: Using operators like map, filter, mergeMap
+
+For detailed information about our RxJS implementation and best practices, see [RxJS-GUIDE.md](./RxJS-GUIDE.md).
+
 ## Getting Started
 
 ### Prerequisites
