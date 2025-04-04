@@ -174,6 +174,7 @@ function App() {
           <AnimatePresence mode="wait">
             <TabsContent value="upload" asChild>
               <motion.div
+                key="upload-tab"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
@@ -351,6 +352,7 @@ function App() {
 
             <TabsContent value="processing" asChild>
               <motion.div
+                key="processing-tab"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
@@ -362,6 +364,7 @@ function App() {
 
             <TabsContent value="grid" asChild>
               <motion.div
+                key="grid-tab"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
@@ -372,15 +375,20 @@ function App() {
             </TabsContent>
 
             <TabsContent value="workflow" asChild>
-              <WorkflowDiagram />
+              <motion.div key="workflow-tab">
+                <WorkflowDiagram />
+              </motion.div>
             </TabsContent>
 
             <TabsContent value="debug" asChild>
-              <DebugView />
+              <motion.div key="debug-tab">
+                <DebugView />
+              </motion.div>
             </TabsContent>
 
             <TabsContent value="results" asChild>
               <motion.div
+                key="results-tab"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
