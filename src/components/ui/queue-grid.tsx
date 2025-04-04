@@ -66,17 +66,12 @@ export function QueueGrid() {
     }
   };
 
-  // Function to handle job approval
-  const handleApprove = (approved: boolean) => {
-    toast.promise(
-      // This would be your actual API call
-      new Promise(resolve => setTimeout(resolve, 1000)),
-      {
-        loading: 'Sparar beslut...',
-        success: `Jobb ${approved ? 'godkänt' : 'avvisat'}`,
-        error: 'Kunde inte spara beslut'
-      }
-    );
+  const handleRefresh = () => {
+    toast.promise(refresh(), {
+      loading: 'Uppdaterar jobbstatus...',
+      success: 'Jobbstatus uppdaterad',
+      error: 'Kunde inte uppdatera jobbstatus'
+    });
   };
 
   // Function to handle job retry
@@ -161,6 +156,15 @@ export function QueueGrid() {
           <div className="flex items-center space-x-4">
             <h3 className="text-3xl text-gray-01">Processöversikt</h3>
             <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefresh}
+                className="text-gray-02 hover:text-gray-01"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Uppdatera
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
