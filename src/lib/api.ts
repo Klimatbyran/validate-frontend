@@ -137,51 +137,54 @@ export function fetchQueueJobs(
   console.log(`🔍 Fetching queue jobs for ${queueName}...`);
   
   // Create an observable for the API request
-  return rateLimiter.throttle(() => api.get<QueuesResponse>('/queues', {
-    params: {
-      activeQueue: queueName,
-      status,
-      page,
-      jobsPerPage,
-      includeJobs: true,
-      includeDelayed: true,
-      includePaused: true,
-      includeWaiting: true,
-      includeActive: true,
-      includeCompleted: true,
-      includeFailed: true,
-      showEmpty: true
-    },
-  }))
-  .pipe(
-    tap(response => console.log(`✅ Received response for ${queueName}:`, response.data)),
-    map(response => {
-      // Validate the response
-      const parsed = QueuesResponseSchema.safeParse(response.data);
-      if (!parsed.success) {
-        console.error(`❌ Invalid response data for ${queueName}:`, parsed.error);
-        throw new Error(`Ogiltig data från servern: ${parsed.error.message}`);
-      }
+  return new Promise((resolve, reject) => {
+    rateLimiter.throttle(() => api.get<QueuesResponse>('/queues', {
+      params: {
+        activeQueue: queueName,
+        status,
+        page,
+        jobsPerPage,
+        includeJobs: true,
+        includeDelayed: true,
+        includePaused: true,
+        includeWaiting: true,
+        includeActive: true,
+        includeCompleted: true,
+        includeFailed: true,
+        showEmpty: true
+      },
+    }))
+    .pipe(
+      tap(response => console.log(`✅ Received response for ${queueName}:`, response.data)),
+      map(response => {
+        // Validate the response
+        const parsed = QueuesResponseSchema.safeParse(response.data);
+        if (!parsed.success) {
+          console.error(`❌ Invalid response data for ${queueName}:`, parsed.error);
+          throw new Error(`Ogiltig data från servern: ${parsed.error.message}`);
+        }
 
-      // Find the requested queue
-      const queue = parsed.data.queues.find(q => q.name === queueName);
-      if (!queue) {
-        console.error(`❌ Queue "${queueName}" not found in response`);
-        throw new Error(`Kunde inte hitta kön "${queueName}"`);
-      }
+        // Find the requested queue
+        const queue = parsed.data.queues.find(q => q.name === queueName);
+        if (!queue) {
+          console.error(`❌ Queue "${queueName}" not found in response`);
+          throw new Error(`Kunde inte hitta kön "${queueName}"`);
+        }
 
-      return { queue };
-    }),
-    catchError(error => {
-      try {
-        handleApiError(error, queueName);
-      } catch (handledError) {
-        return throwError(() => handledError);
-      }
-    }),
-    // Convert Observable to Promise for compatibility with existing code
-    // In a fully reactive app, we would keep this as an Observable
-  ).toPromise();
+        return { queue };
+      }),
+      catchError(error => {
+        try {
+          handleApiError(error, queueName);
+        } catch (handledError) {
+          return throwError(() => handledError);
+        }
+      })
+    ).subscribe({
+      next: (result) => resolve(result),
+      error: (error) => reject(error)
+    });
+  });
 }
 
 function handleApiError(error: unknown, context?: string): never {
