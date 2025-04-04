@@ -30,6 +30,7 @@ import {
   FileText,
   ExternalLink
 } from 'lucide-react';
+import { WikidataPreview } from './wikidata-preview';
 
 interface JobDetailsDialogProps {
   job: QueueJob | null;
@@ -48,6 +49,8 @@ function isJsonString(str: string): boolean {
   }
 }
 
+import { WikidataPreview } from './wikidata-preview';
+
 // Renders a user-friendly view of JSON data
 function UserFriendlyDataView({ data }: { data: any }) {
   const processedData = typeof data === 'string' && isJsonString(data) 
@@ -56,6 +59,10 @@ function UserFriendlyDataView({ data }: { data: any }) {
   
   // List of technical fields to hide from the user-friendly view
   const technicalFields = ['autoApprove', 'threadId', 'messageId', 'url'];
+  
+  // Extract wikidata if present
+  const wikidataField = processedData.wikidata;
+  const hasWikidata = wikidataField && typeof wikidataField === 'object';
   
   const renderValue = (value: any): React.ReactNode => {
     if (value === null) return <span className="text-gray-02">Inget värde</span>;
@@ -96,9 +103,16 @@ function UserFriendlyDataView({ data }: { data: any }) {
 
   return (
     <div className="space-y-3 text-sm">
+      {/* Show Wikidata preview if available */}
+      {hasWikidata && (
+        <div className="mb-4">
+          <WikidataPreview data={wikidataField} />
+        </div>
+      )}
+      
       {Object.entries(processedData).map(([key, value]) => {
-        // Skip technical fields
-        if (technicalFields.includes(key)) return null;
+        // Skip technical fields and wikidata (since we're showing it separately)
+        if (technicalFields.includes(key) || key === 'wikidata') return null;
         
         return (
           <div key={key} className="bg-gray-03/20 rounded-lg p-3">
