@@ -26,7 +26,9 @@ import {
   GitMerge,
   HelpCircle,
   Info,
-  Code
+  Code,
+  FileText,
+  ExternalLink
 } from 'lucide-react';
 
 interface JobDetailsDialogProps {
@@ -52,6 +54,9 @@ function UserFriendlyDataView({ data }: { data: any }) {
     ? JSON.parse(data) 
     : data;
   
+  // List of technical fields to hide from the user-friendly view
+  const technicalFields = ['autoApprove', 'threadId', 'messageId', 'url'];
+  
   const renderValue = (value: any): React.ReactNode => {
     if (value === null) return <span className="text-gray-02">Inget värde</span>;
     if (typeof value === 'boolean') return value ? 'Ja' : 'Nej';
@@ -68,12 +73,17 @@ function UserFriendlyDataView({ data }: { data: any }) {
     if (typeof value === 'object') {
       return (
         <div className="pl-4 border-l-2 border-gray-03/50 mt-2 space-y-2">
-          {Object.entries(value).map(([k, v]) => (
-            <div key={k}>
-              <span className="font-medium text-gray-01">{k}:</span>{' '}
-              {renderValue(v)}
-            </div>
-          ))}
+          {Object.entries(value).map(([k, v]) => {
+            // Skip technical fields in nested objects too
+            if (technicalFields.includes(k)) return null;
+            
+            return (
+              <div key={k}>
+                <span className="font-medium text-gray-01">{k}:</span>{' '}
+                {renderValue(v)}
+              </div>
+            );
+          })}
         </div>
       );
     }
@@ -86,12 +96,17 @@ function UserFriendlyDataView({ data }: { data: any }) {
 
   return (
     <div className="space-y-3 text-sm">
-      {Object.entries(processedData).map(([key, value]) => (
-        <div key={key} className="bg-gray-03/20 rounded-lg p-3">
-          <div className="font-medium text-gray-01 mb-1">{key}</div>
-          <div className="text-gray-02">{renderValue(value)}</div>
-        </div>
-      ))}
+      {Object.entries(processedData).map(([key, value]) => {
+        // Skip technical fields
+        if (technicalFields.includes(key)) return null;
+        
+        return (
+          <div key={key} className="bg-gray-03/20 rounded-lg p-3">
+            <div className="font-medium text-gray-01 mb-1">{key}</div>
+            <div className="text-gray-02">{renderValue(value)}</div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -194,6 +209,11 @@ export function JobDetailsDialog({
     const { companyName, description, ...rest } = job.data;
     return rest;
   };
+  
+  // Get URL from job data if it exists
+  const getDocumentUrl = () => {
+    return job.data.url || null;
+  };
 
   // Simplified view for jobs that need approval
   if (needsApproval && activeTab === 'user') {
@@ -201,14 +221,29 @@ export function JobDetailsDialog({
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl mb-2">
-              {job.data.companyName || job.data.company}
-            </DialogTitle>
-            {job.data.description && (
-              <DialogDescription className="text-base">
-                {job.data.description}
-              </DialogDescription>
-            )}
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-2xl mb-2">
+                  {job.data.companyName || job.data.company}
+                </DialogTitle>
+                {job.data.description && (
+                  <DialogDescription className="text-base">
+                    {job.data.description}
+                  </DialogDescription>
+                )}
+              </div>
+              {job.data.url && (
+                <a 
+                  href={job.data.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-2 text-blue-03 hover:text-blue-03/80 bg-blue-03/10 p-2 rounded-full"
+                  title="Öppna källdokument"
+                >
+                  <FileText className="w-5 h-5" />
+                </a>
+              )}
+            </div>
           </DialogHeader>
 
           <div className="flex items-center space-x-2 mb-6">
@@ -285,14 +320,29 @@ export function JobDetailsDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl mb-2">
-            {job.data.companyName || job.data.company}
-          </DialogTitle>
-          {job.data.description && (
-            <DialogDescription className="text-base">
-              {job.data.description}
-            </DialogDescription>
-          )}
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-2xl mb-2">
+                {job.data.companyName || job.data.company}
+              </DialogTitle>
+              {job.data.description && (
+                <DialogDescription className="text-base">
+                  {job.data.description}
+                </DialogDescription>
+              )}
+            </div>
+            {job.data.url && (
+              <a 
+                href={job.data.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2 text-blue-03 hover:text-blue-03/80 bg-blue-03/10 p-2 rounded-full"
+                title="Öppna källdokument"
+              >
+                <FileText className="w-5 h-5" />
+              </a>
+            )}
+          </div>
         </DialogHeader>
 
         {needsApproval && (
