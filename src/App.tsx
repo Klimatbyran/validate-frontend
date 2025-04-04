@@ -10,6 +10,7 @@ import { WorkflowDiagram } from '@/components/ui/workflow-diagram';
 import { DebugView } from '@/components/ui/debug-view';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
+import { useQueues } from '@/hooks/useQueues';
 
 interface UploadedFile {
   file: File;

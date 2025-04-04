@@ -17,6 +17,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { useGroupedCompanies } from '@/hooks/useGroupedCompanies';
+import { useQueues } from '@/hooks/useQueues';
 import { Button } from '@/components/ui/button';
 import { WORKFLOW_STAGES } from '@/lib/constants';
 import { toast } from 'sonner';
@@ -72,6 +73,19 @@ export function QueueGrid() {
       success: 'Jobbstatus uppdaterad',
       error: 'Kunde inte uppdatera jobbstatus'
     });
+  };
+
+  // Function to handle job approval
+  const handleApprove = (approved: boolean) => {
+    toast.promise(
+      // This would be your actual API call
+      new Promise(resolve => setTimeout(resolve, 1000)),
+      {
+        loading: 'Sparar beslut...',
+        success: `Jobb ${approved ? 'godkänt' : 'avvisat'}`,
+        error: 'Kunde inte spara beslut'
+      }
+    );
   };
 
   // Function to handle job retry
