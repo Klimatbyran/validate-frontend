@@ -36,7 +36,7 @@ export function WikidataPreview({ data }: WikidataProps) {
   const entityUrl = data.node ? `https://www.wikidata.org/wiki/${data.node}` : null;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-03/20">
+    <div className="bg-gray-04 rounded-lg shadow-sm overflow-hidden border border-gray-03/20">
       <div className="flex items-center p-4">
         {logoUrl && (
           <div className="flex-shrink-0 mr-4">
