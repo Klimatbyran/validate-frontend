@@ -5,6 +5,9 @@ import { groupQueues, groupByCompany } from './operators';
 
 export class QueueStore {
   private queues: Record<string, BehaviorSubject<Queue | null>> = {};
+  private pollingIntervals: Record<string, NodeJS.Timeout> = {};
+  // Track which queues have completed historical loading
+  private historicallyLoaded = new Set<string>();
   private groupedCompanies$ = new BehaviorSubject<GroupedCompany[]>([]);
   private queueStats$ = new BehaviorSubject<QueueStatsState>({
     totals: {
@@ -163,6 +166,59 @@ export class QueueStore {
 
   getQueueStats(): Observable<QueueStatsState> {
     return this.queueStats$.asObservable();
+  }
+  
+  // Load historical data for a queue and then start polling for updates
+  async loadQueueWithUpdates(queueId: string): Promise<void> {
+    if (this.historicallyLoaded.has(queueId)) {
+      console.log(`🔄 Queue ${queueId} already loaded historically, skipping`);
+      return;
+    }
+    
+    try {
+      console.log(`📚 Starting historical load for queue ${queueId}`);
+      
+      // Step 1: Load all historical jobs (oldest first)
+      const historicalData = await fetchAllHistoricalJobs(queueId);
+      this.updateQueue(queueId, historicalData.queue);
+      
+      // Mark as historically loaded
+      this.historicallyLoaded.add(queueId);
+      console.log(`✅ Completed historical load for queue ${queueId}`);
+      
+      // Step 2: Start polling for updates (newest first)
+      this.pollQueueUpdates(queueId);
+    } catch (error) {
+      console.error(`❌ Error in loadQueueWithUpdates for ${queueId}:`, error);
+    }
+  }
+  
+  // Poll for updates to a queue
+  private pollQueueUpdates(queueId: string): void {
+    console.log(`🔄 Starting update polling for queue ${queueId}`);
+    
+    // Use a separate interval for each queue to avoid overwhelming the server
+    const intervalId = setInterval(async () => {
+      try {
+        // Only fetch the most recent jobs (newest first)
+        const updates = await fetchQueueJobs(queueId, 'latest', 1, 10, 'desc');
+        this.updateQueue(queueId, updates.queue);
+      } catch (error) {
+        console.error(`❌ Error polling updates for ${queueId}:`, error);
+      }
+    }, 1000); // Poll every second
+    
+    // Store the interval ID so we can clear it later if needed
+    this.pollingIntervals[queueId] = intervalId;
+  }
+  
+  // Stop polling updates for a queue
+  stopPollingUpdates(queueId: string): void {
+    if (this.pollingIntervals[queueId]) {
+      clearInterval(this.pollingIntervals[queueId]);
+      delete this.pollingIntervals[queueId];
+      console.log(`⏹️ Stopped polling updates for queue ${queueId}`);
+    }
   }
 }
 

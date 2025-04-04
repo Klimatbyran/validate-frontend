@@ -132,9 +132,10 @@ export function fetchQueueJobs(
   queueName: string, 
   status = 'latest',
   page = 1,
-  jobsPerPage = 20
+  jobsPerPage = 20,
+  sortOrder: 'asc' | 'desc' = 'desc'
 ): Promise<QueueJobsResponse> {
-  console.log(`🔍 Fetching queue jobs for ${queueName}...`);
+  console.log(`🔍 Fetching queue jobs for ${queueName}... (page ${page}, ${sortOrder})`);
   
   // Create an observable for the API request
   return new Promise((resolve, reject) => {
@@ -144,6 +145,7 @@ export function fetchQueueJobs(
         status,
         page,
         jobsPerPage,
+        sortOrder,
         includeJobs: true,
         includeDelayed: true,
         includePaused: true,
@@ -185,6 +187,55 @@ export function fetchQueueJobs(
       error: (error) => reject(error)
     });
   });
+}
+
+// Load all historical jobs for a queue using pagination
+export async function fetchAllHistoricalJobs(
+  queueName: string,
+  jobsPerPage = 50
+): Promise<QueueJobsResponse> {
+  console.log(`📚 Loading historical jobs for ${queueName}...`);
+  
+  let allJobs: QueueJobsResponse = { queue: { jobs: [], counts: { active: 0, waiting: 0, completed: 0, failed: 0, delayed: 0, paused: false } } };
+  let currentPage = 1;
+  let hasMoreJobs = true;
+  
+  try {
+    // Keep fetching pages until we have all jobs (oldest first)
+    while (hasMoreJobs) {
+      const response = await fetchQueueJobs(queueName, 'latest', currentPage, jobsPerPage, 'asc');
+      
+      if (!response.queue || !response.queue.jobs || response.queue.jobs.length === 0) {
+        hasMoreJobs = false;
+      } else {
+        // First page, initialize with queue metadata
+        if (currentPage === 1) {
+          allJobs = {
+            queue: {
+              ...response.queue,
+              jobs: [...response.queue.jobs]
+            }
+          };
+        } else {
+          // Append jobs from subsequent pages
+          allJobs.queue.jobs = [...allJobs.queue.jobs, ...response.queue.jobs];
+        }
+        
+        // Check if we've reached the end
+        if (response.queue.jobs.length < jobsPerPage) {
+          hasMoreJobs = false;
+        } else {
+          currentPage++;
+        }
+      }
+    }
+    
+    console.log(`✅ Loaded ${allJobs.queue.jobs.length} historical jobs for ${queueName}`);
+    return allJobs;
+  } catch (error) {
+    console.error(`❌ Error loading historical jobs for ${queueName}:`, error);
+    throw error;
+  }
 }
 
 function handleApiError(error: unknown, context?: string): never {

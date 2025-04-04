@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { fetchQueues, fetchQueueJobs } from '@/lib/api';
+import { fetchQueues, fetchQueueJobs, fetchAllHistoricalJobs } from '@/lib/api';
 import type { QueuesResponse } from '@/lib/types';
 import { WORKFLOW_STAGES } from '@/lib/constants';
 import { queueStore } from '@/lib/queue-store';
@@ -19,6 +19,10 @@ export function useQueues(page = 1, jobsPerPage = 20) {
           // Add a small delay between requests based on index to stagger them
           const staggerDelay = Math.floor(index / 3) * 300;
           
+          // Start the two-step loading process for this queue
+          queueStore.loadQueueWithUpdates(stage.id);
+          
+          // Return initial data to populate the UI quickly
           return from(fetchQueueJobs(stage.id, 'latest', page, jobsPerPage)).pipe(
             delay(staggerDelay),
             map(response => ({
