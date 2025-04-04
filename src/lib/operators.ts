@@ -220,7 +220,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
       );
     }),
     // Steg 5: Kombinera alla företagsgrupper till en enda array
-    // Använd scan för att bygga upp en array av företag
+    // Använd scan för att bygga upp en array av företag och emittera för varje uppdatering
     scan((companies, company) => {
       // Hitta om detta företag redan finns i vår array
       const index = companies.findIndex(c => c.company === company.company);
@@ -237,6 +237,8 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
       // Lägg till det nya företaget
       return [...companies, company];
     }, [] as GroupedCompany[]),
+    // Dela strömmen för att undvika att köra om hela pipeline för varje subscriber
+    share(),
     
     // Sortera företag efter namn
     map(companies => 

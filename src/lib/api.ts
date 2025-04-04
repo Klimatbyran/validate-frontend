@@ -2,8 +2,8 @@ import axios, { AxiosError } from 'axios';
 import { QueuesResponse, QueuesResponseSchema, QueueJobsResponse, QueueJobsResponseSchema } from './types';
 import { toast } from 'sonner';
 
-import { Observable, Subject, from, of, timer, concat, throwError } from 'rxjs';
-import { mergeMap, concatMap, tap, catchError, delay, map, share, finalize } from 'rxjs/operators';
+import { Observable, Subject, from, of, timer, concat, throwError, EMPTY } from 'rxjs';
+import { mergeMap, concatMap, tap, catchError, delay, map, share, finalize, expand, takeWhile } from 'rxjs/operators';
 
 // RxJS-based rate limiter for API requests
 class RxRateLimiter {
@@ -243,40 +243,46 @@ export function fetchAllHistoricalJobs(
   };
   
   // Använd en rekursiv funktion för att hämta alla sidor reaktivt
-  const fetchPage = (page: number, accumulatedResponse?: QueueJobsResponse): Observable<QueueJobsResponse> => {
-    return from(fetchQueueJobs(queueName, 'latest', page, jobsPerPage, 'asc')).pipe(
-      mergeMap(response => {
-        // Om vi inte har några jobb eller tom respons, returnera det vi har hittills
-        if (!response.queue || !response.queue.jobs || response.queue.jobs.length === 0) {
-          return of(accumulatedResponse || emptyResponse);
-        }
-        
-        // Kombinera tidigare resultat med nya jobb
-        const combinedResponse = accumulatedResponse ? {
-          queue: {
-            ...response.queue,
-            jobs: [...accumulatedResponse.queue.jobs, ...response.queue.jobs]
-          }
-        } : response;
-        
-        // Om vi har färre jobb än sidstorlek, har vi nått slutet
-        if (response.queue.jobs.length < jobsPerPage) {
-          return of(combinedResponse);
-        }
-        
-        // Annars fortsätt med nästa sida
-        return fetchPage(page + 1, combinedResponse);
-      }),
-      catchError(error => {
-        console.error(`❌ Error loading historical jobs for ${queueName}:`, error);
-        return throwError(() => error);
-      })
-    );
+  // Implementera med scan för att emittera delresultat för varje sida
+  const fetchPages = (): Observable<QueueJobsResponse> => {
+    return from([1]) // Starta med sida 1
+      .pipe(
+        // Expandera strömmen för att hämta alla sidor
+        expand(page => 
+          from(fetchQueueJobs(queueName, 'latest', page, jobsPerPage, 'asc')).pipe(
+            map(response => ({
+              response,
+              nextPage: response.queue?.jobs?.length === jobsPerPage ? page + 1 : null
+            })),
+            catchError(error => {
+              console.error(`❌ Error loading page ${page} for ${queueName}:`, error);
+              return of({ response: emptyResponse, nextPage: null });
+            })
+          )
+        ),
+        // Avsluta när vi inte har fler sidor
+        takeWhile(({ nextPage }) => nextPage !== null, true),
+        // Ackumulera resultat med scan
+        scan((acc, { response }) => {
+          if (!acc.queue.jobs.length) return response;
+          
+          return {
+            queue: {
+              ...response.queue,
+              jobs: [...acc.queue.jobs, ...(response.queue?.jobs || [])]
+            }
+          };
+        }, emptyResponse),
+        // Logga framsteg
+        tap(result => console.log(`📊 Loaded ${result.queue.jobs.length} jobs so far for ${queueName}`)),
+      );
   };
-  
-  // Starta med första sidan
-  return fetchPage(1).pipe(
-    tap(result => console.log(`✅ Loaded ${result.queue.jobs.length} historical jobs for ${queueName}`))
+  // Starta hämtningen av alla sidor
+  return fetchPages().pipe(
+    // Slutlig loggning när alla sidor är hämtade
+    finalize(() => console.log(`✅ Completed loading historical jobs for ${queueName}`)),
+    // Dela strömmen för att undvika att köra om hela pipeline för varje subscriber
+    share()
   );
 }
 

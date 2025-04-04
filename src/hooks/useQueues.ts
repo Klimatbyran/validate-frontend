@@ -41,9 +41,10 @@ export function useQueues(page = 1, jobsPerPage = 20) {
             })
           );
         }, 3), // Samtidighetsgräns på 3
-        // Använd reduce istället för toArray för att bygga upp resultatet reaktivt
-        reduce((acc: any[], queue) => {
-          if (queue) acc.push(queue);
+        // Använd scan istället för reduce/toArray för att bygga upp resultatet reaktivt
+        // scan emitterar värden för varje element, inte bara i slutet som reduce
+        scan((acc: any[], queue) => {
+          if (queue) return [...acc, queue];
           return acc;
         }, []),
         map(queues => ({
