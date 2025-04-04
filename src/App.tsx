@@ -25,6 +25,7 @@ interface UrlInput {
 
 function App() {
   const [currentTab, setCurrentTab] = useState('upload');
+  const { refresh } = useQueues();
   const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -150,10 +151,11 @@ function App() {
     }
 
     setCurrentTab('processing');
+    refresh(); // Refresh data when switching to processing tab
     toast('Påbörjar bearbetning...', {
       description: `${totalItems} ${uploadMode === 'file' ? 'fil' : 'länk'}${totalItems === 1 ? '' : 'ar'} att processa`,
     });
-  }, [uploadedFiles.length, processedUrls.length, uploadMode]);
+  }, [uploadedFiles.length, processedUrls.length, uploadMode, refresh]);
 
   return (
     <div className="min-h-screen bg-gray-05 p-8">
@@ -161,7 +163,17 @@ function App() {
       <div className="max-w-[1400px] mx-auto">
         <Header />
 
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
+        <Tabs 
+          value={currentTab} 
+          onValueChange={(value) => {
+            setCurrentTab(value);
+            // Refresh data when switching to grid or processing tabs
+            if (value === 'grid' || value === 'processing') {
+              refresh();
+            }
+          }} 
+          className="space-y-6"
+        >
           <TabsList className="bg-gray-04/50 backdrop-blur-sm">
             <TabsTrigger value="upload">Uppladdning</TabsTrigger>
             <TabsTrigger value="processing">Bearbetning</TabsTrigger>

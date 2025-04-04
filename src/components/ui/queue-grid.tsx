@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Loader2, 
@@ -28,6 +28,19 @@ export function QueueGrid() {
   const [selectedJob, setSelectedJob] = useState<QueueJob | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const groupedCompanies = useGroupedCompanies();
+  const { refresh } = useQueues(); // Add useQueues to ensure data is refreshed
+  
+  // Refresh data when component mounts
+  useEffect(() => {
+    refresh();
+    
+    // Set up periodic refresh
+    const intervalId = setInterval(() => {
+      refresh();
+    }, 15000); // Refresh every 15 seconds
+    
+    return () => clearInterval(intervalId);
+  }, [refresh]);
 
   // Function to toggle company expansion
   const toggleCompanyExpansion = (companyKey: string) => {
