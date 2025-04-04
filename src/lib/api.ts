@@ -224,53 +224,60 @@ export function fetchQueueJobs(
   });
 }
 
+// VIKTIGT: Använd endast reaktiva RxJS-metoder. Statiska objekt, globala variabler 
+// och blockerande metoder som toArray() är FÖRBJUDNA.
+
 // Load all historical jobs for a queue using pagination
-export async function fetchAllHistoricalJobs(
+export function fetchAllHistoricalJobs(
   queueName: string,
   jobsPerPage = 50
-): Promise<QueueJobsResponse> {
+): Observable<QueueJobsResponse> {
   console.log(`📚 Loading historical jobs for ${queueName}...`);
   
-  let allJobs: QueueJobsResponse = { queue: { jobs: [], counts: { active: 0, waiting: 0, completed: 0, failed: 0, delayed: 0, paused: false } } };
-  let currentPage = 1;
-  let hasMoreJobs = true;
+  // Skapa en initial tom respons
+  const emptyResponse: QueueJobsResponse = { 
+    queue: { 
+      jobs: [], 
+      counts: { active: 0, waiting: 0, completed: 0, failed: 0, delayed: 0, paused: false } 
+    } 
+  };
   
-  try {
-    // Keep fetching pages until we have all jobs (oldest first)
-    while (hasMoreJobs) {
-      const response = await fetchQueueJobs(queueName, 'latest', currentPage, jobsPerPage, 'asc');
-      
-      if (!response.queue || !response.queue.jobs || response.queue.jobs.length === 0) {
-        hasMoreJobs = false;
-      } else {
-        // First page, initialize with queue metadata
-        if (currentPage === 1) {
-          allJobs = {
-            queue: {
-              ...response.queue,
-              jobs: [...response.queue.jobs]
-            }
-          };
-        } else {
-          // Append jobs from subsequent pages
-          allJobs.queue.jobs = [...allJobs.queue.jobs, ...response.queue.jobs];
+  // Använd en rekursiv funktion för att hämta alla sidor reaktivt
+  const fetchPage = (page: number, accumulatedResponse?: QueueJobsResponse): Observable<QueueJobsResponse> => {
+    return from(fetchQueueJobs(queueName, 'latest', page, jobsPerPage, 'asc')).pipe(
+      mergeMap(response => {
+        // Om vi inte har några jobb eller tom respons, returnera det vi har hittills
+        if (!response.queue || !response.queue.jobs || response.queue.jobs.length === 0) {
+          return of(accumulatedResponse || emptyResponse);
         }
         
-        // Check if we've reached the end
+        // Kombinera tidigare resultat med nya jobb
+        const combinedResponse = accumulatedResponse ? {
+          queue: {
+            ...response.queue,
+            jobs: [...accumulatedResponse.queue.jobs, ...response.queue.jobs]
+          }
+        } : response;
+        
+        // Om vi har färre jobb än sidstorlek, har vi nått slutet
         if (response.queue.jobs.length < jobsPerPage) {
-          hasMoreJobs = false;
-        } else {
-          currentPage++;
+          return of(combinedResponse);
         }
-      }
-    }
-    
-    console.log(`✅ Loaded ${allJobs.queue.jobs.length} historical jobs for ${queueName}`);
-    return allJobs;
-  } catch (error) {
-    console.error(`❌ Error loading historical jobs for ${queueName}:`, error);
-    throw error;
-  }
+        
+        // Annars fortsätt med nästa sida
+        return fetchPage(page + 1, combinedResponse);
+      }),
+      catchError(error => {
+        console.error(`❌ Error loading historical jobs for ${queueName}:`, error);
+        return throwError(() => error);
+      })
+    );
+  };
+  
+  // Starta med första sidan
+  return fetchPage(1).pipe(
+    tap(result => console.log(`✅ Loaded ${result.queue.jobs.length} historical jobs for ${queueName}`))
+  );
 }
 
 function handleApiError(error: unknown, context?: string): Error {

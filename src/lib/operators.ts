@@ -26,28 +26,19 @@ export function groupQueues(): OperatorFunction<{ queueId: string; queue: Queue 
 }
 
 // Group jobs by company using RxJS groupBy
+// VIKTIGT: Använd endast reaktiva RxJS-metoder. Statiska objekt, globala variabler 
+// och blockerande metoder som toArray() är FÖRBJUDNA.
 export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
-  // Create a shared subject to track thread-company associations
-  const threadCompanyAssociations = new BehaviorSubject<Record<string, string>>({});
-  
   return pipe(
-    // First, process each job to update thread-company associations
+    // Logga inkommande jobb
     tap(job => {
-      console.log('👥 Processing job for associations:', {
+      console.log('👥 Processing job:', {
         id: job.id,
         companyName: job.data.companyName,
         threadId: job.data.threadId
       });
-      
-      // If this job has both a threadId and companyName, update the associations
-      if (job.data.threadId && job.data.companyName) {
-        threadCompanyAssociations.next({
-          ...threadCompanyAssociations.getValue(),
-          [job.data.threadId]: job.data.companyName
-        });
-      }
     }),
-    // Group by threadId to process jobs in the same thread together
+    // Steg 1: Gruppera jobb efter threadId för att hantera jobb i samma tråd tillsammans
     groupBy(
       job => job.data.threadId || job.id,
       {
@@ -58,42 +49,75 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
         })
       }
     ),
-    // Process each thread group reactively
+    // Steg 2: Bearbeta varje trådgrupp reaktivt
     mergeMap(threadGroup => {
-      // Create a stream that combines each job with the latest associations
+      // Använd scan för att bygga upp en "state" för varje tråd
+      // Detta ersätter behovet av en global BehaviorSubject
       return threadGroup.pipe(
-        // For each job in the thread, combine with latest associations
-        withLatestFrom(threadCompanyAssociations),
-        // Update job company name based on thread associations
-        map(([jobData, associations]) => {
-          const threadId = jobData.threadId;
-          const companyName = jobData.job.data.companyName || 
-                             (threadId && associations[threadId]);
+        // Scan används för att ackumulera state inom en ström
+        scan((acc, jobData) => {
+          // Hitta companyName från tidigare jobb i tråden eller från det aktuella jobbet
+          const companyName = jobData.job.data.companyName || acc.companyName;
           
-          // If we have a company name from associations, apply it
-          if (companyName && !jobData.job.data.companyName) {
-            // Create a new job object with updated company name
-            const updatedJob = {
-              ...jobData.job,
-              data: {
-                ...jobData.job.data,
-                companyName
-              }
-            };
-            
-            return {
-              ...jobData,
-              job: updatedJob
-            };
+          // Uppdatera alla jobb i tråden med companyName om det finns
+          const updatedJobs = acc.jobs.map(item => {
+            // Om jobbet inte har companyName men tråden har det, uppdatera jobbet
+            if (companyName && !item.job.data.companyName) {
+              return {
+                ...item,
+                job: {
+                  ...item.job,
+                  data: {
+                    ...item.job.data,
+                    companyName
+                  }
+                }
+              };
+            }
+            return item;
+          });
+          
+          // Lägg till eller uppdatera det aktuella jobbet
+          const existingJobIndex = updatedJobs.findIndex(
+            item => item.job.id === jobData.job.id && item.job.queueId === jobData.job.queueId
+          );
+          
+          if (existingJobIndex >= 0) {
+            updatedJobs[existingJobIndex] = jobData;
+          } else {
+            updatedJobs.push(jobData);
           }
           
-          return jobData;
-        }),
-        // Share the processed jobs stream
+          return {
+            companyName,
+            jobs: updatedJobs
+          };
+        }, { companyName: '', jobs: [] as any[] }),
+        // Emittera varje jobb separat med uppdaterad companyName
+        mergeMap(threadState => 
+          from(threadState.jobs).pipe(
+            // Uppdatera companyName för alla jobb i tråden
+            map(jobData => {
+              if (threadState.companyName && !jobData.job.data.companyName) {
+                return {
+                  ...jobData,
+                  job: {
+                    ...jobData.job,
+                    data: {
+                      ...jobData.job.data,
+                      companyName: threadState.companyName
+                    }
+                  }
+                };
+              }
+              return jobData;
+            })
+          )
+        ),
         share()
       );
     }),
-    // Now group by company name with the updated job data
+    // Steg 3: Gruppera jobb efter företagsnamn med uppdaterad jobbdata
     groupBy(
       job => job.job.data.companyName || job.job.data.company || 'Unknown',
       {
@@ -103,59 +127,56 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
     tap(group => {
       console.log('🏢 Created company group:', group.key);
     }),
-    // Process each company group
+    // Steg 4: Bearbeta varje företagsgrupp
     mergeMap(group => {
-      // Create a subject to track the accumulated state for this company
-      const companyState = new BehaviorSubject({
-        company: group.key,
-        companyName: undefined as string | undefined,
-        description: undefined as string | undefined,
-        threads: new Map<string, QueueJob[]>()
-      });
+      // Använd scan istället för BehaviorSubject för att bygga upp företagsstate
+      // Detta är en rent funktionell reaktiv approach utan sidoeffekter
       
-      // Process each job in the company group
       return group.pipe(
-        // Update company state with each job
-        tap(data => {
+        // Använd scan för att bygga upp företagsstate
+        scan((acc, data) => {
           const { job, threadId } = data;
-          const currentState = companyState.getValue();
           
-          // Get current jobs for this thread
-          const threadJobs = currentState.threads.get(threadId) || [];
+          // Hämta aktuella jobb för denna tråd
+          const threadJobs = acc.threads.get(threadId) || [];
           
-          // Add job to thread, replacing if it already exists
+          // Lägg till jobb i tråden, ersätt om det redan finns
           const updatedJobs = [
             ...threadJobs.filter(j => j.id !== job.id || j.queueId !== job.queueId), 
             job
           ];
           
-          // Create new threads map with updated jobs
-          const newThreads = new Map(currentState.threads);
+          // Skapa ny threads-map med uppdaterade jobb
+          const newThreads = new Map(acc.threads);
           newThreads.set(threadId, updatedJobs);
           
-          // Update company info if available
-          const newCompanyName = job.data.companyName || currentState.companyName;
-          const newDescription = job.data.description || currentState.description;
+          // Uppdatera företagsinfo om tillgänglig
+          const newCompanyName = job.data.companyName || acc.companyName;
+          const newDescription = job.data.description || acc.description;
           
-          // Update the company state
-          companyState.next({
-            company: currentState.company,
+          // Returnera uppdaterat state
+          return {
+            company: acc.company,
             companyName: newCompanyName,
             description: newDescription,
             threads: newThreads
-          });
+          };
+        }, {
+          company: group.key,
+          companyName: undefined as string | undefined,
+          description: undefined as string | undefined,
+          threads: new Map<string, QueueJob[]>()
         }),
-        // Convert the latest company state to GroupedCompany format
-        switchMap(() => companyState),
+        // Konvertera företagsstate till GroupedCompany-format
         map(({ company, companyName, description, threads }) => {
-          // Convert threads Map to attempts array
+          // Konvertera threads Map till attempts-array
           const attempts = Array.from(threads.entries()).map(([threadId, jobs]) => {
-            // Find the latest job in this thread
+            // Hitta det senaste jobbet i denna tråd
             const latestJob = jobs.reduce((latest, job) => 
               job.timestamp > (latest?.timestamp ?? 0) ? job : latest
             , jobs[0]);
             
-            // Create stages object from jobs
+            // Skapa stages-objekt från jobb
             const stages = jobs.reduce((stagesAcc, job) => ({
               ...stagesAcc,
               [job.queueId]: {
@@ -170,13 +191,13 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
               description,
               threadId,
               year: latestJob.data.year || new Date().getFullYear(),
-              jobs, // Include all jobs for this thread
+              jobs, // Inkludera alla jobb för denna tråd
               stages
             };
           });
           
-          // Sort attempts by timestamp (newest first)
-          const sortedAttempts = [...attempts].sort((a, b) => {
+          // Sortera attempts efter timestamp (nyast först)
+          const sortedAttempts = attempts.sort((a, b) => {
             const aTime = Math.min(...Object.values(a.stages).map(s => s.timestamp));
             const bTime = Math.min(...Object.values(b.stages).map(s => s.timestamp));
             return bTime - aTime;
@@ -189,34 +210,38 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
             attempts: sortedAttempts
           };
         }),
-        // Only emit when the company state changes
+        // Emittera bara när företagsstatet ändras
         distinctUntilChanged((prev, curr) => {
-          // Simple check for equality based on thread count and job count
+          // Kontrollera likhet baserat på antal trådar och jobb
           const prevJobCount = Array.from(prev.threads.values()).flat().length;
           const currJobCount = Array.from(curr.threads.values()).flat().length;
           return prevJobCount === currJobCount && prev.threads.size === curr.threads.size;
         })
       );
     }),
-    // Combine all company groups into a single array using a shared state
+    // Steg 5: Kombinera alla företagsgrupper till en enda array
+    // Använd scan för att bygga upp en array av företag
     scan((companies, company) => {
-      // Find if this company already exists in our array
+      // Hitta om detta företag redan finns i vår array
       const index = companies.findIndex(c => c.company === company.company);
       
-      // Replace or add the company
+      // Ersätt eller lägg till företaget
       if (index >= 0) {
+        // Skapa en ny array med det uppdaterade företaget
         return [
           ...companies.slice(0, index),
           company,
           ...companies.slice(index + 1)
         ];
       }
+      // Lägg till det nya företaget
       return [...companies, company];
     }, [] as GroupedCompany[]),
     
-    // Sort companies by name
+    // Sortera företag efter namn
     map(companies => 
-      [...companies].sort((a, b) => 
+      // Skapa en ny sorterad array utan att mutera den ursprungliga
+      companies.sort((a, b) => 
         (a.companyName || a.company).localeCompare(b.companyName || b.company)
       )
     ),

@@ -108,11 +108,15 @@ export class QueueStore {
     });
   }
 
+  // VIKTIGT: Använd endast reaktiva RxJS-metoder. Statiska objekt, globala variabler 
+  // och blockerande metoder som toArray() är FÖRBJUDNA.
   private setupDataPipeline(queues$: Observable<{ queueId: string; queue: Queue | null }[]>) {
     queues$.pipe(
       debounceTime(100), // Debounce rapid updates
       groupQueues(),
       groupByCompany(),
+      // Använd shareReplay för att dela resultatet mellan flera subscribers
+      // utan att behöva köra om hela pipeline
       shareReplay(1)
     ).subscribe(
       companies => {
@@ -169,29 +173,36 @@ export class QueueStore {
     return this.queueStats$.asObservable();
   }
   
+  // VIKTIGT: Använd endast reaktiva RxJS-metoder. Statiska objekt, globala variabler 
+  // och blockerande metoder som toArray() är FÖRBJUDNA.
+  
   // Load historical data for a queue and then start polling for updates
-  async loadQueueWithUpdates(queueId: string): Promise<void> {
+  loadQueueWithUpdates(queueId: string): void {
     if (this.historicallyLoaded.has(queueId)) {
       console.log(`🔄 Queue ${queueId} already loaded historically, skipping`);
       return;
     }
     
-    try {
-      console.log(`📚 Starting historical load for queue ${queueId}`);
-      
-      // Step 1: Load all historical jobs (oldest first)
-      const historicalData = await fetchAllHistoricalJobs(queueId);
-      this.updateQueue(queueId, historicalData.queue);
-      
-      // Mark as historically loaded
-      this.historicallyLoaded.add(queueId);
-      console.log(`✅ Completed historical load for queue ${queueId}`);
-      
-      // Step 2: Start polling for updates (newest first)
-      this.pollQueueUpdates(queueId);
-    } catch (error) {
-      console.error(`❌ Error in loadQueueWithUpdates for ${queueId}:`, error);
-    }
+    console.log(`📚 Starting historical load for queue ${queueId}`);
+    
+    // Steg 1: Ladda alla historiska jobb (äldst först) reaktivt
+    fetchAllHistoricalJobs(queueId).pipe(
+      // När historisk laddning är klar, uppdatera kön och starta polling
+      tap(historicalData => {
+        this.updateQueue(queueId, historicalData.queue);
+        
+        // Markera som historiskt laddad
+        this.historicallyLoaded.add(queueId);
+        console.log(`✅ Completed historical load for queue ${queueId}`);
+        
+        // Steg 2: Starta polling för uppdateringar (nyast först)
+        this.pollQueueUpdates(queueId);
+      }),
+      catchError(error => {
+        console.error(`❌ Error in loadQueueWithUpdates for ${queueId}:`, error);
+        return EMPTY;
+      })
+    ).subscribe();
   }
   
   // Poll for updates to a queue
