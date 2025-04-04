@@ -149,53 +149,78 @@ export function fetchQueueJobs(
   
   // Create an observable for the API request
   return new Promise((resolve, reject) => {
-    rateLimiter.throttle(() => api.get<QueuesResponse>('/queues', {
-      params: {
-        activeQueue: queueName,
-        status,
-        page,
-        jobsPerPage,
-        sortOrder,
-        includeJobs: true,
-        includeDelayed: true,
-        includePaused: true,
-        includeWaiting: true,
-        includeActive: true,
-        includeCompleted: true,
-        includeFailed: true,
-        showEmpty: true
-      },
-    }))
-    .pipe(
-      tap(response => console.log(`✅ Received response for ${queueName}:`, response.data)),
-      map(response => {
-        // Validate the response
-        const parsed = QueuesResponseSchema.safeParse(response.data);
-        if (!parsed.success) {
-          console.error(`❌ Invalid response data for ${queueName}:`, parsed.error);
-          throw new Error(`Ogiltig data från servern: ${parsed.error.message}`);
-        }
+    try {
+      const subscription = rateLimiter.throttle(() => api.get<QueuesResponse>('/queues', {
+        params: {
+          activeQueue: queueName,
+          status,
+          page,
+          jobsPerPage,
+          sortOrder,
+          includeJobs: true,
+          includeDelayed: true,
+          includePaused: true,
+          includeWaiting: true,
+          includeActive: true,
+          includeCompleted: true,
+          includeFailed: true,
+          showEmpty: true
+        },
+      }))
+      .pipe(
+        tap(response => console.log(`✅ Received response for ${queueName}:`, response.data)),
+        map(response => {
+          // Validate the response
+          const parsed = QueuesResponseSchema.safeParse(response.data);
+          if (!parsed.success) {
+            console.error(`❌ Invalid response data for ${queueName}:`, parsed.error);
+            throw new Error(`Ogiltig data från servern: ${parsed.error.message}`);
+          }
 
-        // Find the requested queue
-        const queue = parsed.data.queues.find(q => q.name === queueName);
-        if (!queue) {
-          console.error(`❌ Queue "${queueName}" not found in response`);
-          throw new Error(`Kunde inte hitta kön "${queueName}"`);
-        }
+          // Find the requested queue
+          const queue = parsed.data.queues.find(q => q.name === queueName);
+          if (!queue) {
+            console.error(`❌ Queue "${queueName}" not found in response`);
+            throw new Error(`Kunde inte hitta kön "${queueName}"`);
+          }
 
-        return { queue };
-      }),
-      catchError(error => {
-        try {
-          handleApiError(error, queueName);
-        } catch (handledError) {
-          return throwError(() => handledError);
+          return { queue };
+        }),
+        catchError(error => {
+          console.error(`❌ Error in fetchQueueJobs for ${queueName}:`, error);
+          try {
+            const handledError = handleApiError(error, queueName);
+            return throwError(() => handledError);
+          } catch (handledError) {
+            return throwError(() => handledError);
+          }
+        }),
+        finalize(() => {
+          console.log(`🏁 Request for ${queueName} finalized`);
+        })
+      ).subscribe({
+        next: (result) => {
+          console.log(`✅ Successfully fetched queue jobs for ${queueName}`);
+          resolve(result);
+        },
+        error: (error) => {
+          console.error(`❌ Error in subscription for ${queueName}:`, error);
+          reject(error);
+        },
+        complete: () => {
+          console.log(`✅ Subscription for ${queueName} completed`);
         }
-      })
-    ).subscribe({
-      next: (result) => resolve(result),
-      error: (error) => reject(error)
-    });
+      });
+      
+      // Return cleanup function
+      return () => {
+        console.log(`🧹 Cleaning up subscription for ${queueName}`);
+        subscription.unsubscribe();
+      };
+    } catch (error) {
+      console.error(`❌ Unexpected error in fetchQueueJobs for ${queueName}:`, error);
+      reject(error);
+    }
   });
 }
 
@@ -248,22 +273,22 @@ export async function fetchAllHistoricalJobs(
   }
 }
 
-function handleApiError(error: unknown, context?: string): never {
+function handleApiError(error: unknown, context?: string): Error {
   const errorPrefix = context ? `[${context}] ` : '';
   console.error(`❌ API Error ${errorPrefix}:`, error);
 
   if (error instanceof AxiosError) {
     if (!error.response) {
       if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-        throw new Error(`${errorPrefix}Servern svarar långsamt`);
+        return new Error(`${errorPrefix}Servern svarar långsamt`);
       }
       if (error.code === 'ECONNRESET') {
-        throw new Error(`${errorPrefix}Anslutningen bröts`);
+        return new Error(`${errorPrefix}Anslutningen bröts`);
       }
       if (error.code === 'ERR_NETWORK') {
-        throw new Error(`${errorPrefix}Kunde inte nå servern. Kontrollera din internetanslutning.`);
+        return new Error(`${errorPrefix}Kunde inte nå servern. Kontrollera din internetanslutning.`);
       }
-      throw new Error(`${errorPrefix}Kunde inte nå servern: ${error.message}`);
+      return new Error(`${errorPrefix}Kunde inte nå servern: ${error.message}`);
     }
     
     const statusCode = error.response.status;
@@ -275,27 +300,27 @@ function handleApiError(error: unknown, context?: string): never {
     
     switch (statusCode) {
       case 401:
-        throw new Error(`${errorPrefix}Du måste logga in`);
+        return new Error(`${errorPrefix}Du måste logga in`);
       case 403:
-        throw new Error(`${errorPrefix}Åtkomst nekad`);
+        return new Error(`${errorPrefix}Åtkomst nekad`);
       case 404:
-        throw new Error(`${errorPrefix}Kunde inte hitta data`);
+        return new Error(`${errorPrefix}Kunde inte hitta data`);
       case 429:
-        throw new Error(`${errorPrefix}För många förfrågningar`);
+        return new Error(`${errorPrefix}För många förfrågningar`);
       case 500:
       case 502:
       case 503:
       case 504:
-        throw new Error(`${errorPrefix}Ett serverfel har inträffat (${statusCode})`);
+        return new Error(`${errorPrefix}Ett serverfel har inträffat (${statusCode})`);
       default:
         // Include response data in error message if available
         const errorMessage = responseData?.message || responseData?.error || error.message;
-        throw new Error(`${errorPrefix}Ett fel uppstod (${statusCode}): ${errorMessage}`);
+        return new Error(`${errorPrefix}Ett fel uppstod (${statusCode}): ${errorMessage}`);
     }
   }
   
   // For non-Axios errors, try to extract useful information
   const errorMessage = error instanceof Error ? error.message : String(error);
   console.error('Detailed error:', error);
-  throw new Error(`${errorPrefix}Ett oväntat fel uppstod: ${errorMessage}`);
+  return new Error(`${errorPrefix}Ett oväntat fel uppstod: ${errorMessage}`);
 }
