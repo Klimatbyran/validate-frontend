@@ -5,41 +5,41 @@ import { WORKFLOW_STAGES } from '@/lib/constants';
 import { queueStore } from '@/lib/queue-store';
 import { toast } from 'sonner';
 
+import { from, forkJoin } from 'rxjs';
+import { mergeMap, map, catchError, tap, toArray } from 'rxjs/operators';
+
 export function useQueues(page = 1, jobsPerPage = 20) {
   const { data, error, isLoading, mutate } = useSWR<QueuesResponse>(
     ['queues', page, jobsPerPage],
     async () => {
-      // Create a map to store queue data as it arrives
-      const queueMap = new Map();
-
-      // Fetch jobs for each queue in parallel and update the store as data arrives
-      const queuePromises = WORKFLOW_STAGES.map(stage => 
-        fetchQueueJobs(stage.id, 'latest', page, jobsPerPage)
-          .then(response => {
-            const queue = {
+      // Create a reactive pipeline to fetch all queues
+      return from(WORKFLOW_STAGES).pipe(
+        // Process in batches of 3 to reduce server load
+        mergeMap((stage, index) => {
+          // Add a small delay between requests based on index to stagger them
+          const staggerDelay = Math.floor(index / 3) * 300;
+          
+          return from(fetchQueueJobs(stage.id, 'latest', page, jobsPerPage)).pipe(
+            delay(staggerDelay),
+            map(response => ({
               ...response.queue,
               name: stage.id
-            };
-            
-            // Update the queue store immediately when data arrives
-            queueStore.updateQueue(stage.id, queue);
-            queueMap.set(stage.id, queue);
-            
-            return queue;
-          })
-          .catch(error => {
-            console.error(`❌ Failed to fetch queue ${stage.id}:`, error);
-            return null;
-          })
-      );
-
-      // Wait for all queues to complete
-      await Promise.all(queuePromises);
-
-      // Convert map to array for final response
-      const queues = Array.from(queueMap.values()).filter(Boolean);
-
-      return { queues };
+            })),
+            tap(queue => {
+              // Update the queue store immediately when data arrives
+              queueStore.updateQueue(stage.id, queue);
+            }),
+            catchError(error => {
+              console.error(`❌ Failed to fetch queue ${stage.id}:`, error);
+              return from([null]); // Return null for failed queues
+            })
+          );
+        }, 3), // Concurrency limit of 3
+        toArray(),
+        map(queues => ({
+          queues: queues.filter(Boolean) // Filter out nulls
+        }))
+      ).toPromise();
     },
     {
       refreshInterval: 10000, // Increased from 5000 to 10000 to reduce server load

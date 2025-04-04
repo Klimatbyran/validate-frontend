@@ -2,46 +2,67 @@ import axios, { AxiosError } from 'axios';
 import { QueuesResponse, QueuesResponseSchema, QueueJobsResponse, QueueJobsResponseSchema } from './types';
 import { toast } from 'sonner';
 
-// Rate limiter for API requests
-const rateLimiter = {
-  lastRequestTime: 0,
-  queue: [] as { resolve: (value: unknown) => void, fn: () => Promise<any> }[],
+import { Observable, Subject, from, of, timer, concat, throwError } from 'rxjs';
+import { mergeMap, concatMap, tap, catchError, delay, map, share, finalize } from 'rxjs/operators';
+
+// RxJS-based rate limiter for API requests
+class RxRateLimiter {
+  private queue$ = new Subject<{
+    fn: () => Promise<any>,
+    observer: { next: (value: any) => void, error: (err: any) => void, complete: () => void }
+  }>();
+  private lastRequestTime = 0;
+  private processing = false;
   
-  async throttle(fn: () => Promise<any>): Promise<any> {
-    return new Promise((resolve) => {
-      this.queue.push({ resolve, fn });
-      this.processQueue();
-    });
-  },
-  
-  processQueue() {
-    if (this.queue.length === 0) return;
-    
-    const now = Date.now();
-    const timeElapsed = now - this.lastRequestTime;
-    
-    if (timeElapsed >= 1000 || this.lastRequestTime === 0) {
-      const { resolve, fn } = this.queue.shift()!;
-      this.lastRequestTime = now;
-      
-      Promise.resolve(fn())
-        .then(result => {
-          resolve(result);
-          // Schedule next request
-          setTimeout(() => this.processQueue(), 1000);
-        })
-        .catch(error => {
-          resolve(Promise.reject(error));
-          // Schedule next request
-          setTimeout(() => this.processQueue(), 1000);
-        });
-    } else {
-      // Wait for the remaining time before processing the next request
-      const waitTime = 1000 - timeElapsed;
-      setTimeout(() => this.processQueue(), waitTime);
-    }
+  constructor(private minInterval = 1000) {
+    // Process queue items with rate limiting
+    this.queue$.pipe(
+      concatMap(item => {
+        const now = Date.now();
+        const timeElapsed = now - this.lastRequestTime;
+        const waitTime = Math.max(0, this.minInterval - timeElapsed);
+        
+        return concat(
+          // Wait if needed
+          waitTime > 0 ? timer(waitTime) : of(null),
+          // Execute the function
+          from(item.fn()).pipe(
+            tap(() => this.lastRequestTime = Date.now()),
+            map(result => ({ result, observer: item.observer })),
+            catchError(error => of({ error, observer: item.observer }))
+          )
+        );
+      })
+    ).subscribe(
+      ({ result, error, observer }) => {
+        if (error) {
+          observer.error(error);
+        } else {
+          observer.next(result);
+          observer.complete();
+        }
+      }
+    );
   }
-};
+  
+  throttle<T>(fn: () => Promise<T>): Observable<T> {
+    return new Observable<T>(observer => {
+      this.queue$.next({
+        fn,
+        observer: {
+          next: (value) => observer.next(value),
+          error: (err) => observer.error(err),
+          complete: () => observer.complete()
+        }
+      });
+    }).pipe(
+      share()
+    );
+  }
+}
+
+// Create a singleton instance
+const rateLimiter = new RxRateLimiter(1000);
 
 // Create a custom axios instance with retries
 const api = axios.create({
@@ -108,53 +129,60 @@ api.interceptors.response.use(
   }
 );
 
-export async function fetchQueueJobs(
+export function fetchQueueJobs(
   queueName: string, 
   status = 'latest',
   page = 1,
   jobsPerPage = 20
 ): Promise<QueueJobsResponse> {
-  try {
-    console.log(`🔍 Fetching queue jobs for ${queueName}...`);
-    
-    // Use rate limiter to ensure requests are at most once per second
-    const response = await rateLimiter.throttle(() => api.get<QueuesResponse>('/queues', {
-      params: {
-        activeQueue: queueName,
-        status,
-        page,
-        jobsPerPage,
-        includeJobs: true,
-        includeDelayed: true,
-        includePaused: true,
-        includeWaiting: true,
-        includeActive: true,
-        includeCompleted: true,
-        includeFailed: true,
-        showEmpty: true
-      },
-    }));
+  console.log(`🔍 Fetching queue jobs for ${queueName}...`);
+  
+  // Create an observable for the API request
+  return rateLimiter.throttle(() => api.get<QueuesResponse>('/queues', {
+    params: {
+      activeQueue: queueName,
+      status,
+      page,
+      jobsPerPage,
+      includeJobs: true,
+      includeDelayed: true,
+      includePaused: true,
+      includeWaiting: true,
+      includeActive: true,
+      includeCompleted: true,
+      includeFailed: true,
+      showEmpty: true
+    },
+  }))
+  .pipe(
+    tap(response => console.log(`✅ Received response for ${queueName}:`, response.data)),
+    map(response => {
+      // Validate the response
+      const parsed = QueuesResponseSchema.safeParse(response.data);
+      if (!parsed.success) {
+        console.error(`❌ Invalid response data for ${queueName}:`, parsed.error);
+        throw new Error(`Ogiltig data från servern: ${parsed.error.message}`);
+      }
 
-    console.log(`✅ Received response for ${queueName}:`, response.data);
+      // Find the requested queue
+      const queue = parsed.data.queues.find(q => q.name === queueName);
+      if (!queue) {
+        console.error(`❌ Queue "${queueName}" not found in response`);
+        throw new Error(`Kunde inte hitta kön "${queueName}"`);
+      }
 
-    // First validate that we got a valid queues response
-    const parsed = QueuesResponseSchema.safeParse(response.data);
-    if (!parsed.success) {
-      console.error(`❌ Invalid response data for ${queueName}:`, parsed.error);
-      throw new Error(`Ogiltig data från servern: ${parsed.error.message}`);
-    }
-
-    // Find the requested queue
-    const queue = parsed.data.queues.find(q => q.name === queueName);
-    if (!queue) {
-      console.error(`❌ Queue "${queueName}" not found in response`);
-      throw new Error(`Kunde inte hitta kön "${queueName}"`);
-    }
-
-    return { queue };
-  } catch (error) {
-    handleApiError(error, queueName);
-  }
+      return { queue };
+    }),
+    catchError(error => {
+      try {
+        handleApiError(error, queueName);
+      } catch (handledError) {
+        return throwError(() => handledError);
+      }
+    }),
+    // Convert Observable to Promise for compatibility with existing code
+    // In a fully reactive app, we would keep this as an Observable
+  ).toPromise();
 }
 
 function handleApiError(error: unknown, context?: string): never {

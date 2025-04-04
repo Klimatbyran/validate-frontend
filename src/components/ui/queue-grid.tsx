@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { timer, EMPTY } from 'rxjs';
+import { skip, delay, throttleTime, tap, catchError } from 'rxjs/operators';
 import { motion } from 'framer-motion';
 import { 
   Loader2, 
@@ -31,16 +33,35 @@ export function QueueGrid() {
   const groupedCompanies = useGroupedCompanies();
   const { refresh } = useQueues(); // Add useQueues to ensure data is refreshed
   
-  // Refresh data when component mounts
+  // Refresh data when component mounts using RxJS
   useEffect(() => {
+    // Initial refresh
     refresh();
     
-    // Set up periodic refresh
-    const intervalId = setInterval(() => {
-      refresh();
-    }, 30000); // Refresh every 30 seconds (increased from 15 seconds)
+    // Set up periodic refresh using RxJS timer
+    const subscription = timer(0, 30000) // Initial delay of 0, then every 30 seconds
+      .pipe(
+        // Skip the first emission since we already called refresh()
+        skip(1),
+        // Add some jitter to avoid all components refreshing at exactly the same time
+        delay(() => Math.random() * 2000),
+        // Throttle to prevent too many refreshes
+        throttleTime(10000),
+        // Tap for side effects
+        tap(() => {
+          console.log('🔄 Auto-refreshing queue grid data');
+          refresh();
+        }),
+        // Handle errors to prevent subscription from breaking
+        catchError(err => {
+          console.error('Error in refresh timer:', err);
+          return EMPTY;
+        })
+      )
+      .subscribe();
     
-    return () => clearInterval(intervalId);
+    // Clean up subscription
+    return () => subscription.unsubscribe();
   }, [refresh]);
 
   // Function to toggle company expansion

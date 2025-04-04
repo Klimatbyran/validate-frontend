@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { from, of } from 'rxjs';
+import { mergeMap, map, toArray, catchError } from 'rxjs/operators';
 import { motion } from 'framer-motion';
 import { Loader2, AlertCircle, Clock, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { useQueues } from '@/hooks/useQueues';
@@ -12,24 +14,36 @@ export function DebugView() {
   const [allJobs, setAllJobs] = useState<QueueJob[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 
-  // Memoize the job processing logic
-  const processJobs = useCallback((queues) => {
-    if (!queues) return [];
-    
-    // Extract and sort all jobs
-    return queues.flatMap(queue => 
-      queue.jobs.map(job => ({
-        ...job,
-        queueId: queue.name
-      }))
-    ).sort((a, b) => b.timestamp - a.timestamp); // Sort by timestamp, newest first
-  }, []);
-
+  // Use RxJS to process jobs reactively
   useEffect(() => {
     if (!queues) return;
-    const processedJobs = processJobs(queues);
-    setAllJobs(processedJobs);
-  }, [queues, processJobs]);
+    
+    // Create an observable from the queues data
+    const subscription = from(queues).pipe(
+      // Flatten the jobs from all queues
+      mergeMap(queue => 
+        from(queue.jobs).pipe(
+          map(job => ({
+            ...job,
+            queueId: queue.name
+          }))
+        )
+      ),
+      // Collect all jobs into an array
+      toArray(),
+      // Sort by timestamp, newest first
+      map(jobs => jobs.sort((a, b) => b.timestamp - a.timestamp)),
+      // Handle errors
+      catchError(err => {
+        console.error('Error processing jobs:', err);
+        return of([]);
+      })
+    ).subscribe(processedJobs => {
+      setAllJobs(processedJobs);
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [queues]);
 
   const handleRefresh = () => {
     toast.promise(refresh(), {
