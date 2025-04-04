@@ -38,7 +38,7 @@ export function QueueGrid() {
     // Set up periodic refresh
     const intervalId = setInterval(() => {
       refresh();
-    }, 15000); // Refresh every 15 seconds
+    }, 30000); // Refresh every 30 seconds (increased from 15 seconds)
     
     return () => clearInterval(intervalId);
   }, [refresh]);

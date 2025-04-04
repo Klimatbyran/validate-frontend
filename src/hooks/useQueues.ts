@@ -42,7 +42,7 @@ export function useQueues(page = 1, jobsPerPage = 20) {
       return { queues };
     },
     {
-      refreshInterval: 5000,
+      refreshInterval: 10000, // Increased from 5000 to 10000 to reduce server load
       errorRetryCount: 3,
       errorRetryInterval: (retryCount) => Math.min(1000 * 2 ** retryCount, 30000),
       shouldRetryOnError: (error) => {

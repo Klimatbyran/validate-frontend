@@ -8,7 +8,7 @@ export function useQueueJobs(queueName: string, status = 'latest', page = 1, job
     queueName ? ['queue-jobs', queueName, status, page, jobsPerPage] : null,
     () => fetchQueueJobs(queueName, status, page, jobsPerPage),
     {
-      refreshInterval: 5000,
+      refreshInterval: 10000, // Increased from 5000 to 10000 to reduce server load
       errorRetryCount: 3,
       errorRetryInterval: (retryCount) => Math.min(1000 * 2 ** retryCount, 30000),
       shouldRetryOnError: (error) => {

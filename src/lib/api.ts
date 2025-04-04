@@ -2,6 +2,47 @@ import axios, { AxiosError } from 'axios';
 import { QueuesResponse, QueuesResponseSchema, QueueJobsResponse, QueueJobsResponseSchema } from './types';
 import { toast } from 'sonner';
 
+// Rate limiter for API requests
+const rateLimiter = {
+  lastRequestTime: 0,
+  queue: [] as { resolve: (value: unknown) => void, fn: () => Promise<any> }[],
+  
+  async throttle(fn: () => Promise<any>): Promise<any> {
+    return new Promise((resolve) => {
+      this.queue.push({ resolve, fn });
+      this.processQueue();
+    });
+  },
+  
+  processQueue() {
+    if (this.queue.length === 0) return;
+    
+    const now = Date.now();
+    const timeElapsed = now - this.lastRequestTime;
+    
+    if (timeElapsed >= 1000 || this.lastRequestTime === 0) {
+      const { resolve, fn } = this.queue.shift()!;
+      this.lastRequestTime = now;
+      
+      Promise.resolve(fn())
+        .then(result => {
+          resolve(result);
+          // Schedule next request
+          setTimeout(() => this.processQueue(), 1000);
+        })
+        .catch(error => {
+          resolve(Promise.reject(error));
+          // Schedule next request
+          setTimeout(() => this.processQueue(), 1000);
+        });
+    } else {
+      // Wait for the remaining time before processing the next request
+      const waitTime = 1000 - timeElapsed;
+      setTimeout(() => this.processQueue(), waitTime);
+    }
+  }
+};
+
 // Create a custom axios instance with retries
 const api = axios.create({
   baseURL: '/api',
@@ -76,7 +117,8 @@ export async function fetchQueueJobs(
   try {
     console.log(`🔍 Fetching queue jobs for ${queueName}...`);
     
-    const response = await api.get<QueuesResponse>('/queues', {
+    // Use rate limiter to ensure requests are at most once per second
+    const response = await rateLimiter.throttle(() => api.get<QueuesResponse>('/queues', {
       params: {
         activeQueue: queueName,
         status,
@@ -91,7 +133,7 @@ export async function fetchQueueJobs(
         includeFailed: true,
         showEmpty: true
       },
-    });
+    }));
 
     console.log(`✅ Received response for ${queueName}:`, response.data);
 
