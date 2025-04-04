@@ -27,6 +27,9 @@ export function groupQueues(): OperatorFunction<{ queueId: string; queue: Queue 
 
 // Group jobs by company using RxJS groupBy
 export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
+  // Create a map to track threadIds and their associated companies
+  const threadCompanyMap: Record<string, string> = {};
+  
   return pipe(
     tap(job => {
       console.log('👥 Grouping job:', {
@@ -34,16 +37,57 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
         companyName: job.data.companyName,
         threadId: job.data.threadId
       });
+      
+      // If this job has both a threadId and companyName, store the association
+      if (job.data.threadId && job.data.companyName) {
+        threadCompanyMap[job.data.threadId] = job.data.companyName;
+      }
     }),
-    // Group by company name, fallback to company if name not available
+    // First, group by threadId to collect all jobs in the same thread
     groupBy(
-      job => job.data.companyName || job.data.company || 'Unknown',
+      job => job.data.threadId || job.id,
       {
         element: job => ({
           job,
-          threadId: job.data.threadId,
+          threadId: job.data.threadId || job.id,
           timestamp: job.finishedOn || job.processedOn || job.timestamp
         })
+      }
+    ),
+    // Process each thread group to determine the company name
+    mergeMap(threadGroup => {
+      return threadGroup.pipe(
+        // Collect all jobs in this thread
+        toArray(),
+        map(jobsInThread => {
+          // Find a job with a company name if any exists
+          const jobWithCompany = jobsInThread.find(item => item.job.data.companyName);
+          const companyName = jobWithCompany ? 
+            jobWithCompany.job.data.companyName : 
+            (threadGroup.key && threadCompanyMap[threadGroup.key] ? 
+              threadCompanyMap[threadGroup.key] : null);
+          
+          // If we found a company name, apply it to all jobs in this thread
+          if (companyName) {
+            jobsInThread.forEach(item => {
+              if (!item.job.data.companyName) {
+                item.job.data.companyName = companyName;
+              }
+            });
+          }
+          
+          // Return the jobs with potentially updated company names
+          return jobsInThread;
+        }),
+        // Flatten the array back to individual jobs
+        mergeMap(jobs => from(jobs))
+      );
+    }),
+    // Now group by company name with the updated job data
+    groupBy(
+      job => job.job.data.companyName || job.job.data.company || 'Unknown',
+      {
+        element: job => job
       }
     ),
     tap(group => {
