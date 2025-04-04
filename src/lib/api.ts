@@ -170,21 +170,38 @@ export function fetchQueueJobs(
       .pipe(
         tap(response => console.log(`✅ Received response for ${queueName}:`, response.data)),
         map(response => {
-          // Validate the response
-          const parsed = QueuesResponseSchema.safeParse(response.data);
-          if (!parsed.success) {
-            console.error(`❌ Invalid response data for ${queueName}:`, parsed.error);
-            throw new Error(`Ogiltig data från servern: ${parsed.error.message}`);
-          }
+          try {
+            // Validate the response
+            const parsed = QueuesResponseSchema.safeParse(response.data);
+            if (!parsed.success) {
+              console.error(`❌ Invalid response data for ${queueName}:`, parsed.error);
+              throw new Error(`Ogiltig data från servern: ${parsed.error.message}`);
+            }
 
-          // Find the requested queue
-          const queue = parsed.data.queues.find(q => q.name === queueName);
-          if (!queue) {
-            console.error(`❌ Queue "${queueName}" not found in response`);
-            throw new Error(`Kunde inte hitta kön "${queueName}"`);
-          }
+            // Find the requested queue
+            const queue = parsed.data.queues.find(q => q.name === queueName);
+            if (!queue) {
+              console.warn(`⚠️ Queue "${queueName}" not found in response`);
+              // Return empty queue instead of throwing
+              return { 
+                queue: { 
+                  jobs: [], 
+                  counts: { active: 0, waiting: 0, completed: 0, failed: 0, delayed: 0, paused: false } 
+                } 
+              };
+            }
 
-          return { queue };
+            return { queue };
+          } catch (error) {
+            console.error(`❌ Error processing response for ${queueName}:`, error);
+            // Return empty queue instead of throwing
+            return { 
+              queue: { 
+                jobs: [], 
+                counts: { active: 0, waiting: 0, completed: 0, failed: 0, delayed: 0, paused: false } 
+              } 
+            };
+          }
         }),
         catchError(error => {
           console.error(`❌ Error in fetchQueueJobs for ${queueName}:`, error);
@@ -250,10 +267,13 @@ export function fetchAllHistoricalJobs(
         // Expandera strömmen för att hämta alla sidor
         expand(page => 
           from(fetchQueueJobs(queueName, 'latest', page, jobsPerPage, 'asc')).pipe(
-            map(response => ({
-              response,
-              nextPage: response.queue?.jobs?.length === jobsPerPage ? page + 1 : null
-            })),
+            map(response => {
+              console.log(`📄 Processing page ${page} response for ${queueName}:`, response);
+              return {
+                response: response || emptyResponse,
+                nextPage: response?.queue?.jobs?.length === jobsPerPage ? page + 1 : null
+              };
+            }),
             catchError(error => {
               console.error(`❌ Error loading page ${page} for ${queueName}:`, error);
               return of({ response: emptyResponse, nextPage: null });
@@ -264,12 +284,17 @@ export function fetchAllHistoricalJobs(
         takeWhile(({ nextPage }) => nextPage !== null, true),
         // Ackumulera resultat med scan
         scan((acc, { response }) => {
-          if (!acc.queue.jobs.length) return response;
+          if (!acc.queue?.jobs?.length) return response || emptyResponse;
+          
+          if (!response?.queue) {
+            console.warn(`⚠️ Missing queue in response for ${queueName}`);
+            return acc;
+          }
           
           return {
             queue: {
               ...response.queue,
-              jobs: [...acc.queue.jobs, ...(response.queue?.jobs || [])]
+              jobs: [...acc.queue.jobs, ...(response.queue.jobs || [])]
             }
           };
         }, emptyResponse),
