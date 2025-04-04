@@ -171,10 +171,9 @@ function App() {
             <TabsTrigger value="results">Resultat</TabsTrigger>
           </TabsList>
 
-          <AnimatePresence mode="wait">
-            <TabsContent value="upload" asChild>
+          <AnimatePresence mode="wait" initial={false}>
+            <TabsContent key="upload" value="upload" asChild>
               <motion.div
-                key="upload-tab"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
@@ -350,9 +349,8 @@ function App() {
               </motion.div>
             </TabsContent>
 
-            <TabsContent value="processing" asChild>
+            <TabsContent key="processing" value="processing" asChild>
               <motion.div
-                key="processing-tab"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
@@ -362,9 +360,8 @@ function App() {
               </motion.div>
             </TabsContent>
 
-            <TabsContent value="grid" asChild>
+            <TabsContent key="grid" value="grid" asChild>
               <motion.div
-                key="grid-tab"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
@@ -374,21 +371,20 @@ function App() {
               </motion.div>
             </TabsContent>
 
-            <TabsContent value="workflow" asChild>
-              <motion.div key="workflow-tab">
+            <TabsContent key="workflow" value="workflow" asChild>
+              <motion.div>
                 <WorkflowDiagram />
               </motion.div>
             </TabsContent>
 
-            <TabsContent value="debug" asChild>
-              <motion.div key="debug-tab">
+            <TabsContent key="debug" value="debug" asChild>
+              <motion.div>
                 <DebugView />
               </motion.div>
             </TabsContent>
 
-            <TabsContent value="results" asChild>
+            <TabsContent key="results" value="results" asChild>
               <motion.div
-                key="results-tab"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
