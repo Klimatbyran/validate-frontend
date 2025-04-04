@@ -213,6 +213,9 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
         }),
         // Emittera bara när företagsstatet ändras
         distinctUntilChanged((prev, curr) => {
+          // Säkerställ att threads finns innan vi försöker använda values()
+          if (!prev?.threads || !curr?.threads) return false;
+          
           // Kontrollera likhet baserat på antal trådar och jobb
           const prevJobCount = Array.from(prev.threads.values()).flat().length;
           const currJobCount = Array.from(curr.threads.values()).flat().length;
@@ -251,10 +254,16 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
     
     // Log the current state
     tap(companies => {
+      // Säkerställ att companies är en array innan vi försöker använda length och reduce
+      if (!companies || !Array.isArray(companies)) {
+        console.log('📈 Current companies state: No companies available');
+        return;
+      }
+      
       console.log('📈 Current companies state:', {
         companyCount: companies.length,
         totalAttempts: companies.reduce((sum, company) => 
-          sum + company.attempts.length, 0
+          sum + (company?.attempts?.length || 0), 0
         )
       });
     }),
