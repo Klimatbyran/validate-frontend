@@ -377,109 +377,174 @@ export function JobDetailsDialog({
           </div>
         </DialogHeader>
 
-        {needsApproval && (
-          <div className="flex items-center space-x-2 mb-6">
-            <Button
-              variant={activeTab === 'user' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('user')}
-              className="rounded-full"
-            >
-              <Info className="w-4 h-4 mr-2" />
-              Översikt
-            </Button>
-            <Button
-              variant={activeTab === 'technical' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('technical')}
-              className="rounded-full"
-            >
-              <Code className="w-4 h-4 mr-2" />
-              Tekniska detaljer
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center space-x-2 mb-6">
+          <Button
+            variant={activeTab === 'user' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('user')}
+            className="rounded-full"
+          >
+            <Info className="w-4 h-4 mr-2" />
+            Översikt
+          </Button>
+          <Button
+            variant={activeTab === 'technical' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('technical')}
+            className="rounded-full"
+          >
+            <Code className="w-4 h-4 mr-2" />
+            Tekniska detaljer
+          </Button>
+        </div>
 
         <div className="space-y-6 my-6">
-          {/* Status Section */}
-          <div className="bg-gray-03/20 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-gray-01 mb-4">Status</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-full ${getStatusColor()}`}>
-                  {getStatusIcon()}
-                </div>
-                <div>
-                  <div className="font-medium text-gray-01">
-                    {stage?.name || job.queueId}
-                  </div>
-                  <div className="text-sm text-gray-02">
-                    {getStatusText()}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="text-sm text-gray-02">Skapad</div>
-                <div className="text-gray-01">
-                  {new Date(job.timestamp).toLocaleString('sv-SE')}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Job Relationships Section */}
-          {hasParent && (
-            <div className="bg-blue-03/10 rounded-lg p-4">
-              <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
-                <GitBranch className="w-5 h-5 mr-2" />
-                Jobbrelationer
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2 text-blue-03">
-                  <ArrowUpRight className="w-4 h-4" />
-                  <span className="text-sm">Förälder:</span>
-                  <code className="bg-blue-03/20 px-2 py-1 rounded text-sm">
-                    {job.parent.queue}:{job.parent.id}
-                  </code>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Job Data Section */}
-          <div className="bg-gray-03/20 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-gray-01 mb-4">Jobbdata</h3>
-            <div className="grid grid-cols-1 gap-4">
-              {Object.entries(job.data).map(([key, value]) => {
-                if (key === 'companyName' || key === 'description') return null;
-                
-                return (
-                  <div key={key} className="bg-gray-04 rounded-lg p-3">
-                    <div className="text-sm text-gray-02 mb-1">{key}</div>
-                    <div className="text-gray-01 break-words">
-                      {typeof value === 'string' && isJsonString(value) ? (
-                        <JsonViewer data={value} />
-                      ) : typeof value === 'object' ? (
-                        <JsonViewer data={value} />
-                      ) : (
-                        String(value)
-                      )}
+          {activeTab === 'user' ? (
+            <>
+              {/* Status Section */}
+              <div className="bg-gray-03/20 rounded-lg p-4">
+                <h3 className="text-lg font-medium text-gray-01 mb-4">Status</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-3">
+                    <div className={`p-2 rounded-full ${getStatusColor()}`}>
+                      {getStatusIcon()}
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-01">
+                        {stage?.name || job.queueId}
+                      </div>
+                      <div className="text-sm text-gray-02">
+                        {getStatusText()}
+                      </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* Error Section */}
-          {job.isFailed && job.stacktrace.length > 0 && (
-            <div className="bg-pink-03/10 rounded-lg p-4">
-              <h3 className="text-lg font-medium text-pink-03 mb-4">Felmeddelande</h3>
-              <pre className="text-pink-03 text-sm overflow-x-auto">
-                {job.stacktrace.join('\n')}
-              </pre>
-            </div>
+                  <div>
+                    <div className="text-sm text-gray-02">Skapad</div>
+                    <div className="text-gray-01">
+                      {new Date(job.timestamp).toLocaleString('sv-SE')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Job Relationships Section */}
+              {hasParent && (
+                <div className="bg-blue-03/10 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
+                    <GitBranch className="w-5 h-5 mr-2" />
+                    Jobbrelationer
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2 text-blue-03">
+                      <ArrowUpRight className="w-4 h-4" />
+                      <span className="text-sm">Förälder:</span>
+                      <code className="bg-blue-03/20 px-2 py-1 rounded text-sm">
+                        {job.parent.queue}:{job.parent.id}
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* User-friendly Job Data Section */}
+              <div className="bg-gray-03/20 rounded-lg p-4">
+                <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
+                <UserFriendlyDataView data={getFilteredJobData()} />
+              </div>
+
+              {/* Error Section */}
+              {job.isFailed && job.stacktrace.length > 0 && (
+                <div className="bg-pink-03/10 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-pink-03 mb-4">Felmeddelande</h3>
+                  <div className="text-pink-03 text-sm">
+                    {job.stacktrace[0]}
+                    {job.stacktrace.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveTab('technical')}
+                        className="mt-2 text-pink-03 hover:bg-pink-03/10"
+                      >
+                        Visa fullständigt felmeddelande
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Technical Job Data Section */}
+              <div className="bg-gray-03/20 rounded-lg p-4">
+                <h3 className="text-lg font-medium text-gray-01 mb-4">Teknisk data</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  {Object.entries(job.data).map(([key, value]) => {
+                    if (key === 'companyName' || key === 'description') return null;
+                    
+                    return (
+                      <div key={key} className="bg-gray-04 rounded-lg p-3">
+                        <div className="text-sm text-gray-02 mb-1">{key}</div>
+                        <div className="text-gray-01 break-words">
+                          {typeof value === 'string' && isJsonString(value) ? (
+                            <JsonViewer data={value} />
+                          ) : typeof value === 'object' ? (
+                            <JsonViewer data={value} />
+                          ) : (
+                            String(value)
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Full Error Section */}
+              {job.isFailed && job.stacktrace.length > 0 && (
+                <div className="bg-pink-03/10 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-pink-03 mb-4">Fullständigt felmeddelande</h3>
+                  <pre className="text-pink-03 text-sm overflow-x-auto">
+                    {job.stacktrace.join('\n')}
+                  </pre>
+                </div>
+              )}
+
+              {/* Job Metadata */}
+              <div className="bg-gray-03/20 rounded-lg p-4">
+                <h3 className="text-lg font-medium text-gray-01 mb-4">Jobbmetadata</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div className="text-gray-02">ID</div>
+                    <div className="font-mono text-gray-01">{job.id}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-02">Kö</div>
+                    <div className="text-gray-01">{job.queueId}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-02">Skapad</div>
+                    <div className="text-gray-01">{new Date(job.timestamp).toLocaleString('sv-SE')}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-02">Startad</div>
+                    <div className="text-gray-01">
+                      {job.processedOn ? new Date(job.processedOn).toLocaleString('sv-SE') : '-'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-02">Avslutad</div>
+                    <div className="text-gray-01">
+                      {job.finishedOn ? new Date(job.finishedOn).toLocaleString('sv-SE') : '-'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-02">Försök</div>
+                    <div className="text-gray-01">{job.attemptsMade}</div>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </div>
 
