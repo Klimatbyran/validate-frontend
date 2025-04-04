@@ -6,7 +6,7 @@ import { queueStore } from '@/lib/queue-store';
 import { toast } from 'sonner';
 
 import { from, forkJoin } from 'rxjs';
-import { mergeMap, map, catchError, tap, toArray } from 'rxjs/operators';
+import { mergeMap, map, catchError, tap, toArray, delay } from 'rxjs/operators';
 
 export function useQueues(page = 1, jobsPerPage = 20) {
   const { data, error, isLoading, mutate } = useSWR<QueuesResponse>(
