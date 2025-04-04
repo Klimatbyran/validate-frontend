@@ -36,7 +36,23 @@ export class QueueStore {
 
   private setupStatsPipeline(queues$: Observable<{ queueId: string; queue: Queue | null }[]>) {
     queues$.pipe(
-      debounceTime(100), // Debounce rapid updates
+      debounceTime(300), // Increased debounce time to reduce processing frequency
+      distinctUntilChanged((prev, curr) => {
+        // More sophisticated comparison to avoid unnecessary updates
+        if (prev.length !== curr.length) return false;
+        
+        return prev.every((prevItem, index) => {
+          const currItem = curr[index];
+          if (prevItem.queueId !== currItem.queueId) return false;
+          if (!prevItem.queue && !currItem.queue) return true;
+          if (!prevItem.queue || !currItem.queue) return false;
+          
+          return prevItem.queue.counts.active === currItem.queue.counts.active &&
+                 prevItem.queue.counts.waiting === currItem.queue.counts.waiting &&
+                 prevItem.queue.counts.completed === currItem.queue.counts.completed &&
+                 prevItem.queue.counts.failed === currItem.queue.counts.failed;
+        });
+      }),
       map(queues => {
         const stats: QueueStatsState = {
           totals: {
