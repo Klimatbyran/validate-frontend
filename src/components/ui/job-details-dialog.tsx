@@ -118,8 +118,8 @@ function UserFriendlyDataView({ data }: { data: any }) {
         <div className="mb-4">
           <FiscalYearDisplay data={{
             fiscalYear: processedData.fiscalYear,
-            startMonth: processedData.startMonth,
-            endMonth: processedData.endMonth
+            startMonth: typeof processedData.startMonth === 'number' ? processedData.startMonth : undefined,
+            endMonth: typeof processedData.endMonth === 'number' ? processedData.endMonth : undefined
           }} />
         </div>
       )}
