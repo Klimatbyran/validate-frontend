@@ -2,6 +2,7 @@ import { BehaviorSubject, Observable, combineLatest, map, shareReplay, distinctU
 import type { Queue, QueueJob, CompanyStatus, GroupedCompany, QueueStats, QueueStatsState } from './types';
 import { WORKFLOW_STAGES } from './constants';
 import { groupQueues, groupByCompany } from './operators';
+import { fetchQueueJobs, fetchAllHistoricalJobs } from './api';
 
 export class QueueStore {
   private queues: Record<string, BehaviorSubject<Queue | null>> = {};
