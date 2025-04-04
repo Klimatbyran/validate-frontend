@@ -31,6 +31,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { WikidataPreview } from './wikidata-preview';
+import { FiscalYearDisplay } from './fiscal-year-display';
 
 interface JobDetailsDialogProps {
   job: QueueJob | null;
@@ -58,9 +59,13 @@ function UserFriendlyDataView({ data }: { data: any }) {
   // List of technical fields to hide from the user-friendly view
   const technicalFields = ['autoApprove', 'threadId', 'messageId', 'url'];
   
-  // Extract wikidata if present
+  // Extract special fields
   const wikidataField = processedData.wikidata;
   const hasWikidata = wikidataField && typeof wikidataField === 'object';
+  
+  // Check if we have fiscal year data
+  const hasFiscalYear = processedData.fiscalYear || 
+    (processedData.startMonth && processedData.endMonth);
   
   const renderValue = (value: any): React.ReactNode => {
     if (value === null) return <span className="text-gray-02">Inget värde</span>;
@@ -108,9 +113,24 @@ function UserFriendlyDataView({ data }: { data: any }) {
         </div>
       )}
       
+      {/* Show Fiscal Year display if available */}
+      {hasFiscalYear && (
+        <div className="mb-4">
+          <FiscalYearDisplay data={{
+            fiscalYear: processedData.fiscalYear,
+            startMonth: processedData.startMonth,
+            endMonth: processedData.endMonth
+          }} />
+        </div>
+      )}
+      
       {Object.entries(processedData).map(([key, value]) => {
-        // Skip technical fields and wikidata (since we're showing it separately)
-        if (technicalFields.includes(key) || key === 'wikidata') return null;
+        // Skip technical fields and special fields (since we're showing them separately)
+        if (technicalFields.includes(key) || 
+            key === 'wikidata' || 
+            key === 'fiscalYear' || 
+            key === 'startMonth' || 
+            key === 'endMonth') return null;
         
         return (
           <div key={key} className="bg-gray-03/20 rounded-lg p-3">
