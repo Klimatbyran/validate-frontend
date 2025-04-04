@@ -1,4 +1,5 @@
 # Garbo Validation Tool
+<img width="1429" alt="image" src="https://github.com/user-attachments/assets/451bf903-d87e-4e1a-a030-22e83c0df155" />
 
 A modern React-based tool for validating and managing workflow queues with real-time updates and interactive visualizations.
 
