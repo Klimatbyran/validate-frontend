@@ -242,6 +242,12 @@ export function JobDetailsDialog({
     return rest;
   };
   
+  // Filter out schema and metadata fields from job data for user-friendly view
+  const getFilteredJobDataWithoutSchema = () => {
+    const { companyName, description, schema, ...rest } = job.data;
+    return rest;
+  };
+  
   // Get URL from job data if it exists
   const getDocumentUrl = () => {
     return job.data.url || null;
@@ -316,7 +322,7 @@ export function JobDetailsDialog({
 
             <div className="bg-gray-03/20 rounded-lg p-4">
               <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
-              <UserFriendlyDataView data={getFilteredJobData()} />
+              <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
             </div>
           </div>
 
@@ -450,7 +456,7 @@ export function JobDetailsDialog({
               {/* User-friendly Job Data Section */}
               <div className="bg-gray-03/20 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
-                <UserFriendlyDataView data={getFilteredJobData()} />
+                <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
               </div>
 
               {/* Error Section */}
@@ -475,12 +481,25 @@ export function JobDetailsDialog({
             </>
           ) : (
             <>
+              {/* Schema Section (if present) */}
+              {job.data.schema && (
+                <div className="bg-blue-03/10 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
+                    <Code className="w-5 h-5 mr-2" />
+                    Schema
+                  </h3>
+                  <div className="bg-gray-04 rounded-lg p-3">
+                    <JsonViewer data={job.data.schema} />
+                  </div>
+                </div>
+              )}
+              
               {/* Technical Job Data Section */}
               <div className="bg-gray-03/20 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-gray-01 mb-4">Teknisk data</h3>
                 <div className="grid grid-cols-1 gap-4">
                   {Object.entries(job.data).map(([key, value]) => {
-                    if (key === 'companyName' || key === 'description') return null;
+                    if (key === 'companyName' || key === 'description' || key === 'schema') return null;
                     
                     return (
                       <div key={key} className="bg-gray-04 rounded-lg p-3">
