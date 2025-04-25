@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Header } from '@/components/ui/header';
-import { DebugView } from '@/components/ui/debug-view';
 import { Toaster } from '@/components/ui/sonner';
 import { useQueues } from '@/hooks/useQueues';
 import { Upload } from './components/tabs/upload/Upload';
@@ -10,6 +9,7 @@ import { Processing } from './components/tabs/processing/Processing';
 import { JobStatus } from './components/tabs/job-status/JobStatus';
 import { ProcessFlow } from './components/tabs/process-flow/ProcessFlow';
 import { Results } from './components/tabs/results/Results';
+import { Debug } from './components/tabs/debug/Debug';
 
 
 function App() {
@@ -44,10 +44,10 @@ function App() {
 
           <AnimatePresence mode="wait" initial={false}>
             <Upload refresh={refresh} changeTab={setCurrentTab}/>
-            <Processing />
+            <Processing/>
             <JobStatus/>
             <ProcessFlow/>
-            <DebugView />
+            <Debug/>
             <Results />           
           </AnimatePresence>
         </Tabs>
