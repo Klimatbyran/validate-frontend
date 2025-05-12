@@ -3,7 +3,7 @@ import { QueuesResponse, QueuesResponseSchema, QueueJobsResponse, QueueJobsRespo
 import { toast } from 'sonner';
 
 import { Observable, Subject, from, of, timer, concat, throwError, EMPTY } from 'rxjs';
-import { mergeMap, concatMap, tap, catchError, delay, map, share, finalize, expand, takeWhile, scan } from 'rxjs/operators';
+import { mergeMap, concatMap, tap, catchError, delay, map, share, finalize, expand, takeWhile, scan, filter } from 'rxjs/operators';
 
 // RxJS-based rate limiter for API requests
 class RxRateLimiter {
@@ -33,8 +33,14 @@ class RxRateLimiter {
           )
         );
       })
+    ).pipe(
+      filter(item => item !== null)
     ).subscribe(
       (item) => {
+        if (!item) {
+          console.log("item is null");
+          return;
+        }
         if (item.error) {
           item.observer.error(item.error);
         } else {

@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { fetchQueues, fetchQueueJobs } from '@/lib/api';
+import { fetchQueueJobs } from '@/lib/api';
 import type { QueuesResponse } from '@/lib/types';
 import { WORKFLOW_STAGES } from '@/lib/constants';
 import { queueStore } from '@/lib/queue-store';
@@ -7,15 +7,15 @@ import { toast } from 'sonner';
 
 // VIKTIGT: Använd endast reaktiva RxJS-metoder. Statiska objekt, globala variabler 
 // och blockerande metoder som toArray() är FÖRBJUDNA.
-import { from, forkJoin, of, EMPTY } from 'rxjs';
-import { mergeMap, map, catchError, delay, reduce, scan, tap } from 'rxjs/operators';
+import { from, lastValueFrom, of } from 'rxjs';
+import { mergeMap, map, catchError, delay, scan, tap } from 'rxjs/operators';
 
 export function useQueues(page = 1, jobsPerPage = 20) {
   const { data, error, isLoading, mutate } = useSWR<QueuesResponse>(
     ['queues', page, jobsPerPage],
     () => {
       // Skapa en reaktiv pipeline för att hämta alla köer
-      return from(WORKFLOW_STAGES).pipe(
+      return lastValueFrom(from(WORKFLOW_STAGES).pipe(
         // Bearbeta i batches om 3 för att minska serverbelastningen
         mergeMap((stage, index) => {
           // Lägg till en liten fördröjning baserad på index för att sprida ut förfrågningarna
@@ -23,7 +23,7 @@ export function useQueues(page = 1, jobsPerPage = 20) {
           
           // Starta tvåstegsprocessen för att ladda denna kö
           queueStore.loadQueueWithUpdates(stage.id);
-          
+          console.log(stage.id);
           // Returnera initiala data för att snabbt populera UI
           return from(fetchQueueJobs(stage.id, 'latest', page, jobsPerPage)).pipe(
             delay(staggerDelay),
@@ -50,7 +50,7 @@ export function useQueues(page = 1, jobsPerPage = 20) {
         map(queues => ({
           queues // Filtrera bort nulls redan i reduce
         }))
-      ).toPromise();
+      ))
     },
     {
       refreshInterval: 10000, // Increased from 5000 to 10000 to reduce server load
@@ -76,7 +76,7 @@ export function useQueues(page = 1, jobsPerPage = 20) {
 
   return {
     queues: data?.queues ?? [],
-    total: data?.total ?? 0,
+    total: data?.queues.length ?? 0,
     isLoading,
     isError: !!error,
     error,
