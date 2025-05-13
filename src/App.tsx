@@ -3,7 +3,6 @@ import { AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Header } from '@/components/ui/header';
 import { Toaster } from '@/components/ui/sonner';
-import { useQueues } from '@/hooks/useQueues';
 import { Upload } from './components/tabs/upload/Upload';
 import { Processing } from './components/tabs/processing/Processing';
 import { JobStatus } from './components/tabs/job-status/JobStatus';
@@ -14,7 +13,6 @@ import { Debug } from './components/tabs/debug/Debug';
 
 function App() {
   const [currentTab, setCurrentTab] = useState('upload');
-  const { refresh } = useQueues(); 
 
   return (
     <div className="min-h-screen bg-gray-05 p-8">
@@ -26,10 +24,6 @@ function App() {
           value={currentTab} 
           onValueChange={(value) => {
             setCurrentTab(value);
-            // Refresh data when switching to grid or processing tabs
-            if (value === 'grid' || value === 'processing') {
-              refresh();
-            }
           }} 
           className="space-y-6"
         >
@@ -43,7 +37,7 @@ function App() {
           </TabsList>
 
           <AnimatePresence mode="wait" initial={false}>
-            <Upload refresh={refresh} changeTab={setCurrentTab}/>
+            <Upload changeTab={setCurrentTab}/>
             <Processing/>
             <JobStatus/>
             <ProcessFlow/>

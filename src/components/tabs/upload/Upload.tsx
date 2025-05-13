@@ -20,11 +20,10 @@ export interface UrlInput {
 
 interface UploadProps {
   changeTab: (tab: string) => void;
-  refresh: () => void;
 }
 
 
-export function Upload({changeTab, refresh}: UploadProps) {
+export function Upload({changeTab}: UploadProps) {
   const [isDragging, setIsDragging] = useState(false);  
   const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -138,7 +137,7 @@ export function Upload({changeTab, refresh}: UploadProps) {
       setUrlInput('');
     } catch (error) {
       console.error('Failed to add jobs:', error);
-      toast.error(`Could not add jobs: ${error.message}`);
+      toast.error(`Could not add jobs: ${(error as Error).message}`);
     }
   }, [urlInput, autoApprove]);
 
@@ -150,11 +149,10 @@ export function Upload({changeTab, refresh}: UploadProps) {
     }
 
     changeTab('processing');
-    refresh(); // Refresh data when switching to processing tab
     toast('Start processing...', {
       description: `${totalItems} ${uploadMode === 'file' ? 'file' : 'link'}${totalItems === 1 ? '' : 's'} are processed`,
     });
-  }, [uploadedFiles.length, processedUrls.length, uploadMode, refresh, changeTab]);
+  }, [uploadedFiles.length, processedUrls.length, uploadMode, changeTab]);
 
   return (
     <>

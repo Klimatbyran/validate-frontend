@@ -2,14 +2,14 @@ import { z } from 'zod';
 
 // Base schemas
 export const CountsSchema = z.object({
-  active: z.number(),
-  completed: z.number(),
-  delayed: z.number(),
-  failed: z.number(),
-  paused: z.number(),
-  prioritized: z.number(),
-  waiting: z.number(),
-  'waiting-children': z.number(),
+  active: z.number().optional(),
+  completed: z.number().optional(),
+  delayed: z.number().optional(),
+  failed: z.number().optional(),
+  paused: z.number().optional(),
+  prioritized: z.number().optional(),
+  waiting: z.number().optional(),
+  'waiting-children': z.number().optional(),
 });
 
 export const PaginationSchema = z.object({
@@ -96,10 +96,18 @@ export const QueueSchema = z.object({
   delimiter: z.string(),
 });
 
+export const QueueStatSchema = z.object({
+  name: z.string(),
+  status: CountsSchema.optional()
+})
+
+export const QueuesStatsSchema = z.array(QueueStatSchema);
+
 // Response schemas
 export const QueuesResponseSchema = z.object({
   queues: z.array(QueueSchema),
 });
+
 
 export const QueueJobsResponseSchema = z.object({
   queue: QueueSchema,
@@ -112,6 +120,8 @@ export type JobData = z.infer<typeof JobDataSchema>;
 export type JobParent = z.infer<typeof JobParentSchema>;
 export type QueuesResponse = z.infer<typeof QueuesResponseSchema>;
 export type QueueJobsResponse = z.infer<typeof QueueJobsResponseSchema>;
+export type QueuesStats = z.infer<typeof QueuesStatsSchema>;
+export type QueueStats = z.infer<typeof QueueStatSchema>;
 
 // Queue management types
 export interface QueueJob extends Job {
@@ -138,14 +148,6 @@ export interface GroupedCompany {
   attempts: CompanyStatus[];
 }
 
-export interface QueueStats {
-  active: number;
-  waiting: number;
-  completed: number;
-  failed: number;
-  isPaused: boolean;
-}
-
 export interface QueueStatsState {
   totals: {
     active: number;
@@ -155,5 +157,5 @@ export interface QueueStatsState {
     delayed: number;
     paused: number;
   };
-  queueStats: Record<string, QueueStats>;
+  queueStats: QueueStats;
 }
