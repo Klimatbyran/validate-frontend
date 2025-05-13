@@ -14,18 +14,6 @@ interface TotalQueuesStats {
     queuesStats: QueueStats[];
 }
 
-const initialState = {
-  totals: {
-    active: 0,
-    waiting: 0,
-    completed: 0,
-    failed: 0,
-    delayed: 0,
-    paused: 0,
-  },
-  queuesStats: []
-};
-
 export function useQueuesStats(refreshInterval = 0) {
   const { data, error, isLoading, mutate } = useSWR('/api/queues/stats', fetchQueuesStats, {
     refreshInterval: refreshInterval,
@@ -62,7 +50,14 @@ function calcualateTotalQueueStats(queuesStats: QueueStats[]): TotalQueuesStats 
     acc.delayed += status?.delayed || 0;
     acc.paused += status?.paused || 0; 
     return acc;
-  }, initialState.totals);
+  }, {
+    active: 0,
+    waiting: 0,
+    completed: 0,
+    failed: 0,
+    delayed: 0,
+    paused: 0,
+  });
 
   return {
     totals,
