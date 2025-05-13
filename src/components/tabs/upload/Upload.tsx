@@ -5,6 +5,7 @@ import { Button } from "../../ui/button";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { UploadList } from "./UploadList";
+import { QueueAddJobResponse } from "@/lib/types";
 
 export interface UploadedFile {
   file: File;
@@ -79,47 +80,29 @@ export function Upload({changeTab}: UploadProps) {
       return;
     }
 
-    // Create jobs for each URL
-    const jobs = urls.map(url => ({
-      name: 'process-pdf',
-      data: {
-        url,
-        threadId: crypto.randomUUID().replace(/-/g, ''),
-        autoApprove: Boolean(autoApprove), // Use boolean instead of string
-        messageId: crypto.randomUUID().replace(/-/g, '')
-      },
-      options: {
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 1000
-        }
-      }
-    }));
-
+   
     // Send jobs to the API
     try {
-      const responses = await Promise.all(jobs.map(async job => {
-        console.log('Sending job:', job);
+      const response = await fetch('/api/queues/nlmParsePDF', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          urls,
+          autoApprove: Boolean(autoApprove)
+        })
+      });
 
-        const response = await fetch('/api/queues/nlmParsePDF/add', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(job)
-        });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Job submission error:', errorText);
+        throw new Error(`Failed to add jobs: ${errorText}`);
+      }
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Job submission error:', errorText);
-          throw new Error(`Failed to add job: ${errorText}`);
-        }
+      const jobs = await response.json() as QueueAddJobResponse;
 
-        return response.json();
-      }));
-
-      console.log('Queue responses:', responses);
+      console.log('Queue responses:', jobs);
 
       const newUrls = urls.map(url => ({
         url,

@@ -113,6 +113,8 @@ export const QueueJobsResponseSchema = z.object({
   queue: QueueSchema,
 });
 
+export const QueueAddJobResponseSchema = z.array(QueueSchema);
+
 // Inferred types
 export type Queue = z.infer<typeof QueueSchema>;
 export type Job = z.infer<typeof JobSchema>;
@@ -122,6 +124,7 @@ export type QueuesResponse = z.infer<typeof QueuesResponseSchema>;
 export type QueueJobsResponse = z.infer<typeof QueueJobsResponseSchema>;
 export type QueuesStats = z.infer<typeof QueuesStatsSchema>;
 export type QueueStats = z.infer<typeof QueueStatSchema>;
+export type QueueAddJobResponse = z.infer<typeof QueueAddJobResponseSchema>;
 
 // Queue management types
 export interface QueueJob extends Job {
