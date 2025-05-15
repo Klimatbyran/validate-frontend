@@ -61,15 +61,18 @@ export const JobDataSchema = z.object({
 export const JobSchema = z.object({
   id: z.string(),
   name: z.string().optional(),
+  queue: z.string(),
+  url: z.string().url().optional(),
+  autoApprove: z.boolean().optional().default(false),
   timestamp: z.number(),
   processedOn: z.number().optional(),
   finishedOn: z.number().optional(),
   progress: z.number().optional(),
   attempts: z.number().optional(),
+  attemptsMade: z.number().optional(),
   delay: z.union([z.string(), z.number()]).optional(),
   stacktrace: z.array(z.string()),
   opts: JobOptionsSchema,
-  data: JobDataSchema,
   parent: JobParentSchema,
   returnValue: z.union([
     z.string(),
@@ -82,11 +85,14 @@ export const JobSchema = z.object({
   isFailed: z.boolean().optional(),
 }).passthrough();
 
+export const DataJobSchema = JobSchema.extend({
+  data: JobDataSchema
+});
+
 export const QueueSchema = z.object({
   name: z.string(),
   type: z.enum(['bull', 'bullmq']),
   isPaused: z.boolean(),
-  statuses: z.array(z.string()),
   counts: CountsSchema,
   jobs: z.array(JobSchema),
   pagination: PaginationSchema,
@@ -95,6 +101,20 @@ export const QueueSchema = z.object({
   allowCompletedRetries: z.boolean(),
   delimiter: z.string(),
 });
+
+export const processSchema = z.object({
+  id: z.string(),
+  company: z.string().optional(),
+  wikidataId: z.string().optional(),
+  jobs: z.array(JobSchema)
+})
+
+export const companyProcessSchema = z.object({
+  company: z.string().optional(),
+  wikidataId: z.string().optional(),
+  processes: z.array(processSchema.omit({company: true, wikidataId: true}))
+});
+
 
 export const QueueStatSchema = z.object({
   name: z.string(),
@@ -118,6 +138,7 @@ export const QueueAddJobResponseSchema = z.array(QueueSchema);
 // Inferred types
 export type Queue = z.infer<typeof QueueSchema>;
 export type Job = z.infer<typeof JobSchema>;
+export type DataJob = z.infer<typeof DataJobSchema>;
 export type JobData = z.infer<typeof JobDataSchema>;
 export type JobParent = z.infer<typeof JobParentSchema>;
 export type QueuesResponse = z.infer<typeof QueuesResponseSchema>;
@@ -125,6 +146,8 @@ export type QueueJobsResponse = z.infer<typeof QueueJobsResponseSchema>;
 export type QueuesStats = z.infer<typeof QueuesStatsSchema>;
 export type QueueStats = z.infer<typeof QueueStatSchema>;
 export type QueueAddJobResponse = z.infer<typeof QueueAddJobResponseSchema>;
+export type Process = z.infer<typeof processSchema>;
+export type CompanyProcess = z.infer<typeof companyProcessSchema>;
 
 // Queue management types
 export interface QueueJob extends Job {
