@@ -66,6 +66,7 @@ export const JobSchema = z.object({
   autoApprove: z.boolean().optional().default(false),
   timestamp: z.number(),
   processedOn: z.number().optional(),
+  processId: z.string().optional(),
   finishedOn: z.number().optional(),
   progress: z.number().optional(),
   attempts: z.number().optional(),

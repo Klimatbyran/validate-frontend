@@ -1,5 +1,4 @@
 import type {  QueueStats } from '@/lib/types';
-import type { QueueStats } from '@/lib/types';
 import useSWR from 'swr';
 
 interface TotalQueuesStats {
