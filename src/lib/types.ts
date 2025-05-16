@@ -122,6 +122,18 @@ export const QueueStatSchema = z.object({
   status: CountsSchema.optional()
 })
 
+const pipelineQueueSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    next: z.object({
+      selection: z.boolean().default(false).optional(),
+      target: z.array(z.string())
+    }).optional()
+});
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const pipelineSchema = z.array(pipelineQueueSchema);
+
 export const QueuesStatsSchema = z.array(QueueStatSchema);
 
 // Response schemas
@@ -140,7 +152,6 @@ export const QueueAddJobResponseSchema = z.array(QueueSchema);
 export type Queue = z.infer<typeof QueueSchema>;
 export type Job = z.infer<typeof JobSchema>;
 export type DataJob = z.infer<typeof DataJobSchema>;
-export type JobData = z.infer<typeof JobDataSchema>;
 export type JobParent = z.infer<typeof JobParentSchema>;
 export type QueuesResponse = z.infer<typeof QueuesResponseSchema>;
 export type QueueJobsResponse = z.infer<typeof QueueJobsResponseSchema>;
@@ -149,6 +160,8 @@ export type QueueStats = z.infer<typeof QueueStatSchema>;
 export type QueueAddJobResponse = z.infer<typeof QueueAddJobResponseSchema>;
 export type Process = z.infer<typeof processSchema>;
 export type CompanyProcess = z.infer<typeof companyProcessSchema>;
+export type Pipeline = z.infer<typeof pipelineSchema>;
+export type PipelineNode = z.infer<typeof pipelineQueueSchema>;
 
 // Queue management types
 export interface QueueJob extends Job {
