@@ -1,4 +1,4 @@
-import { PipelineDiagram } from "@/components/ui/pipeline-diagram";
+import { PipelineDiagram } from "@/components/ui/PipelineDiagram/pipeline-diagram";
 import { TabsContent } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 

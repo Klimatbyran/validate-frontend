@@ -19,12 +19,16 @@ export function buildPipelineGraph(pipeline: Pipeline): { nodes: Node[], edges: 
       const node: Node ={
         id: pipelineNode.id,
         data: {
-          label: pipelineNode.name
+          label: pipelineNode.name,
+          sourceHandles: [`s-${pipelineNode.id}`],
+          targetHandles: [`t-${pipelineNode.id}`],
         },
         position: {
           x: 0,
           y: 0
         },
+        type: "custom",
+        draggable: false,
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
       };
@@ -54,7 +58,12 @@ export function buildPipelineSubgraph(pipeline: Pipeline, node: PipelineNode): E
         for(const target of node.next.target) {
             const nextNode = getNode(pipeline, target);
             if(!nextNode) continue;
-            graph.push({id: `${node.id}-${nextNode.id}`, source: node.id, target: nextNode.id});
+            graph.push({
+              id: `${node.id}-${nextNode.id}`,
+              source: node.id,
+              target: nextNode.id,
+              type: (node.id === 'nlmParsePDF' && nextNode.id === 'precheck') ? "custom" : "default",
+            });
         }
     }
     return graph;

@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { usePipeline } from '@/hooks/usePipeline';
-import { buildPipelineGraph } from '@/lib/pipeline';
 import '@xyflow/react/dist/style.css';
 import { PipelineGraph } from './PipelineGraph';
 
@@ -14,13 +13,7 @@ export function PipelineDiagram() {
     return <div>Error: {error.message}</div>;
   }
 
-  
-  
-
   if(pipeline) {
-    //console.log(buildPipelineGraph(pipeline).join("\n"));
-    
-
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -29,7 +22,7 @@ export function PipelineDiagram() {
       >
         <h2 className="text-xl font-semibold text-gray-01 mb-6">Process Flow</h2>
         <div style={{ height: '600px', width: '100%' }}>
-          <PipelineGraph/>
+          <PipelineGraph pipeline={pipeline} />
         </div>        
       </motion.div>
     );
