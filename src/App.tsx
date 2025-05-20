@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+
+import { AnimatePresence, motion } from 'framer-motion'; // Added motion import
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'; // Added TabsContent
 import { Header } from '@/components/ui/header';
 import { Toaster } from '@/components/ui/sonner';
 import { Upload } from './components/tabs/upload/Upload';
@@ -13,6 +15,8 @@ import { Debug } from './components/tabs/debug/Debug';
 
 function App() {
   const [currentTab, setCurrentTab] = useState('upload');
+
+
 
   return (
     <div className="min-h-screen bg-gray-05 p-8">
@@ -37,12 +41,20 @@ function App() {
           </TabsList>
 
           <AnimatePresence mode="wait" initial={false}>
-            <Upload changeTab={setCurrentTab}/>
-            <Processing/>
-            <JobStatus/>
-            <ProcessFlow/>
-            <Debug/>
-            <Results />           
+            <motion.div
+              key={currentTab}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {currentTab === 'upload' && <Upload changeTab={setCurrentTab}/>}
+              {currentTab === 'processing' && <Processing />}
+              {currentTab === 'grid' && <JobStatus />}
+              {currentTab === 'workflow' && <ProcessFlow />}
+              {currentTab === 'debug' && <Debug />}
+              {currentTab === 'results' && <Results />}
+            </motion.div>
           </AnimatePresence>
         </Tabs>
       </div>
