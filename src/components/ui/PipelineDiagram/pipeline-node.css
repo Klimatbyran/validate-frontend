@@ -1,4 +1,5 @@
-.react-flow__node-custom {
+.react-flow__node-custom,
+.react-flow__node-multi  {
     padding: 10px;
     border-radius: var(--xy-node-border-radius, var(--xy-node-border-radius-default));
     width: 150px;
@@ -8,4 +9,16 @@
     border: var(--xy-node-border, var(--xy-node-border-default));
     background-color: var(--xy-node-background-color, var(--xy-node-background-color-default));
     cursor: pointer;
+}
+
+.react-flow__node-custom:hover {
+    background-color: rgb(20,20,20);
+}
+
+.node-task:hover {
+    background-color: rgb(40,40,40);
+}
+
+.react-flow {
+    background-color: rgba(0,0,0,0);
 }

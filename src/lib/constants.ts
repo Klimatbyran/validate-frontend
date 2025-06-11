@@ -21,7 +21,7 @@ export const WORKFLOW_STAGES = [
   { id: 'diffGoals', name: 'Climate Goals' },
   { id: 'diffInitiatives', name: 'Initiatives' },
   { id: 'diffBaseYear', name: 'Base Year' },
-  { id: 'diffReportingPeriods', name: 'Financial Years' },
+  { id: 'diffReportingPeriods', name: 'Reporting Periods' },
   { id: 'saveToAPI', name: 'API Storage' },
   { id: 'wikipediaUpload', name: 'Wikipedia' },
   { id: 'diffTags', name: 'Tags' },

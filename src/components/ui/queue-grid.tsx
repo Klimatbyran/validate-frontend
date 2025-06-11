@@ -149,7 +149,6 @@ export function QueueGrid() {
           jobId={selectedJob?.id ?? "0"}
           queueName={selectedJob?.queue ?? ""}
           isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
           onApprove={handleApprove}
           onRetry={handleRetry}
         />

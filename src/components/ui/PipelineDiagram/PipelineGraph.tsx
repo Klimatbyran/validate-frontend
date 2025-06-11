@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import dagre from '@dagrejs/dagre';
-import { useEffect } from 'react';
+import dagre from "@dagrejs/dagre";
+import { useContext, useEffect } from "react";
 import {
   ReactFlow,
   useNodesState,
@@ -9,31 +9,32 @@ import {
   Node,
   Position,
   BezierEdge,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import { buildPipelineGraph } from '@/lib/pipeline';
-import PipelineNode from './PipelineNode';
-import WaypointOffsetEdge from './CustomEdge';
-import { Pipeline } from '@/lib/types';
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { buildPipelineGraph } from "@/lib/pipeline";
+import PipelineNode from "./PipelineNode";
+import WaypointOffsetEdge from "./CustomEdge";
+import { PipelineContext } from "@/components/contexts/PipelineContext";
+import { Job } from "@/lib/types";
+import PipelineMultiNode from "./PipelineMultiNode";
 
-const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({})); 
+const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
 
 const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
-  dagreGraph.setGraph({ rankdir: 'LR', ranksep: 20, nodesep: 20  });
- 
+  dagreGraph.setGraph({ rankdir: "LR", ranksep: 50, nodesep: 20 });
+
   nodes.forEach((node) => {
     dagreGraph.setNode(node.id, { width: 172, height: 36, ...node.data });
   });
- 
+
   edges.forEach((edge) => {
     dagreGraph.setEdge(edge.source, edge.target, {
-      weight: edge.source === 'nlmParsePDF' && edge.target === 'precheck' ? 100 : 1,
-      type: 'smoothstep' 
+      type: "smoothstep",
     });
   });
- 
+
   dagre.layout(dagreGraph);
- 
+
   const newNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
     const newNode = {
@@ -42,41 +43,41 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
       sourcePosition: Position.Right,
 
       position: {
-        x: nodeWithPosition.x - 172 / 2,
-        y: nodeWithPosition.y - 36 / 2,
+        x: nodeWithPosition.x - (172) / 2,
+        y: nodeWithPosition.y - (36) / 2,
       },
     };
- 
+
     return newNode;
   });
- 
+
   return { nodes: newNodes, edges };
 };
 
-export function PipelineGraph({pipeline}: {pipeline: Pipeline}) {
+export function PipelineGraph({jobs}: {jobs?: Job[]}) {
+  const pipeline = useContext(PipelineContext);
   const [nodes, setNodes, onNodesChange] = useNodesState([] as Node[]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([] as Edge[]);
 
   useEffect(() => {
-    const {nodes, edges} = buildPipelineGraph(pipeline || []);
+    const { nodes, edges } = buildPipelineGraph(pipeline || [], jobs);
     const result = getLayoutedElements(nodes, edges);
     setNodes(result.nodes);
     setEdges(result.edges);
-    },
-    [pipeline, setNodes, setEdges],
-  );
- 
+  }, [pipeline, setNodes, setEdges]);
+
   return (
+    <div style={{ height: "400px", width: "100%" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        nodeTypes={{custom: PipelineNode}}
-        edgeTypes={{custom: WaypointOffsetEdge, default: BezierEdge}}
-        colorMode='dark'
+        nodeTypes={{ custom: PipelineNode, multi: PipelineMultiNode }}
+        edgeTypes={{ custom: WaypointOffsetEdge, default: BezierEdge }}
+        colorMode="dark"
         fitView
-      >        
-      </ReactFlow>
+      ></ReactFlow>
+    </div>
   );
-};
+}

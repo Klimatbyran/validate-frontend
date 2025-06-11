@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+export const processStatusSchema = z.enum(['active', 'completed', 'failed', 'waiting']);
 // Base schemas
 export const CountsSchema = z.object({
   active: z.number().optional(),
@@ -12,13 +13,21 @@ export const CountsSchema = z.object({
   'waiting-children': z.number().optional(),
 });
 
-export const PaginationSchema = z.object({
-  pageCount: z.number(),
-  range: z.object({
-    start: z.number(),
-    end: z.number(),
-  }),
+export const approvalDataSchema = z.object({
+  oldValue: z.any(),
+  newValue: z.any()
 });
+
+export const approvalSchema = z.object({
+  summary: z.string(),
+  type: z.string(),
+  data: approvalDataSchema,
+  approved: z.boolean().default(false),
+  metadata: z.object({
+    comment: z.string().optional(),
+    source: z.string().optional()
+  })
+})
 
 export const JobOptionsSchema = z.object({
   attempts: z.number(),
@@ -53,8 +62,6 @@ export const JobDataSchema = z.object({
   companyName: z.string().optional(),
   description: z.string().optional(),
   year: z.number().optional(),
-  status: z.string().optional(),
-  needsApproval: z.boolean().optional(),
   comment: z.string().optional(),
 }).passthrough();
 
@@ -63,6 +70,7 @@ export const JobSchema = z.object({
   name: z.string().optional(),
   queue: z.string(),
   url: z.string().url().optional(),
+  approval: approvalSchema,
   autoApprove: z.boolean().optional().default(false),
   timestamp: z.number(),
   processedOn: z.number().optional(),
@@ -72,7 +80,8 @@ export const JobSchema = z.object({
   attempts: z.number().optional(),
   attemptsMade: z.number().optional(),
   delay: z.union([z.string(), z.number()]).optional(),
-  stacktrace: z.array(z.string()),
+  stacktrace: z.array(z.string()),  
+  status: z.string().optional(),
   opts: JobOptionsSchema,
   parent: JobParentSchema,
   returnValue: z.union([
@@ -96,7 +105,6 @@ export const QueueSchema = z.object({
   isPaused: z.boolean(),
   counts: CountsSchema,
   jobs: z.array(JobSchema),
-  pagination: PaginationSchema,
   readOnlyMode: z.boolean(),
   allowRetries: z.boolean(),
   allowCompletedRetries: z.boolean(),
@@ -107,7 +115,11 @@ export const processSchema = z.object({
   id: z.string(),
   company: z.string().optional(),
   wikidataId: z.string().optional(),
-  jobs: z.array(JobSchema)
+  year: z.number().optional(),
+  startedAt: z.number().optional(),
+  finishedAt: z.number().optional(),
+  jobs: z.array(JobSchema),
+  status: processStatusSchema.optional()
 })
 
 export const companyProcessSchema = z.object({
@@ -162,6 +174,7 @@ export type Process = z.infer<typeof processSchema>;
 export type CompanyProcess = z.infer<typeof companyProcessSchema>;
 export type Pipeline = z.infer<typeof pipelineSchema>;
 export type PipelineNode = z.infer<typeof pipelineQueueSchema>;
+export type ProcessStatus = z.infer<typeof processStatusSchema>;
 
 // Queue management types
 export interface QueueJob extends Job {
@@ -198,4 +211,90 @@ export interface QueueStatsState {
     paused: number;
   };
   queueStats: QueueStats;
+}
+
+export const Scopes = {
+  "scope1": "Scope 1",
+  "scope2": "Scope 2",
+  "scope3": "Scope 3",
+  "biogenic": "Biogenic",
+}
+
+export const EmissionUnits = ["tCO2", "tCO2e"];
+export type EmissionUnit = "tCO2" | "tCO2e";
+export const EmployeesUnits = ["FTE", "AVG", "EOY"];
+export type EmployeesUnit =  "FTE" | "AVG" | "EOY";
+
+export const Scope3Categories = [
+  "purchasedGoods",
+  "capitalGoods",
+  "fuelAndEnergyRelatedActivities",
+  "upstreamTransportationAndDistribution",
+  "wasteGeneratedInOperations",
+  "businessTravel",
+  "employeeCommuting",
+  "upstreamLeasedAssets",
+  "downstreamTransportationAndDistribution",
+  "processingOfSoldProducts",
+  "useOfSoldProducts",
+  "endOfLifeTreatmentOfSoldProducts",
+  "downstreamLeasedAssets",
+  "franchises",
+  "investments",
+  "other"
+]
+
+export interface Emission {
+    id?: string,
+    total: number | null,
+    unit: EmissionUnit
+}
+
+export interface Scope2 {
+    id?: string,
+    mb?: number | null,
+    lb?: number | null,
+    unknown?: number | null,
+    unit: EmissionUnit
+}
+
+export interface Scope3 {
+    categories: (Emission & {category: number})[],    
+    statedTotalEmissions?: Emission | null
+}
+
+export interface Emissions {
+    id?: string,
+    scope1?: Emission | null,
+    scope2?: Scope2 | null,
+    scope3?: Scope3 | null,
+    biogenic?: Emission | null,
+    statedTotalEmissions?: Emission | null
+}
+
+export interface ReportingPeriod {
+    id?: string,
+    startDate: string,
+    endDate: string,
+    reportURL?: string,
+    emissions: Emissions,
+    economy: Economy
+}
+
+export interface Economy {
+  id?: string;
+  employees?: Employees;
+  turnover?: Turnover;
+}
+
+export interface Employees {
+  id?: string;
+  value: number | null;
+  unit: EmployeesUnit;
+}
+
+export interface Turnover {
+  id?: string;
+  value: number | null;
+  currency: string;
 }

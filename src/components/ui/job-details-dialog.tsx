@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Dialog,
@@ -26,12 +26,13 @@ import {
 import { WikidataPreview } from './wikidata-preview';
 import { FiscalYearDisplay } from './fiscal-year-display';
 import { useJob } from '@/hooks/useJob';
+import { JobDetailContext } from '../contexts/JobDetailContext';
+import { Validation } from './Validation/Validation';
 
 interface JobDetailsDialogProps {
   jobId: string;
   queueName: string;
   isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
   onApprove?: (approved: boolean) => void;
   onRetry?: () => void;
 }
@@ -64,7 +65,7 @@ function UserFriendlyDataView({ data }: { data: any }) {
   
   const renderValue = (value: any): React.ReactNode => {
     if (value === null) return <span className="text-gray-02">No Value</span>;
-    if (typeof value === 'boolean') return value ? 'Ja' : 'Nej';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
     if (typeof value === 'string' || typeof value === 'number') return String(value);
     if (Array.isArray(value)) {
       return (
@@ -170,27 +171,24 @@ function JsonViewer({ data }: { data: any }) {
 export function JobDetailsDialog({ 
   jobId,
   queueName, 
-  isOpen, 
-  onOpenChange,
+  isOpen,
   onApprove,
   onRetry
 }: JobDetailsDialogProps) {
   const [activeTab, setActiveTab] = useState<'user' | 'technical'>('user');
+  const { togglePopover } = useContext(JobDetailContext);
   const { job } = useJob(jobId, queueName);
-
-  console.log(job?.data);
   
   if (!job) return null;
 
   const stage = WORKFLOW_STAGES.find(s => s.id === job.queue);
-  const needsApproval = !job.data?.approved && !job.autoApprove;
+  const needsApproval = job.approval !== undefined;
   const canRetry = job.isFailed;
-  const hasParent = !!job.parent;
 
   const handleApprove = (approved: boolean) => {
     if (onApprove) {
       onApprove(approved);
-      onOpenChange(false);
+      togglePopover(null);
       toast.success(approved ? 'Jobbet godkänt' : 'Jobbet avvisat');
     }
   };
@@ -198,7 +196,7 @@ export function JobDetailsDialog({
   const handleRetry = () => {
     if (onRetry) {
       onRetry();
-      onOpenChange(false);
+      togglePopover(null);
       toast.success('Jobbet omstartat');
     }
   };
@@ -227,11 +225,11 @@ export function JobDetailsDialog({
   };
 
   const getStatusText = () => {
-    if (needsApproval) return 'Väntar på godkännande';
-    if (job.isFailed) return 'Misslyckad';
-    if (job.finishedOn) return 'Slutförd';
-    if (job.processedOn) return 'Bearbetar';
-    return 'Väntar';
+    if (needsApproval) return 'Waiting for approval';
+    if (job.isFailed) return 'Failed';
+    if (job.finishedOn) return 'Completed';
+    if (job.processedOn) return 'Processing';
+    return 'Waiting';
   };
   
   const getFilteredJobData = () => {
@@ -253,121 +251,16 @@ export function JobDetailsDialog({
     return job.data.url || null;
   };
 
-  // Simplified view for jobs that need approval
-  if (needsApproval && activeTab === 'user') {
-    return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="text-2xl mb-2">
-                  {job.data.companyName || job.data.company}
-                </DialogTitle>
-                {job.data.description && (
-                  <DialogDescription className="text-base">
-                    {job.data.description}
-                  </DialogDescription>
-                )}
-              </div>
-              {job.data.url && (
-                <a 
-                  href={job.data.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-2 text-blue-03 hover:text-blue-03/80 bg-blue-03/10 p-2 rounded-full"
-                  title="Öppna källdokument"
-                >
-                  <FileText className="w-5 h-5" />
-                </a>
-              )}
-            </div>
-          </DialogHeader>
 
-          <div className="flex items-center space-x-2 mb-6">
-            <Button
-              variant={activeTab === 'user' ? 'primary' : 'secondary'}
-              size="sm"
-              onClick={() => setActiveTab('user')}
-              className="rounded-full"
-            >
-              <Info className="w-4 h-4 mr-2" />
-              Overview
-            </Button>
-            <Button
-              variant={activeTab === 'technical' ? 'primary' : 'secondary'}
-              size="sm"
-              onClick={() => setActiveTab('technical')}
-              className="rounded-full"
-            >
-              <Code className="w-4 h-4 mr-2" />
-              Technical details
-            </Button>
-          </div>
-
-          <div className="space-y-6 my-6">
-            <div className="bg-blue-03/10 rounded-lg p-4">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 rounded-full bg-blue-03/20">
-                  <HelpCircle className="w-5 h-5 text-blue-03" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium text-blue-03">Approval required</h3>
-                  <p className="text-sm text-blue-03/80">
-                    Please review the information and accept or reject.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-03/20 rounded-lg p-4">
-              <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
-              <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <div className="flex justify-between w-full">
-              <div></div>
-              <div className="space-x-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => handleApprove(false)}
-                  className="border-pink-03 text-pink-03 hover:bg-pink-03/10"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Rejct
-                </Button>
-                <Button
-                  onClick={() => handleApprove(true)}
-                  className="bg-green-03 text-white hover:bg-green-03/90"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Approve
-                </Button>
-              </div>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  // Technical view or non-approval jobs
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={() => togglePopover(null)}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div>
-              <DialogTitle className="text-2xl mb-2">
+              <DialogTitle className="text-2xl">
                 {job.data.companyName || job.data.company}
               </DialogTitle>
-              {job.data.description && (
-                <DialogDescription className="text-base">
-                  {job.data.description}
-                </DialogDescription>
-              )}
             </div>
             {job.data.url && (
               <a 
@@ -434,30 +327,15 @@ export function JobDetailsDialog({
                 </div>
               </div>
 
-              {/* TODO: Job Relationships Section 
-              {hasParent && (
-                <div className="bg-blue-03/10 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
-                    <GitBranch className="w-5 h-5 mr-2" />
-                    Jobbrelationer
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2 text-blue-03">
-                      <ArrowUpRight className="w-4 h-4" />
-                      <span className="text-sm">Förälder:</span>
-                      <code className="bg-blue-03/20 px-2 py-1 rounded text-sm">
-                        {job.parent.queue}:{job.parent.id}
-                      </code>
-                    </div>
-                  </div>
+              {/* Validation Section */}
+              {job.approval != undefined && (
+                
+                <div className="bg-gray-03/20 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-gray-01 mb-4">Validation</h3>
+                  {job.approval.summary}
+                  <Validation data={job.approval.data} type={job.approval.type} />
                 </div>
-              )}*/}
-
-              {/* User-friendly Job Data Section */}
-              <div className="bg-gray-03/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
-                <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
-              </div>
+              )}
 
               {/* Error Section */}
               {job.isFailed && job.stacktrace.length > 0 && (
@@ -496,6 +374,7 @@ export function JobDetailsDialog({
               
               {/* Technical Job Data Section */}
               <div className="bg-gray-03/20 rounded-lg p-4">
+              {/*
                 <h3 className="text-lg font-medium text-gray-01 mb-4">Technical data</h3>
                 <div className="grid grid-cols-1 gap-4">
                   {Object.entries(job.data).map(([key, value]) => {
@@ -516,7 +395,7 @@ export function JobDetailsDialog({
                       </div>
                     );
                   })}
-                </div>
+                </div>*/}
               </div>
 
               {/* Full Error Section */}

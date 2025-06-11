@@ -1,4 +1,4 @@
-import { QueueGrid } from "@/components/ui/queue-grid";
+import { ProcessOverview } from "@/components/ui/process-overview";
 import { TabsContent } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 
@@ -11,7 +11,7 @@ export function JobStatus() {
         exit={{ opacity: 0, x: 20 }}
         className="space-y-6"
       >
-        <QueueGrid />
+        <ProcessOverview />
       </motion.div>
     </TabsContent>
   );

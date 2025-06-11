@@ -5,6 +5,7 @@ export function useProcesses(refreshInterval = 0) {
   const { data, error, isLoading, mutate } = useSWR('/api/processes', fetchProcesses, {
     refreshInterval: refreshInterval,
     dedupingInterval: 2000,
+    revalidateOnFocus: true,
   });
 
   return {

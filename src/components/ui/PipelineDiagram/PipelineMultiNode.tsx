@@ -4,32 +4,38 @@ import { AlertCircle, CheckCircle2, CircleSlash, Clock, XCircle } from "lucide-r
 import { useContext } from "react";
 import { JobDetailContext } from "@/components/contexts/JobDetailContext";
 
-interface PipelineNodeProps {
+interface PipelineMultiNodeProps {
     data: {
       label: string;
-      status?: string;
-      jobId: string;
+      jobs: {        
+        status?: string;
+        jobId: string;
+      }[]
     };
     isConnectable: boolean;
     id: string;
 }
 
 
-function PipelineNode({ data, isConnectable, id }: PipelineNodeProps) {
+function PipelineMultiNode({ data, isConnectable, id }: PipelineMultiNodeProps) {
   const { togglePopover } = useContext(JobDetailContext);
 
   return (
-    <div onClick={() => togglePopover({id: data.jobId, queue: id})}>
+    <div className="h-fit">
       <Handle
         className="react-flow__handle react-flow__handle-left nodrag"
         type="target"
         position={Position.Left}
         isConnectable={isConnectable}
       />
-      <div className="flex items-center gap-2">
-        {data.status && getStatusIcon(data?.status)}
-       <strong className="text-xs">{data.label}</strong>
-      </div>
+      <div className="flex flex-col gap-2">
+      {(data.jobs ?? []).map((job) => (
+        <div className="flex items-center gap-2 bg-gray-03 p-2 rounded-md cursor-pointer node-task" onClick={() => togglePopover({id: job.jobId, queue: id})}>
+          {job.status && getStatusIcon(job.status)}
+          <strong className="text-xs">{data.label}</strong>
+        </div>
+      ))} 
+      </div>     
       <Handle
         className="react-flow__handle react-flow__handle-right nodrag"
         type="source"
@@ -75,4 +81,4 @@ function getStatusIcon(status?: string) {
   }
 }
 
-export default PipelineNode;
+export default PipelineMultiNode;
