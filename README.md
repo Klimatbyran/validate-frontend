@@ -15,23 +15,14 @@ A modern React-based tool for validating and managing workflow queues with real-
 
 - **Frontend**: React with TypeScript
 - **UI Components**: Custom components with Tailwind CSS
-- **State Management**: RxJS for reactive state management
 - **API Communication**: Axios for HTTP requests
 - **Data Fetching**: SWR for data fetching with caching and revalidation
 - **Containerization**: Docker for deployment
 - **Orchestration**: Kubernetes for container orchestration
 
-## RxJS Architecture
+## Deployment in the Garbo Environment 
 
-This project uses RxJS for reactive data processing and state management. The application follows a reactive programming paradigm where data flows through streams (Observables) that can be transformed, combined, and consumed.
-
-Key aspects of our RxJS implementation:
-- **Reactive Data Flow**: Data flows through streams from API to UI
-- **Centralized State Management**: Using BehaviorSubjects in QueueStore
-- **Non-blocking Operations**: All data processing is asynchronous
-- **Declarative Transformations**: Using operators like map, filter, mergeMap
-
-For detailed information about our RxJS implementation and best practices, see [RxJS-GUIDE.md](./RxJS-GUIDE.md).
+![Deployment Diagram](./docs/deployment.png)
 
 ## Getting Started
 
@@ -39,6 +30,8 @@ For detailed information about our RxJS implementation and best practices, see [
 
 - Node.js (v16+)
 - npm or yarn
+- Running [Garbo Pipeline](https://github.com/Klimatbyran/garbo) (only `npm run dev-workers` necessary)
+- Running [Garbo Pipeline API (Validate-Backend)](https://github.com/Klimatbyran/validate-backend)
 
 ### Installation
 
@@ -71,6 +64,8 @@ yarn dev
 - `/src`: Source code
   - `/components`: UI components
     - `/ui`: Reusable UI components
+    - `/tabs`: Tab components
+    - `/contexts`: React contexts
   - `/hooks`: Custom React hooks
   - `/lib`: Utilities, types, and constants
   - `/assets`: Static assets

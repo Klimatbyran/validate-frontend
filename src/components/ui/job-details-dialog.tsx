@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useContext, useState } from 'react';
+import { motion } from 'framer-motion';
 import { 
   Dialog,
   DialogContent,
@@ -10,33 +10,29 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { QueueJob } from '@/lib/types';
 import { WORKFLOW_STAGES } from '@/lib/constants';
 import { 
   CheckCircle2, 
-  XCircle, 
   AlertTriangle,
   MessageSquare,
   RotateCcw,
   Check,
   X,
-  ArrowUpRight,
-  ArrowDownRight,
-  GitBranch,
-  GitMerge,
   HelpCircle,
   Info,
   Code,
   FileText,
-  ExternalLink
 } from 'lucide-react';
 import { WikidataPreview } from './wikidata-preview';
 import { FiscalYearDisplay } from './fiscal-year-display';
+import { useJob } from '@/hooks/useJob';
+import { JobDetailContext } from '../contexts/JobDetailContext';
+import { Validation } from './Validation/Validation';
 
 interface JobDetailsDialogProps {
-  job: QueueJob | null;
+  jobId: string;
+  queueName: string;
   isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
   onApprove?: (approved: boolean) => void;
   onRetry?: () => void;
 }
@@ -55,7 +51,7 @@ function UserFriendlyDataView({ data }: { data: any }) {
   const processedData = typeof data === 'string' && isJsonString(data) 
     ? JSON.parse(data) 
     : data;
-  
+
   // List of technical fields to hide from the user-friendly view
   const technicalFields = ['autoApprove', 'threadId', 'messageId', 'url'];
   
@@ -68,8 +64,8 @@ function UserFriendlyDataView({ data }: { data: any }) {
     (processedData.startMonth && processedData.endMonth);
   
   const renderValue = (value: any): React.ReactNode => {
-    if (value === null) return <span className="text-gray-02">Inget värde</span>;
-    if (typeof value === 'boolean') return value ? 'Ja' : 'Nej';
+    if (value === null) return <span className="text-gray-02">No Value</span>;
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
     if (typeof value === 'string' || typeof value === 'number') return String(value);
     if (Array.isArray(value)) {
       return (
@@ -86,7 +82,6 @@ function UserFriendlyDataView({ data }: { data: any }) {
           {Object.entries(value).map(([k, v]) => {
             // Skip technical fields in nested objects too
             if (technicalFields.includes(k)) return null;
-            
             return (
               <div key={k}>
                 <span className="font-medium text-gray-01">{k}:</span>{' '}
@@ -117,7 +112,7 @@ function UserFriendlyDataView({ data }: { data: any }) {
       {hasFiscalYear && (
         <div className="mb-4">
           <FiscalYearDisplay data={{
-            fiscalYear: processedData.fiscalYear,
+            fiscalYear: 2023,
             startMonth: typeof processedData.startMonth === 'number' ? processedData.startMonth : undefined,
             endMonth: typeof processedData.endMonth === 'number' ? processedData.endMonth : undefined
           }} />
@@ -174,25 +169,26 @@ function JsonViewer({ data }: { data: any }) {
 }
 
 export function JobDetailsDialog({ 
-  job, 
-  isOpen, 
-  onOpenChange,
+  jobId,
+  queueName, 
+  isOpen,
   onApprove,
   onRetry
 }: JobDetailsDialogProps) {
   const [activeTab, setActiveTab] = useState<'user' | 'technical'>('user');
+  const { togglePopover } = useContext(JobDetailContext);
+  const { job } = useJob(jobId, queueName);
   
   if (!job) return null;
 
-  const stage = WORKFLOW_STAGES.find(s => s.id === job.queueId);
-  const needsApproval = !job.data.approved && !job.data.autoApprove;
+  const stage = WORKFLOW_STAGES.find(s => s.id === job.queue);
+  const needsApproval = job.approval !== undefined;
   const canRetry = job.isFailed;
-  const hasParent = !!job.parent;
 
   const handleApprove = (approved: boolean) => {
     if (onApprove) {
       onApprove(approved);
-      onOpenChange(false);
+      togglePopover(null);
       toast.success(approved ? 'Jobbet godkänt' : 'Jobbet avvisat');
     }
   };
@@ -200,7 +196,7 @@ export function JobDetailsDialog({
   const handleRetry = () => {
     if (onRetry) {
       onRetry();
-      onOpenChange(false);
+      togglePopover(null);
       toast.success('Jobbet omstartat');
     }
   };
@@ -229,23 +225,25 @@ export function JobDetailsDialog({
   };
 
   const getStatusText = () => {
-    if (needsApproval) return 'Väntar på godkännande';
-    if (job.isFailed) return 'Misslyckad';
-    if (job.finishedOn) return 'Slutförd';
-    if (job.processedOn) return 'Bearbetar';
-    return 'Väntar';
-  };
-
-  // Filter out metadata fields from job data
-  const getFilteredJobData = () => {
-    const { companyName, description, ...rest } = job.data;
-    return rest;
+    if (needsApproval) return 'Waiting for approval';
+    if (job.isFailed) return 'Failed';
+    if (job.finishedOn) return 'Completed';
+    if (job.processedOn) return 'Processing';
+    return 'Waiting';
   };
   
-  // Filter out schema and metadata fields from job data for user-friendly view
+  const getFilteredJobData = () => {
+    const keysToOmit = ['companyName', 'description'];
+    return Object.fromEntries(
+      Object.entries(job.data).filter(([key]) => !keysToOmit.includes(key))
+    );
+  };
+
   const getFilteredJobDataWithoutSchema = () => {
-    const { companyName, description, schema, ...rest } = job.data;
-    return rest;
+    const keysToOmit = ['companyName', 'description', 'schema'];
+    return Object.fromEntries(
+      Object.entries(job.data).filter(([key]) => !keysToOmit.includes(key))
+    );
   };
   
   // Get URL from job data if it exists
@@ -253,121 +251,16 @@ export function JobDetailsDialog({
     return job.data.url || null;
   };
 
-  // Simplified view for jobs that need approval
-  if (needsApproval && activeTab === 'user') {
-    return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="text-2xl mb-2">
-                  {job.data.companyName || job.data.company}
-                </DialogTitle>
-                {job.data.description && (
-                  <DialogDescription className="text-base">
-                    {job.data.description}
-                  </DialogDescription>
-                )}
-              </div>
-              {job.data.url && (
-                <a 
-                  href={job.data.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-2 text-blue-03 hover:text-blue-03/80 bg-blue-03/10 p-2 rounded-full"
-                  title="Öppna källdokument"
-                >
-                  <FileText className="w-5 h-5" />
-                </a>
-              )}
-            </div>
-          </DialogHeader>
 
-          <div className="flex items-center space-x-2 mb-6">
-            <Button
-              variant={activeTab === 'user' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('user')}
-              className="rounded-full"
-            >
-              <Info className="w-4 h-4 mr-2" />
-              Översikt
-            </Button>
-            <Button
-              variant={activeTab === 'technical' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('technical')}
-              className="rounded-full"
-            >
-              <Code className="w-4 h-4 mr-2" />
-              Tekniska detaljer
-            </Button>
-          </div>
-
-          <div className="space-y-6 my-6">
-            <div className="bg-blue-03/10 rounded-lg p-4">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 rounded-full bg-blue-03/20">
-                  <HelpCircle className="w-5 h-5 text-blue-03" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium text-blue-03">Godkännande krävs</h3>
-                  <p className="text-sm text-blue-03/80">
-                    Vänligen granska informationen och godkänn eller avvisa.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-03/20 rounded-lg p-4">
-              <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
-              <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <div className="flex justify-between w-full">
-              <div></div>
-              <div className="space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => handleApprove(false)}
-                  className="border-pink-03 text-pink-03 hover:bg-pink-03/10"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Avvisa
-                </Button>
-                <Button
-                  onClick={() => handleApprove(true)}
-                  className="bg-green-03 text-white hover:bg-green-03/90"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Godkänn
-                </Button>
-              </div>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  // Technical view or non-approval jobs
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={() => togglePopover(null)}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div>
-              <DialogTitle className="text-2xl mb-2">
+              <DialogTitle className="text-2xl">
                 {job.data.companyName || job.data.company}
               </DialogTitle>
-              {job.data.description && (
-                <DialogDescription className="text-base">
-                  {job.data.description}
-                </DialogDescription>
-              )}
             </div>
             {job.data.url && (
               <a 
@@ -385,22 +278,22 @@ export function JobDetailsDialog({
 
         <div className="flex items-center space-x-2 mb-6">
           <Button
-            variant={activeTab === 'user' ? 'default' : 'outline'}
+            variant={activeTab === 'user' ? 'primary' : 'secondary'}
             size="sm"
             onClick={() => setActiveTab('user')}
             className="rounded-full"
           >
             <Info className="w-4 h-4 mr-2" />
-            Översikt
+            Overview
           </Button>
           <Button
-            variant={activeTab === 'technical' ? 'default' : 'outline'}
+            variant={activeTab === 'technical' ? 'primary' : 'secondary'}
             size="sm"
             onClick={() => setActiveTab('technical')}
             className="rounded-full"
           >
             <Code className="w-4 h-4 mr-2" />
-            Tekniska detaljer
+            Technical details
           </Button>
         </div>
 
@@ -417,7 +310,7 @@ export function JobDetailsDialog({
                     </div>
                     <div>
                       <div className="font-medium text-gray-01">
-                        {stage?.name || job.queueId}
+                        {stage?.name || job.queue}
                       </div>
                       <div className="text-sm text-gray-02">
                         {getStatusText()}
@@ -426,7 +319,7 @@ export function JobDetailsDialog({
                   </div>
 
                   <div>
-                    <div className="text-sm text-gray-02">Skapad</div>
+                    <div className="text-sm text-gray-02">Created</div>
                     <div className="text-gray-01">
                       {new Date(job.timestamp).toLocaleString('sv-SE')}
                     </div>
@@ -434,35 +327,20 @@ export function JobDetailsDialog({
                 </div>
               </div>
 
-              {/* Job Relationships Section */}
-              {hasParent && (
-                <div className="bg-blue-03/10 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
-                    <GitBranch className="w-5 h-5 mr-2" />
-                    Jobbrelationer
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2 text-blue-03">
-                      <ArrowUpRight className="w-4 h-4" />
-                      <span className="text-sm">Förälder:</span>
-                      <code className="bg-blue-03/20 px-2 py-1 rounded text-sm">
-                        {job.parent.queue}:{job.parent.id}
-                      </code>
-                    </div>
-                  </div>
+              {/* Validation Section */}
+              {job.approval != undefined && (
+                
+                <div className="bg-gray-03/20 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-gray-01 mb-4">Validation</h3>
+                  {job.approval.summary}
+                  <Validation data={job.approval.data} type={job.approval.type} />
                 </div>
               )}
-
-              {/* User-friendly Job Data Section */}
-              <div className="bg-gray-03/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
-                <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
-              </div>
 
               {/* Error Section */}
               {job.isFailed && job.stacktrace.length > 0 && (
                 <div className="bg-pink-03/10 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-pink-03 mb-4">Felmeddelande</h3>
+                  <h3 className="text-lg font-medium text-pink-03 mb-4">Error Message</h3>
                   <div className="text-pink-03 text-sm">
                     {job.stacktrace[0]}
                     {job.stacktrace.length > 1 && (
@@ -472,7 +350,7 @@ export function JobDetailsDialog({
                         onClick={() => setActiveTab('technical')}
                         className="mt-2 text-pink-03 hover:bg-pink-03/10"
                       >
-                        Visa fullständigt felmeddelande
+                        View full error message
                       </Button>
                     )}
                   </div>
@@ -496,7 +374,8 @@ export function JobDetailsDialog({
               
               {/* Technical Job Data Section */}
               <div className="bg-gray-03/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-01 mb-4">Teknisk data</h3>
+              {/*
+                <h3 className="text-lg font-medium text-gray-01 mb-4">Technical data</h3>
                 <div className="grid grid-cols-1 gap-4">
                   {Object.entries(job.data).map(([key, value]) => {
                     if (key === 'companyName' || key === 'description' || key === 'schema') return null;
@@ -516,13 +395,13 @@ export function JobDetailsDialog({
                       </div>
                     );
                   })}
-                </div>
+                </div>*/}
               </div>
 
               {/* Full Error Section */}
               {job.isFailed && job.stacktrace.length > 0 && (
                 <div className="bg-pink-03/10 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-pink-03 mb-4">Fullständigt felmeddelande</h3>
+                  <h3 className="text-lg font-medium text-pink-03 mb-4">Complete error message</h3>
                   <pre className="text-pink-03 text-sm overflow-x-auto">
                     {job.stacktrace.join('\n')}
                   </pre>
@@ -531,34 +410,34 @@ export function JobDetailsDialog({
 
               {/* Job Metadata */}
               <div className="bg-gray-03/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-01 mb-4">Jobbmetadata</h3>
+                <h3 className="text-lg font-medium text-gray-01 mb-4">Job metadata</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <div className="text-gray-02">ID</div>
                     <div className="font-mono text-gray-01">{job.id}</div>
                   </div>
                   <div>
-                    <div className="text-gray-02">Kö</div>
-                    <div className="text-gray-01">{job.queueId}</div>
+                    <div className="text-gray-02">Queue</div>
+                    <div className="text-gray-01">{job.queue}</div>
                   </div>
                   <div>
-                    <div className="text-gray-02">Skapad</div>
+                    <div className="text-gray-02">Created</div>
                     <div className="text-gray-01">{new Date(job.timestamp).toLocaleString('sv-SE')}</div>
                   </div>
                   <div>
-                    <div className="text-gray-02">Startad</div>
+                    <div className="text-gray-02">Strarted</div>
                     <div className="text-gray-01">
                       {job.processedOn ? new Date(job.processedOn).toLocaleString('sv-SE') : '-'}
                     </div>
                   </div>
                   <div>
-                    <div className="text-gray-02">Avslutad</div>
+                    <div className="text-gray-02">Finished</div>
                     <div className="text-gray-01">
                       {job.finishedOn ? new Date(job.finishedOn).toLocaleString('sv-SE') : '-'}
                     </div>
                   </div>
                   <div>
-                    <div className="text-gray-02">Försök</div>
+                    <div className="text-gray-02">Attempts</div>
                     <div className="text-gray-01">{job.attemptsMade}</div>
                   </div>
                 </div>
@@ -577,26 +456,26 @@ export function JobDetailsDialog({
                   className="text-blue-03 hover:bg-blue-03/10"
                 >
                   <RotateCcw className="w-4 h-4 mr-2" />
-                  Försök igen
+                  Try again
                 </Button>
               )}
             </div>
             {needsApproval && (
               <div className="space-x-2">
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => handleApprove(false)}
                   className="border-pink-03 text-pink-03 hover:bg-pink-03/10"
                 >
                   <X className="w-4 h-4 mr-2" />
-                  Avvisa
+                  Reject
                 </Button>
                 <Button
                   onClick={() => handleApprove(true)}
                   className="bg-green-03 text-white hover:bg-green-03/90"
                 >
                   <Check className="w-4 h-4 mr-2" />
-                  Godkänn
+                  Approve
                 </Button>
               </div>
             )}
