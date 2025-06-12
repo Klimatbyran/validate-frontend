@@ -22,7 +22,7 @@ spec:
             - containerPort: 80
           env:
             - name: VITE_API_URL
-              value: "http://garbo:80"
+              value: "http://pipeline-api:80"
           resources:
             limits:
               cpu: "0.5"
