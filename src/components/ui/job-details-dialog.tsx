@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Dialog,
   DialogContent,
@@ -14,24 +14,22 @@ import { QueueJob } from '@/lib/types';
 import { WORKFLOW_STAGES } from '@/lib/constants';
 import { 
   CheckCircle2, 
-  XCircle, 
   AlertTriangle,
   MessageSquare,
   RotateCcw,
   Check,
   X,
   ArrowUpRight,
-  ArrowDownRight,
   GitBranch,
-  GitMerge,
   HelpCircle,
   Info,
   Code,
   FileText,
-  ExternalLink
 } from 'lucide-react';
 import { WikidataPreview } from './wikidata-preview';
 import { FiscalYearDisplay } from './fiscal-year-display';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface JobDetailsDialogProps {
   job: QueueJob | null;
@@ -70,7 +68,36 @@ function UserFriendlyDataView({ data }: { data: any }) {
   const renderValue = (value: any): React.ReactNode => {
     if (value === null) return <span className="text-gray-02">Inget värde</span>;
     if (typeof value === 'boolean') return value ? 'Ja' : 'Nej';
-    if (typeof value === 'string' || typeof value === 'number') return String(value);
+    if (typeof value === 'string') {
+      // Remove all triple backticks to ensure tables inside code blocks are rendered as tables
+      const valueNoBackticks = value.replace(/```+/g, '');
+      const processedValue = valueNoBackticks.replace(/<!--\s*page\s*:\s*(\d+)\s*-->/gi, '\n---\n**PAGE: $1**\n---\n');
+      
+      // Check if the string looks like markdown (contains markdown patterns)
+      const isMarkdown = /^[\s\S]*?(#{1,6}\s|^\s*[-*+]\s|^\s*\d+\.\s|^\s*>\s|^\s*`{3,}|^\s*\|.*\|.*\|)/m.test(processedValue);
+      
+      if (isMarkdown && processedValue.trim().length > 0) {
+        return (
+          <div className="space-y-3">
+            <div className="text-xs text-gray-02 italic">Relevant markdown:</div>
+            
+         
+            {/* Rendered markdown */}
+            <div className="prose prose-sm max-w-none bg-white rounded p-3 border markdown-tables">
+              <Markdown remarkPlugins={[remarkGfm]}>{processedValue}</Markdown>
+            </div>
+
+               {/* raw display */}
+               <div className="bg-gray-04 rounded p-3">
+              <div className="text-xs text-gray-02 mb-2 font-medium">Original raw display:</div>
+              <div className="text-gray-02">{value}</div>
+            </div>
+          </div>
+        );
+      }
+      return String(value);
+    }
+    if (typeof value === 'number') return String(value);
     if (Array.isArray(value)) {
       return (
         <ul className="list-disc pl-5 space-y-1">
@@ -244,7 +271,7 @@ export function JobDetailsDialog({
   
   // Filter out schema and metadata fields from job data for user-friendly view
   const getFilteredJobDataWithoutSchema = () => {
-    const { companyName, description, schema, ...rest } = job.data;
+    const { companyName, description, schema, markdown, ...rest } = job.data;
     return rest;
   };
   
@@ -257,7 +284,7 @@ export function JobDetailsDialog({
   if (needsApproval && activeTab === 'user') {
     return (
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-6xl">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -324,6 +351,8 @@ export function JobDetailsDialog({
               <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
               <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
             </div>
+
+       
           </div>
 
           <DialogFooter>
@@ -356,7 +385,7 @@ export function JobDetailsDialog({
   // Technical view or non-approval jobs
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto max-w-6xl">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -453,7 +482,22 @@ export function JobDetailsDialog({
                 </div>
               )}
 
-              {/* User-friendly Job Data Section */}
+              {/* Markdown Section (Dokumentation) - only one, above Information */}
+              <div className="bg-blue-03/10 rounded-lg p-4">
+                <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
+                  <FileText className="w-5 h-5 mr-2" />
+                  Dokumentation
+                </h3>
+                <div className="prose prose-sm max-w-none">
+                  {job.data.markdown ? (
+                    <Markdown remarkPlugins={[remarkGfm]}>{job.data.markdown}</Markdown>
+                  ) : (
+                    <p className="text-gray-02 italic">Ingen dokumentation tillgänglig</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Information Section */}
               <div className="bg-gray-03/20 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
                 <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
@@ -488,6 +532,13 @@ export function JobDetailsDialog({
                     <Code className="w-5 h-5 mr-2" />
                     Schema
                   </h3>
+                  <div className="prose prose-sm max-w-none mb-4">
+                    {job.data.markdown ? (
+                      <Markdown remarkPlugins={[remarkGfm]}>{job.data.markdown}</Markdown>
+                    ) : (
+                      <p className="text-gray-02 italic">Ingen dokumentation tillgänglig</p>
+                    )}
+                  </div>
                   <div className="bg-gray-04 rounded-lg p-3">
                     <JsonViewer data={job.data.schema} />
                   </div>
@@ -519,7 +570,42 @@ export function JobDetailsDialog({
                 </div>
               </div>
 
-              {/* Full Error Section */}
+              {/* Return Value Section */}
+              <div className="bg-blue-03/10 rounded-lg p-4">
+                <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
+                  <Code className="w-5 h-5 mr-2" />
+                  Return Value
+                </h3>
+                <div className="space-y-4">
+                  {typeof job.returnValue !== 'undefined' && job.returnValue !== null ? (
+                    <>
+                      {/* Check if return value contains markdown */}
+                      {typeof job.returnValue === 'object' && job.returnValue !== null && 'markdown' in job.returnValue && (
+                        <div className="bg-white rounded-lg p-4 border">
+                          <h4 className="text-sm font-medium text-gray-01 mb-2">Rendered Markdown:</h4>
+                          <div className="prose prose-sm max-w-none">
+                            <Markdown remarkPlugins={[remarkGfm]}>{String((job.returnValue as any).markdown)}</Markdown>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Always show the raw JSON */}
+                      <div className="bg-gray-04 rounded-lg p-3">
+                        <h4 className="text-sm font-medium text-gray-01 mb-2">Raw JSON:</h4>
+                        {typeof job.returnValue === 'object' ? (
+                          <JsonViewer data={job.returnValue} />
+                        ) : (
+                          <pre className="bg-gray-04 rounded p-2 overflow-x-auto">{String(job.returnValue)}</pre>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-gray-02 italic">Ingen return value tillgänglig</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Error Section */}
               {job.isFailed && job.stacktrace.length > 0 && (
                 <div className="bg-pink-03/10 rounded-lg p-4">
                   <h3 className="text-lg font-medium text-pink-03 mb-4">Fullständigt felmeddelande</h3>

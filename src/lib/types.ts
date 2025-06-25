@@ -56,6 +56,7 @@ export const JobDataSchema = z.object({
   status: z.string().optional(),
   needsApproval: z.boolean().optional(),
   comment: z.string().optional(),
+  markdown: z.string().optional(),
 }).passthrough();
 
 export const JobSchema = z.object({
