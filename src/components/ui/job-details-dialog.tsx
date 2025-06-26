@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { WikidataPreview } from './wikidata-preview';
 import { FiscalYearDisplay } from './fiscal-year-display';
-import { MarkdownDisplay } from './markdown-display';
+import { MarkdownVectorPagesDisplay } from './markdown-display';
 import { isMarkdown } from '@/lib/utils';
 
 interface JobDetailsDialogProps {
@@ -72,7 +72,7 @@ function UserFriendlyDataView({ data }: { data: any }) {
       // Use MarkdownDisplay for all markdown rendering
       if (isMarkdown(value)) {
         return (
-            <MarkdownDisplay value={value} />
+            <MarkdownVectorPagesDisplay value={value} />
         );
       }
       return String(value);

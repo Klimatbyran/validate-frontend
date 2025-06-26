@@ -6,7 +6,8 @@ interface MarkdownDisplayProps {
   showRaw?: boolean;
 }
 
-export function MarkdownDisplay({ value }: MarkdownDisplayProps) {
+// Display markdown with PAGE delimiters from the vector database
+export function MarkdownVectorPagesDisplay({ value }: MarkdownDisplayProps) {
   // Remove all triple backticks to ensure tables inside code blocks are rendered as tables
   const valueNoBackticks = value.replace(/```+/g, '');
   // Replace <!-- page: xx --> comments with a divider
