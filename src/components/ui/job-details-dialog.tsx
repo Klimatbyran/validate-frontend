@@ -28,8 +28,6 @@ import {
 } from 'lucide-react';
 import { WikidataPreview } from './wikidata-preview';
 import { FiscalYearDisplay } from './fiscal-year-display';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { MarkdownDisplay } from './markdown-display';
 import { isMarkdown } from '@/lib/utils';
 
@@ -74,10 +72,7 @@ function UserFriendlyDataView({ data }: { data: any }) {
       // Use MarkdownDisplay for all markdown rendering
       if (isMarkdown(value)) {
         return (
-          <div className="space-y-3">
-            <div className="text-xs text-gray-02 italic">Relevant markdown:</div>
-            <MarkdownDisplay value={value} showRaw={true} />
-          </div>
+            <MarkdownDisplay value={value} />
         );
       }
       return String(value);
