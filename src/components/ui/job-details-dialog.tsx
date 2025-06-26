@@ -502,13 +502,6 @@ export function JobDetailsDialog({
                     <Code className="w-5 h-5 mr-2" />
                     Schema
                   </h3>
-                  <div className="prose prose-sm max-w-none mb-4">
-                    {job.data.markdown ? (
-                      <Markdown remarkPlugins={[remarkGfm]}>{job.data.markdown}</Markdown>
-                    ) : (
-                      <p className="text-gray-02 italic">Ingen dokumentation tillgänglig</p>
-                    )}
-                  </div>
                   <div className="bg-gray-04 rounded-lg p-3">
                     <JsonViewer data={job.data.schema} />
                   </div>
@@ -537,41 +530,6 @@ export function JobDetailsDialog({
                       </div>
                     );
                   })}
-                </div>
-              </div>
-
-              {/* Return Value Section */}
-              <div className="bg-blue-03/10 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
-                  <Code className="w-5 h-5 mr-2" />
-                  Return Value
-                </h3>
-                <div className="space-y-4">
-                  {typeof job.returnValue !== 'undefined' && job.returnValue !== null ? (
-                    <>
-                      {/* Check if return value contains markdown */}
-                      {typeof job.returnValue === 'object' && job.returnValue !== null && 'markdown' in job.returnValue && (
-                        <div className="bg-white rounded-lg p-4 border">
-                          <h4 className="text-sm font-medium text-gray-01 mb-2">Rendered Markdown:</h4>
-                          <div className="prose prose-sm max-w-none">
-                            <Markdown remarkPlugins={[remarkGfm]}>{String((job.returnValue as any).markdown)}</Markdown>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Always show the raw JSON */}
-                      <div className="bg-gray-04 rounded-lg p-3">
-                        <h4 className="text-sm font-medium text-gray-01 mb-2">Raw JSON:</h4>
-                        {typeof job.returnValue === 'object' ? (
-                          <JsonViewer data={job.returnValue} />
-                        ) : (
-                          <pre className="bg-gray-04 rounded p-2 overflow-x-auto">{String(job.returnValue)}</pre>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-gray-02 italic">Ingen return value tillgänglig</p>
-                  )}
                 </div>
               </div>
 
