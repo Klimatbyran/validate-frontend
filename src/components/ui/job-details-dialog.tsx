@@ -251,7 +251,7 @@ export function JobDetailsDialog({
   
   // Filter out schema and metadata fields from job data for user-friendly view
   const getFilteredJobDataWithoutSchema = () => {
-    const { companyName, description, schema, markdown, ...rest } = job.data;
+    const { companyName, description, schema, ...rest } = job.data;
     return rest;
   };
   
