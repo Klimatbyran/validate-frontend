@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Dialog,
   DialogContent,
@@ -14,24 +14,22 @@ import { QueueJob } from '@/lib/types';
 import { WORKFLOW_STAGES } from '@/lib/constants';
 import { 
   CheckCircle2, 
-  XCircle, 
   AlertTriangle,
   MessageSquare,
   RotateCcw,
   Check,
   X,
   ArrowUpRight,
-  ArrowDownRight,
   GitBranch,
-  GitMerge,
   HelpCircle,
   Info,
   Code,
   FileText,
-  ExternalLink
 } from 'lucide-react';
 import { WikidataPreview } from './wikidata-preview';
 import { FiscalYearDisplay } from './fiscal-year-display';
+import { MarkdownVectorPagesDisplay } from './markdown-display';
+import { isMarkdown } from '@/lib/utils';
 
 interface JobDetailsDialogProps {
   job: QueueJob | null;
@@ -70,7 +68,16 @@ function UserFriendlyDataView({ data }: { data: any }) {
   const renderValue = (value: any): React.ReactNode => {
     if (value === null) return <span className="text-gray-02">Inget värde</span>;
     if (typeof value === 'boolean') return value ? 'Ja' : 'Nej';
-    if (typeof value === 'string' || typeof value === 'number') return String(value);
+    if (typeof value === 'string') {
+      // Use MarkdownDisplay for all markdown rendering
+      if (isMarkdown(value)) {
+        return (
+            <MarkdownVectorPagesDisplay value={value} />
+        );
+      }
+      return String(value);
+    }
+    if (typeof value === 'number') return String(value);
     if (Array.isArray(value)) {
       return (
         <ul className="list-disc pl-5 space-y-1">
@@ -257,7 +264,7 @@ export function JobDetailsDialog({
   if (needsApproval && activeTab === 'user') {
     return (
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-6xl">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -324,6 +331,8 @@ export function JobDetailsDialog({
               <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
               <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
             </div>
+
+       
           </div>
 
           <DialogFooter>
@@ -356,7 +365,7 @@ export function JobDetailsDialog({
   // Technical view or non-approval jobs
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto max-w-6xl">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -453,7 +462,7 @@ export function JobDetailsDialog({
                 </div>
               )}
 
-              {/* User-friendly Job Data Section */}
+              {/* Information Section */}
               <div className="bg-gray-03/20 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
                 <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
@@ -519,7 +528,7 @@ export function JobDetailsDialog({
                 </div>
               </div>
 
-              {/* Full Error Section */}
+              {/* Error Section */}
               {job.isFailed && job.stacktrace.length > 0 && (
                 <div className="bg-pink-03/10 rounded-lg p-4">
                   <h3 className="text-lg font-medium text-pink-03 mb-4">Fullständigt felmeddelande</h3>
