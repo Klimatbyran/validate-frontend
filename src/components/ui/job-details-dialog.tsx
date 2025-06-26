@@ -72,7 +72,7 @@ function UserFriendlyDataView({ data }: { data: any }) {
     if (typeof value === 'boolean') return value ? 'Ja' : 'Nej';
     if (typeof value === 'string') {
       // Use MarkdownDisplay for all markdown rendering
-      if (isMarkdown(value) && value.trim().length > 0) {
+      if (isMarkdown(value)) {
         return (
           <div className="space-y-3">
             <div className="text-xs text-gray-02 italic">Relevant markdown:</div>
