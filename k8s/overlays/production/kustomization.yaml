@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: validate-frontend
+resources:
+  - ../../base
+patches:
+  - path: ingress-patch.yaml
+images:
+  - name: ghcr.io/klimatbyran/validate-frontend
+    newTag: '1.0.0' # {"$imagepolicy": "flux-system:validate-frontend:tag"}

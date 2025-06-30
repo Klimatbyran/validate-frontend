@@ -1,60 +1,68 @@
-name: Build and Deploy
+name: Continuous Integration
+
+env:
+  # Use docker.io for Docker Hub if empty
+  REGISTRY: ghcr.io
+  # github.repository as <account>/<repo>
+  IMAGE_NAME: ${{ github.repository }}
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
+    paths-ignore:
+      - 'k8s/**' # Avoid CI runs for updates inside k8s folder
 
 jobs:
-  build:
+  ci:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Build
-      run: npm run build
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-    
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@v2
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Extract repository name
-      id: repo-name
-      run: echo "REPO_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-    
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: true
-        tags: |
-          ghcr.io/${{ steps.repo-name.outputs.REPO_NAME }}:latest
-          ghcr.io/${{ steps.repo-name.outputs.REPO_NAME }}:${{ github.sha }}
-    
-    - name: Bump version and push tag
-      if: github.event_name != 'pull_request'
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        npm version patch -m "Bump version to %s [skip ci]"
-        git push
-        git push --tags
+      # Step 1: Checkout the repository code
+      - name: 🛎️ Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Step 2: Extract and normalize repository name into lowercase (e.g., pipeline-api)
+      - id: imagename
+        uses: ASzc/change-string-case-action@v6
+        with:
+          string: ${{ github.repository }}
+
+      # Step 3: Get the current version of the project (assumes `package.json` exists)
+      - name: 📝 Get Current Version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@main
+
+      # Step 4: Login to Docker Registry (GHCR authentication)
+      - name: 🔐 Login to Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 5: Set up Docker Buildx (required for advanced Docker build features)
+      - name: 🏗️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Step 6: Build and push Docker image
+      - name: 🔧 Build and push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.imagename.outputs.lowercase }}:${{ steps.package-version.outputs.current-version }}
+            ${{ env.REGISTRY }}/${{ steps.imagename.outputs.lowercase }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Step 7: Update version in package.json to prepare for next development cycle
+      - name: 🎫 Update patch version
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git pull --rebase origin main
+          npm version prerelease --preid=rc # Increment version (e.g., 1.0.0 -> 1.0.1-rc.0)
+          git push origin main
