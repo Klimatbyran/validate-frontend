@@ -1,11 +1,9 @@
-import React from 'react';
+
 import { Calendar } from 'lucide-react';
 
 interface FiscalYearProps {
   data: {
     fiscalYear?: { startMonth?: number; endMonth?: number };
-    startMonth?: number;
-    endMonth?: number;
   };
 }
 
@@ -15,13 +13,8 @@ export function FiscalYearDisplay({ data }: FiscalYearProps) {
     return null;
   }
 
-  let startMonthNum: number | undefined = data.startMonth;
-  let endMonthNum: number | undefined = data.endMonth;
-  
-  if (typeof data.fiscalYear === 'object' && data.fiscalYear !== null) {
-    startMonthNum = data.fiscalYear.startMonth ?? undefined;
-    endMonthNum = data.fiscalYear.endMonth ?? undefined;
-  } 
+  let startMonthNum: number | undefined = data.fiscalYear.startMonth;
+  let endMonthNum: number | undefined = data.fiscalYear.endMonth;
 
   const getMonthName = (monthNumber: number) => {
     const months = [
@@ -58,11 +51,7 @@ export function FiscalYearDisplay({ data }: FiscalYearProps) {
         </div>
       ) : (
         <p className="text-sm text-gray-02">
-          {fiscalYearNum
-            ? `Räkenskapsåret ${fiscalYearNum}`
-            : startMonth || endMonth
-              ? `Räkenskapsår: ${startMonth || ''} - ${endMonth || ''}`
-              : 'Ingen data'}
+          Räkenskapsår: {startMonth || ''} - {endMonth || ''}
         </p>
       )}
     </div>
