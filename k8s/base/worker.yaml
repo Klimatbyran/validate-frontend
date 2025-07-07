@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: validate-frontend-worker
+  namespace: default
+  labels:
+    app: validate-frontend-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: validate-frontend-worker
+  template:
+    metadata:
+      labels:
+        app: validate-frontend-worker
+    spec:
+      containers:
+        - name: validate-frontend-worker
+          image: ghcr.io/klimatbyran/validate-frontend
+          command: ['npm', 'run', 'worker']
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1024Mi"
+              cpu: "500m"
+          env:
+            - name: REDIS_HOST
+              value: redis-master
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis
+                  key: redis-password
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: DATABASE_URL
+          imagePullPolicy: Always

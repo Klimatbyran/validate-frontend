@@ -1,23 +1,27 @@
-FROM docker.io/library/node:20-alpine
+# Build Stage
+FROM node:lts-alpine3.20 as build
 
+# Set working directory for the build process
 WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --omit=dev
 
-# Copy source code
+# Copy all application code
 COPY . .
 
-# Build the app
+# Run the build command to generate static files
 RUN npm run build
 
-# Expose port
+# Serve Stage
+FROM nginx:stable-alpine
+
+# Copy the output of the build stage to NGINX's default public directory
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Expose default NGINX port
 EXPOSE 80
 
-# Set environment variables
-ENV HOST=0.0.0.0
-ENV PORT=80
-
-# Start the app
-CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "80"]
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
