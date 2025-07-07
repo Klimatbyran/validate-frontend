@@ -80,3 +80,36 @@
     @apply bg-background text-foreground font-dm-sans;
   }
 }
+
+
+.markdown-tables {
+  max-width: 100%;
+  margin-bottom: 1rem;
+}
+
+.markdown-tables table {
+  width: 100%;
+  max-width: 900px;
+  table-layout: fixed;
+}
+
+.markdown-tables th,
+.markdown-tables td {
+  border: 1px solid #d1d5db;
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+.markdown-tables th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+}
+
+.markdown-tables tbody tr:nth-child(even) {
+  background-color: #f9fafb; /* More specific selector */
+}
+
+.markdown-tables hr {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
