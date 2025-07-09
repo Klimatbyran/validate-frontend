@@ -1,12 +1,12 @@
 # Build Stage
-FROM node:lts-alpine3.20 as build
+FROM node:lts-alpine3.20 AS build
 
 # Set working directory for the build process
 WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci
 
 # Copy all application code
 COPY . .
