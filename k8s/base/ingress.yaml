@@ -7,10 +7,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - validate-frontend.myapp.com
-      secretName: validate-frontend-tls
+        - validate-stage.klimatkollen.se
+      secretName: validate-stage-frontend-tls
   rules:
-    - host: validate-frontend.myapp.com
+    - host: validate-stage.klimatkollen.se
       http:
         paths:
           - path: /

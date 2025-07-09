@@ -4,7 +4,7 @@ namespace: validate-frontend
 resources:
   - ../../base
 patches:
-  - path: ingress-patch.yaml
+  - path: ingress.yaml
 images:
   - name: ghcr.io/klimatbyran/validate-frontend
     newTag: '1.0.0' # {"$imagepolicy": "flux-system:validate-frontend:tag"}
