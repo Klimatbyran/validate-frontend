@@ -5,10 +5,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - api.validate.myapp.com
-      secretName: api-validate-myapp-com-tls
+        - validate.klimatkollen.se
+      secretName: validate-frontend-tls
   rules:
-    - host: api.validate.myapp.com
+    - host: validate.klimatkollen.se
       http:
         paths:
           - path: /
