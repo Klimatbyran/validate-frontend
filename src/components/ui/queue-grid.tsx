@@ -344,12 +344,18 @@ export function QueueGrid() {
                                       Försök {index + 1} ({attempt.year})
                                     </h4>
                                   </div>
+                                  <div className="text-xs text-gray-02 mb-2">
+                                    Jobs in this attempt: {attempt.jobs?.map(j => `${j.queueId}:${j.id}`).join(', ')}
+                                  </div>
+                                  <div className="text-xs text-gray-02 mt-2">
+                                    Thread ID: {attempt.threadId}
+                                  </div>
                                 </div>
 
                                 {/* Stage details */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                                   {WORKFLOW_STAGES.map(stage => {
-                                    const job = attempt.jobs?.find(j => j.queueId === stage.id);
+                                    const job = attempt.jobs?.find(j => (j.queueId || j.name) === stage.id);
                                     if (!job) return null;
 
                                     const needsApproval = !job.data.approved && !job.data.autoApprove;

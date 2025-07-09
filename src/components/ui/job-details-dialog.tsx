@@ -29,6 +29,7 @@ import {
 import { WikidataPreview } from './wikidata-preview';
 import { FiscalYearDisplay } from './fiscal-year-display';
 import { MarkdownVectorPagesDisplay } from './markdown-display';
+import { ScopeEmissionsDisplay } from './scope-emissions-display';
 import { isMarkdown } from '@/lib/utils';
 
 interface JobDetailsDialogProps {
@@ -49,10 +50,27 @@ function isJsonString(str: string): boolean {
 }
 
 // Renders a user-friendly view of JSON data
-function UserFriendlyDataView({ data }: { data: any }) {
+function UserFriendlyDataView({ data, job }: { data: any; job?: QueueJob }) {
   const processedData = typeof data === 'string' && isJsonString(data) 
     ? JSON.parse(data) 
     : data;
+  
+  // Also check job return value for scope data
+  let returnValueData = null;
+  if (job?.returnValue && typeof job.returnValue === 'string' && isJsonString(job.returnValue)) {
+    try {
+      returnValueData = JSON.parse(job.returnValue);
+    } catch (e) {
+      // Ignore parse errors
+    }
+  } else if (job?.returnValue && typeof job.returnValue === 'object') {
+    // If returnValue.value exists, use it as the main return value
+    if ('value' in job.returnValue && job.returnValue.value) {
+      returnValueData = job.returnValue.value;
+    } else {
+      returnValueData = job.returnValue;
+    }
+  }
   
   // List of technical fields to hide from the user-friendly view
   const technicalFields = ['autoApprove', 'threadId', 'messageId', 'url'];
@@ -64,6 +82,23 @@ function UserFriendlyDataView({ data }: { data: any }) {
   // Check if we have fiscal year data
   const hasFiscalYear = processedData.fiscalYear || 
     (processedData.startMonth && processedData.endMonth);
+  
+  // Check if we have scope1+2 emissions data (in job data or return value)
+  const hasScopeData = (
+    (processedData.scope12 && Array.isArray(processedData.scope12)) ||
+    (returnValueData && typeof returnValueData === 'object' && Array.isArray(returnValueData.scope12)) ||
+    (returnValueData && typeof returnValueData === 'object' && returnValueData.value && Array.isArray(returnValueData.value.scope12))
+  );
+
+  // Get scope data from any possible source
+  let scopeData = undefined;
+  if (processedData.scope12 && Array.isArray(processedData.scope12)) {
+    scopeData = processedData.scope12;
+  } else if (returnValueData && typeof returnValueData === 'object' && Array.isArray(returnValueData.scope12)) {
+    scopeData = returnValueData.scope12;
+  } else if (returnValueData && typeof returnValueData === 'object' && returnValueData.value && Array.isArray(returnValueData.value.scope12)) {
+    scopeData = returnValueData.value.scope12;
+  }
   
   const renderValue = (value: any): React.ReactNode => {
     if (value === null) return <span className="text-gray-02">Inget värde</span>;
@@ -79,28 +114,35 @@ function UserFriendlyDataView({ data }: { data: any }) {
     }
     if (typeof value === 'number') return String(value);
     if (Array.isArray(value)) {
+      const items: Array<React.ReactElement> = (value as unknown[])
+        .map((item, i) => {
+          const rendered = renderValue(item);
+          if (rendered == null) return null;
+          return <li key={i}>{rendered as React.ReactNode}</li>;
+        })
+        .filter(Boolean) as Array<React.ReactElement>;
       return (
         <ul className="list-disc pl-5 space-y-1">
-          {value.map((item, i) => (
-            <li key={i}>{renderValue(item)}</li>
-          ))}
+          {items}
         </ul>
       );
     }
     if (typeof value === 'object') {
+      const entries: Array<React.ReactElement> = Object.entries(value)
+        .map(([k, v]) => {
+          // Skip technical fields in nested objects too
+          if (technicalFields.includes(k)) return null;
+          return (
+            <div key={k}>
+              <span className="font-medium text-gray-01">{k}:</span>{' '}
+              {renderValue(v)}
+            </div>
+          );
+        })
+        .filter(Boolean) as Array<React.ReactElement>;
       return (
         <div className="pl-4 border-l-2 border-gray-03/50 mt-2 space-y-2">
-          {Object.entries(value).map(([k, v]) => {
-            // Skip technical fields in nested objects too
-            if (technicalFields.includes(k)) return null;
-            
-            return (
-              <div key={k}>
-                <span className="font-medium text-gray-01">{k}:</span>{' '}
-                {renderValue(v)}
-              </div>
-            );
-          })}
+          {entries}
         </div>
       );
     }
@@ -124,20 +166,34 @@ function UserFriendlyDataView({ data }: { data: any }) {
       {hasFiscalYear && (
         <div className="mb-4">
           <FiscalYearDisplay data={{
-            fiscalYear: processedData.fiscalYear,
-            startMonth: typeof processedData.startMonth === 'number' ? processedData.startMonth : undefined,
-            endMonth: typeof processedData.endMonth === 'number' ? processedData.endMonth : undefined
+            fiscalYear: processedData.fiscalYear
           }} />
         </div>
       )}
       
+      {/* Show Scope 1+2 emissions data if available */}
+      {hasScopeData && (
+        (() => { console.log('ScopeEmissionsDisplay data:', { scope12: scopeData }); return null; })()
+      )}
+      {hasScopeData && (
+        <div className="mb-4">
+          <ScopeEmissionsDisplay data={{ scope12: scopeData }} />
+        </div>
+      )}
+      
+      {/* Show Metadata if available (from returnValueData) */}
+      {returnValueData && typeof returnValueData === 'object' && 'metadata' in returnValueData && returnValueData.metadata && (
+        <MetadataDisplay metadata={returnValueData.metadata} />
+      )}
+
       {Object.entries(processedData).map(([key, value]) => {
         // Skip technical fields and special fields (since we're showing them separately)
         if (technicalFields.includes(key) || 
             key === 'wikidata' || 
             key === 'fiscalYear' || 
             key === 'startMonth' || 
-            key === 'endMonth') return null;
+            key === 'endMonth' ||
+            key === 'scope12') return null;
         
         return (
           <div key={key} className="bg-gray-03/20 rounded-lg p-3">
@@ -146,6 +202,75 @@ function UserFriendlyDataView({ data }: { data: any }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// Add a component for displaying metadata
+function MetadataDisplay({ metadata }: { metadata: any }) {
+  if (!metadata) return null;
+  
+  const hasPrompt = metadata.prompt && typeof metadata.prompt === 'string';
+  const hasContext = metadata.context && typeof metadata.context === 'string';
+  
+  return (
+    <div className="mb-4 max-w-full">
+      <div className="bg-gray-03/20 rounded-lg p-4">
+        <h3 className="text-lg font-medium text-gray-01 mb-4 flex items-center">
+          <Info className="w-5 h-5 mr-2 text-gray-02" />
+          Metadata
+        </h3>
+        
+        <div className="space-y-3">
+          {/* Expandable Prompt Section */}
+          {hasPrompt && (
+            <details className="bg-blue-03/10 border border-blue-03/30 rounded-lg overflow-hidden">
+              <summary className="cursor-pointer p-3 bg-blue-03/5 hover:bg-blue-03/10 transition-colors select-none">
+                <span className="font-medium text-blue-03">Prompt</span>
+              </summary>
+              <div className="p-4 text-gray-01 whitespace-pre-line bg-white border-t border-blue-03/20">
+                {metadata.prompt}
+              </div>
+            </details>
+          )}
+          
+          {/* Expandable Context Section */}
+          {hasContext && (
+            <details className="bg-green-03/10 border border-green-03/30 rounded-lg overflow-hidden">
+              <summary className="cursor-pointer p-3 bg-green-03/5 hover:bg-green-03/10 transition-colors select-none">
+                <span className="font-medium text-green-03">Context</span>
+              </summary>
+              <div className="p-4 bg-white border-t border-green-03/20">
+                <div className="prose max-w-full text-gray-01 mb-4">
+                  <MarkdownVectorPagesDisplay value={metadata.context} />
+                </div>
+                <details className="bg-gray-03/10 border border-gray-03/30 rounded-lg overflow-hidden">
+                  <summary className="cursor-pointer p-2 bg-gray-03/5 hover:bg-gray-03/10 transition-colors select-none">
+                    <span className="text-sm font-medium text-gray-01">Raw Context</span>
+                  </summary>
+                  <div className="p-3 bg-white border-t border-gray-03/20">
+                    <pre className="text-xs text-gray-01 overflow-x-auto bg-gray-04 p-3 rounded whitespace-pre-wrap">
+                      {metadata.context}
+                    </pre>
+                  </div>
+                </details>
+              </div>
+            </details>
+          )}
+          
+          {/* Expandable Raw Context Section */}
+          <details className="bg-gray-03/10 border border-gray-03/30 rounded-lg overflow-hidden">
+            <summary className="cursor-pointer p-3 bg-gray-03/5 hover:bg-gray-03/10 transition-colors select-none">
+              <span className="font-medium text-gray-01">Raw Context</span>
+            </summary>
+            <div className="p-4 bg-white border-t border-gray-03/20">
+              <pre className="text-xs text-gray-01 overflow-x-auto bg-gray-04 p-3 rounded whitespace-pre-wrap">
+                {metadata.context}
+              </pre>
+            </div>
+          </details>
+        </div>
+      </div>
     </div>
   );
 }
@@ -293,7 +418,7 @@ export function JobDetailsDialog({
 
           <div className="flex items-center space-x-2 mb-6">
             <Button
-              variant={activeTab === 'user' ? 'default' : 'outline'}
+              variant={activeTab === 'user' ? 'primary' : 'ghost'}
               size="sm"
               onClick={() => setActiveTab('user')}
               className="rounded-full"
@@ -302,7 +427,7 @@ export function JobDetailsDialog({
               Översikt
             </Button>
             <Button
-              variant={activeTab === 'technical' ? 'default' : 'outline'}
+              variant={activeTab === 'technical' ? 'primary' : 'ghost'}
               size="sm"
               onClick={() => setActiveTab('technical')}
               className="rounded-full"
@@ -329,7 +454,7 @@ export function JobDetailsDialog({
 
             <div className="bg-gray-03/20 rounded-lg p-4">
               <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
-              <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
+              <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} job={job} />
             </div>
 
        
@@ -340,7 +465,7 @@ export function JobDetailsDialog({
               <div></div>
               <div className="space-x-2">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => handleApprove(false)}
                   className="border-pink-03 text-pink-03 hover:bg-pink-03/10"
                 >
@@ -348,6 +473,7 @@ export function JobDetailsDialog({
                   Avvisa
                 </Button>
                 <Button
+                  variant="primary"
                   onClick={() => handleApprove(true)}
                   className="bg-green-03 text-white hover:bg-green-03/90"
                 >
@@ -394,7 +520,7 @@ export function JobDetailsDialog({
 
         <div className="flex items-center space-x-2 mb-6">
           <Button
-            variant={activeTab === 'user' ? 'default' : 'outline'}
+            variant={activeTab === 'user' ? 'primary' : 'ghost'}
             size="sm"
             onClick={() => setActiveTab('user')}
             className="rounded-full"
@@ -403,7 +529,7 @@ export function JobDetailsDialog({
             Översikt
           </Button>
           <Button
-            variant={activeTab === 'technical' ? 'default' : 'outline'}
+            variant={activeTab === 'technical' ? 'primary' : 'ghost'}
             size="sm"
             onClick={() => setActiveTab('technical')}
             className="rounded-full"
@@ -444,7 +570,7 @@ export function JobDetailsDialog({
               </div>
 
               {/* Job Relationships Section */}
-              {hasParent && (
+              {hasParent && job.parent && (
                 <div className="bg-blue-03/10 rounded-lg p-4">
                   <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
                     <GitBranch className="w-5 h-5 mr-2" />
@@ -452,7 +578,7 @@ export function JobDetailsDialog({
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2 text-blue-03">
-                      <ArrowUpRight className="w-4 h-4" />
+                      <ArrowUpRight className="w-5 h-4" />
                       <span className="text-sm">Förälder:</span>
                       <code className="bg-blue-03/20 px-2 py-1 rounded text-sm">
                         {job.parent.queue}:{job.parent.id}
@@ -465,7 +591,7 @@ export function JobDetailsDialog({
               {/* Information Section */}
               <div className="bg-gray-03/20 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
-                <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
+                <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} job={job} />
               </div>
 
               {/* Error Section */}
@@ -572,6 +698,7 @@ export function JobDetailsDialog({
                   </div>
                 </div>
               </div>
+
             </>
           )}
         </div>
@@ -593,7 +720,7 @@ export function JobDetailsDialog({
             {needsApproval && (
               <div className="space-x-2">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => handleApprove(false)}
                   className="border-pink-03 text-pink-03 hover:bg-pink-03/10"
                 >
@@ -601,6 +728,7 @@ export function JobDetailsDialog({
                   Avvisa
                 </Button>
                 <Button
+                  variant="primary"
                   onClick={() => handleApprove(true)}
                   className="bg-green-03 text-white hover:bg-green-03/90"
                 >

@@ -140,7 +140,8 @@ function App() {
       setUrlInput('');
     } catch (error) {
       console.error('Failed to add jobs:', error);
-      toast.error(`Kunde inte lägga till jobb: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error(`Kunde inte lägga till jobb: ${errorMessage}`);
     }
   }, [urlInput, autoApprove]);
 
