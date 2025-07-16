@@ -78,49 +78,42 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   
   // List of technical fields to hide from the user-friendly view
   const technicalFields = ['autoApprove', 'threadId', 'messageId', 'url'];
+
+  function ValueList({ items }: { items: any[] }) {
+    return (
+      <ul className="list-disc pl-5 space-y-1">
+        {items.map((item, i) => (
+          <li key={i}>{renderValue(item)}</li>
+        ))}
+      </ul>
+    );
+  }
+
+  function ValueObject({ obj }: { obj: Record<string, any> }) {
+    return (
+      <div className="pl-4 border-l-2 border-gray-03/50 mt-2 space-y-2">
+        {Object.entries(obj).map(([key, value]) => {
+          if (technicalFields.includes(key)) return null;
+          return (
+            <div key={key}>
+              <span className="font-medium text-gray-01">{key}:</span>{' '}
+              {renderValue(value)}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
   
   const renderValue = (value: any): React.ReactNode => {
     if (value === null) return <span className="text-gray-02">Inget värde</span>;
     if (typeof value === 'boolean') return value ? 'Ja' : 'Nej';
     if (typeof value === 'string') {
-      if (isMarkdown(value)) {
-        return <MarkdownVectorPagesDisplay value={value} />;
-      }
-      return String(value);
+      return isMarkdown(value) ? <MarkdownVectorPagesDisplay value={value} /> : value;
     }
     if (typeof value === 'number') return String(value);
-    if (Array.isArray(value)) {
-      const items: Array<React.ReactElement> = (value as unknown[])
-        .map((item, i) => {
-          const rendered = renderValue(item);
-          if (rendered == null) return null;
-          return <li key={i}>{rendered as React.ReactNode}</li>;
-        })
-        .filter(Boolean) as Array<React.ReactElement>;
-      return (
-        <ul className="list-disc pl-5 space-y-1">
-          {items}
-        </ul>
-      );
-    }
-    if (typeof value === 'object') {
-      const entries: Array<React.ReactElement> = Object.entries(value)
-        .map(([k, v]) => {
-          if (technicalFields.includes(k)) return null;
-          return (
-            <div key={k}>
-              <span className="font-medium text-gray-01">{k}:</span>{' '}
-              {renderValue(v)}
-            </div>
-          );
-        })
-        .filter(Boolean) as Array<React.ReactElement>;
-      return (
-        <div className="pl-4 border-l-2 border-gray-03/50 mt-2 space-y-2">
-          {entries}
-        </div>
-      );
-    }
+    if (Array.isArray(value)) return <ValueList items={value} />;
+    if (typeof value === 'object') return <ValueObject obj={value} />;
     return String(value);
   };
 
