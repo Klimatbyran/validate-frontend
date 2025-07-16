@@ -59,9 +59,76 @@ function Scope2Row({ label, value }: Scope2RowProps) {
   );
 }
 
+interface Scope1CardProps {
+  data?: {
+    total: number;
+    unit: 'tCO2e' | 'tCO2';
+  } | null;
+}
+
+function Scope1Card({ data }: Scope1CardProps) {
+  if (!data) return null;
+  
+  return (
+    <EmissionCard 
+      icon={<Building2 className="w-5 h-5 text-orange-600" />}
+      title="Scope 1"
+      className="mr-0 md:mr-2"
+    >
+      <div className="font-extrabold text-gray-900 text-4xl mb-1">
+        {formatNumber(data.total)}
+      </div>
+      <div className="text-base text-gray-700">
+        {data.unit || 'tCO2e'}
+      </div>
+      <div className="text-sm text-gray-500 mt-2">
+        Direkta utsläpp
+      </div>
+    </EmissionCard>
+  );
+}
+
+interface Scope2CardProps {
+  data?: {
+    mb?: number;
+    lb?: number;
+    unknown?: number;
+    unit: 'tCO2e' | 'tCO2';
+  } | null;
+}
+
+function Scope2Card({ data }: Scope2CardProps) {
+  if (!data) return null;
+  
+  return (
+    <EmissionCard 
+      icon={<Building2 className="w-5 h-5 text-blue-600" />}
+      title="Scope 2"
+      className="ml-0 md:ml-2"
+    >
+      <div className="space-y-2 mt-2">
+        {data.mb != null && (
+          <Scope2Row label="Marknadsbaserad" value={data.mb} />
+        )}
+        {data.lb != null && (
+          <Scope2Row label="Platsbaserad" value={data.lb} />
+        )}
+        {data.unknown != null && (
+          <Scope2Row label="Ospecificerad" value={data.unknown} />
+        )}
+      </div>
+      <div className="text-base text-gray-700 mt-2">
+        {data.unit || 'tCO2e'}
+      </div>
+      <div className="text-sm text-gray-500 mt-2">
+        Indirekta utsläpp (el, värme, kyla)
+      </div>
+    </EmissionCard>
+  );
+}
+
 
 export function ScopeEmissionsDisplay({ data }: ScopeEmissionsDisplayProps) {
-  console.log('ScopeEmissionsDisplay received:', data, 'First year:', data.scope12?.[0]);
   if (!data.scope12 || !Array.isArray(data.scope12) || data.scope12.length === 0) {
     return null;
   }
@@ -108,57 +175,12 @@ export function ScopeEmissionsDisplay({ data }: ScopeEmissionsDisplayProps) {
                 <span className="bg-green-600 text-white text-xs font-semibold px-3 py-1 rounded-full ml-2 shadow">Senaste år</span>
               )}
             </div>
-            {/* Responsive cards container with vertical divider on desktop */}
             <div className="flex flex-col md:flex-row md:items-stretch justify-center gap-4 md:gap-0 mt-2 relative max-w-2xl mx-auto">
-              {/* Scope 1 card if present */}
-              {yearData.scope1 && (
-                <EmissionCard 
-                  icon={<Building2 className="w-5 h-5 text-orange-600" />}
-                  title="Scope 1"
-                  className="mr-0 md:mr-2"
-                >
-                  <div className="font-extrabold text-gray-900 text-4xl mb-1">
-                    {formatNumber(yearData.scope1.total)}
-                  </div>
-                  <div className="text-base text-gray-700">
-                    {yearData.scope1.unit || 'tCO2e'}
-                  </div>
-                  <div className="text-sm text-gray-500 mt-2">
-                    Direkta utsläpp
-                  </div>
-                </EmissionCard>
-              )}
-              {/* Vertical divider on desktop */}
+              <Scope1Card data={yearData.scope1} />
               {yearData.scope1 && yearData.scope2 && (
                 <div className="hidden md:block w-0.5 bg-gray-200 mx-2 rounded-full" style={{ minHeight: 180 }} />
               )}
-              {/* Scope 2 grouped card if present */}
-              {yearData.scope2 && (
-                <EmissionCard 
-                  icon={<Building2 className="w-5 h-5 text-blue-600" />}
-                  title="Scope 2"
-                  className="ml-0 md:ml-2"
-                >
-                  {/* List all available Scope 2 values */}
-                  <div className="space-y-2 mt-2">
-                    {yearData.scope2.mb != null && (
-                      <Scope2Row label="Marknadsbaserad" value={yearData.scope2.mb} />
-                    )}
-                    {yearData.scope2.lb != null && (
-                      <Scope2Row label="Platsbaserad" value={yearData.scope2.lb} />
-                    )}
-                    {yearData.scope2.unknown != null && (
-                      <Scope2Row label="Ospecificerad" value={yearData.scope2.unknown} />
-                    )}
-                  </div>
-                  <div className="text-base text-gray-700 mt-2">
-                    {yearData.scope2.unit || 'tCO2e'}
-                  </div>
-                  <div className="text-sm text-gray-500 mt-2">
-                    Indirekta utsläpp (el, värme, kyla)
-                  </div>
-                </EmissionCard>
-              )}
+              <Scope2Card data={yearData.scope2} />
             </div>
           </div>
         ))}
