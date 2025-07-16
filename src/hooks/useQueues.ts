@@ -17,7 +17,6 @@ export function useQueues(page = 1, jobsPerPage = 20) {
       // Simple approach: fetch each queue individually
       const queuePromises = WORKFLOW_STAGES.map(async (stage) => {
         try {
-          console.log(`Loading queue: ${stage.id}`);
           
           // Load queue data
           queueStore.loadQueueWithUpdates(stage.id);
@@ -25,31 +24,8 @@ export function useQueues(page = 1, jobsPerPage = 20) {
           // Fetch initial data
           const response = await fetchQueueJobs(stage.id, 'latest', page, jobsPerPage);
           
-          console.log(`Queue ${stage.id} response:`, response);
           
-          // Special debugging for precheck
-          if (stage.id === 'precheck') {
-            console.log('🔍 Precheck queue details:', {
-              jobs: response.queue.jobs?.length || 0,
-              counts: response.queue.counts,
-              isPaused: response.queue.isPaused
-            });
-            
-            // Log individual job details for precheck
-            if (response.queue.jobs && response.queue.jobs.length > 0) {
-              console.log('🔍 Precheck jobs:', response.queue.jobs.map(job => ({
-                id: job.id,
-                threadId: job.data.threadId,
-                company: job.data.company,
-                status: job.finishedOn ? 'completed' : job.processedOn ? 'processing' : 'waiting'
-              })));
-            }
-          }
           
-          if (stage.id === 'precheck') {
-            console.log('Fetched precheck jobs from API:', response.queue.jobs);
-            console.log('About to update queueStore for precheck with:', response.queue);
-          }
           // Update queue store
           queueStore.updateQueue(stage.id, response.queue);
           
@@ -60,10 +36,6 @@ export function useQueues(page = 1, jobsPerPage = 20) {
         } catch (error) {
           console.warn(`Failed to load queue ${stage.id}:`, error);
           
-          // Special debugging for precheck errors
-          if (stage.id === 'precheck') {
-            console.error('🔍 Precheck queue error:', error);
-          }
           
           return null;
         }

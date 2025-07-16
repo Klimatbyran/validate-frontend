@@ -159,14 +159,6 @@ export class QueueStore {
   updateQueue(queueId: string, queue: Queue | null) {
     const subject = this.queues[queueId];
     if (subject) {
-      // Special debugging for precheck
-      if (queueId === 'precheck') {
-        console.log('🔍 QueueStore updating precheck:', {
-          jobsCount: queue?.jobs?.length || 0,
-          counts: queue?.counts,
-          hasJobs: !!queue?.jobs
-        });
-      }
       subject.next(queue);
     }
   }

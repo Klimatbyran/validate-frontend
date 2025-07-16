@@ -29,11 +29,6 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
       }
     ),
     mergeMap(threadGroup => {
-      threadGroup.subscribe(jobData => {
-        if (jobData.job.queueId === 'precheck' || jobData.job.name === 'precheck') {
-          console.log('Grouping precheck job:', jobData);
-        }
-      });
       // Använd scan för att bygga upp en "state" för varje tråd
       // Detta ersätter behovet av en global BehaviorSubject
       return threadGroup.pipe(
