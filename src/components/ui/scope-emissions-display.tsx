@@ -1,6 +1,5 @@
-import React from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, Building2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Leaf, Building2 } from 'lucide-react';
 
 interface ScopeEmissionsData {
   scope12: Array<{
@@ -22,25 +21,44 @@ interface ScopeEmissionsDisplayProps {
   data: ScopeEmissionsData;
 }
 
-function formatNumber(num: number): string {
+function formatNumber(num: number | null | undefined): string {
+  if (num == null) return '0';
   return num.toLocaleString('sv-SE');
 }
 
-function getTrendIcon(current: number, previous: number) {
-  if (current > previous) {
-    return <TrendingUp className="w-4 h-4 text-pink-03" />;
-  }
-  if (current < previous) {
-    return <TrendingDown className="w-4 h-4 text-green-03" />;
-  }
-  return <Minus className="w-4 h-4 text-gray-02" />;
+interface EmissionCardProps {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+  className?: string;
 }
 
-function getTrendPercentage(current: number, previous: number): string {
-  if (previous === 0) return '';
-  const change = ((current - previous) / previous) * 100;
-  return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
+function EmissionCard({ icon, title, children, className = '' }: EmissionCardProps) {
+  return (
+    <div className={`bg-white rounded-2xl p-8 border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 w-full md:flex-1 min-h-[220px] flex flex-col justify-center ${className}`}>
+      <div className="flex items-center space-x-2 mb-2">
+        {icon}
+        <span className="font-semibold text-lg text-gray-900">{title}</span>
+      </div>
+      {children}
+    </div>
+  );
 }
+
+interface Scope2RowProps {
+  label: string;
+  value: number;
+}
+
+function Scope2Row({ label, value }: Scope2RowProps) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-base text-gray-700">{label}</span>
+      <span className="font-extrabold text-gray-900 text-xl">{formatNumber(value)}</span>
+    </div>
+  );
+}
+
 
 export function ScopeEmissionsDisplay({ data }: ScopeEmissionsDisplayProps) {
   console.log('ScopeEmissionsDisplay received:', data, 'First year:', data.scope12?.[0]);
@@ -51,35 +69,18 @@ export function ScopeEmissionsDisplay({ data }: ScopeEmissionsDisplayProps) {
   // Sort years in descending order (newest first)
   const sortedData = [...data.scope12].sort((a, b) => b.year - a.year);
   const latestYear = sortedData[0];
-  const previousYear = sortedData[1];
 
   const hasScope1 = latestYear.scope1?.total !== undefined;
   const hasScope2 = latestYear.scope2 && (
-    latestYear.scope2.mb !== undefined || 
-    latestYear.scope2.lb !== undefined || 
-    latestYear.scope2.unknown !== undefined
+    latestYear.scope2.mb != null || 
+    latestYear.scope2.lb != null || 
+    latestYear.scope2.unknown != null
   );
 
   if (!hasScope1 && !hasScope2) {
     return null;
   }
 
-  // Calculate Scope 2 total for display - use market-based if available, otherwise location-based
-  const getScope2Total = (scope2Data: any) => {
-    if (!scope2Data) return 0;
-    // Prioritize market-based, then location-based, then unknown
-    return scope2Data.mb ?? scope2Data.lb ?? scope2Data.unknown ?? 0;
-  };
-
-  // Get all available scope 2 values for detailed display
-  const getScope2Details = (scope2Data: any) => {
-    if (!scope2Data) return [];
-    const details = [];
-    if (scope2Data.mb !== undefined) details.push({ label: 'Marknadsbaserad', value: scope2Data.mb });
-    if (scope2Data.lb !== undefined) details.push({ label: 'Platsbaserad', value: scope2Data.lb });
-    if (scope2Data.unknown !== undefined) details.push({ label: 'Ospecificerad', value: scope2Data.unknown });
-    return details;
-  };
 
   return (
     <motion.div 
@@ -111,11 +112,11 @@ export function ScopeEmissionsDisplay({ data }: ScopeEmissionsDisplayProps) {
             <div className="flex flex-col md:flex-row md:items-stretch justify-center gap-4 md:gap-0 mt-2 relative max-w-2xl mx-auto">
               {/* Scope 1 card if present */}
               {yearData.scope1 && (
-                <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 w-full md:flex-1 min-h-[220px] flex flex-col justify-center mr-0 md:mr-2">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Building2 className="w-5 h-5 text-orange-600" />
-                    <span className="font-semibold text-lg text-gray-900">Scope 1</span>
-                  </div>
+                <EmissionCard 
+                  icon={<Building2 className="w-5 h-5 text-orange-600" />}
+                  title="Scope 1"
+                  className="mr-0 md:mr-2"
+                >
                   <div className="font-extrabold text-gray-900 text-4xl mb-1">
                     {formatNumber(yearData.scope1.total)}
                   </div>
@@ -125,7 +126,7 @@ export function ScopeEmissionsDisplay({ data }: ScopeEmissionsDisplayProps) {
                   <div className="text-sm text-gray-500 mt-2">
                     Direkta utsläpp
                   </div>
-                </div>
+                </EmissionCard>
               )}
               {/* Vertical divider on desktop */}
               {yearData.scope1 && yearData.scope2 && (
@@ -133,30 +134,21 @@ export function ScopeEmissionsDisplay({ data }: ScopeEmissionsDisplayProps) {
               )}
               {/* Scope 2 grouped card if present */}
               {yearData.scope2 && (
-                <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 w-full md:flex-1 min-h-[220px] flex flex-col justify-center ml-0 md:ml-2">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Building2 className="w-5 h-5 text-blue-600" />
-                    <span className="font-semibold text-lg text-gray-900">Scope 2</span>
-                  </div>
+                <EmissionCard 
+                  icon={<Building2 className="w-5 h-5 text-blue-600" />}
+                  title="Scope 2"
+                  className="ml-0 md:ml-2"
+                >
                   {/* List all available Scope 2 values */}
                   <div className="space-y-2 mt-2">
-                    {yearData.scope2.mb !== undefined && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-base text-gray-700">Marknadsbaserad</span>
-                        <span className="font-extrabold text-gray-900 text-xl">{formatNumber(yearData.scope2.mb)}</span>
-                      </div>
+                    {yearData.scope2.mb != null && (
+                      <Scope2Row label="Marknadsbaserad" value={yearData.scope2.mb} />
                     )}
-                    {yearData.scope2.lb !== undefined && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-base text-gray-700">Platsbaserad</span>
-                        <span className="font-extrabold text-gray-900 text-xl">{formatNumber(yearData.scope2.lb)}</span>
-                      </div>
+                    {yearData.scope2.lb != null && (
+                      <Scope2Row label="Platsbaserad" value={yearData.scope2.lb} />
                     )}
-                    {yearData.scope2.unknown !== undefined && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-base text-gray-700">Ospecificerad</span>
-                        <span className="font-extrabold text-gray-900 text-xl">{formatNumber(yearData.scope2.unknown)}</span>
-                      </div>
+                    {yearData.scope2.unknown != null && (
+                      <Scope2Row label="Ospecificerad" value={yearData.scope2.unknown} />
                     )}
                   </div>
                   <div className="text-base text-gray-700 mt-2">
@@ -165,7 +157,7 @@ export function ScopeEmissionsDisplay({ data }: ScopeEmissionsDisplayProps) {
                   <div className="text-sm text-gray-500 mt-2">
                     Indirekta utsläpp (el, värme, kyla)
                   </div>
-                </div>
+                </EmissionCard>
               )}
             </div>
           </div>
