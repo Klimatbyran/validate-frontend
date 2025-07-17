@@ -15,8 +15,17 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      // Proxy screenshots API directly
+      '/api/screenshots': {
+        target: 'http://localhost:3000/',
+        changeOrigin: true,
+        secure: false,
+        timeout: 30000,
+        proxyTimeout: 30000,
+      },
+      // Other /api calls
       '/api': {
-        target: 'https://stage-api.klimatkollen.se',
+        target: 'http://localhost:3000/',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '/admin/queues/api'),
         secure: false,

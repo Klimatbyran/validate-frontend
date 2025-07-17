@@ -6,6 +6,7 @@ import { WikidataPreview } from './wikidata-preview';
 import { FiscalYearDisplay } from './fiscal-year-display';
 import { ScopeEmissionsDisplay } from './scope-emissions-display';
 import { MetadataDisplay } from './metadata-display';
+import { ScreenshotSlideshow } from './screenshot-slideshow';
 
 interface JobSpecificDataViewProps {
   data: any;
@@ -73,9 +74,6 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   // Parse return value data from job
   const returnValueData = parseReturnValueData(job);
   
-  // Get scope data for display
-  const scopeData = getScopeData(processedData, returnValueData);
-  
   // List of technical fields to hide from the user-friendly view
   const technicalFields = ['autoApprove', 'threadId', 'messageId', 'url'];
 
@@ -121,6 +119,9 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     return <div>{String(processedData)}</div>;
   }
 
+  // Get scope data for rendering
+  const scopeData = getScopeData(processedData, returnValueData);
+
   return (
     <div className="space-y-3 text-sm">
       {/* Show Wikidata preview if available */}
@@ -142,6 +143,10 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         <div className="mb-4">
           <ScopeEmissionsDisplay data={{ scope12: scopeData }} />
         </div>
+      )}
+      {/* Show Screenshot slideshow if scopeData and PDF URL exist */}
+      {scopeData && job?.data?.url && (
+        <ScreenshotSlideshow pdfUrl={job.data.url} />
       )}
       
       {/* Show metadata if available (from returnValueData) */}
