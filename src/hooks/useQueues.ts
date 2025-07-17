@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { fetchQueues, fetchQueueJobs } from '@/lib/api';
+import { fetchQueueJobs } from '@/lib/api';
 import type { QueuesResponse } from '@/lib/types';
 import { WORKFLOW_STAGES } from '@/lib/constants';
 import { queueStore } from '@/lib/queue-store';
@@ -13,49 +13,47 @@ import { mergeMap, map, catchError, delay, reduce, scan, tap } from 'rxjs/operat
 export function useQueues(page = 1, jobsPerPage = 20) {
   const { data, error, isLoading, mutate } = useSWR<QueuesResponse>(
     ['queues', page, jobsPerPage],
-    () => {
-      // Skapa en reaktiv pipeline för att hämta alla köer
-      return from(WORKFLOW_STAGES).pipe(
-        // Bearbeta i batches om 3 för att minska serverbelastningen
-        mergeMap((stage, index) => {
-          // Lägg till en liten fördröjning baserad på index för att sprida ut förfrågningarna
-          const staggerDelay = Math.floor(index / 3) * 300;
+    async () => {
+      // Simple approach: fetch each queue individually
+      const queuePromises = WORKFLOW_STAGES.map(async (stage) => {
+        try {
           
-          // Starta tvåstegsprocessen för att ladda denna kö
+          // Load queue data
           queueStore.loadQueueWithUpdates(stage.id);
           
-          // Returnera initiala data för att snabbt populera UI
-          return from(fetchQueueJobs(stage.id, 'latest', page, jobsPerPage)).pipe(
-            delay(staggerDelay),
-            map(response => ({
-              ...response.queue,
-              name: stage.id
-            })),
-            tap(queue => {
-              // Uppdatera queue store omedelbart när data anländer
-              queueStore.updateQueue(stage.id, queue);
-            }),
-            catchError(error => {
-              return of(null); // Returnera null för misslyckade köer
-            })
-          );
-        }, 3), // Samtidighetsgräns på 3
-        // Använd scan istället för reduce/toArray för att bygga upp resultatet reaktivt
-        // scan emitterar värden för varje element, inte bara i slutet som reduce
-        scan((acc: any[], queue) => {
-          if (queue) return [...acc, queue];
-          return acc;
-        }, []),
-        map(queues => ({
-          queues // Filtrera bort nulls redan i reduce
-        }))
-      ).toPromise();
+          // Fetch initial data
+          const response = await fetchQueueJobs(stage.id, 'latest', page, jobsPerPage);
+          
+          
+          
+          // Update queue store
+          queueStore.updateQueue(stage.id, response.queue);
+          
+          return {
+            ...response.queue,
+            name: stage.id
+          };
+        } catch (error) {
+          console.warn(`Failed to load queue ${stage.id}:`, error);
+          
+          
+          return null;
+        }
+      });
+
+      const queues = await Promise.all(queuePromises);
+      const validQueues = queues.filter(queue => queue !== null);
+
+      return {
+        queues: validQueues,
+        total: validQueues.length
+      };
     },
     {
-      refreshInterval: 10000, // Increased from 5000 to 10000 to reduce server load
+      refreshInterval: 10000,
       errorRetryCount: 3,
-      errorRetryInterval: (retryCount) => Math.min(1000 * 2 ** retryCount, 30000),
-      shouldRetryOnError: (error) => {
+      errorRetryInterval: 1000,
+      shouldRetryOnError: (error: any) => {
         const message = error?.message?.toLowerCase() || '';
         return !message.includes('åtkomst nekad') &&
                !message.includes('logga in') &&
@@ -66,15 +64,15 @@ export function useQueues(page = 1, jobsPerPage = 20) {
       keepPreviousData: true,
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      onError: (error) => {
-        toast.error('Kunde inte hämta ködata: ' + error.message);
+      onError: (error: any) => {
+        toast.error('Kunde inte hämta ködata: ' + (error?.message || 'Unknown error'));
       }
     }
   );
 
   return {
     queues: data?.queues ?? [],
-    total: data?.total ?? 0,
+    total: data?.queues?.length ?? 0,
     isLoading,
     isError: !!error,
     error,

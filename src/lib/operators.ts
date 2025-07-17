@@ -28,7 +28,6 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
         })
       }
     ),
-    // Steg 2: Bearbeta varje trådgrupp reaktivt
     mergeMap(threadGroup => {
       // Använd scan för att bygga upp en "state" för varje tråd
       // Detta ersätter behovet av en global BehaviorSubject

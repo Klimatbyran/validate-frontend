@@ -26,10 +26,8 @@ import {
   Code,
   FileText,
 } from 'lucide-react';
-import { WikidataPreview } from './wikidata-preview';
-import { FiscalYearDisplay } from './fiscal-year-display';
-import { MarkdownVectorPagesDisplay } from './markdown-display';
-import { isMarkdown } from '@/lib/utils';
+import { JobSpecificDataView } from './job-specific-data-view';
+import { JsonViewer } from './json-viewer';
 
 interface JobDetailsDialogProps {
   job: QueueJob | null;
@@ -39,6 +37,7 @@ interface JobDetailsDialogProps {
   onRetry?: () => void;
 }
 
+// Utility function to check if a string is valid JSON
 function isJsonString(str: string): boolean {
   try {
     JSON.parse(str);
@@ -48,137 +47,7 @@ function isJsonString(str: string): boolean {
   }
 }
 
-// Renders a user-friendly view of JSON data
-function UserFriendlyDataView({ data }: { data: any }) {
-  const processedData = typeof data === 'string' && isJsonString(data) 
-    ? JSON.parse(data) 
-    : data;
-  
-  // List of technical fields to hide from the user-friendly view
-  const technicalFields = ['autoApprove', 'threadId', 'messageId', 'url'];
-  
-  // Extract special fields
-  const wikidataField = processedData.wikidata;
-  const hasWikidata = wikidataField && typeof wikidataField === 'object';
-  
-  // Check if we have fiscal year data
-  const hasFiscalYear = processedData.fiscalYear || 
-    (processedData.startMonth && processedData.endMonth);
-  
-  const renderValue = (value: any): React.ReactNode => {
-    if (value === null) return <span className="text-gray-02">Inget värde</span>;
-    if (typeof value === 'boolean') return value ? 'Ja' : 'Nej';
-    if (typeof value === 'string') {
-      // Use MarkdownDisplay for all markdown rendering
-      if (isMarkdown(value)) {
-        return (
-            <MarkdownVectorPagesDisplay value={value} />
-        );
-      }
-      return String(value);
-    }
-    if (typeof value === 'number') return String(value);
-    if (Array.isArray(value)) {
-      return (
-        <ul className="list-disc pl-5 space-y-1">
-          {value.map((item, i) => (
-            <li key={i}>{renderValue(item)}</li>
-          ))}
-        </ul>
-      );
-    }
-    if (typeof value === 'object') {
-      return (
-        <div className="pl-4 border-l-2 border-gray-03/50 mt-2 space-y-2">
-          {Object.entries(value).map(([k, v]) => {
-            // Skip technical fields in nested objects too
-            if (technicalFields.includes(k)) return null;
-            
-            return (
-              <div key={k}>
-                <span className="font-medium text-gray-01">{k}:</span>{' '}
-                {renderValue(v)}
-              </div>
-            );
-          })}
-        </div>
-      );
-    }
-    return String(value);
-  };
 
-  if (typeof processedData !== 'object') {
-    return <div>{String(processedData)}</div>;
-  }
-
-  return (
-    <div className="space-y-3 text-sm">
-      {/* Show Wikidata preview if available */}
-      {hasWikidata && (
-        <div className="mb-4">
-          <WikidataPreview data={wikidataField} />
-        </div>
-      )}
-      
-      {/* Show Fiscal Year display if available */}
-      {hasFiscalYear && (
-        <div className="mb-4">
-          <FiscalYearDisplay data={{
-            fiscalYear: processedData.fiscalYear,
-            startMonth: typeof processedData.startMonth === 'number' ? processedData.startMonth : undefined,
-            endMonth: typeof processedData.endMonth === 'number' ? processedData.endMonth : undefined
-          }} />
-        </div>
-      )}
-      
-      {Object.entries(processedData).map(([key, value]) => {
-        // Skip technical fields and special fields (since we're showing them separately)
-        if (technicalFields.includes(key) || 
-            key === 'wikidata' || 
-            key === 'fiscalYear' || 
-            key === 'startMonth' || 
-            key === 'endMonth') return null;
-        
-        return (
-          <div key={key} className="bg-gray-03/20 rounded-lg p-3">
-            <div className="font-medium text-gray-01 mb-1">{key}</div>
-            <div className="text-gray-02">{renderValue(value)}</div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// Technical JSON viewer with expand/collapse functionality
-function JsonViewer({ data }: { data: any }) {
-  const [isExpanded, setIsExpanded] = React.useState(false);
-
-  return (
-    <div className="font-mono text-sm">
-      <div className="flex items-center justify-between mb-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="text-blue-03 hover:bg-blue-03/10"
-        >
-          {isExpanded ? 'Komprimera' : 'Expandera'}
-        </Button>
-      </div>
-      <pre className={`
-        bg-gray-03/20 rounded-lg p-3 overflow-x-auto
-        ${isExpanded ? 'max-h-none' : 'max-h-32'}
-      `}>
-        {JSON.stringify(
-          typeof data === 'string' ? JSON.parse(data) : data,
-          null,
-          2
-        )}
-      </pre>
-    </div>
-  );
-}
 
 export function JobDetailsDialog({ 
   job, 
@@ -243,21 +112,10 @@ export function JobDetailsDialog({
     return 'Väntar';
   };
 
-  // Filter out metadata fields from job data
-  const getFilteredJobData = () => {
-    const { companyName, description, ...rest } = job.data;
-    return rest;
-  };
-  
   // Filter out schema and metadata fields from job data for user-friendly view
   const getFilteredJobDataWithoutSchema = () => {
     const { companyName, description, schema, ...rest } = job.data;
     return rest;
-  };
-  
-  // Get URL from job data if it exists
-  const getDocumentUrl = () => {
-    return job.data.url || null;
   };
 
   // Simplified view for jobs that need approval
@@ -293,16 +151,15 @@ export function JobDetailsDialog({
 
           <div className="flex items-center space-x-2 mb-6">
             <Button
-              variant={activeTab === 'user' ? 'default' : 'outline'}
+              variant="primary"
               size="sm"
-              onClick={() => setActiveTab('user')}
               className="rounded-full"
             >
               <Info className="w-4 h-4 mr-2" />
               Översikt
             </Button>
             <Button
-              variant={activeTab === 'technical' ? 'default' : 'outline'}
+              variant="ghost"
               size="sm"
               onClick={() => setActiveTab('technical')}
               className="rounded-full"
@@ -329,7 +186,7 @@ export function JobDetailsDialog({
 
             <div className="bg-gray-03/20 rounded-lg p-4">
               <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
-              <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
+              <JobSpecificDataView data={getFilteredJobDataWithoutSchema()} job={job} />
             </div>
 
        
@@ -340,7 +197,7 @@ export function JobDetailsDialog({
               <div></div>
               <div className="space-x-2">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => handleApprove(false)}
                   className="border-pink-03 text-pink-03 hover:bg-pink-03/10"
                 >
@@ -348,6 +205,7 @@ export function JobDetailsDialog({
                   Avvisa
                 </Button>
                 <Button
+                  variant="primary"
                   onClick={() => handleApprove(true)}
                   className="bg-green-03 text-white hover:bg-green-03/90"
                 >
@@ -394,7 +252,7 @@ export function JobDetailsDialog({
 
         <div className="flex items-center space-x-2 mb-6">
           <Button
-            variant={activeTab === 'user' ? 'default' : 'outline'}
+            variant={activeTab === 'user' ? 'primary' : 'ghost'}
             size="sm"
             onClick={() => setActiveTab('user')}
             className="rounded-full"
@@ -403,7 +261,7 @@ export function JobDetailsDialog({
             Översikt
           </Button>
           <Button
-            variant={activeTab === 'technical' ? 'default' : 'outline'}
+            variant={activeTab === 'technical' ? 'primary' : 'ghost'}
             size="sm"
             onClick={() => setActiveTab('technical')}
             className="rounded-full"
@@ -444,7 +302,7 @@ export function JobDetailsDialog({
               </div>
 
               {/* Job Relationships Section */}
-              {hasParent && (
+              {hasParent && job.parent && (
                 <div className="bg-blue-03/10 rounded-lg p-4">
                   <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
                     <GitBranch className="w-5 h-5 mr-2" />
@@ -452,7 +310,7 @@ export function JobDetailsDialog({
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2 text-blue-03">
-                      <ArrowUpRight className="w-4 h-4" />
+                      <ArrowUpRight className="w-5 h-4" />
                       <span className="text-sm">Förälder:</span>
                       <code className="bg-blue-03/20 px-2 py-1 rounded text-sm">
                         {job.parent.queue}:{job.parent.id}
@@ -465,7 +323,7 @@ export function JobDetailsDialog({
               {/* Information Section */}
               <div className="bg-gray-03/20 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
-                <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
+                <JobSpecificDataView data={getFilteredJobDataWithoutSchema()} job={job} />
               </div>
 
               {/* Error Section */}
@@ -568,10 +426,11 @@ export function JobDetailsDialog({
                   </div>
                   <div>
                     <div className="text-gray-02">Försök</div>
-                    <div className="text-gray-01">{job.attemptsMade}</div>
+                    <div className="text-gray-01">{job.attempts || 0}</div>
                   </div>
                 </div>
               </div>
+
             </>
           )}
         </div>
@@ -593,7 +452,7 @@ export function JobDetailsDialog({
             {needsApproval && (
               <div className="space-x-2">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => handleApprove(false)}
                   className="border-pink-03 text-pink-03 hover:bg-pink-03/10"
                 >
@@ -601,6 +460,7 @@ export function JobDetailsDialog({
                   Avvisa
                 </Button>
                 <Button
+                  variant="primary"
                   onClick={() => handleApprove(true)}
                   className="bg-green-03 text-white hover:bg-green-03/90"
                 >
