@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { queueStore } from '@/lib/queue-store';
-import type { QueueStatsState } from '@/lib/types';
+import { useEffect, useState } from "react";
+import { queueStore } from "@/lib/queue-store";
+import type { QueueStatsState } from "@/lib/types";
 
 const initialState: QueueStatsState = {
   totals: {
@@ -11,16 +11,16 @@ const initialState: QueueStatsState = {
     delayed: 0,
     paused: 0,
   },
-  queueStats: {}
+  queueStats: {},
 };
 
 export function useQueueStats() {
   const [stats, setStats] = useState<QueueStatsState>(initialState);
 
   useEffect(() => {
-    const subscription = queueStore.getQueueStats().subscribe(
-      newStats => setStats(newStats)
-    );
+    const subscription = queueStore
+      .getQueueStats()
+      .subscribe(newStats => setStats(newStats));
 
     return () => subscription.unsubscribe();
   }, []);

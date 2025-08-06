@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ["class"],
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     container: {
       center: true,
@@ -51,43 +51,43 @@ export default {
         },
         // Custom theme colors
         orange: {
-          '01': '#FDE7CE',
-          '02': '#FDB768',
-          '03': '#F48F2A',
-          '04': '#B25F00',
-          '05': '#6B3700',
+          "01": "#FDE7CE",
+          "02": "#FDB768",
+          "03": "#F48F2A",
+          "04": "#B25F00",
+          "05": "#6B3700",
         },
         blue: {
-          '01': '#D4E7F7',
-          '02': '#99CFFF',
-          '03': '#59A0E1',
-          '04': '#206288',
-          '05': '#13364E',
+          "01": "#D4E7F7",
+          "02": "#99CFFF",
+          "03": "#59A0E1",
+          "04": "#206288",
+          "05": "#13364E",
         },
         green: {
-          '01': '#F1FFCC',
-          '02': '#D5FD63',
-          '03': '#AAE506',
-          '04': '#6C9105',
-          '05': '#3D4B16',
+          "01": "#F1FFCC",
+          "02": "#D5FD63",
+          "03": "#AAE506",
+          "04": "#6C9105",
+          "05": "#3D4B16",
         },
         pink: {
-          '01': '#FAE1E9',
-          '02': '#EEA0B7',
-          '03': '#F0759A',
-          '04': '#97455D',
-          '05': '#73263D',
+          "01": "#FAE1E9",
+          "02": "#EEA0B7",
+          "03": "#F0759A",
+          "04": "#97455D",
+          "05": "#73263D",
         },
         gray: {
-          '01': '#F7F7F7',
-          '02': '#878787',
-          '03': '#2E2E2E',
-          '04': '#121212',
-          '05': '#000000',
+          "01": "#F7F7F7",
+          "02": "#878787",
+          "03": "#2E2E2E",
+          "04": "#121212",
+          "05": "#000000",
         },
       },
       fontFamily: {
-        'dm-sans': ['DM Sans', 'sans-serif'],
+        "dm-sans": ["DM Sans", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -111,4 +111,4 @@ export default {
     },
   },
   plugins: [require("tailwindcss-animate")],
-}
+};

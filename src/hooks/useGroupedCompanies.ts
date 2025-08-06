@@ -8,7 +8,7 @@ export function useGroupedCompanies() {
   useEffect(() => {
     const subscription = queueStore
       .getGroupedCompanies()
-      .subscribe((newCompanies) => setCompanies(newCompanies));
+      .subscribe(newCompanies => setCompanies(newCompanies));
 
     return () => subscription.unsubscribe();
   }, []);

@@ -1,4 +1,5 @@
 # Garbo Validation Tool
+
 <img width="1429" alt="image" src="https://github.com/user-attachments/assets/451bf903-d87e-4e1a-a030-22e83c0df155" />
 
 A modern React-based tool for validating and managing workflow queues with real-time updates and interactive visualizations.
@@ -26,6 +27,7 @@ A modern React-based tool for validating and managing workflow queues with real-
 This project uses RxJS for reactive data processing and state management. The application follows a reactive programming paradigm where data flows through streams (Observables) that can be transformed, combined, and consumed.
 
 Key aspects of our RxJS implementation:
+
 - **Reactive Data Flow**: Data flows through streams from API to UI
 - **Centralized State Management**: Using BehaviorSubjects in QueueStore
 - **Non-blocking Operations**: All data processing is asynchronous
@@ -43,12 +45,14 @@ For detailed information about our RxJS implementation and best practices, see [
 ### Installation
 
 1. Clone the repository
+
 ```bash
 git clone <repository-url>
 cd <repository-directory>
 ```
 
 2. Install dependencies
+
 ```bash
 npm install
 # or
@@ -56,6 +60,7 @@ yarn install
 ```
 
 3. Start the development server
+
 ```bash
 npm run dev
 # or
@@ -86,11 +91,13 @@ yarn build
 ### Docker Deployment
 
 Build the Docker image:
+
 ```bash
 docker build -t garbo-validation-tool .
 ```
 
 Run the container:
+
 ```bash
 docker run -p 80:80 garbo-validation-tool
 ```
@@ -98,6 +105,7 @@ docker run -p 80:80 garbo-validation-tool
 ## Kubernetes Deployment
 
 Apply the Kubernetes manifests:
+
 ```bash
 kubectl apply -f k8s/
 ```

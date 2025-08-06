@@ -16,17 +16,17 @@ spec:
         app: frontend
     spec:
       containers:
-      - name: frontend
-        image: ${REPOSITORY_NAME}:${TAG}
-        ports:
-        - containerPort: 80
-        env:
-        - name: VITE_API_URL
-          value: "http://garbo:80"
-        resources:
-          limits:
-            cpu: "0.5"
-            memory: "512Mi"
-          requests:
-            cpu: "0.2"
-            memory: "256Mi"
+        - name: frontend
+          image: ${REPOSITORY_NAME}:${TAG}
+          ports:
+            - containerPort: 80
+          env:
+            - name: VITE_API_URL
+              value: "http://garbo:80"
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: "512Mi"
+            requests:
+              cpu: "0.2"
+              memory: "256Mi"

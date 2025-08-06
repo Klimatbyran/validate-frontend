@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Base schemas
 export const CountsSchema = z.object({
@@ -9,7 +9,7 @@ export const CountsSchema = z.object({
   paused: z.number(),
   prioritized: z.number(),
   waiting: z.number(),
-  'waiting-children': z.number(),
+  "waiting-children": z.number(),
 });
 
 export const PaginationSchema = z.object({
@@ -20,71 +20,89 @@ export const PaginationSchema = z.object({
   }),
 });
 
-export const JobOptionsSchema = z.object({
-  attempts: z.number(),
-  backoff: z.object({
-    delay: z.number(),
-    type: z.string()
-  }).optional()
-}).passthrough();
+export const JobOptionsSchema = z
+  .object({
+    attempts: z.number(),
+    backoff: z
+      .object({
+        delay: z.number(),
+        type: z.string(),
+      })
+      .optional(),
+  })
+  .passthrough();
 
-export const JobParentSchema = z.object({
-  id: z.string(),
-  queue: z.string()
-}).optional();
+export const JobParentSchema = z
+  .object({
+    id: z.string(),
+    queue: z.string(),
+  })
+  .optional();
 
-export const JobDataSchema = z.object({
-  url: z.string().optional(),
-  threadId: z.string(),
-  autoApprove: z.union([z.boolean(), z.string()]).transform(val => {
-    if (typeof val === 'string') {
-      return val.toLowerCase() === 'true' || val === '1';
-    }
-    return val;
-  }).optional(),
-  approved: z.union([z.boolean(), z.string()]).transform(val => {
-    if (typeof val === 'string') {
-      return val.toLowerCase() === 'true' || val === '1';
-    }
-    return val;
-  }).optional(),
-  messageId: z.string().optional(),
-  company: z.string().optional(),
-  companyName: z.string().optional(),
-  description: z.string().optional(),
-  year: z.number().optional(),
-  status: z.string().optional(),
-  needsApproval: z.boolean().optional(),
-  comment: z.string().optional(),
-}).passthrough();
+export const JobDataSchema = z
+  .object({
+    url: z.string().optional(),
+    threadId: z.string(),
+    autoApprove: z
+      .union([z.boolean(), z.string()])
+      .transform(val => {
+        if (typeof val === "string") {
+          return val.toLowerCase() === "true" || val === "1";
+        }
+        return val;
+      })
+      .optional(),
+    approved: z
+      .union([z.boolean(), z.string()])
+      .transform(val => {
+        if (typeof val === "string") {
+          return val.toLowerCase() === "true" || val === "1";
+        }
+        return val;
+      })
+      .optional(),
+    messageId: z.string().optional(),
+    company: z.string().optional(),
+    companyName: z.string().optional(),
+    description: z.string().optional(),
+    year: z.number().optional(),
+    status: z.string().optional(),
+    needsApproval: z.boolean().optional(),
+    comment: z.string().optional(),
+  })
+  .passthrough();
 
-export const JobSchema = z.object({
-  id: z.string(),
-  name: z.string().optional(),
-  timestamp: z.number(),
-  processedOn: z.number().optional(),
-  finishedOn: z.number().optional(),
-  progress: z.number().optional(),
-  attempts: z.number().optional(),
-  delay: z.union([z.string(), z.number()]).optional(),
-  stacktrace: z.array(z.string()),
-  opts: JobOptionsSchema,
-  data: JobDataSchema,
-  parent: JobParentSchema,
-  returnValue: z.union([
-    z.string(),
-    z.number(),
-    z.null(),
-    z.object({}),
-    z.undefined(),
-    z.boolean()
-  ]).optional(),
-  isFailed: z.boolean().optional(),
-}).passthrough();
+export const JobSchema = z
+  .object({
+    id: z.string(),
+    name: z.string().optional(),
+    timestamp: z.number(),
+    processedOn: z.number().optional(),
+    finishedOn: z.number().optional(),
+    progress: z.number().optional(),
+    attempts: z.number().optional(),
+    delay: z.union([z.string(), z.number()]).optional(),
+    stacktrace: z.array(z.string()),
+    opts: JobOptionsSchema,
+    data: JobDataSchema,
+    parent: JobParentSchema,
+    returnValue: z
+      .union([
+        z.string(),
+        z.number(),
+        z.null(),
+        z.object({}),
+        z.undefined(),
+        z.boolean(),
+      ])
+      .optional(),
+    isFailed: z.boolean().optional(),
+  })
+  .passthrough();
 
 export const QueueSchema = z.object({
   name: z.string(),
-  type: z.enum(['bull', 'bullmq']),
+  type: z.enum(["bull", "bullmq"]),
   isPaused: z.boolean(),
   statuses: z.array(z.string()),
   counts: CountsSchema,
@@ -125,10 +143,13 @@ export interface CompanyStatus {
   year: number;
   threadId: string;
   jobs?: QueueJob[]; // Add jobs array to store all jobs for this thread
-  stages: Record<string, {
-    status: 'completed' | 'failed' | 'processing' | 'pending';
-    timestamp: number;
-  }>;
+  stages: Record<
+    string,
+    {
+      status: "completed" | "failed" | "processing" | "pending";
+      timestamp: number;
+    }
+  >;
 }
 
 export interface GroupedCompany {

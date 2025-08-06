@@ -14,28 +14,34 @@ This application uses RxJS for reactive data processing. Understanding the flow 
 ## Common Anti-Patterns to Avoid
 
 ❌ **Avoid Blocking Operators**: Never use operators that block the stream or collect all emissions before continuing:
+
 - `toArray()` - Collects all emissions into an array, blocking until the source completes
 - `reduce()` - Similar to `toArray()`, waits for completion
 - `forEach()` - Blocks execution
 
 ❌ **Avoid Imperative State Management**: Don't mix imperative and reactive code:
+
 - Avoid maintaining external state that's updated inside subscribe callbacks
 - Don't use global variables that are modified by stream operations
 
 ## Recommended Patterns
 
 ✅ **Use Declarative Operators**: Transform data using operators:
+
 - `map()`, `filter()`, `mergeMap()`, `switchMap()`, etc.
 
 ✅ **Use Subjects for State Management**:
+
 - `BehaviorSubject` for values that need an initial state
 - `Subject` for event streams
 
 ✅ **Use Scan Instead of Reduce**:
+
 - `scan()` emits intermediate results as they're processed
 - `reduce()` only emits when the source completes
 
 ✅ **Share Expensive Operations**:
+
 - Use `shareReplay()` to share the result of expensive operations
 
 ## Data Flow Architecture
@@ -68,7 +74,8 @@ Controls the rate of API requests to prevent overwhelming the server:
 
 ```typescript
 // Usage example
-rateLimiter.throttle(() => api.get('/endpoint'))
+rateLimiter
+  .throttle(() => api.get("/endpoint"))
   .subscribe(result => console.log(result));
 ```
 
@@ -97,9 +104,9 @@ export function useQueueStats() {
   const [stats, setStats] = useState<QueueStatsState>(initialState);
 
   useEffect(() => {
-    const subscription = queueStore.getQueueStats().subscribe(
-      newStats => setStats(newStats)
-    );
+    const subscription = queueStore
+      .getQueueStats()
+      .subscribe(newStats => setStats(newStats));
 
     return () => subscription.unsubscribe();
   }, []);
@@ -124,7 +131,7 @@ from(fetchQueueJobs(queueName)).pipe(
   }),
   // Share the result with multiple subscribers
   shareReplay(1)
-)
+);
 ```
 
 ### Grouping and Aggregating Data
@@ -133,27 +140,30 @@ from(fetchQueueJobs(queueName)).pipe(
 // Process jobs from multiple queues
 combineLatest(queueObservables).pipe(
   // Flatten jobs from all queues
-  mergeMap(queues => from(queues).pipe(
-    mergeMap(queue => from(queue.jobs || []))
-  )),
+  mergeMap(queues =>
+    from(queues).pipe(mergeMap(queue => from(queue.jobs || [])))
+  ),
   // Group by company
   groupBy(job => job.data.company),
   // Process each group
-  mergeMap(group => group.pipe(
-    // Use scan instead of reduce to emit partial results
-    scan((acc, job) => {
-      // Update accumulator with new job
-      return { ...acc, jobs: [...acc.jobs, job] };
-    }, { company: group.key, jobs: [] })
-  )),
+  mergeMap(group =>
+    group.pipe(
+      // Use scan instead of reduce to emit partial results
+      scan(
+        (acc, job) => {
+          // Update accumulator with new job
+          return { ...acc, jobs: [...acc.jobs, job] };
+        },
+        { company: group.key, jobs: [] }
+      )
+    )
+  ),
   // Collect results without blocking
   scan((acc, companyData) => {
     // Update companies array
-    return acc.map(c => 
-      c.company === companyData.company ? companyData : c
-    );
+    return acc.map(c => (c.company === companyData.company ? companyData : c));
   }, [] as CompanyData[])
-)
+);
 ```
 
 ## Debugging RxJS Streams
@@ -162,10 +172,10 @@ Use these operators to debug your streams:
 
 ```typescript
 myObservable$.pipe(
-  tap(value => console.log('Before transformation:', value)),
+  tap(value => console.log("Before transformation:", value)),
   map(value => transformValue(value)),
-  tap(value => console.log('After transformation:', value))
-)
+  tap(value => console.log("After transformation:", value))
+);
 ```
 
 ## Common Mistakes and Solutions
@@ -178,14 +188,10 @@ myObservable$.pipe(
 
 ```typescript
 // ❌ Bad: Only emits when source completes
-from(dataSource).pipe(
-  reduce((acc, value) => [...acc, value], [])
-)
+from(dataSource).pipe(reduce((acc, value) => [...acc, value], []));
 
 // ✅ Good: Emits with each new value
-from(dataSource).pipe(
-  scan((acc, value) => [...acc, value], [])
-)
+from(dataSource).pipe(scan((acc, value) => [...acc, value], []));
 ```
 
 ### Problem: Memory leaks
@@ -199,7 +205,7 @@ useEffect(() => {
   const subscription = myObservable$.subscribe(value => {
     // Update state
   });
-  
+
   // Clean up on component unmount
   return () => subscription.unsubscribe();
 }, []);
@@ -213,15 +219,15 @@ useEffect(() => {
 
 ```typescript
 // ❌ Bad: Each subscriber triggers a new API call
-const getUsers = () => from(fetch('/api/users')).pipe(
-  map(response => response.json())
-);
+const getUsers = () =>
+  from(fetch("/api/users")).pipe(map(response => response.json()));
 
 // ✅ Good: Multiple subscribers share one API call
-const getUsers = () => from(fetch('/api/users')).pipe(
-  map(response => response.json()),
-  shareReplay(1)
-);
+const getUsers = () =>
+  from(fetch("/api/users")).pipe(
+    map(response => response.json()),
+    shareReplay(1)
+  );
 ```
 
 ## Best Practices

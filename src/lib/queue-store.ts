@@ -41,7 +41,7 @@ export class QueueStore {
 
   constructor() {
     console.log("🏗️ Initializing QueueStore");
-    WORKFLOW_STAGES.forEach((stage) => {
+    WORKFLOW_STAGES.forEach(stage => {
       this.queues[stage.id] = new BehaviorSubject<Queue | null>(null);
     });
 
@@ -78,7 +78,7 @@ export class QueueStore {
             );
           });
         }),
-        map((queues) => {
+        map(queues => {
           const stats: QueueStatsState = {
             totals: {
               active: 0,
@@ -127,7 +127,7 @@ export class QueueStore {
         ),
         shareReplay(1)
       )
-      .subscribe((stats) => {
+      .subscribe(stats => {
         this.queueStats$.next(stats);
       });
   }
@@ -147,10 +147,10 @@ export class QueueStore {
         shareReplay(1)
       )
       .subscribe(
-        (companies) => {
+        companies => {
           this.groupedCompanies$.next(companies);
         },
-        (error) => {
+        error => {
           console.error("❌ Pipeline error:", error);
           this.groupedCompanies$.next([]);
         }
@@ -170,7 +170,7 @@ export class QueueStore {
               prev?.counts.completed === curr?.counts.completed &&
               prev?.counts.failed === curr?.counts.failed
           ),
-          map((queue) => ({
+          map(queue => ({
             queueId: id,
             queue,
           }))
@@ -220,7 +220,7 @@ export class QueueStore {
     fetchAllHistoricalJobs(queueId)
       .pipe(
         // När historisk laddning är klar, uppdatera kön och starta polling
-        tap((historicalData) => {
+        tap(historicalData => {
           this.updateQueue(queueId, historicalData.queue);
 
           // Markera som historiskt laddad
@@ -230,7 +230,7 @@ export class QueueStore {
           // Steg 2: Starta polling för uppdateringar (nyast först)
           this.pollQueueUpdates(queueId);
         }),
-        catchError((error) => {
+        catchError(error => {
           console.error(
             `❌ Error in loadQueueWithUpdates for ${queueId}:`,
             error

@@ -16,7 +16,7 @@ export function useQueueJobs(
       refreshInterval: 20000, // Increased from 5000 to 20000 to reduce server load
       errorRetryCount: 3,
       errorRetryInterval: 0, // Enable SWR's built-in exponential backoff
-      shouldRetryOnError: (error) => {
+      shouldRetryOnError: error => {
         const message = error?.message?.toLowerCase() || "";
         return (
           !message.includes("åtkomst nekad") &&
@@ -29,7 +29,7 @@ export function useQueueJobs(
       keepPreviousData: true,
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      onSuccess: (data) => {
+      onSuccess: data => {
         // Update the queue store when new data arrives
         queueStore.updateQueue(queueName, data.queue);
       },

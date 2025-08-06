@@ -38,15 +38,15 @@ export function useQueues(page = 1, jobsPerPage = 20) {
               fetchQueueJobs(stage.id, "latest", page, jobsPerPage)
             ).pipe(
               delay(staggerDelay),
-              map((response) => ({
+              map(response => ({
                 ...response.queue,
                 name: stage.id,
               })),
-              tap((queue) => {
+              tap(queue => {
                 // Uppdatera queue store omedelbart när data anländer
                 queueStore.updateQueue(stage.id, queue);
               }),
-              catchError((error) => {
+              catchError(error => {
                 console.error(`❌ Failed to fetch queue ${stage.id}:`, error);
                 return of(null); // Returnera null för misslyckade köer
               })
@@ -58,7 +58,7 @@ export function useQueues(page = 1, jobsPerPage = 20) {
             if (queue) return [...acc, queue];
             return acc;
           }, []),
-          map((queues) => ({
+          map(queues => ({
             queues, // Filtrera bort nulls redan i reduce
           }))
         )
@@ -67,9 +67,8 @@ export function useQueues(page = 1, jobsPerPage = 20) {
     {
       refreshInterval: 10000, // Increased from 5000 to 10000 to reduce server load
       errorRetryCount: 3,
-      errorRetryInterval: (retryCount) =>
-        Math.min(1000 * 2 ** retryCount, 30000),
-      shouldRetryOnError: (error) => {
+      errorRetryInterval: retryCount => Math.min(1000 * 2 ** retryCount, 30000),
+      shouldRetryOnError: error => {
         const message = error?.message?.toLowerCase() || "";
         return (
           !message.includes("åtkomst nekad") &&
@@ -82,7 +81,7 @@ export function useQueues(page = 1, jobsPerPage = 20) {
       keepPreviousData: true,
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      onError: (error) => {
+      onError: error => {
         console.error("❌ Queue fetch error:", error);
         toast.error("Kunde inte hämta ködata: " + error.message);
       },

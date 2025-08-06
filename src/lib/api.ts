@@ -48,7 +48,7 @@ class RxRateLimiter {
     // Process queue items with rate limiting
     this.queue$
       .pipe(
-        concatMap((item) => {
+        concatMap(item => {
           const now = Date.now();
           const timeElapsed = now - this.lastRequestTime;
           const waitTime = Math.max(0, this.minInterval - timeElapsed);
@@ -59,19 +59,19 @@ class RxRateLimiter {
             // Execute the function
             from(item.fn()).pipe(
               tap(() => (this.lastRequestTime = Date.now())),
-              map((result) => ({
+              map(result => ({
                 result,
                 observer: item.observer,
                 error: null,
               })),
-              catchError((error) =>
+              catchError(error =>
                 of({ result: null, observer: item.observer, error })
               )
             )
           );
         })
       )
-      .subscribe((item) => {
+      .subscribe(item => {
         if (item.error) {
           item.observer.error(item.error);
         } else {
@@ -82,7 +82,7 @@ class RxRateLimiter {
   }
 
   throttle<T>(fn: () => Promise<T>): Observable<T> {
-    return new Observable<T>((observer) => {
+    return new Observable<T>(observer => {
       if (!observer) {
         console.error("Observer is undefined in throttle method");
         return;
@@ -91,8 +91,8 @@ class RxRateLimiter {
       this.queue$.next({
         fn,
         observer: {
-          next: (value) => observer.next(value),
-          error: (err) => observer.error(err),
+          next: value => observer.next(value),
+          error: err => observer.error(err),
           complete: () => observer.complete(),
         },
       });
@@ -116,14 +116,14 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
   timeout: 30000,
-  validateStatus: (status) => {
+  validateStatus: status => {
     return status >= 200 && status < 300;
   },
 });
 
 // Add request interceptor for logging and retry handling
 api.interceptors.request.use(
-  (config) => {
+  config => {
     // Add retry count to config if not present
     if (config.retryCount === undefined) {
       config.retryCount = 0;
@@ -137,7 +137,7 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => {
+  error => {
     console.error("❌ Request error:", error);
     return Promise.reject(error);
   }
@@ -145,8 +145,8 @@ api.interceptors.request.use(
 
 // Add response interceptor for logging and retry handling
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+  response => response,
+  async error => {
     const config = error.config;
 
     // Only retry on network errors or 5xx errors
@@ -166,7 +166,7 @@ api.interceptors.response.use(
         10000
       );
 
-      await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+      await new Promise(resolve => setTimeout(resolve, backoffDelay));
 
       return api(config);
     }
@@ -210,10 +210,10 @@ export function fetchQueueJobs(
           })
         )
         .pipe(
-          tap((response) =>
+          tap(response =>
             console.log(`✅ Received response for ${queueName}:`, response.data)
           ),
-          map((response) => {
+          map(response => {
             try {
               // Validate the response
               const parsed = QueuesResponseSchema.safeParse(response.data);
@@ -228,9 +228,7 @@ export function fetchQueueJobs(
               }
 
               // Find the requested queue
-              const queue = parsed.data.queues.find(
-                (q) => q.name === queueName
-              );
+              const queue = parsed.data.queues.find(q => q.name === queueName);
               if (!queue) {
                 console.warn(`⚠️ Queue "${queueName}" not found in response`);
                 // Return empty queue instead of throwing
@@ -271,7 +269,7 @@ export function fetchQueueJobs(
               };
             }
           }),
-          catchError((error) => {
+          catchError(error => {
             console.error(
               `❌ Error in fetchQueueJobs for ${queueName}:`,
               error
@@ -288,11 +286,11 @@ export function fetchQueueJobs(
           })
         )
         .subscribe({
-          next: (result) => {
+          next: result => {
             console.log(`✅ Successfully fetched queue jobs for ${queueName}`);
             resolve(result);
           },
-          error: (error) => {
+          error: error => {
             console.error(`❌ Error in subscription for ${queueName}:`, error);
             reject(error);
           },
@@ -347,11 +345,11 @@ export function fetchAllHistoricalJobs(
     return from([1]) // Starta med sida 1
       .pipe(
         // Expandera strömmen för att hämta alla sidor
-        expand((page) =>
+        expand(page =>
           from(
             fetchQueueJobs(queueName, "latest", page, jobsPerPage, "asc")
           ).pipe(
-            map((response) => {
+            map(response => {
               console.log(
                 `📄 Processing page ${page} response for ${queueName}:`,
                 response
@@ -364,7 +362,7 @@ export function fetchAllHistoricalJobs(
                     : null,
               };
             }),
-            catchError((error) => {
+            catchError(error => {
               console.error(
                 `❌ Error loading page ${page} for ${queueName}:`,
                 error
@@ -392,7 +390,7 @@ export function fetchAllHistoricalJobs(
           };
         }, emptyResponse),
         // Logga framsteg
-        tap((result) =>
+        tap(result =>
           console.log(
             `📊 Loaded ${result.queue.jobs.length} jobs so far for ${queueName}`
           )

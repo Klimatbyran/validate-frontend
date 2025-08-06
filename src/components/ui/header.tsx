@@ -1,6 +1,6 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { FileText, Bot } from 'lucide-react';
+import React from "react";
+import { motion } from "framer-motion";
+import { FileText, Bot } from "lucide-react";
 
 export function Header() {
   return (
@@ -14,10 +14,10 @@ export function Header() {
           className="relative"
           initial={{ scale: 0.9 }}
           animate={{ scale: 1 }}
-          transition={{ 
+          transition={{
             type: "spring",
             stiffness: 260,
-            damping: 20 
+            damping: 20,
           }}
         >
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-02 via-orange-03 to-orange-04 p-[2px]">
@@ -41,12 +41,8 @@ export function Header() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h1 className="text-5xl text-gray-01 mb-1">
-              Garbo AI
-            </h1>
-            <p className="text-gray-02">
-              By Klimatkollen
-            </p>
+            <h1 className="text-5xl text-gray-01 mb-1">Garbo AI</h1>
+            <p className="text-gray-02">By Klimatkollen</p>
           </motion.div>
         </div>
       </div>

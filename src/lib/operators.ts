@@ -28,24 +28,24 @@ export function groupQueues(): OperatorFunction<
   QueueJob[]
 > {
   return pipe(
-    tap((queues) => {
+    tap(queues => {
       console.log(
         "🔍 Incoming queues:",
-        queues.map((q) => ({
+        queues.map(q => ({
           queueId: q.queueId,
           jobCount: q.queue?.jobs.length || 0,
         }))
       );
     }),
-    mergeMap((queues) =>
+    mergeMap(queues =>
       from(
         queues.flatMap(
           ({ queueId, queue }) =>
-            queue?.jobs.map((job) => ({ ...job, queueId })) || []
+            queue?.jobs.map(job => ({ ...job, queueId })) || []
         )
       )
     ),
-    tap((job) => {
+    tap(job => {
       console.log("📦 Processing job:", {
         id: job.id,
         queueId: job.queueId,
@@ -63,7 +63,7 @@ export function groupQueues(): OperatorFunction<
 export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
   return pipe(
     // Logga inkommande jobb
-    tap((job) => {
+    tap(job => {
       console.log("👥 Processing job:", {
         id: job.id,
         companyName: job.data.companyName,
@@ -71,15 +71,15 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
       });
     }),
     // Steg 1: Gruppera jobb efter threadId för att hantera jobb i samma tråd tillsammans
-    groupBy((job) => job.data.threadId || job.id, {
-      element: (job) => ({
+    groupBy(job => job.data.threadId || job.id, {
+      element: job => ({
         job,
         threadId: job.data.threadId || job.id,
         timestamp: job.finishedOn || job.processedOn || job.timestamp,
       }),
     }),
     // Steg 2: Bearbeta varje trådgrupp reaktivt
-    mergeMap((threadGroup) => {
+    mergeMap(threadGroup => {
       // Använd scan för att bygga upp en "state" för varje tråd
       // Detta ersätter behovet av en global BehaviorSubject
       return threadGroup.pipe(
@@ -90,7 +90,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
             const companyName = jobData.job.data.companyName || acc.companyName;
 
             // Uppdatera alla jobb i tråden med companyName om det finns
-            const updatedJobs = acc.jobs.map((item) => {
+            const updatedJobs = acc.jobs.map(item => {
               // Om jobbet inte har companyName men tråden har det, uppdatera jobbet
               if (companyName && !item.job.data.companyName) {
                 return {
@@ -109,7 +109,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
 
             // Lägg till eller uppdatera det aktuella jobbet
             const existingJobIndex = updatedJobs.findIndex(
-              (item) =>
+              item =>
                 item.job.id === jobData.job.id &&
                 item.job.queueId === jobData.job.queueId
             );
@@ -128,10 +128,10 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
           { companyName: "", jobs: [] as any[] }
         ),
         // Emittera varje jobb separat med uppdaterad companyName
-        mergeMap((threadState) =>
+        mergeMap(threadState =>
           from(threadState.jobs).pipe(
             // Uppdatera companyName för alla jobb i tråden
-            map((jobData) => {
+            map(jobData => {
               if (threadState.companyName && !jobData.job.data.companyName) {
                 return {
                   ...jobData,
@@ -153,16 +153,16 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
     }),
     // Steg 3: Gruppera jobb efter företagsnamn med uppdaterad jobbdata
     groupBy(
-      (job) => job.job.data.companyName || job.job.data.company || "Unknown",
+      job => job.job.data.companyName || job.job.data.company || "Unknown",
       {
-        element: (job) => job,
+        element: job => job,
       }
     ),
-    tap((group) => {
+    tap(group => {
       console.log("🏢 Created company group:", group.key);
     }),
     // Steg 4: Bearbeta varje företagsgrupp
-    mergeMap((group) => {
+    mergeMap(group => {
       // Använd scan istället för BehaviorSubject för att bygga upp företagsstate
       // Detta är en rent funktionell reaktiv approach utan sidoeffekter
 
@@ -178,7 +178,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
             // Lägg till jobb i tråden, ersätt om det redan finns
             const updatedJobs = [
               ...threadJobs.filter(
-                (j) => j.id !== job.id || j.queueId !== job.queueId
+                j => j.id !== job.id || j.queueId !== job.queueId
               ),
               job,
             ];
@@ -246,10 +246,10 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
           // Sortera attempts efter timestamp (nyast först)
           const sortedAttempts = attempts.sort((a, b) => {
             const aTime = Math.min(
-              ...Object.values(a.stages).map((s) => s.timestamp)
+              ...Object.values(a.stages).map(s => s.timestamp)
             );
             const bTime = Math.min(
-              ...Object.values(b.stages).map((s) => s.timestamp)
+              ...Object.values(b.stages).map(s => s.timestamp)
             );
             return bTime - aTime;
           });
@@ -280,7 +280,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
     // Använd scan för att bygga upp en array av företag och emittera för varje uppdatering
     scan((companies, company) => {
       // Hitta om detta företag redan finns i vår array
-      const index = companies.findIndex((c) => c.company === company.company);
+      const index = companies.findIndex(c => c.company === company.company);
 
       // Ersätt eller lägg till företaget
       if (index >= 0) {
@@ -298,7 +298,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
     share(),
 
     // Sortera företag efter namn
-    map((companies) =>
+    map(companies =>
       // Skapa en ny sorterad array utan att mutera den ursprungliga
       companies.sort((a, b) =>
         (a.companyName || a.company).localeCompare(b.companyName || b.company)
@@ -306,7 +306,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
     ),
 
     // Log the current state
-    tap((companies) => {
+    tap(companies => {
       // Säkerställ att companies är en array innan vi försöker använda length och reduce
       if (!companies || !Array.isArray(companies)) {
         console.log("📈 Current companies state: No companies available");
@@ -321,7 +321,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
         ),
       });
     }),
-    catchError((error) => {
+    catchError(error => {
       console.error("❌ Error in groupByCompany:", error);
       return of([]);
     }),

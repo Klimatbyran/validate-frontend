@@ -59,7 +59,7 @@ function App() {
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files).filter(
-      (file) => file.type === "application/pdf"
+      file => file.type === "application/pdf"
     );
 
     if (files.length === 0) {
@@ -67,13 +67,13 @@ function App() {
       return;
     }
 
-    const newFiles = files.map((file) => ({
+    const newFiles = files.map(file => ({
       file,
       id: crypto.randomUUID(),
       company: file.name.split("_")[0],
     }));
 
-    setUploadedFiles((prev) => {
+    setUploadedFiles(prev => {
       const updatedFiles = [...prev, ...newFiles];
       toast.success(
         `${files.length} fil${files.length === 1 ? "" : "er"} uppladdade`
@@ -86,8 +86,8 @@ function App() {
     // Split the input by newlines and filter out empty lines
     const urls = urlInput
       .split("\n")
-      .map((url) => url.trim())
-      .filter((url) => url);
+      .map(url => url.trim())
+      .filter(url => url);
     // ignorera om filerna slutar på pdf eller ej- vissa kommer inte göra det men ändå vara giltiga pdf:er.
 
     if (urls.length === 0) {
@@ -96,7 +96,7 @@ function App() {
     }
 
     // Create jobs for each URL
-    const jobs = urls.map((url) => ({
+    const jobs = urls.map(url => ({
       name: "process-pdf",
       data: {
         url,
@@ -116,7 +116,7 @@ function App() {
     // Send jobs to the API
     try {
       const responses = await Promise.all(
-        jobs.map(async (job) => {
+        jobs.map(async job => {
           console.log("Sending job:", job);
 
           const response = await fetch("/api/queues/nlmParsePDF/add", {
@@ -139,13 +139,13 @@ function App() {
 
       console.log("Queue responses:", responses);
 
-      const newUrls = urls.map((url) => ({
+      const newUrls = urls.map(url => ({
         url,
         id: crypto.randomUUID(),
         company: new URL(url).hostname.split(".")[0],
       }));
 
-      setProcessedUrls((prev) => {
+      setProcessedUrls(prev => {
         const updatedUrls = [...prev, ...newUrls];
         toast.success(
           `${urls.length} länk${urls.length === 1 ? "" : "ar"} tillagda`
@@ -186,7 +186,7 @@ function App() {
 
         <Tabs
           value={currentTab}
-          onValueChange={(value) => {
+          onValueChange={value => {
             setCurrentTab(value);
             // Refresh data when switching to grid or processing tabs
             if (value === "grid" || value === "processing") {
@@ -331,7 +331,7 @@ function App() {
                           </div>
                           <textarea
                             value={urlInput}
-                            onChange={(e) => setUrlInput(e.target.value)}
+                            onChange={e => setUrlInput(e.target.value)}
                             placeholder="https://example.com/rapport.pdf&#10;https://example.com/rapport2.pdf"
                             className="w-full h-32 bg-gray-03/20 border border-gray-03 rounded-lg p-3 text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
                           />
