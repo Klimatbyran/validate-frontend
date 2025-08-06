@@ -146,9 +146,16 @@ function UserFriendlyDataView({ data }: { data: any }) {
           return null;
 
         return (
-          <div key={key} className="bg-gray-03/20 rounded-lg p-3">
-            <div className="font-medium text-gray-01 mb-1">{key}</div>
-            <div className="text-gray-02">{renderValue(value)}</div>
+          <div
+            key={key}
+            className="bg-gray-03/20 rounded-lg p-4 border border-gray-03/30"
+          >
+            <div className="font-semibold text-gray-01 mb-2 text-sm uppercase tracking-wide">
+              {key}
+            </div>
+            <div className="text-gray-02 leading-relaxed">
+              {renderValue(value)}
+            </div>
           </div>
         );
       })}
@@ -274,94 +281,115 @@ export function JobDetailsDialog({
   if (needsApproval && activeTab === "user") {
     return (
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="text-2xl mb-2">
-                  {job.data.companyName || job.data.company}
-                </DialogTitle>
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-4xl">
+          <DialogHeader className="pb-6">
+            <div className="flex items-start">
+              <div className="flex-1">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 rounded-full bg-blue-03/20">
+                    <HelpCircle className="w-6 h-6 text-blue-03" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-2xl font-bold text-gray-01">
+                      {job.data.companyName || job.data.company}
+                    </DialogTitle>
+                    <div className="text-sm text-blue-03 font-medium">
+                      Väntar på godkännande
+                    </div>
+                  </div>
+                </div>
                 {job.data.description && (
-                  <DialogDescription className="text-base">
+                  <DialogDescription className="text-base text-gray-02 leading-relaxed">
                     {job.data.description}
                   </DialogDescription>
                 )}
               </div>
-              {job.data.url && (
-                <a
-                  href={job.data.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-2 text-blue-03 hover:text-blue-03/80 bg-blue-03/10 p-2 rounded-full"
-                  title="Öppna källdokument"
-                >
-                  <FileText className="w-5 h-5" />
-                </a>
-              )}
             </div>
           </DialogHeader>
 
-          <div className="flex items-center space-x-2 mb-6">
+          <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-1 mb-8 inline-flex">
             <Button
-              variant={activeTab === "user" ? "default" : "outline"}
+              variant="ghost"
               size="sm"
               onClick={() => setActiveTab("user")}
-              className="rounded-full"
+              className={`rounded-md px-6 py-2 font-medium transition-all duration-200 ${
+                activeTab === "user"
+                  ? "bg-blue-03 text-blue-01 shadow-sm"
+                  : "text-gray-02 hover:text-gray-01 hover:bg-gray-03/30"
+              }`}
             >
               <Info className="w-4 h-4 mr-2" />
               Översikt
             </Button>
             <Button
-              variant={activeTab === "technical" ? "default" : "outline"}
+              variant="ghost"
               size="sm"
               onClick={() => setActiveTab("technical")}
-              className="rounded-full"
+              className={`rounded-md px-6 py-2 font-medium transition-all duration-200 ${
+                activeTab === "technical"
+                  ? "bg-blue-03 text-blue-01 shadow-sm"
+                  : "text-gray-02 hover:text-gray-01 hover:bg-gray-03/30"
+              }`}
             >
               <Code className="w-4 h-4 mr-2" />
               Tekniska detaljer
             </Button>
           </div>
 
-          <div className="space-y-6 my-6">
-            <div className="bg-blue-03/10 rounded-lg p-4">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 rounded-full bg-blue-03/20">
-                  <HelpCircle className="w-5 h-5 text-blue-03" />
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-blue-03/10 to-blue-04/10 rounded-xl p-6 border border-blue-03/20">
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="p-3 rounded-full bg-blue-03/20">
+                  <HelpCircle className="w-6 h-6 text-blue-03" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-medium text-blue-03">
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-blue-03">
                     Godkännande krävs
                   </h3>
-                  <p className="text-sm text-blue-03/80">
-                    Vänligen granska informationen och godkänn eller avvisa.
+                  <p className="text-base text-blue-03/80 leading-relaxed">
+                    Vänligen granska informationen nedan och godkänn eller
+                    avvisa jobbet.
                   </p>
                 </div>
+                {job.data.url && (
+                  <a
+                    href={job.data.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center space-x-2 text-blue-03 hover:text-blue-03/80 bg-blue-03/20 hover:bg-blue-03/30 p-3 rounded-xl transition-all duration-200 border border-blue-03/30"
+                    title="Öppna källdokument"
+                  >
+                    <FileText className="w-5 h-5" />
+                    <span className="text-sm font-medium">Öppna PDF</span>
+                  </a>
+                )}
               </div>
             </div>
 
-            <div className="bg-gray-03/20 rounded-lg p-4">
-              <h3 className="text-lg font-medium text-gray-01 mb-4">
+            <div className="bg-gray-04/80 backdrop-blur-sm rounded-xl p-6 border border-gray-03/30 shadow-sm">
+              <h3 className="text-xl font-semibold text-gray-01 mb-6 flex items-center">
+                <Info className="w-5 h-5 mr-3 text-blue-03" />
                 Information
               </h3>
               <UserFriendlyDataView data={getFilteredJobDataWithoutSchema()} />
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="pt-6 border-t border-gray-03/30">
             <div className="flex justify-between w-full">
               <div></div>
-              <div className="space-x-2">
+              <div className="space-x-3">
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => handleApprove(false)}
-                  className="border-pink-03 text-pink-03 hover:bg-pink-03/10"
+                  className="border-pink-03 text-pink-03 hover:bg-pink-03/10 px-6 py-2 font-medium transition-all duration-200"
                 >
                   <X className="w-4 h-4 mr-2" />
                   Avvisa
                 </Button>
                 <Button
                   onClick={() => handleApprove(true)}
-                  className="bg-green-03 text-white hover:bg-green-03/90"
+                  className="bg-green-03 text-white hover:bg-green-03/90 px-6 py-2 font-medium transition-all duration-200 shadow-sm"
                 >
                   <Check className="w-4 h-4 mr-2" />
                   Godkänn
@@ -377,80 +405,104 @@ export function JobDetailsDialog({
   // Technical view or non-approval jobs
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-2xl mb-2">
-                {job.data.companyName || job.data.company}
-              </DialogTitle>
+      <DialogContent className="max-h-[90vh] overflow-y-auto max-w-4xl">
+        <DialogHeader className="pb-6">
+          <div className="flex items-start">
+            <div className="flex-1">
+              <div className="flex items-center space-x-3 mb-3">
+                <div className={`p-2 rounded-full ${getStatusColor()}`}>
+                  {getStatusIcon()}
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-bold text-gray-01">
+                    {job.data.companyName || job.data.company}
+                  </DialogTitle>
+                  <div className="text-sm text-gray-02 font-medium">
+                    {stage?.name || job.queueId} • {getStatusText()}
+                  </div>
+                </div>
+              </div>
               {job.data.description && (
-                <DialogDescription className="text-base">
+                <DialogDescription className="text-base text-gray-02 leading-relaxed">
                   {job.data.description}
                 </DialogDescription>
               )}
             </div>
-            {job.data.url && (
-              <a
-                href={job.data.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center space-x-2 text-blue-03 hover:text-blue-03/80 bg-blue-03/10 p-2 rounded-full"
-                title="Öppna källdokument"
-              >
-                <FileText className="w-5 h-5" />
-              </a>
-            )}
           </div>
         </DialogHeader>
 
-        <div className="flex items-center space-x-2 mb-6">
+        <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-1 mb-8 inline-flex">
           <Button
-            variant={activeTab === "user" ? "default" : "outline"}
+            variant="ghost"
             size="sm"
             onClick={() => setActiveTab("user")}
-            className="rounded-full"
+            className={`rounded-md px-6 py-2 font-medium transition-all duration-200 ${
+              activeTab === "user"
+                ? "bg-blue-03 text-blue-01 shadow-sm"
+                : "text-gray-02 hover:text-gray-01 hover:bg-gray-03/30"
+            }`}
           >
             <Info className="w-4 h-4 mr-2" />
             Översikt
           </Button>
           <Button
-            variant={activeTab === "technical" ? "default" : "outline"}
+            variant="ghost"
             size="sm"
             onClick={() => setActiveTab("technical")}
-            className="rounded-full"
+            className={`rounded-md px-6 py-2 font-medium transition-all duration-200 ${
+              activeTab === "technical"
+                ? "bg-blue-03 text-blue-01 shadow-sm"
+                : "text-gray-02 hover:text-gray-01 hover:bg-gray-03/30"
+            }`}
           >
             <Code className="w-4 h-4 mr-2" />
             Tekniska detaljer
           </Button>
         </div>
 
-        <div className="space-y-6 my-6">
+        <div className="space-y-6">
           {activeTab === "user" ? (
             <>
               {/* Status Section */}
-              <div className="bg-gray-03/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-01 mb-4">
-                  Status
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-full ${getStatusColor()}`}>
+              <div className="bg-gray-04/80 backdrop-blur-sm rounded-xl p-6 border border-gray-03/30 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-gray-01 flex items-center">
+                    <Info className="w-5 h-5 mr-3 text-blue-03" />
+                    Status
+                  </h3>
+                  {job.data.url && (
+                    <a
+                      href={job.data.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-2 text-blue-03 hover:text-blue-03/80 bg-blue-03/10 hover:bg-blue-03/20 p-3 rounded-xl transition-all duration-200"
+                      title="Öppna källdokument"
+                    >
+                      <FileText className="w-5 h-5" />
+                      <span className="text-sm font-medium">Öppna PDF</span>
+                    </a>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex items-center space-x-4">
+                    <div className={`p-3 rounded-full ${getStatusColor()}`}>
                       {getStatusIcon()}
                     </div>
                     <div>
-                      <div className="font-medium text-gray-01">
+                      <div className="font-semibold text-gray-01 text-lg">
                         {stage?.name || job.queueId}
                       </div>
-                      <div className="text-sm text-gray-02">
+                      <div className="text-sm text-gray-02 font-medium">
                         {getStatusText()}
                       </div>
                     </div>
                   </div>
 
-                  <div>
-                    <div className="text-sm text-gray-02">Skapad</div>
-                    <div className="text-gray-01">
+                  <div className="bg-gray-03/20 rounded-lg p-4">
+                    <div className="text-sm text-gray-02 font-medium mb-1">
+                      Skapad
+                    </div>
+                    <div className="text-gray-01 font-mono">
                       {new Date(job.timestamp).toLocaleString("sv-SE")}
                     </div>
                   </div>
@@ -459,16 +511,16 @@ export function JobDetailsDialog({
 
               {/* Job Relationships Section */}
               {hasParent && (
-                <div className="bg-blue-03/10 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
-                    <GitBranch className="w-5 h-5 mr-2" />
+                <div className="bg-gradient-to-r from-blue-03/10 to-blue-04/10 rounded-xl p-6 border border-blue-03/20">
+                  <h3 className="text-xl font-semibold text-blue-03 mb-4 flex items-center">
+                    <GitBranch className="w-5 h-5 mr-3" />
                     Jobbrelationer
                   </h3>
                   <div className="space-y-3">
-                    <div className="flex items-center space-x-2 text-blue-03">
+                    <div className="flex items-center space-x-3 text-blue-03">
                       <ArrowUpRight className="w-4 h-4" />
-                      <span className="text-sm">Förälder:</span>
-                      <code className="bg-blue-03/20 px-2 py-1 rounded text-sm">
+                      <span className="text-sm font-medium">Förälder:</span>
+                      <code className="bg-blue-03/20 px-3 py-1 rounded-lg text-sm font-mono">
                         {job.parent.queue}:{job.parent.id}
                       </code>
                     </div>
@@ -477,8 +529,9 @@ export function JobDetailsDialog({
               )}
 
               {/* User-friendly Job Data Section */}
-              <div className="bg-gray-03/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-01 mb-4">
+              <div className="bg-gray-04/80 backdrop-blur-sm rounded-xl p-6 border border-gray-03/30 shadow-sm">
+                <h3 className="text-xl font-semibold text-gray-01 mb-6 flex items-center">
+                  <Info className="w-5 h-5 mr-3 text-blue-03" />
                   Information
                 </h3>
                 <UserFriendlyDataView
@@ -488,18 +541,19 @@ export function JobDetailsDialog({
 
               {/* Error Section */}
               {job.isFailed && job.stacktrace.length > 0 && (
-                <div className="bg-pink-03/10 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-pink-03 mb-4">
+                <div className="bg-gradient-to-r from-pink-03/10 to-pink-04/10 rounded-xl p-6 border border-pink-03/20">
+                  <h3 className="text-xl font-semibold text-pink-03 mb-4 flex items-center">
+                    <AlertTriangle className="w-5 h-5 mr-3" />
                     Felmeddelande
                   </h3>
-                  <div className="text-pink-03 text-sm">
+                  <div className="text-pink-03 text-sm bg-pink-03/10 rounded-lg p-4 font-mono">
                     {job.stacktrace[0]}
                     {job.stacktrace.length > 1 && (
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setActiveTab("technical")}
-                        className="mt-2 text-pink-03 hover:bg-pink-03/10"
+                        className="mt-3 text-pink-03 hover:bg-pink-03/10 font-medium"
                       >
                         Visa fullständigt felmeddelande
                       </Button>
@@ -613,14 +667,14 @@ export function JobDetailsDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="pt-6 border-t border-gray-03/30">
           <div className="flex justify-between w-full">
             <div>
               {canRetry && (
                 <Button
                   variant="ghost"
                   onClick={handleRetry}
-                  className="text-blue-03 hover:bg-blue-03/10"
+                  className="text-blue-03 hover:bg-blue-03/10 px-6 py-2 font-medium transition-all duration-200"
                 >
                   <RotateCcw className="w-4 h-4 mr-2" />
                   Försök igen
@@ -628,18 +682,18 @@ export function JobDetailsDialog({
               )}
             </div>
             {needsApproval && (
-              <div className="space-x-2">
+              <div className="space-x-3">
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => handleApprove(false)}
-                  className="border-pink-03 text-pink-03 hover:bg-pink-03/10"
+                  className="border-pink-03 text-pink-03 hover:bg-pink-03/10 px-6 py-2 font-medium transition-all duration-200"
                 >
                   <X className="w-4 h-4 mr-2" />
                   Avvisa
                 </Button>
                 <Button
                   onClick={() => handleApprove(true)}
-                  className="bg-green-03 text-white hover:bg-green-03/90"
+                  className="bg-green-03 text-white hover:bg-green-03/90 px-6 py-2 font-medium transition-all duration-200 shadow-sm"
                 >
                   <Check className="w-4 h-4 mr-2" />
                   Godkänn
