@@ -55,7 +55,7 @@ export function QueueGrid() {
           refresh();
         }),
         // Handle errors to prevent subscription from breaking
-        catchError(err => {
+        catchError((err) => {
           console.error("Error in refresh timer:", err);
           return EMPTY;
         })
@@ -68,7 +68,7 @@ export function QueueGrid() {
 
   // Function to toggle company expansion
   const toggleCompanyExpansion = (companyKey: string) => {
-    setExpandedCompanies(prev => {
+    setExpandedCompanies((prev) => {
       const next = new Set(prev);
       if (next.has(companyKey)) {
         next.delete(companyKey);
@@ -85,7 +85,7 @@ export function QueueGrid() {
       setExpandedCompanies(new Set());
       toast.info("Minimerade alla företag");
     } else {
-      setExpandedCompanies(new Set(groupedCompanies.map(c => c.company)));
+      setExpandedCompanies(new Set(groupedCompanies.map((c) => c.company)));
       toast.info("Expanderade alla företag");
     }
   };
@@ -102,7 +102,7 @@ export function QueueGrid() {
   const handleApprove = (approved: boolean) => {
     toast.promise(
       // This would be your actual API call
-      new Promise(resolve => setTimeout(resolve, 1000)),
+      new Promise((resolve) => setTimeout(resolve, 1000)),
       {
         loading: "Sparar beslut...",
         success: `Jobb ${approved ? "godkänt" : "avvisat"}`,
@@ -115,7 +115,7 @@ export function QueueGrid() {
   const handleRetry = () => {
     toast.promise(
       // This would be your actual API call
-      new Promise(resolve => setTimeout(resolve, 1000)),
+      new Promise((resolve) => setTimeout(resolve, 1000)),
       {
         loading: "Startar om jobb...",
         success: "Jobb omstartat",
@@ -236,7 +236,7 @@ export function QueueGrid() {
                     Företag
                   </th>
                   <th className="text-left p-4 text-gray-02 w-[100px]">År</th>
-                  {WORKFLOW_STAGES.map(stage => (
+                  {WORKFLOW_STAGES.map((stage) => (
                     <th
                       key={stage.id}
                       className="text-center p-4 text-gray-02 relative group hover:bg-gray-03/20 transition-colors duration-200"
@@ -252,7 +252,7 @@ export function QueueGrid() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-03/50">
-                {groupedCompanies.map(company => (
+                {groupedCompanies.map((company) => (
                   <React.Fragment key={company.company}>
                     {/* Company header row */}
                     <tr
@@ -290,9 +290,9 @@ export function QueueGrid() {
                         {company.attempts[0]?.year}
                       </td>
                       {/* Summary status for all attempts */}
-                      {WORKFLOW_STAGES.map(stage => {
+                      {WORKFLOW_STAGES.map((stage) => {
                         const allStatuses = company.attempts.map(
-                          attempt =>
+                          (attempt) =>
                             attempt.stages[stage.id]?.status || "pending"
                         );
 
@@ -370,9 +370,9 @@ export function QueueGrid() {
 
                                   {/* Stage details */}
                                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                                    {WORKFLOW_STAGES.map(stage => {
+                                    {WORKFLOW_STAGES.map((stage) => {
                                       const job = attempt.jobs?.find(
-                                        j => j.queueId === stage.id
+                                        (j) => j.queueId === stage.id
                                       );
                                       if (!job) return null;
 
@@ -382,12 +382,12 @@ export function QueueGrid() {
                                       let statusColor = needsApproval
                                         ? "bg-blue-03/10"
                                         : job.isFailed
-                                          ? "bg-pink-03/10"
-                                          : job.finishedOn
-                                            ? "bg-green-03/10"
-                                            : job.processedOn
-                                              ? "bg-blue-03/10"
-                                              : "bg-gray-03/10";
+                                        ? "bg-pink-03/10"
+                                        : job.finishedOn
+                                        ? "bg-green-03/10"
+                                        : job.processedOn
+                                        ? "bg-blue-03/10"
+                                        : "bg-gray-03/10";
 
                                       return (
                                         <button
@@ -397,7 +397,7 @@ export function QueueGrid() {
                                           transition-colors duration-200
                                           hover:bg-gray-03/20
                                         `}
-                                          onClick={e => {
+                                          onClick={(e) => {
                                             e.stopPropagation();
                                             setSelectedJob(job);
                                             setIsDialogOpen(true);
