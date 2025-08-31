@@ -203,12 +203,9 @@ export function fetchQueueJobs(
               throw new Error(`Ogiltig data från servern: ${parsed.error.message}`);
             }
 
-            // Log all queue names
-            console.log('All queue names in API response:', parsed.data.queues.map(q => q.name));
-
             // Find the requested queue (case-insensitive, trimmed)
             const queue = parsed.data.queues.find(q => q.name.trim().toLowerCase() === queueName.trim().toLowerCase());
-            console.log('Looking for queue:', queueName, 'Found:', queue);
+            
             if (!queue) {
               // Return empty queue instead of throwing
               return { 
