@@ -1,5 +1,5 @@
 import React from 'react';
-import { SlideshowButton } from './slideshow-button';
+import { Button } from './button';
 
 interface SlideshowControlsProps {
   current: number;
@@ -35,32 +35,34 @@ export const SlideshowControls: React.FC<SlideshowControlsProps> = ({
 
       {/* Navigation buttons */}
       <div className={fullscreenMode ? "absolute top-4 left-4 z-10 flex space-x-2" : "flex items-center space-x-2 w-full justify-center"}>
-        <SlideshowButton
+        <Button
           variant="secondary"
+          size="sm"
           onClick={onPrevious}
           aria-label="Previous screenshot"
         >
           Prev
-        </SlideshowButton>
+        </Button>
         
         {showFullscreenButton && onFullscreen && (
-          <SlideshowButton
+          <Button
             variant="primary"
             size="default"
             onClick={onFullscreen}
             aria-label="Open fullscreen slideshow"
           >
             Open Fullscreen
-          </SlideshowButton>
+          </Button>
         )}
         
-        <SlideshowButton
+        <Button
           variant="secondary"
+          size="sm"
           onClick={onNext}
           aria-label="Next screenshot"
         >
           Next
-        </SlideshowButton>
+        </Button>
       </div>
     </>
   );
