@@ -7,6 +7,8 @@ import { FiscalYearDisplay } from './fiscal-year-display';
 import { ScopeEmissionsDisplay } from './scope-emissions-display';
 import { MetadataDisplay } from './metadata-display';
 import { ScreenshotSlideshow } from './screenshot-slideshow';
+import { CollapsibleSection } from './collapsible-section';
+import { Image } from 'lucide-react';
 
 interface JobSpecificDataViewProps {
   data: any;
@@ -146,7 +148,16 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       )}
       {/* Show Screenshot slideshow if scopeData and PDF URL exist */}
       {scopeData && job?.data?.url && (
-        <ScreenshotSlideshow pdfUrl={job.data.url} />
+        <CollapsibleSection
+          title="Screenshots"
+          icon={<Image />}
+          bgColor="bg-purple-100/40"
+          borderColor="border-purple-300"
+          textColor="text-purple-900"
+          iconColor="text-purple-700"
+        >
+          <ScreenshotSlideshow pdfUrl={job.data.url} />
+        </CollapsibleSection>
       )}
       
       {/* Show metadata if available (from returnValueData) */}
