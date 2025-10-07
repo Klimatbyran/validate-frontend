@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { 
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { QueueJob } from '@/lib/types';
-import { WORKFLOW_STAGES } from '@/lib/constants';
-import { 
-  CheckCircle2, 
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { QueueJob } from "@/lib/types";
+import { getWorkflowStages } from "@/lib/workflow-config";
+import {
+  CheckCircle2,
   AlertTriangle,
   MessageSquare,
   RotateCcw,
@@ -25,9 +25,9 @@ import {
   Info,
   Code,
   FileText,
-} from 'lucide-react';
-import { JobSpecificDataView } from './job-specific-data-view';
-import { JsonViewer } from './json-viewer';
+} from "lucide-react";
+import { JobSpecificDataView } from "./job-specific-data-view";
+import { JsonViewer } from "./json-viewer";
 
 interface JobDetailsDialogProps {
   job: QueueJob | null;
@@ -47,20 +47,18 @@ function isJsonString(str: string): boolean {
   }
 }
 
-
-
-export function JobDetailsDialog({ 
-  job, 
-  isOpen, 
+export function JobDetailsDialog({
+  job,
+  isOpen,
   onOpenChange,
   onApprove,
-  onRetry
+  onRetry,
 }: JobDetailsDialogProps) {
-  const [activeTab, setActiveTab] = useState<'user' | 'technical'>('user');
-  
+  const [activeTab, setActiveTab] = useState<"user" | "technical">("user");
+
   if (!job) return null;
 
-  const stage = WORKFLOW_STAGES.find(s => s.id === job.queueId);
+  const stage = getWorkflowStages().find((s) => s.id === job.queueId);
   const needsApproval = !job.data.approved && !job.data.autoApprove;
   const canRetry = job.isFailed;
   const hasParent = !!job.parent;
@@ -69,7 +67,7 @@ export function JobDetailsDialog({
     if (onApprove) {
       onApprove(approved);
       onOpenChange(false);
-      toast.success(approved ? 'Jobbet godkänt' : 'Jobbet avvisat');
+      toast.success(approved ? "Jobbet godkänt" : "Jobbet avvisat");
     }
   };
 
@@ -77,39 +75,41 @@ export function JobDetailsDialog({
     if (onRetry) {
       onRetry();
       onOpenChange(false);
-      toast.success('Jobbet omstartat');
+      toast.success("Jobbet omstartat");
     }
   };
 
   const getStatusIcon = () => {
     if (needsApproval) return <HelpCircle className="w-5 h-5 text-blue-03" />;
     if (job.isFailed) return <AlertTriangle className="w-5 h-5 text-pink-03" />;
-    if (job.finishedOn) return <CheckCircle2 className="w-5 h-5 text-green-03" />;
-    if (job.processedOn) return (
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-      >
-        <RotateCcw className="w-5 h-5 text-blue-03" />
-      </motion.div>
-    );
+    if (job.finishedOn)
+      return <CheckCircle2 className="w-5 h-5 text-green-03" />;
+    if (job.processedOn)
+      return (
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        >
+          <RotateCcw className="w-5 h-5 text-blue-03" />
+        </motion.div>
+      );
     return <MessageSquare className="w-5 h-5 text-gray-02" />;
   };
 
   const getStatusColor = () => {
-    if (needsApproval) return 'bg-blue-03/20';
-    if (job.isFailed) return 'bg-pink-03/20';
-    if (job.finishedOn) return 'bg-green-03/20';
-    if (job.processedOn) return 'bg-blue-03/20';
-    return 'bg-gray-03/20';
+    if (needsApproval) return "bg-blue-03/20";
+    if (job.isFailed) return "bg-pink-03/20";
+    if (job.finishedOn) return "bg-green-03/20";
+    if (job.processedOn) return "bg-blue-03/20";
+    return "bg-gray-03/20";
   };
 
   const getStatusText = () => {
-    if (needsApproval) return 'Väntar på godkännande';
-    if (job.isFailed) return 'Misslyckad';
-    if (job.finishedOn) return 'Slutförd';
-    if (job.processedOn) return 'Bearbetar';
-    return 'Väntar';
+    if (needsApproval) return "Väntar på godkännande";
+    if (job.isFailed) return "Misslyckad";
+    if (job.finishedOn) return "Slutförd";
+    if (job.processedOn) return "Bearbetar";
+    return "Väntar";
   };
 
   // Filter out schema and metadata fields from job data for user-friendly view
@@ -119,7 +119,7 @@ export function JobDetailsDialog({
   };
 
   // Simplified view for jobs that need approval
-  if (needsApproval && activeTab === 'user') {
+  if (needsApproval && activeTab === "user") {
     return (
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[90vh] overflow-y-auto max-w-6xl">
@@ -136,9 +136,9 @@ export function JobDetailsDialog({
                 )}
               </div>
               {job.data.url && (
-                <a 
-                  href={job.data.url} 
-                  target="_blank" 
+                <a
+                  href={job.data.url}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center space-x-2 text-blue-03 hover:text-blue-03/80 bg-blue-03/10 p-2 rounded-full"
                   title="Öppna källdokument"
@@ -150,18 +150,14 @@ export function JobDetailsDialog({
           </DialogHeader>
 
           <div className="flex items-center space-x-2 mb-6">
-            <Button
-              variant="primary"
-              size="sm"
-              className="rounded-full"
-            >
+            <Button variant="primary" size="sm" className="rounded-full">
               <Info className="w-4 h-4 mr-2" />
               Översikt
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setActiveTab('technical')}
+              onClick={() => setActiveTab("technical")}
               className="rounded-full"
             >
               <Code className="w-4 h-4 mr-2" />
@@ -176,7 +172,9 @@ export function JobDetailsDialog({
                   <HelpCircle className="w-5 h-5 text-blue-03" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium text-blue-03">Godkännande krävs</h3>
+                  <h3 className="text-lg font-medium text-blue-03">
+                    Godkännande krävs
+                  </h3>
                   <p className="text-sm text-blue-03/80">
                     Vänligen granska informationen och godkänn eller avvisa.
                   </p>
@@ -185,11 +183,14 @@ export function JobDetailsDialog({
             </div>
 
             <div className="bg-gray-03/20 rounded-lg p-4">
-              <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
-              <JobSpecificDataView data={getFilteredJobDataWithoutSchema()} job={job} />
+              <h3 className="text-lg font-medium text-gray-01 mb-4">
+                Information
+              </h3>
+              <JobSpecificDataView
+                data={getFilteredJobDataWithoutSchema()}
+                job={job}
+              />
             </div>
-
-       
           </div>
 
           <DialogFooter>
@@ -237,9 +238,9 @@ export function JobDetailsDialog({
               )}
             </div>
             {job.data.url && (
-              <a 
-                href={job.data.url} 
-                target="_blank" 
+              <a
+                href={job.data.url}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center space-x-2 text-blue-03 hover:text-blue-03/80 bg-blue-03/10 p-2 rounded-full"
                 title="Öppna källdokument"
@@ -252,18 +253,18 @@ export function JobDetailsDialog({
 
         <div className="flex items-center space-x-2 mb-6">
           <Button
-            variant={activeTab === 'user' ? 'primary' : 'ghost'}
+            variant={activeTab === "user" ? "primary" : "ghost"}
             size="sm"
-            onClick={() => setActiveTab('user')}
+            onClick={() => setActiveTab("user")}
             className="rounded-full"
           >
             <Info className="w-4 h-4 mr-2" />
             Översikt
           </Button>
           <Button
-            variant={activeTab === 'technical' ? 'primary' : 'ghost'}
+            variant={activeTab === "technical" ? "primary" : "ghost"}
             size="sm"
-            onClick={() => setActiveTab('technical')}
+            onClick={() => setActiveTab("technical")}
             className="rounded-full"
           >
             <Code className="w-4 h-4 mr-2" />
@@ -272,11 +273,13 @@ export function JobDetailsDialog({
         </div>
 
         <div className="space-y-6 my-6">
-          {activeTab === 'user' ? (
+          {activeTab === "user" ? (
             <>
               {/* Status Section */}
               <div className="bg-gray-03/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-01 mb-4">Status</h3>
+                <h3 className="text-lg font-medium text-gray-01 mb-4">
+                  Status
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-full ${getStatusColor()}`}>
@@ -295,7 +298,7 @@ export function JobDetailsDialog({
                   <div>
                     <div className="text-sm text-gray-02">Skapad</div>
                     <div className="text-gray-01">
-                      {new Date(job.timestamp).toLocaleString('sv-SE')}
+                      {new Date(job.timestamp).toLocaleString("sv-SE")}
                     </div>
                   </div>
                 </div>
@@ -322,21 +325,28 @@ export function JobDetailsDialog({
 
               {/* Information Section */}
               <div className="bg-gray-03/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-01 mb-4">Information</h3>
-                <JobSpecificDataView data={getFilteredJobDataWithoutSchema()} job={job} />
+                <h3 className="text-lg font-medium text-gray-01 mb-4">
+                  Information
+                </h3>
+                <JobSpecificDataView
+                  data={getFilteredJobDataWithoutSchema()}
+                  job={job}
+                />
               </div>
 
               {/* Error Section */}
               {job.isFailed && job.stacktrace.length > 0 && (
                 <div className="bg-pink-03/10 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-pink-03 mb-4">Felmeddelande</h3>
+                  <h3 className="text-lg font-medium text-pink-03 mb-4">
+                    Felmeddelande
+                  </h3>
                   <div className="text-pink-03 text-sm">
                     {job.stacktrace[0]}
                     {job.stacktrace.length > 1 && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setActiveTab('technical')}
+                        onClick={() => setActiveTab("technical")}
                         className="mt-2 text-pink-03 hover:bg-pink-03/10"
                       >
                         Visa fullständigt felmeddelande
@@ -360,21 +370,28 @@ export function JobDetailsDialog({
                   </div>
                 </div>
               )}
-              
+
               {/* Technical Job Data Section */}
               <div className="bg-gray-03/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-01 mb-4">Teknisk data</h3>
+                <h3 className="text-lg font-medium text-gray-01 mb-4">
+                  Teknisk data
+                </h3>
                 <div className="grid grid-cols-1 gap-4">
                   {Object.entries(job.data).map(([key, value]) => {
-                    if (key === 'companyName' || key === 'description' || key === 'schema') return null;
-                    
+                    if (
+                      key === "companyName" ||
+                      key === "description" ||
+                      key === "schema"
+                    )
+                      return null;
+
                     return (
                       <div key={key} className="bg-gray-04 rounded-lg p-3">
                         <div className="text-sm text-gray-02 mb-1">{key}</div>
                         <div className="text-gray-01 break-words">
-                          {typeof value === 'string' && isJsonString(value) ? (
+                          {typeof value === "string" && isJsonString(value) ? (
                             <JsonViewer data={value} />
-                          ) : typeof value === 'object' ? (
+                          ) : typeof value === "object" ? (
                             <JsonViewer data={value} />
                           ) : (
                             String(value)
@@ -389,16 +406,20 @@ export function JobDetailsDialog({
               {/* Error Section */}
               {job.isFailed && job.stacktrace.length > 0 && (
                 <div className="bg-pink-03/10 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-pink-03 mb-4">Fullständigt felmeddelande</h3>
+                  <h3 className="text-lg font-medium text-pink-03 mb-4">
+                    Fullständigt felmeddelande
+                  </h3>
                   <pre className="text-pink-03 text-sm overflow-x-auto">
-                    {job.stacktrace.join('\n')}
+                    {job.stacktrace.join("\n")}
                   </pre>
                 </div>
               )}
 
               {/* Job Metadata */}
               <div className="bg-gray-03/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-01 mb-4">Jobbmetadata</h3>
+                <h3 className="text-lg font-medium text-gray-01 mb-4">
+                  Jobbmetadata
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <div className="text-gray-02">ID</div>
@@ -410,18 +431,24 @@ export function JobDetailsDialog({
                   </div>
                   <div>
                     <div className="text-gray-02">Skapad</div>
-                    <div className="text-gray-01">{new Date(job.timestamp).toLocaleString('sv-SE')}</div>
+                    <div className="text-gray-01">
+                      {new Date(job.timestamp).toLocaleString("sv-SE")}
+                    </div>
                   </div>
                   <div>
                     <div className="text-gray-02">Startad</div>
                     <div className="text-gray-01">
-                      {job.processedOn ? new Date(job.processedOn).toLocaleString('sv-SE') : '-'}
+                      {job.processedOn
+                        ? new Date(job.processedOn).toLocaleString("sv-SE")
+                        : "-"}
                     </div>
                   </div>
                   <div>
                     <div className="text-gray-02">Avslutad</div>
                     <div className="text-gray-01">
-                      {job.finishedOn ? new Date(job.finishedOn).toLocaleString('sv-SE') : '-'}
+                      {job.finishedOn
+                        ? new Date(job.finishedOn).toLocaleString("sv-SE")
+                        : "-"}
                     </div>
                   </div>
                   <div>
@@ -430,7 +457,6 @@ export function JobDetailsDialog({
                   </div>
                 </div>
               </div>
-
             </>
           )}
         </div>

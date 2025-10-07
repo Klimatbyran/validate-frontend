@@ -1,21 +1,22 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Loader2, RefreshCw, WifiOff, AlertCircle } from 'lucide-react';
-import { useQueues } from '@/hooks/useQueues';
-import { useQueueStats } from '@/hooks/useQueueStats';
-import { Button } from '@/components/ui/button';
-import { WORKFLOW_STAGES } from '@/lib/constants';
-import { toast } from 'sonner';
+// React import not needed for this component
+import { motion } from "framer-motion";
+import { Loader2, RefreshCw, WifiOff, AlertCircle } from "lucide-react";
+import { useQueues } from "@/hooks/useQueues";
+import { useQueueStats } from "@/hooks/useQueueStats";
+import { Button } from "@/components/ui/button";
+import { getWorkflowStages } from "@/lib/workflow-config";
+import { toast } from "sonner";
 
 export function QueueStatus() {
   const { isLoading, isError, error, refresh } = useQueues();
   const { totals, queueStats } = useQueueStats();
+  const workflowStages = getWorkflowStages();
 
   const handleRefresh = () => {
     toast.promise(refresh(), {
-      loading: 'Uppdaterar köstatus...',
-      success: 'Köstatus uppdaterad',
-      error: 'Kunde inte uppdatera köstatus'
+      loading: "Uppdaterar köstatus...",
+      success: "Köstatus uppdaterad",
+      error: "Kunde inte uppdatera köstatus",
     });
   };
 
@@ -28,8 +29,9 @@ export function QueueStatus() {
   }
 
   if (isError) {
-    const isNetworkError = error?.message?.includes('internetanslutning') || 
-                          error?.message?.includes('nå servern');
+    const isNetworkError =
+      error?.message?.includes("internetanslutning") ||
+      error?.message?.includes("nå servern");
 
     return (
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] p-6">
@@ -40,7 +42,9 @@ export function QueueStatus() {
             ) : (
               <AlertCircle className="w-6 h-6 mr-2" />
             )}
-            <span className="text-sm">{error?.message || 'Kunde inte hämta köstatus'}</span>
+            <span className="text-sm">
+              {error?.message || "Kunde inte hämta köstatus"}
+            </span>
           </div>
           <Button
             variant="ghost"
@@ -128,7 +132,7 @@ export function QueueStatus() {
                 <div className="text-lg text-blue-01/80">Aktiva</div>
               </div>
             </div>
-            
+
             <div className="relative overflow-hidden rounded-tr-[20px] bg-orange-03">
               <div className="absolute inset-0 bg-gradient-to-br from-orange-02/30 to-orange-04/30" />
               <div className="relative p-6">
@@ -136,7 +140,7 @@ export function QueueStatus() {
                 <div className="text-lg text-orange-01/80">Väntande</div>
               </div>
             </div>
-            
+
             <div className="relative overflow-hidden rounded-bl-[20px] bg-green-03">
               <div className="absolute inset-0 bg-gradient-to-br from-green-02/30 to-green-04/30" />
               <div className="relative p-6">
@@ -144,7 +148,7 @@ export function QueueStatus() {
                 <div className="text-lg text-green-01/80">Klara</div>
               </div>
             </div>
-            
+
             <div className="relative overflow-hidden rounded-br-[20px] bg-pink-03">
               <div className="absolute inset-0 bg-gradient-to-br from-pink-02/30 to-pink-04/30" />
               <div className="relative p-6">
@@ -158,52 +162,56 @@ export function QueueStatus() {
 
       {/* Detailed Queue List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0">
-        {WORKFLOW_STAGES.map((stage, index) => {
+        {workflowStages.map((stage, index) => {
           const stats = queueStats[stage.id] || {
             active: 0,
             waiting: 0,
             completed: 0,
             failed: 0,
-            isPaused: false
+            isPaused: false,
           };
-          
-          const status = stats.isPaused ? 'paused' : 
-                        stats.failed > 0 ? 'failed' : 
-                        stats.active > 0 ? 'active' : 
-                        'completed';
-          
+
+          const status = stats.isPaused
+            ? "paused"
+            : stats.failed > 0
+            ? "failed"
+            : stats.active > 0
+            ? "active"
+            : "completed";
+
           const statusColors = {
-            paused: 'bg-orange-03',
-            failed: 'bg-pink-03',
-            active: 'bg-blue-03',
-            completed: 'bg-green-03'
+            paused: "bg-orange-03",
+            failed: "bg-pink-03",
+            active: "bg-blue-03",
+            completed: "bg-green-03",
           };
 
           const textColors = {
-            paused: 'text-orange-01',
-            failed: 'text-pink-01',
-            active: 'text-blue-01',
-            completed: 'text-green-01'
+            paused: "text-orange-01",
+            failed: "text-pink-01",
+            active: "text-blue-01",
+            completed: "text-green-01",
           };
 
           const gradientColors = {
-            paused: 'from-orange-02/30 to-orange-04/30',
-            failed: 'from-pink-02/30 to-pink-04/30',
-            active: 'from-blue-02/30 to-blue-04/30',
-            completed: 'from-green-02/30 to-green-04/30'
+            paused: "from-orange-02/30 to-orange-04/30",
+            failed: "from-pink-02/30 to-pink-04/30",
+            active: "from-blue-02/30 to-blue-04/30",
+            completed: "from-green-02/30 to-green-04/30",
           };
 
           // Calculate rounded corners based on position
           const isFirst = index === 0;
-          const isLast = index === WORKFLOW_STAGES.length - 1;
+          const isLast = index === workflowStages.length - 1;
           const isTopRow = index < 3;
-          const isBottomRow = index >= WORKFLOW_STAGES.length - 3;
-          
-          let roundedCorners = '';
-          if (isFirst && isTopRow) roundedCorners = 'rounded-tl-[20px]';
-          if (index === 2 && isTopRow) roundedCorners = 'rounded-tr-[20px]';
-          if (isLast && isBottomRow) roundedCorners = 'rounded-br-[20px]';
-          if (index === WORKFLOW_STAGES.length - 3 && isBottomRow) roundedCorners = 'rounded-bl-[20px]';
+          const isBottomRow = index >= workflowStages.length - 3;
+
+          let roundedCorners = "";
+          if (isFirst && isTopRow) roundedCorners = "rounded-tl-[20px]";
+          if (index === 2 && isTopRow) roundedCorners = "rounded-tr-[20px]";
+          if (isLast && isBottomRow) roundedCorners = "rounded-br-[20px]";
+          if (index === workflowStages.length - 3 && isBottomRow)
+            roundedCorners = "rounded-bl-[20px]";
 
           return (
             <motion.div
@@ -215,7 +223,9 @@ export function QueueStatus() {
               <div className="p-4 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className={`w-2 h-12 ${statusColors[status]}`}>
-                    <div className={`w-full h-full bg-gradient-to-b ${gradientColors[status]}`} />
+                    <div
+                      className={`w-full h-full bg-gradient-to-b ${gradientColors[status]}`}
+                    />
                   </div>
                   <div>
                     <h4 className={`text-lg ${textColors[status]}`}>
@@ -227,23 +237,33 @@ export function QueueStatus() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-4 border-t border-gray-03">
                 <div className="p-3 text-center border-r border-gray-03">
                   <p className={`text-base ${textColors[status]}/70`}>Aktiva</p>
-                  <p className={`text-2xl ${textColors[status]}`}>{stats.active}</p>
+                  <p className={`text-2xl ${textColors[status]}`}>
+                    {stats.active}
+                  </p>
                 </div>
                 <div className="p-3 text-center border-r border-gray-03">
-                  <p className={`text-base ${textColors[status]}/70`}>Väntande</p>
-                  <p className={`text-2xl ${textColors[status]}`}>{stats.waiting}</p>
+                  <p className={`text-base ${textColors[status]}/70`}>
+                    Väntande
+                  </p>
+                  <p className={`text-2xl ${textColors[status]}`}>
+                    {stats.waiting}
+                  </p>
                 </div>
                 <div className="p-3 text-center border-r border-gray-03">
                   <p className={`text-base ${textColors[status]}/70`}>Klara</p>
-                  <p className={`text-2xl ${textColors[status]}`}>{stats.completed}</p>
+                  <p className={`text-2xl ${textColors[status]}`}>
+                    {stats.completed}
+                  </p>
                 </div>
                 <div className="p-3 text-center">
                   <p className={`text-base ${textColors[status]}/70`}>Fel</p>
-                  <p className={`text-2xl ${textColors[status]}`}>{stats.failed}</p>
+                  <p className={`text-2xl ${textColors[status]}`}>
+                    {stats.failed}
+                  </p>
                 </div>
               </div>
             </motion.div>

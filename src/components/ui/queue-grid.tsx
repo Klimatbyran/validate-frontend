@@ -1,43 +1,46 @@
-import React, { useState, useEffect } from 'react';
-import { timer, EMPTY } from 'rxjs';
-import { skip, delay, throttleTime, catchError, tap } from 'rxjs/operators';
-import { motion } from 'framer-motion';
-import { 
-  Loader2, 
-  RefreshCw, 
-  CheckCircle2, 
-  XCircle, 
-  Clock, 
-  ChevronDown, 
-  ChevronRight, 
-  ChevronsDown, 
+import React, { useState, useEffect } from "react";
+import { timer, EMPTY } from "rxjs";
+import { skip, delay, throttleTime, catchError, tap } from "rxjs/operators";
+import { motion } from "framer-motion";
+import {
+  Loader2,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ChevronDown,
+  ChevronRight,
+  ChevronsDown,
   ChevronsUp,
   AlertCircle,
   Check,
   X,
   AlertTriangle,
-  HelpCircle
-} from 'lucide-react';
-import { useGroupedCompanies } from '@/hooks/useGroupedCompanies';
-import { useQueues } from '@/hooks/useQueues';
-import { Button } from '@/components/ui/button';
-import { WORKFLOW_STAGES } from '@/lib/constants';
-import { toast } from 'sonner';
-import { JobDetailsDialog } from './job-details-dialog';
-import type { QueueJob } from '@/lib/types';
+  HelpCircle,
+} from "lucide-react";
+import { useGroupedCompanies } from "@/hooks/useGroupedCompanies";
+import { useQueues } from "@/hooks/useQueues";
+import { Button } from "@/components/ui/button";
+import { getWorkflowStages } from "@/lib/workflow-config";
+import { toast } from "sonner";
+import { JobDetailsDialog } from "./job-details-dialog";
+import type { QueueJob } from "@/lib/types";
 
 export function QueueGrid() {
-  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(
+    new Set()
+  );
   const [selectedJob, setSelectedJob] = useState<QueueJob | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const groupedCompanies = useGroupedCompanies();
   const { refresh } = useQueues(); // Add useQueues to ensure data is refreshed
-  
+  const workflowStages = getWorkflowStages();
+
   // Refresh data when component mounts using RxJS
   useEffect(() => {
     // Initial refresh
     refresh();
-    
+
     // Set up periodic refresh using RxJS timer
     const subscription = timer(0, 30000) // Initial delay of 0, then every 30 seconds
       .pipe(
@@ -49,24 +52,23 @@ export function QueueGrid() {
         throttleTime(10000),
         // Tap for side effects
         tap(() => {
-          console.log('🔄 Auto-refreshing queue grid data');
           refresh();
         }),
         // Handle errors to prevent subscription from breaking
-        catchError(err => {
-          console.error('Error in refresh timer:', err);
+        catchError((err) => {
+          console.error("Error in refresh timer:", err);
           return EMPTY;
         })
       )
       .subscribe();
-    
+
     // Clean up subscription
     return () => subscription.unsubscribe();
   }, [refresh]);
 
   // Function to toggle company expansion
   const toggleCompanyExpansion = (companyKey: string) => {
-    setExpandedCompanies(prev => {
+    setExpandedCompanies((prev) => {
       const next = new Set(prev);
       if (next.has(companyKey)) {
         next.delete(companyKey);
@@ -81,18 +83,18 @@ export function QueueGrid() {
   const toggleAllCompanies = () => {
     if (expandedCompanies.size === groupedCompanies.length) {
       setExpandedCompanies(new Set());
-      toast.info('Minimerade alla företag');
+      toast.info("Minimerade alla företag");
     } else {
-      setExpandedCompanies(new Set(groupedCompanies.map(c => c.company)));
-      toast.info('Expanderade alla företag');
+      setExpandedCompanies(new Set(groupedCompanies.map((c) => c.company)));
+      toast.info("Expanderade alla företag");
     }
   };
 
   const handleRefresh = () => {
     toast.promise(refresh(), {
-      loading: 'Uppdaterar jobbstatus...',
-      success: 'Jobbstatus uppdaterad',
-      error: 'Kunde inte uppdatera jobbstatus'
+      loading: "Uppdaterar jobbstatus...",
+      success: "Jobbstatus uppdaterad",
+      error: "Kunde inte uppdatera jobbstatus",
     });
   };
 
@@ -100,11 +102,11 @@ export function QueueGrid() {
   const handleApprove = (approved: boolean) => {
     toast.promise(
       // This would be your actual API call
-      new Promise(resolve => setTimeout(resolve, 1000)),
+      new Promise((resolve) => setTimeout(resolve, 1000)),
       {
-        loading: 'Sparar beslut...',
-        success: `Jobb ${approved ? 'godkänt' : 'avvisat'}`,
-        error: 'Kunde inte spara beslut'
+        loading: "Sparar beslut...",
+        success: `Jobb ${approved ? "godkänt" : "avvisat"}`,
+        error: "Kunde inte spara beslut",
       }
     );
   };
@@ -113,11 +115,11 @@ export function QueueGrid() {
   const handleRetry = () => {
     toast.promise(
       // This would be your actual API call
-      new Promise(resolve => setTimeout(resolve, 1000)),
+      new Promise((resolve) => setTimeout(resolve, 1000)),
       {
-        loading: 'Startar om jobb...',
-        success: 'Jobb omstartat',
-        error: 'Kunde inte starta om jobb'
+        loading: "Startar om jobb...",
+        success: "Jobb omstartat",
+        error: "Kunde inte starta om jobb",
       }
     );
   };
@@ -134,7 +136,7 @@ export function QueueGrid() {
 
   const getJobStatusIcon = (job: QueueJob) => {
     const needsApproval = !job.data.approved && !job.data.autoApprove;
-    
+
     if (needsApproval) {
       return <HelpCircle className="w-5 h-5 text-blue-03" />;
     }
@@ -152,24 +154,24 @@ export function QueueGrid() {
 
   const getJobStatusColor = (job: QueueJob) => {
     const needsApproval = !job.data.approved && !job.data.autoApprove;
-    
-    if (needsApproval) return 'text-blue-03';
+
+    if (needsApproval) return "text-blue-03";
     if (job.finishedOn) {
-      return job.isFailed ? 'text-pink-03' : 'text-green-03';
+      return job.isFailed ? "text-pink-03" : "text-green-03";
     }
-    if (job.processedOn) return 'text-blue-03';
-    return 'text-gray-02';
+    if (job.processedOn) return "text-blue-03";
+    return "text-gray-02";
   };
 
   const getJobStatusText = (job: QueueJob) => {
     const needsApproval = !job.data.approved && !job.data.autoApprove;
-    
-    if (needsApproval) return 'Väntar på godkännande';
+
+    if (needsApproval) return "Väntar på godkännande";
     if (job.finishedOn) {
-      return job.isFailed ? 'Misslyckad' : 'Klar';
+      return job.isFailed ? "Misslyckad" : "Klar";
     }
-    if (job.processedOn) return 'Bearbetar';
-    return 'Väntar';
+    if (job.processedOn) return "Bearbetar";
+    return "Väntar";
   };
 
   return (
@@ -229,13 +231,15 @@ export function QueueGrid() {
           <table className="w-full min-w-[1200px]">
             <thead>
               <tr className="border-b border-gray-03">
-                <th className="text-left p-4 text-gray-02 w-[300px]">Företag</th>
+                <th className="text-left p-4 text-gray-02 w-[300px]">
+                  Företag
+                </th>
                 <th className="text-left p-4 text-gray-02 w-[100px]">År</th>
-                {WORKFLOW_STAGES.map(stage => (
-                  <th 
-                    key={stage.id} 
+                {workflowStages.map((stage) => (
+                  <th
+                    key={stage.id}
                     className="text-center p-4 text-gray-02"
-                    style={{ minWidth: '100px' }}
+                    style={{ minWidth: "100px" }}
                   >
                     <div className="transform -rotate-45 origin-left translate-x-4">
                       {stage.name}
@@ -245,13 +249,17 @@ export function QueueGrid() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-03">
-              {groupedCompanies.map(company => (
+              {groupedCompanies.map((company) => (
                 <React.Fragment key={company.company}>
                   {/* Company header row */}
-                  <tr 
+                  <tr
                     className={`
                       transition-colors duration-200
-                      ${expandedCompanies.has(company.company) ? 'bg-gray-03/10' : ''}
+                      ${
+                        expandedCompanies.has(company.company)
+                          ? "bg-gray-03/10"
+                          : ""
+                      }
                       hover:bg-gray-03/5 cursor-pointer
                     `}
                     onClick={() => toggleCompanyExpansion(company.company)}
@@ -279,35 +287,40 @@ export function QueueGrid() {
                       {company.attempts[0]?.year}
                     </td>
                     {/* Summary status for all attempts */}
-                    {WORKFLOW_STAGES.map(stage => {
+                    {workflowStages.map((stage) => {
                       const allStatuses = company.attempts.map(
-                        attempt => attempt.stages[stage.id]?.status || 'pending'
+                        (attempt) =>
+                          attempt.stages[stage.id]?.status || "pending"
                       );
-                      
-                      const hasCompleted = allStatuses.includes('completed');
-                      const hasFailed = allStatuses.includes('failed');
-                      const hasProcessing = allStatuses.includes('processing');
-                      
+
+                      const hasCompleted = allStatuses.includes("completed");
+                      const hasFailed = allStatuses.includes("failed");
+                      const hasProcessing = allStatuses.includes("processing");
+
                       let icon;
                       let bgColor;
-                      
+
                       if (hasCompleted) {
-                        icon = <CheckCircle2 className="w-5 h-5 text-green-03" />;
-                        bgColor = 'bg-green-03/10';
+                        icon = (
+                          <CheckCircle2 className="w-5 h-5 text-green-03" />
+                        );
+                        bgColor = "bg-green-03/10";
                       } else if (hasFailed) {
                         icon = <XCircle className="w-5 h-5 text-pink-03" />;
-                        bgColor = 'bg-pink-03/10';
+                        bgColor = "bg-pink-03/10";
                       } else if (hasProcessing) {
-                        icon = <Clock className="w-5 h-5 text-blue-03 animate-spin" />;
-                        bgColor = 'bg-blue-03/10';
+                        icon = (
+                          <Clock className="w-5 h-5 text-blue-03 animate-spin" />
+                        );
+                        bgColor = "bg-blue-03/10";
                       } else {
                         icon = <Clock className="w-5 h-5 text-gray-02" />;
-                        bgColor = '';
+                        bgColor = "";
                       }
 
                       return (
-                        <td 
-                          key={stage.id} 
+                        <td
+                          key={stage.id}
                           className={`p-4 text-center ${bgColor}`}
                         >
                           <div className="flex items-center justify-center">
@@ -321,12 +334,14 @@ export function QueueGrid() {
                   {/* Expanded content */}
                   {expandedCompanies.has(company.company) && (
                     <tr>
-                      <td colSpan={WORKFLOW_STAGES.length + 2} className="p-0">
+                      <td colSpan={workflowStages.length + 2} className="p-0">
                         <div className="bg-gray-03/5 p-4">
                           {/* Company description */}
                           {company.description && (
                             <div className="mb-4 text-gray-02 bg-gray-04/50 p-4 rounded-lg">
-                              <h4 className="text-gray-01 font-medium mb-2">Om företaget</h4>
+                              <h4 className="text-gray-01 font-medium mb-2">
+                                Om företaget
+                              </h4>
                               <p>{company.description}</p>
                             </div>
                           )}
@@ -334,7 +349,7 @@ export function QueueGrid() {
                           {/* Attempts */}
                           <div className="space-y-4">
                             {company.attempts.map((attempt, index) => (
-                              <div 
+                              <div
                                 key={attempt.threadId}
                                 className="bg-gray-04/50 rounded-lg overflow-hidden"
                               >
@@ -345,7 +360,10 @@ export function QueueGrid() {
                                     </h4>
                                   </div>
                                   <div className="text-xs text-gray-02 mb-2">
-                                    Jobs in this attempt: {attempt.jobs?.map(j => `${j.queueId}:${j.id}`).join(', ')}
+                                    Jobs in this attempt:{" "}
+                                    {attempt.jobs
+                                      ?.map((j) => `${j.queueId}:${j.id}`)
+                                      .join(", ")}
                                   </div>
                                   <div className="text-xs text-gray-02 mt-2">
                                     Thread ID: {attempt.threadId}
@@ -354,20 +372,27 @@ export function QueueGrid() {
 
                                 {/* Stage details */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                                  {WORKFLOW_STAGES.map(stage => {
-                                    const job = attempt.jobs?.find(j => (j.queueId || j.name) === stage.id);
+                                  {workflowStages.map((stage) => {
+                                    const job = attempt.jobs?.find(
+                                      (j) => (j.queueId || j.name) === stage.id
+                                    );
                                     if (!job) return null;
 
-                                    const needsApproval = !job.data.approved && !job.data.autoApprove;
-                                    let statusColor = needsApproval ? 'bg-blue-03/10' : (
-                                      job.isFailed ? 'bg-pink-03/10' :
-                                      job.finishedOn ? 'bg-green-03/10' :
-                                      job.processedOn ? 'bg-blue-03/10' :
-                                      'bg-gray-03/10'
-                                    );
+                                    const needsApproval =
+                                      !job.data.approved &&
+                                      !job.data.autoApprove;
+                                    let statusColor = needsApproval
+                                      ? "bg-blue-03/10"
+                                      : job.isFailed
+                                      ? "bg-pink-03/10"
+                                      : job.finishedOn
+                                      ? "bg-green-03/10"
+                                      : job.processedOn
+                                      ? "bg-blue-03/10"
+                                      : "bg-gray-03/10";
 
                                     return (
-                                      <button 
+                                      <button
                                         key={stage.id}
                                         className={`
                                           ${statusColor} rounded-lg p-4 text-left
@@ -381,7 +406,9 @@ export function QueueGrid() {
                                         }}
                                       >
                                         <div className="flex items-center space-x-2 mb-2">
-                                          <span className={getJobStatusColor(job)}>
+                                          <span
+                                            className={getJobStatusColor(job)}
+                                          >
                                             {getJobStatusIcon(job)}
                                           </span>
                                           <h5 className="font-medium text-gray-01">
