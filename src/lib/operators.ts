@@ -216,7 +216,27 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
 
           // Filter to only latest job per queueId across all attempts
           const latestJobsByQueueId = new Map();
+          const attemptCountsByYear = new Map();
+          const latestTimestampsByYear = new Map();
+
           sortedAttempts.forEach((attempt) => {
+            const year = attempt.year;
+
+            // Count attempts per year
+            attemptCountsByYear.set(
+              year,
+              (attemptCountsByYear.get(year) || 0) + 1
+            );
+
+            // Track latest timestamp per year
+            const attemptTimestamp = Math.min(
+              ...Object.values(attempt.stages).map((s: any) => s.timestamp)
+            );
+            const currentLatest = latestTimestampsByYear.get(year);
+            if (!currentLatest || attemptTimestamp > currentLatest) {
+              latestTimestampsByYear.set(year, attemptTimestamp);
+            }
+
             attempt.jobs.forEach((job) => {
               const existingJob = latestJobsByQueueId.get(job.queueId);
               if (!existingJob || job.timestamp > existingJob.timestamp) {
@@ -236,8 +256,8 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
           });
 
           // Create filtered attempts with only latest jobs
-          const filteredAttempts = Array.from(jobsByYear.entries()).map(
-            ([year, jobs]) => {
+          const filteredAttempts = Array.from(jobsByYear.entries())
+            .map(([year, jobs]) => {
               // Create stages from latest jobs
               const stages = jobs.reduce(
                 (stagesAcc: CompanyStatus["stages"], job: QueueJob) => ({
@@ -259,9 +279,11 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
                 year,
                 jobs, // Only latest jobs per queueId
                 stages,
+                attemptCount: attemptCountsByYear.get(year) || 1,
+                latestTimestamp: latestTimestampsByYear.get(year) || 0,
               };
-            }
-          );
+            })
+            .sort((a, b) => b.latestTimestamp - a.latestTimestamp); // Sort by latest timestamp descending
 
           return {
             company,

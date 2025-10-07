@@ -197,6 +197,7 @@ export interface SwimlaneYearData {
   attempts: number;
   fields: Record<string, SwimlaneStatusType | SwimlaneFieldData>;
   jobs?: QueueJob[]; // Preserve the actual job data
+  latestTimestamp?: number; // Timestamp of the latest attempt
 }
 
 export interface SwimlaneCompany {

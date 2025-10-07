@@ -251,9 +251,10 @@ export function convertGroupedCompaniesToSwimlaneFormat(
       (attempt: any) => {
         const yearData: SwimlaneYearData = {
           year: attempt.year,
-          attempts: 1, // Each attempt represents one attempt
+          attempts: attempt.attemptCount || 1, // Use actual attempt count
           fields: {},
           jobs: attempt.jobs || [], // Preserve the actual job data
+          latestTimestamp: attempt.latestTimestamp, // Include latest timestamp
         };
 
         // Populate fields from jobs instead of stages to get complete data

@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { JobDetailsDialog } from "./job-details-dialog";
 import { useGroupedCompanies } from "@/hooks/useGroupedCompanies";
-// WORKFLOW_STAGES is now replaced by getWorkflowStages() from workflow-config
 import { queueStore } from "@/lib/queue-store";
 import {
   getAllPipelineSteps,
@@ -40,8 +39,6 @@ import type {
   QueueJob,
 } from "@/lib/types";
 
-// getFieldStatus, isFieldActivelyProcessing, and getJobStatus are imported from workflow-utils
-
 /**
  * Unified status display function for individual field/job display
  * Consolidates icon, text, and styles logic for compact and detailed views
@@ -53,7 +50,6 @@ function getStatusDisplay(
 ) {
   const status = getJobStatusFromUtils(job);
 
-  // Icon configuration
   const getIcon = (status: SwimlaneStatusType) => {
     const sizeClasses = {
       compact: "w-3 h-3",
@@ -144,10 +140,6 @@ function getStatusDisplay(
   };
 }
 
-// Old stage-based icon functions removed - now using job-based icons
-
-// getStepStatus is now replaced by calculatePipelineStepStatus from workflow-utils
-
 function getStepIcon(
   status: "completed" | "processing" | "failed" | "waiting" | "needs_approval"
 ) {
@@ -165,8 +157,6 @@ function getStepIcon(
   }
 }
 
-// Helper function to find job by queue ID directly
-// More efficient than the previous fieldName-based lookup
 function findJobByQueueId(
   queueId: string,
   yearData: SwimlaneYearData
@@ -187,7 +177,6 @@ function YearRow({
   expandLevel: "collapsed" | "compact" | "full";
   onFieldClick: (field: string) => void;
 }) {
-  // Calculate year-specific step statistics using the unified function
   const yearStepStats = useMemo(() => {
     const pipelineSteps = getAllPipelineSteps();
     return pipelineSteps.map((step) => {
@@ -213,6 +202,11 @@ function YearRow({
           <span className="text-xs text-gray-02">
             {yearData.attempts} attempts
           </span>
+          {yearData.latestTimestamp && (
+            <span className="text-xs text-blue-02">
+              Latest: {new Date(yearData.latestTimestamp).toLocaleString()}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-4">
           {yearStepStats.map((step, index) => (
@@ -233,44 +227,50 @@ function YearRow({
       {expandLevel === "compact" && (
         <div className="p-7 space-y-2 bg-gray-05">
           {yearStepStats.map((step, stepIndex) => (
-            <div key={stepIndex} className="flex items-start gap-2">
-              <div className="flex-shrink-0 w-24 pt-1">
-                <span className="text-[10px] font-semibold text-gray-02 uppercase tracking-wide">
-                  {step.name}
-                </span>
-              </div>
-              <div className="flex-1 flex flex-wrap gap-1.5">
-                {getQueuesForPipelineStep(step.id).map((queueId) => {
-                  const fieldName = getQueueDisplayName(queueId);
-                  // Find the specific job for this field using direct queueId lookup
-                  const job = findJobByQueueId(queueId, yearData);
-                  const isActive = job?.processedOn && !job?.finishedOn;
-                  const status = getJobStatusFromUtils(job);
+            <div key={stepIndex}>
+              <div className="flex items-start gap-2">
+                <div className="flex-shrink-0 w-24 pt-1">
+                  <span className="text-[10px] font-semibold text-gray-02 uppercase tracking-wide">
+                    {step.name}
+                  </span>
+                </div>
+                <div className="flex-1 flex flex-wrap gap-1.5">
+                  {getQueuesForPipelineStep(step.id).map((queueId) => {
+                    const fieldName = getQueueDisplayName(queueId);
+                    // Find the specific job for this field using direct queueId lookup
+                    const job = findJobByQueueId(queueId, yearData);
+                    const isActive = job?.processedOn && !job?.finishedOn;
 
-                  return (
-                    <button
-                      key={queueId}
-                      onClick={() => onFieldClick(queueId)}
-                      className={`
-                        relative px-2 py-1 rounded border text-[10px] font-medium
-                        hover:shadow-sm hover:scale-105 transition-all
-                        ${getStatusDisplay(job, "compact", !!isActive).styles}
-                      `}
-                    >
-                      <span className="flex items-center gap-1">
-                        <span
-                          className={`${
-                            isActive ? "inline-block animate-spin-slow" : ""
-                          }`}
-                        >
-                          {getStatusDisplay(job, "compact", !!isActive).icon}
+                    return (
+                      <button
+                        key={queueId}
+                        onClick={() => onFieldClick(queueId)}
+                        className={`
+                          relative px-2 py-1 rounded border text-[10px] font-medium
+                          hover:shadow-sm hover:scale-105 transition-all
+                          ${getStatusDisplay(job, "compact", !!isActive).styles}
+                        `}
+                      >
+                        <span className="flex items-center gap-1">
+                          <span
+                            className={`${
+                              isActive ? "inline-block animate-spin-slow" : ""
+                            }`}
+                          >
+                            {getStatusDisplay(job, "compact", !!isActive).icon}
+                          </span>
+                          <span>{fieldName}</span>
                         </span>
-                        <span>{fieldName}</span>
-                      </span>
-                    </button>
-                  );
-                })}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+              {stepIndex < yearStepStats.length - 1 && (
+                <div className="mt-3 mb-2">
+                  <div className="h-px bg-gray-03"></div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -281,7 +281,7 @@ function YearRow({
         <div className="p-7 bg-gray-05 space-y-4">
           {yearStepStats.map((step, stepIndex) => (
             <div key={stepIndex}>
-              <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-03">
+              <div className="flex items-center gap-2 mb-2 pb-1.5">
                 <span className="text-xs font-bold text-gray-01 uppercase tracking-wide">
                   {step.name}
                 </span>
@@ -425,7 +425,7 @@ function CompanyCard({ company }: { company: SwimlaneCompany }) {
         {/* Years */}
         {(company.years || []).map((yearData) => (
           <YearRow
-            key={yearData.year}
+            key={`${yearData.year}-${yearData.latestTimestamp || 0}`}
             yearData={yearData}
             expandLevel={expandLevel}
             onFieldClick={(queueId) => {
