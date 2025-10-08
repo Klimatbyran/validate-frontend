@@ -1,6 +1,5 @@
 import {
   CheckCircle2,
-  AlertTriangle,
   Clock,
   HelpCircle,
   XCircle,
@@ -109,7 +108,7 @@ export function getStatusIcon(
     variant === "compact" ? config.colors.iconCompact : config.colors.icon;
 
   const animationClass =
-    status === "processing" && isActive ? config.animation || "" : "";
+    status === "processing" && isActive ? (config as any).animation || "" : "";
 
   return (
     <IconComponent
@@ -139,4 +138,66 @@ export function getCompactStyles(
  */
 export function getDetailedTextColor(status: SwimlaneStatusType): string {
   return STATUS_CONFIG[status].colors.text;
+}
+
+/**
+ * Stat card color mappings for consistent theming
+ */
+export const STAT_CARD_COLORS = {
+  gray: {
+    value: "text-gray-01",
+    label: "text-gray-02",
+  },
+  green: {
+    value: "text-green-03",
+    label: "text-green-02",
+  },
+  blue: {
+    value: "text-blue-03",
+    label: "text-blue-02",
+  },
+  orange: {
+    value: "text-orange-03",
+    label: "text-orange-02",
+  },
+  pink: {
+    value: "text-pink-03",
+    label: "text-pink-02",
+  },
+} as const;
+
+/**
+ * Get stat card value color
+ */
+export function getStatCardValueColor(
+  color: keyof typeof STAT_CARD_COLORS
+): string {
+  return STAT_CARD_COLORS[color].value;
+}
+
+/**
+ * Get stat card label color
+ */
+export function getStatCardLabelColor(
+  color: keyof typeof STAT_CARD_COLORS
+): string {
+  return STAT_CARD_COLORS[color].label;
+}
+
+/**
+ * Get step icon for pipeline step status
+ */
+export function getStepIcon(
+  status: "completed" | "processing" | "failed" | "waiting" | "needs_approval"
+) {
+  const config = getStatusConfig(status);
+  const IconComponent = config.icon;
+
+  return (
+    <IconComponent
+      className={`w-5 h-5 ${config.colors.icon} ${
+        "animation" in config ? config.animation : ""
+      }`.trim()}
+    />
+  );
 }

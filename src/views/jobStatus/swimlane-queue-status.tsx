@@ -8,11 +8,15 @@ import {
   Activity,
   BarChart3,
 } from "lucide-react";
-import { JobDetailsDialog } from "../ui/job-details-dialog";
+import { JobDetailsDialog } from "../../components/ui/job-details-dialog";
 import { useGroupedCompanies } from "@/hooks/useGroupedCompanies";
 import { queueStore } from "@/lib/queue-store";
 import { StatCard, CompactStatCard, PipelineStepCard } from "./stat-cards";
-import { ViewToggle, useViewToggle, type ViewLevel } from "../ui/view-toggle";
+import {
+  ViewToggle,
+  useViewToggle,
+  type ViewLevel,
+} from "../../components/ui/view-toggle";
 import {
   getAllPipelineSteps,
   getQueuesForPipelineStep,
@@ -24,13 +28,15 @@ import {
   convertGroupedCompaniesToSwimlaneFormat,
   getJobStatus as getJobStatusFromUtils,
   calculateStepJobStats,
+  findJobByQueueId,
 } from "@/lib/workflow-utils";
 import {
-  getStatusConfig,
   getStatusLabel,
   getStatusIcon,
   getCompactStyles,
+  getStepIcon,
 } from "@/lib/status-config";
+import { calculateSwimlaneOverallStats } from "@/lib/calculation-utils";
 import type { SwimlaneYearData, SwimlaneCompany, QueueJob } from "@/lib/types";
 
 function getStatusDisplay(
@@ -47,32 +53,6 @@ function getStatusDisplay(
     styles:
       variant === "compact" ? getCompactStyles(status, isActive) : undefined,
   };
-}
-
-function getStepIcon(
-  status: "completed" | "processing" | "failed" | "waiting" | "needs_approval"
-) {
-  const config = getStatusConfig(status);
-  const IconComponent = config.icon;
-
-  return (
-    <IconComponent
-      className={`w-5 h-5 ${config.colors.icon} ${
-        "animation" in config ? config.animation : ""
-      }`.trim()}
-    />
-  );
-}
-
-function findJobByQueueId(
-  queueId: string,
-  yearData: SwimlaneYearData
-): QueueJob | undefined {
-  if (!yearData.jobs) {
-    return undefined;
-  }
-
-  return yearData.jobs.find((job: QueueJob) => job.queueId === queueId);
 }
 
 function YearRow({
@@ -329,98 +309,13 @@ function CompanyCard({ company }: { company: SwimlaneCompany }) {
   );
 }
 
-function calculateOverallStats(companies: SwimlaneCompany[]) {
-  // Calculate overall job statistics across all companies and years
-  let totalJobs = 0;
-  let completedFields = 0;
-  let processingFields = 0;
-  let failedFields = 0;
-  let waitingFields = 0;
-  let needsApprovalFields = 0;
-
-  // Count jobs from latest year only for each company
-  companies.forEach((company) => {
-    // Only count from the latest year (first in the sorted array)
-    const latestYear = company.years[0];
-    if (latestYear) {
-      totalJobs++;
-
-      // Count jobs from latest year only
-      (latestYear.jobs || []).forEach((job) => {
-        const status = getJobStatusFromUtils(job);
-
-        switch (status) {
-          case "completed":
-            completedFields++;
-            break;
-          case "processing":
-            processingFields++;
-            break;
-          case "failed":
-            failedFields++;
-            break;
-          case "needs_approval":
-            needsApprovalFields++;
-            break;
-          case "waiting":
-          default:
-            waitingFields++;
-            break;
-        }
-      });
-    }
-  });
-
-  // Calculate step statistics using the unified function
-  const pipelineSteps = getAllPipelineSteps();
-  const stepStats = pipelineSteps.map((step) => {
-    const stats = calculateStepJobStats(companies, step.id);
-    return {
-      name: step.name,
-      ...stats,
-    };
-  });
-
-  const totalFields =
-    completedFields +
-    processingFields +
-    failedFields +
-    waitingFields +
-    needsApprovalFields;
-  const completionRate =
-    totalFields > 0 ? (completedFields / totalFields) * 100 : 0;
-
-  const activeJobs = companies.reduce((acc, company) => {
-    const latestYear = company.years[0];
-    if (
-      latestYear?.jobs?.some(
-        (job) =>
-          (job.processedOn && !job.finishedOn) ||
-          (!job.data.approved && !job.data.autoApprove)
-      )
-    ) {
-      return acc + 1;
-    }
-    return acc;
-  }, 0);
-
-  return {
-    totalJobs,
-    totalCompanies: companies.length,
-    totalFields,
-    completedFields,
-    processingFields,
-    failedFields,
-    waitingFields,
-    needsApprovalFields,
-    completionRate,
-    activeJobs,
-    stepStats,
-  };
-}
-
 function OverviewStats({ companies }: { companies: SwimlaneCompany[] }) {
-  const stats = calculateOverallStats(companies);
+  const stats = calculateSwimlaneOverallStats(
+    companies,
+    getAllPipelineSteps,
+    calculateStepJobStats,
+    getJobStatusFromUtils
+  );
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (

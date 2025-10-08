@@ -1,7 +1,11 @@
 import React from "react";
 import { CheckCircle2, Loader2, HelpCircle, AlertTriangle } from "lucide-react";
-import { getStatusConfig } from "@/lib/status-config";
-import { PipelineProgressBar } from "../ui/multi-progress-bar";
+import {
+  getStatusConfig,
+  getStatCardValueColor,
+  getStatCardLabelColor,
+} from "@/lib/status-config";
+import { PipelineProgressBar } from "../../components/ui/multi-progress-bar";
 
 /**
  * Base stat card component with consistent styling
@@ -29,29 +33,19 @@ export function StatCard({
     lg: "text-3xl",
   };
 
-  const colorClasses = {
-    gray: "text-gray-01",
-    green: "text-green-03",
-    blue: "text-blue-03",
-    orange: "text-orange-03",
-    pink: "text-pink-03",
-  };
-
-  const labelColorClasses = {
-    gray: "text-gray-02",
-    green: "text-green-02",
-    blue: "text-blue-02",
-    orange: "text-orange-02",
-    pink: "text-pink-02",
-  };
-
   return (
     <div className={`bg-gray-03/50 rounded-lg p-4 ${className}`}>
-      <div className={`${sizeClasses[size]} font-bold ${colorClasses[color]}`}>
+      <div
+        className={`${sizeClasses[size]} font-bold ${getStatCardValueColor(
+          color
+        )}`}
+      >
         {value}
       </div>
       <div
-        className={`text-xs ${labelColorClasses[color]} mt-1 flex items-center gap-1`}
+        className={`text-xs ${getStatCardLabelColor(
+          color
+        )} mt-1 flex items-center gap-1`}
       >
         {icon}
         {label}
@@ -76,26 +70,12 @@ export function CompactStatCard({
   color = "gray",
   className = "",
 }: CompactStatCardProps) {
-  const colorClasses = {
-    gray: "text-gray-01",
-    green: "text-green-03",
-    blue: "text-blue-03",
-    orange: "text-orange-03",
-    pink: "text-pink-03",
-  };
-
-  const labelColorClasses = {
-    gray: "text-gray-02",
-    green: "text-green-02",
-    blue: "text-blue-02",
-    orange: "text-orange-02",
-    pink: "text-pink-02",
-  };
-
   return (
     <div className={`text-center p-3 bg-gray-03/50 rounded-lg ${className}`}>
-      <div className={`text-lg font-bold ${colorClasses[color]}`}>{value}</div>
-      <div className={`text-xs ${labelColorClasses[color]}`}>{label}</div>
+      <div className={`text-lg font-bold ${getStatCardValueColor(color)}`}>
+        {value}
+      </div>
+      <div className={`text-xs ${getStatCardLabelColor(color)}`}>{label}</div>
     </div>
   );
 }

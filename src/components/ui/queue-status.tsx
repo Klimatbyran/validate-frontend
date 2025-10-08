@@ -1,4 +1,3 @@
-// React import not needed for this component
 import { motion } from "framer-motion";
 import { Loader2, RefreshCw, WifiOff, AlertCircle } from "lucide-react";
 import { useQueues } from "@/hooks/useQueues";

@@ -26,7 +26,7 @@ import {
   Code,
   FileText,
 } from "lucide-react";
-import { JobSpecificDataView } from "./job-specific-data-view";
+import { JobSpecificDataView } from "../../views/job-specific-data-view";
 import { JsonViewer } from "./json-viewer";
 
 interface JobDetailsDialogProps {

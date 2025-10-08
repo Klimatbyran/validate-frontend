@@ -127,3 +127,101 @@ export function calculateOverallStatistics(
     completionRate: calculateCompletionRate(completedFields, totalFields),
   };
 }
+
+/**
+ * Calculate overall statistics for swimlane companies (latest year only)
+ * Note: This function requires imports from workflow-utils and workflow-config
+ */
+export function calculateSwimlaneOverallStats(
+  companies: any[],
+  getAllPipelineSteps: () => any[],
+  calculateStepJobStats: (data: any, stepId: string) => any,
+  getJobStatus: (job: any) => string
+) {
+  let totalJobs = 0;
+  let completedFields = 0;
+  let processingFields = 0;
+  let failedFields = 0;
+  let waitingFields = 0;
+  let needsApprovalFields = 0;
+
+  // Count jobs from latest year only for each company
+  companies.forEach((company) => {
+    // Only count from the latest year (first in the sorted array)
+    const latestYear = company.years[0];
+    if (latestYear) {
+      totalJobs++;
+
+      // Count jobs from latest year only
+      (latestYear.jobs || []).forEach((job: any) => {
+        const status = getJobStatus(job);
+
+        switch (status) {
+          case "completed":
+            completedFields++;
+            break;
+          case "processing":
+            processingFields++;
+            break;
+          case "failed":
+            failedFields++;
+            break;
+          case "needs_approval":
+            needsApprovalFields++;
+            break;
+          case "waiting":
+          default:
+            waitingFields++;
+            break;
+        }
+      });
+    }
+  });
+
+  // Calculate step statistics using the unified function
+  const pipelineSteps = getAllPipelineSteps();
+  const stepStats = pipelineSteps.map((step: any) => {
+    const stats = calculateStepJobStats(companies, step.id);
+    return {
+      name: step.name,
+      ...stats,
+    };
+  });
+
+  const totalFields =
+    completedFields +
+    processingFields +
+    failedFields +
+    waitingFields +
+    needsApprovalFields;
+  const completionRate =
+    totalFields > 0 ? (completedFields / totalFields) * 100 : 0;
+
+  const activeJobs = companies.reduce((acc, company) => {
+    const latestYear = company.years[0];
+    if (
+      latestYear?.jobs?.some(
+        (job: any) =>
+          (job.processedOn && !job.finishedOn) ||
+          (!job.data.approved && !job.data.autoApprove)
+      )
+    ) {
+      return acc + 1;
+    }
+    return acc;
+  }, 0);
+
+  return {
+    totalJobs,
+    totalCompanies: companies.length,
+    totalFields,
+    completedFields,
+    processingFields,
+    failedFields,
+    waitingFields,
+    needsApprovalFields,
+    completionRate,
+    activeJobs,
+    stepStats,
+  };
+}

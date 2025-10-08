@@ -13,9 +13,7 @@ import type {
 } from "./types";
 import {
   getQueuesForPipelineStep,
-  getAllFieldNames,
   getAllPipelineSteps,
-  PIPELINE_STEPS,
 } from "./workflow-config";
 
 /**
@@ -84,6 +82,20 @@ export function getJobsForStep(
     // Single year data
     return data.jobs?.filter((job) => queueIds.includes(job.queueId)) || [];
   }
+}
+
+/**
+ * Find a job by queue ID in year data
+ */
+export function findJobByQueueId(
+  queueId: string,
+  yearData: SwimlaneYearData
+): any | undefined {
+  if (!yearData.jobs) {
+    return undefined;
+  }
+
+  return yearData.jobs.find((job: any) => job.queueId === queueId);
 }
 
 /**
@@ -183,82 +195,6 @@ export function calculatePipelineStepStatus(
 }
 
 /**
- * Check if a field is actively processing
- */
-export function isFieldActivelyProcessing(
-  fieldData: SwimlaneStatusType | SwimlaneFieldData | undefined
-): boolean {
-  if (!fieldData) {
-    return false;
-  }
-
-  if (typeof fieldData === "string") {
-    return fieldData === "processing";
-  }
-
-  return fieldData.isActivelyProcessing || false;
-}
-
-/**
- * Calculate overall statistics for a company across all years
- */
-export function calculateCompanyStats(company: SwimlaneCompany) {
-  let totalJobs = 0;
-  let totalFields = 0;
-  let completedFields = 0;
-  let processingFields = 0;
-  let failedFields = 0;
-  let waitingFields = 0;
-  let needsApprovalFields = 0;
-
-  const stepStats = PIPELINE_STEPS.map((step) => ({
-    name: step.name,
-    completed: 0,
-    processing: 0,
-    failed: 0,
-    waiting: 0,
-    total: 0,
-  }));
-
-  company.years.forEach((year) => {
-    totalJobs++;
-
-    getAllFieldNames().forEach((field) => {
-      totalFields++;
-      const fieldData = year.fields[field];
-      const status = getFieldStatus(fieldData);
-
-      if (status === "completed") completedFields++;
-      else if (status === "processing") processingFields++;
-      else if (status === "failed") failedFields++;
-      else if (status === "needs_approval") needsApprovalFields++;
-      else waitingFields++;
-
-      // Calculate step statistics
-      PIPELINE_STEPS.forEach((step, index) => {
-        const stepStatus = calculatePipelineStepStatus(year, step.id);
-        stepStats[index].total++;
-        if (stepStatus === "completed") stepStats[index].completed++;
-        else if (stepStatus === "processing") stepStats[index].processing++;
-        else if (stepStatus === "failed") stepStats[index].failed++;
-        else stepStats[index].waiting++;
-      });
-    });
-  });
-
-  return {
-    totalJobs,
-    totalFields,
-    completedFields,
-    processingFields,
-    failedFields,
-    waitingFields,
-    needsApprovalFields,
-    stepStats,
-  };
-}
-
-/**
  * Convert grouped companies data to swimlane format
  */
 export function convertGroupedCompaniesToSwimlaneFormat(
@@ -312,61 +248,4 @@ export function convertGroupedCompaniesToSwimlaneFormat(
     };
     return result;
   });
-}
-
-/**
- * Get status color classes for different statuses
- */
-export function getStatusColorClasses(status: SwimlaneStatusType): string {
-  switch (status) {
-    case "completed":
-      return "text-green-03 bg-green-03/20 border-green-03 ring-green-03";
-    case "failed":
-      return "text-pink-03 bg-pink-03/20 border-pink-03 ring-pink-03";
-    case "processing":
-      return "text-blue-03 bg-blue-03/20 border-blue-03 ring-blue-03";
-    case "needs_approval":
-      return "text-orange-03 bg-orange-03/20 border-orange-03 ring-orange-03";
-    case "waiting":
-    default:
-      return "text-gray-02 bg-gray-03/20 border-gray-03 ring-gray-03";
-  }
-}
-
-/**
- * Get status icon for different statuses
- */
-export function getStatusIcon(status: SwimlaneStatusType): string {
-  switch (status) {
-    case "completed":
-      return "✓";
-    case "failed":
-      return "⚠";
-    case "processing":
-      return "⟳";
-    case "needs_approval":
-      return "?";
-    case "waiting":
-    default:
-      return "○";
-  }
-}
-
-/**
- * Get status text for different statuses
- */
-export function getStatusText(status: SwimlaneStatusType): string {
-  switch (status) {
-    case "completed":
-      return "Klar";
-    case "failed":
-      return "Misslyckades";
-    case "processing":
-      return "Bearbetar";
-    case "needs_approval":
-      return "Behöver godkännande";
-    case "waiting":
-    default:
-      return "Väntar";
-  }
 }
