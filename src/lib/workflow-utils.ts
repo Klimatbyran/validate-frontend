@@ -73,13 +73,13 @@ export function getJobsForStep(
   const queueIds = getQueuesForPipelineStep(stepId);
 
   if (Array.isArray(data)) {
-    // All companies data
-    return data.flatMap((company) =>
-      company.years.flatMap(
-        (year) =>
-          year.jobs?.filter((job) => queueIds.includes(job.queueId)) || []
-      )
-    );
+    // All companies data - only get jobs from latest year per company
+    return data.flatMap((company) => {
+      const latestYear = company.years[0]; // Latest year is first in sorted array
+      return (
+        latestYear?.jobs?.filter((job) => queueIds.includes(job.queueId)) || []
+      );
+    });
   } else {
     // Single year data
     return data.jobs?.filter((job) => queueIds.includes(job.queueId)) || [];
@@ -107,7 +107,29 @@ export function calculateStepJobStats(
     (stats, job) => {
       const status = getJobStatus(job);
       stats.total++;
-      stats[status]++;
+
+      // Map status to the correct property name
+      switch (status) {
+        case "completed":
+          stats.completed++;
+          break;
+        case "processing":
+          stats.processing++;
+          break;
+        case "failed":
+          stats.failed++;
+          break;
+        case "waiting":
+          stats.waiting++;
+          break;
+        case "needs_approval":
+          stats.needsApproval++;
+          break;
+        default:
+          stats.waiting++;
+          break;
+      }
+
       return stats;
     },
     {
@@ -119,10 +141,6 @@ export function calculateStepJobStats(
       total: 0,
     }
   );
-
-  // Only log if there are unexpected results
-  if (result.failed > 0 || result.total === 0) {
-  }
 
   return result;
 }

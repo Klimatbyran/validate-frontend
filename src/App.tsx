@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/ui/header";
 import { QueueStatus } from "@/components/ui/queue-status";
 import { QueueGrid } from "@/components/ui/queue-grid";
-import { SwimlaneQueueStatus } from "@/components/ui/swimlane-queue-status";
+import { SwimlaneQueueStatus } from "@/components/jobStatus/swimlane-queue-status";
 import { WorkflowDiagram } from "@/components/ui/workflow-diagram";
 import { DebugView } from "@/components/ui/debug-view";
 import { Toaster } from "@/components/ui/sonner";

@@ -2,24 +2,17 @@ import React, { useState, useMemo } from "react";
 import {
   ChevronDown,
   ChevronRight,
-  CheckCircle2,
-  AlertTriangle,
   Calendar,
   TrendingUp,
-  Clock,
   Loader2,
   Activity,
   BarChart3,
-  Eye,
-  Grid3X3,
-  List,
-  HelpCircle,
-  XCircle,
-  RotateCw,
 } from "lucide-react";
-import { JobDetailsDialog } from "./job-details-dialog";
+import { JobDetailsDialog } from "../ui/job-details-dialog";
 import { useGroupedCompanies } from "@/hooks/useGroupedCompanies";
 import { queueStore } from "@/lib/queue-store";
+import { StatCard, CompactStatCard, PipelineStepCard } from "./stat-cards";
+import { ViewToggle, useViewToggle, type ViewLevel } from "../ui/view-toggle";
 import {
   getAllPipelineSteps,
   getQueuesForPipelineStep,
@@ -32,17 +25,14 @@ import {
   getJobStatus as getJobStatusFromUtils,
   calculateStepJobStats,
 } from "@/lib/workflow-utils";
-import type {
-  SwimlaneStatusType,
-  SwimlaneYearData,
-  SwimlaneCompany,
-  QueueJob,
-} from "@/lib/types";
+import {
+  getStatusConfig,
+  getStatusLabel,
+  getStatusIcon,
+  getCompactStyles,
+} from "@/lib/status-config";
+import type { SwimlaneYearData, SwimlaneCompany, QueueJob } from "@/lib/types";
 
-/**
- * Unified status display function for individual field/job display
- * Consolidates icon, text, and styles logic for compact and detailed views
- */
 function getStatusDisplay(
   job: QueueJob | undefined,
   variant: "compact" | "detailed",
@@ -50,111 +40,28 @@ function getStatusDisplay(
 ) {
   const status = getJobStatusFromUtils(job);
 
-  const getIcon = (status: SwimlaneStatusType) => {
-    const sizeClasses = {
-      compact: "w-3 h-3",
-      detailed: "w-4 h-4",
-    };
-
-    const colorClasses = {
-      compact: "text-white",
-      detailed: {
-        completed: "text-green-03",
-        failed: "text-pink-03",
-        processing: "text-blue-03",
-        needs_approval: "text-orange-03",
-        waiting: "text-gray-02",
-      },
-    };
-
-    const iconProps = {
-      className: `${sizeClasses[variant]} ${
-        variant === "compact"
-          ? colorClasses.compact
-          : colorClasses.detailed[status]
-      } ${status === "processing" && isActive ? "animate-spin-slow" : ""}`,
-    };
-
-    switch (status) {
-      case "completed":
-        return <CheckCircle2 {...iconProps} />;
-      case "processing":
-        return <RotateCw {...iconProps} />;
-      case "failed":
-        return variant === "compact" ? (
-          <XCircle {...iconProps} />
-        ) : (
-          <XCircle {...iconProps} />
-        );
-      case "needs_approval":
-        return <HelpCircle {...iconProps} />;
-      case "waiting":
-        return <Clock {...iconProps} />;
-    }
-  };
-
-  // Text configuration
-  const getText = (status: SwimlaneStatusType) => {
-    if (isActive) return "Processing Now";
-    switch (status) {
-      case "completed":
-        return "Done";
-      case "failed":
-        return "Requires Action";
-      case "processing":
-        return "In Progress";
-      case "needs_approval":
-        return "Awaiting Approval";
-      case "waiting":
-        return "Waiting";
-    }
-  };
-
-  // Styles configuration (only for compact view)
-  const getStyles = (status: SwimlaneStatusType) => {
-    if (variant !== "compact") return undefined;
-
-    const baseStatus = status || "waiting";
-    switch (baseStatus) {
-      case "completed":
-        return "text-white bg-green-03/60 border-transparent";
-      case "failed":
-        return "text-white bg-pink-03/60 border-transparent";
-      case "processing":
-        return isActive
-          ? "text-white bg-blue-03/60 border-blue-03 ring-2 ring-blue-03/50 animate-pulse"
-          : "text-white bg-blue-03/60 border-blue-03";
-      case "needs_approval":
-        return "text-white bg-orange-03/60 border-transparent";
-      case "waiting":
-      default:
-        return "text-white bg-gray-03/60 border-gray-03";
-    }
-  };
-
   return {
     status,
-    icon: getIcon(status),
-    text: getText(status),
-    styles: getStyles(status),
+    icon: getStatusIcon(status, variant, isActive),
+    text: getStatusLabel(status, isActive),
+    styles:
+      variant === "compact" ? getCompactStyles(status, isActive) : undefined,
   };
 }
 
 function getStepIcon(
   status: "completed" | "processing" | "failed" | "waiting" | "needs_approval"
 ) {
-  switch (status) {
-    case "completed":
-      return <CheckCircle2 className="w-5 h-5 text-green-03" />;
-    case "processing":
-      return <RotateCw className="w-5 h-5 text-blue-03 animate-spin-slow" />;
-    case "failed":
-      return <AlertTriangle className="w-5 h-5 text-pink-03" />;
-    case "needs_approval":
-      return <HelpCircle className="w-5 h-5 text-orange-03" />;
-    case "waiting":
-      return <Clock className="w-5 h-5 text-gray-02" />;
-  }
+  const config = getStatusConfig(status);
+  const IconComponent = config.icon;
+
+  return (
+    <IconComponent
+      className={`w-5 h-5 ${config.colors.icon} ${
+        "animation" in config ? config.animation : ""
+      }`.trim()}
+    />
+  );
 }
 
 function findJobByQueueId(
@@ -174,7 +81,7 @@ function YearRow({
   onFieldClick,
 }: {
   yearData: SwimlaneYearData;
-  expandLevel: "collapsed" | "compact" | "full";
+  expandLevel: ViewLevel;
   onFieldClick: (field: string) => void;
 }) {
   const yearStepStats = useMemo(() => {
@@ -331,20 +238,16 @@ function YearRow({
 }
 
 function CompanyCard({ company }: { company: SwimlaneCompany }) {
-  const [expandLevel, setExpandLevel] = useState<
-    "collapsed" | "compact" | "full"
-  >("collapsed");
+  const {
+    currentView: expandLevel,
+    setCurrentView: setExpandLevel,
+    cycleView,
+  } = useViewToggle("collapsed");
   const [selectedJob, setSelectedJob] = useState<QueueJob | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const latestYear = company.years?.[0];
   const totalYears = company.years?.length || 0;
-
-  const cycleExpand = () => {
-    if (expandLevel === "collapsed") setExpandLevel("compact");
-    else if (expandLevel === "compact") setExpandLevel("full");
-    else setExpandLevel("collapsed");
-  };
 
   return (
     <>
@@ -352,7 +255,7 @@ function CompanyCard({ company }: { company: SwimlaneCompany }) {
         {/* Company Header */}
         <div className="w-full px-4 py-3 bg-gray-03/50 border-b border-gray-03 flex items-center justify-between">
           <button
-            onClick={cycleExpand}
+            onClick={cycleView}
             className="flex items-center gap-3 hover:opacity-70 transition-opacity"
           >
             {expandLevel === "collapsed" && (
@@ -376,49 +279,14 @@ function CompanyCard({ company }: { company: SwimlaneCompany }) {
               </div>
             </div>
           </button>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setExpandLevel("collapsed");
-              }}
-              className={`p-2 rounded-lg border transition-colors ${
-                expandLevel === "collapsed"
-                  ? "bg-gray-03 text-gray-01 border-gray-02"
-                  : "bg-transparent text-gray-02 border-gray-02 hover:bg-gray-03 hover:text-gray-01"
-              }`}
-              title="Collapsed View"
-            >
-              <Eye className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setExpandLevel("compact");
-              }}
-              className={`p-2 rounded-lg border transition-colors ${
-                expandLevel === "compact"
-                  ? "bg-blue-03/20 text-blue-03 border-blue-03"
-                  : "bg-transparent text-gray-02 border-gray-02 hover:bg-gray-03 hover:text-gray-01"
-              }`}
-              title="Compact View"
-            >
-              <List className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setExpandLevel("full");
-              }}
-              className={`p-2 rounded-lg border transition-colors ${
-                expandLevel === "full"
-                  ? "bg-green-03/20 text-green-03 border-green-03"
-                  : "bg-transparent text-gray-02 border-gray-02 hover:bg-gray-03 hover:text-gray-01"
-              }`}
-              title="Full Detail View"
-            >
-              <Grid3X3 className="w-4 h-4" />
-            </button>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-1"
+          >
+            <ViewToggle
+              currentView={expandLevel}
+              onViewChange={setExpandLevel}
+            />
           </div>
         </div>
 
@@ -470,13 +338,15 @@ function calculateOverallStats(companies: SwimlaneCompany[]) {
   let waitingFields = 0;
   let needsApprovalFields = 0;
 
-  // Count all jobs across all companies and years
+  // Count jobs from latest year only for each company
   companies.forEach((company) => {
-    company.years.forEach((year) => {
+    // Only count from the latest year (first in the sorted array)
+    const latestYear = company.years[0];
+    if (latestYear) {
       totalJobs++;
 
-      // Count all jobs for this year
-      (year.jobs || []).forEach((job) => {
+      // Count jobs from latest year only
+      (latestYear.jobs || []).forEach((job) => {
         const status = getJobStatusFromUtils(job);
 
         switch (status) {
@@ -498,7 +368,7 @@ function calculateOverallStats(companies: SwimlaneCompany[]) {
             break;
         }
       });
-    });
+    }
   });
 
   // Calculate step statistics using the unified function
@@ -520,18 +390,19 @@ function calculateOverallStats(companies: SwimlaneCompany[]) {
   const completionRate =
     totalFields > 0 ? (completedFields / totalFields) * 100 : 0;
 
-  const activeJobs = companies.reduce(
-    (acc, company) =>
-      acc +
-      company.years.filter((year) =>
-        year.jobs?.some(
-          (job) =>
-            (job.processedOn && !job.finishedOn) ||
-            (!job.data.approved && !job.data.autoApprove)
-        )
-      ).length,
-    0
-  );
+  const activeJobs = companies.reduce((acc, company) => {
+    const latestYear = company.years[0];
+    if (
+      latestYear?.jobs?.some(
+        (job) =>
+          (job.processedOn && !job.finishedOn) ||
+          (!job.data.approved && !job.data.autoApprove)
+      )
+    ) {
+      return acc + 1;
+    }
+    return acc;
+  }, 0);
 
   return {
     totalJobs,
@@ -571,67 +442,52 @@ function OverviewStats({ companies }: { companies: SwimlaneCompany[] }) {
         <>
           {/* Top Level Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-gray-03/50 rounded-lg p-4">
-              <div className="text-2xl font-bold text-gray-01">
-                {stats.totalCompanies}
-              </div>
-              <div className="text-xs text-gray-02 mt-1">Companies</div>
-            </div>
-            <div className="bg-gray-03/50 rounded-lg p-4">
-              <div className="text-2xl font-bold text-gray-01">
-                {stats.totalJobs}
-              </div>
-              <div className="text-xs text-gray-02 mt-1">Reports</div>
-            </div>
-            <div className="bg-gray-03/50 rounded-lg p-4">
-              <div className="text-2xl font-bold text-blue-03">
-                {stats.activeJobs}
-              </div>
-              <div className="text-xs text-blue-02 mt-1 flex items-center gap-1">
-                <Activity className="w-3 h-3" />
-                Active Jobs
-              </div>
-            </div>
-            <div className="bg-gray-03/50 rounded-lg p-4">
-              <div className="text-2xl font-bold text-green-03">
-                {stats.completionRate.toFixed(1)}%
-              </div>
-              <div className="text-xs text-green-02 mt-1">Completed Fields</div>
-            </div>
+            <StatCard
+              value={stats.totalCompanies}
+              label="Companies"
+              color="gray"
+            />
+            <StatCard value={stats.totalJobs} label="Reports" color="gray" />
+            <StatCard
+              value={stats.activeJobs}
+              label="Active Jobs"
+              color="blue"
+              icon={<Activity className="w-3 h-3" />}
+            />
+            <StatCard
+              value={`${stats.completionRate.toFixed(1)}%`}
+              label="Completed Fields"
+              color="green"
+            />
           </div>
 
           {/* Field Status Breakdown */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-            <div className="text-center p-3 bg-gray-03/50 rounded-lg">
-              <div className="text-lg font-bold text-gray-01">
-                {stats.totalFields}
-              </div>
-              <div className="text-xs text-gray-02">Total Jobs</div>
-            </div>
-            <div className="text-center p-3 bg-gray-03/50 rounded-lg">
-              <div className="text-lg font-bold text-green-03">
-                {stats.completedFields}
-              </div>
-              <div className="text-xs text-green-02">Completed</div>
-            </div>
-            <div className="text-center p-3 bg-gray-03/50 rounded-lg">
-              <div className="text-lg font-bold text-blue-03">
-                {stats.processingFields}
-              </div>
-              <div className="text-xs text-blue-02">Processing</div>
-            </div>
-            <div className="text-center p-3 bg-gray-03/50 rounded-lg">
-              <div className="text-lg font-bold text-orange-03">
-                {stats.needsApprovalFields}
-              </div>
-              <div className="text-xs text-orange-02">Approval</div>
-            </div>
-            <div className="text-center p-3 bg-gray-03/50 rounded-lg">
-              <div className="text-lg font-bold text-pink-03">
-                {stats.failedFields}
-              </div>
-              <div className="text-xs text-pink-02">Failed</div>
-            </div>
+            <CompactStatCard
+              value={stats.totalFields}
+              label="Total Jobs"
+              color="gray"
+            />
+            <CompactStatCard
+              value={stats.completedFields}
+              label="Completed"
+              color="green"
+            />
+            <CompactStatCard
+              value={stats.processingFields}
+              label="Processing"
+              color="blue"
+            />
+            <CompactStatCard
+              value={stats.needsApprovalFields}
+              label="Approval"
+              color="orange"
+            />
+            <CompactStatCard
+              value={stats.failedFields}
+              label="Failed"
+              color="pink"
+            />
           </div>
 
           {/* Pipeline Steps Stats */}
@@ -640,84 +496,18 @@ function OverviewStats({ companies }: { companies: SwimlaneCompany[] }) {
               Pipeline Steps Overview
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {stats.stepStats.map((step, index) => {
-                const completionPercent =
-                  step.total > 0 ? (step.completed / step.total) * 100 : 0;
-
-                // Calculate percentages for each status
-                const completedPercent =
-                  step.total > 0 ? (step.completed / step.total) * 100 : 0;
-                const processingPercent =
-                  step.total > 0 ? (step.processing / step.total) * 100 : 0;
-                const failedPercent =
-                  step.total > 0 ? (step.failed / step.total) * 100 : 0;
-                const needsApprovalPercent =
-                  step.total > 0 ? (step.needsApproval / step.total) * 100 : 0;
-                const waitingPercent =
-                  step.total > 0 ? (step.waiting / step.total) * 100 : 0;
-
-                return (
-                  <div key={index} className="bg-gray-03/50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-gray-01">
-                        {step.name}
-                      </span>
-                      <span className="text-xs font-bold text-gray-01">
-                        {completionPercent.toFixed(0)}% completed
-                      </span>
-                    </div>
-                    <div className="w-full h-2 bg-gray-02 rounded-full overflow-hidden mb-2 flex">
-                      <div
-                        className="h-full bg-green-03 transition-all"
-                        style={{ width: `${completedPercent}%` }}
-                        title={`${step.completed} completed`}
-                      />
-                      <div
-                        className="h-full bg-blue-03 transition-all"
-                        style={{ width: `${processingPercent}%` }}
-                        title={`${step.processing} processing`}
-                      />
-                      <div
-                        className="h-full bg-orange-03 transition-all"
-                        style={{ width: `${needsApprovalPercent}%` }}
-                        title={`${step.needsApproval} needs approval`}
-                      />
-                      <div
-                        className="h-full bg-pink-03 transition-all"
-                        style={{ width: `${failedPercent}%` }}
-                        title={`${step.failed} failed`}
-                      />
-                      <div
-                        className="h-full bg-gray-02 transition-all"
-                        style={{ width: `${waitingPercent}%` }}
-                        title={`${step.waiting} waiting`}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-gray-02">
-                      <span className="flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-green-03" />
-                        {step.completed}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 text-blue-03" />
-                        {step.processing}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <HelpCircle className="w-3 h-3 text-orange-03" />
-                        {step.needsApproval}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3 text-pink-03" />
-                        {step.failed}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-gray-02" />
-                        {step.waiting}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+              {stats.stepStats.map((step, index) => (
+                <PipelineStepCard
+                  key={index}
+                  name={step.name}
+                  completed={step.completed}
+                  processing={step.processing}
+                  failed={step.failed}
+                  needsApproval={step.needsApproval}
+                  waiting={step.waiting}
+                  total={step.total}
+                />
+              ))}
             </div>
           </div>
         </>

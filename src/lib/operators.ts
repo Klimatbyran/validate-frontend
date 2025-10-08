@@ -334,12 +334,27 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
     // Dela strömmen för att undvika att köra om hela pipeline för varje subscriber
     share(),
 
-    // Sortera företag efter namn
+    // Sortera företag efter senaste timestamp (nyaste först)
     map((companies) =>
       // Skapa en ny sorterad array utan att mutera den ursprungliga
-      companies.sort((a, b) =>
-        (a.companyName || a.company).localeCompare(b.companyName || b.company)
-      )
+      companies.sort((a, b) => {
+        // Hitta den senaste timestampen för varje företag från attempts
+        const aLatestTimestamp = Math.max(
+          ...(a.attempts || []).map(
+            (attempt: CompanyStatus & { latestTimestamp?: number }) =>
+              attempt.latestTimestamp || 0
+          )
+        );
+        const bLatestTimestamp = Math.max(
+          ...(b.attempts || []).map(
+            (attempt: CompanyStatus & { latestTimestamp?: number }) =>
+              attempt.latestTimestamp || 0
+          )
+        );
+
+        // Sortera efter senaste timestamp (nyaste först)
+        return bLatestTimestamp - aLatestTimestamp;
+      })
     ),
 
     catchError(() => {
