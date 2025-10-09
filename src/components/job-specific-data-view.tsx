@@ -3,7 +3,7 @@ import { QueueJob } from "@/lib/types";
 import { MarkdownVectorPagesDisplay } from "./ui/markdown-display";
 import { isMarkdown, isJsonString } from "@/lib/utils";
 import { FiscalYearDisplay } from "./ui/fiscal-year-display";
-import { ScopeEmissionsDisplay } from "./ui/scope-emissions-display";
+import { ScopeEmissionsDisplay } from "./scope-emissions-display";
 import { MetadataDisplay } from "./ui/metadata-display";
 import { ScreenshotSlideshow } from "./screenshot-slideshow";
 import { CollapsibleSection } from "./ui/collapsible-section";
