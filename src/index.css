@@ -1,7 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
+
+@layer utilities {
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -71,7 +77,7 @@
     --ring: 25 97% 56%;
   }
 }
- 
+
 @layer base {
   * {
     @apply border-border;
@@ -80,7 +86,6 @@
     @apply bg-background text-foreground font-dm-sans;
   }
 }
-
 
 .markdown-tables {
   max-width: 100%;
@@ -112,4 +117,18 @@
 .markdown-tables hr {
   margin-top: 2rem;
   margin-bottom: 2rem;
+}
+
+/* Custom animations for swimlane component */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
 }
