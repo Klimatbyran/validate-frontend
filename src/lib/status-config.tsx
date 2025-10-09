@@ -141,6 +141,42 @@ export function getDetailedTextColor(status: SwimlaneStatusType): string {
 }
 
 /**
+ * Get background color for status indicators (with /20 opacity for dialogs)
+ */
+export function getStatusBackgroundColor(status: SwimlaneStatusType): string {
+  const backgroundMap = {
+    completed: "bg-green-03/20",
+    failed: "bg-pink-03/20",
+    processing: "bg-blue-03/20",
+    needs_approval: "bg-orange-03/20",
+    waiting: "bg-gray-03/20",
+  };
+  return backgroundMap[status];
+}
+
+/**
+ * Get Swedish status labels for dialogs
+ */
+export function getStatusLabelSwedish(
+  status: SwimlaneStatusType,
+  isActive?: boolean
+): string {
+  if (status === "processing" && isActive) {
+    return "Bearbetar nu";
+  }
+
+  const swedishLabels = {
+    completed: "Slutförd",
+    failed: "Misslyckad",
+    processing: "Bearbetar",
+    needs_approval: "Väntar på godkännande",
+    waiting: "Väntar",
+  };
+
+  return swedishLabels[status];
+}
+
+/**
  * Stat card color mappings for consistent theming
  */
 export const STAT_CARD_COLORS = {

@@ -5,8 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/ui/header";
 import { QueueStatus } from "@/components/ui/queue-status";
-import { QueueGrid } from "@/components/ui/queue-grid";
-import { SwimlaneQueueStatus } from "@/views/jobStatus/swimlane-queue-status";
+import { SwimlaneQueueStatus } from "@/views/swimlane-queue-status";
 import { WorkflowDiagram } from "@/components/ui/workflow-diagram";
 import { DebugView } from "@/views/debug-view";
 import { Toaster } from "@/components/ui/sonner";
@@ -108,7 +107,7 @@ function App() {
 
     // Send jobs to the API
     try {
-      const responses = await Promise.all(
+      await Promise.all(
         jobs.map(async (job) => {
           const response = await fetch("/api/queues/nlmParsePDF/add", {
             method: "POST",
@@ -182,8 +181,8 @@ function App() {
                 value={currentTab}
                 onValueChange={(value) => {
                   setCurrentTab(value);
-                  // Refresh data when switching to grid or processing tabs
-                  if (value === "grid" || value === "processing") {
+                  // Refresh data when switching to jobbstatus or processing tabs
+                  if (value === "jobbstatus" || value === "processing") {
                     refresh();
                   }
                 }}
@@ -192,10 +191,7 @@ function App() {
                 <TabsList className="bg-gray-04/50 backdrop-blur-sm">
                   <TabsTrigger value="upload">Uppladdning</TabsTrigger>
                   <TabsTrigger value="processing">Bearbetning</TabsTrigger>
-                  <TabsTrigger value="grid">Jobbstatus (Grid)</TabsTrigger>
-                  <TabsTrigger value="swimlane">
-                    Jobbstatus (Swimlane)
-                  </TabsTrigger>
+                  <TabsTrigger value="jobbstatus">Jobbstatus</TabsTrigger>
                   <TabsTrigger value="workflow">Processflöde</TabsTrigger>
                   <TabsTrigger value="debug">Debug</TabsTrigger>
                   <TabsTrigger value="results">Resultat</TabsTrigger>
@@ -406,18 +402,7 @@ function App() {
                     </motion.div>
                   </TabsContent>
 
-                  <TabsContent key="grid" value="grid" asChild>
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      className="space-y-6"
-                    >
-                      <QueueGrid />
-                    </motion.div>
-                  </TabsContent>
-
-                  <TabsContent key="swimlane" value="swimlane" asChild>
+                  <TabsContent key="jobbstatus" value="jobbstatus" asChild>
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}

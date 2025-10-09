@@ -1,28 +1,17 @@
 import React from "react";
 import { QueueJob } from "@/lib/types";
-import { MarkdownVectorPagesDisplay } from "../components/ui/markdown-display";
-import { isMarkdown } from "@/lib/utils";
-import { WikidataPreview } from "../components/ui/wikidata-preview";
-import { FiscalYearDisplay } from "../components/ui/fiscal-year-display";
-import { ScopeEmissionsDisplay } from "../components/ui/scope-emissions-display";
-import { MetadataDisplay } from "../components/ui/metadata-display";
-import { ScreenshotSlideshow } from "../components/ui/screenshot-slideshow";
-import { CollapsibleSection } from "../components/ui/collapsible-section";
+import { MarkdownVectorPagesDisplay } from "./ui/markdown-display";
+import { isMarkdown, isJsonString } from "@/lib/utils";
+import { FiscalYearDisplay } from "./ui/fiscal-year-display";
+import { ScopeEmissionsDisplay } from "./ui/scope-emissions-display";
+import { MetadataDisplay } from "./ui/metadata-display";
+import { ScreenshotSlideshow } from "./screenshot-slideshow";
+import { CollapsibleSection } from "./ui/collapsible-section";
 import { Image } from "lucide-react";
 
 interface JobSpecificDataViewProps {
   data: any;
   job?: QueueJob;
-}
-
-// Utility function to check if a string is valid JSON
-function isJsonString(str: string): boolean {
-  try {
-    JSON.parse(str);
-    return true;
-  } catch (e) {
-    return false;
-  }
 }
 
 // Utility function to parse return value data from job
@@ -143,13 +132,6 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
 
   return (
     <div className="space-y-3 text-sm">
-      {/* Show Wikidata preview if available */}
-      {processedData.wikidata && typeof processedData.wikidata === "object" && (
-        <div className="mb-4">
-          <WikidataPreview data={processedData.wikidata} />
-        </div>
-      )}
-
       {/* Show Fiscal Year display if available */}
       {(processedData.fiscalYear ||
         (processedData.startMonth && processedData.endMonth)) && (

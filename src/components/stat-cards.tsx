@@ -5,7 +5,7 @@ import {
   getStatCardValueColor,
   getStatCardLabelColor,
 } from "@/lib/status-config";
-import { PipelineProgressBar } from "../../components/ui/multi-progress-bar";
+import { PipelineProgressBar } from "./ui/multi-progress-bar";
 
 /**
  * Base stat card component with consistent styling

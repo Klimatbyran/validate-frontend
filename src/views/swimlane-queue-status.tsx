@@ -8,15 +8,19 @@ import {
   Activity,
   BarChart3,
 } from "lucide-react";
-import { JobDetailsDialog } from "../../components/ui/job-details-dialog";
+import { JobDetailsDialog } from "../components/job-details-dialog";
 import { useGroupedCompanies } from "@/hooks/useGroupedCompanies";
 import { queueStore } from "@/lib/queue-store";
-import { StatCard, CompactStatCard, PipelineStepCard } from "./stat-cards";
+import {
+  StatCard,
+  CompactStatCard,
+  PipelineStepCard,
+} from "../components/stat-cards";
 import {
   ViewToggle,
   useViewToggle,
   type ViewLevel,
-} from "../../components/ui/view-toggle";
+} from "../components/ui/view-toggle";
 import {
   getAllPipelineSteps,
   getQueuesForPipelineStep,
