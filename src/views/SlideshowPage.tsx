@@ -1,6 +1,6 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
-import { ScreenshotSlideshow } from "./components/screenshot-slideshow";
+import { ScreenshotSlideshow } from "../components/screenshot-slideshow";
 
 const SlideshowPage: React.FC = () => {
   const [searchParams] = useSearchParams();

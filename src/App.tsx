@@ -12,7 +12,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { useQueues } from "@/hooks/useQueues";
 import { Routes, Route } from "react-router-dom";
-import SlideshowPage from "./SlideshowPage";
+import SlideshowPage from "./views/SlideshowPage";
 
 interface UploadedFile {
   file: File;
