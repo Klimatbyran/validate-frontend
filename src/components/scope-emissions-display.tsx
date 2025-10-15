@@ -243,75 +243,100 @@ interface Scope3EmissionsDisplayProps {
   wikidataId?: string;
 }
 
-function Scope3CategoryRow({ label, value }: { label: string; value: number | null | undefined }) {
-  if (value == null) return null;
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-base text-gray-700">{label}</span>
-      <span className="font-extrabold text-gray-900 text-xl">{value.toLocaleString('sv-SE')}</span>
-    </div>
-  );
-}
+// (Removed unused inline row component for readability)
 
 export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisplayProps) {
   if (!data.scope3 || !Array.isArray(data.scope3) || data.scope3.length === 0) {
     return null;
   }
 
-  const sorted = [...data.scope3].sort((a, b) => b.year - a.year);
+  const sortedScope3ByYear = [...data.scope3].sort((a, b) => b.year - a.year);
 
-  const [correct2024, setCorrect2024] = React.useState<{
-    total?: number | null;
-    unit?: string | null;
-    categories?: Array<{ name?: string; id?: string; total?: number | null; unit?: string | null }>;
-  } | null>(null);
-  const [correct2024Raw, setCorrect2024Raw] = React.useState<any | null>(null);
+  type ReferenceCategory = { id?: string; name?: string; total?: number | null; unit?: string | null };
+  type ReferenceSnapshot = { total?: number | null; unit?: string | null; categories?: ReferenceCategory[] } | null;
+
+  const REFERENCE_YEAR = 2024;
+
+  const [reference2024, setReference2024] = React.useState<ReferenceSnapshot>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  // Fetch a comparable reference snapshot for a single known year (REFERENCE_YEAR)
+  // from the production API. We keep this narrowly scoped to avoid coupling the UI
+  // to the server's internal shapes and to allow straightforward value comparisons.
+  async function fetchCompanyById(companyId: string, signal: AbortSignal) {
+    const response = await fetch(
+      getPublicApiUrl(`/api/companies/${encodeURIComponent(companyId)}`),
+      { signal }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+  }
+
+  function getReportingPeriods(company: any) {
+    return Array.isArray(company?.reportingPeriods) ? company.reportingPeriods : [];
+  }
+
+  function findPeriodEndingInYear(periods: any[], year: number) {
+    return periods.find((period: any) => {
+      const endDate = period?.endDate ? new Date(period.endDate) : null;
+      return endDate && endDate.getFullYear() === year;
+    });
+  }
+
+  function buildReferenceSnapshotFromScope3(scope3: any): ReferenceSnapshot {
+    if (!scope3) return null;
+    const categories: ReferenceCategory[] = Array.isArray(scope3.categories)
+      ? scope3.categories.map((category: any) => {
+          const name = category?.name
+            ?? category?.categoryName
+            ?? category?.label
+            ?? category?.title
+            ?? category?.category?.name
+            ?? category?.category
+            ?? category?.id;
+          return {
+            id: category?.id,
+            name,
+            total: category?.total ?? null,
+            unit: category?.unit ?? null,
+          } as ReferenceCategory;
+        })
+      : [];
+    return {
+      total: scope3.statedTotalEmissions?.total ?? null,
+      unit: scope3.statedTotalEmissions?.unit ?? null,
+      categories,
+    };
+  }
+
   React.useEffect(() => {
-    let cancelled = false;
-    async function fetchCorrect() {
-      if (!wikidataId) return;
+    if (!wikidataId) return;
+    const abortController = new AbortController();
+    let isMounted = true;
+
+    async function fetchReferenceFor2024(companyId: string) {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetch(getPublicApiUrl(`/api/companies/${encodeURIComponent(wikidataId)}`));
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const company = await res.json();
-        const periods = Array.isArray(company?.reportingPeriods) ? company.reportingPeriods : [];
-        const match = periods.find((p: any) => {
-          const end = p?.endDate ? new Date(p.endDate) : null;
-          return end && end.getFullYear() === 2024;
-        });
-        const s3 = match?.emissions?.scope3;
-        const item = s3 ? {
-          total: s3.statedTotalEmissions?.total ?? null,
-          unit: s3.statedTotalEmissions?.unit ?? null,
-          categories: Array.isArray(s3.categories)
-            ? s3.categories.map((c: any) => {
-                const name = c?.name ?? c?.categoryName ?? c?.label ?? c?.title ?? c?.category?.name ?? c?.category ?? c?.id;
-                return {
-                  id: c?.id,
-                  name,
-                  total: c?.total ?? null,
-                  unit: c?.unit ?? null,
-                };
-              })
-            : [],
-        } : null;
-        if (!cancelled) {
-          setCorrect2024(item);
-          setCorrect2024Raw(s3 ?? null);
-        }
+        const company = await fetchCompanyById(companyId, abortController.signal);
+        const periods = getReportingPeriods(company);
+        const periodWithEndInReferenceYear = findPeriodEndingInYear(periods, REFERENCE_YEAR);
+        const scope3 = periodWithEndInReferenceYear?.emissions?.scope3;
+        const snapshot = buildReferenceSnapshotFromScope3(scope3);
+        if (isMounted) setReference2024(snapshot);
       } catch (e: any) {
-        if (!cancelled) setError(e?.message || 'Kunde inte hämta referensdata');
+        if (isMounted && e?.name !== 'AbortError') setError(e?.message || 'Kunde inte hämta referensdata');
       } finally {
-        if (!cancelled) setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     }
-    fetchCorrect();
-    return () => { cancelled = true; };
+
+    fetchReferenceFor2024(wikidataId);
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, [wikidataId]);
 
   // Standard GHG Protocol Scope 3 category names (1..15)
@@ -333,40 +358,38 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
     15: 'Investments',
   };
 
-  function normalizeYearEntry(y: any) {
-    // Derive display fields regardless of input shape
-    const total = y?.scope3?.statedTotalEmissions?.total ?? y?.total ?? null;
-    const unit = y?.scope3?.statedTotalEmissions?.unit ?? y?.unit ?? null;
-    const catsRaw = y?.scope3?.categories ?? y?.categories ?? [];
-    const categories: Array<{ key: string; label: string; total: number | null; unit: string | null; number?: number }>
-      = Array.isArray(catsRaw) ? catsRaw.map((c: any, idx: number) => {
-        const number = typeof c?.category === 'number' ? c.category : undefined;
-        const label = number ? categoryNames[number] || `Category ${number}` : (c?.name || c?.label || `Kategori ${idx+1}`);
-        return {
-          key: c?.id || (number != null ? `cat-${number}` : `idx-${idx}`),
-          label,
-          total: c?.total ?? null,
-          unit: c?.unit ?? null,
-          number,
-        };
-      }) : [];
+  type NormalizedCategory = { key: string; label: string; total: number | null; unit: string | null; number?: number };
+  type NormalizedYearEntry = { total: number | null; unit: string | null; categories: NormalizedCategory[] };
+
+  // Normalize various possible input shapes into one consistent structure used by this UI.
+  // The data may arrive either nested under entry.scope3 or flat on the year object.
+  // We also standardize category keys/labels and keep any numeric category identifier when present
+  // so we can compare against reference values (which are organized by 1..15).
+  function normalizeYearEntry(entry: any): NormalizedYearEntry {
+    const total = entry?.scope3?.statedTotalEmissions?.total ?? entry?.total ?? null;
+    const unit = entry?.scope3?.statedTotalEmissions?.unit ?? entry?.unit ?? null;
+    const rawCategories = entry?.scope3?.categories ?? entry?.categories ?? [];
+    const categories: NormalizedCategory[] = Array.isArray(rawCategories)
+      ? rawCategories.map((rawCategory: any, index: number) => {
+          const number = typeof rawCategory?.category === 'number' ? rawCategory.category : undefined;
+          const label = number
+            ? categoryNames[number] || `Category ${number}`
+            : (rawCategory?.name || rawCategory?.label || `Kategori ${index + 1}`);
+          return {
+            key: rawCategory?.id || (number != null ? `cat-${number}` : `idx-${index}`),
+            label,
+            total: rawCategory?.total ?? null,
+            unit: rawCategory?.unit ?? null,
+            number,
+          };
+        })
+      : [];
     return { total, unit, categories };
   }
 
-  function findRefMatch(category: { label: string; number?: number }) {
-    if (!correct2024) return undefined;
-    // Try exact by number if reference categories encode numbers in name or have id equal.
-    const byNumber = category.number != null ? (correct2024.categories || []).find(c => {
-      const name = (c.name || '').toString();
-      const id = (c.id || '').toString();
-      return name.includes(`${category.number}`) || id === `${category.number}` || id.endsWith(`-${category.number}`);
-    }) : undefined;
-    if (byNumber) return byNumber;
-    // Fallback by label case-insensitive
-    const byLabel = (correct2024.categories || []).find(c => String(c?.name ?? '').toLowerCase() === String(category.label).toLowerCase());
-    return byLabel;
-  }
-
+  // Try to infer a Scope 3 category number (1..15) from a reference item by looking for a digit
+  // either in its name or id. This makes the comparison robust even when the API doesn't
+  // provide a dedicated numeric field.
   function inferCategoryNumberFromRef(c: { name?: any; id?: any }) {
     const source = `${String(c?.name ?? '')} ${String(c?.id ?? '')}`;
     const m = source.match(/(?:^|[^\d])(1[0-5]|[1-9])(?:[^\d]|$)/);
@@ -377,37 +400,27 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
     return undefined;
   }
 
-  function findOurMatchForRef(refCat: { name?: any; id?: any }) {
-    const year2024 = sorted.find(y => y.year === 2024);
-    if (!year2024) return undefined;
-    const our = normalizeYearEntry(year2024);
-    const num = inferCategoryNumberFromRef(refCat);
-    if (num != null) {
-      const byNum = (our.categories || []).find(c => c.number === num);
-      if (byNum) return byNum;
-    }
-    const nameLc = String(refCat?.name ?? '').toLowerCase();
-    const byLabel = (our.categories || []).find(c => c.label.toLowerCase() === nameLc);
-    return byLabel;
-  }
-
+  // Build a quick-lookup map from category number -> { total, unit } for our local data.
+  // Used to render and compare against the reference snapshot efficiently.
   function buildOurNumberMapForYear(year: number) {
-    const y = sorted.find(e => e.year === year);
-    if (!y) return {} as Record<number, { total: number | null; unit: string | null }>;
-    const norm = normalizeYearEntry(y);
+    const yearEntry = sortedScope3ByYear.find(e => e.year === year);
+    if (!yearEntry) return {} as Record<number, { total: number | null; unit: string | null }>;
+    const normalized = normalizeYearEntry(yearEntry);
     const map: Record<number, { total: number | null; unit: string | null }> = {};
-    for (const c of norm.categories) {
-      if (typeof c.number === 'number') {
-        map[c.number] = { total: c.total ?? null, unit: c.unit ?? null };
+    for (const category of normalized.categories) {
+      if (typeof category.number === 'number') {
+        map[category.number] = { total: category.total ?? null, unit: category.unit ?? null };
       }
     }
     return map;
   }
 
+  // Build a quick-lookup map from category number -> { total, unit } for the reference data.
+  // We rely on inferCategoryNumberFromRef to extract the number when possible.
   function buildRefNumberMap() {
     const map: Record<number, { total: number | null; unit: string | null }> = {};
-    if (!correct2024 || !Array.isArray(correct2024.categories)) return map;
-    for (const c of correct2024.categories) {
+    if (!reference2024 || !Array.isArray(reference2024.categories)) return map;
+    for (const c of reference2024.categories) {
       const num = inferCategoryNumberFromRef(c);
       if (num != null) {
         map[num] = { total: c.total ?? null, unit: c.unit ?? null };
@@ -416,10 +429,12 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
     return map;
   }
 
+  // A compact, normalized representation of the fetched reference snapshot.
+  // Helpful for debugging and copying exact expected values.
   const referenceJson = React.useMemo(() => {
-    if (!correct2024) return null;
+    if (!reference2024) return null;
     const categories: Array<{ category: number; total: number | null; unit: string | null }> = [];
-    for (const c of correct2024.categories || []) {
+    for (const c of reference2024.categories || []) {
       const num = inferCategoryNumberFromRef(c);
       if (typeof num === 'number') {
         categories.push({ category: num, total: c.total ?? null, unit: c.unit ?? null });
@@ -429,15 +444,116 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
     return {
       scope3: [
         {
-          year: 2024,
+          year: REFERENCE_YEAR,
           scope3: {
             categories,
-            statedTotalEmissions: { total: correct2024.total ?? null, unit: correct2024.unit ?? null },
+            statedTotalEmissions: { total: reference2024.total ?? null, unit: reference2024.unit ?? null },
           },
         },
       ],
     } as const;
-  }, [correct2024]);
+  }, [reference2024]);
+
+  const ourNumberMap2024 = React.useMemo(() => buildOurNumberMapForYear(REFERENCE_YEAR), [sortedScope3ByYear]);
+  const refNumberMap = React.useMemo(() => buildRefNumberMap(), [reference2024]);
+
+  function renderReferenceSummary() {
+    if (!reference2024) return null;
+    const year2024 = sortedScope3ByYear.find(entry => entry.year === REFERENCE_YEAR);
+    const ourTotal = year2024 ? normalizeYearEntry(year2024).total : null;
+    const isMatch = (ourTotal ?? null) === (reference2024.total ?? null);
+    return (
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-amber-900">Totalt (2024)</span>
+        <span className="text-base font-bold text-amber-900 flex items-center gap-2">
+          {typeof reference2024.total === 'number' ? reference2024.total.toLocaleString('sv-SE') : '—'}
+          {reference2024.unit ? ` ${reference2024.unit}` : ''}
+          {(ourTotal !== null || reference2024.total !== null) && (
+            isMatch ? <span className="text-green-700">✓</span> : <span className="text-red-600">✗</span>
+          )}
+        </span>
+      </div>
+    );
+  }
+
+  function renderReferenceCategoryComparisons() {
+    const categoryNumbers = Array.from({ length: 15 }, (_, i) => i + 1);
+    return (
+      <div className="mt-2 divide-y divide-amber-200">
+        {categoryNumbers.map((categoryNumber) => {
+          const ref = refNumberMap[categoryNumber];
+          const our = ourNumberMap2024[categoryNumber];
+          const label = categoryNames[categoryNumber] || `Category ${categoryNumber}`;
+          const match = (ref?.total ?? null) === (our?.total ?? null);
+          return (
+            <div key={categoryNumber} className="flex items-center justify-between py-1.5">
+              <span className="text-sm text-amber-900">{label}</span>
+              <span className="text-sm font-semibold text-amber-900 flex items-center gap-2">
+                {typeof (ref?.total) === 'number' ? ref!.total!.toLocaleString('sv-SE') : '—'}{ref?.unit ? ` ${ref.unit}` : ''}
+                {match ? <span className="text-green-700">✓</span> : <span className="text-red-600">✗</span>}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  function renderYearSection(entry: any, isLatest: boolean) {
+    const normalized = normalizeYearEntry(entry);
+    const isReferenceYear = entry.year === REFERENCE_YEAR;
+    return (
+      <div className="mb-14">
+        <div className="flex items-center mb-3 bg-amber-900/20 rounded-lg px-4 py-2 w-fit">
+          <span className="text-2xl font-extrabold text-amber-900 mr-3 drop-shadow-sm">{entry.year}</span>
+          {isLatest && (
+            <span className="bg-amber-600 text-white text-xs font-semibold px-3 py-1 rounded-full ml-2 shadow">Senaste år</span>
+          )}
+        </div>
+        <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+          <div className="flex items-center space-x-2 mb-2">
+            <Truck className="w-5 h-5 text-amber-700" />
+            <span className="font-semibold text-lg text-gray-900">Scope 3</span>
+          </div>
+          {typeof normalized.total === 'number' && (
+            <div className="font-extrabold text-gray-900 text-4xl mb-1">{normalized.total.toLocaleString('sv-SE')}</div>
+          )}
+          <div className="text-base text-gray-700">{normalized.unit || 'tCO2e'}</div>
+          {isReferenceYear ? (
+            <div className="mt-4 divide-y divide-gray-200">
+              {Array.from({ length: 15 }, (_, i) => i + 1).map((n) => {
+                const our = ourNumberMap2024[n];
+                const ref = refNumberMap[n];
+                const match = (our?.total ?? null) === (ref?.total ?? null);
+                return (
+                  <div key={n} className="flex items-center justify-between py-2">
+                    <span className="text-base text-gray-700">{categoryNames[n] || `Category ${n}`}</span>
+                    <span className="font-extrabold text-gray-900 text-xl flex items-center gap-2">
+                      {typeof (our?.total) === 'number' ? our!.total!.toLocaleString('sv-SE') : '—'}{our?.unit ? ` ${our.unit}` : ''}
+                      {match ? <span className="text-green-700">✓</span> : <span className="text-red-600">✗</span>}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            normalized.categories && normalized.categories.length > 0 && (
+              <div className="mt-4 divide-y divide-gray-200">
+                {normalized.categories.map((category) => (
+                  <div key={category.key} className="flex items-center justify-between py-2">
+                    <span className="text-base text-gray-700">{category.label}</span>
+                    <span className="font-extrabold text-gray-900 text-xl">
+                      {typeof category.total === 'number' ? category.total.toLocaleString('sv-SE') : '—'}{category.unit ? ` ${category.unit}` : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div 
@@ -467,50 +583,11 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
             {!isLoading && error && (
               <div className="text-sm text-amber-800">{error}</div>
             )}
-            {!isLoading && !error && correct2024 && (
+            {!isLoading && !error && reference2024 && (
               <div className="space-y-2">
-                {(() => {
-                  const year2024 = sorted.find(y => y.year === 2024);
-                  const ourTotal = year2024 ? normalizeYearEntry(year2024).total : null;
-                  const isMatch = (ourTotal ?? null) === (correct2024.total ?? null);
-                  return (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-amber-900">Totalt (2024)</span>
-                      <span className="text-base font-bold text-amber-900 flex items-center gap-2">
-                        {typeof correct2024.total === 'number' ? correct2024.total.toLocaleString('sv-SE') : '—'}
-                        {correct2024.unit ? ` ${correct2024.unit}` : ''}
-                        {(ourTotal !== null || correct2024.total !== null) && (
-                          isMatch ? <span className="text-green-700">✓</span> : <span className="text-red-600">✗</span>
-                        )}
-                      </span>
-                    </div>
-                  );
-                })()}
-                {(() => {
-                  const refMap = buildRefNumberMap();
-                  const ourMap = buildOurNumberMapForYear(2024);
-                  const nums = Array.from({ length: 15 }, (_, i) => i + 1);
-                  return (
-                    <div className="mt-2 divide-y divide-amber-200">
-                      {nums.map((n) => {
-                        const ref = refMap[n];
-                        const our = ourMap[n];
-                        const label = categoryNames[n] || `Category ${n}`;
-                        const match = (ref?.total ?? null) === (our?.total ?? null);
-                        return (
-                          <div key={n} className="flex items-center justify-between py-1.5">
-                            <span className="text-sm text-amber-900">{label}</span>
-                            <span className="text-sm font-semibold text-amber-900 flex items-center gap-2">
-                              {typeof (ref?.total) === 'number' ? ref!.total!.toLocaleString('sv-SE') : '—'}{ref?.unit ? ` ${ref.unit}` : ''}
-                              {match ? <span className="text-green-700">✓</span> : <span className="text-red-600">✗</span>}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-                {!correct2024.total && (!correct2024.categories || correct2024.categories.length === 0) && (
+                {renderReferenceSummary()}
+                {renderReferenceCategoryComparisons()}
+                {!reference2024.total && (!reference2024.categories || reference2024.categories.length === 0) && (
                   <div className="text-sm text-amber-800">Inga referensvärden hittades för 2024.</div>
                 )}
                 {referenceJson && (
@@ -531,71 +608,10 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
       )}
 
       <div className="space-y-6">
-        {sorted.map((y, idx) => (
-          <div key={y.year} className="mb-14">
-            <div className="flex items-center mb-3 bg-amber-900/20 rounded-lg px-4 py-2 w-fit">
-              <span className="text-2xl font-extrabold text-amber-900 mr-3 drop-shadow-sm">{y.year}</span>
-              {idx === 0 && (
-                <span className="bg-amber-600 text-white text-xs font-semibold px-3 py-1 rounded-full ml-2 shadow">Senaste år</span>
-              )}
-            </div>
-
-            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-              <div className="flex items-center space-x-2 mb-2">
-                <Truck className="w-5 h-5 text-amber-700" />
-                <span className="font-semibold text-lg text-gray-900">Scope 3</span>
-              </div>
-              {(() => {
-                const normalized = normalizeYearEntry(y);
-                return (
-                  <>
-                    {typeof normalized.total === 'number' && (
-                      <div className="font-extrabold text-gray-900 text-4xl mb-1">{normalized.total.toLocaleString('sv-SE')}</div>
-                    )}
-                    <div className="text-base text-gray-700">{normalized.unit || 'tCO2e'}</div>
-                    {y.year === 2024 ? (
-                      (() => {
-                        const refMap = buildRefNumberMap();
-                        const ourMap = buildOurNumberMapForYear(2024);
-                        const nums = Array.from({ length: 15 }, (_, i) => i + 1);
-                        return (
-                          <div className="mt-4 divide-y divide-gray-200">
-                            {nums.map((n) => {
-                              const our = ourMap[n];
-                              const ref = refMap[n];
-                              const match = (our?.total ?? null) === (ref?.total ?? null);
-                              return (
-                                <div key={n} className="flex items-center justify-between py-2">
-                                  <span className="text-base text-gray-700">{categoryNames[n] || `Category ${n}`}</span>
-                                  <span className="font-extrabold text-gray-900 text-xl flex items-center gap-2">
-                                    {typeof (our?.total) === 'number' ? our!.total!.toLocaleString('sv-SE') : '—'}{our?.unit ? ` ${our.unit}` : ''}
-                                    {match ? <span className="text-green-700">✓</span> : <span className="text-red-600">✗</span>}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        );
-                      })()
-                    ) : (
-                      normalized.categories && normalized.categories.length > 0 && (
-                        <div className="mt-4 divide-y divide-gray-200">
-                          {normalized.categories.map((c) => (
-                            <div key={c.key} className="flex items-center justify-between py-2">
-                              <span className="text-base text-gray-700">{c.label}</span>
-                              <span className="font-extrabold text-gray-900 text-xl">
-                                {typeof c.total === 'number' ? c.total.toLocaleString('sv-SE') : '—'}{c.unit ? ` ${c.unit}` : ''}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-          </div>
+        {sortedScope3ByYear.map((entry, index) => (
+          <React.Fragment key={entry.year}>
+            {renderYearSection(entry, index === 0)}
+          </React.Fragment>
         ))}
       </div>
 
