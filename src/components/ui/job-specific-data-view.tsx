@@ -4,7 +4,7 @@ import { MarkdownVectorPagesDisplay } from './markdown-display';
 import { isMarkdown } from '@/lib/utils';
 import { WikidataPreview } from './wikidata-preview';
 import { FiscalYearDisplay } from './fiscal-year-display';
-import { ScopeEmissionsDisplay } from './scope-emissions-display';
+import { ScopeEmissionsDisplay, Scope3EmissionsDisplay } from './scope-emissions-display';
 import { MetadataDisplay } from './metadata-display';
 import { ScreenshotSlideshow } from './screenshot-slideshow';
 import { CollapsibleSection } from './collapsible-section';
@@ -68,6 +68,20 @@ function getScopeData(processedData: any, returnValueData: any): any {
   return null;
 }
 
+// Helper to get scope 3 data from various sources
+function getScope3Data(processedData: any, returnValueData: any): any {
+  const hasScope3 = (
+    (processedData.scope3 && Array.isArray(processedData.scope3)) ||
+    (returnValueData && typeof returnValueData === 'object' && Array.isArray((returnValueData as any).scope3)) ||
+    (returnValueData && typeof returnValueData === 'object' && (returnValueData as any).value && Array.isArray((returnValueData as any).value.scope3))
+  );
+  if (!hasScope3) return null;
+  if (processedData.scope3 && Array.isArray(processedData.scope3)) return processedData.scope3;
+  if (returnValueData && typeof returnValueData === 'object' && Array.isArray((returnValueData as any).scope3)) return (returnValueData as any).scope3;
+  if (returnValueData && typeof returnValueData === 'object' && (returnValueData as any).value && Array.isArray((returnValueData as any).value.scope3)) return (returnValueData as any).value.scope3;
+  return null;
+}
+
 export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const processedData = typeof data === 'string' && isJsonString(data) 
     ? JSON.parse(data) 
@@ -123,6 +137,8 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
 
   // Get scope data for rendering
   const scopeData = getScopeData(processedData, returnValueData);
+  const scope3Data = getScope3Data(processedData, returnValueData);
+  const wikidataId: string | undefined = processedData?.wikidata?.node || returnValueData?.wikidata?.node;
 
   return (
     <div className="space-y-3 text-sm">
@@ -144,6 +160,12 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       {scopeData && (
         <div className="mb-4">
           <ScopeEmissionsDisplay data={{ scope12: scopeData }} />
+        </div>
+      )}
+      {/* Show Scope 3 emissions data if available */}
+      {scope3Data && (
+        <div className="mb-4">
+          <Scope3EmissionsDisplay data={{ scope3: scope3Data }} wikidataId={wikidataId} />
         </div>
       )}
       {/* Show Screenshot slideshow if scopeData and PDF URL exist */}
@@ -172,7 +194,8 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             key === 'fiscalYear' || 
             key === 'startMonth' || 
             key === 'endMonth' ||
-            key === 'scope12') return null;
+            key === 'scope12' ||
+            key === 'scope3') return null;
         
         return (
           <div key={key} className="bg-gray-03/20 rounded-lg p-3">

@@ -1,5 +1,6 @@
 export const WORKFLOW_STAGES = [
   { id: 'nlmParsePDF', name: 'PDF Parsning' },
+  { id: 'doclingParsePDF', name: 'Docling PDF Parsning' },
   { id: 'nlmExtractTables', name: 'Tabellextraktion' },
   { id: 'precheck', name: 'Förkontroll' },
   { id: 'guessWikidata', name: 'Wikidata' },

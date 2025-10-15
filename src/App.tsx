@@ -91,7 +91,8 @@ function App() {
         url,
         threadId: crypto.randomUUID().replace(/-/g, ''),
         autoApprove: Boolean(autoApprove), // Use boolean instead of string
-        messageId: crypto.randomUUID().replace(/-/g, '')
+        messageId: crypto.randomUUID().replace(/-/g, ''),
+        //runOnly: ['scope3', 'scope1+2']
       },
       options: {
         attempts: 3,
