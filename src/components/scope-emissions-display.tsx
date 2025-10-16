@@ -251,13 +251,12 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
   }
 
   const sortedScope3ByYear = [...data.scope3].sort((a, b) => b.year - a.year);
+  const latestScope3Year = sortedScope3ByYear[0]?.year as number | undefined;
 
   type ReferenceCategory = { id?: string; name?: string; total?: number | null; unit?: string | null };
   type ReferenceSnapshot = { total?: number | null; unit?: string | null; categories?: ReferenceCategory[] } | null;
 
-  const REFERENCE_YEAR = 2024;
-
-  const [reference2024, setReference2024] = React.useState<ReferenceSnapshot>(null);
+  const [referenceForLatestYear, setReferenceForLatestYear] = React.useState<ReferenceSnapshot>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -311,20 +310,20 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
   }
 
   React.useEffect(() => {
-    if (!wikidataId) return;
+    if (!wikidataId || !latestScope3Year) return;
     const abortController = new AbortController();
     let isMounted = true;
 
-    async function fetchReferenceFor2024(companyId: string) {
+    async function fetchReferenceForYear(companyId: string, year: number) {
       setIsLoading(true);
       setError(null);
       try {
         const company = await fetchCompanyById(companyId, abortController.signal);
         const periods = getReportingPeriods(company);
-        const periodWithEndInReferenceYear = findPeriodEndingInYear(periods, REFERENCE_YEAR);
+        const periodWithEndInReferenceYear = findPeriodEndingInYear(periods, year);
         const scope3 = periodWithEndInReferenceYear?.emissions?.scope3;
         const snapshot = buildReferenceSnapshotFromScope3(scope3);
-        if (isMounted) setReference2024(snapshot);
+        if (isMounted) setReferenceForLatestYear(snapshot);
       } catch (e: any) {
         if (isMounted && e?.name !== 'AbortError') setError(e?.message || 'Kunde inte hämta referensdata');
       } finally {
@@ -332,12 +331,12 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
       }
     }
 
-    fetchReferenceFor2024(wikidataId);
+    fetchReferenceForYear(wikidataId, latestScope3Year);
     return () => {
       isMounted = false;
       abortController.abort();
     };
-  }, [wikidataId]);
+  }, [wikidataId, latestScope3Year]);
 
   // Standard GHG Protocol Scope 3 category names (1..15)
   const categoryNames: Record<number, string> = {
@@ -419,8 +418,8 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
   // We rely on inferCategoryNumberFromRef to extract the number when possible.
   function buildRefNumberMap() {
     const map: Record<number, { total: number | null; unit: string | null }> = {};
-    if (!reference2024 || !Array.isArray(reference2024.categories)) return map;
-    for (const c of reference2024.categories) {
+    if (!referenceForLatestYear || !Array.isArray(referenceForLatestYear.categories)) return map;
+    for (const c of referenceForLatestYear.categories) {
       const num = inferCategoryNumberFromRef(c);
       if (num != null) {
         map[num] = { total: c.total ?? null, unit: c.unit ?? null };
@@ -432,9 +431,9 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
   // A compact, normalized representation of the fetched reference snapshot.
   // Helpful for debugging and copying exact expected values.
   const referenceJson = React.useMemo(() => {
-    if (!reference2024) return null;
+    if (!referenceForLatestYear || !latestScope3Year) return null;
     const categories: Array<{ category: number; total: number | null; unit: string | null }> = [];
-    for (const c of reference2024.categories || []) {
+    for (const c of referenceForLatestYear.categories || []) {
       const num = inferCategoryNumberFromRef(c);
       if (typeof num === 'number') {
         categories.push({ category: num, total: c.total ?? null, unit: c.unit ?? null });
@@ -444,31 +443,31 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
     return {
       scope3: [
         {
-          year: REFERENCE_YEAR,
+          year: latestScope3Year,
           scope3: {
             categories,
-            statedTotalEmissions: { total: reference2024.total ?? null, unit: reference2024.unit ?? null },
+            statedTotalEmissions: { total: referenceForLatestYear.total ?? null, unit: referenceForLatestYear.unit ?? null },
           },
         },
       ],
     } as const;
-  }, [reference2024]);
+  }, [referenceForLatestYear, latestScope3Year]);
 
-  const ourNumberMap2024 = React.useMemo(() => buildOurNumberMapForYear(REFERENCE_YEAR), [sortedScope3ByYear]);
-  const refNumberMap = React.useMemo(() => buildRefNumberMap(), [reference2024]);
+  const ourNumberMapForLatest = React.useMemo(() => latestScope3Year ? buildOurNumberMapForYear(latestScope3Year) : {}, [sortedScope3ByYear, latestScope3Year]);
+  const refNumberMap = React.useMemo(() => buildRefNumberMap(), [referenceForLatestYear]);
 
   function renderReferenceSummary() {
-    if (!reference2024) return null;
-    const year2024 = sortedScope3ByYear.find(entry => entry.year === REFERENCE_YEAR);
-    const ourTotal = year2024 ? normalizeYearEntry(year2024).total : null;
-    const isMatch = (ourTotal ?? null) === (reference2024.total ?? null);
+    if (!referenceForLatestYear || !latestScope3Year) return null;
+    const yearEntry = sortedScope3ByYear.find(entry => entry.year === latestScope3Year);
+    const ourTotal = yearEntry ? normalizeYearEntry(yearEntry).total : null;
+    const isMatch = (ourTotal ?? null) === (referenceForLatestYear.total ?? null);
     return (
       <div className="flex items-center justify-between">
-        <span className="text-sm text-amber-900">Totalt (2024)</span>
+        <span className="text-sm text-amber-900">Totalt ({latestScope3Year})</span>
         <span className="text-base font-bold text-amber-900 flex items-center gap-2">
-          {typeof reference2024.total === 'number' ? reference2024.total.toLocaleString('sv-SE') : '—'}
-          {reference2024.unit ? ` ${reference2024.unit}` : ''}
-          {(ourTotal !== null || reference2024.total !== null) && (
+          {typeof referenceForLatestYear.total === 'number' ? referenceForLatestYear.total.toLocaleString('sv-SE') : '—'}
+          {referenceForLatestYear.unit ? ` ${referenceForLatestYear.unit}` : ''}
+          {(ourTotal !== null || referenceForLatestYear.total !== null) && (
             isMatch ? <span className="text-green-700">✓</span> : <span className="text-red-600">✗</span>
           )}
         </span>
@@ -482,7 +481,7 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
       <div className="mt-2 divide-y divide-amber-200">
         {categoryNumbers.map((categoryNumber) => {
           const ref = refNumberMap[categoryNumber];
-          const our = ourNumberMap2024[categoryNumber];
+          const our = ourNumberMapForLatest[categoryNumber];
           const label = categoryNames[categoryNumber] || `Category ${categoryNumber}`;
           const match = (ref?.total ?? null) === (our?.total ?? null);
           return (
@@ -501,7 +500,7 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
 
   function renderYearSection(entry: any, isLatest: boolean) {
     const normalized = normalizeYearEntry(entry);
-    const isReferenceYear = entry.year === REFERENCE_YEAR;
+    const isReferenceYear = latestScope3Year != null && entry.year === latestScope3Year;
     return (
       <div className="mb-14">
         <div className="flex items-center mb-3 bg-amber-900/20 rounded-lg px-4 py-2 w-fit">
@@ -522,7 +521,7 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
           {isReferenceYear ? (
             <div className="mt-4 divide-y divide-gray-200">
               {Array.from({ length: 15 }, (_, i) => i + 1).map((n) => {
-                const our = ourNumberMap2024[n];
+                const our = ourNumberMapForLatest[n];
                 const ref = refNumberMap[n];
                 const match = (our?.total ?? null) === (ref?.total ?? null);
                 return (
@@ -570,12 +569,12 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
         </h3>
       </div>
 
-      {wikidataId && (
+      {wikidataId && latestScope3Year && (
         <div className="mb-4">
           <div className="bg-amber-100/60 border border-amber-200 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle2 className="w-4 h-4 text-amber-700" />
-              <span className="text-sm font-medium text-amber-800">Referensvärden (2024) från API i prod</span>
+              <span className="text-sm font-medium text-amber-800">Referensvärden ({latestScope3Year}) från API i prod</span>
             </div>
             {isLoading && (
               <div className="text-sm text-amber-800">Hämtar…</div>
@@ -583,16 +582,16 @@ export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisp
             {!isLoading && error && (
               <div className="text-sm text-amber-800">{error}</div>
             )}
-            {!isLoading && !error && reference2024 && (
+            {!isLoading && !error && referenceForLatestYear && (
               <div className="space-y-2">
                 {renderReferenceSummary()}
                 {renderReferenceCategoryComparisons()}
-                {!reference2024.total && (!reference2024.categories || reference2024.categories.length === 0) && (
-                  <div className="text-sm text-amber-800">Inga referensvärden hittades för 2024.</div>
+                {!referenceForLatestYear.total && (!referenceForLatestYear.categories || referenceForLatestYear.categories.length === 0) && (
+                  <div className="text-sm text-amber-800">Inga referensvärden hittades för {latestScope3Year}.</div>
                 )}
                 {referenceJson && (
                   <details className="mt-3 bg-white rounded border border-amber-200 p-3">
-                    <summary className="cursor-pointer text-sm font-medium text-amber-900">Reference JSON</summary>
+                    <summary className="cursor-pointer text-sm font-medium text-amber-900">Reference JSON ({latestScope3Year})</summary>
                     <div className="flex justify-end">
                       <CopyJsonButton getText={() => JSON.stringify(referenceJson, null, 2)} />
                     </div>
