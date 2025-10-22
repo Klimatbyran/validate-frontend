@@ -7,14 +7,18 @@ import { CopyJsonButton } from './CopyJsonButton';
 interface Scope3EmissionsData {
   scope3: Array<{
     year: number;
-    // Support two shapes: flat or nested under scope3
-    total?: number | null;
-    unit?: 'tCO2e' | 'tCO2';
-    categories?: Array<{ id?: string; name?: string; total?: number | null; unit?: string | null; category?: number }>;
-    scope3?: {
-      statedTotalEmissions?: { total?: number | null; unit?: string | null } | null;
-      categories?: Array<{ category?: number; total?: number | null; unit?: string | null }> | null;
-    } | null;
+    scope3: {
+      statedTotalEmissions: { total: number | null; unit: string | null };
+      categories: Array<{ 
+        id: string; 
+        category: number; 
+        total: number | null; 
+        unit: string | null;
+        metadata?: any;
+      }>;
+      calculatedTotalEmissions?: number;
+      metadata?: any;
+    };
   }>;
 }
 
@@ -23,7 +27,7 @@ interface Scope3EmissionsDisplayProps {
   wikidataId?: string;
 }
 
-type ReferenceCategory = { id?: string; name?: string; total?: number | null; unit?: string | null };
+type ReferenceCategory = { id?: string; name?: string; total?: number | null; unit?: string | null; category?: number };
 type ReferenceSnapshot = { total?: number | null; unit?: string | null; categories?: ReferenceCategory[] } | null;
 
 // Fetch a comparable reference snapshot for a single known year (REFERENCE_YEAR)
@@ -52,21 +56,13 @@ function findPeriodEndingInYear(periods: any[], year: number) {
 function buildReferenceSnapshotFromScope3(scope3: any): ReferenceSnapshot {
   if (!scope3) return null;
   const categories: ReferenceCategory[] = Array.isArray(scope3.categories)
-    ? scope3.categories.map((category: any) => {
-        const name = category?.name
-          ?? category?.categoryName
-          ?? category?.label
-          ?? category?.title
-          ?? category?.category?.name
-          ?? category?.category
-          ?? category?.id;
-        return {
-          id: category?.id,
-          name,
-          total: category?.total ?? null,
-          unit: category?.unit ?? null,
-        } as ReferenceCategory;
-      })
+    ? scope3.categories.map((category: any) => ({
+        id: category.id,
+        name: category.name,
+        total: category.total ?? null,
+        unit: category.unit ?? null,
+        category: category.category,
+      }))
     : [];
   return {
     total: scope3.statedTotalEmissions?.total ?? null,
@@ -97,25 +93,21 @@ const categoryNames: Record<number, string> = {
 type NormalizedCategory = { key: string; label: string; total: number | null; unit: string | null; number?: number };
 type NormalizedYearEntry = { total: number | null; unit: string | null; categories: NormalizedCategory[] };
 
-// Normalize various possible input shapes into one consistent structure used by this UI.
-// The data may arrive either nested under entry.scope3 or flat on the year object.
-// We also standardize category keys/labels and keep any numeric category identifier when present
-// so we can compare against reference values (which are organized by 1..15).
+// Normalize the scope3 data structure into a consistent format for the UI.
 function normalizeYearEntry(entry: any): NormalizedYearEntry {
-  const total = entry?.scope3?.statedTotalEmissions?.total ?? entry?.total ?? null;
-  const unit = entry?.scope3?.statedTotalEmissions?.unit ?? entry?.unit ?? null;
-  const rawCategories = entry?.scope3?.categories ?? entry?.categories ?? [];
+  const scope3 = entry.scope3;
+  const total = scope3?.statedTotalEmissions?.total ?? null;
+  const unit = scope3?.statedTotalEmissions?.unit ?? null;
+  const rawCategories = scope3?.categories ?? [];
   const categories: NormalizedCategory[] = Array.isArray(rawCategories)
-    ? rawCategories.map((rawCategory: any, index: number) => {
-        const number = typeof rawCategory?.category === 'number' ? rawCategory.category : undefined;
-        const label = number
-          ? categoryNames[number] || `Category ${number}`
-          : (rawCategory?.name || rawCategory?.label || `Kategori ${index + 1}`);
+    ? rawCategories.map((rawCategory: any) => {
+        const number = rawCategory.category;
+        const label = categoryNames[number] || `Category ${number}`;
         return {
-          key: rawCategory?.id || (number != null ? `cat-${number}` : `idx-${index}`),
+          key: rawCategory.id || `cat-${number}`,
           label,
-          total: rawCategory?.total ?? null,
-          unit: rawCategory?.unit ?? null,
+          total: rawCategory.total ?? null,
+          unit: rawCategory.unit ?? null,
           number,
         };
       })
@@ -123,18 +115,6 @@ function normalizeYearEntry(entry: any): NormalizedYearEntry {
   return { total, unit, categories };
 }
 
-// Try to infer a Scope 3 category number (1..15) from a reference item by looking for a digit
-// either in its name or id. This makes the comparison robust even when the API doesn't
-// provide a dedicated numeric field.
-function inferCategoryNumberFromRef(c: { name?: any; id?: any }) {
-  const source = `${String(c?.name ?? '')} ${String(c?.id ?? '')}`;
-  const m = source.match(/(?:^|[^\d])(1[0-5]|[1-9])(?:[^\d]|$)/);
-  if (m) {
-    const n = parseInt(m[1], 10);
-    if (n >= 1 && n <= 15) return n;
-  }
-  return undefined;
-}
 
 // Build a quick-lookup map from category number -> { total, unit } for our local data.
 // Used to render and compare against the reference snapshot efficiently.
@@ -152,15 +132,13 @@ function buildOurNumberMapForYear(year: number, sortedScope3ByYear: any[]) {
 }
 
 // Build a quick-lookup map from category number -> { total, unit } for the reference data.
-// We rely on inferCategoryNumberFromRef to extract the number when possible.
 function buildRefNumberMap(year: number, referenceByYear: Record<number, ReferenceSnapshot>) {
   const map: Record<number, { total: number | null; unit: string | null }> = {};
   const snapshot = referenceByYear[year];
   if (!snapshot || !Array.isArray(snapshot.categories)) return map;
   for (const c of snapshot.categories) {
-    const num = inferCategoryNumberFromRef(c);
-    if (num != null) {
-      map[num] = { total: c.total ?? null, unit: c.unit ?? null };
+    if (typeof c.category === 'number') {
+      map[c.category] = { total: c.total ?? null, unit: c.unit ?? null };
     }
   }
   return map;
@@ -226,9 +204,8 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
     if (!snapshot) return null;
     const categories: Array<{ category: number; total: number | null; unit: string | null }> = [];
     for (const c of snapshot.categories || []) {
-      const num = inferCategoryNumberFromRef(c);
-      if (typeof num === 'number') {
-        categories.push({ category: num, total: c.total ?? null, unit: c.unit ?? null });
+      if (typeof c.category === 'number') {
+        categories.push({ category: c.category, total: c.total ?? null, unit: c.unit ?? null });
       }
     }
     categories.sort((a, b) => a.category - b.category);

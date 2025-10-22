@@ -20,14 +20,18 @@ interface Scope12EmissionsData {
 interface Scope3EmissionsData {
   scope3: Array<{
     year: number;
-    // Support two shapes: flat or nested under scope3
-    total?: number | null;
-    unit?: 'tCO2e' | 'tCO2';
-    categories?: Array<{ id?: string; name?: string; total?: number | null; unit?: string | null; category?: number }>;
-    scope3?: {
-      statedTotalEmissions?: { total?: number | null; unit?: string | null } | null;
-      categories?: Array<{ category?: number; total?: number | null; unit?: string | null }> | null;
-    } | null;
+    scope3: {
+      statedTotalEmissions: { total: number | null; unit: string | null };
+      categories: Array<{ 
+        id: string; 
+        category: number; 
+        total: number | null; 
+        unit: string | null;
+        metadata?: any;
+      }>;
+      calculatedTotalEmissions?: number;
+      metadata?: any;
+    };
   }>;
 }
 
