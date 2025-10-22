@@ -1,8 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import { fileURLToPath } from "url";
 
 // https://vitejs.dev/config/
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
@@ -78,6 +81,16 @@ export default defineConfig({
           });
         },
       },
+      // Public Klimatkollen API for company data
+      '/kkapi': {
+        target: 'https://api.klimatkollen.se',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/kkapi/, '/api'),
+        timeout: 30000,
+        proxyTimeout: 30000,
+      },
+        
     },
   },
 });
