@@ -15,18 +15,15 @@ export function isMarkdown(value: string) {
 
 
 
-// Public Klimatkollen API base: in dev, use /kkapi (proxied to https://api.klimatkollen.se/api)
-// in production, hit the absolute URL directly.
+// Use dev proxy in development, direct API in production
 export const getPublicApiUrl = (path: string) => {
-  const isProd = import.meta.env.PROD;
-  if (isProd) {
-    // Ensure path starts with /api
-    const normalized = path.startsWith('/api') ? path : `/api${path.startsWith('/') ? '' : '/'}${path}`;
-    return `https://api.klimatkollen.se${normalized}`;
+  const isDev = import.meta.env.DEV;
+  if (isDev) {
+    // Remove /api prefix since proxy adds it back
+    const cleanPath = path.startsWith('/api') ? path.replace(/^\/api/, '') : path;
+    return `/kkapi${cleanPath}`;
   }
-  // Dev: route through vite proxy
-  const normalized = path.startsWith('/api') ? path.replace(/^\/api/, '') : path;
-  return `/kkapi${normalized.startsWith('/') ? '' : '/'}${normalized}`;
+  return `https://api.klimatkollen.se${path}`;  // Direct in prod
 }
 // Utility function to check if a string is valid JSON
 export function isJsonString(str: string): boolean {
