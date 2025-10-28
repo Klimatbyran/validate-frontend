@@ -3,10 +3,10 @@ import { fetchQueueJobs } from '@/lib/api';
 import { queueStore } from '@/lib/queue-store';
 import type { QueueJobsResponse } from '@/lib/types';
 
-export function useQueueJobs(queueName: string, status = 'latest', page = 1, jobsPerPage = 10) {
+export function useQueueJobs(queueName: string, status?: string) {
   const { data, error, isLoading, mutate } = useSWR<QueueJobsResponse>(
-    queueName ? ['queue-jobs', queueName, status, page, jobsPerPage] : null,
-    () => fetchQueueJobs(queueName, status, page, jobsPerPage),
+    queueName ? ['queue-jobs', queueName, status] : null,
+    () => fetchQueueJobs(queueName, status),
     {
       refreshInterval: 10000, // Increased from 5000 to 10000 to reduce server load
       errorRetryCount: 3,

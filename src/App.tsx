@@ -10,7 +10,6 @@ import { WorkflowDiagram } from "@/components/ui/workflow-diagram";
 import { DebugView } from "@/views/debug-view";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { useQueues } from "@/hooks/useQueues";
 import { Routes, Route } from "react-router-dom";
 import SlideshowPage from "./views/SlideshowPage";
 
@@ -28,7 +27,6 @@ interface UrlInput {
 
 function App() {
   const [currentTab, setCurrentTab] = useState("upload");
-  const { refresh } = useQueues();
   const [uploadMode, setUploadMode] = useState<"file" | "url">("file");
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -87,45 +85,27 @@ function App() {
       return;
     }
 
-    // Create jobs for each URL
-    const jobs = urls.map((url) => ({
-      name: "process-pdf",
-      data: {
-        url,
-        threadId: crypto.randomUUID().replace(/-/g, ""),
-        autoApprove: Boolean(autoApprove), // Use boolean instead of string
-        messageId: crypto.randomUUID().replace(/-/g, ""),
-      },
-      options: {
-        attempts: 3,
-        backoff: {
-          type: "exponential",
-          delay: 1000,
-        },
-      },
-    }));
-
-    // Send jobs to the API
+    // Send batch job creation request to the custom API
     try {
-      await Promise.all(
-        jobs.map(async (job) => {
-          const response = await fetch("/api/queues/nlmParsePDF/add", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(job),
-          });
+      const response = await fetch("/api/queues/nlmParsePDF", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          autoApprove: Boolean(autoApprove),
+          urls: urls,
+        }),
+      });
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Job submission error:", errorText);
-            throw new Error(`Failed to add job: ${errorText}`);
-          }
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Job submission error:", errorText);
+        throw new Error(`Failed to add jobs: ${errorText}`);
+      }
 
-          return response.json();
-        })
-      );
+      const result = await response.json();
+      console.log("Jobs created successfully:", result);
 
       const newUrls = urls.map((url) => ({
         url,
@@ -159,13 +139,12 @@ function App() {
     }
 
     setCurrentTab("processing");
-    refresh(); // Refresh data when switching to processing tab
     toast("Påbörjar bearbetning...", {
       description: `${totalItems} ${uploadMode === "file" ? "fil" : "länk"}${
         totalItems === 1 ? "" : "ar"
       } att processa`,
     });
-  }, [uploadedFiles.length, processedUrls.length, uploadMode, refresh]);
+  }, [uploadedFiles.length, processedUrls.length, uploadMode]);
 
   return (
     <Routes>
@@ -181,10 +160,6 @@ function App() {
                 value={currentTab}
                 onValueChange={(value) => {
                   setCurrentTab(value);
-                  // Refresh data when switching to jobbstatus or processing tabs
-                  if (value === "jobbstatus" || value === "processing") {
-                    refresh();
-                  }
                 }}
                 className="space-y-6"
               >

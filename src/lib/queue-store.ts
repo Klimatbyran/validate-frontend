@@ -235,7 +235,7 @@ export class QueueStore {
     const intervalId = setInterval(async () => {
       try {
         // Only fetch the most recent jobs (newest first)
-        const updates = await fetchQueueJobs(queueId, "latest", 1, 10, "desc");
+        const updates = await fetchQueueJobs(queueId);
         this.updateQueue(queueId, updates.queue);
       } catch (error) {
         // Silently handle polling errors

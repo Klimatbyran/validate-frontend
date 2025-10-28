@@ -9,8 +9,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { JobDetailsDialog } from "../components/job-details-dialog";
-import { useGroupedCompanies } from "@/hooks/useGroupedCompanies";
-import { queueStore } from "@/lib/queue-store";
+import { useCompanies } from "@/hooks/useCompanies";
 import {
   StatCard,
   CompactStatCard,
@@ -286,6 +285,13 @@ function CompanyCard({ company }: { company: SwimlaneCompany }) {
               );
 
               if (job) {
+                console.log('=== CLICKED JOB DATA ===');
+                console.log('Full job object:', job);
+                console.log('Job returnValue:', job.returnValue);
+                console.log('Job data:', job.data);
+                console.log('Job status:', job.status);
+                console.log('Job queueId:', job.queueId);
+                console.log('========================');
                 setSelectedJob(job);
                 setIsDialogOpen(true);
               } else {
@@ -418,31 +424,145 @@ function OverviewStats({ companies }: { companies: SwimlaneCompany[] }) {
 // convertGroupedCompaniesToSwimlaneFormat is now imported from workflow-utils
 
 export function SwimlaneQueueStatus() {
-  const companies = useGroupedCompanies();
+  const { companies, isLoading, error } = useCompanies();
 
-  // Trigger queue loading if not already loaded
-  React.useEffect(() => {
-    getWorkflowStages().forEach((stage) => {
-      queueStore.loadQueueWithUpdates(stage.id);
+  // Convert CustomAPICompany to SwimlaneCompany format
+  const swimlaneCompanies = React.useMemo(() => {
+    console.log('SwimlaneQueueStatus - converting companies:', companies);
+    if (!companies || companies.length === 0) return [];
+    
+      return companies.map((company) => {
+      console.log('SwimlaneQueueStatus - processing company:', company.company, 'with', company.processes.length, 'processes');
+      if (company.processes.length > 0) {
+        console.log('SwimlaneQueueStatus - first process:', company.processes[0]);
+        if (company.processes[0].jobs.length > 0) {
+          const firstJob = company.processes[0].jobs[0];
+          console.log('SwimlaneQueueStatus - first job (full structure):', firstJob);
+          console.log('SwimlaneQueueStatus - first job (key fields):', {
+            id: firstJob.id,
+            status: firstJob.status,
+            finishedOn: firstJob.finishedOn,
+            processedBy: firstJob.processedBy,
+            approval: firstJob.approval,
+            autoApprove: firstJob.autoApprove,
+            returnvalue: firstJob.returnvalue,
+            data: firstJob.data
+          });
+        }
+      }
+      // Group processes by year
+      const processesByYear = company.processes.reduce((acc, process) => {
+        const year = process.year || new Date().getFullYear();
+        if (!acc[year]) {
+          acc[year] = [];
+        }
+        acc[year].push(process);
+        return acc;
+      }, {} as Record<number, typeof company.processes>);
+
+      // Convert to SwimlaneYearData format
+      const years = Object.entries(processesByYear).map(([yearStr, yearProcesses]) => {
+        const year = parseInt(yearStr);
+        const latestProcess = yearProcesses.reduce((latest, process) => 
+          (process.startedAt || 0) > (latest.startedAt || 0) ? process : latest
+        );
+
+        return {
+          year,
+          attempts: yearProcesses.length,
+          fields: {}, // We'll populate this based on the jobs in the processes
+          jobs: yearProcesses.flatMap(process => 
+            process.jobs.map(job => {
+              const convertedJob = {
+                ...job,
+                queueId: job.queue,
+                data: {
+                  ...job.data,
+                  company: company.company,
+                  companyName: company.company,
+                  year: year,
+                  threadId: process.id,
+                  // Map approval status properly
+                  approved: job.approval?.approved || false,
+                  autoApprove: job.autoApprove
+                },
+                // Map status fields properly for getJobStatus function
+                isFailed: job.status === "failed",
+                finishedOn: job.finishedOn,
+                processedOn: job.processedBy ? job.timestamp : undefined,
+                // Ensure we have the right timestamp
+                timestamp: job.timestamp,
+                // Map return value data for job details display
+                returnValue: job.returnvalue,
+                // Map other important fields
+                attempts: job.attemptsMade,
+                stacktrace: job.stacktrace || []
+              };
+              
+              // Debug: log the converted job and its calculated status
+              if (job.id === company.processes[0]?.jobs[0]?.id) {
+                console.log('SwimlaneQueueStatus - converted job:', convertedJob);
+                console.log('SwimlaneQueueStatus - job status calculation:', {
+                  finishedOn: convertedJob.finishedOn,
+                  isFailed: convertedJob.isFailed,
+                  processedOn: convertedJob.processedOn,
+                  approved: convertedJob.data.approved,
+                  autoApprove: convertedJob.data.autoApprove
+                });
+                console.log('SwimlaneQueueStatus - return value data:', {
+                  hasReturnValue: !!convertedJob.returnValue,
+                  returnValueType: typeof convertedJob.returnValue,
+                  returnValueKeys: convertedJob.returnValue ? Object.keys(convertedJob.returnValue) : []
+                });
+              }
+              
+              return convertedJob;
+            })
+          ),
+          latestTimestamp: latestProcess.startedAt || 0
+        };
+      }).sort((a, b) => b.year - a.year);
+
+      return {
+        id: company.company,
+        name: company.company,
+        years
+      };
     });
-  }, []);
+  }, [companies]);
 
-  // Convert the existing data to the new format
-  const swimlaneCompanies =
-    companies && Array.isArray(companies)
-      ? convertGroupedCompaniesToSwimlaneFormat(companies)
-      : [];
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-8 h-8 text-blue-03 animate-spin mx-auto" />
+          <div>
+            <p className="text-lg text-gray-01 font-medium">Loading companies...</p>
+            <p className="text-sm text-gray-02 mt-2">Fetching company data from API</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  // Show loading state if no companies data yet
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <div className="text-center">
+          <p className="text-red-03">Error loading companies: {error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state
   if (!companies || companies.length === 0) {
     return (
       <div className="flex items-center justify-center p-4">
         <div className="text-center">
-          <Loader2 className="w-6 h-6 text-gray-02 animate-spin mx-auto mb-4" />
-          <p className="text-gray-02">Loading data...</p>
-          <p className="text-xs text-gray-03 mt-2">
-            Companies: {companies?.length || 0}
-          </p>
+          <p className="text-gray-02">No companies found</p>
         </div>
       </div>
     );

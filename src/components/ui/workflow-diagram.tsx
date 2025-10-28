@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import mermaid from 'mermaid';
-import { useQueueStats } from '@/hooks/useQueueStats';
 
 // Initialize mermaid with dark theme configuration
 mermaid.initialize({
@@ -24,16 +23,10 @@ mermaid.initialize({
 });
 
 export function WorkflowDiagram() {
-  const { queueStats } = useQueueStats();
   const [svg, setSvg] = React.useState<string>('');
 
-  // Create the diagram with job counts
+  // Create the diagram without job counts
   const diagram = React.useMemo(() => {
-    const getQueueStats = (queueId: string) => {
-      const stats = queueStats[queueId] || { active: 0, waiting: 0 };
-      const total = stats.active + stats.waiting;
-      return total > 0 ? `<br/>(${total})` : '';
-    };
 
     return `
       flowchart TB
@@ -41,39 +34,39 @@ export function WorkflowDiagram() {
         subgraph Input["Input"]
           style Input fill:none,stroke:#2E2E2E,color:#878787
           PDF[PDF]
-          Cache[Cache${getQueueStats('cache')}]
-          NLM[Parse PDF${getQueueStats('nlmParsePDF')}]
-          Tables[Tables${getQueueStats('nlmExtractTables')}]
+          Cache[Cache]
+          NLM[Parse PDF]
+          Tables[Tables]
         end
 
         subgraph Processing["Processing"]
           style Processing fill:none,stroke:#2E2E2E,color:#878787
-          Precheck[Precheck${getQueueStats('precheck')}]
-          GuessWikidata[Wikidata${getQueueStats('guessWikidata')}]
-          FiscalYear[Fiscal Year${getQueueStats('diffReportingPeriods')}]
-          Emissions[Emissions${getQueueStats('extractEmissions')}]
+          Precheck[Precheck]
+          GuessWikidata[Wikidata]
+          FiscalYear[Fiscal Year]
+          Emissions[Emissions]
         end
 
         subgraph Analysis["Analysis"]
           style Analysis fill:none,stroke:#2E2E2E,color:#878787
-          Industry[Industry${getQueueStats('diffIndustry')}]
-          Scope1[Scope 1+2${getQueueStats('diffScope12')}]
-          Scope3[Scope 3${getQueueStats('diffScope3')}]
-          Biogenic[Biogenic${getQueueStats('diffBiogenic')}]
-          Goals[Goals${getQueueStats('diffGoals')}]
-          Initiatives[Initiatives${getQueueStats('diffInitiatives')}]
-          Turnover[Turnover${getQueueStats('diffTurnover')}]
-          Employees[Employees${getQueueStats('diffEmployees')}]
-          BaseYear[Base Year${getQueueStats('diffBaseYear')}]
+          Industry[Industry]
+          Scope1[Scope 1+2]
+          Scope3[Scope 3]
+          Biogenic[Biogenic]
+          Goals[Goals]
+          Initiatives[Initiatives]
+          Turnover[Turnover]
+          Employees[Employees]
+          BaseYear[Base Year]
         end
 
         subgraph Output["Output"]
           style Output fill:none,stroke:#2E2E2E,color:#878787
-          Tags[Tags${getQueueStats('diffTags')}]
-          Wikipedia[Wikipedia${getQueueStats('wikipediaUpload')}]
-          Markdown[Markdown${getQueueStats('indexMarkdown')}]
-          CheckDB[DB Check${getQueueStats('checkDB')}]
-          Review[Review${getQueueStats('sendCompanyLink')}]
+          Tags[Tags]
+          Wikipedia[Wikipedia]
+          Markdown[Markdown]
+          CheckDB[DB Check]
+          Review[Review]
           API((API))
         end
 
@@ -145,16 +138,8 @@ export function WorkflowDiagram() {
         classDef completed fill:#AAE506,stroke:#6C9105,color:#F7F7F7
         classDef failed fill:#F0759A,stroke:#97455D,color:#F7F7F7
 
-        %% Apply styles based on queue status
-        ${Object.entries(queueStats).map(([queueId, stats]) => {
-          if (stats.active > 0) return `class ${queueId} active`;
-          if (stats.waiting > 0) return `class ${queueId} waiting`;
-          if (stats.failed > 0) return `class ${queueId} failed`;
-          if (stats.completed > 0) return `class ${queueId} completed`;
-          return '';
-        }).filter(Boolean).join('\n')}
     `;
-  }, [queueStats]);
+  }, []);
 
   React.useEffect(() => {
     const renderDiagram = async () => {

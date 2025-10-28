@@ -29,12 +29,7 @@ export function useQueues(page = 1, jobsPerPage = 20) {
           queueStore.loadQueueWithUpdates(stage.id);
 
           // Fetch initial data
-          const response = await fetchQueueJobs(
-            stage.id,
-            "latest",
-            page,
-            jobsPerPage
-          );
+          const response = await fetchQueueJobs(stage.id);
 
           // Update queue store
           queueStore.updateQueue(stage.id, response.queue);

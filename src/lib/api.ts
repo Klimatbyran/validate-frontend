@@ -1,11 +1,11 @@
 import axios, { AxiosError } from "axios";
 import {
-  QueuesResponse,
-  QueuesResponseSchema,
   QueueJobsResponse,
-  QueueJobsResponseSchema,
+  CustomAPIProcess,
+  CustomAPICompany,
+  CustomAPIQueueStats,
+  CustomAPIJob,
 } from "./types";
-import { toast } from "sonner";
 
 import {
   Observable,
@@ -15,20 +15,14 @@ import {
   timer,
   concat,
   throwError,
-  EMPTY,
 } from "rxjs";
 import {
-  mergeMap,
   concatMap,
   tap,
   catchError,
-  delay,
   map,
   share,
   finalize,
-  expand,
-  takeWhile,
-  scan,
 } from "rxjs/operators";
 
 // RxJS-based rate limiter for API requests
@@ -42,7 +36,6 @@ class RxRateLimiter {
     };
   }>();
   private lastRequestTime = 0;
-  private processing = false;
 
   constructor(private minInterval = 1000) {
     // Process queue items with rate limiting
@@ -154,9 +147,9 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Add retry count to config if not present
-    if (config.retryCount === undefined) {
-      config.retryCount = 0;
-      config.maxRetries = 3;
+    if ((config as any).retryCount === undefined) {
+      (config as any).retryCount = 0;
+      (config as any).maxRetries = 3;
     }
 
     // Reduce the batch size for large requests
@@ -183,14 +176,14 @@ api.interceptors.response.use(
         error.code === "ETIMEDOUT" ||
         error.code === "ECONNRESET" ||
         (error.response && error.response.status >= 500)) &&
-      config.retryCount < config.maxRetries
+      (config as any).retryCount < (config as any).maxRetries
     ) {
-      config.retryCount++;
+      (config as any).retryCount++;
 
       // Exponential backoff with jitter
       const jitter = Math.random() * 1000;
       const backoffDelay = Math.min(
-        1000 * 2 ** config.retryCount + jitter,
+        1000 * 2 ** (config as any).retryCount + jitter,
         10000
       );
 
@@ -205,73 +198,79 @@ api.interceptors.response.use(
 
 export function fetchQueueJobs(
   queueName: string,
-  status = "latest",
-  page = 1,
-  jobsPerPage = 20,
-  sortOrder: "asc" | "desc" = "desc"
+  status?: string
 ): Promise<QueueJobsResponse> {
   // Create an observable for the API request
   return new Promise((resolve, reject) => {
     try {
       const subscription = rateLimiter
         .throttle(() =>
-          api.get<QueuesResponse>("/queues", {
-            params: {
-              activeQueue: queueName,
-              status,
-              page,
-              jobsPerPage,
-              sortOrder,
-              includeJobs: true,
-              includeDelayed: true,
-              includePaused: true,
-              includeWaiting: true,
-              includeActive: true,
-              includeCompleted: true,
-              includeFailed: true,
-              showEmpty: true,
-            },
+          api.get(`/queues/${queueName}`, {
+            params: status ? { status } : {},
           })
         )
         .pipe(
           map((response) => {
             try {
-              // Validate the response
-              const parsed = QueuesResponseSchema.safeParse(response.data);
-              if (!parsed.success) {
-                throw new Error(
-                  `Ogiltig data från servern: ${parsed.error.message}`
-                );
-              }
-
-              // Find the requested queue (case-insensitive, trimmed)
-              const queue = parsed.data.queues.find(
-                (q) =>
-                  q.name.trim().toLowerCase() === queueName.trim().toLowerCase()
-              );
-
-              if (!queue) {
-                console.warn(
-                  `Queue '${queueName}' not found in response. Available queues:`,
-                  parsed.data.queues.map((q) => q.name)
-                );
-                // Return empty queue instead of throwing
-                return {
-                  queue: {
-                    jobs: [],
-                    counts: {
-                      active: 0,
-                      waiting: 0,
-                      completed: 0,
-                      failed: 0,
-                      delayed: 0,
-                      paused: 0,
-                      prioritized: 0,
-                      "waiting-children": 0,
-                    },
+              // The custom API returns an array of jobs directly
+              const jobs = response.data || [];
+              
+              // Transform the custom API response to match the expected format
+              const queue = {
+                name: queueName,
+                type: "bullmq" as const,
+                isPaused: false,
+                statuses: ["active", "waiting", "completed", "failed", "delayed", "paused"],
+                counts: {
+                  active: jobs.filter((job: CustomAPIJob) => job.status === "active").length,
+                  waiting: jobs.filter((job: CustomAPIJob) => job.status === "waiting").length,
+                  completed: jobs.filter((job: CustomAPIJob) => job.status === "completed").length,
+                  failed: jobs.filter((job: CustomAPIJob) => job.status === "failed").length,
+                  delayed: jobs.filter((job: CustomAPIJob) => job.status === "delayed").length,
+                  paused: jobs.filter((job: CustomAPIJob) => job.status === "paused").length,
+                  prioritized: jobs.filter((job: CustomAPIJob) => job.status === "prioritized").length,
+                  "waiting-children": jobs.filter((job: CustomAPIJob) => job.status === "waiting-children").length,
+                },
+                jobs: jobs.map((job: CustomAPIJob) => ({
+                  id: job.id,
+                  name: job.name,
+                  timestamp: job.timestamp,
+                  processedOn: job.processedBy ? job.timestamp : undefined,
+                  finishedOn: job.finishedOn,
+                  progress: job.progress,
+                  attempts: job.attemptsMade,
+                  delay: job.delay,
+                  stacktrace: job.stacktrace || [],
+                  opts: job.opts || {},
+                  data: {
+                    url: job.url,
+                    autoApprove: job.autoApprove,
+                    threadId: job.processId,
+                    messageId: job.id,
+                    company: job.company,
+                    companyName: job.company,
+                    description: job.approval?.summary,
+                    year: job.year,
+                    status: job.status,
+                    needsApproval: !job.autoApprove && !job.approval?.approved,
+                    comment: job.approval?.metadata?.comment,
                   },
-                };
-              }
+                  parent: undefined,
+                  returnValue: job.returnvalue,
+                  isFailed: job.status === "failed",
+                })),
+                pagination: {
+                  pageCount: 1,
+                  range: {
+                    start: 0,
+                    end: jobs.length - 1,
+                  },
+                },
+                readOnlyMode: false,
+                allowRetries: true,
+                allowCompletedRetries: true,
+                delimiter: ":",
+              };
 
               return { queue };
             } catch (error) {
@@ -279,7 +278,10 @@ export function fetchQueueJobs(
               // Return empty queue instead of throwing
               return {
                 queue: {
-                  jobs: [],
+                  name: queueName,
+                  type: "bullmq" as const,
+                  isPaused: false,
+                  statuses: [],
                   counts: {
                     active: 0,
                     waiting: 0,
@@ -290,6 +292,15 @@ export function fetchQueueJobs(
                     prioritized: 0,
                     "waiting-children": 0,
                   },
+                  jobs: [],
+                  pagination: {
+                    pageCount: 0,
+                    range: { start: 0, end: 0 },
+                  },
+                  readOnlyMode: false,
+                  allowRetries: true,
+                  allowCompletedRetries: true,
+                  delimiter: ":",
                 },
               };
             }
@@ -327,76 +338,142 @@ export function fetchQueueJobs(
 // VIKTIGT: Använd endast reaktiva RxJS-metoder. Statiska objekt, globala variabler
 // och blockerande metoder som toArray() är FÖRBJUDNA.
 
-// Load all historical jobs for a queue using pagination
+// Load all historical jobs for a queue - simplified for custom API
 export function fetchAllHistoricalJobs(
-  queueName: string,
-  jobsPerPage = 50
+  queueName: string
 ): Observable<QueueJobsResponse> {
-  // Skapa en initial tom respons
-  const emptyResponse: QueueJobsResponse = {
-    queue: {
-      jobs: [],
-      counts: {
-        active: 0,
-        waiting: 0,
-        completed: 0,
-        failed: 0,
-        delayed: 0,
-        paused: false,
-      },
-    },
-  };
-
-  // Använd en rekursiv funktion för att hämta alla sidor reaktivt
-  // Implementera med scan för att emittera delresultat för varje sida
-  const fetchPages = (): Observable<QueueJobsResponse> => {
-    return from([1]) // Starta med sida 1
-      .pipe(
-        // Expandera strömmen för att hämta alla sidor
-        expand((page) =>
-          from(
-            fetchQueueJobs(queueName, "latest", page, jobsPerPage, "asc")
-          ).pipe(
-            map((response) => {
-              return {
-                response: response || emptyResponse,
-                nextPage:
-                  response?.queue?.jobs?.length === jobsPerPage
-                    ? page + 1
-                    : null,
-              };
-            }),
-            catchError((error) => {
-              return of({ response: emptyResponse, nextPage: null });
-            })
-          )
-        ),
-        // Avsluta när vi inte har fler sidor
-        takeWhile(({ nextPage }) => nextPage !== null, true),
-        // Ackumulera resultat med scan
-        scan((acc, { response }) => {
-          if (!acc.queue?.jobs?.length) return response || emptyResponse;
-
-          if (!response?.queue) {
-            return acc;
-          }
-
-          return {
-            queue: {
-              ...response.queue,
-              jobs: [...acc.queue.jobs, ...(response.queue.jobs || [])],
-            },
-          };
-        }, emptyResponse)
-      );
-  };
-  // Starta hämtningen av alla sidor
-  return fetchPages().pipe(
-    // Slutlig loggning när alla sidor är hämtade
-    finalize(() => {}),
-    // Dela strömmen för att undvika att köra om hela pipeline för varje subscriber
+  // The custom API returns all jobs at once, so we just need to fetch them
+  return from(fetchQueueJobs(queueName)).pipe(
+    catchError((error) => {
+      console.error(`Error fetching historical jobs for ${queueName}:`, error);
+      // Return empty response on error
+      return of({
+        queue: {
+          name: queueName,
+          type: "bullmq" as const,
+          isPaused: false,
+          statuses: [],
+          counts: {
+            active: 0,
+            waiting: 0,
+            completed: 0,
+            failed: 0,
+            delayed: 0,
+            paused: 0,
+            prioritized: 0,
+            "waiting-children": 0,
+          },
+          jobs: [],
+          pagination: {
+            pageCount: 0,
+            range: { start: 0, end: 0 },
+          },
+          readOnlyMode: false,
+          allowRetries: true,
+          allowCompletedRetries: true,
+          delimiter: ":",
+        },
+      });
+    }),
     share()
   );
+}
+
+// New process management endpoints for the custom API
+export function fetchProcesses(): Promise<CustomAPIProcess[]> {
+  return new Promise((resolve, reject) => {
+    try {
+      const subscription = rateLimiter
+        .throttle(() => api.get("/processes/"))
+        .pipe(
+          map((response) => response.data || []),
+          catchError((error) => {
+            console.error("Error fetching processes:", error);
+            return of([]);
+          })
+        )
+        .subscribe({
+          next: (processes) => resolve(processes),
+          error: (error) => reject(error),
+        });
+
+      return () => subscription.unsubscribe();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+export function fetchProcessesByCompany(): Promise<CustomAPICompany[]> {
+  return new Promise((resolve, reject) => {
+    try {
+      const subscription = rateLimiter
+        .throttle(() => api.get("/processes/companies"))
+        .pipe(
+          map((response) => response.data || []),
+          catchError((error) => {
+            console.error("Error fetching processes by company:", error);
+            return of([]);
+          })
+        )
+        .subscribe({
+          next: (companies) => resolve(companies),
+          error: (error) => reject(error),
+        });
+
+      return () => subscription.unsubscribe();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+export function fetchProcessById(processId: string): Promise<CustomAPIProcess | null> {
+  return new Promise((resolve, reject) => {
+    try {
+      const subscription = rateLimiter
+        .throttle(() => api.get(`/processes/${processId}`))
+        .pipe(
+          map((response) => response.data),
+          catchError((error) => {
+            console.error(`Error fetching process ${processId}:`, error);
+            return of(null);
+          })
+        )
+        .subscribe({
+          next: (process) => resolve(process),
+          error: (error) => reject(error),
+        });
+
+      return () => subscription.unsubscribe();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+export function fetchQueueStats(): Promise<CustomAPIQueueStats[]> {
+  return new Promise((resolve, reject) => {
+    try {
+      const subscription = rateLimiter
+        .throttle(() => api.get("/queues/stats"))
+        .pipe(
+          map((response) => response.data || []),
+          catchError((error) => {
+            console.error("Error fetching queue stats:", error);
+            return of([]);
+          })
+        )
+        .subscribe({
+          next: (stats) => resolve(stats),
+          error: (error) => reject(error),
+        });
+
+      return () => subscription.unsubscribe();
+    } catch (error) {
+      reject(error);
+    }
+  });
 }
 
 function handleApiError(error: unknown, context?: string): Error {

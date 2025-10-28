@@ -44,23 +44,22 @@ export default defineConfig({
       },
       // Other /api calls
       "/api": {
-        target: "http://localhost:3000/",
+        target: "https://stage-pipeline-api.klimatkollen.se",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, "/admin/queues/api"),
         secure: false,
         timeout: 30000, // Increase timeout to 30 seconds
         proxyTimeout: 30000, // Increase proxy timeout to 30 seconds
         configure: (proxy, _options) => {
           proxy.on("error", (err, _req, res) => {
             console.warn(
-              "Backend server not available on port 3000. Queue API will not work."
+              "Pipeline API server not available on port 3001. Queue API will not work."
             );
             if (res && !res.headersSent) {
               res.writeHead(503, { "Content-Type": "application/json" });
               res.end(
                 JSON.stringify({
-                  error: "Backend server not available",
-                  message: "Please start the backend server on port 3000",
+                  error: "Pipeline API server not available",
+                  message: "Please start the pipeline API server on port 3001",
                   queues: [],
                   jobs: [],
                   stats: { total: 0, active: 0, completed: 0, failed: 0 },
