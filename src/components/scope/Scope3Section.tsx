@@ -166,15 +166,24 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
     let isMounted = true;
 
     async function fetchReferencesForYears(companyId: string, years: number[]) {
+      try {
+        console.log('[Scope3Section] start reference fetch', { companyId, years });
+      } catch (_) {}
       setIsLoading(true);
       setError(null);
       try {
         const company = await fetchCompanyById(companyId, abortController.signal);
+        try {
+          console.log('[Scope3Section] fetched company', { companyId, hasReportingPeriods: Array.isArray((company as any)?.reportingPeriods), reportingPeriodsCount: Array.isArray((company as any)?.reportingPeriods) ? (company as any).reportingPeriods.length : 0 });
+        } catch (_) {}
         const periods = getReportingPeriods(company);
         const nextMap: Record<number, ReferenceSnapshot> = {};
         for (const y of years) {
           const period = findPeriodEndingInYear(periods, y);
           const scope3 = period?.emissions?.scope3;
+          try {
+            console.log('[Scope3Section] year snapshot', { year: y, hasPeriod: !!period, hasScope3: !!scope3 });
+          } catch (_) {}
           nextMap[y] = buildReferenceSnapshotFromScope3(scope3);
         }
         if (isMounted) {
@@ -183,6 +192,9 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
         }
       } catch (e: any) {
         if (isMounted && e?.name !== 'AbortError') {
+          try {
+            console.warn('[Scope3Section] reference fetch error', e);
+          } catch (_) {}
           setError(e?.message || 'Kunde inte hämta referensdata');
           setIsLoading(false);
         }

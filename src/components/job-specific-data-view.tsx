@@ -1,7 +1,7 @@
 import React from "react";
 import { QueueJob } from "@/lib/types";
 import { MarkdownVectorPagesDisplay } from "./ui/markdown-display";
-import { isMarkdown, isJsonString } from "@/lib/utils";
+import { isMarkdown, isJsonString, getWikidataInfo } from "@/lib/utils";
 import { FiscalYearDisplay } from "./ui/fiscal-year-display";
 import { ScopeEmissionsDisplay } from "./scope-emissions-display";
 import { MetadataDisplay } from "./ui/metadata-display";
@@ -86,11 +86,46 @@ function getScope3Data(processedData: any, returnValueData: any): any {
 }
 
 export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
+  const [detailed, setDetailed] = React.useState<any | null>(null);
+  const [, setIsLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    let aborted = false;
+    async function loadDetails() {
+      if (!job || job.returnValue) return;
+      if (!job.queueId || !job.id) return;
+      try {
+        setIsLoading(true);
+        const res = await fetch(`/api/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!aborted) setDetailed(json);
+      } finally {
+        if (!aborted) setIsLoading(false);
+      }
+    }
+    loadDetails();
+    return () => { aborted = true; };
+  }, [job?.id, job?.queueId, Boolean(job?.returnValue)]);
+
+  const effectiveJob = React.useMemo(() => {
+    if (!job) return undefined;
+    if (!detailed) return job;
+    return {
+      ...job,
+      returnValue: detailed.returnvalue ?? job.returnValue,
+      data: detailed.data || job.data,
+      progress: detailed.progress ?? job.progress,
+      failedReason: detailed.failedReason ?? (job as any).failedReason,
+      stacktrace: detailed.stacktrace || job.stacktrace,
+    } as any;
+  }, [job, detailed]);
+
   const processedData =
     typeof data === "string" && isJsonString(data) ? JSON.parse(data) : data;
 
   // Parse return value data from job
-  const returnValueData = parseReturnValueData(job);
+  const returnValueData = parseReturnValueData(effectiveJob);
 
   // List of technical fields to hide from the user-friendly view
   const technicalFields = ["autoApprove", "threadId", "messageId", "url"];
@@ -145,7 +180,27 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   // Get scope data for rendering
   const scopeData = getScopeData(processedData, returnValueData);
   const scope3Data = getScope3Data(processedData, returnValueData);
-  const wikidataId: string | undefined = processedData?.wikidata?.node || returnValueData?.wikidata?.node;
+  const wikidataId: string | undefined = React.useMemo(() => {
+    const fromJob = getWikidataInfo(effectiveJob as any)?.node;
+    const fromProcessed = (processedData as any)?.wikidataId || (processedData as any)?.wikidata?.node;
+    const candidate = fromJob || fromProcessed;
+    if (!candidate) return undefined;
+    const id = typeof candidate === 'string' ? candidate : String(candidate);
+    const trimmed = id.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }, [effectiveJob, processedData]);
+
+  React.useEffect(() => {
+    try {
+      console.log('[JobSpecificDataView] scope3 panel context', {
+        jobId: job?.id,
+        queueId: job?.queueId,
+        hasReturnValue: !!job?.returnValue,
+        derivedWikidataId: wikidataId,
+        hasScope3Data: !!scope3Data,
+      });
+    } catch (_) {}
+  }, [job?.id, job?.queueId, Boolean(job?.returnValue), wikidataId, Boolean(scope3Data)]);
 
   return (
     <div className="space-y-3 text-sm">

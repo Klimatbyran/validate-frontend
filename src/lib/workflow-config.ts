@@ -29,9 +29,11 @@ export interface PipelineStep {
  */
 export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   // Preprocessing
-  nlmParsePDF: "PDF Parsning",
+  nlmParsePDF: "PDF Parsning NLM",
   nlmExtractTables: "Tabellextraktion",
   precheck: "Förkontroll",
+  parsePdf: "PDF Parsning",
+  doclingParsePDF: "PDF Parsining docling",
 
   // AI Data Extraction
   guessWikidata: "Wikidata",
@@ -70,7 +72,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
     id: "preprocessing",
     name: "Preprocessing",
     description: "Initial document processing and preparation",
-    stageIds: ["nlmParsePDF", "nlmExtractTables", "precheck"],
+    stageIds: ["nlmParsePDF", "nlmExtractTables", "precheck", "parsePdf", "doclingParsePDF"],
     order: 1,
   },
   {

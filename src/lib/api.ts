@@ -203,17 +203,19 @@ export function fetchQueueJobs(
   // Create an observable for the API request
   return new Promise((resolve, reject) => {
     try {
+      const params = status ? { status } : {};
       const subscription = rateLimiter
         .throttle(() =>
-          api.get(`/queues/${queueName}`, {
-            params: status ? { status } : {},
-          })
+          api.get(`/queues/${queueName}`, { params })
         )
         .pipe(
           map((response) => {
             try {
               // The custom API returns an array of jobs directly
               const jobs = response.data || [];
+              
+              // Sort jobs by timestamp descending to get latest jobs first
+              const sortedJobs = jobs.sort((a: CustomAPIJob, b: CustomAPIJob) => (b.timestamp || 0) - (a.timestamp || 0));
               
               // Transform the custom API response to match the expected format
               const queue = {
@@ -222,16 +224,16 @@ export function fetchQueueJobs(
                 isPaused: false,
                 statuses: ["active", "waiting", "completed", "failed", "delayed", "paused"],
                 counts: {
-                  active: jobs.filter((job: CustomAPIJob) => job.status === "active").length,
-                  waiting: jobs.filter((job: CustomAPIJob) => job.status === "waiting").length,
-                  completed: jobs.filter((job: CustomAPIJob) => job.status === "completed").length,
-                  failed: jobs.filter((job: CustomAPIJob) => job.status === "failed").length,
-                  delayed: jobs.filter((job: CustomAPIJob) => job.status === "delayed").length,
-                  paused: jobs.filter((job: CustomAPIJob) => job.status === "paused").length,
-                  prioritized: jobs.filter((job: CustomAPIJob) => job.status === "prioritized").length,
-                  "waiting-children": jobs.filter((job: CustomAPIJob) => job.status === "waiting-children").length,
+                  active: sortedJobs.filter((job: CustomAPIJob) => job.status === "active").length,
+                  waiting: sortedJobs.filter((job: CustomAPIJob) => job.status === "waiting").length,
+                  completed: sortedJobs.filter((job: CustomAPIJob) => job.status === "completed").length,
+                  failed: sortedJobs.filter((job: CustomAPIJob) => job.status === "failed").length,
+                  delayed: sortedJobs.filter((job: CustomAPIJob) => job.status === "delayed").length,
+                  paused: sortedJobs.filter((job: CustomAPIJob) => job.status === "paused").length,
+                  prioritized: sortedJobs.filter((job: CustomAPIJob) => job.status === "prioritized").length,
+                  "waiting-children": sortedJobs.filter((job: CustomAPIJob) => job.status === "waiting-children").length,
                 },
-                jobs: jobs.map((job: CustomAPIJob) => ({
+                jobs: sortedJobs.map((job: CustomAPIJob) => ({
                   id: job.id,
                   name: job.name,
                   timestamp: job.timestamp,
@@ -263,7 +265,7 @@ export function fetchQueueJobs(
                   pageCount: 1,
                   range: {
                     start: 0,
-                    end: jobs.length - 1,
+                    end: sortedJobs.length - 1,
                   },
                 },
                 readOnlyMode: false,
@@ -340,10 +342,11 @@ export function fetchQueueJobs(
 
 // Load all historical jobs for a queue - simplified for custom API
 export function fetchAllHistoricalJobs(
-  queueName: string
+  queueName: string,
+  status?: string
 ): Observable<QueueJobsResponse> {
   // The custom API returns all jobs at once, so we just need to fetch them
-  return from(fetchQueueJobs(queueName)).pipe(
+  return from(fetchQueueJobs(queueName, status)).pipe(
     catchError((error) => {
       console.error(`Error fetching historical jobs for ${queueName}:`, error);
       // Return empty response on error
@@ -413,7 +416,8 @@ export function fetchProcessesByCompany(): Promise<CustomAPICompany[]> {
           map((response) => response.data || []),
           catchError((error) => {
             console.error("Error fetching processes by company:", error);
-            return of([]);
+            // Propagate error so callers can decide how to handle state updates
+            return throwError(() => error);
           })
         )
         .subscribe({

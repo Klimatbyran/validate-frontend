@@ -54,7 +54,7 @@ export function useQueues(page = 1, jobsPerPage = 20) {
       };
     },
     {
-      refreshInterval: 10000,
+      refreshInterval: 30000,
       errorRetryCount: 3,
       errorRetryInterval: 1000,
       shouldRetryOnError: (error: any) => {

@@ -471,17 +471,18 @@ export function SwimlaneQueueStatus() {
           year,
           attempts: yearProcesses.length,
           fields: {}, // We'll populate this based on the jobs in the processes
-          jobs: yearProcesses.flatMap(process => 
-            process.jobs.map(job => {
+          // Only include jobs from the latest process (single run/thread) to avoid mixing runs
+          jobs: (latestProcess.jobs || []).map(job => {
               const convertedJob = {
                 ...job,
                 queueId: job.queue,
+                opts: { attempts: (job as any).attemptsMade ?? 0 },
                 data: {
                   ...job.data,
                   company: company.company,
                   companyName: company.company,
                   year: year,
-                  threadId: process.id,
+                  threadId: latestProcess.id,
                   // Map approval status properly
                   approved: job.approval?.approved || false,
                   autoApprove: job.autoApprove
@@ -517,8 +518,7 @@ export function SwimlaneQueueStatus() {
               }
               
               return convertedJob;
-            })
-          ),
+            }),
           latestTimestamp: latestProcess.startedAt || 0
         };
       }).sort((a, b) => b.year - a.year);

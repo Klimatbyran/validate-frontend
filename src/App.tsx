@@ -34,6 +34,16 @@ function App() {
   const [processedUrls, setProcessedUrls] = useState<UrlInput[]>([]);
   const [autoApprove, setAutoApprove] = useState(true);
 
+  const handleFileSubmit = useCallback(async () => {
+    if (uploadedFiles.length === 0) {
+      toast.error("Inga PDF-filer uppladdade");
+      return;
+    }
+
+    // For now, just show a message that file upload is not yet supported
+    toast.info("Filuppladdning stöds inte ännu. Använd länk-läget istället.");
+  }, [uploadedFiles, autoApprove]);
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -87,13 +97,14 @@ function App() {
 
     // Send batch job creation request to the custom API
     try {
-      const response = await fetch("/api/queues/nlmParsePDF", {
+      const response = await fetch("/api/queues/parsePdf", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           autoApprove: Boolean(autoApprove),
+          forceReindex: true,
           urls: urls,
         }),
       });
@@ -234,6 +245,14 @@ function App() {
                                 </span>
                               </p>
                             </div>
+                            {uploadedFiles.length > 0 && (
+                              <div className="mt-4 flex justify-end">
+                                <Button onClick={handleFileSubmit}>
+                                  <FileUp className="w-4 h-4 mr-2" />
+                                  Lägg till filer
+                                </Button>
+                              </div>
+                            )}
                           </TabsContent>
 
                           <TabsContent value="url">

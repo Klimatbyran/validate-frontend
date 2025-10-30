@@ -240,7 +240,7 @@ export class QueueStore {
       } catch (error) {
         // Silently handle polling errors
       }
-    }, 1000); // Poll every second
+    }, 30000); // Poll every 30 seconds to reduce load
 
     // Store the interval ID so we can clear it later if needed
     this.pollingIntervals[queueId] = intervalId;
