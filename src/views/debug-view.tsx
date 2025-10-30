@@ -10,14 +10,14 @@ import {
   XCircle,
   RefreshCw,
 } from "lucide-react";
-import { useQueues } from "@/hooks/useQueues";
+import { useCompanies } from "@/hooks/useCompanies";
 import { Button } from "@/components/ui/button";
 import { getWorkflowStages } from "@/lib/workflow-config";
 import { toast } from "sonner";
 import type { QueueJob } from "@/lib/types";
 
 export function DebugView() {
-  const { queues, isLoading, isError, error, refresh } = useQueues();
+  const { companies, isLoading, error } = useCompanies();
   const [allJobs, setAllJobs] = useState<QueueJob[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 

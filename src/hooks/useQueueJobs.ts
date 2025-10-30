@@ -3,14 +3,14 @@ import { fetchQueueJobs } from '@/lib/api';
 import { queueStore } from '@/lib/queue-store';
 import type { QueueJobsResponse } from '@/lib/types';
 
-export function useQueueJobs(queueName: string, status = 'latest', page = 1, jobsPerPage = 10) {
+export function useQueueJobs(queueName: string) {
   const { data, error, isLoading, mutate } = useSWR<QueueJobsResponse>(
-    queueName ? ['queue-jobs', queueName, status, page, jobsPerPage] : null,
-    () => fetchQueueJobs(queueName, status, page, jobsPerPage),
+    queueName ? ['queue-jobs', queueName] : null,
+    () => fetchQueueJobs(queueName),
     {
-      refreshInterval: 10000, // Increased from 5000 to 10000 to reduce server load
+      refreshInterval: 30000, // Poll every 30s to reduce browser churn
       errorRetryCount: 3,
-      errorRetryInterval: (retryCount) => Math.min(1000 * 2 ** retryCount, 30000),
+      errorRetryInterval: 5000,
       shouldRetryOnError: (error) => {
         const message = error?.message?.toLowerCase() || '';
         return !message.includes('åtkomst nekad') &&
@@ -24,7 +24,9 @@ export function useQueueJobs(queueName: string, status = 'latest', page = 1, job
       revalidateOnReconnect: true,
       onSuccess: (data) => {
         // Update the queue store when new data arrives
-        queueStore.updateQueue(queueName, data.queue);
+        if (data?.queue) {
+          queueStore.updateQueue(queueName, data.queue);
+        }
       }
     }
   );
