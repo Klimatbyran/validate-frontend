@@ -32,11 +32,11 @@ export function groupQueues(): OperatorFunction<
 // och blockerande metoder som toArray() är FÖRBJUDNA.
 export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
   return pipe(
-    // Steg 1: Gruppera jobb efter threadId för att hantera jobb i samma tråd tillsammans
-    groupBy((job) => job.data.threadId || job.id, {
+    // Steg 1: Gruppera jobb ENBART efter top-level threadId (inga fallbacks i data)
+    groupBy((job) => (job as any)?.threadId ?? "__missing_threadId__", {
       element: (job) => ({
         job,
-        threadId: job.data.threadId || job.id,
+        threadId: (job as any)?.threadId ?? "__missing_threadId__",
         timestamp: job.finishedOn || job.processedOn || job.timestamp,
       }),
     }),
@@ -246,7 +246,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
                 latestTimestamp: attemptLatestTs,
                 jobs: attempt.jobs,
                 companyName: latestJobInAttempt?.data?.companyName,
-                threadId,
+                threadId: attempt.threadId,
               });
             }
           });

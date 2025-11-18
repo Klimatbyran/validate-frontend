@@ -105,6 +105,8 @@ function App() {
         body: JSON.stringify({
           autoApprove: Boolean(autoApprove),
           forceReindex: true,
+          replaceAllEmissions: true,
+          runOnly: ['scope1+2', 'scope3'],
           urls: urls,
         }),
       });

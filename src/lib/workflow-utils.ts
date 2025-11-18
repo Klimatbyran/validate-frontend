@@ -23,15 +23,31 @@ import {
 export function getJobStatus(job: any): SwimlaneStatusType {
   if (!job) return "waiting";
 
-  // Only count as failed if explicitly marked as failed AND finished
-  if (job.finishedOn && job.isFailed) {
+  // Check the raw status field from the API first (for jobs from /process/companies endpoint)
+  const rawStatus = job.status;
+  
+  // Map API status values to our internal status types
+  if (rawStatus === "failed") {
     return "failed";
   }
-
-  // If finished but not failed, check if it needs approval
-  if (job.finishedOn) {
-    const needsApproval = !job.data.approved && !job.data.autoApprove;
+  
+  if (rawStatus === "active") {
+    return "processing";
+  }
+  
+  if (rawStatus === "waiting" || rawStatus === "waiting-children" || rawStatus === "delayed") {
+    return "waiting";
+  }
+  
+  // For completed jobs, check if they need approval
+  if (rawStatus === "completed" || job.finishedOn) {
+    const needsApproval = !job.data?.approved && !job.data?.autoApprove;
     return needsApproval ? "needs_approval" : "completed";
+  }
+
+  // Only count as failed if explicitly marked as failed AND finished
+  if (job.isFailed) {
+    return "failed";
   }
 
   // If actively processing, show as processing

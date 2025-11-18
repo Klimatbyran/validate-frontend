@@ -114,7 +114,8 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     return {
       ...job,
       returnValue: detailed.returnvalue ?? job.returnValue,
-      data: detailed.data || job.data,
+      // Merge both shapes from details: base on original, then detailed.data, then detailed.jobData
+      data: { ...(job.data || {}), ...(detailed as any)?.data, ...(detailed as any)?.jobData },
       progress: detailed.progress ?? job.progress,
       failedReason: detailed.failedReason ?? (job as any).failedReason,
       stacktrace: detailed.stacktrace || job.stacktrace,
@@ -199,8 +200,16 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         derivedWikidataId: wikidataId,
         hasScope3Data: !!scope3Data,
       });
+      console.log('[JobSpecificDataView] threadId sources', {
+        dataThreadId: (job as any)?.data?.threadId,
+        jobDataThreadId: (job as any)?.jobData?.threadId,
+        effectiveDataThreadId: (effectiveJob as any)?.data?.threadId,
+        detailedKeys: detailed ? Object.keys(detailed) : [],
+        detailedDataKeys: (detailed as any)?.data ? Object.keys((detailed as any).data) : [],
+        detailedJobDataKeys: (detailed as any)?.jobData ? Object.keys((detailed as any).jobData) : [],
+      });
     } catch (_) {}
-  }, [job?.id, job?.queueId, Boolean(job?.returnValue), wikidataId, Boolean(scope3Data)]);
+  }, [job?.id, job?.queueId, Boolean(job?.returnValue), wikidataId, Boolean(scope3Data), effectiveJob, detailed]);
 
   return (
     <div className="space-y-3 text-sm">
@@ -215,7 +224,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       {/* Show Scope 1+2 emissions data if available */}
       {scopeData && (
         <div className="mb-4">
-          <ScopeEmissionsDisplay data={{ scope12: scopeData }} />
+          <ScopeEmissionsDisplay data={{ scope12: scopeData }} wikidataId={wikidataId} />
         </div>
       )}
       {/* Show Scope 3 emissions data if available */}

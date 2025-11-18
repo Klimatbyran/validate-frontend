@@ -293,14 +293,29 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
           )}
         </div>
         <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-          <div className="flex items-center space-x-2 mb-2">
+          <div className="flex items-center space-x-2 mb-4">
             <Truck className="w-5 h-5 text-amber-700" />
             <span className="font-semibold text-lg text-gray-900">Scope 3</span>
           </div>
-          {typeof normalized.total === 'number' && (
-            <div className="font-extrabold text-gray-900 text-4xl mb-1">{normalized.total.toLocaleString('sv-SE')}</div>
-          )}
-          <div className="text-base text-gray-700">{normalized.unit || 'tCO2e'}</div>
+          <div className="mb-6 pb-4 border-b border-gray-200">
+            <div className="text-sm text-gray-600 mb-2">Totalt (statedTotalEmissions)</div>
+            {normalized.total !== null && normalized.total !== undefined ? (
+              <>
+                <div className="font-extrabold text-gray-900 text-4xl mb-1 flex items-center gap-2">
+                  {normalized.total.toLocaleString('sv-SE')}
+                  {hasReferenceForYear && (() => {
+                    const refSnapshot = referenceByYear[entry.year];
+                    const refTotal = refSnapshot?.total ?? null;
+                    const match = normalized.total === refTotal;
+                    return match ? <span className="text-green-700 text-2xl">✓</span> : <span className="text-red-600 text-2xl">✗</span>;
+                  })()}
+                </div>
+                <div className="text-base text-gray-700">{normalized.unit || 'tCO2e'}</div>
+              </>
+            ) : (
+              <div className="text-base text-gray-700">— {normalized.unit || 'tCO2e'}</div>
+            )}
+          </div>
           {hasReferenceForYear ? (
             <div className="mt-4 divide-y divide-gray-200">
               {Array.from({ length: 15 }, (_, i) => i + 1).map((n) => {

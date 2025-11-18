@@ -48,13 +48,14 @@ function getStatusDisplay(
   isActive?: boolean
 ) {
   const status = getJobStatusFromUtils(job);
+  const jobExists = job !== undefined;
 
   return {
     status,
     icon: getStatusIcon(status, variant, isActive),
     text: getStatusLabel(status, isActive),
     styles:
-      variant === "compact" ? getCompactStyles(status, isActive) : undefined,
+      variant === "compact" ? getCompactStyles(status, isActive, jobExists) : undefined,
   };
 }
 
@@ -129,7 +130,8 @@ function YearRow({
                     const fieldName = getQueueDisplayName(queueId);
                     // Find the specific job for this field using direct queueId lookup
                     const job = findJobByQueueId(queueId, yearData);
-                    const isActive = job?.processedOn && !job?.finishedOn;
+                    // Check if job is actively processing - either has processedOn or status is "active"
+                    const isActive = (job?.processedOn && !job?.finishedOn) || job?.status === "active";
 
                     return (
                       <button
@@ -182,7 +184,8 @@ function YearRow({
                   const fieldName = getQueueDisplayName(queueId);
                   // Find the specific job for this field using direct queueId lookup
                   const job = findJobByQueueId(queueId, yearData);
-                  const isActive = job?.processedOn && !job?.finishedOn;
+                  // Check if job is actively processing - either has processedOn or status is "active"
+                  const isActive = (job?.processedOn && !job?.finishedOn) || job?.status === "active";
 
                   return (
                     <button
@@ -431,104 +434,152 @@ export function SwimlaneQueueStatus() {
     console.log('SwimlaneQueueStatus - converting companies:', companies);
     if (!companies || companies.length === 0) return [];
     
-      return companies.map((company) => {
-      console.log('SwimlaneQueueStatus - processing company:', company.company, 'with', company.processes.length, 'processes');
-      if (company.processes.length > 0) {
-        console.log('SwimlaneQueueStatus - first process:', company.processes[0]);
-        if (company.processes[0].jobs.length > 0) {
-          const firstJob = company.processes[0].jobs[0];
-          console.log('SwimlaneQueueStatus - first job (full structure):', firstJob);
-          console.log('SwimlaneQueueStatus - first job (key fields):', {
-            id: firstJob.id,
-            status: firstJob.status,
-            finishedOn: firstJob.finishedOn,
-            processedBy: firstJob.processedBy,
-            approval: firstJob.approval,
-            autoApprove: firstJob.autoApprove,
-            returnvalue: firstJob.returnvalue,
-            data: firstJob.data
-          });
+    return companies
+      .map((company) => {
+        console.log('SwimlaneQueueStatus - processing company:', company.company, 'with', company.processes.length, 'processes');
+        if (company.processes.length > 0) {
+          console.log('SwimlaneQueueStatus - first process:', company.processes[0]);
+          if (company.processes[0].jobs.length > 0) {
+            const firstJob = company.processes[0].jobs[0];
+            console.log('SwimlaneQueueStatus - first job (full structure):', firstJob);
+            console.log('SwimlaneQueueStatus - first job (key fields):', {
+              id: firstJob.id,
+              status: firstJob.status,
+              finishedOn: firstJob.finishedOn,
+              processedBy: firstJob.processedBy,
+              approval: firstJob.approval,
+              autoApprove: firstJob.autoApprove,
+              returnvalue: firstJob.returnvalue,
+              data: firstJob.data
+            });
+          }
         }
-      }
-      // Group processes by year
-      const processesByYear = company.processes.reduce((acc, process) => {
-        const year = process.year || new Date().getFullYear();
-        if (!acc[year]) {
-          acc[year] = [];
-        }
-        acc[year].push(process);
-        return acc;
-      }, {} as Record<number, typeof company.processes>);
 
-      // Convert to SwimlaneYearData format
-      const years = Object.entries(processesByYear).map(([yearStr, yearProcesses]) => {
-        const year = parseInt(yearStr);
-        const latestProcess = yearProcesses.reduce((latest, process) => 
-          (process.startedAt || 0) > (latest.startedAt || 0) ? process : latest
-        );
+        // Use process.company directly (from /process/companies endpoint)
+        // Only fallback to "Unknown" if company is missing from both company and process level
+        const companyName = 
+          company.company ||
+          company.processes?.[0]?.company ||
+          "Unknown";
+
+        // Group processes by year
+        const processesByYear = company.processes.reduce((acc, process) => {
+          const year = process.year || new Date().getFullYear();
+          if (!acc[year]) {
+            acc[year] = [];
+          }
+          acc[year].push(process);
+          return acc;
+        }, {} as Record<number, typeof company.processes>);
+
+        // Convert to SwimlaneYearData format
+        const years = Object.entries(processesByYear).map(([yearStr, yearProcesses]) => {
+          const year = parseInt(yearStr);
+          const latestProcess = yearProcesses.reduce((latest, process) => 
+            (process.startedAt || 0) > (latest.startedAt || 0) ? process : latest
+          );
+
+          return {
+            year,
+            attempts: yearProcesses.length,
+            fields: {}, // We'll populate this based on the jobs in the processes
+            // Only include jobs from the latest process (single run/thread) to avoid mixing runs
+            jobs: (latestProcess.jobs || []).map(job => {
+                const convertedJob = {
+                  ...job,
+                  queueId: job.queue,
+                  opts: { attempts: (job as any).attemptsMade ?? 0 },
+                  // Prefer top-level threadId for all consumers
+                  threadId: (job as any)?.threadId ?? (job as any)?.processId,
+                  data: {
+                    // Merge worker data from both shapes if present
+                    ...(job as any)?.jobData,
+                    ...job.data,
+                    // Use resolved company name from process level
+                    company: companyName,
+                    companyName: companyName,
+                    year: year,
+                    // Only preserve worker-provided threadId from either shape
+                    threadId:
+                      (job as any)?.threadId ??
+                      (job as any)?.processId ??
+                      (job as any)?.data?.threadId ??
+                      (job as any)?.jobData?.threadId,
+                    // Map approval status properly
+                    approved: job.approval?.approved || false,
+                    autoApprove: job.autoApprove
+                  },
+                  // Map status fields properly for getJobStatus function
+                  isFailed: job.status === "failed",
+                  finishedOn: job.finishedOn,
+                  processedOn: job.processedBy ? job.timestamp : undefined,
+                  // Ensure we have the right timestamp
+                  timestamp: job.timestamp,
+                  // Map return value data for job details display
+                  returnValue: job.returnvalue,
+                  // Map other important fields
+                  attempts: job.attemptsMade,
+                  stacktrace: job.stacktrace || []
+                };
+                
+                // Debug: log the converted job and its calculated status
+                if (job.id === company.processes[0]?.jobs[0]?.id) {
+                  console.log('SwimlaneQueueStatus - converted job:', convertedJob);
+                  console.log('SwimlaneQueueStatus - job status calculation:', {
+                    finishedOn: convertedJob.finishedOn,
+                    isFailed: convertedJob.isFailed,
+                    processedOn: convertedJob.processedOn,
+                    approved: convertedJob.data.approved,
+                    autoApprove: convertedJob.data.autoApprove
+                  });
+                  console.log('SwimlaneQueueStatus - return value data:', {
+                    hasReturnValue: !!convertedJob.returnValue,
+                    returnValueType: typeof convertedJob.returnValue,
+                    returnValueKeys: convertedJob.returnValue ? Object.keys(convertedJob.returnValue) : []
+                  });
+                  console.log('SwimlaneQueueStatus - threadId sources:', {
+                    rawDataThreadId: (job as any)?.data?.threadId,
+                    rawJobDataThreadId: (job as any)?.jobData?.threadId,
+                    mergedThreadId: convertedJob.data.threadId,
+                  });
+                }
+                
+                return convertedJob;
+              }),
+            latestTimestamp: latestProcess.startedAt || 0
+          };
+        }).sort((a, b) => b.year - a.year);
+
+        // Generate a unique ID - prefer company name, fallback to process ID or wikidataId
+        const companyId = 
+          company.company ||
+          company.wikidataId ||
+          company.processes?.[0]?.id ||
+          `${companyName}-${company.processes?.[0]?.startedAt || Date.now()}`;
+
+        console.log('SwimlaneQueueStatus - company identifier resolution:', {
+          originalCompany: company.company,
+          processCompany: company.processes?.[0]?.company,
+          resolvedName: companyName,
+          resolvedId: companyId,
+          hasProcesses: company.processes.length > 0,
+          yearsCount: years.length
+        });
 
         return {
-          year,
-          attempts: yearProcesses.length,
-          fields: {}, // We'll populate this based on the jobs in the processes
-          // Only include jobs from the latest process (single run/thread) to avoid mixing runs
-          jobs: (latestProcess.jobs || []).map(job => {
-              const convertedJob = {
-                ...job,
-                queueId: job.queue,
-                opts: { attempts: (job as any).attemptsMade ?? 0 },
-                data: {
-                  ...job.data,
-                  company: company.company,
-                  companyName: company.company,
-                  year: year,
-                  threadId: latestProcess.id,
-                  // Map approval status properly
-                  approved: job.approval?.approved || false,
-                  autoApprove: job.autoApprove
-                },
-                // Map status fields properly for getJobStatus function
-                isFailed: job.status === "failed",
-                finishedOn: job.finishedOn,
-                processedOn: job.processedBy ? job.timestamp : undefined,
-                // Ensure we have the right timestamp
-                timestamp: job.timestamp,
-                // Map return value data for job details display
-                returnValue: job.returnvalue,
-                // Map other important fields
-                attempts: job.attemptsMade,
-                stacktrace: job.stacktrace || []
-              };
-              
-              // Debug: log the converted job and its calculated status
-              if (job.id === company.processes[0]?.jobs[0]?.id) {
-                console.log('SwimlaneQueueStatus - converted job:', convertedJob);
-                console.log('SwimlaneQueueStatus - job status calculation:', {
-                  finishedOn: convertedJob.finishedOn,
-                  isFailed: convertedJob.isFailed,
-                  processedOn: convertedJob.processedOn,
-                  approved: convertedJob.data.approved,
-                  autoApprove: convertedJob.data.autoApprove
-                });
-                console.log('SwimlaneQueueStatus - return value data:', {
-                  hasReturnValue: !!convertedJob.returnValue,
-                  returnValueType: typeof convertedJob.returnValue,
-                  returnValueKeys: convertedJob.returnValue ? Object.keys(convertedJob.returnValue) : []
-                });
-              }
-              
-              return convertedJob;
-            }),
-          latestTimestamp: latestProcess.startedAt || 0
+          id: companyId,
+          name: companyName,
+          years
         };
-      }).sort((a, b) => b.year - a.year);
-
-      return {
-        id: company.company,
-        name: company.company,
-        years
-      };
-    });
+      })
+      .filter((company) => {
+        // Filter out companies with no valid years data
+        const hasValidYears = company.years && company.years.length > 0;
+        if (!hasValidYears) {
+          console.warn('SwimlaneQueueStatus - filtering out company with no years:', company.name, company.id);
+        }
+        return hasValidYears;
+      });
   }, [companies]);
 
   // Show loading state

@@ -244,10 +244,18 @@ export function fetchQueueJobs(
                   delay: job.delay,
                   stacktrace: job.stacktrace || [],
                   opts: job.opts || {},
+                  // Prefer top-level threadId from API; fall back to processId or id
+                  threadId: (job as any)?.threadId ?? (job as any)?.processId ?? job.id,
                   data: {
                     url: job.url,
                     autoApprove: job.autoApprove,
-                    threadId: job.processId,
+                    // Mirror threadId inside data for technical display components
+                    threadId:
+                      (job as any)?.threadId ??
+                      (job as any)?.processId ??
+                      (job as any)?.data?.threadId ??
+                      (job as any)?.jobData?.threadId ??
+                      job.id,
                     messageId: job.id,
                     company: job.company,
                     companyName: job.company,
