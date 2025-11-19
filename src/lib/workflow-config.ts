@@ -34,6 +34,7 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   precheck: "Förkontroll",
   parsePdf: "PDF Parsning",
   doclingParsePDF: "PDF Parsining docling",
+  indexMarkdown: "Markdown",
 
   // AI Data Extraction
   guessWikidata: "Wikidata",
@@ -60,7 +61,6 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   saveToAPI: "API Lagring",
   wikipediaUpload: "Wikipedia",
   diffTags: "Taggar",
-  indexMarkdown: "Markdown",
 };
 
 /**
@@ -72,7 +72,9 @@ export const PIPELINE_STEPS: PipelineStep[] = [
     id: "preprocessing",
     name: "Preprocessing",
     description: "Initial document processing and preparation",
-    stageIds: ["nlmParsePDF", "nlmExtractTables", "precheck", "parsePdf", "doclingParsePDF"],
+    stageIds: ["nlmParsePDF", "nlmExtractTables", "precheck", "parsePdf", "doclingParsePDF", "indexMarkdown", "guessWikidata", "extractEmissions",  "followUpBaseYear",
+
+    ],
     order: 1,
   },
   {
@@ -80,9 +82,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
     name: "AI Data Extraction",
     description: "AI-powered data extraction and analysis",
     stageIds: [
-      "guessWikidata",
       "diffReportingPeriods",
-      "extractEmissions",
       "followUpScope12",
       "followUpScope3",
       "followUpBiogenic",
@@ -91,7 +91,6 @@ export const PIPELINE_STEPS: PipelineStep[] = [
       "followUpInitiatives",
       "followUpFiscalYear",
       "followUpCompanyTags",
-      "followUpBaseYear",
       "followUpIndustryGics",
       "diffIndustry",
       "diffGoals",
@@ -110,7 +109,6 @@ export const PIPELINE_STEPS: PipelineStep[] = [
       "saveToAPI",
       "wikipediaUpload",
       "diffTags",
-      "indexMarkdown",
     ],
     order: 3,
   },

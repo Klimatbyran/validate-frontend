@@ -235,9 +235,12 @@ export function getStepIcon(
   const config = getStatusConfig(status);
   const IconComponent = config.icon;
 
+  // Use gray for waiting status in step icons (user requirement)
+  const iconColor = status === "waiting" ? config.colors.text : config.colors.icon;
+
   return (
     <IconComponent
-      className={`w-5 h-5 ${config.colors.icon} ${
+      className={`w-5 h-5 ${iconColor} ${
         "animation" in config ? config.animation : ""
       }`.trim()}
     />

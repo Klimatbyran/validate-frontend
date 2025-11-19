@@ -174,6 +174,24 @@ export function calculateStepJobStats(
 }
 
 /**
+ * Check if a job has been started (has been processed or finished)
+ */
+function hasJobBeenStarted(job: any): boolean {
+  if (!job) return false;
+  // Job has been started if it has been processed or finished
+  return !!(job.processedOn || job.finishedOn || job.status === "active" || job.status === "completed" || job.status === "failed");
+}
+
+/**
+ * Check if a job is actively processing
+ */
+function isJobActivelyProcessing(job: any): boolean {
+  if (!job) return false;
+  // Job is actively processing if it has processedOn but no finishedOn, or status is "active"
+  return (job.processedOn && !job.finishedOn) || job.status === "active";
+}
+
+/**
  * Calculate the overall status for a pipeline step based on its fields
  */
 export function calculatePipelineStepStatus(
@@ -187,24 +205,136 @@ export function calculatePipelineStepStatus(
     return "waiting";
   }
 
-  const fieldStatuses = queueIds.map((queueId) => {
+  // Get jobs and their statuses
+  const jobsWithStatuses = queueIds.map((queueId) => {
+    // First try to get status from fields if available
     const fieldData = yearData.fields[queueId];
-    const status = getFieldStatus(fieldData);
-
-    return status;
+    let status: SwimlaneStatusType;
+    let job: any;
+    
+    if (fieldData) {
+      status = getFieldStatus(fieldData);
+      // Still need to get the job to check if it's actively processing
+      job = findJobByQueueId(queueId, yearData);
+    } else {
+      job = findJobByQueueId(queueId, yearData);
+      status = getJobStatus(job);
+    }
+    
+    return { queueId, job, status };
   });
 
-  // Priority-based status determination (new order: failed > needs_approval > processing > waiting > completed)
-  if (fieldStatuses.some((status) => status === "failed")) {
+  // Special case for finalize step: show green if saveToAPI (API Lagring) is completed
+  // This is the most important step for the user
+  // But check for delayed jobs first - if any job is delayed, show gray
+  if (stepId === "finalize") {
+    // Check for delayed jobs first (check raw status, not mapped status)
+    const hasDelayed = jobsWithStatuses.some((entry) => 
+      entry.job && entry.job.status === "delayed"
+    );
+    
+    if (hasDelayed) {
+      return "waiting"; // Show gray for delayed
+    }
+    
+    const saveToAPIEntry = jobsWithStatuses.find((entry) => entry.queueId === "saveToAPI");
+    if (saveToAPIEntry && saveToAPIEntry.status === "completed") {
+      return "completed";
+    }
+  }
+
+  // For preprocessing and data-extraction steps: special logic
+  // - Show processing if any job is actively processing
+  // - Show green if all started jobs are completed (ignore waiting jobs that haven't been run)
+  // - Show failed if any started job failed
+  // - Show gray (waiting) if any job is delayed
+  if (stepId === "preprocessing" || stepId === "data-extraction") {
+    // Check if any job is actively processing first (highest priority)
+    const hasActivelyProcessing = jobsWithStatuses.some((entry) => 
+      isJobActivelyProcessing(entry.job)
+    );
+    
+    if (hasActivelyProcessing) {
+      return "processing";
+    }
+
+    // Check for delayed jobs (check raw status, not mapped status)
+    const hasDelayed = jobsWithStatuses.some((entry) => 
+      entry.job && entry.job.status === "delayed"
+    );
+    
+    if (hasDelayed) {
+      return "waiting"; // Show gray for delayed
+    }
+
+    // Filter to only jobs that have been started (ignore waiting jobs that haven't been run)
+    const startedJobs = jobsWithStatuses.filter((entry) => hasJobBeenStarted(entry.job));
+    
+    if (startedJobs.length === 0) {
+      // No jobs have been started yet
+      return "waiting";
+    }
+
+    // Check statuses of started jobs only
+    const startedStatuses = startedJobs.map((entry) => entry.status);
+    const hasFailed = startedStatuses.some((status) => status === "failed");
+    const allCompleted = startedStatuses.every((status) => status === "completed");
+    const hasCompleted = startedStatuses.some((status) => status === "completed");
+
+    // If any started job failed, show failed
+    if (hasFailed) {
+      return "failed";
+    }
+
+    // If all started jobs are completed (green), show green
+    // This means: no failed, no stuck, no delayed - everything that was run is green
+    if (allCompleted && hasCompleted) {
+      return "completed";
+    }
+
+    // Check for needs_approval
+    if (startedStatuses.some((status) => status === "needs_approval")) {
+      return "needs_approval";
+    }
+
+    // Default to waiting
+    return "waiting";
+  }
+
+  // For other steps, use the original logic but also check for delayed
+  // Check for delayed jobs (check raw status, not mapped status)
+  const hasDelayed = jobsWithStatuses.some((entry) => 
+    entry.job && entry.job.status === "delayed"
+  );
+  
+  if (hasDelayed) {
+    return "waiting"; // Show gray for delayed
+  }
+  
+  const fieldStatuses = jobsWithStatuses.map((entry) => entry.status);
+  const hasCompleted = fieldStatuses.some((status) => status === "completed");
+  const hasWaiting = fieldStatuses.some((status) => status === "waiting");
+  const hasFailed = fieldStatuses.some((status) => status === "failed");
+  
+  // Check if all jobs are completed (no waiting, no failed, at least one completed)
+  if (hasCompleted && !hasWaiting && !hasFailed) {
+    return "completed";
+  }
+
+  // Priority-based status determination:
+  // 1. If there's at least one red (failed) → show red
+  // 2. If there's at least one gray (waiting) → show gray
+  // 3. Otherwise, if there's any green (completed) → show green
+  if (hasFailed) {
     return "failed";
+  } else if (hasWaiting) {
+    return "waiting";
+  } else if (hasCompleted) {
+    return "completed";
   } else if (fieldStatuses.some((status) => status === "needs_approval")) {
     return "needs_approval";
   } else if (fieldStatuses.some((status) => status === "processing")) {
     return "processing";
-  } else if (fieldStatuses.every((status) => status === "waiting")) {
-    return "waiting";
-  } else if (fieldStatuses.every((status) => status === "completed")) {
-    return "completed";
   } else {
     return "waiting";
   }
