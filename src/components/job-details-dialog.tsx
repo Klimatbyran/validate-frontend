@@ -290,6 +290,7 @@ export function JobDetailsDialog({
     if (!job) return;
     let aborted = false;
     async function loadDetails() {
+      if (!job) return;
       if (job.returnValue || (job as any).returnvalue) return;
       if (!job.queueId || !job.id) return;
       try {
@@ -347,11 +348,61 @@ export function JobDetailsDialog({
     }
   };
 
-  const handleRetry = () => {
-    if (onRetry) {
-      onRetry();
-      onOpenChange(false);
-      toast.success("Jobbet omstartat");
+  const handleRetry = async () => {
+    if (!job || !effectiveJob || !effectiveJob.queueId || !effectiveJob.id) {
+      console.error("Cannot retry: missing job information");
+      toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
+      return;
+    }
+
+    // Retry without overriding any data - send empty data object
+    const requestData = {
+      data: {},
+    };
+
+    try {
+      const response = await fetch(
+        `/api/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestData),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Failed to retry job:", errorText);
+        toast.error(`Kunde inte köra om jobbet: ${errorText || "Okänt fel"}`);
+        return;
+      }
+
+      const updatedJob = await response.json();
+      console.log("Job retried successfully:", updatedJob);
+      toast.success("Jobbet körs om");
+      
+      // Refresh job data
+      if (job.queueId && job.id) {
+        try {
+          const res = await fetch(`/api/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`);
+          if (res.ok) {
+            const json = await res.json();
+            setDetailed(json);
+          }
+        } catch (e) {
+          console.error("Failed to refresh job data:", e);
+        }
+      }
+
+      // Call the onRetry callback if provided (for parent component updates)
+      if (onRetry) {
+        onRetry();
+      }
+      
+      // Don't close the dialog automatically - let user see the updated status
+    } catch (error) {
+      console.error("Error retrying job:", error);
+      toast.error(`Ett fel uppstod vid omkörning: ${error instanceof Error ? error.message : "Okänt fel"}`);
     }
   };
 

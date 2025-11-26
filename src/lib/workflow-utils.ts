@@ -23,6 +23,30 @@ import {
 export function getJobStatus(job: any): SwimlaneStatusType {
   if (!job) return "waiting";
 
+  // Check for approval status FIRST (before checking other statuses)
+  // Jobs waiting for approval might have status "delayed" or "completed"
+  const approval = job.data?.approval || job.jobData?.approval || (job as any)?.approval;
+  const hasApprovalObject = approval && typeof approval === "object";
+  const isPendingApproval = hasApprovalObject && approval.approved === false;
+  
+  // Debug logging for approval detection
+  if (job.queueId === "guessWikidata" && hasApprovalObject) {
+    console.log("[getJobStatus] Approval check for job:", {
+      jobId: job.id,
+      queueId: job.queueId,
+      rawStatus: job.status,
+      hasApproval: hasApprovalObject,
+      approved: approval.approved,
+      isPendingApproval,
+      approvalSource: job.data?.approval ? "data.approval" : job.jobData?.approval ? "jobData.approval" : "top-level"
+    });
+  }
+  
+  // If job has pending approval, return needs_approval regardless of other status
+  if (isPendingApproval) {
+    return "needs_approval";
+  }
+
   // Check the raw status field from the API first (for jobs from /process/companies endpoint)
   const rawStatus = job.status;
   
@@ -35,14 +59,14 @@ export function getJobStatus(job: any): SwimlaneStatusType {
     return "processing";
   }
   
-  if (rawStatus === "waiting" || rawStatus === "waiting-children" || rawStatus === "delayed") {
-    return "waiting";
-  }
-  
-  // For completed jobs, check if they need approval
+  // For completed jobs, check if they need approval (fallback check)
   if (rawStatus === "completed" || job.finishedOn) {
     const needsApproval = !job.data?.approved && !job.data?.autoApprove;
     return needsApproval ? "needs_approval" : "completed";
+  }
+  
+  if (rawStatus === "waiting" || rawStatus === "waiting-children" || rawStatus === "delayed") {
+    return "waiting";
   }
 
   // Only count as failed if explicitly marked as failed AND finished
@@ -292,7 +316,7 @@ export function calculatePipelineStepStatus(
       return "completed";
     }
 
-    // Check for needs_approval
+    // Check for needs_approval (prioritize over waiting)
     if (startedStatuses.some((status) => status === "needs_approval")) {
       return "needs_approval";
     }
@@ -323,16 +347,18 @@ export function calculatePipelineStepStatus(
 
   // Priority-based status determination:
   // 1. If there's at least one red (failed) → show red
-  // 2. If there's at least one gray (waiting) → show gray
-  // 3. Otherwise, if there's any green (completed) → show green
+  // 2. If there's at least one orange (needs_approval) → show orange (prioritize approval)
+  // 3. If there's at least one gray (waiting) → show gray
+  // 4. Otherwise, if there's any green (completed) → show green
+  const hasNeedsApproval = fieldStatuses.some((status) => status === "needs_approval");
   if (hasFailed) {
     return "failed";
+  } else if (hasNeedsApproval) {
+    return "needs_approval";
   } else if (hasWaiting) {
     return "waiting";
   } else if (hasCompleted) {
     return "completed";
-  } else if (fieldStatuses.some((status) => status === "needs_approval")) {
-    return "needs_approval";
   } else if (fieldStatuses.some((status) => status === "processing")) {
     return "processing";
   } else {

@@ -7,7 +7,12 @@ import {
   Loader2,
   Activity,
   BarChart3,
+  Filter,
+  X,
+  ChevronsDown,
+  ChevronsUp,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { JobDetailsDialog } from "../components/job-details-dialog";
 import { useCompanies } from "@/hooks/useCompanies";
 import {
@@ -40,6 +45,7 @@ import {
   getStepIcon,
 } from "@/lib/status-config";
 import { calculateSwimlaneOverallStats } from "@/lib/calculation-utils";
+import { toast } from "sonner";
 import type { SwimlaneYearData, SwimlaneCompany, QueueJob } from "@/lib/types";
 
 function getStatusDisplay(
@@ -63,10 +69,16 @@ function YearRow({
   yearData,
   expandLevel,
   onFieldClick,
+  allRuns,
+  isExpanded,
+  onToggleExpand,
 }: {
   yearData: SwimlaneYearData;
   expandLevel: ViewLevel;
-  onFieldClick: (field: string) => void;
+  onFieldClick: (field: string, runData?: SwimlaneYearData) => void;
+  allRuns?: SwimlaneYearData[];
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }) {
   const yearStepStats = useMemo(() => {
     const pipelineSteps = getAllPipelineSteps();
@@ -81,6 +93,33 @@ function YearRow({
     });
   }, [yearData]);
 
+  // Get a canonical threadId for this run:
+  // Prefer the worker/queue threadId stored in job.data.threadId, then job.threadId,
+  // and finally fall back to the yearData/thread-level threadId if needed.
+  const currentThreadId =
+    yearData.jobs?.[0]?.data?.threadId ||
+    yearData.jobs?.[0]?.threadId ||
+    (yearData as any).threadId;
+  const currentLatestTimestamp = yearData.latestTimestamp || 0;
+
+  const hasPreviousRuns = allRuns && allRuns.length > 1;
+  // Previous runs are all runs that are not the current run (different threadId or older timestamp)
+  const previousRuns =
+    hasPreviousRuns && allRuns
+      ? allRuns.filter((run) => {
+          const runThreadId =
+            run.jobs?.[0]?.data?.threadId ||
+            run.jobs?.[0]?.threadId ||
+            (run as any).threadId;
+          const runTimestamp = run.latestTimestamp || 0;
+          // Exclude the current run (same threadId and timestamp)
+          return !(
+            runThreadId === currentThreadId &&
+            runTimestamp === currentLatestTimestamp
+          );
+        })
+      : [];
+
   return (
     <div className="border-t border-gray-03 first:border-t-0">
       {/* Year Header */}
@@ -90,6 +129,34 @@ function YearRow({
           <span className="text-sm font-medium text-gray-01">
             {yearData.year}
           </span>
+          {currentThreadId && (
+            <span className="text-xs text-gray-02 font-mono bg-gray-04 px-1.5 py-0.5 rounded">
+              {currentThreadId}
+            </span>
+          )}
+          {hasPreviousRuns && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleExpand?.();
+              }}
+              className="h-6 px-2 text-xs text-blue-03 hover:text-blue-04 hover:bg-blue-03/10"
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronsUp className="w-3 h-3 mr-1" />
+                  Visa färre
+                </>
+              ) : (
+                <>
+                  <ChevronsDown className="w-3 h-3 mr-1" />
+                  Visa fler ({allRuns.length - 1} tidigare)
+                </>
+              )}
+            </Button>
+          )}
           <span className="text-xs text-gray-02">
             {yearData.attempts} attempts
           </span>
@@ -130,19 +197,45 @@ function YearRow({
                     const fieldName = getQueueDisplayName(queueId);
                     // Find the specific job for this field using direct queueId lookup
                     const job = findJobByQueueId(queueId, yearData);
+                    // A job is considered a "re-run" if there exists more than one job
+                    // for this queueId with the same threadId across all runs (including this one)
+                    const allJobsForQueueAndThread =
+                      !!currentThreadId && allRuns
+                        ? allRuns.flatMap((run) =>
+                            (run.jobs || []).filter((j) => {
+                              const jobThreadId =
+                                j.data?.threadId ||
+                                (j as any).threadId ||
+                                (run as any).threadId;
+                              return (
+                                j.queueId === queueId &&
+                                jobThreadId === currentThreadId
+                              );
+                            })
+                          )
+                        : [];
+                    const isRerun =
+                      !!currentThreadId &&
+                      Array.isArray(allJobsForQueueAndThread) &&
+                      allJobsForQueueAndThread.length > 1;
                     // Check if job is actively processing - either has processedOn or status is "active"
-                    const isActive = (job?.processedOn && !job?.finishedOn) || job?.status === "active";
+                    const isActive =
+                      (job?.processedOn && !job?.finishedOn) ||
+                      job?.status === "active";
 
                     return (
                       <button
                         key={queueId}
-                        onClick={() => onFieldClick(queueId)}
+                        onClick={() => onFieldClick(queueId, yearData)}
                         className={`
-                          relative px-2 py-1 rounded border text-[10px] font-medium
-                          hover:shadow-sm hover:scale-105 transition-all
-                          ${getStatusDisplay(job, "compact", !!isActive).styles}
-                        `}
+                        relative px-2 py-1 rounded border text-[10px] font-medium
+                        hover:shadow-sm hover:scale-105 transition-all
+                        ${getStatusDisplay(job, "compact", !!isActive).styles}
+                      `}
                       >
+                        {isRerun && (
+                          <span className="pointer-events-none absolute top-0 right-0 w-0 h-0 border-t-[10px] border-t-orange-03 border-l-[10px] border-l-transparent" />
+                        )}
                         <span className="flex items-center gap-1">
                           <span
                             className={`${
@@ -184,17 +277,43 @@ function YearRow({
                   const fieldName = getQueueDisplayName(queueId);
                   // Find the specific job for this field using direct queueId lookup
                   const job = findJobByQueueId(queueId, yearData);
+                  // Mark as "re-run" if there is more than one job for this queueId
+                  // with the same threadId across all runs (including this one)
+                  const allJobsForQueueAndThread =
+                    !!currentThreadId && allRuns
+                      ? allRuns.flatMap((run) =>
+                          (run.jobs || []).filter((j) => {
+                            const jobThreadId =
+                              j.data?.threadId ||
+                              (j as any).threadId ||
+                              (run as any).threadId;
+                            return (
+                              j.queueId === queueId &&
+                              jobThreadId === currentThreadId
+                            );
+                          })
+                        )
+                      : [];
+                  const isRerun =
+                    !!currentThreadId &&
+                    Array.isArray(allJobsForQueueAndThread) &&
+                    allJobsForQueueAndThread.length > 1;
                   // Check if job is actively processing - either has processedOn or status is "active"
-                  const isActive = (job?.processedOn && !job?.finishedOn) || job?.status === "active";
+                  const isActive =
+                    (job?.processedOn && !job?.finishedOn) ||
+                    job?.status === "active";
 
                   return (
                     <button
                       key={queueId}
-                      onClick={() => onFieldClick(queueId)}
+                      onClick={() => onFieldClick(queueId, yearData)}
                       className={`relative flex items-start gap-3 p-3 bg-gray-03/50 rounded-lg hover:bg-gray-03 hover:shadow-sm transition-all text-left group ${
                         isActive ? "ring-2 ring-blue-03" : ""
                       }`}
                     >
+                      {isRerun && (
+                        <span className="pointer-events-none absolute top-0 right-0 w-0 h-0 border-t-[12px] border-t-orange-03 border-l-[12px] border-l-transparent" />
+                      )}
                       <div className="flex-shrink-0 mt-0.5">
                         {getStatusDisplay(job, "detailed", !!isActive).icon}
                       </div>
@@ -219,6 +338,152 @@ function YearRow({
           ))}
         </div>
       )}
+
+      {/* Previous Runs - shown when expanded */}
+      {isExpanded && hasPreviousRuns && previousRuns.length > 0 && (
+        <div className="border-t border-gray-03 bg-gray-04/30">
+          <div className="px-4 py-2 text-xs text-gray-02 font-medium">
+            Tidigare körningar:
+          </div>
+          {previousRuns.map((previousRun, idx) => {
+            const prevThreadId = (previousRun as any).threadId || previousRun.jobs?.[0]?.threadId || previousRun.jobs?.[0]?.data?.threadId;
+            // Calculate stats outside of useMemo to avoid hooks rule violation
+            const pipelineSteps = getAllPipelineSteps();
+            const prevYearStepStats = pipelineSteps.map((step) => {
+              const stats = calculateStepJobStats(previousRun, step.id);
+              return {
+                id: step.id,
+                name: step.name,
+                status: calculatePipelineStepStatus(previousRun, step.id),
+                ...stats,
+              };
+            });
+
+            return (
+              <div key={`prev-${prevThreadId}-${idx}`} className="border-t border-gray-03/50">
+                {/* Previous Run Header */}
+                <div className="px-4 py-2 bg-gray-03/20 border-b border-gray-03/50 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-02">Tidigare körning</span>
+                    {prevThreadId && (
+                      <span className="text-xs text-gray-02 font-mono bg-gray-04 px-1.5 py-0.5 rounded">
+                        {prevThreadId}
+                      </span>
+                    )}
+                    {previousRun.latestTimestamp && (
+                      <span className="text-xs text-gray-02">
+                        {new Date(previousRun.latestTimestamp).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Previous Run Swimlane - Compact View */}
+                {expandLevel === "compact" && (
+                  <div className="p-4 space-y-2 bg-gray-05/50">
+                    {prevYearStepStats.map((step, stepIndex) => (
+                      <div key={stepIndex}>
+                        <div className="flex items-start gap-2">
+                          <div className="flex-shrink-0 w-24 pt-1">
+                            <span className="text-[10px] font-semibold text-gray-02 uppercase tracking-wide">
+                              {step.name}
+                            </span>
+                          </div>
+                          <div className="flex-1 flex flex-wrap gap-1.5">
+                            {getQueuesForPipelineStep(step.id).map((queueId) => {
+                              const fieldName = getQueueDisplayName(queueId);
+                              const job = findJobByQueueId(queueId, previousRun);
+                              const isActive = (job?.processedOn && !job?.finishedOn) || job?.status === "active";
+
+                              return (
+                    <button
+                      key={queueId}
+                      onClick={() => onFieldClick(queueId, previousRun)}
+                      className={`
+                        relative px-2 py-1 rounded border text-[10px] font-medium
+                        hover:shadow-sm hover:scale-105 transition-all opacity-75
+                        ${getStatusDisplay(job, "compact", !!isActive).styles}
+                      `}
+                    >
+                                  <span className="flex items-center gap-1">
+                                    <span
+                                      className={`${
+                                        isActive ? "inline-block animate-spin-slow" : ""
+                                      }`}
+                                    >
+                                      {getStatusDisplay(job, "compact", !!isActive).icon}
+                                    </span>
+                                    <span>{fieldName}</span>
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        {stepIndex < prevYearStepStats.length - 1 && (
+                          <div className="mt-3 mb-2">
+                            <div className="h-px bg-gray-03"></div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Previous Run Swimlane - Full Expanded View */}
+                {expandLevel === "full" && (
+                  <div className="p-4 bg-gray-05/50 space-y-4">
+                    {prevYearStepStats.map((step, stepIndex) => (
+                      <div key={stepIndex}>
+                        <div className="flex items-center gap-2 mb-2 pb-1.5">
+                          <span className="text-xs font-bold text-gray-01 uppercase tracking-wide">
+                            {step.name}
+                          </span>
+                          <div className="flex-1 h-px bg-gray-03"></div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                          {getQueuesForPipelineStep(step.id).map((queueId) => {
+                            const fieldName = getQueueDisplayName(queueId);
+                            const job = findJobByQueueId(queueId, previousRun);
+                            const isActive = (job?.processedOn && !job?.finishedOn) || job?.status === "active";
+
+                            return (
+                              <button
+                                key={queueId}
+                                onClick={() => onFieldClick(queueId, previousRun)}
+                                className={`relative flex items-start gap-3 p-3 bg-gray-03/30 rounded-lg hover:bg-gray-03/50 hover:shadow-sm transition-all text-left group opacity-75 ${
+                                  isActive ? "ring-2 ring-blue-03" : ""
+                                }`}
+                              >
+                                <div className="flex-shrink-0 mt-0.5">
+                                  {getStatusDisplay(job, "detailed", !!isActive).icon}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-gray-01 mb-1 group-hover:text-blue-03 transition-colors">
+                                    {fieldName}
+                                    {isActive && (
+                                      <span className="ml-2 text-blue-03 text-xs">
+                                        (Active)
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-gray-02">
+                                    {getStatusDisplay(job, "detailed", !!isActive).text}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -231,9 +496,22 @@ function CompanyCard({ company }: { company: SwimlaneCompany }) {
   } = useViewToggle("collapsed");
   const [selectedJob, setSelectedJob] = useState<QueueJob | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
 
   const latestYear = company.years?.[0];
   const totalYears = company.years?.length || 0;
+
+  const toggleYearExpand = (yearKey: string) => {
+    setExpandedYears((prev) => {
+      const next = new Set(prev);
+      if (next.has(yearKey)) {
+        next.delete(yearKey);
+      } else {
+        next.add(yearKey);
+      }
+      return next;
+    });
+  };
 
   return (
     <>
@@ -276,33 +554,70 @@ function CompanyCard({ company }: { company: SwimlaneCompany }) {
           </div>
         </div>
 
-        {/* Years */}
-        {(company.years || []).map((yearData) => (
-          <YearRow
-            key={`${yearData.year}-${yearData.latestTimestamp || 0}`}
-            yearData={yearData}
-            expandLevel={expandLevel}
-            onFieldClick={(queueId) => {
-              const job = yearData.jobs?.find(
-                (j: QueueJob) => j.queueId === queueId
-              );
+        {/* Years - Group by year, show latest run first, previous runs when expanded */}
+        {(() => {
+          // Group years by year number
+          const yearsByYear = (company.years || []).reduce((acc, yearData) => {
+            const year = yearData.year;
+            if (!acc[year]) {
+              acc[year] = [];
+            }
+            acc[year].push(yearData);
+            return acc;
+          }, {} as Record<number, typeof company.years>);
 
-              if (job) {
-                console.log('=== CLICKED JOB DATA ===');
-                console.log('Full job object:', job);
-                console.log('Job returnValue:', job.returnValue);
-                console.log('Job data:', job.data);
-                console.log('Job status:', job.status);
-                console.log('Job queueId:', job.queueId);
-                console.log('========================');
-                setSelectedJob(job);
-                setIsDialogOpen(true);
-              } else {
-                console.warn(`No job found for queueId: ${queueId}`);
-              }
-            }}
-          />
-        ))}
+          // Sort years descending
+          const sortedYearNumbers = Object.keys(yearsByYear)
+            .map(Number)
+            .sort((a, b) => b - a);
+
+          return sortedYearNumbers.map((year) => {
+            const runsForYear = yearsByYear[year];
+            // Sort runs by latestTimestamp (newest first)
+            const sortedRuns = [...runsForYear].sort((a, b) => 
+              (b.latestTimestamp || 0) - (a.latestTimestamp || 0)
+            );
+            const latestRun = sortedRuns[0];
+            const previousRuns = sortedRuns.slice(1);
+            const yearKey = `${year}-${latestRun.latestTimestamp || 0}`;
+            const isExpanded = expandedYears.has(yearKey);
+            const hasPreviousRuns = previousRuns.length > 0;
+
+            return (
+              <React.Fragment key={yearKey}>
+                <YearRow
+                  yearData={latestRun}
+                  expandLevel={expandLevel}
+                  onFieldClick={(queueId, runData) => {
+                    // Use the specific run data if provided (from previous runs), otherwise use latest run
+                    const targetRun = runData || latestRun;
+                    const job = targetRun.jobs?.find(
+                      (j: QueueJob) => j.queueId === queueId
+                    );
+
+                    if (job) {
+                      console.log('=== CLICKED JOB DATA ===');
+                      console.log('Full job object:', job);
+                      console.log('Job returnValue:', job.returnValue);
+                      console.log('Job data:', job.data);
+                      console.log('Job status:', job.status);
+                      console.log('Job queueId:', job.queueId);
+                      console.log('From run:', runData ? 'previous run' : 'latest run');
+                      console.log('========================');
+                      setSelectedJob(job);
+                      setIsDialogOpen(true);
+                    } else {
+                      console.warn(`No job found for queueId: ${queueId} in the specified run`);
+                    }
+                  }}
+                  allRuns={hasPreviousRuns ? sortedRuns : [latestRun]}
+                  isExpanded={isExpanded}
+                  onToggleExpand={() => toggleYearExpand(yearKey)}
+                />
+              </React.Fragment>
+            );
+          });
+        })()}
       </div>
 
       <JobDetailsDialog
@@ -426,8 +741,47 @@ function OverviewStats({ companies }: { companies: SwimlaneCompany[] }) {
 
 // convertGroupedCompaniesToSwimlaneFormat is now imported from workflow-utils
 
+// Helper function to check if a company has any jobs waiting for approval
+function hasPendingApproval(company: SwimlaneCompany): boolean {
+  return company.years.some((year) =>
+    (year.jobs || []).some((job: QueueJob) => {
+      const status = getJobStatusFromUtils(job);
+      return status === "needs_approval";
+    })
+  );
+}
+
 export function SwimlaneQueueStatus() {
   const { companies, isLoading, error } = useCompanies();
+  const [showOnlyPendingApproval, setShowOnlyPendingApproval] = useState(false);
+
+  const handleRerunByWorker = (workerName: "scope1+2" | "scope3", limit = 5) => {
+    toast.promise(
+      fetch("/api/queues/rerun-by-worker", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workerName,
+          queues: ["followUpScope12"],
+          limit,
+        }),
+      }).then((res) => {
+        if (!res.ok) {
+          return res.text().then((text) => {
+            throw new Error(text || `HTTP ${res.status}`);
+          });
+        }
+      }),
+      {
+        loading: `Kör om senaste ${limit} jobben för ${workerName}...`,
+        success: `Startade om ${limit} jobb för ${workerName}`,
+        error: (err) =>
+          `Kunde inte köra om jobb för ${workerName}: ${
+            err?.message || "Okänt fel"
+          }`,
+      }
+    );
+  };
 
   // Convert CustomAPICompany to SwimlaneCompany format
   const swimlaneCompanies = React.useMemo(() => {
@@ -473,24 +827,31 @@ export function SwimlaneQueueStatus() {
         }, {} as Record<number, typeof company.processes>);
 
         // Convert to SwimlaneYearData format
-        const years = Object.entries(processesByYear).map(([yearStr, yearProcesses]) => {
+        // Group processes by year, then create a year entry for each process (run)
+        const years: (SwimlaneYearData & { threadId?: string; runIndex?: number; isLatestRun?: boolean })[] = [];
+        Object.entries(processesByYear).forEach(([yearStr, yearProcesses]) => {
           const year = parseInt(yearStr);
-          const latestProcess = yearProcesses.reduce((latest, process) => 
-            (process.startedAt || 0) > (latest.startedAt || 0) ? process : latest
+          // Sort processes by startedAt (newest first)
+          const sortedProcesses = [...yearProcesses].sort((a, b) => 
+            (b.startedAt || 0) - (a.startedAt || 0)
           );
 
-          return {
-            year,
-            attempts: yearProcesses.length,
-            fields: {}, // We'll populate this based on the jobs in the processes
-            // Only include jobs from the latest process (single run/thread) to avoid mixing runs
-            jobs: (latestProcess.jobs || []).map(job => {
+          // Create a year entry for each process (run)
+          sortedProcesses.forEach((process, index) => {
+            const threadId = process.id || process.threadId || (process as any)?.processId;
+            
+            years.push({
+              year,
+              attempts: yearProcesses.length,
+              fields: {}, // We'll populate this based on the jobs in the processes
+              // Include jobs from this specific process (run)
+              jobs: (process.jobs || []).map(job => {
                 const convertedJob = {
                   ...job,
                   queueId: job.queue,
                   opts: { attempts: (job as any).attemptsMade ?? 0 },
                   // Prefer top-level threadId for all consumers
-                  threadId: (job as any)?.threadId ?? (job as any)?.processId,
+                  threadId: (job as any)?.threadId ?? (job as any)?.processId ?? threadId,
                   data: {
                     // Merge worker data from both shapes if present
                     ...(job as any)?.jobData,
@@ -503,11 +864,13 @@ export function SwimlaneQueueStatus() {
                     threadId:
                       (job as any)?.threadId ??
                       (job as any)?.processId ??
+                      threadId ??
                       (job as any)?.data?.threadId ??
                       (job as any)?.jobData?.threadId,
-                    // Map approval status properly
+                    // Map approval status properly - include full approval object
                     approved: job.approval?.approved || false,
-                    autoApprove: job.autoApprove
+                    autoApprove: job.autoApprove,
+                    approval: job.approval || (job as any)?.jobData?.approval || (job as any)?.data?.approval
                   },
                   // Map status fields properly for getJobStatus function
                   isFailed: job.status === "failed",
@@ -523,7 +886,7 @@ export function SwimlaneQueueStatus() {
                 };
                 
                 // Debug: log the converted job and its calculated status
-                if (job.id === company.processes[0]?.jobs[0]?.id) {
+                if (job.id === company.processes[0]?.jobs[0]?.id && index === 0) {
                   console.log('SwimlaneQueueStatus - converted job:', convertedJob);
                   console.log('SwimlaneQueueStatus - job status calculation:', {
                     finishedOn: convertedJob.finishedOn,
@@ -546,9 +909,42 @@ export function SwimlaneQueueStatus() {
                 
                 return convertedJob;
               }),
-            latestTimestamp: latestProcess.startedAt || 0
-          };
-        }).sort((a, b) => b.year - a.year);
+              latestTimestamp: process.startedAt || 0,
+              // Add threadId and run index for identification
+              threadId: threadId,
+              runIndex: index,
+              isLatestRun: index === 0,
+            });
+          });
+        });
+
+        // Sort years: first by year (descending), then by runIndex (ascending - latest first)
+        years.sort((a, b) => {
+          // First sort by year
+          if (a.year !== b.year) {
+            // Check if either year has jobs needing approval
+            const aHasApproval = (a.jobs || []).some((job: QueueJob) => {
+              const status = getJobStatusFromUtils(job);
+              return status === "needs_approval";
+            });
+            const bHasApproval = (b.jobs || []).some((job: QueueJob) => {
+              const status = getJobStatusFromUtils(job);
+              return status === "needs_approval";
+            });
+            
+            // Prioritize years with pending approval
+            if (aHasApproval && !bHasApproval) return -1;
+            if (!aHasApproval && bHasApproval) return 1;
+            
+            // Otherwise sort by year descending
+            return b.year - a.year;
+          }
+          
+          // Within the same year, sort by runIndex (latest first, index 0)
+          const aRunIndex = (a as any).runIndex ?? 0;
+          const bRunIndex = (b as any).runIndex ?? 0;
+          return aRunIndex - bRunIndex;
+        });
 
         // Generate a unique ID - prefer company name, fallback to process ID or wikidataId
         const companyId = 
@@ -581,6 +977,19 @@ export function SwimlaneQueueStatus() {
         return hasValidYears;
       });
   }, [companies]);
+
+  // Filter companies based on pending approval filter
+  const filteredCompanies = React.useMemo(() => {
+    if (!showOnlyPendingApproval) {
+      return swimlaneCompanies;
+    }
+    return swimlaneCompanies.filter(hasPendingApproval);
+  }, [swimlaneCompanies, showOnlyPendingApproval]);
+
+  // Count companies with pending approval
+  const pendingApprovalCount = React.useMemo(() => {
+    return swimlaneCompanies.filter(hasPendingApproval).length;
+  }, [swimlaneCompanies]);
 
   // Show loading state
   if (isLoading) {
@@ -621,12 +1030,74 @@ export function SwimlaneQueueStatus() {
 
   return (
     <div className="space-y-6">
-      <OverviewStats companies={swimlaneCompanies} />
+      {/* Filter Bar */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between bg-gray-04/50 rounded-lg p-4 border border-gray-03 gap-3">
+        <div className="flex items-center gap-3">
+          <Filter className="w-5 h-5 text-gray-02" />
+          <span className="text-sm font-medium text-gray-01">Filter:</span>
+          <Button
+            variant={showOnlyPendingApproval ? "primary" : "ghost"}
+            size="sm"
+            onClick={() => setShowOnlyPendingApproval(!showOnlyPendingApproval)}
+            className={
+              showOnlyPendingApproval
+                ? "bg-orange-03 text-white hover:bg-orange-03/90"
+                : ""
+            }
+          >
+            {showOnlyPendingApproval && <X className="w-4 h-4 mr-2" />}
+            Väntar på godkännande
+            {pendingApprovalCount > 0 && (
+              <span className="ml-2 px-2 py-0.5 rounded-full bg-orange-03/20 text-orange-03 text-xs font-medium">
+                {pendingApprovalCount}
+              </span>
+            )}
+          </Button>
+        </div>
+        <div className="flex flex-col md:flex-row md:items-center gap-2">
+          {showOnlyPendingApproval && (
+            <div className="text-sm text-gray-02">
+              Visar {filteredCompanies.length} av {swimlaneCompanies.length} företag
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-01">Kör om jobb:</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleRerunByWorker("scope1+2")}
+              className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
+            >
+              Scope 1+2 (5 st)
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleRerunByWorker("scope3")}
+              className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
+            >
+              Scope 3 (5 st)
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <OverviewStats companies={filteredCompanies} />
 
       <div className="space-y-4">
-        {swimlaneCompanies.map((company) => (
-          <CompanyCard key={company.id} company={company} />
-        ))}
+        {filteredCompanies.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-02">
+              {showOnlyPendingApproval
+                ? "Inga företag väntar på godkännande"
+                : "Inga företag hittades"}
+            </p>
+          </div>
+        ) : (
+          filteredCompanies.map((company) => (
+            <CompanyCard key={company.id} company={company} />
+          ))
+        )}
       </div>
     </div>
   );
