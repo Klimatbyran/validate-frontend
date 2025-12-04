@@ -33,7 +33,7 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   nlmExtractTables: "Tabellextraktion",
   precheck: "Förkontroll",
   parsePdf: "PDF Parsning",
-  doclingParsePDF: "PDF Parsining docling",
+  doclingParsePDF: "PDF Parsning docling",
   indexMarkdown: "Markdown",
 
   // AI Data Extraction
@@ -72,8 +72,16 @@ export const PIPELINE_STEPS: PipelineStep[] = [
     id: "preprocessing",
     name: "Preprocessing",
     description: "Initial document processing and preparation",
-    stageIds: ["nlmParsePDF", "nlmExtractTables", "precheck", "parsePdf", "doclingParsePDF", "indexMarkdown", "guessWikidata", "extractEmissions",  "followUpBaseYear",
-
+    stageIds: [
+      "nlmParsePDF",
+      "nlmExtractTables",
+      "precheck",
+      "parsePdf",
+      "doclingParsePDF",
+      "indexMarkdown",
+      "guessWikidata",
+      "extractEmissions",
+      "followUpBaseYear",
     ],
     order: 1,
   },
@@ -104,12 +112,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
     id: "finalize",
     name: "Finalize",
     description: "Final processing and data storage",
-    stageIds: [
-      "sendCompanyLink",
-      "saveToAPI",
-      "wikipediaUpload",
-      "diffTags",
-    ],
+    stageIds: ["sendCompanyLink", "saveToAPI", "wikipediaUpload", "diffTags"],
     order: 3,
   },
 ];
