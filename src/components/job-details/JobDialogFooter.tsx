@@ -35,11 +35,7 @@ export function JobDialogFooter({
           <Button
             variant="ghost"
             onClick={() => onApprove?.(false)}
-            className={
-              approvalOnly
-                ? "border-pink-03 text-pink-03 hover:bg-pink-03/10"
-                : "border-pink-03 text-pink-03 hover:bg-pink-03/10"
-            }
+            className="border-pink-03 text-pink-03 hover:bg-pink-03/10"
           >
             <X className="w-4 h-4 mr-2" />
             Avvisa

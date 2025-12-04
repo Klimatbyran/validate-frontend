@@ -10,6 +10,8 @@ interface DialogTabsProps {
 }
 
 export function DialogTabs({ activeTab, setActiveTab, job }: DialogTabsProps) {
+  const wikidataInfo = getWikidataInfo(job);
+
   return (
     <div className="flex items-center space-x-2 mb-6">
       <Button
@@ -43,10 +45,10 @@ export function DialogTabs({ activeTab, setActiveTab, job }: DialogTabsProps) {
           </a>
         </Button>
       )}
-      {getWikidataInfo(job) && (
+      {wikidataInfo && (
         <Button variant="ghost" size="sm" asChild className="rounded-full">
           <a
-            href={`https://www.wikidata.org/wiki/${getWikidataInfo(job)?.node}`}
+            href={`https://www.wikidata.org/wiki/${wikidataInfo.node}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center"
