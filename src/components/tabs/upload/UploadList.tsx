@@ -32,10 +32,7 @@ export function UploadList({
             ? `Uppladdade filer (${uploadedFiles.length})`
             : `Tillagda länkar (${processedUrls.length})`}
         </h2>
-        <Button
-          variant="primary"
-          onClick={onContinue}
-        >
+        <Button variant="primary" onClick={onContinue}>
           Se resultat
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
@@ -51,12 +48,9 @@ export function UploadList({
               >
                 <File className="w-6 h-6 text-orange-03" />
                 <div className="flex-1">
-                  <p className="text-sm text-gray-01">
-                    {file.name}
-                  </p>
+                  <p className="text-sm text-gray-01">{file.name}</p>
                   <p className="text-sm text-gray-02">
-                    Företag: {company} •{" "}
-                    {(file.size / 1024 / 1024).toFixed(2)}{" "}
+                    Företag: {company} • {(file.size / 1024 / 1024).toFixed(2)}{" "}
                     MB
                   </p>
                 </div>
@@ -71,12 +65,8 @@ export function UploadList({
               >
                 <Link2 className="w-6 h-6 text-orange-03" />
                 <div className="flex-1">
-                  <p className="text-sm text-gray-01 break-all">
-                    {url}
-                  </p>
-                  <p className="text-sm text-gray-02">
-                    Företag: {company}
-                  </p>
+                  <p className="text-sm text-gray-01 break-all">{url}</p>
+                  <p className="text-sm text-gray-02">Företag: {company}</p>
                 </div>
               </motion.li>
             ))}
@@ -84,4 +74,3 @@ export function UploadList({
     </motion.div>
   );
 }
-

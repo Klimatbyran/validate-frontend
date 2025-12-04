@@ -234,4 +234,3 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
     </div>
   );
 }
-

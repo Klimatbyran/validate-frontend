@@ -24,9 +24,7 @@ export function UrlUploadForm({
             Klistra in PDF-länkar (en per rad)
           </label>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-02">
-              Auto-godkänn
-            </span>
+            <span className="text-sm text-gray-02">Auto-godkänn</span>
             <button
               onClick={() => onAutoApproveChange(!autoApprove)}
               className={`
@@ -34,22 +32,14 @@ export function UrlUploadForm({
                 transition-colors focus-visible:outline-none
                 focus-visible:ring-2 focus-visible:ring-ring
                 focus-visible:ring-offset-2
-                ${
-                  autoApprove
-                    ? "bg-green-03"
-                    : "bg-gray-03"
-                }
+                ${autoApprove ? "bg-green-03" : "bg-gray-03"}
               `}
             >
               <span
                 className={`
                   inline-block h-4 w-4 transform rounded-full
                   bg-white transition-transform
-                  ${
-                    autoApprove
-                      ? "translate-x-6"
-                      : "translate-x-1"
-                  }
+                  ${autoApprove ? "translate-x-6" : "translate-x-1"}
                 `}
               />
             </button>
@@ -62,10 +52,7 @@ export function UrlUploadForm({
           className="w-full h-32 bg-gray-03/20 border border-gray-03 rounded-lg p-3 text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
         />
         <div className="mt-4 flex justify-end">
-          <Button
-            onClick={onSubmit}
-            disabled={!urlInput.trim()}
-          >
+          <Button onClick={onSubmit} disabled={!urlInput.trim()}>
             <Link2 className="w-4 h-4 mr-2" />
             Lägg till länkar
           </Button>
@@ -74,4 +61,3 @@ export function UrlUploadForm({
     </div>
   );
 }
-

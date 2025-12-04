@@ -39,15 +39,10 @@ export function FileUploadZone({
           }
         `}
       >
-        <motion.div
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-        >
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
           <FileUp
             className={`w-12 h-12 mb-4 ${
-              isDragging
-                ? "text-orange-03"
-                : "text-gray-02"
+              isDragging ? "text-orange-03" : "text-gray-02"
             }`}
           />
         </motion.div>
@@ -70,4 +65,3 @@ export function FileUploadZone({
     </>
   );
 }
-
