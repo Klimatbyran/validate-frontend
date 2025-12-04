@@ -46,4 +46,3 @@ export function UrlListItem({ url }: UrlListItemProps) {
     </motion.li>
   );
 }
-
