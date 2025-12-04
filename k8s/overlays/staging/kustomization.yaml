@@ -5,4 +5,4 @@ resources:
   - ../../base
 images:
   - name: ghcr.io/klimatbyran/validate-frontend
-    newTag: '1.0.6-rc.7' # {"$imagepolicy": "flux-system:validate-frontend-stage:tag"}
+    newTag: '1.0.6-rc.8' # {"$imagepolicy": "flux-system:validate-frontend-stage:tag"}
