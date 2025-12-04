@@ -45,7 +45,7 @@ export function DialogTabs({ activeTab, setActiveTab, job }: DialogTabsProps) {
           </a>
         </Button>
       )}
-      {wikidataInfo && (
+      {wikidataInfo?.node && (
         <Button variant="ghost" size="sm" asChild className="rounded-full">
           <a
             href={`https://www.wikidata.org/wiki/${wikidataInfo.node}`}
