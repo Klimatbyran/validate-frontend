@@ -42,7 +42,11 @@ function App() {
 
     // For now, just show a message that file upload is not yet supported
     toast.info("Filuppladdning stöds inte ännu. Använd länk-läget istället.");
-  }, [uploadedFiles, autoApprove]);
+
+    // TODO: When implementing file upload functionality:
+    // 1. Include autoApprove in the API request body (similar to handleUrlSubmit)
+    // 2. Add autoApprove back to the dependency array below
+  }, [uploadedFiles]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -106,7 +110,7 @@ function App() {
           autoApprove: Boolean(autoApprove),
           forceReindex: true,
           replaceAllEmissions: true,
-          runOnly: ['scope1+2', 'scope3'],
+          runOnly: ["scope1+2", "scope3"],
           urls: urls,
         }),
       });
