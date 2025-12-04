@@ -136,6 +136,20 @@ export interface QueueJob extends Job {
   queueId: string;
 }
 
+// Extended QueueJob type that includes lowercase variants from API responses
+export interface QueueJobWithVariants extends QueueJob {
+  returnvalue?: Job["returnValue"];
+  jobData?: JobData;
+}
+
+// Type for detailed API response that may have different casing
+export interface DetailedJobResponse extends Partial<Job> {
+  returnvalue?: Job["returnValue"];
+  jobData?: JobData;
+  data?: JobData;
+  failedReason?: string;
+}
+
 export interface CompanyStatus {
   company: string;
   companyName?: string;
@@ -236,7 +250,17 @@ export interface CustomAPIJob {
       source?: string;
     };
   };
-  status: "active" | "waiting" | "waiting-children" | "prioritized" | "completed" | "failed" | "delayed" | "paused" | "repeat" | "wait";
+  status:
+    | "active"
+    | "waiting"
+    | "waiting-children"
+    | "prioritized"
+    | "completed"
+    | "failed"
+    | "delayed"
+    | "paused"
+    | "repeat"
+    | "wait";
   company?: string;
   wikidataId?: string;
   year?: number;

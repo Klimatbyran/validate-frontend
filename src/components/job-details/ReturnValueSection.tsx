@@ -1,0 +1,29 @@
+import { QueueJob, QueueJobWithVariants } from "@/lib/types";
+import { ValueRenderer } from "@/components/ui/value-renderer";
+
+interface ReturnValueSectionProps {
+  job: QueueJob | null;
+}
+
+export function ReturnValueSection({ job }: ReturnValueSectionProps) {
+  if (!job) return null;
+
+  // Check both returnValue (camelCase) and returnvalue (lowercase)
+  const jobWithVariants = job as QueueJobWithVariants;
+  const returnValue = job.returnValue ?? jobWithVariants.returnvalue;
+
+  if (returnValue === null || returnValue === undefined) {
+    return null;
+  }
+
+  return (
+    <div className="bg-gray-03/20 rounded-lg p-4">
+      <h3 className="text-lg font-medium text-gray-01 mb-4">Return Value</h3>
+      <div className="bg-gray-04 rounded-lg p-3">
+        <div className="text-gray-01 break-words">
+          <ValueRenderer value={returnValue} />
+        </div>
+      </div>
+    </div>
+  );
+}

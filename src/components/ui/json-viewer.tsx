@@ -1,11 +1,10 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface JsonViewerProps {
   data: any;
 }
-
-
 
 export function JsonViewer({ data }: JsonViewerProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -19,19 +18,21 @@ export function JsonViewer({ data }: JsonViewerProps) {
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-blue-03 hover:bg-blue-03/10"
         >
-          {isExpanded ? 'Komprimera' : 'Expandera'}
+          {isExpanded ? "Komprimera" : "Expandera"}
         </Button>
       </div>
-      <pre className={`
-        bg-gray-03/20 rounded-lg p-3 overflow-x-auto
-        ${isExpanded ? 'max-h-none' : 'max-h-32'}
-      `}>
+      <pre
+        className={cn(
+          "bg-gray-03/20 rounded-lg p-3 overflow-x-auto",
+          isExpanded ? "max-h-none" : "max-h-32"
+        )}
+      >
         {JSON.stringify(
-          typeof data === 'string' ? JSON.parse(data) : data,
+          typeof data === "string" ? JSON.parse(data) : data,
           null,
           2
         )}
       </pre>
     </div>
   );
-} 
+}
