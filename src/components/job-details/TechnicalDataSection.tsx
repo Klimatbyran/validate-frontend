@@ -1,6 +1,5 @@
 import { QueueJob } from "@/lib/types";
-import { JsonViewer } from "../ui/json-viewer";
-import { isJsonString } from "@/lib/utils";
+import { ValueRenderer } from "@/components/ui/value-renderer";
 
 interface TechnicalDataSectionProps {
   job: QueueJob;
@@ -23,13 +22,7 @@ export function TechnicalDataSection({ job }: TechnicalDataSectionProps) {
             <div key={key} className="bg-gray-04 rounded-lg p-3">
               <div className="text-sm text-gray-02 mb-1">{key}</div>
               <div className="text-gray-01 break-words">
-                {typeof value === "string" && isJsonString(value) ? (
-                  <JsonViewer data={value} />
-                ) : typeof value === "object" ? (
-                  <JsonViewer data={value} />
-                ) : (
-                  String(value)
-                )}
+                <ValueRenderer value={value} />
               </div>
             </div>
           );

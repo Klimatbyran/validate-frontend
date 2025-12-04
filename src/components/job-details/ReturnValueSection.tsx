@@ -1,6 +1,5 @@
 import { QueueJob } from "@/lib/types";
-import { JsonViewer } from "../ui/json-viewer";
-import { isJsonString } from "@/lib/utils";
+import { ValueRenderer } from "@/components/ui/value-renderer";
 
 interface ReturnValueSectionProps {
   job: QueueJob | null;
@@ -21,13 +20,7 @@ export function ReturnValueSection({ job }: ReturnValueSectionProps) {
       <h3 className="text-lg font-medium text-gray-01 mb-4">Return Value</h3>
       <div className="bg-gray-04 rounded-lg p-3">
         <div className="text-gray-01 break-words">
-          {typeof returnValue === "string" && isJsonString(returnValue) ? (
-            <JsonViewer data={returnValue} />
-          ) : typeof returnValue === "object" ? (
-            <JsonViewer data={returnValue} />
-          ) : (
-            String(returnValue)
-          )}
+          <ValueRenderer value={returnValue} />
         </div>
       </div>
     </div>

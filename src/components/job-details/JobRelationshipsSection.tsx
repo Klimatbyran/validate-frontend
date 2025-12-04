@@ -6,9 +6,7 @@ interface JobRelationshipsSectionProps {
 }
 
 export function JobRelationshipsSection({ job }: JobRelationshipsSectionProps) {
-  const hasParent = !!job.parent;
-
-  if (!hasParent || !job.parent) return null;
+  if (!job.parent) return null;
 
   return (
     <div className="bg-blue-03/10 rounded-lg p-4">

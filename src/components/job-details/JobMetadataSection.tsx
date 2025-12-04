@@ -1,4 +1,5 @@
 import { QueueJob } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 interface JobMetadataSectionProps {
   job: QueueJob;
@@ -44,7 +45,7 @@ export function JobMetadataSection({ job }: JobMetadataSectionProps) {
         {metadataFields.map((field, index) => (
           <div key={index}>
             <div className="text-gray-02">{field.label}</div>
-            <div className={`text-gray-01 ${field.className || ""}`}>
+            <div className={cn("text-gray-01", field.className)}>
               {field.value}
             </div>
           </div>
