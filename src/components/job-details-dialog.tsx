@@ -1,172 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { QueueJob } from "@/lib/types";
-import { getWorkflowStages } from "@/lib/workflow-config";
-import { getJobStatus } from "@/lib/workflow-utils";
-import {
-  getStatusIcon as getCentralizedStatusIcon,
-  getStatusBackgroundColor,
-  getStatusLabelSwedish,
-} from "@/lib/status-config";
-import { ArrowUpRight, GitBranch, HelpCircle, Code } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 import { JobSpecificDataView } from "./job-specific-data-view";
-import { JsonViewer } from "./ui/json-viewer";
-import { isJsonString } from "@/lib/utils";
 import { JobDialogHeader } from "./job-details/JobDialogHeader";
 import { DialogTabs } from "./job-details/DialogTabs";
 import { JobDialogFooter } from "./job-details/JobDialogFooter";
-
-function TechnicalDataSection({ job }: { job: QueueJob }) {
-  return (
-    <div className="bg-gray-03/20 rounded-lg p-4">
-      <h3 className="text-lg font-medium text-gray-01 mb-4">Teknisk data</h3>
-      <div className="grid grid-cols-1 gap-4">
-        {Object.entries(job.data).map(([key, value]) => {
-          if (
-            key === "companyName" ||
-            key === "description" ||
-            key === "schema"
-          )
-            return null;
-
-          return (
-            <div key={key} className="bg-gray-04 rounded-lg p-3">
-              <div className="text-sm text-gray-02 mb-1">{key}</div>
-              <div className="text-gray-01 break-words">
-                {typeof value === "string" && isJsonString(value) ? (
-                  <JsonViewer data={value} />
-                ) : typeof value === "object" ? (
-                  <JsonViewer data={value} />
-                ) : (
-                  String(value)
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function ReturnValueSection({ job }: { job: QueueJob | null }) {
-  if (!job) return null;
-
-  // Check both returnValue (camelCase) and returnvalue (lowercase)
-  const returnValue = job.returnValue ?? (job as any).returnvalue;
-
-  if (returnValue === null || returnValue === undefined) {
-    return null;
-  }
-
-  return (
-    <div className="bg-gray-03/20 rounded-lg p-4">
-      <h3 className="text-lg font-medium text-gray-01 mb-4">Return Value</h3>
-      <div className="bg-gray-04 rounded-lg p-3">
-        <div className="text-gray-01 break-words">
-          {typeof returnValue === "string" && isJsonString(returnValue) ? (
-            <JsonViewer data={returnValue} />
-          ) : typeof returnValue === "object" ? (
-            <JsonViewer data={returnValue} />
-          ) : (
-            String(returnValue)
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function JobMetadataSection({ job }: { job: QueueJob }) {
-  const metadataFields = [
-    {
-      label: "ID",
-      value: job.id,
-      className: "font-mono",
-    },
-    {
-      label: "Kö",
-      value: job.queueId,
-    },
-    {
-      label: "Skapad",
-      value: new Date(job.timestamp).toLocaleString("sv-SE"),
-    },
-    {
-      label: "Startad",
-      value: job.processedOn
-        ? new Date(job.processedOn).toLocaleString("sv-SE")
-        : "-",
-    },
-    {
-      label: "Avslutad",
-      value: job.finishedOn
-        ? new Date(job.finishedOn).toLocaleString("sv-SE")
-        : "-",
-    },
-    {
-      label: "Försök",
-      value: job.attempts || 0,
-    },
-  ];
-
-  return (
-    <div className="bg-gray-03/20 rounded-lg p-4">
-      <h3 className="text-lg font-medium text-gray-01 mb-4">Jobbmetadata</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-        {metadataFields.map((field, index) => (
-          <div key={index}>
-            <div className="text-gray-02">{field.label}</div>
-            <div className={`text-gray-01 ${field.className || ""}`}>
-              {field.value}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ErrorSection({
-  job,
-  setActiveTab,
-  isFullError = false,
-}: {
-  job: QueueJob;
-  setActiveTab: (tab: "user" | "technical") => void;
-  isFullError?: boolean;
-}) {
-  if (!job.isFailed || job.stacktrace.length === 0) return null;
-
-  return (
-    <div className="bg-pink-03/10 rounded-lg p-4">
-      <h3 className="text-lg font-medium text-pink-03 mb-4">
-        {isFullError ? "Fullständigt felmeddelande" : "Felmeddelande"}
-      </h3>
-      {isFullError ? (
-        <pre className="text-pink-03 text-sm overflow-x-auto">
-          {job.stacktrace.join("\n")}
-        </pre>
-      ) : (
-        <div className="text-pink-03 text-sm">
-          {job.stacktrace[0]}
-          {job.stacktrace.length > 1 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setActiveTab("technical")}
-              className="mt-2 text-pink-03 hover:bg-pink-03/10"
-            >
-              Visa fullständigt felmeddelande
-            </Button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+import { TechnicalDataSection } from "./job-details/TechnicalDataSection";
+import { ReturnValueSection } from "./job-details/ReturnValueSection";
+import { JobMetadataSection } from "./job-details/JobMetadataSection";
+import { ErrorSection } from "./job-details/ErrorSection";
+import { JobStatusSection } from "./job-details/JobStatusSection";
+import { JobRelationshipsSection } from "./job-details/JobRelationshipsSection";
+import { SchemaSection } from "./job-details/SchemaSection";
 
 interface JobDetailsDialogProps {
   job: QueueJob | null;
@@ -254,10 +101,8 @@ export function JobDetailsDialog({
     });
   } catch (_) {}
 
-  const stage = getWorkflowStages().find((s) => s.id === job.queueId);
   const needsApproval = !job.data.approved && !job.data.autoApprove;
   const canRetry = Boolean(job.isFailed);
-  const hasParent = !!job.parent;
 
   const handleApprove = (approved: boolean) => {
     if (onApprove) {
@@ -333,26 +178,6 @@ export function JobDetailsDialog({
         }`
       );
     }
-  };
-
-  // Use centralized status system
-  const jobStatus = getJobStatus(job);
-  const isActivelyProcessing = job.processedOn && !job.finishedOn;
-
-  const getStatusIcon = () => {
-    return getCentralizedStatusIcon(
-      jobStatus,
-      "detailed",
-      !!isActivelyProcessing
-    );
-  };
-
-  const getStatusColor = () => {
-    return getStatusBackgroundColor(jobStatus);
-  };
-
-  const getStatusText = () => {
-    return getStatusLabelSwedish(jobStatus, !!isActivelyProcessing);
   };
 
   // Filter out schema and metadata fields from job data for user-friendly view
@@ -440,53 +265,8 @@ export function JobDetailsDialog({
         <div className="space-y-6 my-6">
           {activeTab === "user" && (
             <>
-              {/* Status Section */}
-              <div className="bg-gray-03/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-01 mb-4">
-                  Status
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-full ${getStatusColor()}`}>
-                      {getStatusIcon()}
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-01">
-                        {stage?.name || job.queueId}
-                      </div>
-                      <div className="text-sm text-gray-02">
-                        {getStatusText()}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-sm text-gray-02">Skapad</div>
-                    <div className="text-gray-01">
-                      {new Date(job.timestamp).toLocaleString("sv-SE")}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Job Relationships Section */}
-              {hasParent && job.parent && (
-                <div className="bg-blue-03/10 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
-                    <GitBranch className="w-5 h-5 mr-2" />
-                    Jobbrelationer
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2 text-blue-03">
-                      <ArrowUpRight className="w-5 h-4" />
-                      <span className="text-sm">Förälder:</span>
-                      <code className="bg-blue-03/20 px-2 py-1 rounded text-sm">
-                        {job.parent.queue}:{job.parent.id}
-                      </code>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <JobStatusSection job={job} />
+              <JobRelationshipsSection job={job} />
 
               {/* Information Section */}
               <div className="bg-gray-03/20 rounded-lg p-4">
@@ -504,18 +284,7 @@ export function JobDetailsDialog({
           )}
           {activeTab === "technical" && (
             <>
-              {/* Schema Section (if present) */}
-              {job.data.schema && (
-                <div className="bg-blue-03/10 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
-                    <Code className="w-5 h-5 mr-2" />
-                    Schema
-                  </h3>
-                  <div className="bg-gray-04 rounded-lg p-3">
-                    <JsonViewer data={job.data.schema} />
-                  </div>
-                </div>
-              )}
+              <SchemaSection job={job} />
               <ReturnValueSection job={effectiveJob ?? job} />
               <TechnicalDataSection job={job} />
               <ErrorSection
