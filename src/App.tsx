@@ -88,11 +88,37 @@ function App() {
 
   const handleUrlSubmit = useCallback(async () => {
     // Split the input by newlines and filter out empty lines
-    const urls = urlInput
+    const urlLines = urlInput
       .split("\n")
       .map((url) => url.trim())
       .filter((url) => url);
     // ignorera om filerna slutar på pdf eller ej- vissa kommer inte göra det men ändå vara giltiga pdf:er.
+
+    if (urlLines.length === 0) {
+      toast.error("Inga giltiga PDF-länkar hittades");
+      return;
+    }
+
+    // Validate URLs and filter out invalid ones
+    const urls: string[] = [];
+    const invalidUrls: string[] = [];
+
+    for (const url of urlLines) {
+      try {
+        new URL(url);
+        urls.push(url);
+      } catch {
+        invalidUrls.push(url);
+      }
+    }
+
+    if (invalidUrls.length > 0) {
+      toast.warning(
+        `${invalidUrls.length} ogiltig${
+          invalidUrls.length === 1 ? "" : "a"
+        } URL${invalidUrls.length === 1 ? "" : ":er"} hoppades över`
+      );
+    }
 
     if (urls.length === 0) {
       toast.error("Inga giltiga PDF-länkar hittades");
@@ -124,11 +150,20 @@ function App() {
       const result = await response.json();
       console.log("Jobs created successfully:", result);
 
-      const newUrls = urls.map((url) => ({
-        url,
-        id: crypto.randomUUID(),
-        company: new URL(url).hostname.split(".")[0],
-      }));
+      const newUrls = urls.map((url) => {
+        let company = "Unknown";
+        try {
+          company = new URL(url).hostname.split(".")[0] || "Unknown";
+        } catch (error) {
+          // Fallback if URL parsing fails (shouldn't happen after validation, but be safe)
+          console.warn(`Failed to parse URL for company name: ${url}`, error);
+        }
+        return {
+          url,
+          id: crypto.randomUUID(),
+          company,
+        };
+      });
 
       setProcessedUrls((prev) => {
         const updatedUrls = [...prev, ...newUrls];
