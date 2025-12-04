@@ -62,9 +62,9 @@ export const STATUS_CONFIG = {
     icon: Clock,
     colors: {
       text: "text-gray-02",
-      background: "bg-gray-03/60",
-      border: "border-gray-03",
-      icon: "text-gray-02",
+      background: "bg-blue-01/50",
+      border: "border-blue-02/60",
+      icon: "text-blue-03",
       iconCompact: "text-white",
     },
   },
@@ -122,9 +122,15 @@ export function getStatusIcon(
  */
 export function getCompactStyles(
   status: SwimlaneStatusType,
-  isActive?: boolean
+  isActive?: boolean,
+  jobExists?: boolean
 ): string {
   const config = STATUS_CONFIG[status];
+
+  // If job doesn't exist, use a more subtle gray style
+  if (jobExists === false) {
+    return `text-gray-02 bg-gray-03/30 border-gray-03/50`;
+  }
 
   if (status === "processing" && isActive) {
     return `text-white ${config.colors.background} ${config.colors.border} ring-2 ring-blue-03/50 animate-pulse`;
@@ -149,7 +155,7 @@ export function getStatusBackgroundColor(status: SwimlaneStatusType): string {
     failed: "bg-pink-03/20",
     processing: "bg-blue-03/20",
     needs_approval: "bg-orange-03/20",
-    waiting: "bg-gray-03/20",
+    waiting: "bg-blue-01/20",
   };
   return backgroundMap[status];
 }
@@ -229,9 +235,12 @@ export function getStepIcon(
   const config = getStatusConfig(status);
   const IconComponent = config.icon;
 
+  // Use gray for waiting status in step icons (user requirement)
+  const iconColor = status === "waiting" ? config.colors.text : config.colors.icon;
+
   return (
     <IconComponent
-      className={`w-5 h-5 ${config.colors.icon} ${
+      className={`w-5 h-5 ${iconColor} ${
         "animation" in config ? config.animation : ""
       }`.trim()}
     />

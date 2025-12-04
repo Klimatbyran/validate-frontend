@@ -10,7 +10,6 @@ import { WorkflowDiagram } from "@/components/ui/workflow-diagram";
 import { DebugView } from "@/views/debug-view";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { useQueues } from "@/hooks/useQueues";
 import { Routes, Route } from "react-router-dom";
 import SlideshowPage from "./views/SlideshowPage";
 
@@ -28,13 +27,26 @@ interface UrlInput {
 
 function App() {
   const [currentTab, setCurrentTab] = useState("upload");
-  const { refresh } = useQueues();
   const [uploadMode, setUploadMode] = useState<"file" | "url">("file");
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [urlInput, setUrlInput] = useState("");
   const [processedUrls, setProcessedUrls] = useState<UrlInput[]>([]);
   const [autoApprove, setAutoApprove] = useState(true);
+
+  const handleFileSubmit = useCallback(async () => {
+    if (uploadedFiles.length === 0) {
+      toast.error("Inga PDF-filer uppladdade");
+      return;
+    }
+
+    // For now, just show a message that file upload is not yet supported
+    toast.info("Filuppladdning stöds inte ännu. Använd länk-läget istället.");
+
+    // TODO: When implementing file upload functionality:
+    // 1. Include autoApprove in the API request body (similar to handleUrlSubmit)
+    // 2. Add autoApprove back to the dependency array below
+  }, [uploadedFiles]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -76,62 +88,82 @@ function App() {
 
   const handleUrlSubmit = useCallback(async () => {
     // Split the input by newlines and filter out empty lines
-    const urls = urlInput
+    const urlLines = urlInput
       .split("\n")
       .map((url) => url.trim())
       .filter((url) => url);
     // ignorera om filerna slutar på pdf eller ej- vissa kommer inte göra det men ändå vara giltiga pdf:er.
+
+    if (urlLines.length === 0) {
+      toast.error("Inga giltiga PDF-länkar hittades");
+      return;
+    }
+
+    // Validate URLs and filter out invalid ones
+    const urls: string[] = [];
+    const invalidUrls: string[] = [];
+
+    for (const url of urlLines) {
+      try {
+        new URL(url);
+        urls.push(url);
+      } catch {
+        invalidUrls.push(url);
+      }
+    }
+
+    if (invalidUrls.length > 0) {
+      toast.warning(
+        `${invalidUrls.length} ogiltig${
+          invalidUrls.length === 1 ? "" : "a"
+        } URL${invalidUrls.length === 1 ? "" : ":er"} hoppades över`
+      );
+    }
 
     if (urls.length === 0) {
       toast.error("Inga giltiga PDF-länkar hittades");
       return;
     }
 
-    // Create jobs for each URL
-    const jobs = urls.map((url) => ({
-      name: "process-pdf",
-      data: {
-        url,
-        threadId: crypto.randomUUID().replace(/-/g, ""),
-        autoApprove: Boolean(autoApprove), // Use boolean instead of string
-        messageId: crypto.randomUUID().replace(/-/g, ""),
-      },
-      options: {
-        attempts: 3,
-        backoff: {
-          type: "exponential",
-          delay: 1000,
-        },
-      },
-    }));
-
-    // Send jobs to the API
+    // Send batch job creation request to the custom API
     try {
-      await Promise.all(
-        jobs.map(async (job) => {
-          const response = await fetch("/api/queues/nlmParsePDF/add", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(job),
-          });
+      const response = await fetch("/api/queues/parsePdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          autoApprove: Boolean(autoApprove),
+          forceReindex: true,
+          replaceAllEmissions: true,
+          runOnly: ["scope1+2", "scope3"],
+          urls: urls,
+        }),
+      });
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Job submission error:", errorText);
-            throw new Error(`Failed to add job: ${errorText}`);
-          }
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Job submission error:", errorText);
+        throw new Error(`Failed to add jobs: ${errorText}`);
+      }
 
-          return response.json();
-        })
-      );
+      const result = await response.json();
+      console.log("Jobs created successfully:", result);
 
-      const newUrls = urls.map((url) => ({
-        url,
-        id: crypto.randomUUID(),
-        company: new URL(url).hostname.split(".")[0],
-      }));
+      const newUrls = urls.map((url) => {
+        let company = "Unknown";
+        try {
+          company = new URL(url).hostname.split(".")[0] || "Unknown";
+        } catch (error) {
+          // Fallback if URL parsing fails (shouldn't happen after validation, but be safe)
+          console.warn(`Failed to parse URL for company name: ${url}`, error);
+        }
+        return {
+          url,
+          id: crypto.randomUUID(),
+          company,
+        };
+      });
 
       setProcessedUrls((prev) => {
         const updatedUrls = [...prev, ...newUrls];
@@ -159,13 +191,12 @@ function App() {
     }
 
     setCurrentTab("processing");
-    refresh(); // Refresh data when switching to processing tab
     toast("Påbörjar bearbetning...", {
       description: `${totalItems} ${uploadMode === "file" ? "fil" : "länk"}${
         totalItems === 1 ? "" : "ar"
       } att processa`,
     });
-  }, [uploadedFiles.length, processedUrls.length, uploadMode, refresh]);
+  }, [uploadedFiles.length, processedUrls.length, uploadMode]);
 
   return (
     <Routes>
@@ -181,10 +212,6 @@ function App() {
                 value={currentTab}
                 onValueChange={(value) => {
                   setCurrentTab(value);
-                  // Refresh data when switching to jobbstatus or processing tabs
-                  if (value === "jobbstatus" || value === "processing") {
-                    refresh();
-                  }
                 }}
                 className="space-y-6"
               >
@@ -259,6 +286,14 @@ function App() {
                                 </span>
                               </p>
                             </div>
+                            {uploadedFiles.length > 0 && (
+                              <div className="mt-4 flex justify-end">
+                                <Button onClick={handleFileSubmit}>
+                                  <FileUp className="w-4 h-4 mr-2" />
+                                  Lägg till filer
+                                </Button>
+                              </div>
+                            )}
                           </TabsContent>
 
                           <TabsContent value="url">

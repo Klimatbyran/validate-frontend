@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -150,6 +150,34 @@ function TechnicalDataSection({ job }: { job: QueueJob }) {
   );
 }
 
+function ReturnValueSection({ job }: { job: QueueJob | null }) {
+  if (!job) return null;
+  
+  // Check both returnValue (camelCase) and returnvalue (lowercase)
+  const returnValue = job.returnValue ?? (job as any).returnvalue;
+  
+  if (returnValue === null || returnValue === undefined) {
+    return null;
+  }
+
+  return (
+    <div className="bg-gray-03/20 rounded-lg p-4">
+      <h3 className="text-lg font-medium text-gray-01 mb-4">Return Value</h3>
+      <div className="bg-gray-04 rounded-lg p-3">
+        <div className="text-gray-01 break-words">
+          {typeof returnValue === "string" && isJsonString(returnValue) ? (
+            <JsonViewer data={returnValue} />
+          ) : typeof returnValue === "object" ? (
+            <JsonViewer data={returnValue} />
+          ) : (
+            String(returnValue)
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function JobMetadataSection({ job }: { job: QueueJob }) {
   const metadataFields = [
     {
@@ -255,8 +283,57 @@ export function JobDetailsDialog({
   onRetry,
 }: JobDetailsDialogProps) {
   const [activeTab, setActiveTab] = useState<"user" | "technical">("user");
+  const [detailed, setDetailed] = useState<any | null>(null);
+
+  // Fetch detailed job data if returnValue is not present (similar to job-specific-data-view)
+  React.useEffect(() => {
+    if (!job) return;
+    let aborted = false;
+    async function loadDetails() {
+      if (!job) return;
+      if (job.returnValue || (job as any).returnvalue) return;
+      if (!job.queueId || !job.id) return;
+      try {
+        const res = await fetch(`/api/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!aborted) setDetailed(json);
+      } catch (e) {
+        console.error('[JobDetailsDialog] Failed to load details', e);
+      }
+    }
+    loadDetails();
+    return () => { aborted = true; };
+  }, [job?.id, job?.queueId, Boolean(job?.returnValue), Boolean((job as any)?.returnvalue)]);
+
+  // Create effectiveJob that merges detailed data (similar to job-specific-data-view)
+  const effectiveJob = React.useMemo(() => {
+    if (!job) return null;
+    if (!detailed) return job;
+    return {
+      ...job,
+      returnValue: (detailed as any).returnvalue ?? job.returnValue ?? (job as any).returnvalue,
+      // Merge both shapes from details
+      data: { ...(job.data || {}), ...(detailed as any)?.data, ...(detailed as any)?.jobData },
+      progress: detailed.progress ?? job.progress,
+      failedReason: detailed.failedReason ?? (job as any).failedReason,
+      stacktrace: detailed.stacktrace || job.stacktrace,
+    } as any;
+  }, [job, detailed]);
 
   if (!job) return null;
+
+  // Debug: log threadId sources for the selected job
+  try {
+    console.log('[JobDetailsDialog] Selected job debug', {
+      jobId: job.id,
+      queueId: job.queueId,
+      dataThreadId: (job as any)?.data?.threadId,
+      jobDataThreadId: (job as any)?.jobData?.threadId,
+      company: (job as any)?.data?.company,
+      mergedPreview: { ...(job as any)?.jobData, ...(job as any)?.data },
+    });
+  } catch (_) {}
 
   const stage = getWorkflowStages().find((s) => s.id === job.queueId);
   const needsApproval = !job.data.approved && !job.data.autoApprove;
@@ -271,11 +348,61 @@ export function JobDetailsDialog({
     }
   };
 
-  const handleRetry = () => {
-    if (onRetry) {
-      onRetry();
-      onOpenChange(false);
-      toast.success("Jobbet omstartat");
+  const handleRetry = async () => {
+    if (!job || !effectiveJob || !effectiveJob.queueId || !effectiveJob.id) {
+      console.error("Cannot retry: missing job information");
+      toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
+      return;
+    }
+
+    // Retry without overriding any data - send empty data object
+    const requestData = {
+      data: {},
+    };
+
+    try {
+      const response = await fetch(
+        `/api/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestData),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Failed to retry job:", errorText);
+        toast.error(`Kunde inte köra om jobbet: ${errorText || "Okänt fel"}`);
+        return;
+      }
+
+      const updatedJob = await response.json();
+      console.log("Job retried successfully:", updatedJob);
+      toast.success("Jobbet körs om");
+      
+      // Refresh job data
+      if (job.queueId && job.id) {
+        try {
+          const res = await fetch(`/api/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`);
+          if (res.ok) {
+            const json = await res.json();
+            setDetailed(json);
+          }
+        } catch (e) {
+          console.error("Failed to refresh job data:", e);
+        }
+      }
+
+      // Call the onRetry callback if provided (for parent component updates)
+      if (onRetry) {
+        onRetry();
+      }
+      
+      // Don't close the dialog automatically - let user see the updated status
+    } catch (error) {
+      console.error("Error retrying job:", error);
+      toast.error(`Ett fel uppstod vid omkörning: ${error instanceof Error ? error.message : "Okänt fel"}`);
     }
   };
 
@@ -301,7 +428,9 @@ export function JobDetailsDialog({
 
   // Filter out schema and metadata fields from job data for user-friendly view
   const getFilteredJobDataWithoutSchema = () => {
-    const { companyName, description, schema, ...rest } = job.data;
+    // Merge possible worker data shapes so threadId/company are present regardless
+    const merged = { ...(job as any)?.jobData, ...job.data } as Record<string, any>;
+    const { companyName, description, schema, ...rest } = merged;
     return rest;
   };
 
@@ -470,30 +599,7 @@ export function JobDetailsDialog({
                   </div>
                 </div>
               )}
-              <TechnicalDataSection job={job} />
-              <ErrorSection
-                job={job}
-                setActiveTab={setActiveTab}
-                isFullError={true}
-              />
-              <JobMetadataSection job={job} />
-            </>
-          )}
-          {activeTab === "technical" && (
-            <>
-              {/* Technical Tab Content */}
-              {/* Schema Section (if present) */}
-              {job.data.schema && (
-                <div className="bg-blue-03/10 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
-                    <Code className="w-5 h-5 mr-2" />
-                    Schema
-                  </h3>
-                  <div className="bg-gray-04 rounded-lg p-3">
-                    <JsonViewer data={job.data.schema} />
-                  </div>
-                </div>
-              )}
+              <ReturnValueSection job={effectiveJob ?? job} />
               <TechnicalDataSection job={job} />
               <ErrorSection
                 job={job}

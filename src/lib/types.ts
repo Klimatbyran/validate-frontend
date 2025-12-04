@@ -205,3 +205,74 @@ export interface SwimlaneCompany {
   name: string;
   years: SwimlaneYearData[];
 }
+
+// Custom API types for the pipeline API
+export interface CustomAPIJob {
+  name: string;
+  id: string;
+  url: string;
+  autoApprove: boolean;
+  timestamp: number;
+  processId: string;
+  queue: string;
+  processedBy?: string;
+  finishedOn?: number;
+  attemptsMade: number;
+  failedReason?: string;
+  stacktrace: string[];
+  progress?: number;
+  opts: Record<string, any>;
+  delay?: number;
+  approval?: {
+    summary: string;
+    type: string;
+    data: {
+      oldValue: any;
+      newValue: any;
+    };
+    approved: boolean;
+    metadata: {
+      comment?: string;
+      source?: string;
+    };
+  };
+  status: "active" | "waiting" | "waiting-children" | "prioritized" | "completed" | "failed" | "delayed" | "paused" | "repeat" | "wait";
+  company?: string;
+  wikidataId?: string;
+  year?: number;
+  data?: any;
+  returnvalue?: any;
+}
+
+export interface CustomAPIProcess {
+  id: string;
+  company?: string;
+  wikidataId?: string;
+  year?: number;
+  status: "active" | "completed" | "failed" | "waiting";
+  jobs: CustomAPIJob[];
+  startedAt?: number;
+  finishedAt?: number;
+}
+
+export interface CustomAPICompany {
+  company: string;
+  wikidataId?: string;
+  processes: CustomAPIProcess[];
+}
+
+export interface CustomAPIQueueStats {
+  name: string;
+  status: {
+    active: number;
+    waiting: number;
+    "waiting-children": number;
+    prioritized: number;
+    completed: number;
+    failed: number;
+    delayed: number;
+    paused: number;
+    repeat: number;
+    wait: number;
+  };
+}

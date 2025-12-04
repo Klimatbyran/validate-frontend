@@ -166,15 +166,24 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
     let isMounted = true;
 
     async function fetchReferencesForYears(companyId: string, years: number[]) {
+      try {
+        console.log('[Scope3Section] start reference fetch', { companyId, years });
+      } catch (_) {}
       setIsLoading(true);
       setError(null);
       try {
         const company = await fetchCompanyById(companyId, abortController.signal);
+        try {
+          console.log('[Scope3Section] fetched company', { companyId, hasReportingPeriods: Array.isArray((company as any)?.reportingPeriods), reportingPeriodsCount: Array.isArray((company as any)?.reportingPeriods) ? (company as any).reportingPeriods.length : 0 });
+        } catch (_) {}
         const periods = getReportingPeriods(company);
         const nextMap: Record<number, ReferenceSnapshot> = {};
         for (const y of years) {
           const period = findPeriodEndingInYear(periods, y);
           const scope3 = period?.emissions?.scope3;
+          try {
+            console.log('[Scope3Section] year snapshot', { year: y, hasPeriod: !!period, hasScope3: !!scope3 });
+          } catch (_) {}
           nextMap[y] = buildReferenceSnapshotFromScope3(scope3);
         }
         if (isMounted) {
@@ -183,6 +192,9 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
         }
       } catch (e: any) {
         if (isMounted && e?.name !== 'AbortError') {
+          try {
+            console.warn('[Scope3Section] reference fetch error', e);
+          } catch (_) {}
           setError(e?.message || 'Kunde inte hämta referensdata');
           setIsLoading(false);
         }
@@ -281,14 +293,29 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
           )}
         </div>
         <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-          <div className="flex items-center space-x-2 mb-2">
+          <div className="flex items-center space-x-2 mb-4">
             <Truck className="w-5 h-5 text-amber-700" />
             <span className="font-semibold text-lg text-gray-900">Scope 3</span>
           </div>
-          {typeof normalized.total === 'number' && (
-            <div className="font-extrabold text-gray-900 text-4xl mb-1">{normalized.total.toLocaleString('sv-SE')}</div>
-          )}
-          <div className="text-base text-gray-700">{normalized.unit || 'tCO2e'}</div>
+          <div className="mb-6 pb-4 border-b border-gray-200">
+            <div className="text-sm text-gray-600 mb-2">Totalt (statedTotalEmissions)</div>
+            {normalized.total !== null && normalized.total !== undefined ? (
+              <>
+                <div className="font-extrabold text-gray-900 text-4xl mb-1 flex items-center gap-2">
+                  {normalized.total.toLocaleString('sv-SE')}
+                  {hasReferenceForYear && (() => {
+                    const refSnapshot = referenceByYear[entry.year];
+                    const refTotal = refSnapshot?.total ?? null;
+                    const match = normalized.total === refTotal;
+                    return match ? <span className="text-green-700 text-2xl">✓</span> : <span className="text-red-600 text-2xl">✗</span>;
+                  })()}
+                </div>
+                <div className="text-base text-gray-700">{normalized.unit || 'tCO2e'}</div>
+              </>
+            ) : (
+              <div className="text-base text-gray-700">— {normalized.unit || 'tCO2e'}</div>
+            )}
+          </div>
           {hasReferenceForYear ? (
             <div className="mt-4 divide-y divide-gray-200">
               {Array.from({ length: 15 }, (_, i) => i + 1).map((n) => {

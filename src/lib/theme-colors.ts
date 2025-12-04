@@ -52,8 +52,8 @@ export const COLORS = {
     },
     waiting: {
       text: "text-gray-02",
-      background: "bg-gray-03/60",
-      border: "border-gray-03",
+      background: "bg-blue-01/50",
+      border: "border-blue-02/60",
     },
   },
 

@@ -29,21 +29,24 @@ export interface PipelineStep {
  */
 export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   // Preprocessing
-  nlmParsePDF: "PDF Parsning",
+  nlmParsePDF: "PDF Parsning NLM",
   nlmExtractTables: "Tabellextraktion",
   precheck: "Förkontroll",
+  parsePdf: "PDF Parsning",
+  doclingParsePDF: "PDF Parsning docling",
+  indexMarkdown: "Markdown",
 
   // AI Data Extraction
   guessWikidata: "Wikidata",
-  diffReportingPeriods: "Räkenskapsår",
-  extractEmissions: "Utsläppsdata",
+  diffReportingPeriods: "Diff rapportperioder",
+  extractEmissions: "Extrahera utsläpp",
   followUpScope12: "Uppföljning Scope 1&2",
   followUpScope3: "Uppföljning Scope 3",
   followUpBiogenic: "Uppföljning Biogenisk",
   followUpEconomy: "Uppföljning Ekonomi",
   followUpGoals: "Uppföljning Mål",
   followUpInitiatives: "Uppföljning Initiativ",
-  followUpFiscalYear: "Uppföljning Räkenskapsår",
+  followUpFiscalYear: "Uppföljning fiscal year",
   followUpCompanyTags: "Uppföljning Företagstaggar",
   followUpBaseYear: "Uppföljning Basår",
   followUpIndustryGics: "Uppföljning Bransch GICS",
@@ -54,11 +57,10 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   checkDB: "DB Kontroll",
 
   // Finalize
-  sendCompanyLink: "Granskning",
+  sendCompanyLink: "Skicka företagslänk",
   saveToAPI: "API Lagring",
   wikipediaUpload: "Wikipedia",
   diffTags: "Taggar",
-  indexMarkdown: "Markdown",
 };
 
 /**
@@ -70,7 +72,17 @@ export const PIPELINE_STEPS: PipelineStep[] = [
     id: "preprocessing",
     name: "Preprocessing",
     description: "Initial document processing and preparation",
-    stageIds: ["nlmParsePDF", "nlmExtractTables", "precheck"],
+    stageIds: [
+      "nlmParsePDF",
+      "nlmExtractTables",
+      "precheck",
+      "parsePdf",
+      "doclingParsePDF",
+      "indexMarkdown",
+      "guessWikidata",
+      "extractEmissions",
+      "followUpBaseYear",
+    ],
     order: 1,
   },
   {
@@ -78,9 +90,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
     name: "AI Data Extraction",
     description: "AI-powered data extraction and analysis",
     stageIds: [
-      "guessWikidata",
       "diffReportingPeriods",
-      "extractEmissions",
       "followUpScope12",
       "followUpScope3",
       "followUpBiogenic",
@@ -89,7 +99,6 @@ export const PIPELINE_STEPS: PipelineStep[] = [
       "followUpInitiatives",
       "followUpFiscalYear",
       "followUpCompanyTags",
-      "followUpBaseYear",
       "followUpIndustryGics",
       "diffIndustry",
       "diffGoals",
@@ -103,13 +112,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
     id: "finalize",
     name: "Finalize",
     description: "Final processing and data storage",
-    stageIds: [
-      "sendCompanyLink",
-      "saveToAPI",
-      "wikipediaUpload",
-      "diffTags",
-      "indexMarkdown",
-    ],
+    stageIds: ["sendCompanyLink", "saveToAPI", "wikipediaUpload", "diffTags"],
     order: 3,
   },
 ];

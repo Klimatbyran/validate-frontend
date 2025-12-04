@@ -37,6 +37,7 @@ interface Scope3EmissionsData {
 
 interface Scope12EmissionsDisplayProps {
   data: Scope12EmissionsData;
+  wikidataId?: string;
 }
 
 interface Scope3EmissionsDisplayProps {
@@ -44,8 +45,8 @@ interface Scope3EmissionsDisplayProps {
   wikidataId?: string;
 }
 
-export function ScopeEmissionsDisplay({ data }: Scope12EmissionsDisplayProps) {
-  return <Scope12Section data={data} />;
+export function ScopeEmissionsDisplay({ data, wikidataId }: Scope12EmissionsDisplayProps) {
+  return <Scope12Section data={data} wikidataId={wikidataId} />;
 }
 
 export function Scope3EmissionsDisplay({ data, wikidataId }: Scope3EmissionsDisplayProps) {
