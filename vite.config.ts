@@ -53,14 +53,15 @@ export default defineConfig({
         configure: (proxy, _options) => {
           proxy.on("error", (err, _req, res) => {
             console.warn(
-              "Pipeline API server not available on port 3001. Queue API will not work."
+              "Pipeline API server not available at https://stage-pipeline-api.klimatkollen.se. Queue API will not work."
             );
             if (res && !res.headersSent) {
               res.writeHead(503, { "Content-Type": "application/json" });
               res.end(
                 JSON.stringify({
                   error: "Pipeline API server not available",
-                  message: "Please start the pipeline API server on port 3001",
+                  message:
+                    "Pipeline API server at https://stage-pipeline-api.klimatkollen.se is not reachable",
                   queues: [],
                   jobs: [],
                   stats: { total: 0, active: 0, completed: 0, failed: 0 },
@@ -82,15 +83,14 @@ export default defineConfig({
         },
       },
       // Public Klimatkollen API for company data
-      '/kkapi': {
-        target: 'https://api.klimatkollen.se',
+      "/kkapi": {
+        target: "https://api.klimatkollen.se",
         changeOrigin: true,
         secure: true,
-        rewrite: (path) => path.replace(/^\/kkapi/, '/api'),
+        rewrite: (path) => path.replace(/^\/kkapi/, "/api"),
         timeout: 30000,
         proxyTimeout: 30000,
       },
-        
     },
   },
 });
