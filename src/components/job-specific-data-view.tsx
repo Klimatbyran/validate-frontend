@@ -290,12 +290,23 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     if (!detailed) return job;
     return {
       ...job,
-      returnValue: detailed.returnvalue ?? job.returnValue,
+      // Prefer freshest lifecycle fields from detailed response
+      status: (detailed as any).status ?? job.status,
+      processedOn: (detailed as any).processedOn ?? job.processedOn,
+      finishedOn: (detailed as any).finishedOn ?? job.finishedOn,
+      isFailed: (detailed as any).isFailed ?? job.isFailed,
+      timestamp: (detailed as any).timestamp ?? job.timestamp,
+      // Merge return value and data
+      returnValue: (detailed as any).returnvalue ?? job.returnValue,
       // Merge both shapes from details: base on original, then detailed.data, then detailed.jobData
-      data: { ...(job.data || {}), ...(detailed as any)?.data, ...(detailed as any)?.jobData },
-      progress: detailed.progress ?? job.progress,
-      failedReason: detailed.failedReason ?? (job as any).failedReason,
-      stacktrace: detailed.stacktrace || job.stacktrace,
+      data: {
+        ...(job.data || {}),
+        ...(detailed as any)?.data,
+        ...(detailed as any)?.jobData,
+      },
+      progress: (detailed as any).progress ?? job.progress,
+      failedReason: (detailed as any).failedReason ?? (job as any).failedReason,
+      stacktrace: (detailed as any).stacktrace || job.stacktrace,
     } as any;
   }, [job, detailed]);
 
@@ -609,6 +620,98 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     }
   };
 
+  // Helper flags for follow-up scope jobs
+  const isFollowUpScope12Job =
+    effectiveJob && effectiveJob.queueId === "followUpScope12";
+  const isFollowUpScope3Job =
+    effectiveJob && effectiveJob.queueId === "followUpScope3";
+
+  // Handle "rerun and save" for scope 1+2 (followUpScope12 queue)
+  const handleRerunAndSaveScope12 = async () => {
+    if (!effectiveJob || !effectiveJob.id) {
+      console.error("Cannot rerun and save: missing job information");
+      toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/queues/followUpScope12/${encodeURIComponent(
+          effectiveJob.id
+        )}/rerun-and-save`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scopes: ["scope1+2"] }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Failed to rerun and save scope1+2 job:", errorText);
+        toast.error(
+          `Kunde inte köra om och spara scope1+2: ${
+            errorText || "Okänt fel"
+          }`
+        );
+        return;
+      }
+
+      toast.success("Scope 1+2 körs om och sparas");
+      await refreshJobData();
+    } catch (error) {
+      console.error("Error rerunning and saving scope1+2 job:", error);
+      toast.error(
+        `Ett fel uppstod vid omkörning: ${
+          error instanceof Error ? error.message : "Okänt fel"
+        }`
+      );
+    }
+  };
+
+  // Handle "rerun and save" for scope 3 (followUpScope3 queue)
+  const handleRerunAndSaveScope3 = async () => {
+    if (!effectiveJob || !effectiveJob.id) {
+      console.error("Cannot rerun and save: missing job information");
+      toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/queues/followUpScope3/${encodeURIComponent(
+          effectiveJob.id
+        )}/rerun-and-save`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scopes: ["scope3"] }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Failed to rerun and save scope3 job:", errorText);
+        toast.error(
+          `Kunde inte köra om och spara scope3: ${
+            errorText || "Okänt fel"
+          }`
+        );
+        return;
+      }
+
+      toast.success("Scope 3 körs om och sparas");
+      await refreshJobData();
+    } catch (error) {
+      console.error("Error rerunning and saving scope3 job:", error);
+      toast.error(
+        `Ett fel uppstod vid omkörning: ${
+          error instanceof Error ? error.message : "Okänt fel"
+        }`
+      );
+    }
+  };
+
   return (
     <div className="space-y-3 text-sm">
       {/* Show URL if available */}
@@ -728,9 +831,9 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         );
       })}
 
-      {/* Rerun Button */}
+      {/* Rerun Buttons */}
       {effectiveJob && effectiveJob.queueId && effectiveJob.id && (
-        <div className="mt-6 pt-4 border-t border-gray-03">
+        <div className="mt-6 pt-4 border-t border-gray-03 flex flex-wrap gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -740,6 +843,28 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <RotateCcw className="w-4 h-4 mr-2" />
             Kör om jobbet
           </Button>
+          {isFollowUpScope12Job && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRerunAndSaveScope12}
+              className="text-green-03 hover:bg-green-03/10"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Kör om och spara Scope 1+2
+            </Button>
+          )}
+          {isFollowUpScope3Job && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRerunAndSaveScope3}
+              className="text-green-03 hover:bg-green-03/10"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Kör om och spara Scope 3
+            </Button>
+          )}
         </div>
       )}
     </div>

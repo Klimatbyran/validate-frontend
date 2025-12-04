@@ -1,75 +1,75 @@
 import { useState, useEffect, useRef } from 'react';
-import { fetchProcessesByCompany, fetchProcessById, fetchQueueStats } from '@/lib/api';
+import { fetchCompaniesPage, fetchProcessById, fetchQueueStats } from '@/lib/api';
 import type { CustomAPICompany } from '@/lib/types';
-
-// Per-job details are fetched on demand in dialogs; no helper needed here
-
-// On-demand enhancement removed from startup; details are fetched per-dialog
-
-// Delta enhancement removed; details are fetched on demand in dialogs
 
 export function useCompanies() {
   const [companies, setCompanies] = useState<CustomAPICompany[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMorePages, setHasMorePages] = useState(true);
   const isFetchingRef = useRef(false);
-  // no delta enhancement state needed
   const processPollersRef = useRef<Map<string, { interval: number; max: number; isPolling: boolean; stopped: boolean }>>(new Map());
+  const PAGE_SIZE = 300;
 
   useEffect(() => {
-    let isMounted = true;
-
-    // Slow refresh interval (ms) - just to discover new processes occasionally
     const SLOW_REFRESH_MS = 60000;
     let intervalId: number | undefined;
 
     const fetchAndEnhance = async () => {
+      console.log('useCompanies - fetchAndEnhance called, isFetchingRef.current:', isFetchingRef.current);
+      
       if (isFetchingRef.current) {
-        return; // Skip if a previous cycle is still running
+        console.log('useCompanies - already fetching, skipping');
+        return;
       }
       isFetchingRef.current = true;
+      
       try {
-        // Only show loading spinner on first load
         setError(null);
 
-        if (import.meta.env.DEV) console.log('useCompanies - fetching basic company data...');
-        const data = await fetchProcessesByCompany();
+        console.log('useCompanies - fetching basic company data...');
 
-        if (!isMounted) return;
+        const firstPageCompanies = await fetchCompaniesPage(1, PAGE_SIZE);
+        
+        console.log('useCompanies - fetch completed successfully');
+        console.log('useCompanies - raw fetch result length:', firstPageCompanies?.length);
+        
+        // Force a new array reference to ensure React detects the change
+        const data = Array.isArray(firstPageCompanies) ? [...firstPageCompanies] : [];
 
-        if (import.meta.env.DEV) {
-          console.log('useCompanies - fetched companies:', data.length);
-          if (data.length > 0) {
-            console.log('useCompanies - first company:', data[0]);
-          }
+        console.log('useCompanies - processed data length:', data.length);
+        
+        if (data.length > 0) {
+          console.log('useCompanies - first company:', data[0]);
         }
 
-        // Initial load: render fast and start process pollers (no per-job enhancement)
-        if (data.length > 0 && !hasLoadedOnce) {
-          setCompanies(data);
-          setHasLoadedOnce(true);
-          startProcessPollers(data);
-        } else if (data.length > 0) {
-          // Subsequent slow refresh: update base data only (on-demand details elsewhere)
-          if (!isMounted) return;
-          setCompanies(data);
-          startProcessPollers(data);
-        }
+        console.log('useCompanies - setting hasMorePages:', data.length === PAGE_SIZE);
+        setHasMorePages(data.length === PAGE_SIZE);
+
+        console.log('useCompanies - about to setCompanies with', data.length, 'companies');
+        
+        // Set companies with forced new reference - React will handle unmounted components gracefully
+        setCompanies([...data]);
+        
+        console.log('useCompanies - setCompanies called successfully');
+        
+        startProcessPollers(data);
+        
       } catch (err) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to fetch companies');
-          console.error('useCompanies - error:', err);
-        }
+        console.error('useCompanies - fetch error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch companies');
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        console.log('useCompanies - setting isLoading to false');
+        setIsLoading(false);
         isFetchingRef.current = false;
+        console.log('useCompanies - fetchAndEnhance complete');
       }
     };
 
     function startProcessPollers(currentCompanies: CustomAPICompany[]) {
+      console.log('useCompanies - starting process pollers for', currentCompanies.length, 'companies');
       const pollers = processPollersRef.current;
       for (const company of currentCompanies) {
         for (const process of company.processes) {
@@ -87,20 +87,17 @@ export function useCompanies() {
       const pollers = processPollersRef.current;
       const state = pollers.get(processId);
       if (!state || state.stopped || state.isPolling) return;
+      
       state.isPolling = true;
       try {
         const updated = await fetchProcessById(processId);
-        if (!isMounted) {
-          state.stopped = true;
-          return;
-        }
         if (updated) {
-          // Merge the updated process into the local companies state
           setCompanies((prev) => {
-            return prev.map((c) => ({
+            const newCompanies = prev.map((c) => ({
               ...c,
               processes: c.processes.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)),
             }));
+            return newCompanies;
           });
           if (updated.status === 'completed' || updated.status === 'failed') {
             state.stopped = true;
@@ -113,39 +110,37 @@ export function useCompanies() {
         state.isPolling = false;
         const next = Math.min(Math.floor(state.interval * 1.5), state.max);
         state.interval = next;
-        if (isMounted && !state.stopped) {
+        if (!state.stopped) {
           setTimeout(() => pollProcess(processId), state.interval);
         }
       }
     }
 
-    // Allow external triggers to force an immediate refresh (e.g., after creating runs)
     const onKick = () => {
+      console.log('useCompanies - external refresh triggered');
       fetchAndEnhance();
     };
     window.addEventListener('companies:refresh', onKick);
 
-    // Initial load
+    console.log('useCompanies - starting initial load');
     setIsLoading(true);
     fetchAndEnhance();
 
-    // Slow refresh to discover new processes
     intervalId = window.setInterval(fetchAndEnhance, SLOW_REFRESH_MS);
 
-    // Pause polling when tab is hidden; resume when visible
     const onVisibility = () => {
       if (document.hidden) {
         if (intervalId) window.clearInterval(intervalId);
         intervalId = undefined;
       } else {
-        // Resume slow refresh without immediate fetch
         intervalId = window.setInterval(fetchAndEnhance, SLOW_REFRESH_MS);
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
 
+    // Cleanup function
     return () => {
-      isMounted = false;
+      console.log('useCompanies - cleanup');
       if (intervalId) window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('companies:refresh', onKick);
@@ -156,9 +151,37 @@ export function useCompanies() {
     };
   }, []);
 
-  // Lightweight trigger: poll queue stats and refresh companies only if counts changed
+  async function loadMoreCompanies() {
+    if (isLoadingMore || !hasMorePages) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+    setError(null);
+
+    try {
+      const nextPage = currentPage + 1;
+      const nextPageCompanies = await fetchCompaniesPage(nextPage, PAGE_SIZE);
+
+      if (nextPageCompanies.length === 0) {
+        setHasMorePages(false);
+        return;
+      }
+
+      setCompanies((previousCompanies) => [...previousCompanies, ...nextPageCompanies]);
+      setCurrentPage(nextPage);
+
+      if (nextPageCompanies.length < PAGE_SIZE) {
+        setHasMorePages(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load more companies');
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
+
   useEffect(() => {
-    let isMounted = true;
     let timer: number | undefined;
     let busy = false;
     const prev = new Map<string, string>();
@@ -168,7 +191,6 @@ export function useCompanies() {
       busy = true;
       try {
         const stats = await fetchQueueStats();
-        if (!isMounted) return;
         let changed = false;
         for (const s of stats) {
           const cur = JSON.stringify(s.status);
@@ -177,7 +199,6 @@ export function useCompanies() {
           prev.set(s.name, cur);
         }
         if (changed) {
-          // ask the main effect to refresh now
           window.dispatchEvent(new CustomEvent('companies:refresh'));
         }
       } catch {
@@ -189,10 +210,9 @@ export function useCompanies() {
 
     timer = window.setInterval(tick, 2000);
     return () => {
-      isMounted = false;
       if (timer) window.clearInterval(timer);
     };
   }, []);
 
-  return { companies, isLoading, error };
+  return { companies, isLoading, error, loadMoreCompanies, isLoadingMore, hasMorePages };
 }

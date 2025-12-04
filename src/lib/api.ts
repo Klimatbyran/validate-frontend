@@ -440,6 +440,58 @@ export function fetchProcessesByCompany(): Promise<CustomAPICompany[]> {
   });
 }
 
+export async function fetchCompaniesPage(
+  page: number,
+  pageSize: number
+): Promise<CustomAPICompany[]> {
+  const safePage = Math.max(1, page);
+  const safePageSize = Math.max(1, pageSize);
+
+  const response = await api.get<unknown>("/processes/companies", {
+    params: {
+      page: safePage,
+      pageSize: safePageSize,
+    },
+  });
+
+  const data = response.data as any;
+
+  // Try several common paginated shapes in a deterministic order
+  const directCompanies = Array.isArray(data?.companies) ? data.companies : null;
+  const nestedCompanies = Array.isArray(data?.data?.companies)
+    ? data.data.companies
+    : null;
+  const itemsArray = Array.isArray(data?.items) ? data.items : null;
+  const resultsArray = Array.isArray(data?.results) ? data.results : null;
+
+  if (directCompanies) {
+    return directCompanies as CustomAPICompany[];
+  }
+  if (nestedCompanies) {
+    return nestedCompanies as CustomAPICompany[];
+  }
+  if (itemsArray) {
+    return itemsArray as CustomAPICompany[];
+  }
+  if (resultsArray) {
+    return resultsArray as CustomAPICompany[];
+  }
+
+  // Fallback: backend might still return a plain array at the top level
+  if (Array.isArray(data)) {
+    return data as CustomAPICompany[];
+  }
+
+  if (import.meta.env.DEV) {
+    console.warn(
+      "fetchCompaniesPage: unexpected response shape, expected an array or a { companies | items | results } wrapper",
+      data
+    );
+  }
+
+  return [];
+}
+
 export function fetchProcessById(processId: string): Promise<CustomAPIProcess | null> {
   return new Promise((resolve, reject) => {
     try {

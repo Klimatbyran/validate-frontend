@@ -45,6 +45,7 @@ export default defineConfig({
       // Other /api calls
       "/api": {
         target: "https://stage-pipeline-api.klimatkollen.se",
+        //target: "http://localhost:3001",
         changeOrigin: true,
         secure: false,
         timeout: 30000, // Increase timeout to 30 seconds

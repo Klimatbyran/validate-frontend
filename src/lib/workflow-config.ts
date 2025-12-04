@@ -38,15 +38,15 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
 
   // AI Data Extraction
   guessWikidata: "Wikidata",
-  diffReportingPeriods: "Räkenskapsår",
-  extractEmissions: "Utsläppsdata",
+  diffReportingPeriods: "Diff rapportperioder",
+  extractEmissions: "Extrahera utsläpp",
   followUpScope12: "Uppföljning Scope 1&2",
   followUpScope3: "Uppföljning Scope 3",
   followUpBiogenic: "Uppföljning Biogenisk",
   followUpEconomy: "Uppföljning Ekonomi",
   followUpGoals: "Uppföljning Mål",
   followUpInitiatives: "Uppföljning Initiativ",
-  followUpFiscalYear: "Uppföljning Räkenskapsår",
+  followUpFiscalYear: "Uppföljning fiscal year",
   followUpCompanyTags: "Uppföljning Företagstaggar",
   followUpBaseYear: "Uppföljning Basår",
   followUpIndustryGics: "Uppföljning Bransch GICS",
@@ -57,7 +57,7 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   checkDB: "DB Kontroll",
 
   // Finalize
-  sendCompanyLink: "Granskning",
+  sendCompanyLink: "Skicka företagslänk",
   saveToAPI: "API Lagring",
   wikipediaUpload: "Wikipedia",
   diffTags: "Taggar",

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -93,9 +93,7 @@ function YearRow({
     });
   }, [yearData]);
 
-  // Get a canonical threadId for this run:
-  // Prefer the worker/queue threadId stored in job.data.threadId, then job.threadId,
-  // and finally fall back to the yearData/thread-level threadId if needed.
+  // Get a canonical threadId for this run
   const currentThreadId =
     yearData.jobs?.[0]?.data?.threadId ||
     yearData.jobs?.[0]?.threadId ||
@@ -103,7 +101,6 @@ function YearRow({
   const currentLatestTimestamp = yearData.latestTimestamp || 0;
 
   const hasPreviousRuns = allRuns && allRuns.length > 1;
-  // Previous runs are all runs that are not the current run (different threadId or older timestamp)
   const previousRuns =
     hasPreviousRuns && allRuns
       ? allRuns.filter((run) => {
@@ -112,7 +109,6 @@ function YearRow({
             run.jobs?.[0]?.threadId ||
             (run as any).threadId;
           const runTimestamp = run.latestTimestamp || 0;
-          // Exclude the current run (same threadId and timestamp)
           return !(
             runThreadId === currentThreadId &&
             runTimestamp === currentLatestTimestamp
@@ -195,10 +191,7 @@ function YearRow({
                 <div className="flex-1 flex flex-wrap gap-1.5">
                   {getQueuesForPipelineStep(step.id).map((queueId) => {
                     const fieldName = getQueueDisplayName(queueId);
-                    // Find the specific job for this field using direct queueId lookup
                     const job = findJobByQueueId(queueId, yearData);
-                    // A job is considered a "re-run" if there exists more than one job
-                    // for this queueId with the same threadId across all runs (including this one)
                     const allJobsForQueueAndThread =
                       !!currentThreadId && allRuns
                         ? allRuns.flatMap((run) =>
@@ -218,7 +211,6 @@ function YearRow({
                       !!currentThreadId &&
                       Array.isArray(allJobsForQueueAndThread) &&
                       allJobsForQueueAndThread.length > 1;
-                    // Check if job is actively processing - either has processedOn or status is "active"
                     const isActive =
                       (job?.processedOn && !job?.finishedOn) ||
                       job?.status === "active";
@@ -275,10 +267,7 @@ function YearRow({
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {getQueuesForPipelineStep(step.id).map((queueId) => {
                   const fieldName = getQueueDisplayName(queueId);
-                  // Find the specific job for this field using direct queueId lookup
                   const job = findJobByQueueId(queueId, yearData);
-                  // Mark as "re-run" if there is more than one job for this queueId
-                  // with the same threadId across all runs (including this one)
                   const allJobsForQueueAndThread =
                     !!currentThreadId && allRuns
                       ? allRuns.flatMap((run) =>
@@ -298,7 +287,6 @@ function YearRow({
                     !!currentThreadId &&
                     Array.isArray(allJobsForQueueAndThread) &&
                     allJobsForQueueAndThread.length > 1;
-                  // Check if job is actively processing - either has processedOn or status is "active"
                   const isActive =
                     (job?.processedOn && !job?.finishedOn) ||
                     job?.status === "active";
@@ -347,7 +335,6 @@ function YearRow({
           </div>
           {previousRuns.map((previousRun, idx) => {
             const prevThreadId = (previousRun as any).threadId || previousRun.jobs?.[0]?.threadId || previousRun.jobs?.[0]?.data?.threadId;
-            // Calculate stats outside of useMemo to avoid hooks rule violation
             const pipelineSteps = getAllPipelineSteps();
             const prevYearStepStats = pipelineSteps.map((step) => {
               const stats = calculateStepJobStats(previousRun, step.id);
@@ -361,7 +348,6 @@ function YearRow({
 
             return (
               <div key={`prev-${prevThreadId}-${idx}`} className="border-t border-gray-03/50">
-                {/* Previous Run Header */}
                 <div className="px-4 py-2 bg-gray-03/20 border-b border-gray-03/50 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-gray-02">Tidigare körning</span>
@@ -378,7 +364,6 @@ function YearRow({
                   </div>
                 </div>
 
-                {/* Previous Run Swimlane - Compact View */}
                 {expandLevel === "compact" && (
                   <div className="p-4 space-y-2 bg-gray-05/50">
                     {prevYearStepStats.map((step, stepIndex) => (
@@ -396,15 +381,15 @@ function YearRow({
                               const isActive = (job?.processedOn && !job?.finishedOn) || job?.status === "active";
 
                               return (
-                    <button
-                      key={queueId}
-                      onClick={() => onFieldClick(queueId, previousRun)}
-                      className={`
-                        relative px-2 py-1 rounded border text-[10px] font-medium
-                        hover:shadow-sm hover:scale-105 transition-all opacity-75
-                        ${getStatusDisplay(job, "compact", !!isActive).styles}
-                      `}
-                    >
+                                <button
+                                  key={queueId}
+                                  onClick={() => onFieldClick(queueId, previousRun)}
+                                  className={`
+                                    relative px-2 py-1 rounded border text-[10px] font-medium
+                                    hover:shadow-sm hover:scale-105 transition-all opacity-75
+                                    ${getStatusDisplay(job, "compact", !!isActive).styles}
+                                  `}
+                                >
                                   <span className="flex items-center gap-1">
                                     <span
                                       className={`${
@@ -430,7 +415,6 @@ function YearRow({
                   </div>
                 )}
 
-                {/* Previous Run Swimlane - Full Expanded View */}
                 {expandLevel === "full" && (
                   <div className="p-4 bg-gray-05/50 space-y-4">
                     {prevYearStepStats.map((step, stepIndex) => (
@@ -488,7 +472,13 @@ function YearRow({
   );
 }
 
-function CompanyCard({ company }: { company: SwimlaneCompany }) {
+function CompanyCard({
+  company,
+  positionInList,
+}: {
+  company: SwimlaneCompany;
+  positionInList: number;
+}) {
   const {
     currentView: expandLevel,
     setCurrentView: setExpandLevel,
@@ -516,7 +506,6 @@ function CompanyCard({ company }: { company: SwimlaneCompany }) {
   return (
     <>
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] overflow-hidden hover:shadow-md transition-shadow">
-        {/* Company Header */}
         <div className="w-full px-4 py-3 bg-gray-03/50 border-b border-gray-03 flex items-center justify-between">
           <button
             onClick={cycleView}
@@ -532,7 +521,12 @@ function CompanyCard({ company }: { company: SwimlaneCompany }) {
               <ChevronDown className="w-5 h-5 text-green-03" />
             )}
             <div className="text-left">
-              <h3 className="font-bold text-gray-01">{company.name}</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-gray-02">
+                  {positionInList}.
+                </span>
+                <h3 className="font-bold text-gray-01">{company.name}</h3>
+              </div>
               <div className="flex items-center gap-2 text-xs text-gray-02 mt-1">
                 <TrendingUp className="w-3 h-3" />
                 <span>
@@ -554,9 +548,7 @@ function CompanyCard({ company }: { company: SwimlaneCompany }) {
           </div>
         </div>
 
-        {/* Years - Group by year, show latest run first, previous runs when expanded */}
         {(() => {
-          // Group years by year number
           const yearsByYear = (company.years || []).reduce((acc, yearData) => {
             const year = yearData.year;
             if (!acc[year]) {
@@ -566,14 +558,12 @@ function CompanyCard({ company }: { company: SwimlaneCompany }) {
             return acc;
           }, {} as Record<number, typeof company.years>);
 
-          // Sort years descending
           const sortedYearNumbers = Object.keys(yearsByYear)
             .map(Number)
             .sort((a, b) => b - a);
 
           return sortedYearNumbers.map((year) => {
             const runsForYear = yearsByYear[year];
-            // Sort runs by latestTimestamp (newest first)
             const sortedRuns = [...runsForYear].sort((a, b) => 
               (b.latestTimestamp || 0) - (a.latestTimestamp || 0)
             );
@@ -589,7 +579,6 @@ function CompanyCard({ company }: { company: SwimlaneCompany }) {
                   yearData={latestRun}
                   expandLevel={expandLevel}
                   onFieldClick={(queueId, runData) => {
-                    // Use the specific run data if provided (from previous runs), otherwise use latest run
                     const targetRun = runData || latestRun;
                     const job = targetRun.jobs?.find(
                       (j: QueueJob) => j.queueId === queueId
@@ -626,11 +615,9 @@ function CompanyCard({ company }: { company: SwimlaneCompany }) {
         onOpenChange={setIsDialogOpen}
         onApprove={() => {
           // Handle approve action
-          // TODO: Implement approve functionality
         }}
         onRetry={() => {
           // Handle retry action
-          // TODO: Implement retry functionality
         }}
       />
     </>
@@ -663,7 +650,6 @@ function OverviewStats({ companies }: { companies: SwimlaneCompany[] }) {
 
       {isExpanded && (
         <>
-          {/* Top Level Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <StatCard
               value={stats.totalCompanies}
@@ -684,7 +670,6 @@ function OverviewStats({ companies }: { companies: SwimlaneCompany[] }) {
             />
           </div>
 
-          {/* Field Status Breakdown */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <CompactStatCard
               value={stats.totalFields}
@@ -713,7 +698,6 @@ function OverviewStats({ companies }: { companies: SwimlaneCompany[] }) {
             />
           </div>
 
-          {/* Pipeline Steps Stats */}
           <div className="border-t border-gray-03 pt-4">
             <h3 className="text-sm font-semibold text-gray-01 mb-3">
               Pipeline Steps Overview
@@ -739,9 +723,6 @@ function OverviewStats({ companies }: { companies: SwimlaneCompany[] }) {
   );
 }
 
-// convertGroupedCompaniesToSwimlaneFormat is now imported from workflow-utils
-
-// Helper function to check if a company has any jobs waiting for approval
 function hasPendingApproval(company: SwimlaneCompany): boolean {
   return company.years.some((year) =>
     (year.jobs || []).some((job: QueueJob) => {
@@ -752,10 +733,213 @@ function hasPendingApproval(company: SwimlaneCompany): boolean {
 }
 
 export function SwimlaneQueueStatus() {
-  const { companies, isLoading, error } = useCompanies();
+  const {
+    companies,
+    isLoading,
+    error,
+    loadMoreCompanies,
+    isLoadingMore,
+    hasMorePages,
+  } = useCompanies();
   const [showOnlyPendingApproval, setShowOnlyPendingApproval] = useState(false);
 
-  const handleRerunByWorker = (workerName: "scope1+2" | "scope3", limit = 5) => {
+  // Add debugging useEffect to track companies changes
+  useEffect(() => {
+    console.log('SwimlaneQueueStatus - companies changed:', {
+      companiesLength: companies?.length || 0,
+      isLoading,
+      error,
+      companiesReference: companies,
+      companiesExist: !!companies,
+      companiesIsArray: Array.isArray(companies)
+    });
+  }, [companies, isLoading, error]);
+
+  // Convert CustomAPICompany to SwimlaneCompany format
+  const swimlaneCompanies = useMemo(() => {
+    console.log('SwimlaneQueueStatus - swimlaneCompanies memo triggered');
+    console.log('SwimlaneQueueStatus - converting companies:', companies);
+    
+    if (!companies || companies.length === 0) {
+      console.log('SwimlaneQueueStatus - no companies, returning empty array');
+      return [];
+    }
+
+    const getCompanyLatestTimestamp = (company: { years?: Array<{ latestTimestamp?: number }> }): number => {
+      if (!company.years || company.years.length === 0) return 0;
+      return Math.max(...company.years.map((year) => year.latestTimestamp || 0));
+    };
+    
+    const converted = companies
+      .map((company) => {
+        console.log('SwimlaneQueueStatus - processing company:', company.company, 'with', company.processes.length, 'processes');
+        
+        const companyName = 
+          company.company ||
+          company.processes?.[0]?.company ||
+          "Unknown";
+
+        const processesByYear = company.processes.reduce((acc, process) => {
+          const year = process.year || new Date().getFullYear();
+          if (!acc[year]) {
+            acc[year] = [];
+          }
+          acc[year].push(process);
+          return acc;
+        }, {} as Record<number, typeof company.processes>);
+
+        const getProcessTimestamp = (process: typeof company.processes[0]): number => {
+          if (process.startedAt) return process.startedAt;
+          if (process.finishedAt) return process.finishedAt;
+          if (process.jobs && process.jobs.length > 0) {
+            const latestJobTimestamp = Math.max(
+              ...process.jobs.map((job) => job.timestamp || 0)
+            );
+            if (latestJobTimestamp > 0) return latestJobTimestamp;
+          }
+          return 0;
+        };
+
+        const years = [];
+        Object.entries(processesByYear).forEach(([yearStr, yearProcesses]) => {
+          const year = parseInt(yearStr);
+          const sortedProcesses = [...yearProcesses].sort((a, b) => 
+            getProcessTimestamp(b) - getProcessTimestamp(a)
+          );
+
+          sortedProcesses.forEach((process, index) => {
+            const threadId =
+              process.id ||
+              (process as any)?.threadId ||
+              (process as any)?.processId;
+            
+            years.push({
+              year,
+              attempts: yearProcesses.length,
+              fields: {},
+              jobs: (process.jobs || []).map(job => {
+                const convertedJob = {
+                  ...job,
+                  queueId: job.queue,
+                  opts: { attempts: (job as any).attemptsMade ?? 0 },
+                  threadId: (job as any)?.threadId ?? (job as any)?.processId ?? threadId,
+                  data: {
+                    ...(job as any)?.jobData,
+                    ...job.data,
+                    company: companyName,
+                    companyName: companyName,
+                    year: year,
+                    threadId:
+                      (job as any)?.threadId ??
+                      (job as any)?.processId ??
+                      threadId ??
+                      (job as any)?.data?.threadId ??
+                      (job as any)?.jobData?.threadId,
+                    approved: job.approval?.approved || false,
+                    autoApprove: job.autoApprove,
+                    approval: job.approval || (job as any)?.jobData?.approval || (job as any)?.data?.approval
+                  },
+                  isFailed: job.status === "failed",
+                  finishedOn: job.finishedOn,
+                  processedOn: job.processedBy ? job.timestamp : undefined,
+                  timestamp: job.timestamp,
+                  returnValue: job.returnvalue,
+                  attempts: job.attemptsMade,
+                  stacktrace: job.stacktrace || []
+                };
+                
+                return convertedJob;
+              }),
+              latestTimestamp: getProcessTimestamp(process),
+              threadId: threadId,
+              runIndex: index,
+              isLatestRun: index === 0,
+            });
+          });
+        });
+
+        years.sort((a, b) => {
+          if (a.year !== b.year) {
+            const aHasApproval = (a.jobs || []).some((job) => {
+              const status = getJobStatusFromUtils(job);
+              return status === "needs_approval";
+            });
+            const bHasApproval = (b.jobs || []).some((job) => {
+              const status = getJobStatusFromUtils(job);
+              return status === "needs_approval";
+            });
+            
+            if (aHasApproval && !bHasApproval) return -1;
+            if (!aHasApproval && bHasApproval) return 1;
+            
+            return b.year - a.year;
+          }
+          
+          const aRunIndex = (a as any).runIndex ?? 0;
+          const bRunIndex = (b as any).runIndex ?? 0;
+          return aRunIndex - bRunIndex;
+        });
+
+        const companyId = 
+          company.company ||
+          company.wikidataId ||
+          company.processes?.[0]?.id ||
+          `${companyName}-${company.processes?.[0]?.startedAt || Date.now()}`;
+
+        return {
+          id: companyId,
+          name: companyName,
+          years
+        };
+      })
+      .filter((company) => {
+        const hasValidYears = company.years && company.years.length > 0;
+        if (!hasValidYears) {
+          console.warn('SwimlaneQueueStatus - filtering out company with no years:', company.name, company.id);
+        }
+        return hasValidYears;
+      })
+      .sort((a, b) => {
+        const aLatest = getCompanyLatestTimestamp(a);
+        const bLatest = getCompanyLatestTimestamp(b);
+        return bLatest - aLatest;
+      });
+
+    console.log('SwimlaneQueueStatus - converted companies count:', converted.length);
+    return converted;
+  }, [companies]);
+
+  // Add another debug effect to track swimlaneCompanies changes
+  useEffect(() => {
+    console.log('SwimlaneQueueStatus - swimlaneCompanies updated:', {
+      length: swimlaneCompanies.length,
+      companies: swimlaneCompanies.map(c => ({ id: c.id, name: c.name, yearsCount: c.years.length }))
+    });
+  }, [swimlaneCompanies]);
+
+  // Filter companies based on pending approval filter
+  const filteredCompanies = useMemo(() => {
+    console.log('SwimlaneQueueStatus - filtering companies, showOnlyPendingApproval:', showOnlyPendingApproval);
+    if (!showOnlyPendingApproval) {
+      return swimlaneCompanies;
+    }
+    return swimlaneCompanies.filter(hasPendingApproval);
+  }, [swimlaneCompanies, showOnlyPendingApproval]);
+
+  // Add debug effect for filtered companies
+  useEffect(() => {
+    console.log('SwimlaneQueueStatus - filteredCompanies updated:', {
+      length: filteredCompanies.length,
+      showOnlyPendingApproval
+    });
+  }, [filteredCompanies, showOnlyPendingApproval]);
+
+  // Count companies with pending approval
+  const pendingApprovalCount = useMemo(() => {
+    return swimlaneCompanies.filter(hasPendingApproval).length;
+  }, [swimlaneCompanies]);
+
+  const handleRerunByWorker = (workerName: "scope1+2" | "scope3", limit = 'all') => {
     toast.promise(
       fetch("/api/queues/rerun-by-worker", {
         method: "POST",
@@ -783,216 +967,9 @@ export function SwimlaneQueueStatus() {
     );
   };
 
-  // Convert CustomAPICompany to SwimlaneCompany format
-  const swimlaneCompanies = React.useMemo(() => {
-    console.log('SwimlaneQueueStatus - converting companies:', companies);
-    if (!companies || companies.length === 0) return [];
-    
-    return companies
-      .map((company) => {
-        console.log('SwimlaneQueueStatus - processing company:', company.company, 'with', company.processes.length, 'processes');
-        if (company.processes.length > 0) {
-          console.log('SwimlaneQueueStatus - first process:', company.processes[0]);
-          if (company.processes[0].jobs.length > 0) {
-            const firstJob = company.processes[0].jobs[0];
-            console.log('SwimlaneQueueStatus - first job (full structure):', firstJob);
-            console.log('SwimlaneQueueStatus - first job (key fields):', {
-              id: firstJob.id,
-              status: firstJob.status,
-              finishedOn: firstJob.finishedOn,
-              processedBy: firstJob.processedBy,
-              approval: firstJob.approval,
-              autoApprove: firstJob.autoApprove,
-              returnvalue: firstJob.returnvalue,
-              data: firstJob.data
-            });
-          }
-        }
-
-        // Use process.company directly (from /process/companies endpoint)
-        // Only fallback to "Unknown" if company is missing from both company and process level
-        const companyName = 
-          company.company ||
-          company.processes?.[0]?.company ||
-          "Unknown";
-
-        // Group processes by year
-        const processesByYear = company.processes.reduce((acc, process) => {
-          const year = process.year || new Date().getFullYear();
-          if (!acc[year]) {
-            acc[year] = [];
-          }
-          acc[year].push(process);
-          return acc;
-        }, {} as Record<number, typeof company.processes>);
-
-        // Convert to SwimlaneYearData format
-        // Group processes by year, then create a year entry for each process (run)
-        const years: (SwimlaneYearData & { threadId?: string; runIndex?: number; isLatestRun?: boolean })[] = [];
-        Object.entries(processesByYear).forEach(([yearStr, yearProcesses]) => {
-          const year = parseInt(yearStr);
-          // Sort processes by startedAt (newest first)
-          const sortedProcesses = [...yearProcesses].sort((a, b) => 
-            (b.startedAt || 0) - (a.startedAt || 0)
-          );
-
-          // Create a year entry for each process (run)
-          sortedProcesses.forEach((process, index) => {
-            const threadId = process.id || process.threadId || (process as any)?.processId;
-            
-            years.push({
-              year,
-              attempts: yearProcesses.length,
-              fields: {}, // We'll populate this based on the jobs in the processes
-              // Include jobs from this specific process (run)
-              jobs: (process.jobs || []).map(job => {
-                const convertedJob = {
-                  ...job,
-                  queueId: job.queue,
-                  opts: { attempts: (job as any).attemptsMade ?? 0 },
-                  // Prefer top-level threadId for all consumers
-                  threadId: (job as any)?.threadId ?? (job as any)?.processId ?? threadId,
-                  data: {
-                    // Merge worker data from both shapes if present
-                    ...(job as any)?.jobData,
-                    ...job.data,
-                    // Use resolved company name from process level
-                    company: companyName,
-                    companyName: companyName,
-                    year: year,
-                    // Only preserve worker-provided threadId from either shape
-                    threadId:
-                      (job as any)?.threadId ??
-                      (job as any)?.processId ??
-                      threadId ??
-                      (job as any)?.data?.threadId ??
-                      (job as any)?.jobData?.threadId,
-                    // Map approval status properly - include full approval object
-                    approved: job.approval?.approved || false,
-                    autoApprove: job.autoApprove,
-                    approval: job.approval || (job as any)?.jobData?.approval || (job as any)?.data?.approval
-                  },
-                  // Map status fields properly for getJobStatus function
-                  isFailed: job.status === "failed",
-                  finishedOn: job.finishedOn,
-                  processedOn: job.processedBy ? job.timestamp : undefined,
-                  // Ensure we have the right timestamp
-                  timestamp: job.timestamp,
-                  // Map return value data for job details display
-                  returnValue: job.returnvalue,
-                  // Map other important fields
-                  attempts: job.attemptsMade,
-                  stacktrace: job.stacktrace || []
-                };
-                
-                // Debug: log the converted job and its calculated status
-                if (job.id === company.processes[0]?.jobs[0]?.id && index === 0) {
-                  console.log('SwimlaneQueueStatus - converted job:', convertedJob);
-                  console.log('SwimlaneQueueStatus - job status calculation:', {
-                    finishedOn: convertedJob.finishedOn,
-                    isFailed: convertedJob.isFailed,
-                    processedOn: convertedJob.processedOn,
-                    approved: convertedJob.data.approved,
-                    autoApprove: convertedJob.data.autoApprove
-                  });
-                  console.log('SwimlaneQueueStatus - return value data:', {
-                    hasReturnValue: !!convertedJob.returnValue,
-                    returnValueType: typeof convertedJob.returnValue,
-                    returnValueKeys: convertedJob.returnValue ? Object.keys(convertedJob.returnValue) : []
-                  });
-                  console.log('SwimlaneQueueStatus - threadId sources:', {
-                    rawDataThreadId: (job as any)?.data?.threadId,
-                    rawJobDataThreadId: (job as any)?.jobData?.threadId,
-                    mergedThreadId: convertedJob.data.threadId,
-                  });
-                }
-                
-                return convertedJob;
-              }),
-              latestTimestamp: process.startedAt || 0,
-              // Add threadId and run index for identification
-              threadId: threadId,
-              runIndex: index,
-              isLatestRun: index === 0,
-            });
-          });
-        });
-
-        // Sort years: first by year (descending), then by runIndex (ascending - latest first)
-        years.sort((a, b) => {
-          // First sort by year
-          if (a.year !== b.year) {
-            // Check if either year has jobs needing approval
-            const aHasApproval = (a.jobs || []).some((job: QueueJob) => {
-              const status = getJobStatusFromUtils(job);
-              return status === "needs_approval";
-            });
-            const bHasApproval = (b.jobs || []).some((job: QueueJob) => {
-              const status = getJobStatusFromUtils(job);
-              return status === "needs_approval";
-            });
-            
-            // Prioritize years with pending approval
-            if (aHasApproval && !bHasApproval) return -1;
-            if (!aHasApproval && bHasApproval) return 1;
-            
-            // Otherwise sort by year descending
-            return b.year - a.year;
-          }
-          
-          // Within the same year, sort by runIndex (latest first, index 0)
-          const aRunIndex = (a as any).runIndex ?? 0;
-          const bRunIndex = (b as any).runIndex ?? 0;
-          return aRunIndex - bRunIndex;
-        });
-
-        // Generate a unique ID - prefer company name, fallback to process ID or wikidataId
-        const companyId = 
-          company.company ||
-          company.wikidataId ||
-          company.processes?.[0]?.id ||
-          `${companyName}-${company.processes?.[0]?.startedAt || Date.now()}`;
-
-        console.log('SwimlaneQueueStatus - company identifier resolution:', {
-          originalCompany: company.company,
-          processCompany: company.processes?.[0]?.company,
-          resolvedName: companyName,
-          resolvedId: companyId,
-          hasProcesses: company.processes.length > 0,
-          yearsCount: years.length
-        });
-
-        return {
-          id: companyId,
-          name: companyName,
-          years
-        };
-      })
-      .filter((company) => {
-        // Filter out companies with no valid years data
-        const hasValidYears = company.years && company.years.length > 0;
-        if (!hasValidYears) {
-          console.warn('SwimlaneQueueStatus - filtering out company with no years:', company.name, company.id);
-        }
-        return hasValidYears;
-      });
-  }, [companies]);
-
-  // Filter companies based on pending approval filter
-  const filteredCompanies = React.useMemo(() => {
-    if (!showOnlyPendingApproval) {
-      return swimlaneCompanies;
-    }
-    return swimlaneCompanies.filter(hasPendingApproval);
-  }, [swimlaneCompanies, showOnlyPendingApproval]);
-
-  // Count companies with pending approval
-  const pendingApprovalCount = React.useMemo(() => {
-    return swimlaneCompanies.filter(hasPendingApproval).length;
-  }, [swimlaneCompanies]);
-
-  // Show loading state
-  if (isLoading) {
+  // Show loading state only until we have any companies
+  if (isLoading && (!companies || companies.length === 0)) {
+    console.log('SwimlaneQueueStatus - showing loading state');
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center space-y-4">
@@ -1008,6 +985,7 @@ export function SwimlaneQueueStatus() {
 
   // Show error state
   if (error) {
+    console.log('SwimlaneQueueStatus - showing error state:', error);
     return (
       <div className="flex items-center justify-center p-4">
         <div className="text-center">
@@ -1019,6 +997,7 @@ export function SwimlaneQueueStatus() {
 
   // Show empty state
   if (!companies || companies.length === 0) {
+    console.log('SwimlaneQueueStatus - showing empty state');
     return (
       <div className="flex items-center justify-center p-4">
         <div className="text-center">
@@ -1028,9 +1007,12 @@ export function SwimlaneQueueStatus() {
     );
   }
 
+  console.log('SwimlaneQueueStatus - rendering main component with', filteredCompanies.length, 'companies');
+
   return (
     <div className="space-y-6">
-      {/* Filter Bar */}
+ 
+
       <div className="flex flex-col md:flex-row md:items-center md:justify-between bg-gray-04/50 rounded-lg p-4 border border-gray-03 gap-3">
         <div className="flex items-center gap-3">
           <Filter className="w-5 h-5 text-gray-02" />
@@ -1094,9 +1076,28 @@ export function SwimlaneQueueStatus() {
             </p>
           </div>
         ) : (
-          filteredCompanies.map((company) => (
-            <CompanyCard key={company.id} company={company} />
-          ))
+          <>
+            {filteredCompanies.map((company, companyIndex) => (
+              <CompanyCard
+                key={company.id}
+                company={company}
+                positionInList={companyIndex + 1}
+              />
+            ))}
+            {hasMorePages && (
+              <div className="flex justify-center pt-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={loadMoreCompanies}
+                  disabled={isLoadingMore}
+                  className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
+                >
+                  {isLoadingMore ? "Laddar fler företag..." : "Ladda fler företag"}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
