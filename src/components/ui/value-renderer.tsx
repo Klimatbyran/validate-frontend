@@ -2,7 +2,7 @@ import { JsonViewer } from "./json-viewer";
 import { isJsonString } from "@/lib/utils";
 
 interface ValueRendererProps {
-  value: any;
+  value: unknown;
 }
 
 /**
