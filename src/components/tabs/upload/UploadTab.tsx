@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { FileText, Link2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -6,6 +6,12 @@ import { FileUploadZone } from "./FileUploadZone";
 import { UrlUploadForm } from "./UrlUploadForm";
 import { UploadList } from "./UploadList";
 import { UploadedFile, UrlInput } from "./types";
+import {
+  validateUrls,
+  extractCompanyFromUrl,
+  PARSE_PDF_API_ENDPOINT,
+  DEFAULT_RUN_ONLY,
+} from "./utils";
 
 interface UploadTabProps {
   onTabChange: (tab: string) => void;
@@ -73,11 +79,11 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
 
   const handleUrlSubmit = useCallback(async () => {
     // Split the input by newlines and filter out empty lines
+    // ignorera om filerna slutar på pdf eller ej- vissa kommer inte göra det men ändå vara giltiga pdf:er.
     const urlLines = urlInput
       .split("\n")
       .map((url) => url.trim())
       .filter((url) => url);
-    // ignorera om filerna slutar på pdf eller ej- vissa kommer inte göra det men ändå vara giltiga pdf:er.
 
     if (urlLines.length === 0) {
       toast.error("Inga giltiga PDF-länkar hittades");
@@ -85,17 +91,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
     }
 
     // Validate URLs and filter out invalid ones
-    const urls: string[] = [];
-    const invalidUrls: string[] = [];
-
-    for (const url of urlLines) {
-      try {
-        new URL(url);
-        urls.push(url);
-      } catch {
-        invalidUrls.push(url);
-      }
-    }
+    const { valid: urls, invalid: invalidUrls } = validateUrls(urlLines);
 
     if (invalidUrls.length > 0) {
       toast.warning(
@@ -112,7 +108,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
 
     // Send batch job creation request to the custom API
     try {
-      const response = await fetch("/api/queues/parsePdf", {
+      const response = await fetch(PARSE_PDF_API_ENDPOINT, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -121,7 +117,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
           autoApprove: Boolean(autoApprove),
           forceReindex: true,
           replaceAllEmissions: true,
-          runOnly: ["scope1+2", "scope3"],
+          runOnly: DEFAULT_RUN_ONLY,
           urls: urls,
         }),
       });
@@ -135,20 +131,11 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
       const result = await response.json();
       console.log("Jobs created successfully:", result);
 
-      const newUrls = urls.map((url) => {
-        let company = "Unknown";
-        try {
-          company = new URL(url).hostname.split(".")[0] || "Unknown";
-        } catch (error) {
-          // Fallback if URL parsing fails (shouldn't happen after validation, but be safe)
-          console.warn(`Failed to parse URL for company name: ${url}`, error);
-        }
-        return {
-          url,
-          id: crypto.randomUUID(),
-          company,
-        };
-      });
+      const newUrls = urls.map((url) => ({
+        url,
+        id: crypto.randomUUID(),
+        company: extractCompanyFromUrl(url),
+      }));
 
       setProcessedUrls((prev) => {
         const updatedUrls = [...prev, ...newUrls];
@@ -188,7 +175,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
       {/* Upload Mode Tabs */}
       <Tabs
         value={uploadMode}
-        onValueChange={setUploadMode as any}
+        onValueChange={(value) => setUploadMode(value as "file" | "url")}
         className="w-full"
       >
         <TabsList className="inline-flex bg-gray-04/50 p-1 rounded-full">

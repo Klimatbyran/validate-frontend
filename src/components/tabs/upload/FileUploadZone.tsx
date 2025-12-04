@@ -1,7 +1,7 @@
-import React from "react";
 import { FileUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { UploadedFile } from "./types";
 
 interface FileUploadZoneProps {
@@ -27,23 +27,22 @@ export function FileUploadZone({
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        className={`
-          border-2 border-dashed rounded-lg p-12
-          flex flex-col items-center justify-center
-          transition-all duration-200
-          bg-gray-04/50 backdrop-blur-sm
-          ${
-            isDragging
-              ? "border-orange-03 bg-orange-05/10"
-              : "border-gray-03 hover:border-gray-02"
-          }
-        `}
+        className={cn(
+          "border-2 border-dashed rounded-lg p-12",
+          "flex flex-col items-center justify-center",
+          "transition-all duration-200",
+          "bg-gray-04/50 backdrop-blur-sm",
+          isDragging
+            ? "border-orange-03 bg-orange-05/10"
+            : "border-gray-03 hover:border-gray-02"
+        )}
       >
         <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
           <FileUp
-            className={`w-12 h-12 mb-4 ${
+            className={cn(
+              "w-12 h-12 mb-4",
               isDragging ? "text-orange-03" : "text-gray-02"
-            }`}
+            )}
           />
         </motion.div>
         <p className="text-lg text-gray-01 text-center">

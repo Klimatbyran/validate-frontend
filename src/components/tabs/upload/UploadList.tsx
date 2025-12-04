@@ -1,7 +1,8 @@
-import { File, Link2, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { UploadedFile, UrlInput } from "./types";
+import { FileListItem, UrlListItem } from "./UploadListItem";
 
 interface UploadListProps {
   uploadMode: "file" | "url";
@@ -39,37 +40,10 @@ export function UploadList({
       </div>
       <ul className="divide-y divide-gray-03">
         {uploadMode === "file"
-          ? uploadedFiles.map(({ file, id, company }) => (
-              <motion.li
-                key={id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="p-4 flex items-center space-x-4"
-              >
-                <File className="w-6 h-6 text-orange-03" />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-01">{file.name}</p>
-                  <p className="text-sm text-gray-02">
-                    Företag: {company} • {(file.size / 1024 / 1024).toFixed(2)}{" "}
-                    MB
-                  </p>
-                </div>
-              </motion.li>
+          ? uploadedFiles.map((file) => (
+              <FileListItem key={file.id} file={file} />
             ))
-          : processedUrls.map(({ url, id, company }) => (
-              <motion.li
-                key={id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="p-4 flex items-center space-x-4"
-              >
-                <Link2 className="w-6 h-6 text-orange-03" />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-01 break-all">{url}</p>
-                  <p className="text-sm text-gray-02">Företag: {company}</p>
-                </div>
-              </motion.li>
-            ))}
+          : processedUrls.map((url) => <UrlListItem key={url.id} url={url} />)}
       </ul>
     </motion.div>
   );
