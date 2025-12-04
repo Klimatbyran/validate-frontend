@@ -1,12 +1,5 @@
-import React, { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { useState, useEffect, useMemo } from "react";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { QueueJob } from "@/lib/types";
@@ -17,105 +10,13 @@ import {
   getStatusBackgroundColor,
   getStatusLabelSwedish,
 } from "@/lib/status-config";
-import {
-  RotateCcw,
-  Check,
-  X,
-  ArrowUpRight,
-  GitBranch,
-  HelpCircle,
-  Info,
-  Code,
-  FileText,
-  Globe,
-} from "lucide-react";
+import { ArrowUpRight, GitBranch, HelpCircle, Code } from "lucide-react";
 import { JobSpecificDataView } from "./job-specific-data-view";
 import { JsonViewer } from "./ui/json-viewer";
-import { isJsonString, getWikidataInfo } from "@/lib/utils";
-
-// Reusable components for the dialog
-function JobDialogHeader({ job }: { job: QueueJob }) {
-  return (
-    <DialogHeader>
-      <div className="flex items-center justify-between">
-        <div>
-          <DialogTitle className="text-2xl mb-2">
-            {job.data.companyName || job.data.company}
-          </DialogTitle>
-          {getWikidataInfo(job)?.node && (
-            <div className="text-sm text-gray-02 mb-2">
-              WikidataID: {getWikidataInfo(job)?.node}
-            </div>
-          )}
-          {job.data.description && (
-            <DialogDescription className="text-base">
-              {job.data.description}
-            </DialogDescription>
-          )}
-        </div>
-      </div>
-    </DialogHeader>
-  );
-}
-
-function DialogTabs({
-  activeTab,
-  setActiveTab,
-  job,
-}: {
-  activeTab: "user" | "technical";
-  setActiveTab: (tab: "user" | "technical") => void;
-  job: QueueJob;
-}) {
-  return (
-    <div className="flex items-center space-x-2 mb-6">
-      <Button
-        variant={activeTab === "user" ? "primary" : "ghost"}
-        size="sm"
-        onClick={() => setActiveTab("user")}
-        className="rounded-full"
-      >
-        <Info className="w-4 h-4 mr-2" />
-        Översikt
-      </Button>
-      <Button
-        variant={activeTab === "technical" ? "primary" : "ghost"}
-        size="sm"
-        onClick={() => setActiveTab("technical")}
-        className="rounded-full"
-      >
-        <Code className="w-4 h-4 mr-2" />
-        Tekniska detaljer
-      </Button>
-      {job.data.url && (
-        <Button variant="ghost" size="sm" asChild className="rounded-full">
-          <a
-            href={job.data.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            Report
-          </a>
-        </Button>
-      )}
-      {getWikidataInfo(job) && (
-        <Button variant="ghost" size="sm" asChild className="rounded-full">
-          <a
-            href={`https://www.wikidata.org/wiki/${getWikidataInfo(job)?.node}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center"
-          >
-            <Globe className="w-4 h-4 mr-2" />
-            Wikidata
-          </a>
-        </Button>
-      )}
-    </div>
-  );
-}
+import { isJsonString } from "@/lib/utils";
+import { JobDialogHeader } from "./job-details/JobDialogHeader";
+import { DialogTabs } from "./job-details/DialogTabs";
+import { JobDialogFooter } from "./job-details/JobDialogFooter";
 
 function TechnicalDataSection({ job }: { job: QueueJob }) {
   return (
@@ -152,10 +53,10 @@ function TechnicalDataSection({ job }: { job: QueueJob }) {
 
 function ReturnValueSection({ job }: { job: QueueJob | null }) {
   if (!job) return null;
-  
+
   // Check both returnValue (camelCase) and returnvalue (lowercase)
   const returnValue = job.returnValue ?? (job as any).returnvalue;
-  
+
   if (returnValue === null || returnValue === undefined) {
     return null;
   }
@@ -286,7 +187,7 @@ export function JobDetailsDialog({
   const [detailed, setDetailed] = useState<any | null>(null);
 
   // Fetch detailed job data if returnValue is not present (similar to job-specific-data-view)
-  React.useEffect(() => {
+  useEffect(() => {
     if (!job) return;
     let aborted = false;
     async function loadDetails() {
@@ -294,27 +195,45 @@ export function JobDetailsDialog({
       if (job.returnValue || (job as any).returnvalue) return;
       if (!job.queueId || !job.id) return;
       try {
-        const res = await fetch(`/api/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`);
+        const res = await fetch(
+          `/api/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(
+            job.id
+          )}`
+        );
         if (!res.ok) return;
         const json = await res.json();
         if (!aborted) setDetailed(json);
       } catch (e) {
-        console.error('[JobDetailsDialog] Failed to load details', e);
+        console.error("[JobDetailsDialog] Failed to load details", e);
       }
     }
     loadDetails();
-    return () => { aborted = true; };
-  }, [job?.id, job?.queueId, Boolean(job?.returnValue), Boolean((job as any)?.returnvalue)]);
+    return () => {
+      aborted = true;
+    };
+  }, [
+    job?.id,
+    job?.queueId,
+    Boolean(job?.returnValue),
+    Boolean((job as any)?.returnvalue),
+  ]);
 
   // Create effectiveJob that merges detailed data (similar to job-specific-data-view)
-  const effectiveJob = React.useMemo(() => {
+  const effectiveJob = useMemo(() => {
     if (!job) return null;
     if (!detailed) return job;
     return {
       ...job,
-      returnValue: (detailed as any).returnvalue ?? job.returnValue ?? (job as any).returnvalue,
+      returnValue:
+        (detailed as any).returnvalue ??
+        job.returnValue ??
+        (job as any).returnvalue,
       // Merge both shapes from details
-      data: { ...(job.data || {}), ...(detailed as any)?.data, ...(detailed as any)?.jobData },
+      data: {
+        ...(job.data || {}),
+        ...(detailed as any)?.data,
+        ...(detailed as any)?.jobData,
+      },
       progress: detailed.progress ?? job.progress,
       failedReason: detailed.failedReason ?? (job as any).failedReason,
       stacktrace: detailed.stacktrace || job.stacktrace,
@@ -325,7 +244,7 @@ export function JobDetailsDialog({
 
   // Debug: log threadId sources for the selected job
   try {
-    console.log('[JobDetailsDialog] Selected job debug', {
+    console.log("[JobDetailsDialog] Selected job debug", {
       jobId: job.id,
       queueId: job.queueId,
       dataThreadId: (job as any)?.data?.threadId,
@@ -337,7 +256,7 @@ export function JobDetailsDialog({
 
   const stage = getWorkflowStages().find((s) => s.id === job.queueId);
   const needsApproval = !job.data.approved && !job.data.autoApprove;
-  const canRetry = job.isFailed;
+  const canRetry = Boolean(job.isFailed);
   const hasParent = !!job.parent;
 
   const handleApprove = (approved: boolean) => {
@@ -362,7 +281,9 @@ export function JobDetailsDialog({
 
     try {
       const response = await fetch(
-        `/api/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+        `/api/queues/${encodeURIComponent(
+          effectiveJob.queueId
+        )}/${encodeURIComponent(effectiveJob.id)}/rerun`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -380,11 +301,15 @@ export function JobDetailsDialog({
       const updatedJob = await response.json();
       console.log("Job retried successfully:", updatedJob);
       toast.success("Jobbet körs om");
-      
+
       // Refresh job data
       if (job.queueId && job.id) {
         try {
-          const res = await fetch(`/api/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`);
+          const res = await fetch(
+            `/api/queues/${encodeURIComponent(
+              job.queueId
+            )}/${encodeURIComponent(job.id)}`
+          );
           if (res.ok) {
             const json = await res.json();
             setDetailed(json);
@@ -398,11 +323,15 @@ export function JobDetailsDialog({
       if (onRetry) {
         onRetry();
       }
-      
+
       // Don't close the dialog automatically - let user see the updated status
     } catch (error) {
       console.error("Error retrying job:", error);
-      toast.error(`Ett fel uppstod vid omkörning: ${error instanceof Error ? error.message : "Okänt fel"}`);
+      toast.error(
+        `Ett fel uppstod vid omkörning: ${
+          error instanceof Error ? error.message : "Okänt fel"
+        }`
+      );
     }
   };
 
@@ -429,7 +358,10 @@ export function JobDetailsDialog({
   // Filter out schema and metadata fields from job data for user-friendly view
   const getFilteredJobDataWithoutSchema = () => {
     // Merge possible worker data shapes so threadId/company are present regardless
-    const merged = { ...(job as any)?.jobData, ...job.data } as Record<string, any>;
+    const merged = { ...(job as any)?.jobData, ...job.data } as Record<
+      string,
+      any
+    >;
     const { companyName, description, schema, ...rest } = merged;
     return rest;
   };
@@ -481,27 +413,12 @@ export function JobDetailsDialog({
           </div>
 
           <DialogFooter>
-            <div className="flex justify-between w-full">
-              <div></div>
-              <div className="space-x-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => handleApprove(false)}
-                  className="border-pink-03 text-pink-03 hover:bg-pink-03/10"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Avvisa
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => handleApprove(true)}
-                  className="bg-green-04 text-green-01 hover:bg-green-04/90"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Godkänn
-                </Button>
-              </div>
-            </div>
+            <JobDialogFooter
+              needsApproval={needsApproval}
+              canRetry={false}
+              approvalOnly={true}
+              onApprove={handleApprove}
+            />
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -612,40 +529,12 @@ export function JobDetailsDialog({
         </div>
 
         <DialogFooter>
-          <div className="flex justify-between w-full">
-            <div>
-              {canRetry && (
-                <Button
-                  variant="ghost"
-                  onClick={handleRetry}
-                  className="text-blue-03 hover:bg-blue-03/10"
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Försök igen
-                </Button>
-              )}
-            </div>
-            {needsApproval && (
-              <div className="space-x-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => handleApprove(false)}
-                  className="border-pink-03 text-pink-03 hover:bg-pink-03/10"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Avvisa
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => handleApprove(true)}
-                  className="bg-green-03 text-white hover:bg-green-03/90"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Godkänn
-                </Button>
-              </div>
-            )}
-          </div>
+          <JobDialogFooter
+            needsApproval={needsApproval}
+            canRetry={canRetry}
+            onApprove={handleApprove}
+            onRetry={handleRetry}
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>
