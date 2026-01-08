@@ -3,8 +3,10 @@ kind: Kustomization
 namespace: validate-frontend
 resources:
   - ../../base
+  - namespace.yaml
 patches:
   - path: ingress.yaml
+  - path: deployment-patch.yaml
 images:
   - name: ghcr.io/klimatbyran/validate-frontend
     newTag: '1.0.5' # {"$imagepolicy": "flux-system:validate-frontend:tag"}

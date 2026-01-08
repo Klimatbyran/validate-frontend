@@ -8,10 +8,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - validate.klimatkollen.se
-      secretName: validate-frontend-tls
+        - validate-stage.klimatkollen.se
+      secretName: validate-stage-frontend-tls
   rules:
-    - host: validate.klimatkollen.se
+    - host: validate-stage.klimatkollen.se
       http:
         paths:
           - path: /
