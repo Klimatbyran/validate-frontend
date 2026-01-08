@@ -5,7 +5,7 @@ resources:
   - ../../base
   - namespace.yaml
 patches:
-  - path: ingress.yaml
+  - path: ingress-patch.yaml
   - path: deployment-patch.yaml
 images:
   - name: ghcr.io/klimatbyran/validate-frontend
