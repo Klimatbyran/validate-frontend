@@ -8,6 +8,5 @@ spec:
       containers:
         - name: validate-frontend
           env:
-            # Production API URL - confirmed working
             - name: BACKEND_API_URL
               value: "https://pipeline-api.klimatkollen.se"
