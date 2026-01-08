@@ -17,6 +17,9 @@ spec:
       containers:
         - image: ghcr.io/klimatbyran/validate-frontend
           name: validate-frontend
+          env:
+            - name: BACKEND_API_URL
+              value: "https://stage-pipeline-api.klimatkollen.se"  # Default to staging, override in overlays
           resources:
             requests:
               memory: "512Mi"

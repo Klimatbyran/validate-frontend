@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: validate-frontend
+spec:
+  template:
+    spec:
+      containers:
+        - name: validate-frontend
+          env:
+            - name: BACKEND_API_URL
+              value: "https://pipeline-api.klimatkollen.se"

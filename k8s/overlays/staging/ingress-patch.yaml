@@ -2,12 +2,14 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: validate-frontend
-  annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
-  ingressClassName: nginx
+  tls:
+    - hosts:
+        - validate-stage.klimatkollen.se
+      secretName: validate-stage-frontend-tls
   rules:
-    - http:
+    - host: validate-stage.klimatkollen.se
+      http:
         paths:
           - path: /
             pathType: Prefix
