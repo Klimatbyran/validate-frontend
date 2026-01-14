@@ -3,9 +3,6 @@
  * Provides authenticatedFetch for direct fetch() calls
  */
 
-/**
- * Check if a request method is a write operation
- */
 function isWriteOperation(method: string | undefined): boolean {
   const upperMethod = method?.toUpperCase() || "";
   return ["POST", "PUT", "PATCH", "DELETE"].includes(upperMethod);

@@ -2,20 +2,24 @@
  * AuthContext - Manages authentication state and provides auth functions
  */
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import {
+  createContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import { AuthContextType, TokenPayload, User } from "@/lib/auth-types";
 import { authenticateWithGithub, getGithubAuthUrl } from "@/lib/auth-api";
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
 const TOKEN_STORAGE_KEY = "token";
 const POST_LOGIN_REDIRECT_KEY = "postLoginRedirect";
 
-/**
- * Decode JWT token and extract user info
- */
 function decodeToken(token: string): User | null {
   try {
     const decoded = jwtDecode<TokenPayload>(token);
@@ -32,9 +36,7 @@ function decodeToken(token: string): User | null {
   }
 }
 
-/**
- * Check if token is expired
- */
+
 function isTokenExpired(token: string): boolean {
   try {
     const decoded = jwtDecode<TokenPayload>(token);
@@ -66,9 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  /**
-   * Logout - clear token and user info
-   */
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -78,10 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     navigate("/", { replace: true });
   }, [navigate]);
 
-  /**
-   * Initiate GitHub OAuth login
-   * Saves current URL and redirects to GitHub
-   */
+
   const login = useCallback(() => {
     // Save current location for post-login redirect
     const currentPath = window.location.pathname + window.location.search;
@@ -130,24 +127,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let redirectPath = "/";
         if (response.redirect_uri) {
           // Backend returned a redirect_uri - use it
-          // If it's a full URL, navigate to it; if it's a path, use it as-is
           if (response.redirect_uri.startsWith("http")) {
             window.location.href = response.redirect_uri;
-            return; // Don't use navigate for external URLs
+            return;
           } else {
             redirectPath = response.redirect_uri;
           }
         } else {
           // Fall back to stored redirect or home
-          redirectPath =
-            localStorage.getItem(POST_LOGIN_REDIRECT_KEY) || "/";
+          redirectPath = localStorage.getItem(POST_LOGIN_REDIRECT_KEY) || "/";
         }
 
         localStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
         navigate(redirectPath, { replace: true });
       } catch (error) {
         console.error("Authentication failed:", error);
-        throw error; // Re-throw so AuthCallback can handle it
+        throw error;
       }
     },
     [navigate]
@@ -158,12 +153,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
     if (storedToken) {
       if (isTokenExpired(storedToken)) {
-        // Token expired, clear it
         localStorage.removeItem(TOKEN_STORAGE_KEY);
         setToken(null);
         setUser(null);
       } else {
-        // Valid token
         setToken(storedToken);
         const decodedUser = decodeToken(storedToken);
         setUser(decodedUser);
@@ -194,8 +187,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token, logout]);
 
   // Note: Backend only validates tokens on write operations (POST/PUT/PATCH/DELETE)
-  // GET requests don't validate, so we can't use them for periodic validation
-  // Instead, we rely on:
+  // GET requests don't validate, so we can't use them for periodic validation, but this may be worth revisiting.
+  // Instead, we currently rely on:
   // 1. Client-side timer (based on JWT exp claim) - handles expiration
   // 2. 401 responses from write operations - handles revocation and clock skew
   // 3. Visibility change - re-check token expiration when user returns to tab
@@ -207,7 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Re-validate token expiration when tab becomes visible
     // This catches cases where token expired while user was away
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && token) {
+      if (document.visibilityState === "visible" && token) {
         // Check if token expired while tab was in background
         if (isTokenExpired(token)) {
           logout();
@@ -215,10 +208,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [token, logout]);
 
@@ -238,11 +231,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout();
     };
 
-    window.addEventListener("token-updated", handleTokenUpdate as EventListener);
+    window.addEventListener(
+      "token-updated",
+      handleTokenUpdate as EventListener
+    );
     window.addEventListener("auth-required", handleAuthRequired);
 
     return () => {
-      window.removeEventListener("token-updated", handleTokenUpdate as EventListener);
+      window.removeEventListener(
+        "token-updated",
+        handleTokenUpdate as EventListener
+      );
       window.removeEventListener("auth-required", handleAuthRequired);
     };
   }, [logout]);

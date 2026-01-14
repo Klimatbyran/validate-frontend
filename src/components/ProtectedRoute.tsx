@@ -20,7 +20,6 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, login } = useAuth();
 
-  // Show loading state during initial auth check
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-05 flex items-center justify-center">
@@ -29,7 +28,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // If not authenticated, show login modal
   if (!isAuthenticated) {
     return (
       <Dialog open={true} onOpenChange={() => {}}>
@@ -53,6 +51,5 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // User is authenticated, render protected content
   return <>{children}</>;
 }

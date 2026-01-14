@@ -1,8 +1,3 @@
-/**
- * LoginModal - Reusable login modal component
- * Can be controlled externally via props
- */
-
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +24,6 @@ export function LoginModal({
   const handleLogin = () => {
     login();
     // Note: onClose won't be called because user will be redirected
-    // But we keep it for API compatibility
   };
 
   return (
