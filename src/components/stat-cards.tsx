@@ -62,6 +62,7 @@ interface CompactStatCardProps {
   label: string;
   color?: "gray" | "green" | "blue" | "orange" | "pink";
   className?: string;
+  onClick?: () => void;
 }
 
 export function CompactStatCard({
@@ -69,14 +70,24 @@ export function CompactStatCard({
   label,
   color = "gray",
   className = "",
+  onClick,
 }: CompactStatCardProps) {
+  const Component = onClick ? "button" : "div";
+  const baseClasses = `text-center p-3 bg-gray-03/50 rounded-lg transition-all ${className}`;
+  const interactiveClasses = onClick
+    ? "hover:bg-gray-03 hover:shadow-sm cursor-pointer active:scale-95"
+    : "";
+
   return (
-    <div className={`text-center p-3 bg-gray-03/50 rounded-lg ${className}`}>
+    <Component
+      className={`${baseClasses} ${interactiveClasses}`}
+      onClick={onClick}
+    >
       <div className={`text-lg font-bold ${getStatCardValueColor(color)}`}>
         {value}
       </div>
       <div className={`text-xs ${getStatCardLabelColor(color)}`}>{label}</div>
-    </div>
+    </Component>
   );
 }
 
@@ -92,6 +103,9 @@ interface PipelineStepCardProps {
   waiting: number;
   total: number;
   className?: string;
+  onNeedsApprovalClick?: () => void;
+  onFailedClick?: () => void;
+  onStepClick?: () => void;
 }
 
 export function PipelineStepCard({
@@ -103,6 +117,9 @@ export function PipelineStepCard({
   waiting,
   total,
   className = "",
+  onNeedsApprovalClick,
+  onFailedClick,
+  onStepClick,
 }: PipelineStepCardProps) {
   const completionPercent = total > 0 ? (completed / total) * 100 : 0;
 
@@ -121,8 +138,17 @@ export function PipelineStepCard({
   const config = getStatusConfig(stepStatus);
   const StepIcon = config.icon;
 
+  const CardComponent = onStepClick ? "button" : "div";
+  const cardBaseClasses = `bg-gray-03/50 rounded-lg p-4 transition-all ${className}`;
+  const cardInteractiveClasses = onStepClick
+    ? "hover:bg-gray-03 hover:shadow-sm cursor-pointer active:scale-[0.98]"
+    : "";
+
   return (
-    <div className={`bg-gray-03/50 rounded-lg p-4 ${className}`}>
+    <CardComponent
+      className={`${cardBaseClasses} ${cardInteractiveClasses}`}
+      onClick={onStepClick}
+    >
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-semibold text-gray-01">{name}</span>
         <span className="text-xs font-bold text-gray-01">
@@ -149,19 +175,41 @@ export function PipelineStepCard({
           <Loader2 className="w-3 h-3 text-blue-03" />
           {processing}
         </span>
-        <span className="flex items-center gap-1">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onNeedsApprovalClick?.();
+          }}
+          disabled={!onNeedsApprovalClick || needsApproval === 0}
+          className={`flex items-center gap-1 transition-all ${
+            onNeedsApprovalClick && needsApproval > 0
+              ? "hover:text-orange-03 cursor-pointer hover:scale-110"
+              : ""
+          }`}
+        >
           <HelpCircle className="w-3 h-3 text-orange-03" />
           {needsApproval}
-        </span>
-        <span className="flex items-center gap-1">
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onFailedClick?.();
+          }}
+          disabled={!onFailedClick || failed === 0}
+          className={`flex items-center gap-1 transition-all ${
+            onFailedClick && failed > 0
+              ? "hover:text-pink-03 cursor-pointer hover:scale-110"
+              : ""
+          }`}
+        >
           <AlertTriangle className="w-3 h-3 text-pink-03" />
           {failed}
-        </span>
+        </button>
         <span className="flex items-center gap-1">
           <StepIcon className="w-3 h-3 text-gray-02" />
           {waiting}
         </span>
       </div>
-    </div>
+    </CardComponent>
   );
 }
