@@ -216,8 +216,8 @@ export function SwimlaneQueueStatus() {
         onFilterToggle={toggleFilter}
       />
 
-      <div className="flex flex-col gap-4">
-        {/* Filter Bar */}
+      {/* Sticky Filter Bar */}
+      <div className="sticky top-0 z-40 bg-gray-05 pb-4 -mb-4">
         <FilterBar
           activeFilters={activeFilters}
           runScope={runScope}
