@@ -42,7 +42,31 @@ export default defineConfig({
           });
         },
       },
-      // Other /api calls
+      // Auth API endpoints - must come before /api to match first
+      "/api/auth": {
+        target: "http://localhost:3000", // Local auth API
+        changeOrigin: true,
+        secure: false,
+        timeout: 30000,
+        proxyTimeout: 30000,
+        configure: (proxy, _options) => {
+          proxy.on("error", (err, _req, res) => {
+            console.warn(
+              "Auth API server not available on port 3000. Check if local auth API is running."
+            );
+            if (res && !res.headersSent) {
+              res.writeHead(503, { "Content-Type": "application/json" });
+              res.end(
+                JSON.stringify({
+                  error: "Auth API server not available",
+                  message: "Please start the local auth API server on port 3000",
+                })
+              );
+            }
+          });
+        },
+      },
+      // Other /api calls (pipeline API)
       "/api": {
         target: "https://stage-pipeline-api.klimatkollen.se",
         //target: "http://localhost:3001",
@@ -90,6 +114,33 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/kkapi/, "/api"),
         timeout: 30000,
         proxyTimeout: 30000,
+      },
+      // Auth API proxy (for development)
+      "/authapi": {
+        target: "http://localhost:3000", // Local auth API - adjust port if needed
+        // For staging auth API, use:
+        // target: "https://stage.klimatkollen.se",
+        changeOrigin: true,
+        secure: false, // Set to false for localhost
+        rewrite: (path) => path.replace(/^\/authapi/, ""), // Remove /authapi prefix
+        timeout: 30000,
+        proxyTimeout: 30000,
+        configure: (proxy, _options) => {
+          proxy.on("error", (err, _req, res) => {
+            console.warn(
+              "Auth API server not available on port 3000. Check if local auth API is running."
+            );
+            if (res && !res.headersSent) {
+              res.writeHead(503, { "Content-Type": "application/json" });
+              res.end(
+                JSON.stringify({
+                  error: "Auth API server not available",
+                  message: "Please start the local auth API server on port 3000",
+                })
+              );
+            }
+          });
+        },
       },
     },
   },

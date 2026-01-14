@@ -25,6 +25,7 @@ import {
   useViewToggle,
   type ViewLevel,
 } from "../components/ui/view-toggle";
+import { authenticatedFetch } from "@/lib/api-helpers";
 import {
   getAllPipelineSteps,
   getQueuesForPipelineStep,
@@ -968,7 +969,7 @@ export function SwimlaneQueueStatus() {
     limit = "all"
   ) => {
     toast.promise(
-      fetch("/api/queues/rerun-by-worker", {
+      authenticatedFetch("/api/queues/rerun-by-worker", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

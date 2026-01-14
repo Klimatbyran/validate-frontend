@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { FileText, Link2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { authenticatedFetch } from "@/lib/api-helpers";
 import { FileUploadZone } from "./FileUploadZone";
 import { UrlUploadForm } from "./UrlUploadForm";
 import { UploadList } from "./UploadList";
@@ -108,7 +109,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
 
     // Send batch job creation request to the custom API
     try {
-      const response = await fetch(PARSE_PDF_API_ENDPOINT, {
+      const response = await authenticatedFetch(PARSE_PDF_API_ENDPOINT, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
