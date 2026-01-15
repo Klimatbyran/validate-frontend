@@ -35,8 +35,8 @@ Authentication uses a **separate API backend** from the main pipeline API:
   - `GET /api/auth/github?redirect_uri=...` - OAuth initiation (redirects to GitHub)
   - `POST /api/auth/github` - Token exchange (accepts `{ code: string, state?: string }`)
 - Environments:
-  - Dev: `https://stage.klimatkollen.se` (via `/authapi` proxy) or `localhost:PORT`
-  - Staging: `https://stage.klimatkollen.se`
+  - Dev: `https://stage-api.klimatkollen.se` (via `/api/auth` proxy) or `localhost:PORT`
+  - Staging: `https://stage-api.klimatkollen.se`
   - Production: `https://api.klimatkollen.se`
 
 ### Why Separate APIs?
@@ -180,7 +180,7 @@ Separate axios instance for authentication endpoints.
 
 **Base URL Configuration:**
 - Dev: `/api/auth` (relative path, uses Vite proxy)
-- Production: `https://api.klimatkollen.se/api/auth` or `https://stage.klimatkollen.se/api/auth` (absolute URL)
+- Production: `https://api.klimatkollen.se/api/auth` or `https://stage-api.klimatkollen.se/api/auth` (absolute URL)
 
 ### 7. Pipeline API Middleware (`src/lib/api.ts`)
 
@@ -280,16 +280,18 @@ Token expiration is checked:
 ```typescript
 // Auth API endpoints - must come before /api to match first
 "/api/auth": {
-  target: "http://localhost:3000", // Local auth API
+  target: "https://stage-api.klimatkollen.se", // Staging auth API (for testing)
+  // For local auth API, use: "http://localhost:3000"
   changeOrigin: true,
-  secure: false,
+  secure: true, // Set to true for HTTPS
   // Used for OAuth initiation (browser navigation)
 }
 
 "/authapi": {
-  target: "http://localhost:3000", // Local auth API
+  target: "https://stage-api.klimatkollen.se", // Staging auth API (for testing)
+  // For local auth API, use: "http://localhost:3000"
   changeOrigin: true,
-  secure: false,
+  secure: true, // Set to true for HTTPS, false for localhost
   rewrite: (path) => path.replace(/^\/authapi/, ""),
   // Legacy proxy, kept for compatibility
 }
@@ -305,7 +307,7 @@ Token expiration is checked:
 **Auto-Detection:**
 - Checks `window.location.hostname`
 - If hostname includes `stage` or `staging`:
-  - Auth API: `https://stage.klimatkollen.se`
+  - Auth API: `https://stage-api.klimatkollen.se`
   - Callback URL: Uses `window.location.origin/auth/callback` (e.g., `https://validate-stage.klimatkollen.se/auth/callback`)
 - Otherwise:
   - Auth API: `https://api.klimatkollen.se`

@@ -1,6 +1,6 @@
 /**
  * Auth API client - separate from pipeline API
- * Handles authentication endpoints on api.klimatkollen.se / stage.klimatkollen.se
+ * Handles authentication endpoints on api.klimatkollen.se / stage-api.klimatkollen.se
  */
 
 import axios from "axios";
@@ -21,7 +21,7 @@ function getAuthApiBaseUrl(): string {
   // Detect environment from hostname
   const hostname = window.location.hostname;
   if (hostname.includes("stage") || hostname.includes("staging")) {
-    return "https://stage.klimatkollen.se/api/auth";
+    return "https://stage-api.klimatkollen.se/api/auth";
   }
 
   return "https://api.klimatkollen.se/api/auth";
