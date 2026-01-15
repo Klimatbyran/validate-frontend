@@ -18,6 +18,7 @@ import { ErrorSection } from "./job-details/ErrorSection";
 import { JobStatusSection } from "./job-details/JobStatusSection";
 import { JobRelationshipsSection } from "./job-details/JobRelationshipsSection";
 import { SchemaSection } from "./job-details/SchemaSection";
+import { authenticatedFetch } from "@/lib/api-helpers";
 
 interface JobDetailsDialogProps {
   job: QueueJob | null;
@@ -129,7 +130,7 @@ export function JobDetailsDialog({
     };
 
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `/api/queues/${encodeURIComponent(
           effectiveJob.queueId
         )}/${encodeURIComponent(effectiveJob.id)}/rerun`,

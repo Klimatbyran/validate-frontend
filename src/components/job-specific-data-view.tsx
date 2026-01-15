@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getJobStatus } from "@/lib/workflow-utils";
 import { cn } from "@/lib/utils";
+import { authenticatedFetch } from "@/lib/api-helpers";
 
 interface JobSpecificDataViewProps {
   data: any;
@@ -467,7 +468,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     };
 
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `/api/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
         {
           method: "POST",
@@ -509,7 +510,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     };
 
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `/api/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
         {
           method: "POST",
@@ -552,7 +553,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     };
 
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `/api/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
         {
           method: "POST",
@@ -593,7 +594,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     };
 
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `/api/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
         {
           method: "POST",
@@ -635,7 +636,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     }
 
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `/api/queues/followUpScope12/${encodeURIComponent(
           effectiveJob.id
         )}/rerun-and-save`,
@@ -678,7 +679,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     }
 
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `/api/queues/followUpScope3/${encodeURIComponent(
           effectiveJob.id
         )}/rerun-and-save`,

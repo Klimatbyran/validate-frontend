@@ -143,7 +143,7 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor for logging and retry handling
+// Add request interceptor for logging, retry handling, and auth
 api.interceptors.request.use(
   (config) => {
     // Add retry count to config if not present
@@ -157,6 +157,35 @@ api.interceptors.request.use(
       config.params.jobsPerPage = 20;
     }
 
+    // Check if this is a write operation
+    const method = config.method?.toUpperCase() || "";
+    const isWriteOperation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+
+    if (isWriteOperation) {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        // Show login modal and reject the request
+        // Store the config so we can retry after login
+        window.dispatchEvent(
+          new CustomEvent("show-login-modal", {
+            detail: {
+              action: () => {
+                // Retry the request after login
+                return api(config);
+              },
+            },
+          })
+        );
+        return Promise.reject(new Error("Authentication required for write operations"));
+      }
+    }
+
+    // Add Authorization header if token exists (for all requests)
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
     return config;
   },
   (error) => {
@@ -164,11 +193,51 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for logging and retry handling
+// Add response interceptor for logging, retry handling, and auth
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Update token if server sends new one in response header
+    const newToken = response.headers["x-auth-token"];
+    if (newToken) {
+      localStorage.setItem("token", newToken);
+      // Dispatch event to update AuthContext
+      window.dispatchEvent(
+        new CustomEvent("token-updated", { detail: newToken })
+      );
+    }
+    return response;
+  },
   async (error) => {
     const config = error.config;
+
+    // Handle 401 Unauthorized - token invalid or expired
+    if (error.response?.status === 401) {
+      const method = config?.method?.toUpperCase() || "";
+      const isWriteOperation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+
+      // Clear invalid token
+      localStorage.removeItem("token");
+
+      if (isWriteOperation) {
+        // For write operations, show login modal and allow retry after login
+        window.dispatchEvent(
+          new CustomEvent("show-login-modal", {
+            detail: {
+              action: () => {
+                // Retry the request after login
+                return api(config);
+              },
+            },
+          })
+        );
+      } else {
+        // For GET requests, just trigger auth-required event (silent failure)
+        window.dispatchEvent(new CustomEvent("auth-required"));
+      }
+
+      // Don't retry 401 errors automatically
+      return Promise.reject(error);
+    }
 
     // Only retry on network errors or 5xx errors
     if (

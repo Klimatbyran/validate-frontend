@@ -7,6 +7,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Loader2, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCompanies } from "@/hooks/useCompanies";
+import { authenticatedFetch } from "@/lib/api-helpers";
 import { toast } from "sonner";
 import { convertCompaniesToSwimlaneFormat } from "@/lib/swimlane-transform";
 import {
@@ -141,7 +142,7 @@ export function SwimlaneQueueStatus() {
     limit = "all"
   ) => {
     toast.promise(
-      fetch("/api/queues/rerun-by-worker", {
+      authenticatedFetch("/api/queues/rerun-by-worker", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
