@@ -158,12 +158,11 @@ Application-level component that listens for write-operation authentication requ
 Handles OAuth callback from GitHub.
 
 **Responsibilities:**
-- Extracts `code`, `state`, and optionally `token` from URL query params
-- If token is in URL: Validates, stores, and redirects (for backend redirects with token)
-- If code is in URL: Calls `authenticate(code, state)` from AuthContext
+- Extracts `code` and `state` from URL query params (from GitHub OAuth redirect)
+- Calls `authenticate(code, state)` from AuthContext to exchange code for JWT token
 - Shows loading state during authentication
-- Handles errors (invalid code, network errors, etc.)
-- Redirect handled by AuthContext (uses redirect_uri from backend or falls back)
+- Handles errors (invalid code, network errors, OAuth errors from GitHub, etc.)
+- Redirect handled by AuthContext (uses stored redirect or redirect_uri from backend)
 
 ### 6. Auth API Client (`src/lib/auth-api.ts`)
 
@@ -513,7 +512,7 @@ If tests 2-4 return `200 OK`, the backend is **not validating tokens on write op
 - ✅ User info display in header (greeting with user name)
 - ✅ Logout button in UI (upper right corner)
 - ✅ Login button when not authenticated
-- ✅ Token extraction from URL (supports backend redirects with token in query params)
+- ✅ Code exchange flow (GitHub OAuth code → JWT token via backend)
 - ✅ Automatic retry of write operations after login
 - ✅ Multiple simultaneous write attempts are queued and executed after login
 - ✅ Client-side token expiration handling
