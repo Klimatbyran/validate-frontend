@@ -2,12 +2,7 @@
  * AuthContext - Manages authentication state and provides auth functions
  */
 
-import {
-  createContext,
-  useEffect,
-  useState,
-  useCallback,
-} from "react";
+import { createContext, useEffect, useState, useCallback } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import { AuthContextType, TokenPayload, User } from "@/lib/auth-types";
@@ -35,7 +30,6 @@ function decodeToken(token: string): User | null {
     return null;
   }
 }
-
 
 function isTokenExpired(token: string): boolean {
   try {
@@ -68,7 +62,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -77,7 +70,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Navigate to home (will trigger login modal if ProtectedRoute is active)
     navigate("/", { replace: true });
   }, [navigate]);
-
 
   const login = useCallback(() => {
     // Save current location for post-login redirect
@@ -127,9 +119,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Priority: stored redirect (original page) > backend redirect_uri > home
         const storedRedirect = localStorage.getItem(POST_LOGIN_REDIRECT_KEY);
         const isDev = import.meta.env.DEV;
-        
+
         let redirectPath = "/";
-        
+
         // Prefer stored redirect if available (user's original page)
         // In dev mode, always prefer stored redirect to stay on localhost
         if (storedRedirect) {
