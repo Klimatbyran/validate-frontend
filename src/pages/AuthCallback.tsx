@@ -1,13 +1,12 @@
 /**
  * AuthCallback - Handles OAuth callback from GitHub
- * Extracts code from URL, exchanges it for token, and redirects
+ * Extracts code from URL query params, exchanges it for JWT token via backend,
+ * and redirects user back to their original page
  */
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { jwtDecode } from "jwt-decode";
-import { TokenPayload, User } from "@/lib/auth-types";
 
 export function AuthCallback() {
   const [searchParams] = useSearchParams();
@@ -18,7 +17,6 @@ export function AuthCallback() {
   useEffect(() => {
     const code = searchParams.get("code");
     const state = searchParams.get("state");
-    const tokenFromUrl = searchParams.get("token");
     const errorParam = searchParams.get("error");
 
     // Handle OAuth error from GitHub
@@ -31,47 +29,7 @@ export function AuthCallback() {
       return;
     }
 
-    // If token is in URL (backend redirected with token), use it directly
-    if (tokenFromUrl) {
-      try {
-        // Validate and decode token
-        const decoded = jwtDecode<TokenPayload>(tokenFromUrl);
-        const now = Math.floor(Date.now() / 1000);
-        
-        // Check if expired
-        if (decoded.exp < now) {
-          setError("Token har gått ut. Försök logga in igen.");
-          return;
-        }
-
-        // Decode user info
-        const user: User = {
-          name: decoded.name,
-          id: decoded.id,
-          email: decoded.email,
-          githubId: decoded.githubId,
-          githubImageUrl: decoded.githubImageUrl,
-        };
-
-        // Store token and user info
-        localStorage.setItem("token", tokenFromUrl);
-        
-        // Clear URL params by navigating to clean URL
-        const redirectPath = localStorage.getItem("postLoginRedirect") || "/";
-        localStorage.removeItem("postLoginRedirect");
-        
-        // Reload page to trigger AuthContext to pick up the token
-        // This ensures all components get the updated auth state
-        window.location.href = redirectPath;
-        return;
-      } catch (error) {
-        console.error("Failed to process token from URL:", error);
-        setError("Ogiltig token. Försök logga in igen.");
-        return;
-      }
-    }
-
-    // Check if we have a code
+    // Check if we have a code (required for code exchange)
     if (!code) {
       setError("Ingen autentiseringskod mottagen. Försök logga in igen.");
       return;
