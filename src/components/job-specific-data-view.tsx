@@ -471,23 +471,6 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     } catch (_) {}
   }, [job?.id, job?.queueId, Boolean(job?.returnValue), wikidataId, Boolean(scope3Data), effectiveJob, detailed]);
 
-  // Debug logging specifically for scope 1/2 follow-up jobs and scope1And2 extraction
-  React.useEffect(() => {
-    if (!job) return;
-    try {
-      console.log("[JobSpecificDataView] scope1+2 debug", {
-        jobId: job.id,
-        queueId: job.queueId,
-        hasReturnValue: !!(job as any)?.returnvalue || !!job.returnValue,
-        returnValueData,
-        processedData,
-        scope1And2Value,
-      });
-    } catch {
-      // ignore logging errors
-    }
-  }, [job?.id, job?.queueId, scope1And2Value, processedData, returnValueData]);
-
   // Helper function to refresh job data after rerun
   const refreshJobData = async () => {
     if (job?.queueId && job?.id) {
@@ -685,183 +668,33 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const isFollowUpScope2Job =
     effectiveJob && effectiveJob.queueId === "followUpScope2";
 
-  // Handle "rerun and save" for scope 1+2 (followUpScope12 queue)
-  const handleRerunAndSaveScope12 = async () => {
-    if (!effectiveJob || !effectiveJob.id) {
-      console.error("Cannot rerun and save: missing job information");
+  // Generic handler for "rerun and save" operations
+  const handleRerunAndSave = async (queueName: string, scopes: string[], label: string) => {
+    if (!effectiveJob?.id) {
       toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
       return;
     }
 
     try {
       const response = await authenticatedFetch(
-        `/api/queues/followUpScope12/${encodeURIComponent(
-          effectiveJob.id
-        )}/rerun-and-save`,
+        `/api/queues/${queueName}/${encodeURIComponent(effectiveJob.id)}/rerun-and-save`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          // Important: scopes controls what the worker actually runs
-          // For the combined job we want to run scope1 and scope2 separately
-          body: JSON.stringify({
-            scopes: ["scope1", "scope2"],
-          }),
+          body: JSON.stringify({ scopes }),
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Failed to rerun and save scope1+2 job:", errorText);
-        toast.error(
-          `Kunde inte köra om och spara scope1+2: ${
-            errorText || "Okänt fel"
-          }`
-        );
+        toast.error(`Kunde inte köra om och spara ${label}: ${errorText || "Okänt fel"}`);
         return;
       }
 
-      toast.success("Scope 1+2 körs om och sparas");
+      toast.success(`${label} körs om och sparas`);
       await refreshJobData();
     } catch (error) {
-      console.error("Error rerunning and saving scope1+2 job:", error);
-      toast.error(
-        `Ett fel uppstod vid omkörning: ${
-          error instanceof Error ? error.message : "Okänt fel"
-        }`
-      );
-    }
-  };
-
-  // Handle "rerun and save" for scope 1 (followUpScope1 queue)
-  const handleRerunAndSaveScope1 = async () => {
-    if (!effectiveJob || !effectiveJob.id) {
-      console.error("Cannot rerun and save: missing job information");
-      toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `/api/queues/followUpScope1/${encodeURIComponent(
-          effectiveJob.id
-        )}/rerun-and-save`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            scopes: ["scope1"],
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Failed to rerun and save scope1 job:", errorText);
-        toast.error(
-          `Kunde inte köra om och spara scope1: ${
-            errorText || "Okänt fel"
-          }`
-        );
-        return;
-      }
-
-      toast.success("Scope 1 körs om och sparas");
-      await refreshJobData();
-    } catch (error) {
-      console.error("Error rerunning and saving scope1 job:", error);
-      toast.error(
-        `Ett fel uppstod vid omkörning: ${
-          error instanceof Error ? error.message : "Okänt fel"
-        }`
-      );
-    }
-  };
-
-  // Handle "rerun and save" for scope 2 (followUpScope2 queue)
-  const handleRerunAndSaveScope2 = async () => {
-    if (!effectiveJob || !effectiveJob.id) {
-      console.error("Cannot rerun and save: missing job information");
-      toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `/api/queues/followUpScope2/${encodeURIComponent(
-          effectiveJob.id
-        )}/rerun-and-save`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            scopes: ["scope2"],
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Failed to rerun and save scope2 job:", errorText);
-        toast.error(
-          `Kunde inte köra om och spara scope2: ${
-            errorText || "Okänt fel"
-          }`
-        );
-        return;
-      }
-
-      toast.success("Scope 2 körs om och sparas");
-      await refreshJobData();
-    } catch (error) {
-      console.error("Error rerunning and saving scope2 job:", error);
-      toast.error(
-        `Ett fel uppstod vid omkörning: ${
-          error instanceof Error ? error.message : "Okänt fel"
-        }`
-      );
-    }
-  };
-
-  // Handle "rerun and save" for scope 3 (followUpScope3 queue)
-  const handleRerunAndSaveScope3 = async () => {
-    if (!effectiveJob || !effectiveJob.id) {
-      console.error("Cannot rerun and save: missing job information");
-      toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
-      return;
-    }
-
-    try {
-      const response = await authenticatedFetch(
-        `/api/queues/followUpScope3/${encodeURIComponent(
-          effectiveJob.id
-        )}/rerun-and-save`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ scopes: ["scope3"] }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Failed to rerun and save scope3 job:", errorText);
-        toast.error(
-          `Kunde inte köra om och spara scope3: ${
-            errorText || "Okänt fel"
-          }`
-        );
-        return;
-      }
-
-      toast.success("Scope 3 körs om och sparas");
-      await refreshJobData();
-    } catch (error) {
-      console.error("Error rerunning and saving scope3 job:", error);
-      toast.error(
-        `Ett fel uppstod vid omkörning: ${
-          error instanceof Error ? error.message : "Okänt fel"
-        }`
-      );
+      toast.error(`Ett fel uppstod vid omkörning: ${error instanceof Error ? error.message : "Okänt fel"}`);
     }
   };
 
@@ -1001,7 +834,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleRerunAndSaveScope12}
+              onClick={() => handleRerunAndSave("followUpScope12", ["scope1", "scope2"], "Scope 1+2")}
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
@@ -1012,7 +845,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleRerunAndSaveScope1}
+              onClick={() => handleRerunAndSave("followUpScope1", ["scope1"], "Scope 1")}
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
@@ -1023,7 +856,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleRerunAndSaveScope2}
+              onClick={() => handleRerunAndSave("followUpScope2", ["scope2"], "Scope 2")}
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
@@ -1034,7 +867,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleRerunAndSaveScope3}
+              onClick={() => handleRerunAndSave("followUpScope3", ["scope3"], "Scope 3")}
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
