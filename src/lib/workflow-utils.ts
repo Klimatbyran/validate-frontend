@@ -117,17 +117,34 @@ export function getJobsForStep(
 }
 
 /**
- * Find a job by queue ID in year data
+ * Find the latest job (by timestamp) for a specific queue ID in year data
  */
 export function findJobByQueueId(
   queueId: string,
   yearData: SwimlaneYearData
 ): any | undefined {
-  if (!yearData.jobs) {
+  if (!yearData.jobs || yearData.jobs.length === 0) {
     return undefined;
   }
 
-  return yearData.jobs.find((job: any) => job.queueId === queueId);
+  const jobsForQueue = yearData.jobs.filter(
+    (job: any) => job.queueId === queueId
+  );
+
+  if (jobsForQueue.length === 0) {
+    return undefined;
+  }
+
+  return jobsForQueue.reduce((latestJob: any, currentJob: any) => {
+    const latestTimestamp = latestJob?.timestamp || 0;
+    const currentTimestamp = currentJob?.timestamp || 0;
+
+    if (currentTimestamp > latestTimestamp) {
+      return currentJob;
+    }
+
+    return latestJob;
+  }, jobsForQueue[0]);
 }
 
 /**

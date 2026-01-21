@@ -39,6 +39,18 @@ export function SwimlaneQueueStatus() {
   const [runScope, setRunScope] = useState<RunScope>("latest");
   const [showScrollToTop, setShowScrollToTop] = useState(false);
 
+  // Helper to get the latest run timestamp for a company
+  function getLatestRunTimestampForCompany(company: SwimlaneCompany): number {
+    if (!company.years || company.years.length === 0) {
+      return 0;
+    }
+
+    return company.years.reduce((latestTimestamp, year) => {
+      const yearLatest = year.latestTimestamp || 0;
+      return yearLatest > latestTimestamp ? yearLatest : latestTimestamp;
+    }, 0);
+  }
+
   // Convert CustomAPICompany to SwimlaneCompany format
   const swimlaneCompanies = useMemo(() => {
     return convertCompaniesToSwimlaneFormat(companies);
@@ -138,8 +150,8 @@ export function SwimlaneQueueStatus() {
   };
 
   const handleRerunByWorker = (
-    workerName: "scope1+2" | "scope3",
-    limit = "all"
+    workerName: "scope1" | "scope2" | "scope1+2" | "scope3",
+    limit: number | "all" = "all"
   ) => {
     toast.promise(
       authenticatedFetch("/api/queues/rerun-by-worker", {

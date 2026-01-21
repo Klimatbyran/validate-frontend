@@ -212,6 +212,8 @@ export interface SwimlaneYearData {
   fields: Record<string, SwimlaneStatusType | SwimlaneFieldData>;
   jobs?: QueueJob[]; // Preserve the actual job data
   latestTimestamp?: number; // Timestamp of the latest attempt
+  // Optional thread identifier for grouping runs; populated by the swimlane view conversion logic
+  threadId?: string;
 }
 
 export interface SwimlaneCompany {

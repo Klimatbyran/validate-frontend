@@ -20,6 +20,55 @@ import { JobRelationshipsSection } from "./job-details/JobRelationshipsSection";
 import { SchemaSection } from "./job-details/SchemaSection";
 import { authenticatedFetch } from "@/lib/api-helpers";
 
+// Helper function to extract markdown from job data
+// Checks various possible locations where markdown might be stored
+function extractMarkdownFromJob(job?: QueueJob | null, effectiveJob?: any, detailed?: any): string | undefined {
+  // Check multiple possible locations for markdown
+  const jobData = effectiveJob?.data || job?.data || (effectiveJob as any)?.jobData || (detailed as any)?.jobData;
+  const returnValue = effectiveJob?.returnValue ?? (effectiveJob as any)?.returnvalue ?? job?.returnValue ?? (job as any)?.returnvalue;
+  
+  // Check in job data
+  if (jobData?.markdown && typeof jobData.markdown === 'string') {
+    return jobData.markdown;
+  }
+  
+  // Check in return value
+  if (returnValue) {
+    let parsedReturnValue = returnValue;
+    if (typeof returnValue === 'string' && isJsonString(returnValue)) {
+      try {
+        parsedReturnValue = JSON.parse(returnValue);
+      } catch {
+        // If parsing fails, check if it's markdown directly
+        if (isMarkdown(returnValue)) {
+          return returnValue;
+        }
+        return undefined;
+      }
+    }
+    
+    if (typeof parsedReturnValue === 'object' && parsedReturnValue !== null) {
+      // Check top-level markdown
+      if (parsedReturnValue.markdown && typeof parsedReturnValue.markdown === 'string') {
+        return parsedReturnValue.markdown;
+      }
+      // Check in value.markdown
+      if (parsedReturnValue.value?.markdown && typeof parsedReturnValue.value.markdown === 'string') {
+        return parsedReturnValue.value.markdown;
+      }
+    } else if (typeof parsedReturnValue === 'string' && isMarkdown(parsedReturnValue)) {
+      return parsedReturnValue;
+    }
+  }
+  
+  // Check in detailed job data
+  if (detailed?.data?.markdown && typeof detailed.data.markdown === 'string') {
+    return detailed.data.markdown;
+  }
+  
+  return undefined;
+}
+
 interface JobDetailsDialogProps {
   job: QueueJob | null;
   isOpen: boolean;
@@ -124,10 +173,72 @@ export function JobDetailsDialog({
       return;
     }
 
-    // Retry without overriding any data - send empty data object
-    const requestData = {
-      data: {},
+    // Base data comes from the job's existing data shape (flattened, no nested jobData)
+    const rawData =
+      (effectiveJob as any).data ||
+      (effectiveJob as any).jobData ||
+      (job as any)?.data ||
+      (job as any)?.jobData ||
+      {};
+    const { jobData: nestedJobData, ...rest } = rawData as any;
+    const flattenedBaseData = {
+      ...(nestedJobData || {}),
+      ...rest,
     };
+
+    // Retry, optionally overriding runOnly for scope follow-up jobs
+    let runOnly: string[] | undefined;
+    if (effectiveJob.queueId === "followUpScope12") {
+      runOnly = ["scope1", "scope2"];
+    } else if (effectiveJob.queueId === "followUpScope1") {
+      runOnly = ["scope1"];
+    } else if (effectiveJob.queueId === "followUpScope2") {
+      runOnly = ["scope2"];
+    } else if (effectiveJob.queueId === "followUpScope3") {
+      runOnly = ["scope3"];
+    }
+
+    // For extractEmissions jobs, add markdown context if available
+    let markdownContext: {
+      markdownContextScope1?: string;
+      markdownContextScope2?: string;
+      markdownContextScope12?: string;
+    } = {};
+    
+    if (effectiveJob.queueId === "extractEmissions") {
+      const extractedMarkdown = extractMarkdownFromJob(job, effectiveJob, detailed);
+      if (extractedMarkdown) {
+        // Use the same markdown for all scope contexts
+        markdownContext = {
+          markdownContextScope1: extractedMarkdown,
+          markdownContextScope2: extractedMarkdown,
+          markdownContextScope12: extractedMarkdown,
+        };
+      }
+    }
+
+    const requestData = {
+      data: runOnly
+        ? {
+            ...flattenedBaseData,
+            runOnly,
+            ...markdownContext,
+          }
+        : {
+            ...flattenedBaseData,
+            ...markdownContext,
+          },
+    };
+
+    try {
+      console.log("[JobDetailsDialog] Retry request payload", {
+        queueId: effectiveJob.queueId,
+        id: effectiveJob.id,
+        requestData,
+      });
+    } catch {
+      // ignore logging errors
+    }
 
     try {
       const response = await authenticatedFetch(

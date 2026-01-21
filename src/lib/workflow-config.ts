@@ -40,6 +40,8 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   guessWikidata: "Wikidata",
   diffReportingPeriods: "Diff rapportperioder",
   extractEmissions: "Extrahera utsläpp",
+  followUpScope1: "Uppföljning Scope 1",
+  followUpScope2: "Uppföljning Scope 2",
   followUpScope12: "Uppföljning Scope 1&2",
   followUpScope3: "Uppföljning Scope 3",
   followUpBiogenic: "Uppföljning Biogenisk",
@@ -91,6 +93,8 @@ export const PIPELINE_STEPS: PipelineStep[] = [
     description: "AI-powered data extraction and analysis",
     stageIds: [
       "diffReportingPeriods",
+      "followUpScope1",
+      "followUpScope2",
       "followUpScope12",
       "followUpScope3",
       "followUpBiogenic",

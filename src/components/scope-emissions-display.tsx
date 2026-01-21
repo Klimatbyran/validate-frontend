@@ -14,6 +14,11 @@ interface Scope12EmissionsData {
       unknown?: number;   // Unspecified scope 2 emissions
       unit: 'tCO2e' | 'tCO2';
     } | null;
+    // Optional combined Scope 1+2 value from the worker
+    scope1And2?: {
+      total: number;
+      unit: 'tCO2e' | 'tCO2';
+    } | null;
   }>;
 }
 

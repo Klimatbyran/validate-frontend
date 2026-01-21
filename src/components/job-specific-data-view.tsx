@@ -23,26 +23,27 @@ interface JobSpecificDataViewProps {
 
 // Utility function to parse return value data from job
 function parseReturnValueData(job?: QueueJob): any {
-  if (!job?.returnValue) return null;
+  const rawReturnValue = job?.returnValue ?? (job as any)?.returnvalue;
+  if (!rawReturnValue) return null;
 
-  if (typeof job.returnValue === "string" && isJsonString(job.returnValue)) {
+  if (typeof rawReturnValue === "string" && isJsonString(rawReturnValue)) {
     try {
-      return JSON.parse(job.returnValue);
+      return JSON.parse(rawReturnValue);
     } catch (e) {
       return null;
     }
-  } else if (typeof job.returnValue === "object") {
+  } else if (typeof rawReturnValue === "object") {
     // If returnValue.value exists, use it as the main return value
-    if ("value" in job.returnValue && job.returnValue.value) {
-      return job.returnValue.value;
+    if ("value" in rawReturnValue && (rawReturnValue as any).value) {
+      return (rawReturnValue as any).value;
     } else {
-      return job.returnValue;
+      return rawReturnValue;
     }
   }
   return null;
 }
 
-// Helper function to get scope data from various sources
+// Helper function to get scope 1+2 array data from various sources
 function getScopeData(processedData: any, returnValueData: any): any {
   const hasScopeData =
     (processedData.scope12 && Array.isArray(processedData.scope12)) ||
@@ -77,6 +78,35 @@ function getScopeData(processedData: any, returnValueData: any): any {
   return null;
 }
 
+// Helper function to get the combined Scope 1+2 value
+// Shape is deterministic: scope12[0].scope1And2 on the job output
+function getScope1And2Value(processedData: any, returnValueData: any): any {
+  if (returnValueData && typeof returnValueData === "object") {
+    const topLevelScope12 = (returnValueData as any).scope12;
+    const nestedScope12 = (returnValueData as any).value?.scope12;
+    const scope12Array = Array.isArray(topLevelScope12)
+      ? topLevelScope12
+      : Array.isArray(nestedScope12)
+      ? nestedScope12
+      : null;
+
+    if (scope12Array && scope12Array[0]?.scope1And2) {
+      return scope12Array[0].scope1And2;
+    }
+  }
+
+  if (
+    processedData &&
+    typeof processedData === "object" &&
+    Array.isArray((processedData as any).scope12) &&
+    (processedData as any).scope12[0]?.scope1And2
+  ) {
+    return (processedData as any).scope12[0].scope1And2;
+  }
+
+  return null;
+}
+
 // Helper to get scope 3 data from various sources
 function getScope3Data(processedData: any, returnValueData: any): any {
   const hasScope3 = (
@@ -89,6 +119,55 @@ function getScope3Data(processedData: any, returnValueData: any): any {
   if (returnValueData && typeof returnValueData === 'object' && Array.isArray((returnValueData as any).scope3)) return (returnValueData as any).scope3;
   if (returnValueData && typeof returnValueData === 'object' && (returnValueData as any).value && Array.isArray((returnValueData as any).value.scope3)) return (returnValueData as any).value.scope3;
   return null;
+}
+
+// Helper function to extract markdown from job data
+// Checks various possible locations where markdown might be stored
+function extractMarkdownFromJob(job?: QueueJob, effectiveJob?: any, detailed?: any): string | undefined {
+  // Check multiple possible locations for markdown
+  const jobData = effectiveJob?.data || job?.data || (effectiveJob as any)?.jobData || (detailed as any)?.jobData;
+  const returnValue = effectiveJob?.returnValue ?? (effectiveJob as any)?.returnvalue ?? job?.returnValue ?? (job as any)?.returnvalue;
+  
+  // Check in job data
+  if (jobData?.markdown && typeof jobData.markdown === 'string') {
+    return jobData.markdown;
+  }
+  
+  // Check in return value
+  if (returnValue) {
+    let parsedReturnValue = returnValue;
+    if (typeof returnValue === 'string' && isJsonString(returnValue)) {
+      try {
+        parsedReturnValue = JSON.parse(returnValue);
+      } catch {
+        // If parsing fails, check if it's markdown directly
+        if (isMarkdown(returnValue)) {
+          return returnValue;
+        }
+        return undefined;
+      }
+    }
+    
+    if (typeof parsedReturnValue === 'object' && parsedReturnValue !== null) {
+      // Check top-level markdown
+      if (parsedReturnValue.markdown && typeof parsedReturnValue.markdown === 'string') {
+        return parsedReturnValue.markdown;
+      }
+      // Check in value.markdown
+      if (parsedReturnValue.value?.markdown && typeof parsedReturnValue.value.markdown === 'string') {
+        return parsedReturnValue.value.markdown;
+      }
+    } else if (typeof parsedReturnValue === 'string' && isMarkdown(parsedReturnValue)) {
+      return parsedReturnValue;
+    }
+  }
+  
+  // Check in detailed job data
+  if (detailed?.data?.markdown && typeof detailed.data.markdown === 'string') {
+    return detailed.data.markdown;
+  }
+  
+  return undefined;
 }
 
 // Helper to get wikidata approval data from approval object
@@ -298,7 +377,10 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       isFailed: (detailed as any).isFailed ?? job.isFailed,
       timestamp: (detailed as any).timestamp ?? job.timestamp,
       // Merge return value and data
-      returnValue: (detailed as any).returnvalue ?? job.returnValue,
+      returnValue:
+        (detailed as any).returnvalue ??
+        job.returnValue ??
+        (job as any).returnvalue,
       // Merge both shapes from details: base on original, then detailed.data, then detailed.jobData
       data: {
         ...(job.data || {}),
@@ -371,6 +453,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const scopeData = getScopeData(processedData, returnValueData);
   const scope3Data = getScope3Data(processedData, returnValueData);
   const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob, detailed);
+  const scope1And2Value = getScope1And2Value(processedData, returnValueData);
   const wikidataId: string | undefined = React.useMemo(() => {
     const fromJob = getWikidataInfo(effectiveJob as any)?.node;
     const fromProcessed = (processedData as any)?.wikidataId || (processedData as any)?.wikidata?.node;
@@ -435,6 +518,23 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       });
     } catch (_) {}
   }, [job?.id, job?.queueId, Boolean(job?.returnValue), wikidataId, Boolean(scope3Data), effectiveJob, detailed]);
+
+  // Debug logging specifically for scope 1/2 follow-up jobs and scope1And2 extraction
+  React.useEffect(() => {
+    if (!job) return;
+    try {
+      console.log("[JobSpecificDataView] scope1+2 debug", {
+        jobId: job.id,
+        queueId: job.queueId,
+        hasReturnValue: !!(job as any)?.returnvalue || !!job.returnValue,
+        returnValueData,
+        processedData,
+        scope1And2Value,
+      });
+    } catch {
+      // ignore logging errors
+    }
+  }, [job?.id, job?.queueId, scope1And2Value, processedData, returnValueData]);
 
   // Helper function to refresh job data after rerun
   const refreshJobData = async () => {
@@ -588,10 +688,72 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       return;
     }
 
-    // Rerun without overriding any data - send empty data object
-    const requestData = {
-      data: {},
+    // Base data comes from the job's existing data shape (flattened, no nested jobData)
+    const rawData =
+      (effectiveJob as any).data ||
+      (effectiveJob as any).jobData ||
+      (job as any)?.data ||
+      (job as any)?.jobData ||
+      {};
+    const { jobData: nestedJobData, ...rest } = rawData as any;
+    const flattenedBaseData = {
+      ...(nestedJobData || {}),
+      ...rest,
     };
+
+    // Rerun, optionally overriding runOnly for scope follow-up jobs
+    let runOnly: string[] | undefined;
+    if (effectiveJob.queueId === "followUpScope12") {
+      runOnly = ["scope1", "scope2"];
+    } else if (effectiveJob.queueId === "followUpScope1") {
+      runOnly = ["scope1"];
+    } else if (effectiveJob.queueId === "followUpScope2") {
+      runOnly = ["scope2"];
+    } else if (effectiveJob.queueId === "followUpScope3") {
+      runOnly = ["scope3"];
+    }
+
+    // For extractEmissions jobs, add markdown context if available
+    let markdownContext: {
+      markdownContextScope1?: string;
+      markdownContextScope2?: string;
+      markdownContextScope12?: string;
+    } = {};
+    
+    if (effectiveJob.queueId === "extractEmissions") {
+      const extractedMarkdown = extractMarkdownFromJob(job, effectiveJob, detailed);
+      if (extractedMarkdown) {
+        // Use the same markdown for all scope contexts
+        markdownContext = {
+          markdownContextScope1: extractedMarkdown,
+          markdownContextScope2: extractedMarkdown,
+          markdownContextScope12: extractedMarkdown,
+        };
+      }
+    }
+
+    const requestData = {
+      data: runOnly
+        ? {
+            ...flattenedBaseData,
+            runOnly,
+            ...markdownContext,
+          }
+        : {
+            ...flattenedBaseData,
+            ...markdownContext,
+          },
+    };
+
+    try {
+      console.log("[JobSpecificDataView] Rerun request payload", {
+        queueId: effectiveJob.queueId,
+        id: effectiveJob.id,
+        requestData,
+      });
+    } catch {
+      // ignore logging errors
+    }
 
     try {
       const response = await authenticatedFetch(
@@ -626,6 +788,10 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     effectiveJob && effectiveJob.queueId === "followUpScope12";
   const isFollowUpScope3Job =
     effectiveJob && effectiveJob.queueId === "followUpScope3";
+  const isFollowUpScope1Job =
+    effectiveJob && effectiveJob.queueId === "followUpScope1";
+  const isFollowUpScope2Job =
+    effectiveJob && effectiveJob.queueId === "followUpScope2";
 
   // Handle "rerun and save" for scope 1+2 (followUpScope12 queue)
   const handleRerunAndSaveScope12 = async () => {
@@ -643,7 +809,11 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ scopes: ["scope1+2"] }),
+          // Important: scopes controls what the worker actually runs
+          // For the combined job we want to run scope1 and scope2 separately
+          body: JSON.stringify({
+            scopes: ["scope1", "scope2"],
+          }),
         }
       );
 
@@ -662,6 +832,96 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       await refreshJobData();
     } catch (error) {
       console.error("Error rerunning and saving scope1+2 job:", error);
+      toast.error(
+        `Ett fel uppstod vid omkörning: ${
+          error instanceof Error ? error.message : "Okänt fel"
+        }`
+      );
+    }
+  };
+
+  // Handle "rerun and save" for scope 1 (followUpScope1 queue)
+  const handleRerunAndSaveScope1 = async () => {
+    if (!effectiveJob || !effectiveJob.id) {
+      console.error("Cannot rerun and save: missing job information");
+      toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/queues/followUpScope1/${encodeURIComponent(
+          effectiveJob.id
+        )}/rerun-and-save`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scopes: ["scope1"],
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Failed to rerun and save scope1 job:", errorText);
+        toast.error(
+          `Kunde inte köra om och spara scope1: ${
+            errorText || "Okänt fel"
+          }`
+        );
+        return;
+      }
+
+      toast.success("Scope 1 körs om och sparas");
+      await refreshJobData();
+    } catch (error) {
+      console.error("Error rerunning and saving scope1 job:", error);
+      toast.error(
+        `Ett fel uppstod vid omkörning: ${
+          error instanceof Error ? error.message : "Okänt fel"
+        }`
+      );
+    }
+  };
+
+  // Handle "rerun and save" for scope 2 (followUpScope2 queue)
+  const handleRerunAndSaveScope2 = async () => {
+    if (!effectiveJob || !effectiveJob.id) {
+      console.error("Cannot rerun and save: missing job information");
+      toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/queues/followUpScope2/${encodeURIComponent(
+          effectiveJob.id
+        )}/rerun-and-save`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scopes: ["scope2"],
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Failed to rerun and save scope2 job:", errorText);
+        toast.error(
+          `Kunde inte köra om och spara scope2: ${
+            errorText || "Okänt fel"
+          }`
+        );
+        return;
+      }
+
+      toast.success("Scope 2 körs om och sparas");
+      await refreshJobData();
+    } catch (error) {
+      console.error("Error rerunning and saving scope2 job:", error);
       toast.error(
         `Ett fel uppstod vid omkörning: ${
           error instanceof Error ? error.message : "Okänt fel"
@@ -783,6 +1043,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
           <ScopeEmissionsDisplay data={{ scope12: scopeData }} wikidataId={wikidataId} />
         </div>
       )}
+      {/* Combined Scope 1+2 value is now surfaced inside the Scope 1 card in the Scope 1 & 2 panel */}
       {/* Show Scope 3 emissions data if available */}
       {scope3Data && (
         <div className="mb-4">
@@ -853,6 +1114,28 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Kör om och spara Scope 1+2
+            </Button>
+          )}
+          {isFollowUpScope1Job && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRerunAndSaveScope1}
+              className="text-green-03 hover:bg-green-03/10"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Kör om och spara Scope 1
+            </Button>
+          )}
+          {isFollowUpScope2Job && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRerunAndSaveScope2}
+              className="text-green-03 hover:bg-green-03/10"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Kör om och spara Scope 2
             </Button>
           )}
           {isFollowUpScope3Job && (
