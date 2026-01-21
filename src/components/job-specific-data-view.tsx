@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { getJobStatus } from "@/lib/workflow-utils";
 import { cn } from "@/lib/utils";
 import { authenticatedFetch } from "@/lib/api-helpers";
+import { buildRerunRequestData } from "@/lib/job-rerun-utils";
 
 interface JobSpecificDataViewProps {
   data: any;
@@ -23,26 +24,27 @@ interface JobSpecificDataViewProps {
 
 // Utility function to parse return value data from job
 function parseReturnValueData(job?: QueueJob): any {
-  if (!job?.returnValue) return null;
+  const rawReturnValue = job?.returnvalue;
+  if (!rawReturnValue) return null;
 
-  if (typeof job.returnValue === "string" && isJsonString(job.returnValue)) {
+  if (typeof rawReturnValue === "string" && isJsonString(rawReturnValue)) {
     try {
-      return JSON.parse(job.returnValue);
+      return JSON.parse(rawReturnValue);
     } catch (e) {
       return null;
     }
-  } else if (typeof job.returnValue === "object") {
+  } else if (typeof rawReturnValue === "object") {
     // If returnValue.value exists, use it as the main return value
-    if ("value" in job.returnValue && job.returnValue.value) {
-      return job.returnValue.value;
+    if ("value" in rawReturnValue && (rawReturnValue as any).value) {
+      return (rawReturnValue as any).value;
     } else {
-      return job.returnValue;
+      return rawReturnValue;
     }
   }
   return null;
 }
 
-// Helper function to get scope data from various sources
+// Helper function to get scope 1+2 array data from various sources
 function getScopeData(processedData: any, returnValueData: any): any {
   const hasScopeData =
     (processedData.scope12 && Array.isArray(processedData.scope12)) ||
@@ -92,10 +94,8 @@ function getScope3Data(processedData: any, returnValueData: any): any {
 }
 
 // Helper to get wikidata approval data from approval object
-function getWikidataApprovalData(job?: QueueJob, effectiveJob?: any, detailed?: any): any {
-  // Check for approval object in jobData
-  // Check multiple possible locations: effectiveJob.data, job.data, detailed.jobData
-  const jobData = effectiveJob?.data || job?.data || (effectiveJob as any)?.jobData || (detailed as any)?.jobData;
+function getWikidataApprovalData(job?: QueueJob, effectiveJob?: any): any {
+  const jobData = effectiveJob?.data || job?.data;
   const approval = jobData?.approval;
   
   if (approval && typeof approval === "object") {
@@ -270,7 +270,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   React.useEffect(() => {
     let aborted = false;
     async function loadDetails() {
-      if (!job || job.returnValue) return;
+      if (!job || job.returnvalue) return;
       if (!job.queueId || !job.id) return;
       try {
         setIsLoading(true);
@@ -284,7 +284,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     }
     loadDetails();
     return () => { aborted = true; };
-  }, [job?.id, job?.queueId, Boolean(job?.returnValue)]);
+  }, [job?.id, job?.queueId, Boolean(job?.returnvalue)]);
 
   const effectiveJob = React.useMemo(() => {
     if (!job) return undefined;
@@ -297,13 +297,12 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       finishedOn: (detailed as any).finishedOn ?? job.finishedOn,
       isFailed: (detailed as any).isFailed ?? job.isFailed,
       timestamp: (detailed as any).timestamp ?? job.timestamp,
-      // Merge return value and data
-      returnValue: (detailed as any).returnvalue ?? job.returnValue,
-      // Merge both shapes from details: base on original, then detailed.data, then detailed.jobData
+      // Merge return value and data (deterministic shapes for detailed job responses)
+      returnvalue: (detailed as any).returnvalue ?? job.returnvalue,
+      // Merge data from list job and detailed job (no legacy jobData shape)
       data: {
         ...(job.data || {}),
         ...(detailed as any)?.data,
-        ...(detailed as any)?.jobData,
       },
       progress: (detailed as any).progress ?? job.progress,
       failedReason: (detailed as any).failedReason ?? (job as any).failedReason,
@@ -370,7 +369,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   // Get scope data for rendering
   const scopeData = getScopeData(processedData, returnValueData);
   const scope3Data = getScope3Data(processedData, returnValueData);
-  const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob, detailed);
+  const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob);
   const wikidataId: string | undefined = React.useMemo(() => {
     const fromJob = getWikidataInfo(effectiveJob as any)?.node;
     const fromProcessed = (processedData as any)?.wikidataId || (processedData as any)?.wikidata?.node;
@@ -421,20 +420,18 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       console.log('[JobSpecificDataView] scope3 panel context', {
         jobId: job?.id,
         queueId: job?.queueId,
-        hasReturnValue: !!job?.returnValue,
+        hasReturnValue: !!job?.returnvalue,
         derivedWikidataId: wikidataId,
         hasScope3Data: !!scope3Data,
       });
       console.log('[JobSpecificDataView] threadId sources', {
         dataThreadId: (job as any)?.data?.threadId,
-        jobDataThreadId: (job as any)?.jobData?.threadId,
         effectiveDataThreadId: (effectiveJob as any)?.data?.threadId,
         detailedKeys: detailed ? Object.keys(detailed) : [],
         detailedDataKeys: (detailed as any)?.data ? Object.keys((detailed as any).data) : [],
-        detailedJobDataKeys: (detailed as any)?.jobData ? Object.keys((detailed as any).jobData) : [],
       });
     } catch (_) {}
-  }, [job?.id, job?.queueId, Boolean(job?.returnValue), wikidataId, Boolean(scope3Data), effectiveJob, detailed]);
+  }, [job?.id, job?.queueId, Boolean(job?.returnvalue), wikidataId, Boolean(scope3Data), effectiveJob, detailed]);
 
   // Helper function to refresh job data after rerun
   const refreshJobData = async () => {
@@ -588,10 +585,12 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       return;
     }
 
-    // Rerun without overriding any data - send empty data object
-    const requestData = {
-      data: {},
-    };
+    const requestData = buildRerunRequestData(
+      effectiveJob.queueId,
+      job,
+      effectiveJob,
+      detailed
+    );
 
     try {
       const response = await authenticatedFetch(
@@ -626,90 +625,38 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     effectiveJob && effectiveJob.queueId === "followUpScope12";
   const isFollowUpScope3Job =
     effectiveJob && effectiveJob.queueId === "followUpScope3";
+  const isFollowUpScope1Job =
+    effectiveJob && effectiveJob.queueId === "followUpScope1";
+  const isFollowUpScope2Job =
+    effectiveJob && effectiveJob.queueId === "followUpScope2";
 
-  // Handle "rerun and save" for scope 1+2 (followUpScope12 queue)
-  const handleRerunAndSaveScope12 = async () => {
-    if (!effectiveJob || !effectiveJob.id) {
-      console.error("Cannot rerun and save: missing job information");
+  // Generic handler for "rerun and save" operations
+  const handleRerunAndSave = async (queueName: string, scopes: string[], label: string) => {
+    if (!effectiveJob?.id) {
       toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
       return;
     }
 
     try {
       const response = await authenticatedFetch(
-        `/api/queues/followUpScope12/${encodeURIComponent(
-          effectiveJob.id
-        )}/rerun-and-save`,
+        `/api/queues/${queueName}/${encodeURIComponent(effectiveJob.id)}/rerun-and-save`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ scopes: ["scope1+2"] }),
+          body: JSON.stringify({ scopes }),
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Failed to rerun and save scope1+2 job:", errorText);
-        toast.error(
-          `Kunde inte köra om och spara scope1+2: ${
-            errorText || "Okänt fel"
-          }`
-        );
+        toast.error(`Kunde inte köra om och spara ${label}: ${errorText || "Okänt fel"}`);
         return;
       }
 
-      toast.success("Scope 1+2 körs om och sparas");
+      toast.success(`${label} körs om och sparas`);
       await refreshJobData();
     } catch (error) {
-      console.error("Error rerunning and saving scope1+2 job:", error);
-      toast.error(
-        `Ett fel uppstod vid omkörning: ${
-          error instanceof Error ? error.message : "Okänt fel"
-        }`
-      );
-    }
-  };
-
-  // Handle "rerun and save" for scope 3 (followUpScope3 queue)
-  const handleRerunAndSaveScope3 = async () => {
-    if (!effectiveJob || !effectiveJob.id) {
-      console.error("Cannot rerun and save: missing job information");
-      toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
-      return;
-    }
-
-    try {
-      const response = await authenticatedFetch(
-        `/api/queues/followUpScope3/${encodeURIComponent(
-          effectiveJob.id
-        )}/rerun-and-save`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ scopes: ["scope3"] }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Failed to rerun and save scope3 job:", errorText);
-        toast.error(
-          `Kunde inte köra om och spara scope3: ${
-            errorText || "Okänt fel"
-          }`
-        );
-        return;
-      }
-
-      toast.success("Scope 3 körs om och sparas");
-      await refreshJobData();
-    } catch (error) {
-      console.error("Error rerunning and saving scope3 job:", error);
-      toast.error(
-        `Ett fel uppstod vid omkörning: ${
-          error instanceof Error ? error.message : "Okänt fel"
-        }`
-      );
+      toast.error(`Ett fel uppstod vid omkörning: ${error instanceof Error ? error.message : "Okänt fel"}`);
     }
   };
 
@@ -783,6 +730,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
           <ScopeEmissionsDisplay data={{ scope12: scopeData }} wikidataId={wikidataId} />
         </div>
       )}
+      {/* Combined Scope 1+2 value is now surfaced inside the Scope 1 card in the Scope 1 & 2 panel */}
       {/* Show Scope 3 emissions data if available */}
       {scope3Data && (
         <div className="mb-4">
@@ -848,18 +796,40 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleRerunAndSaveScope12}
+              onClick={() => handleRerunAndSave("followUpScope12", ["scope1", "scope2"], "Scope 1+2")}
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Kör om och spara Scope 1+2
             </Button>
           )}
+          {isFollowUpScope1Job && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleRerunAndSave("followUpScope1", ["scope1"], "Scope 1")}
+              className="text-green-03 hover:bg-green-03/10"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Kör om och spara Scope 1
+            </Button>
+          )}
+          {isFollowUpScope2Job && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleRerunAndSave("followUpScope2", ["scope2"], "Scope 2")}
+              className="text-green-03 hover:bg-green-03/10"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Kör om och spara Scope 2
+            </Button>
+          )}
           {isFollowUpScope3Job && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleRerunAndSaveScope3}
+              onClick={() => handleRerunAndSave("followUpScope3", ["scope3"], "Scope 3")}
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />

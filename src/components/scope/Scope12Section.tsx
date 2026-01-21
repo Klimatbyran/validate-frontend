@@ -17,6 +17,11 @@ interface Scope12EmissionsData {
       unknown?: number;   // Unspecified scope 2 emissions
       unit: 'tCO2e' | 'tCO2';
     } | null;
+    // Optional combined Scope 1+2 value from the worker
+    scope1And2?: {
+      total: number;
+      unit: 'tCO2e' | 'tCO2';
+    } | null;
   }>;
 }
 
@@ -27,7 +32,14 @@ interface Scope12EmissionsDisplayProps {
 
 type Scope12ReferenceSnapshot = {
   scope1?: { total: number | null; unit: string | null } | null;
-  scope2?: { mb?: number | null; lb?: number | null; unknown?: number | null; unit: string | null } | null;
+  scope2?: {
+    mb?: number | null;
+    lb?: number | null;
+    unknown?: number | null;
+    unit: string | null;
+  } | null;
+  // Optional combined Scope 1+2 value from prod API (if available)
+  scope1And2?: { total: number | null; unit: string | null } | null;
 } | null;
 
 async function fetchCompanyById(companyId: string, signal: AbortSignal) {
@@ -54,6 +66,7 @@ function buildReferenceSnapshotFromPeriod(period: any): Scope12ReferenceSnapshot
   if (!period?.emissions) return null;
   const s1 = period.emissions.scope1;
   const s2 = period.emissions.scope2;
+  const s12 = (period.emissions as any).scope1And2;
   return {
     scope1: s1
       ? {
@@ -67,6 +80,13 @@ function buildReferenceSnapshotFromPeriod(period: any): Scope12ReferenceSnapshot
           lb: s2.lb ?? null,
           unknown: s2.unknown ?? null,
           unit: s2.unit ?? null,
+        }
+      : null,
+    scope1And2: s12
+      ? {
+          total:
+            typeof s12.total === "number" ? s12.total : (s12.total ?? null),
+          unit: s12.unit ?? null,
         }
       : null,
   };
@@ -115,26 +135,47 @@ interface Scope1CardProps {
     total: number;
     unit: 'tCO2e' | 'tCO2';
   } | null;
+  combinedScope1And2?: {
+    total: number;
+    unit: 'tCO2e' | 'tCO2';
+  } | null;
+  matchStatus?: 'match' | 'mismatch' | 'none';
 }
 
-function Scope1Card({ data }: Scope1CardProps) {
-  if (!data) return null;
+function Scope1Card({ data, combinedScope1And2, matchStatus = 'none' }: Scope1CardProps) {
+  const hasScope1 = !!data && typeof data.total === 'number';
+  const hasCombined = !!combinedScope1And2 && typeof combinedScope1And2.total === 'number';
+
+  if (!hasScope1 && !hasCombined) return null;
+
+  const displayTotal = hasScope1 ? data!.total : combinedScope1And2!.total;
+  const displayUnit = (hasScope1 ? data!.unit : combinedScope1And2!.unit) || 'tCO2e';
+  const title = hasScope1 ? 'Scope 1' : 'Scope 1+2';
   
   return (
     <EmissionCard 
       icon={<Building2 className="w-5 h-5 text-orange-600" />}
-      title="Scope 1"
+      title={title}
       className="mr-0 md:mr-2"
     >
       <div className="font-extrabold text-gray-900 text-4xl mb-1">
-        {formatNumber(data.total)}
+        {formatNumber(displayTotal)}
       </div>
       <div className="text-base text-gray-700">
-        {data.unit || 'tCO2e'}
+        {displayUnit}
       </div>
       <div className="text-sm text-gray-500 mt-2">
         Direkta utsläpp
       </div>
+      {matchStatus !== 'none' && (
+        <div className="text-xs mt-2">
+          {matchStatus === 'match' ? (
+            <span className="text-green-700">✓ Stämmer med prod</span>
+          ) : (
+            <span className="text-red-600">✗ Avviker från prod</span>
+          )}
+        </div>
+      )}
     </EmissionCard>
   );
 }
@@ -226,14 +267,17 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
     };
   }, [wikidataId, yearsKey]);
 
-  const hasScope1 = latestYear.scope1?.total !== undefined;
+  const hasScope1 =
+    latestYear.scope1?.total !== undefined ||
+    latestYear.scope1And2?.total !== undefined;
+  const hasCombinedScope1And2 = latestYear.scope1And2?.total !== undefined;
   const hasScope2 = latestYear.scope2 && (
     latestYear.scope2.mb != null || 
     latestYear.scope2.lb != null || 
     latestYear.scope2.unknown != null
   );
 
-  if (!hasScope1 && !hasScope2) {
+  if (!hasScope1 && !hasScope2 && !hasCombinedScope1And2) {
     return null;
   }
 
@@ -250,10 +294,24 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
     );
     const ourS1 = latestYear.scope1;
     const ourS2 = latestYear.scope2;
+    const ourCombined = latestYear.scope1And2;
     const s1Match = (ourS1?.total ?? null) === (snapshot.scope1?.total ?? null);
     const s2MbMatch = (ourS2?.mb ?? null) === (snapshot.scope2?.mb ?? null);
     const s2LbMatch = (ourS2?.lb ?? null) === (snapshot.scope2?.lb ?? null);
-    const s2UnknownMatch = (ourS2?.unknown ?? null) === (snapshot.scope2?.unknown ?? null);
+    const s2UnknownMatch =
+      (ourS2?.unknown ?? null) === (snapshot.scope2?.unknown ?? null);
+
+    const snapshotCombined = snapshot.scope1And2;
+    const hasSnapshotCombined =
+      snapshotCombined && typeof snapshotCombined.total === "number";
+    // If we have our own combined value but prod has null/undefined,
+    // treat that as a clear mismatch rather than "no data"
+    const combinedMatch =
+      ourCombined?.total != null
+        ? hasSnapshotCombined
+          ? ourCombined.total === snapshotCombined.total
+          : false
+        : null;
     return (
       <div className="bg-green-700 border border-green-800 rounded-xl p-4 mb-4">
         <div className="flex items-center gap-2 mb-2">
@@ -296,6 +354,26 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
                   {s2UnknownMatch ? <span className="text-green-400">✓</span> : <span className="text-red-300">✗</span>}
                 </span>
               </div>
+              {ourCombined && (
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="text-sm text-white">Scope 1+2 totalt</span>
+                  <span className="text-sm font-semibold text-white flex items-center gap-2">
+                    {snapshotCombined?.total != null
+                      ? snapshotCombined.total.toLocaleString("sv-SE")
+                      : "—"}
+                    {snapshotCombined?.unit
+                      ? ` ${snapshotCombined.unit}`
+                      : ""}
+                    {combinedMatch != null && (
+                      combinedMatch ? (
+                        <span className="text-green-400">✓</span>
+                      ) : (
+                        <span className="text-red-300">✗</span>
+                      )
+                    )}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -332,50 +410,44 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
               )}
             </div>
             <div className="flex flex-col md:flex-row md:items-stretch justify-center gap-4 md:gap-0 mt-2 relative max-w-2xl mx-auto">
-              <Scope1Card data={yearData.scope1} />
+              {(() => {
+                const snapshot = referenceByYear[yearData.year];
+                let matchStatus: 'match' | 'mismatch' | 'none' = 'none';
+
+                if (snapshot) {
+                  if (yearData.scope1 && typeof yearData.scope1.total === 'number') {
+                    const our = yearData.scope1.total ?? null;
+                    const prod = snapshot.scope1?.total ?? null;
+                    if (our != null && prod != null) {
+                      matchStatus = our === prod ? 'match' : 'mismatch';
+                    }
+                  } else if (yearData.scope1And2 && typeof yearData.scope1And2.total === 'number') {
+                    const prodCombined = snapshot.scope1And2;
+                    if (prodCombined && typeof prodCombined.total === "number") {
+                      matchStatus =
+                        yearData.scope1And2.total === prodCombined.total
+                          ? "match"
+                          : "mismatch";
+                    } else {
+                      // We have a combined value but prod explicitly has it null/absent → show clear mismatch
+                      matchStatus = "mismatch";
+                    }
+                  }
+                }
+
+                return (
+                  <Scope1Card
+                    data={yearData.scope1}
+                    combinedScope1And2={yearData.scope1And2}
+                    matchStatus={matchStatus}
+                  />
+                );
+              })()}
               {yearData.scope1 && yearData.scope2 && (
                 <div className="hidden md:block w-0.5 bg-gray-200 mx-2 rounded-full" style={{ minHeight: 180 }} />
               )}
               <Scope2Card data={yearData.scope2} />
             </div>
-            {/* Inline match indicators for this year if reference exists */}
-            {referenceByYear[yearData.year] && (
-              <div className="mt-2 max-w-2xl mx-auto text-xs text-gray-700">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="font-medium">Jämförelse:</span>
-                  <span className="flex items-center gap-1">
-                    <span>Scope 1</span>
-                    {((yearData.scope1?.total ?? null) === (referenceByYear[yearData.year]?.scope1?.total ?? null))
-                      ? <span className="text-green-700">✓</span>
-                      : <span className="text-red-600">✗</span>}
-                  </span>
-                  {yearData.scope2?.mb != null && (
-                    <span className="flex items-center gap-1">
-                      <span>Scope 2 MB</span>
-                      {((yearData.scope2?.mb ?? null) === (referenceByYear[yearData.year]?.scope2?.mb ?? null))
-                        ? <span className="text-green-700">✓</span>
-                        : <span className="text-red-600">✗</span>}
-                    </span>
-                  )}
-                  {yearData.scope2?.lb != null && (
-                    <span className="flex items-center gap-1">
-                      <span>Scope 2 LB</span>
-                      {((yearData.scope2?.lb ?? null) === (referenceByYear[yearData.year]?.scope2?.lb ?? null))
-                        ? <span className="text-green-700">✓</span>
-                        : <span className="text-red-600">✗</span>}
-                    </span>
-                  )}
-                  {yearData.scope2?.unknown != null && (
-                    <span className="flex items-center gap-1">
-                      <span>Scope 2 Ospec</span>
-                      {((yearData.scope2?.unknown ?? null) === (referenceByYear[yearData.year]?.scope2?.unknown ?? null))
-                        ? <span className="text-green-700">✓</span>
-                        : <span className="text-red-600">✗</span>}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         ))}
       </div>
