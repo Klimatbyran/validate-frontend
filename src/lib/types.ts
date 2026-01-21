@@ -86,7 +86,7 @@ export const JobSchema = z
     opts: JobOptionsSchema,
     data: JobDataSchema,
     parent: JobParentSchema,
-    returnValue: z
+    returnvalue: z
       .union([
         z.string(),
         z.number(),
@@ -136,17 +136,8 @@ export interface QueueJob extends Job {
   queueId: string;
 }
 
-// Extended QueueJob type that includes lowercase variants from API responses
-export interface QueueJobWithVariants extends QueueJob {
-  returnvalue?: Job["returnValue"];
-  jobData?: JobData;
-}
-
-// Type for detailed API response that may have different casing
+// Type for detailed API response
 export interface DetailedJobResponse extends Partial<Job> {
-  returnvalue?: Job["returnValue"];
-  jobData?: JobData;
-  data?: JobData;
   failedReason?: string;
 }
 

@@ -1,4 +1,4 @@
-import { QueueJob, QueueJobWithVariants } from "@/lib/types";
+import { QueueJob } from "@/lib/types";
 import { ValueRenderer } from "@/components/ui/value-renderer";
 
 interface ReturnValueSectionProps {
@@ -8,9 +8,7 @@ interface ReturnValueSectionProps {
 export function ReturnValueSection({ job }: ReturnValueSectionProps) {
   if (!job) return null;
 
-  // Check both returnValue (camelCase) and returnvalue (lowercase)
-  const jobWithVariants = job as QueueJobWithVariants;
-  const returnValue = job.returnValue ?? jobWithVariants.returnvalue;
+  const returnValue = job.returnvalue;
 
   if (returnValue === null || returnValue === undefined) {
     return null;

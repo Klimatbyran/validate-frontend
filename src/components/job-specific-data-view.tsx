@@ -24,7 +24,7 @@ interface JobSpecificDataViewProps {
 
 // Utility function to parse return value data from job
 function parseReturnValueData(job?: QueueJob): any {
-  const rawReturnValue = job?.returnValue ?? (job as any)?.returnvalue;
+  const rawReturnValue = job?.returnvalue;
   if (!rawReturnValue) return null;
 
   if (typeof rawReturnValue === "string" && isJsonString(rawReturnValue)) {
@@ -79,35 +79,6 @@ function getScopeData(processedData: any, returnValueData: any): any {
   return null;
 }
 
-// Helper function to get the combined Scope 1+2 value
-// Shape is deterministic: scope12[0].scope1And2 on the job output
-function getScope1And2Value(processedData: any, returnValueData: any): any {
-  if (returnValueData && typeof returnValueData === "object") {
-    const topLevelScope12 = (returnValueData as any).scope12;
-    const nestedScope12 = (returnValueData as any).value?.scope12;
-    const scope12Array = Array.isArray(topLevelScope12)
-      ? topLevelScope12
-      : Array.isArray(nestedScope12)
-      ? nestedScope12
-      : null;
-
-    if (scope12Array && scope12Array[0]?.scope1And2) {
-      return scope12Array[0].scope1And2;
-    }
-  }
-
-  if (
-    processedData &&
-    typeof processedData === "object" &&
-    Array.isArray((processedData as any).scope12) &&
-    (processedData as any).scope12[0]?.scope1And2
-  ) {
-    return (processedData as any).scope12[0].scope1And2;
-  }
-
-  return null;
-}
-
 // Helper to get scope 3 data from various sources
 function getScope3Data(processedData: any, returnValueData: any): any {
   const hasScope3 = (
@@ -123,10 +94,8 @@ function getScope3Data(processedData: any, returnValueData: any): any {
 }
 
 // Helper to get wikidata approval data from approval object
-function getWikidataApprovalData(job?: QueueJob, effectiveJob?: any, detailed?: any): any {
-  // Check for approval object in jobData
-  // Check multiple possible locations: effectiveJob.data, job.data, detailed.jobData
-  const jobData = effectiveJob?.data || job?.data || (effectiveJob as any)?.jobData || (detailed as any)?.jobData;
+function getWikidataApprovalData(job?: QueueJob, effectiveJob?: any): any {
+  const jobData = effectiveJob?.data || job?.data;
   const approval = jobData?.approval;
   
   if (approval && typeof approval === "object") {
@@ -301,7 +270,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   React.useEffect(() => {
     let aborted = false;
     async function loadDetails() {
-      if (!job || job.returnValue) return;
+      if (!job || job.returnvalue) return;
       if (!job.queueId || !job.id) return;
       try {
         setIsLoading(true);
@@ -315,7 +284,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     }
     loadDetails();
     return () => { aborted = true; };
-  }, [job?.id, job?.queueId, Boolean(job?.returnValue)]);
+  }, [job?.id, job?.queueId, Boolean(job?.returnvalue)]);
 
   const effectiveJob = React.useMemo(() => {
     if (!job) return undefined;
@@ -328,16 +297,12 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       finishedOn: (detailed as any).finishedOn ?? job.finishedOn,
       isFailed: (detailed as any).isFailed ?? job.isFailed,
       timestamp: (detailed as any).timestamp ?? job.timestamp,
-      // Merge return value and data
-      returnValue:
-        (detailed as any).returnvalue ??
-        job.returnValue ??
-        (job as any).returnvalue,
-      // Merge both shapes from details: base on original, then detailed.data, then detailed.jobData
+      // Merge return value and data (deterministic shapes for detailed job responses)
+      returnvalue: (detailed as any).returnvalue ?? job.returnvalue,
+      // Merge data from list job and detailed job (no legacy jobData shape)
       data: {
         ...(job.data || {}),
         ...(detailed as any)?.data,
-        ...(detailed as any)?.jobData,
       },
       progress: (detailed as any).progress ?? job.progress,
       failedReason: (detailed as any).failedReason ?? (job as any).failedReason,
@@ -404,8 +369,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   // Get scope data for rendering
   const scopeData = getScopeData(processedData, returnValueData);
   const scope3Data = getScope3Data(processedData, returnValueData);
-  const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob, detailed);
-  const scope1And2Value = getScope1And2Value(processedData, returnValueData);
+  const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob);
   const wikidataId: string | undefined = React.useMemo(() => {
     const fromJob = getWikidataInfo(effectiveJob as any)?.node;
     const fromProcessed = (processedData as any)?.wikidataId || (processedData as any)?.wikidata?.node;
@@ -456,20 +420,18 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       console.log('[JobSpecificDataView] scope3 panel context', {
         jobId: job?.id,
         queueId: job?.queueId,
-        hasReturnValue: !!job?.returnValue,
+        hasReturnValue: !!job?.returnvalue,
         derivedWikidataId: wikidataId,
         hasScope3Data: !!scope3Data,
       });
       console.log('[JobSpecificDataView] threadId sources', {
         dataThreadId: (job as any)?.data?.threadId,
-        jobDataThreadId: (job as any)?.jobData?.threadId,
         effectiveDataThreadId: (effectiveJob as any)?.data?.threadId,
         detailedKeys: detailed ? Object.keys(detailed) : [],
         detailedDataKeys: (detailed as any)?.data ? Object.keys((detailed as any).data) : [],
-        detailedJobDataKeys: (detailed as any)?.jobData ? Object.keys((detailed as any).jobData) : [],
       });
     } catch (_) {}
-  }, [job?.id, job?.queueId, Boolean(job?.returnValue), wikidataId, Boolean(scope3Data), effectiveJob, detailed]);
+  }, [job?.id, job?.queueId, Boolean(job?.returnvalue), wikidataId, Boolean(scope3Data), effectiveJob, detailed]);
 
   // Helper function to refresh job data after rerun
   const refreshJobData = async () => {

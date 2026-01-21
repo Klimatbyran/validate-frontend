@@ -23,28 +23,20 @@ export function getJobData(
 ): Record<string, any> {
   return (
     effectiveJob?.data ||
-    effectiveJob?.jobData ||
     job?.data ||
-    (job as any)?.jobData ||
     detailed?.data ||
-    detailed?.jobData ||
     {}
   );
 }
 
 /**
- * Gets the return value from a job, handling different casings (returnValue vs returnvalue).
+ * Gets the return value from a job.
  */
 export function getReturnValue(
   job?: QueueJob | null,
   effectiveJob?: any
 ): any {
-  return (
-    effectiveJob?.returnValue ??
-    effectiveJob?.returnvalue ??
-    job?.returnValue ??
-    (job as any)?.returnvalue
-  );
+  return effectiveJob?.returnvalue ?? job?.returnvalue;
 }
 
 /**
@@ -111,8 +103,7 @@ export function extractMarkdownFromJob(
 }
 
 /**
- * Flattens job data by merging nested jobData into the top level.
- * Handles the case where data might have a nested jobData field.
+ * Flattens job data by merging any nested `jobData` field into the top level.
  */
 export function flattenJobData(rawData: Record<string, any>): Record<string, any> {
   const { jobData: nestedJobData, ...rest } = rawData;

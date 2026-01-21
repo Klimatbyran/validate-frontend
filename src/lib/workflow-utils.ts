@@ -25,8 +25,7 @@ export function getJobStatus(job: any): SwimlaneStatusType {
 
   // Check for approval status FIRST (before checking other statuses)
   // Jobs waiting for approval might have status "delayed" or "completed"
-  const approval =
-    job.data?.approval || job.jobData?.approval || (job as any)?.approval;
+  const approval = job.data?.approval || (job as any)?.approval;
   const hasApprovalObject = approval && typeof approval === "object";
   const isPendingApproval = hasApprovalObject && approval.approved === false;
 

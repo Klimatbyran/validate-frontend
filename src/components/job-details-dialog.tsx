@@ -1,11 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import {
-  QueueJob,
-  DetailedJobResponse,
-  QueueJobWithVariants,
-} from "@/lib/types";
+import { QueueJob, DetailedJobResponse } from "@/lib/types";
 import { HelpCircle } from "lucide-react";
 import { JobSpecificDataView } from "./job-specific-data-view";
 import { JobDialogHeader } from "./job-details/JobDialogHeader";
@@ -45,7 +41,8 @@ export function JobDetailsDialog({
     let aborted = false;
     async function loadDetails() {
       if (!job) return;
-      if (job.returnValue || (job as QueueJobWithVariants).returnvalue) return;
+      // If we already have a return value on the job, no need to fetch details
+      if (job.returnvalue) return;
       if (!job.queueId || !job.id) return;
       try {
         const res = await fetch(
@@ -67,27 +64,22 @@ export function JobDetailsDialog({
   }, [
     job?.id,
     job?.queueId,
-    Boolean(job?.returnValue),
-    Boolean((job as QueueJobWithVariants)?.returnvalue),
+    Boolean(job?.returnvalue),
   ]);
 
   // Create effectiveJob that merges detailed data (similar to job-specific-data-view)
   const effectiveJob = useMemo(() => {
     if (!job) return null;
     if (!detailed) return job;
-    const jobWithVariants = job as QueueJobWithVariants;
     return {
       ...job,
-      returnValue:
-        detailed.returnvalue ?? job.returnValue ?? jobWithVariants.returnvalue,
-      // Merge both shapes from details
+      returnvalue: detailed.returnvalue ?? job.returnvalue,
       data: {
         ...(job.data || {}),
         ...detailed?.data,
-        ...detailed?.jobData,
       },
       progress: detailed.progress ?? job.progress,
-      failedReason: detailed.failedReason ?? jobWithVariants.failedReason,
+      failedReason: detailed.failedReason ?? job.failedReason,
       stacktrace: detailed.stacktrace || job.stacktrace,
     } as QueueJob;
   }, [job, detailed]);
@@ -96,14 +88,12 @@ export function JobDetailsDialog({
 
   // Debug: log threadId sources for the selected job
   try {
-    const jobWithVariants = job as QueueJobWithVariants;
     console.log("[JobDetailsDialog] Selected job debug", {
       jobId: job.id,
       queueId: job.queueId,
       dataThreadId: job.data?.threadId,
-      jobDataThreadId: jobWithVariants?.jobData?.threadId,
       company: job.data?.company,
-      mergedPreview: { ...jobWithVariants?.jobData, ...job.data },
+      mergedPreview: { ...job.data },
     });
   } catch (_) {}
 
@@ -190,12 +180,7 @@ export function JobDetailsDialog({
 
   // Filter out schema and metadata fields from job data for user-friendly view
   const getFilteredJobDataWithoutSchema = () => {
-    // Merge possible worker data shapes so threadId/company are present regardless
-    const jobWithVariants = job as QueueJobWithVariants;
-    const merged = { ...jobWithVariants?.jobData, ...job.data } as Record<
-      string,
-      unknown
-    >;
+    const merged = (job.data || {}) as Record<string, unknown>;
     const { companyName, description, schema, ...rest } = merged;
     return rest;
   };
