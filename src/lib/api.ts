@@ -302,42 +302,41 @@ export function fetchQueueJobs(
                   prioritized: sortedJobs.filter((job: CustomAPIJob) => job.status === "prioritized").length,
                   "waiting-children": sortedJobs.filter((job: CustomAPIJob) => job.status === "waiting-children").length,
                 },
-                jobs: sortedJobs.map((job: CustomAPIJob) => ({
-                  id: job.id,
-                  name: job.name,
-                  timestamp: job.timestamp,
-                  processedOn: job.processedBy ? job.timestamp : undefined,
-                  finishedOn: job.finishedOn,
-                  progress: job.progress,
-                  attempts: job.attemptsMade,
-                  delay: job.delay,
-                  stacktrace: job.stacktrace || [],
-                  opts: job.opts || {},
-                  // Prefer top-level threadId from API; fall back to processId or id
-                  threadId: (job as any)?.threadId ?? (job as any)?.processId ?? job.id,
-                  data: {
-                    url: job.url,
-                    autoApprove: job.autoApprove,
-                    // Mirror threadId inside data for technical display components
-                    threadId:
-                      (job as any)?.threadId ??
-                      (job as any)?.processId ??
-                      (job as any)?.data?.threadId ??
-                      (job as any)?.jobData?.threadId ??
-                      job.id,
-                    messageId: job.id,
-                    company: job.company,
-                    companyName: job.company,
-                    description: job.approval?.summary,
-                    year: job.year,
-                    status: job.status,
-                    needsApproval: !job.autoApprove && !job.approval?.approved,
-                    comment: job.approval?.metadata?.comment,
-                  },
-                  parent: undefined,
-                  returnValue: job.returnvalue,
-                  isFailed: job.status === "failed",
-                })),
+                jobs: sortedJobs.map((job: CustomAPIJob) => {
+                  const threadId =
+                    (job as any)?.threadId ?? (job as any)?.processId ?? job.id;
+                  return {
+                    id: job.id,
+                    name: job.name,
+                    timestamp: job.timestamp,
+                    processedOn: job.processedBy ? job.timestamp : undefined,
+                    finishedOn: job.finishedOn,
+                    progress: job.progress,
+                    attempts: job.attemptsMade,
+                    delay: job.delay,
+                    stacktrace: job.stacktrace || [],
+                    opts: job.opts || {},
+                    // Prefer top-level threadId from API; fall back to processId or id
+                    threadId,
+                    data: {
+                      url: job.url,
+                      autoApprove: job.autoApprove,
+                      // Mirror threadId inside data for technical display components
+                      threadId,
+                      messageId: job.id,
+                      company: job.company,
+                      companyName: job.company,
+                      description: job.approval?.summary,
+                      year: job.year,
+                      status: job.status,
+                      needsApproval: !job.autoApprove && !job.approval?.approved,
+                      comment: job.approval?.metadata?.comment,
+                    },
+                    parent: undefined,
+                    returnvalue: job.returnvalue,
+                    isFailed: job.status === "failed",
+                  };
+                }),
                 pagination: {
                   pageCount: 1,
                   range: {

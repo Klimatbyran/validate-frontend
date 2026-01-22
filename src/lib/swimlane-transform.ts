@@ -94,7 +94,6 @@ export function convertCompaniesToSwimlaneFormat(
                 threadId:
                   (job as any)?.threadId ?? (job as any)?.processId ?? threadId,
                 data: {
-                  ...(job as any)?.jobData,
                   ...job.data,
                   company: companyName,
                   companyName: companyName,
@@ -103,20 +102,17 @@ export function convertCompaniesToSwimlaneFormat(
                     (job as any)?.threadId ??
                     (job as any)?.processId ??
                     threadId ??
-                    (job as any)?.data?.threadId ??
-                    (job as any)?.jobData?.threadId,
+                    (job as any)?.data?.threadId,
                   approved: job.approval?.approved || false,
                   autoApprove: job.autoApprove,
                   approval:
-                    job.approval ||
-                    (job as any)?.jobData?.approval ||
-                    (job as any)?.data?.approval,
+                    job.approval || (job as any)?.data?.approval,
                 },
                 isFailed: job.status === "failed",
                 finishedOn: job.finishedOn,
                 processedOn: job.processedBy ? job.timestamp : undefined,
                 timestamp: job.timestamp,
-                returnValue: job.returnvalue,
+                returnvalue: job.returnvalue,
                 attempts: job.attemptsMade,
                 stacktrace: job.stacktrace || [],
               };
