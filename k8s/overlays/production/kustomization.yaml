@@ -9,4 +9,4 @@ patches:
   - path: deployment-patch.yaml
 images:
   - name: ghcr.io/klimatbyran/validate-frontend
-    newTag: '1.1.1' # {"$imagepolicy": "flux-system:validate-frontend:tag"}
+    newTag: '1.1.2' # {"$imagepolicy": "flux-system:validate-frontend:tag"}
