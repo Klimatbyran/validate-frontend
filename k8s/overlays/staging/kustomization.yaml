@@ -8,4 +8,4 @@ patches:
   - path: ingress-patch.yaml
 images:
   - name: ghcr.io/klimatbyran/validate-frontend
-    newTag: '1.1.2-rc.4' # {"$imagepolicy": "flux-system:validate-frontend-stage:tag"}
+    newTag: '1.1.2-rc.5' # {"$imagepolicy": "flux-system:validate-frontend-stage:tag"}
