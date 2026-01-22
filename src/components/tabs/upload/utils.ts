@@ -40,4 +40,4 @@ export const PARSE_PDF_API_ENDPOINT = "/api/queues/parsePdf";
 /**
  * Default runOnly configuration for job submission
  */
-export const DEFAULT_RUN_ONLY = ["scope1+2", "scope3"];
+export const DEFAULT_RUN_ONLY = ["scope1", "scope2", "scope3"];
