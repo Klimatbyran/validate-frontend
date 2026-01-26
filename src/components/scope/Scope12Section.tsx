@@ -321,60 +321,52 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
         {isLoadingRef && <div className="text-sm text-white">Hämtar…</div>}
         {!isLoadingRef && refError && <div className="text-sm text-white">{refError}</div>}
         {!isLoadingRef && !refError && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-white">Scope 1 totalt</span>
-              <span className="text-base font-bold text-white flex items-center gap-2">
-                {typeof snapshot.scope1?.total === 'number' ? snapshot.scope1.total.toLocaleString('sv-SE') : '—'}
-                {snapshot.scope1?.unit ? ` ${snapshot.scope1.unit}` : ''}
-                {(ourS1?.total !== undefined || snapshot.scope1?.total != null) && (
-                  s1Match ? <span className="text-green-700">✓</span> : <span className="text-red-600">✗</span>
-                )}
-              </span>
-            </div>
-            <div className="divide-y divide-green-500/40">
+          <div className="divide-y divide-green-500/40">
+            {ourS1 && (
+              <div className="flex items-center justify-between py-1.5">
+                <span className="text-sm text-white">Scope 1 totalt</span>
+                <span className="text-base font-bold text-white flex items-center gap-2">
+                  {snapshot.scope1?.total?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope1?.unit ?? ''}
+                  {s1Match ? <span className="text-green-400">✓</span> : <span className="text-red-300">✗</span>}
+                </span>
+              </div>
+            )}
+            {ourS2?.mb != null && (
               <div className="flex items-center justify-between py-1.5">
                 <span className="text-sm text-white">Scope 2 marknadsbaserad</span>
                 <span className="text-sm font-semibold text-white flex items-center gap-2">
-                  {typeof snapshot.scope2?.mb === 'number' ? snapshot.scope2.mb!.toLocaleString('sv-SE') : '—'}{snapshot.scope2?.unit ? ` ${snapshot.scope2.unit}` : ''}
+                  {snapshot.scope2?.mb?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope2?.unit ?? ''}
                   {s2MbMatch ? <span className="text-green-400">✓</span> : <span className="text-red-300">✗</span>}
                 </span>
               </div>
+            )}
+            {ourS2?.lb != null && (
               <div className="flex items-center justify-between py-1.5">
                 <span className="text-sm text-white">Scope 2 platsbaserad</span>
                 <span className="text-sm font-semibold text-white flex items-center gap-2">
-                  {typeof snapshot.scope2?.lb === 'number' ? snapshot.scope2.lb!.toLocaleString('sv-SE') : '—'}{snapshot.scope2?.unit ? ` ${snapshot.scope2.unit}` : ''}
+                  {snapshot.scope2?.lb?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope2?.unit ?? ''}
                   {s2LbMatch ? <span className="text-green-400">✓</span> : <span className="text-red-300">✗</span>}
                 </span>
               </div>
+            )}
+            {ourS2?.unknown != null && (
               <div className="flex items-center justify-between py-1.5">
                 <span className="text-sm text-white">Scope 2 ospecificerad</span>
                 <span className="text-sm font-semibold text-white flex items-center gap-2">
-                  {typeof snapshot.scope2?.unknown === 'number' ? snapshot.scope2.unknown!.toLocaleString('sv-SE') : '—'}{snapshot.scope2?.unit ? ` ${snapshot.scope2.unit}` : ''}
+                  {snapshot.scope2?.unknown?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope2?.unit ?? ''}
                   {s2UnknownMatch ? <span className="text-green-400">✓</span> : <span className="text-red-300">✗</span>}
                 </span>
               </div>
-              {ourCombined && (
-                <div className="flex items-center justify-between py-1.5">
-                  <span className="text-sm text-white">Scope 1+2 totalt</span>
-                  <span className="text-sm font-semibold text-white flex items-center gap-2">
-                    {snapshotCombined?.total != null
-                      ? snapshotCombined.total.toLocaleString("sv-SE")
-                      : "—"}
-                    {snapshotCombined?.unit
-                      ? ` ${snapshotCombined.unit}`
-                      : ""}
-                    {combinedMatch != null && (
-                      combinedMatch ? (
-                        <span className="text-green-400">✓</span>
-                      ) : (
-                        <span className="text-red-300">✗</span>
-                      )
-                    )}
-                  </span>
-                </div>
-              )}
-            </div>
+            )}
+            {ourCombined && (
+              <div className="flex items-center justify-between py-1.5">
+                <span className="text-sm text-white">Scope 1+2 totalt</span>
+                <span className="text-sm font-semibold text-white flex items-center gap-2">
+                  {snapshotCombined?.total?.toLocaleString('sv-SE') ?? '—'} {snapshotCombined?.unit ?? ''}
+                  {combinedMatch != null && (combinedMatch ? <span className="text-green-400">✓</span> : <span className="text-red-300">✗</span>)}
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>

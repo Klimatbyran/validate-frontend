@@ -44,21 +44,10 @@ function parseReturnValueData(job?: QueueJob): any {
   return null;
 }
 
-// Helper function to get scope 1+2 array data from various sources
+// Helper function to get scope 1+2 array data from return value
 function getScopeData(processedData: any, returnValueData: any): any {
-  // Try to extract array for a given key from multiple data sources
-  const extractArray = (key: string): any[] | null => {
-    const sources = [
-      processedData?.[key],
-      processedData?.value?.[key],
-      returnValueData?.[key],
-      returnValueData?.value?.[key],
-    ];
-    return sources.find((s) => Array.isArray(s)) ?? null;
-  };
-
-  // Check scope12 first (combined format), then scope1/scope2 (split workers)
-  return extractArray("scope12") || extractArray("scope1") || extractArray("scope2");
+  const data = returnValueData?.value ?? returnValueData;
+  return data?.scope12 || data?.scope1 || data?.scope2;
 }
 
 // Helper to get scope 3 data from various sources
