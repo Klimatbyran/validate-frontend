@@ -44,39 +44,10 @@ function parseReturnValueData(job?: QueueJob): any {
   return null;
 }
 
-// Helper function to get scope 1+2 array data from various sources
-function getScopeData(processedData: any, returnValueData: any): any {
-  const hasScopeData =
-    (processedData.scope12 && Array.isArray(processedData.scope12)) ||
-    (returnValueData &&
-      typeof returnValueData === "object" &&
-      Array.isArray(returnValueData.scope12)) ||
-    (returnValueData &&
-      typeof returnValueData === "object" &&
-      returnValueData.value &&
-      Array.isArray(returnValueData.value.scope12));
-
-  if (!hasScopeData) return null;
-
-  // Get scope data from any possible source
-  if (processedData.scope12 && Array.isArray(processedData.scope12)) {
-    return processedData.scope12;
-  } else if (
-    returnValueData &&
-    typeof returnValueData === "object" &&
-    Array.isArray(returnValueData.scope12)
-  ) {
-    return returnValueData.scope12;
-  } else if (
-    returnValueData &&
-    typeof returnValueData === "object" &&
-    returnValueData.value &&
-    Array.isArray(returnValueData.value.scope12)
-  ) {
-    return returnValueData.value.scope12;
-  }
-
-  return null;
+// Helper function to get scope 1+2 array data from return value
+function getScopeData(returnValueData: any): any {
+  const data = returnValueData?.value
+  return data?.scope12 || data?.scope1 || data?.scope2;
 }
 
 // Helper to get scope 3 data from various sources
@@ -367,7 +338,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   }
 
   // Get scope data for rendering
-  const scopeData = getScopeData(processedData, returnValueData);
+  const scopeData = getScopeData(returnValueData);
   const scope3Data = getScope3Data(processedData, returnValueData);
   const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob);
   const wikidataId: string | undefined = React.useMemo(() => {
@@ -768,7 +739,9 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
           key === "fiscalYear" ||
           key === "startMonth" ||
           key === "endMonth" ||
-          key === "scope12"
+          key === "scope12" ||
+          key === "scope1" ||
+          key === "scope2"
         )
           return null;
 
