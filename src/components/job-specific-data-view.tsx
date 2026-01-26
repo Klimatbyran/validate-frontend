@@ -45,8 +45,8 @@ function parseReturnValueData(job?: QueueJob): any {
 }
 
 // Helper function to get scope 1+2 array data from return value
-function getScopeData(processedData: any, returnValueData: any): any {
-  const data = returnValueData?.value ?? returnValueData;
+function getScopeData(returnValueData: any): any {
+  const data = returnValueData?.value
   return data?.scope12 || data?.scope1 || data?.scope2;
 }
 
@@ -338,7 +338,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   }
 
   // Get scope data for rendering
-  const scopeData = getScopeData(processedData, returnValueData);
+  const scopeData = getScopeData(returnValueData);
   const scope3Data = getScope3Data(processedData, returnValueData);
   const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob);
   const wikidataId: string | undefined = React.useMemo(() => {
