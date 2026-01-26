@@ -46,62 +46,19 @@ function parseReturnValueData(job?: QueueJob): any {
 
 // Helper function to get scope 1+2 array data from various sources
 function getScopeData(processedData: any, returnValueData: any): any {
-  // Check for scope12 (combined) format
-  const hasScope12Data =
-    (processedData.scope12 && Array.isArray(processedData.scope12)) ||
-    (returnValueData &&
-      typeof returnValueData === "object" &&
-      Array.isArray(returnValueData.scope12)) ||
-    (returnValueData &&
-      typeof returnValueData === "object" &&
-      returnValueData.value &&
-      Array.isArray(returnValueData.value.scope12));
-
-  if (hasScope12Data) {
-    // Get scope data from any possible source (scope12 format)
-    if (processedData.scope12 && Array.isArray(processedData.scope12)) {
-      return processedData.scope12;
-    } else if (
-      returnValueData &&
-      typeof returnValueData === "object" &&
-      Array.isArray(returnValueData.scope12)
-    ) {
-      return returnValueData.scope12;
-    } else if (
-      returnValueData &&
-      typeof returnValueData === "object" &&
-      returnValueData.value &&
-      Array.isArray(returnValueData.value.scope12)
-    ) {
-      return returnValueData.value.scope12;
-    }
-  }
-
-  // Check for separate scope1 or scope2 top-level format (from split workers)
-  // Workers now return { scope1: [...] } or { scope2: [...] } instead of { scope12: [...] }
-  const getScope1Array = (data: any): any[] | null => {
-    if (data?.scope1 && Array.isArray(data.scope1)) return data.scope1;
-    if (data?.value?.scope1 && Array.isArray(data.value.scope1)) return data.value.scope1;
-    return null;
+  // Try to extract array for a given key from multiple data sources
+  const extractArray = (key: string): any[] | null => {
+    const sources = [
+      processedData?.[key],
+      processedData?.value?.[key],
+      returnValueData?.[key],
+      returnValueData?.value?.[key],
+    ];
+    return sources.find((s) => Array.isArray(s)) ?? null;
   };
 
-  const getScope2Array = (data: any): any[] | null => {
-    if (data?.scope2 && Array.isArray(data.scope2)) return data.scope2;
-    if (data?.value?.scope2 && Array.isArray(data.value.scope2)) return data.value.scope2;
-    return null;
-  };
-
-  const scope1Array = getScope1Array(processedData) || getScope1Array(returnValueData);
-  const scope2Array = getScope2Array(processedData) || getScope2Array(returnValueData);
-
-  if (scope1Array || scope2Array) {
-    // Convert to scope12 format for display components
-    // The arrays contain objects with year and nested scope1/scope2 data
-    const dataToConvert = scope1Array || scope2Array;
-    return dataToConvert;
-  }
-
-  return null;
+  // Check scope12 first (combined format), then scope1/scope2 (split workers)
+  return extractArray("scope12") || extractArray("scope1") || extractArray("scope2");
 }
 
 // Helper to get scope 3 data from various sources
