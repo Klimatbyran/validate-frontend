@@ -13,6 +13,7 @@ import { UploadTab } from "./components/tabs/upload/UploadTab";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthCallback } from "@/pages/AuthCallback";
 import { GlobalLoginModal } from "@/components/GlobalLoginModal";
+import { ErrorBrowserTab } from "@/components/tabs/error-browser/ErrorBrowserTab";
 
 function App() {
   const [currentTab, setCurrentTab] = useState("upload");
@@ -46,6 +47,7 @@ function App() {
                       <TabsTrigger value="jobbstatus">Jobbstatus</TabsTrigger>
                       <TabsTrigger value="workflow">Processflöde</TabsTrigger>
                       <TabsTrigger value="debug">Debug</TabsTrigger>
+                      <TabsTrigger value="errors">Error Browser</TabsTrigger>
                       <TabsTrigger value="results">Resultat</TabsTrigger>
                     </TabsList>
 
@@ -91,6 +93,12 @@ function App() {
                       <TabsContent key="debug" value="debug" asChild>
                         <motion.div>
                           <DebugView />
+                        </motion.div>
+                      </TabsContent>
+
+                      <TabsContent key="errors" value="errors" asChild>
+                        <motion.div>
+                          <ErrorBrowserTab />
                         </motion.div>
                       </TabsContent>
 

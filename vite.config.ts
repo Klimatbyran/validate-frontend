@@ -106,12 +106,21 @@ export default defineConfig({
           });
         },
       },
-      // Public Klimatkollen API for company data
+      // Public Klimatkollen API for company data (prod)
       "/kkapi": {
         target: "https://api.klimatkollen.se",
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path.replace(/^\/kkapi/, "/api"),
+        timeout: 30000,
+        proxyTimeout: 30000,
+      },
+      // Stage Klimatkollen API for company data (stage)
+      "/stagekkapi": {
+        target: "https://stage-api.klimatkollen.se",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/stagekkapi/, ""),
         timeout: 30000,
         proxyTimeout: 30000,
       },
