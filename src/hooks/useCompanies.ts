@@ -20,7 +20,7 @@ export function useCompanies() {
       { interval: number; max: number; isPolling: boolean; stopped: boolean }
     >
   >(new Map());
-  const PAGE_SIZE = 300;
+  const PAGE_SIZE = 50; // Reduced from 300 for faster initial load
 
   useEffect(() => {
     const SLOW_REFRESH_MS = 60000;

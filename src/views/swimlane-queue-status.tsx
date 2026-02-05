@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo, useEffect } from "react";
-import { Loader2, ArrowUp } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCompanies } from "@/hooks/useCompanies";
 import { authenticatedFetch } from "@/lib/api-helpers";
@@ -23,6 +23,7 @@ import {
 import { OverviewStats } from "@/components/swimlane/OverviewStats";
 import { FilterBar } from "@/components/swimlane/FilterBar";
 import { CompanyCard } from "@/components/swimlane/CompanyCard";
+import { CompanyCardSkeleton } from "@/components/swimlane/CompanyCardSkeleton";
 
 export function SwimlaneQueueStatus() {
   const {
@@ -56,32 +57,35 @@ export function SwimlaneQueueStatus() {
     return convertCompaniesToSwimlaneFormat(companies);
   }, [companies]);
 
-  // Calculate filter counts
+  // Calculate filter counts - optimized single pass instead of 8 separate filters
   const filterCounts = useMemo(() => {
-    return {
-      pending_approval: swimlaneCompanies.filter((c) =>
-        hasPendingApproval(c, runScope)
-      ).length,
-      has_failed: swimlaneCompanies.filter((c) => hasFailedJobs(c, runScope))
-        .length,
-      has_processing: swimlaneCompanies.filter((c) =>
-        hasProcessingJobs(c, runScope)
-      ).length,
-      fully_completed: swimlaneCompanies.filter((c) =>
-        isFullyCompleted(c, runScope)
-      ).length,
-      has_issues: swimlaneCompanies.filter((c) => hasIssues(c, runScope))
-        .length,
-      preprocessing_issues: swimlaneCompanies.filter((c) =>
-        hasPipelineStepIssues(c, "preprocessing", runScope)
-      ).length,
-      data_extraction_issues: swimlaneCompanies.filter((c) =>
-        hasPipelineStepIssues(c, "data-extraction", runScope)
-      ).length,
-      finalize_issues: swimlaneCompanies.filter((c) =>
-        hasPipelineStepIssues(c, "finalize", runScope)
-      ).length,
+    const counts = {
+      pending_approval: 0,
+      has_failed: 0,
+      has_processing: 0,
+      fully_completed: 0,
+      has_issues: 0,
+      preprocessing_issues: 0,
+      data_extraction_issues: 0,
+      finalize_issues: 0,
     };
+
+    // Single pass through companies - much faster than 8 separate filter operations
+    swimlaneCompanies.forEach((company) => {
+      if (hasPendingApproval(company, runScope)) counts.pending_approval++;
+      if (hasFailedJobs(company, runScope)) counts.has_failed++;
+      if (hasProcessingJobs(company, runScope)) counts.has_processing++;
+      if (isFullyCompleted(company, runScope)) counts.fully_completed++;
+      if (hasIssues(company, runScope)) counts.has_issues++;
+      if (hasPipelineStepIssues(company, "preprocessing", runScope))
+        counts.preprocessing_issues++;
+      if (hasPipelineStepIssues(company, "data-extraction", runScope))
+        counts.data_extraction_issues++;
+      if (hasPipelineStepIssues(company, "finalize", runScope))
+        counts.finalize_issues++;
+    });
+
+    return counts;
   }, [swimlaneCompanies, runScope]);
 
   // Filter companies based on active filters (AND logic - all must match)
@@ -180,20 +184,35 @@ export function SwimlaneQueueStatus() {
     );
   };
 
-  // Show loading state only until we have any companies
+  // Show loading state with skeletons for better perceived performance
   if (isLoading && (!companies || companies.length === 0)) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-8 h-8 text-blue-03 animate-spin mx-auto" />
-          <div>
-            <p className="text-lg text-gray-01 font-medium">
-              Loading companies...
-            </p>
-            <p className="text-sm text-gray-02 mt-2">
-              Fetching company data from API
-            </p>
+      <div className="space-y-6">
+        {/* Skeleton for OverviewStats */}
+        <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] p-6 animate-pulse">
+          <div className="h-6 w-48 bg-gray-03 rounded mb-4" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-20 bg-gray-03 rounded" />
+            ))}
           </div>
+        </div>
+
+        {/* Skeleton for FilterBar */}
+        <div className="bg-gray-04/50 rounded-lg p-4 border border-gray-03 animate-pulse">
+          <div className="h-8 w-32 bg-gray-03 rounded mb-3" />
+          <div className="flex gap-2 mb-2">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-9 w-24 bg-gray-03 rounded" />
+            ))}
+          </div>
+        </div>
+
+        {/* Skeleton Company Cards */}
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <CompanyCardSkeleton key={i} />
+          ))}
         </div>
       </div>
     );
