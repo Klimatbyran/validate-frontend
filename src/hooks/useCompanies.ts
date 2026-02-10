@@ -37,14 +37,12 @@ export function useCompanies() {
 
         const firstPageCompanies = await fetchCompaniesPage(1, PAGE_SIZE);
 
-        // Force a new array reference to ensure React detects the change
         const data = Array.isArray(firstPageCompanies)
           ? [...firstPageCompanies]
           : [];
 
         setHasMorePages(data.length === PAGE_SIZE);
-
-        // Set companies with forced new reference - React will handle unmounted components gracefully
+        setCurrentPage(1);
         setCompanies([...data]);
 
         startProcessPollers(data);
@@ -134,12 +132,10 @@ export function useCompanies() {
     };
     document.addEventListener("visibilitychange", onVisibility);
 
-    // Cleanup function
     return () => {
       if (intervalId) window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("companies:refresh", onKick);
-      // stop all per-process pollers
       processPollersRef.current.forEach((state) => {
         state.stopped = true;
       });

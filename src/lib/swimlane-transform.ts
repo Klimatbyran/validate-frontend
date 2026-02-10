@@ -14,7 +14,7 @@ import { getJobStatus as getJobStatusFromUtils } from "./workflow-utils";
  * Convert CustomAPICompany array to SwimlaneCompany array
  */
 export function convertCompaniesToSwimlaneFormat(
-  companies: CustomAPICompany[]
+  companies: CustomAPICompany[],
 ): SwimlaneCompany[] {
   if (!companies || companies.length === 0) {
     return [];
@@ -37,28 +37,31 @@ export function convertCompaniesToSwimlaneFormat(
         console.warn(
           "SwimlaneQueueStatus - company missing processes array:",
           companyName,
-          company
+          company,
         );
         return null;
       }
 
-      const processesByYear = company.processes.reduce((acc, process) => {
-        const year = process.year || new Date().getFullYear();
-        if (!acc[year]) {
-          acc[year] = [];
-        }
-        acc[year].push(process);
-        return acc;
-      }, {} as Record<number, typeof company.processes>);
+      const processesByYear = company.processes.reduce(
+        (acc, process) => {
+          const year = process.year || new Date().getFullYear();
+          if (!acc[year]) {
+            acc[year] = [];
+          }
+          acc[year].push(process);
+          return acc;
+        },
+        {} as Record<number, typeof company.processes>,
+      );
 
       const getProcessTimestamp = (
-        process: (typeof company.processes)[0]
+        process: (typeof company.processes)[0],
       ): number => {
         if (process.startedAt) return process.startedAt;
         if (process.finishedAt) return process.finishedAt;
         if (process.jobs && process.jobs.length > 0) {
           const latestJobTimestamp = Math.max(
-            ...process.jobs.map((job) => job.timestamp || 0)
+            ...process.jobs.map((job) => job.timestamp || 0),
           );
           if (latestJobTimestamp > 0) return latestJobTimestamp;
         }
@@ -69,7 +72,7 @@ export function convertCompaniesToSwimlaneFormat(
       Object.entries(processesByYear).forEach(([yearStr, yearProcesses]) => {
         const year = parseInt(yearStr);
         const sortedProcesses = [...yearProcesses].sort(
-          (a, b) => getProcessTimestamp(b) - getProcessTimestamp(a)
+          (a, b) => getProcessTimestamp(b) - getProcessTimestamp(a),
         );
 
         sortedProcesses.forEach((process, index) => {
@@ -105,8 +108,7 @@ export function convertCompaniesToSwimlaneFormat(
                     (job as any)?.data?.threadId,
                   approved: job.approval?.approved || false,
                   autoApprove: job.autoApprove,
-                  approval:
-                    job.approval || (job as any)?.data?.approval,
+                  approval: job.approval || (job as any)?.data?.approval,
                 },
                 isFailed: job.status === "failed",
                 finishedOn: job.finishedOn,
@@ -171,7 +173,7 @@ export function convertCompaniesToSwimlaneFormat(
         console.warn(
           "SwimlaneQueueStatus - filtering out company with no years:",
           company.name,
-          company.id
+          company.id,
         );
       }
       return hasValidYears;

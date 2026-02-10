@@ -37,19 +37,8 @@ export function SwimlaneQueueStatus() {
     new Set()
   );
   const [runScope, setRunScope] = useState<RunScope>("latest");
+  const [companySearchQuery, setCompanySearchQuery] = useState("");
   const [showScrollToTop, setShowScrollToTop] = useState(false);
-
-  // Helper to get the latest run timestamp for a company
-  function getLatestRunTimestampForCompany(company: SwimlaneCompany): number {
-    if (!company.years || company.years.length === 0) {
-      return 0;
-    }
-
-    return company.years.reduce((latestTimestamp, year) => {
-      const yearLatest = year.latestTimestamp || 0;
-      return yearLatest > latestTimestamp ? yearLatest : latestTimestamp;
-    }, 0);
-  }
 
   // Convert CustomAPICompany to SwimlaneCompany format
   const swimlaneCompanies = useMemo(() => {
@@ -84,37 +73,46 @@ export function SwimlaneQueueStatus() {
     };
   }, [swimlaneCompanies, runScope]);
 
-  // Filter companies based on active filters (AND logic - all must match)
+  // Filter companies based on active filters (AND logic) and company name search
   const filteredCompanies = useMemo(() => {
-    if (activeFilters.size === 0) {
-      return swimlaneCompanies;
-    }
+    const searchTrimmed = companySearchQuery.trim().toLowerCase();
+    const statusFiltered =
+      activeFilters.size === 0
+        ? swimlaneCompanies
+        : swimlaneCompanies.filter((company) => {
+            return Array.from(activeFilters).every((filter) => {
+              switch (filter) {
+                case "pending_approval":
+                  return hasPendingApproval(company, runScope);
+                case "has_failed":
+                  return hasFailedJobs(company, runScope);
+                case "has_processing":
+                  return hasProcessingJobs(company, runScope);
+                case "fully_completed":
+                  return isFullyCompleted(company, runScope);
+                case "has_issues":
+                  return hasIssues(company, runScope);
+                case "preprocessing_issues":
+                  return hasPipelineStepIssues(company, "preprocessing", runScope);
+                case "data_extraction_issues":
+                  return hasPipelineStepIssues(
+                    company,
+                    "data-extraction",
+                    runScope
+                  );
+                case "finalize_issues":
+                  return hasPipelineStepIssues(company, "finalize", runScope);
+                default:
+                  return true;
+              }
+            });
+          });
 
-    return swimlaneCompanies.filter((company) => {
-      return Array.from(activeFilters).every((filter) => {
-        switch (filter) {
-          case "pending_approval":
-            return hasPendingApproval(company, runScope);
-          case "has_failed":
-            return hasFailedJobs(company, runScope);
-          case "has_processing":
-            return hasProcessingJobs(company, runScope);
-          case "fully_completed":
-            return isFullyCompleted(company, runScope);
-          case "has_issues":
-            return hasIssues(company, runScope);
-          case "preprocessing_issues":
-            return hasPipelineStepIssues(company, "preprocessing", runScope);
-          case "data_extraction_issues":
-            return hasPipelineStepIssues(company, "data-extraction", runScope);
-          case "finalize_issues":
-            return hasPipelineStepIssues(company, "finalize", runScope);
-          default:
-            return true;
-        }
-      });
-    });
-  }, [swimlaneCompanies, activeFilters, runScope]);
+    if (!searchTrimmed) return statusFiltered;
+    return statusFiltered.filter((company) =>
+      company.name.toLowerCase().includes(searchTrimmed)
+    );
+  }, [swimlaneCompanies, activeFilters, runScope, companySearchQuery]);
 
   // Toggle filter
   const toggleFilter = (filter: FilterType) => {
@@ -129,12 +127,12 @@ export function SwimlaneQueueStatus() {
     });
   };
 
-  // Clear all filters
+  // Clear all filters and company search
   const clearFilters = () => {
     setActiveFilters(new Set());
+    setCompanySearchQuery("");
   };
 
-  // Show/hide scroll to top button
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollToTop(window.scrollY > 300);
@@ -144,7 +142,6 @@ export function SwimlaneQueueStatus() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Scroll to top handler
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -180,7 +177,6 @@ export function SwimlaneQueueStatus() {
     );
   };
 
-  // Show loading state only until we have any companies
   if (isLoading && (!companies || companies.length === 0)) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -199,7 +195,6 @@ export function SwimlaneQueueStatus() {
     );
   }
 
-  // Show error state
   if (error) {
     return (
       <div className="flex items-center justify-center p-4">
@@ -210,7 +205,6 @@ export function SwimlaneQueueStatus() {
     );
   }
 
-  // Show empty state
   if (!companies || companies.length === 0) {
     return (
       <div className="flex items-center justify-center p-4">
@@ -223,13 +217,11 @@ export function SwimlaneQueueStatus() {
 
   return (
     <div className="space-y-6">
-      {/* Process Overview - Moved to top */}
       <OverviewStats
         companies={filteredCompanies}
         onFilterToggle={toggleFilter}
       />
 
-      {/* Sticky Filter Bar */}
       <div className="sticky top-0 z-40 bg-gray-05 pb-4 -mb-4">
         <FilterBar
           activeFilters={activeFilters}
@@ -241,6 +233,8 @@ export function SwimlaneQueueStatus() {
           filteredCount={filteredCompanies.length}
           totalCount={swimlaneCompanies.length}
           onRerunByWorker={handleRerunByWorker}
+          companySearchQuery={companySearchQuery}
+          onCompanySearchChange={setCompanySearchQuery}
         />
       </div>
 
@@ -281,7 +275,6 @@ export function SwimlaneQueueStatus() {
         )}
       </div>
 
-      {/* Floating Scroll to Top Button */}
       {showScrollToTop && (
         <button
           onClick={scrollToTop}
