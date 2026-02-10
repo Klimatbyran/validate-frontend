@@ -13,6 +13,7 @@ import {
   RotateCw,
   MoreVertical,
   Activity,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FilterType, RunScope } from "@/lib/swimlane-filters";
@@ -27,6 +28,8 @@ interface FilterBarProps {
   filteredCount: number;
   totalCount: number;
   onRerunByWorker: (worker: "scope1+2" | "scope3") => void;
+  companySearchQuery?: string;
+  onCompanySearchChange?: (query: string) => void;
 }
 
 export function FilterBar({
@@ -39,7 +42,11 @@ export function FilterBar({
   filteredCount,
   totalCount,
   onRerunByWorker,
+  companySearchQuery = "",
+  onCompanySearchChange,
 }: FilterBarProps) {
+  const hasActiveFiltersOrSearch =
+    activeFilters.size > 0 || (companySearchQuery?.trim() ?? "") !== "";
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -113,44 +120,68 @@ export function FilterBar({
   return (
     <div className="bg-gray-04/50 rounded-lg p-4 border border-gray-03">
       <div className="flex flex-col gap-3">
-        {/* Filter Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-02" />
-            <span className="text-sm font-medium text-gray-01">Filter:</span>
-          </div>
+        {/* Company search and Filter Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          {onCompanySearchChange && (
+            <div className="relative flex-1 min-w-0 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-02 pointer-events-none" />
+              <input
+                type="text"
+                value={companySearchQuery}
+                onChange={(e) => onCompanySearchChange(e.target.value)}
+                placeholder="Sök på företagsnamn..."
+                className="w-full pl-9 pr-8 py-2 rounded-md border border-gray-03 bg-gray-05 text-gray-01 text-sm placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-blue-03/50 focus:border-blue-03"
+                aria-label="Sök företag"
+              />
+              {companySearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => onCompanySearchChange("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-02 hover:text-gray-01 rounded"
+                  aria-label="Rensa sökning"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
+          <div className="flex items-center justify-between sm:justify-end gap-2 flex-1">
+            <div className="flex items-center gap-2">
+              <Filter className="w-5 h-5 text-gray-02" />
+              <span className="text-sm font-medium text-gray-01">Filter:</span>
+            </div>
 
-          {/* Run Scope Toggle */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-02">Omfattning:</span>
-            <div className="flex items-center gap-1 bg-gray-03 rounded-full p-0.5">
-              <button
-                onClick={() => onRunScopeChange("latest")}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  runScope === "latest"
-                    ? "bg-gray-01 text-gray-05"
-                    : "text-gray-02 hover:text-gray-01"
-                }`}
-              >
-                Senaste körning
-              </button>
-              <button
-                onClick={() => onRunScopeChange("all")}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  runScope === "all"
-                    ? "bg-gray-01 text-gray-05"
-                    : "text-gray-02 hover:text-gray-01"
-                }`}
-              >
-                Alla körningar
-              </button>
+            {/* Run Scope Toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-02">Omfattning:</span>
+              <div className="flex items-center gap-1 bg-gray-03 rounded-full p-0.5">
+                <button
+                  onClick={() => onRunScopeChange("latest")}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    runScope === "latest"
+                      ? "bg-gray-01 text-gray-05"
+                      : "text-gray-02 hover:text-gray-01"
+                  }`}
+                >
+                  Senaste körning
+                </button>
+                <button
+                  onClick={() => onRunScopeChange("all")}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    runScope === "all"
+                      ? "bg-gray-01 text-gray-05"
+                      : "text-gray-02 hover:text-gray-01"
+                  }`}
+                >
+                  Alla körningar
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Filter Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Primary Filter Buttons */}
           {primaryFilters.map((filter) => {
             const isActive = activeFilters.has(filter.id);
             const count = filterCounts[filter.id];
@@ -243,7 +274,7 @@ export function FilterBar({
           </div>
 
           {/* Clear Filters */}
-          {activeFilters.size > 0 && (
+          {hasActiveFiltersOrSearch && (
             <Button
               variant="ghost"
               size="sm"
@@ -257,7 +288,7 @@ export function FilterBar({
         </div>
 
         {/* Filter Summary */}
-        {activeFilters.size > 0 && (
+        {hasActiveFiltersOrSearch && (
           <div className="text-sm text-gray-02 pt-2">
             Visar {filteredCount} av {totalCount} företag
           </div>
