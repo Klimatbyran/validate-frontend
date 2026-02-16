@@ -1,6 +1,6 @@
-import React from 'react';
 import { cn } from '@/lib/utils';
-import { CompanyRow, discrepancyConfig } from './types';
+import { CompanyRow } from './types';
+import { discrepancyConfig } from './discrepancyConfig.tsx';
 
 interface DiscrepancyBadgeProps {
   row: CompanyRow;

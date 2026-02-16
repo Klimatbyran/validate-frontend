@@ -2,7 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DiscrepancyType, WorstCompany, discrepancyConfig } from './types';
+import { DiscrepancyType, WorstCompany } from './types';
+import { discrepancyConfig } from './discrepancyConfig.tsx';
 import { ErrorDistributionHistogram } from './ErrorDistributionHistogram';
 
 interface HardestReportsViewProps {

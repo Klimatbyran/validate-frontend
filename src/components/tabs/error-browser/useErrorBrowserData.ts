@@ -1,6 +1,15 @@
 import React from 'react';
-import { Company, CompanyRow, DataPointMetric, WorstCompany, DiscrepancyType, DATA_POINTS, GENERIC_DATA_POINTS } from './types';
-import { getStageApiUrl, getProdApiUrl, pickReportingPeriodForYear, getDataPointValue, classifyDiscrepancy } from './utils';
+import { Company, CompanyRow, DataPointMetric, WorstCompany, DiscrepancyType, DATA_POINTS } from './types';
+import {
+  getStageApiUrl,
+  getProdApiUrl,
+  pickReportingPeriodForYear,
+  getDataPointValue,
+  classifyDiscrepancy,
+  companiesToMapById,
+  reclassifyDiscrepancyForCategoryError,
+  applyCategoryErrorToRows,
+} from './utils';
 
 export function useErrorBrowserData(selectedYear: number, selectedDataPoint: string) {
   const [isLoading, setIsLoading] = React.useState(false);
@@ -39,11 +48,8 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
 
   // Build comparison rows for selected data point
   const comparisonRows = React.useMemo((): CompanyRow[] => {
-    const stageMap = new Map<string, Company>();
-    stageCompanies.forEach(c => stageMap.set(c.wikidataId, c));
-
-    const prodMap = new Map<string, Company>();
-    prodCompanies.forEach(c => prodMap.set(c.wikidataId, c));
+    const stageMap = companiesToMapById(stageCompanies);
+    const prodMap = companiesToMapById(prodCompanies);
 
     const allIds = new Set([...stageMap.keys(), ...prodMap.keys()]);
     const rows: CompanyRow[] = [];
@@ -83,67 +89,13 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
       });
     }
 
-    // Detect category errors
     const currentDP = DATA_POINTS.find(dp => dp.id === selectedDataPoint);
     if (currentDP) {
       const sameScopeDataPoints = DATA_POINTS.filter(
         dp => dp.scope === currentDP.scope && dp.id !== currentDP.id
       );
-
       if (sameScopeDataPoints.length > 0) {
-        for (const row of rows) {
-          if (row.discrepancy === 'identical' || row.discrepancy === 'rounding' || row.discrepancy === 'both-null') continue;
-
-          const stageCompany = stageMap.get(row.wikidataId);
-          const prodCompany = prodMap.get(row.wikidataId);
-
-          // error/small-error/hallucination: stage value found in another prod data point
-          if ((row.discrepancy === 'error' || row.discrepancy === 'small-error' || row.discrepancy === 'hallucination') && row.stageValue !== null && prodCompany) {
-            const prodRP = pickReportingPeriodForYear(prodCompany.reportingPeriods, selectedYear);
-            const stageRPForKind = stageCompany ? pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear) : null;
-            for (const otherDP of sameScopeDataPoints) {
-              const otherProdValue = getDataPointValue(prodRP?.emissions, otherDP.id);
-              if (otherProdValue !== null && Math.abs(row.stageValue - otherProdValue) <= 0.5) {
-                row.discrepancy = 'category-error';
-                row.matchedDataPoint = otherDP.label;
-                // Classify kind
-                const otherStageValue = stageRPForKind ? getDataPointValue(stageRPForKind.emissions, otherDP.id) : null;
-                if (otherStageValue !== null && Math.abs(row.stageValue! - otherStageValue) <= 0.5) {
-                  row.categoryErrorKind = 'duplicating';
-                } else if (row.prodValue !== null && otherStageValue !== null && Math.abs(otherStageValue - row.prodValue) <= 0.5) {
-                  row.categoryErrorKind = 'swap';
-                } else if (GENERIC_DATA_POINTS.has(selectedDataPoint)) {
-                  row.categoryErrorKind = 'conservative';
-                } else if (GENERIC_DATA_POINTS.has(otherDP.id)) {
-                  row.categoryErrorKind = 'overcategorized';
-                } else {
-                  row.categoryErrorKind = 'mix-up';
-                }
-                break;
-              }
-            }
-          }
-
-          // missing: prod value found in another stage data point
-          if (row.discrepancy === 'missing' && row.prodValue !== null && stageCompany) {
-            const stageRP = pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear);
-            for (const otherDP of sameScopeDataPoints) {
-              const otherStageValue = getDataPointValue(stageRP?.emissions, otherDP.id);
-              if (otherStageValue !== null && Math.abs(row.prodValue - otherStageValue) <= 0.5) {
-                row.discrepancy = 'category-error';
-                row.matchedDataPoint = otherDP.label;
-                if (GENERIC_DATA_POINTS.has(otherDP.id)) {
-                  row.categoryErrorKind = 'conservative';
-                } else if (GENERIC_DATA_POINTS.has(selectedDataPoint)) {
-                  row.categoryErrorKind = 'overcategorized';
-                } else {
-                  row.categoryErrorKind = 'mix-up';
-                }
-                break;
-              }
-            }
-          }
-        }
+        applyCategoryErrorToRows(rows, stageMap, prodMap, sameScopeDataPoints, selectedDataPoint, selectedYear);
       }
     }
 
@@ -154,11 +106,8 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
   const allDataPointMetrics = React.useMemo((): DataPointMetric[] => {
     if (stageCompanies.length === 0 || prodCompanies.length === 0) return [];
 
-    const stageMap = new Map<string, Company>();
-    stageCompanies.forEach(c => stageMap.set(c.wikidataId, c));
-
-    const prodMap = new Map<string, Company>();
-    prodCompanies.forEach(c => prodMap.set(c.wikidataId, c));
+    const stageMap = companiesToMapById(stageCompanies);
+    const prodMap = companiesToMapById(prodCompanies);
 
     const allIds = Array.from(new Set([...stageMap.keys(), ...prodMap.keys()]));
 
@@ -185,28 +134,14 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
         const prodValue = getDataPointValue(prodRP?.emissions, dp.id);
 
         let discrepancy = classifyDiscrepancy(stageValue, prodValue, 0.5);
-
-        // Detect category errors
-        if (discrepancy !== 'identical' && discrepancy !== 'rounding' && discrepancy !== 'both-null' && sameScopeDataPoints.length > 0) {
-          if ((discrepancy === 'error' || discrepancy === 'small-error' || discrepancy === 'hallucination') && stageValue !== null) {
-            for (const otherDP of sameScopeDataPoints) {
-              const otherProdValue = getDataPointValue(prodRP?.emissions, otherDP.id);
-              if (otherProdValue !== null && Math.abs(stageValue - otherProdValue) <= 0.5) {
-                discrepancy = 'category-error';
-                break;
-              }
-            }
-          }
-          if (discrepancy === 'missing' && prodValue !== null) {
-            for (const otherDP of sameScopeDataPoints) {
-              const otherStageValue = getDataPointValue(stageRP?.emissions, otherDP.id);
-              if (otherStageValue !== null && Math.abs(prodValue - otherStageValue) <= 0.5) {
-                discrepancy = 'category-error';
-                break;
-              }
-            }
-          }
-        }
+        discrepancy = reclassifyDiscrepancyForCategoryError(
+          discrepancy,
+          stageValue,
+          prodValue,
+          stageRP?.emissions,
+          prodRP?.emissions,
+          sameScopeDataPoints
+        );
 
         switch (discrepancy) {
           case 'identical': identical++; break;
@@ -241,11 +176,8 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
   const worstCompanies = React.useMemo((): WorstCompany[] => {
     if (stageCompanies.length === 0 || prodCompanies.length === 0) return [];
 
-    const stageMap = new Map<string, Company>();
-    stageCompanies.forEach(c => stageMap.set(c.wikidataId, c));
-
-    const prodMap = new Map<string, Company>();
-    prodCompanies.forEach(c => prodMap.set(c.wikidataId, c));
+    const stageMap = companiesToMapById(stageCompanies);
+    const prodMap = companiesToMapById(prodCompanies);
 
     const allIds = Array.from(new Set([...stageMap.keys(), ...prodMap.keys()]));
     const companyErrors: WorstCompany[] = [];
@@ -272,31 +204,17 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
         const prodValue = getDataPointValue(prodRP.emissions, dp.id);
 
         let discrepancy = classifyDiscrepancy(stageValue, prodValue, 0.5);
-
-        // Detect category errors
         const sameScopeDataPoints = DATA_POINTS.filter(
           other => other.scope === dp.scope && other.id !== dp.id
         );
-        if (discrepancy !== 'identical' && discrepancy !== 'rounding' && discrepancy !== 'both-null' && sameScopeDataPoints.length > 0) {
-          if ((discrepancy === 'error' || discrepancy === 'small-error' || discrepancy === 'hallucination') && stageValue !== null) {
-            for (const otherDP of sameScopeDataPoints) {
-              const otherProdValue = getDataPointValue(prodRP.emissions, otherDP.id);
-              if (otherProdValue !== null && Math.abs(stageValue - otherProdValue) <= 0.5) {
-                discrepancy = 'category-error';
-                break;
-              }
-            }
-          }
-          if (discrepancy === 'missing' && prodValue !== null) {
-            for (const otherDP of sameScopeDataPoints) {
-              const otherStageValue = getDataPointValue(stageRP.emissions, otherDP.id);
-              if (otherStageValue !== null && Math.abs(prodValue - otherStageValue) <= 0.5) {
-                discrepancy = 'category-error';
-                break;
-              }
-            }
-          }
-        }
+        discrepancy = reclassifyDiscrepancyForCategoryError(
+          discrepancy,
+          stageValue,
+          prodValue,
+          stageRP.emissions,
+          prodRP.emissions,
+          sameScopeDataPoints
+        );
 
         const isError = discrepancy !== 'identical' && discrepancy !== 'rounding' && discrepancy !== 'both-null';
         if (isError) {
@@ -328,10 +246,8 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
 
   // Total companies with reporting periods in both APIs (for histogram)
   const totalWithBothRPs = React.useMemo(() => {
-    const stageMap = new Map<string, Company>();
-    stageCompanies.forEach(c => stageMap.set(c.wikidataId, c));
-    const prodMap = new Map<string, Company>();
-    prodCompanies.forEach(c => prodMap.set(c.wikidataId, c));
+    const stageMap = companiesToMapById(stageCompanies);
+    const prodMap = companiesToMapById(prodCompanies);
 
     let count = 0;
     for (const id of new Set([...stageMap.keys(), ...prodMap.keys()])) {
