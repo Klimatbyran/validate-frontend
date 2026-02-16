@@ -2,6 +2,8 @@
 export type DiscrepancyType = 'identical' | 'hallucination' | 'missing' | 'rounding' | 'unit-error' | 'small-error' | 'error' | 'category-error' | 'both-null';
 export type CategoryErrorKind = 'conservative' | 'swap' | 'mix-up' | 'overcategorized' | 'duplicating';
 
+export type ErrorBrowserViewMode = 'browser' | 'overview' | 'worst';
+
 // Generic/catch-all data points where placing a value is "conservative"
 export const GENERIC_DATA_POINTS = new Set(['scope2-unknown', 'cat-16']);
 

@@ -36,7 +36,9 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
       setStageCompanies(stage);
       setProdCompanies(prod);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      setError(message);
+      if (import.meta.env.DEV) console.error('useErrorBrowserData fetch error:', err);
     } finally {
       setIsLoading(false);
     }

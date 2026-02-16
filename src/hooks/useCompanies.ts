@@ -46,6 +46,7 @@ export function useCompanies() {
 
         // Set companies with forced new reference - React will handle unmounted components gracefully
         setCompanies([...data]);
+        setCurrentPage(1);
 
         startProcessPollers(data);
       } catch (err) {

@@ -54,6 +54,11 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
     return dist;
   }, [worstCompanies, totalWithBothRPs]);
 
+  const difficultCount = React.useMemo(
+    () => worstCompanies.filter((c) => c.errorCount >= 5).length,
+    [worstCompanies]
+  );
+
   return (
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
       {isLoading ? (
@@ -109,9 +114,9 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
       {!isLoading && (
         <div className="px-4 py-3 bg-gray-03/30 text-sm text-gray-02 border-t border-gray-03/50">
           {worstCompanies.length} companies with errors
-          {worstCompanies.filter(c => c.errorCount >= 5).length > 0 && (
+          {difficultCount > 0 && (
             <span className="ml-2 text-red-400">
-              ({worstCompanies.filter(c => c.errorCount >= 5).length} difficult reports)
+              ({difficultCount} difficult reports)
             </span>
           )}
         </div>

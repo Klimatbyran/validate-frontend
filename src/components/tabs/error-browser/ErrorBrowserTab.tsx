@@ -2,15 +2,18 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { ErrorBrowserViewMode } from './types';
 import { useErrorBrowserData } from './useErrorBrowserData';
 import { BrowserView } from './BrowserView';
 import { OverviewView } from './OverviewView';
 import { HardestReportsView } from './HardestReportsView';
 
+const VIEW_MODES: ErrorBrowserViewMode[] = ['browser', 'overview', 'worst'];
+
 export function ErrorBrowserTab() {
   const [selectedYear, setSelectedYear] = React.useState(2024);
   const [selectedDataPoint, setSelectedDataPoint] = React.useState('cat-1');
-  const [viewMode, setViewMode] = React.useState<'browser' | 'overview' | 'worst'>('browser');
+  const [viewMode, setViewMode] = React.useState<ErrorBrowserViewMode>('browser');
 
   const {
     isLoading,
@@ -47,7 +50,7 @@ export function ErrorBrowserTab() {
           <div className="flex items-center gap-2">
             {/* View toggle – match main app tabs (white/gray-01 when selected) */}
             <div className="flex rounded-full overflow-hidden border border-gray-02/20 bg-gray-04/50 p-1">
-              {(['browser', 'overview', 'worst'] as const).map(mode => (
+              {VIEW_MODES.map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}

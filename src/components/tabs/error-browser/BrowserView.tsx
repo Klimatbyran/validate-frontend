@@ -48,7 +48,7 @@ export function BrowserView({
   };
 
   const showDefaultTypes = () => {
-    setVisibleTypes(new Set(['hallucination', 'missing', 'rounding', 'small-error', 'error', 'category-error']));
+    setVisibleTypes(new Set(['hallucination', 'missing', 'rounding', 'unit-error', 'small-error', 'error', 'category-error']));
   };
 
   // Count by discrepancy type

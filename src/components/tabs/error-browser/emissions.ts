@@ -1,8 +1,9 @@
 import { ReportingPeriod, DATA_POINTS } from './types';
 
 // Emission values can be either a plain number or an object with { total: number }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function extractTotal(value: any): number | null {
+export function extractTotal(
+  value: number | { total?: number | null } | null | undefined
+): number | null {
   if (value === null || value === undefined) return null;
   if (typeof value === 'number') return value;
   if (typeof value === 'object' && 'total' in value) {
@@ -40,13 +41,15 @@ export function pickReportingPeriodForYear(
   return fullYear || periodsForYear[periodsForYear.length - 1];
 }
 
+type Scope3Emissions = NonNullable<NonNullable<ReportingPeriod['emissions']>['scope3']>;
+
 /** Get value for a specific scope 3 category. */
 export function getCategoryValue(
-  scope3: ReportingPeriod['emissions']['scope3'] | null | undefined,
+  scope3: Scope3Emissions | null | undefined,
   categoryNum: number
 ): number | null {
   if (!scope3?.categories) return null;
-  const cat = scope3.categories.find((c) => c.category === categoryNum);
+  const cat = scope3.categories.find((c: { category: number; total: number | null }) => c.category === categoryNum);
   return cat?.total ?? null;
 }
 

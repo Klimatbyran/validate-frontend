@@ -107,6 +107,7 @@ export function calculateOverviewAggregates(
       acc.categoryError += dp.breakdown.categoryError;
       acc.bothNull += dp.breakdown.bothNull;
       acc.withAnyData += dp.withAnyData;
+      // Sum of (company × data point) slots, not unique companies — same company can appear in multiple data points
       acc.totalCompanies +=
         dp.breakdown.identical +
         dp.breakdown.rounding +
