@@ -44,6 +44,7 @@ export function useCompanies() {
         setHasMorePages(data.length === PAGE_SIZE);
         setCurrentPage(1);
         setCompanies([...data]);
+        setCurrentPage(1);
 
         startProcessPollers(data);
       } catch (err) {

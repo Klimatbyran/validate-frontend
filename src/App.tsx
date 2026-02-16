@@ -13,6 +13,7 @@ import { UploadTab } from "./components/tabs/upload/UploadTab";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthCallback } from "@/pages/AuthCallback";
 import { GlobalLoginModal } from "@/components/GlobalLoginModal";
+import { ErrorBrowserTab } from "@/components/tabs/error-browser/ErrorBrowserTab";
 
 function App() {
   const [currentTab, setCurrentTab] = useState("upload");
@@ -33,23 +34,23 @@ function App() {
               <div className="max-w-[1400px] mx-auto">
                 <Header />
 
-                <Tabs
-                  value={currentTab}
-                  onValueChange={(value) => {
-                    setCurrentTab(value);
-                  }}
-                  className="space-y-6"
-                >
-                  <TabsList className="bg-gray-04/50 backdrop-blur-sm">
-                    <TabsTrigger value="upload">Uppladdning</TabsTrigger>
-                    <TabsTrigger value="processing">Bearbetning</TabsTrigger>
-                    <TabsTrigger value="jobbstatus">Jobbstatus</TabsTrigger>
-                    <TabsTrigger value="workflow">Processflöde</TabsTrigger>
-                    {/*                     <TabsTrigger value="debug">Debug</TabsTrigger>
-                     */}{" "}
-                    <TabsTrigger value="results">Resultat</TabsTrigger>
-                    <TabsTrigger value="crawler">Crawler</TabsTrigger>
-                  </TabsList>
+                  <Tabs
+                    value={currentTab}
+                    onValueChange={(value) => {
+                      setCurrentTab(value);
+                    }}
+                    className="space-y-6"
+                  >
+                    <TabsList className="bg-gray-04/50 backdrop-blur-sm">
+                      <TabsTrigger value="upload">Uppladdning</TabsTrigger>
+                      <TabsTrigger value="processing">Bearbetning</TabsTrigger>
+                      <TabsTrigger value="jobbstatus">Jobbstatus</TabsTrigger>
+                      <TabsTrigger value="workflow">Processflöde</TabsTrigger>
+                      <TabsTrigger value="debug">Debug</TabsTrigger>
+                      <TabsTrigger value="errors">Error Browser</TabsTrigger>
+                      <TabsTrigger value="results">Resultat</TabsTrigger>
+                      <TabsTrigger value="crawler">Crawler</TabsTrigger>
+                    </TabsList>
 
                   <AnimatePresence mode="popLayout" initial={false}>
                     <TabsContent key="upload" value="upload" asChild>
@@ -90,11 +91,17 @@ function App() {
                       </motion.div>
                     </TabsContent>
 
-                    {/* <TabsContent key="debug" value="debug" asChild>
+                    <TabsContent key="debug" value="debug" asChild>
                       <motion.div>
                         <DebugView />
                       </motion.div>
-                    </TabsContent> */}
+                    </TabsContent>
+
+                    <TabsContent key="errors" value="errors" asChild>
+                      <motion.div>
+                        <ErrorBrowserTab />
+                      </motion.div>
+                    </TabsContent>
 
                     <TabsContent key="results" value="results" asChild>
                       <motion.div
