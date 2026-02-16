@@ -13,6 +13,7 @@ import { UploadTab } from "./components/tabs/upload/UploadTab";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthCallback } from "@/pages/AuthCallback";
 import { GlobalLoginModal } from "@/components/GlobalLoginModal";
+import CrawlerPage from "./views/CrawlerPage";
 
 function App() {
   const [currentTab, setCurrentTab] = useState("upload");
@@ -118,12 +119,9 @@ function App() {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
-                        className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6"
+                        className="space-y-6"
                       >
-                        <h2 className="text-xl text-gray-01 mb-4">Crawler</h2>
-                        <p className="text-gray-02">
-                          Omg, no crawler to be found yet! Check back later.
-                        </p>
+                        <CrawlerPage />
                       </motion.div>
                     </TabsContent>
                   </AnimatePresence>
