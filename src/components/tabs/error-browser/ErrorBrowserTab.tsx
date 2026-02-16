@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import type { ErrorBrowserViewMode } from './types';
 import { useErrorBrowserData } from './useErrorBrowserData';
 import { BrowserView } from './BrowserView';
@@ -104,12 +105,18 @@ export function ErrorBrowserTab() {
         />
       )}
 
-      {viewMode === 'overview' && !isLoading && (
-        <OverviewView
-          allDataPointMetrics={allDataPointMetrics}
-          selectedYear={selectedYear}
-          onSelectDataPoint={handleOverviewSelectDataPoint}
-        />
+      {viewMode === 'overview' && (
+        isLoading ? (
+          <div className="flex justify-center items-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
+            <LoadingSpinner label="Loading overview..." />
+          </div>
+        ) : (
+          <OverviewView
+            allDataPointMetrics={allDataPointMetrics}
+            selectedYear={selectedYear}
+            onSelectDataPoint={handleOverviewSelectDataPoint}
+          />
+        )
       )}
 
       {viewMode === 'worst' && (

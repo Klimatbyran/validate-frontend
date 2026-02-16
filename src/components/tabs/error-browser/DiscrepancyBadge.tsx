@@ -7,7 +7,7 @@ interface DiscrepancyBadgeProps {
 }
 
 export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
-  const config = discrepancyConfig[row.discrepancy];
+  const config = discrepancyConfig[row.discrepancy] ?? discrepancyConfig['error'];
 
   return (
     <div>
