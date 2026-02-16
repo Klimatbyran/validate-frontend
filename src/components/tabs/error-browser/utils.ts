@@ -26,9 +26,3 @@ export type {
   OverviewAggregates,
 } from './metrics';
 export { exportOverviewCsv, exportComparisonToCsv } from './csv';
-
-/** Format a numeric value for display (or "—" when null). */
-export function formatValue(value: number | null): string {
-  if (value === null || value === undefined) return '—';
-  return value.toLocaleString('sv-SE');
-}

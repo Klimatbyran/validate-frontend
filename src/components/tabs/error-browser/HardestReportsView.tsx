@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Download } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, downloadCsv } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { DiscrepancyType, WorstCompany } from './types';
 import { discrepancyConfig } from './discrepancyConfig.tsx';
@@ -16,7 +16,7 @@ interface HardestReportsViewProps {
 
 function exportHardestReportsCsv(worstCompanies: WorstCompany[], selectedYear: number) {
   const headers = ['Rank', 'Company', 'WikidataId', 'Errors', 'Total Data Points', 'Difficult', 'Error Types', 'Affected Data Points'];
-  const csvRows = [headers.join(',')];
+  const rows: string[][] = [headers];
 
   worstCompanies.forEach((company, index) => {
     const errorTypes = Object.entries(company.breakdown)
@@ -26,25 +26,19 @@ function exportHardestReportsCsv(worstCompanies: WorstCompany[], selectedYear: n
       .map((dp) => dp.label)
       .join('; ');
 
-    csvRows.push([
-      index + 1,
+    rows.push([
+      String(index + 1),
       `"${company.name.replace(/"/g, '""')}"`,
       company.wikidataId,
-      company.errorCount,
-      company.totalDataPoints,
+      String(company.errorCount),
+      String(company.totalDataPoints),
       company.errorCount >= 5 ? 'yes' : 'no',
       `"${errorTypes}"`,
       `"${affectedDPs}"`,
-    ].join(','));
+    ]);
   });
 
-  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `hardest-reports-${selectedYear}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadCsv(rows, `hardest-reports-${selectedYear}.csv`);
 }
 
 export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs, selectedYear }: HardestReportsViewProps) {
@@ -134,7 +128,7 @@ function HardestReportRow({ company, index }: { company: WorstCompany; index: nu
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: Math.min(index * 0.01, 0.5) }}
-      className={cn('transition-colors hover:bg-gray-03/30', isDifficult ? 'bg-red-500/5' : '')}
+      className="transition-colors hover:bg-gray-03/30"
     >
       <td className="px-4 py-3 text-sm text-gray-02 font-mono">{index + 1}</td>
       <td className="px-4 py-3">

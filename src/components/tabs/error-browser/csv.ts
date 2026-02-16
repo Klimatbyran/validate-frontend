@@ -1,3 +1,4 @@
+import { downloadCsv } from '@/lib/utils';
 import type { CompanyRow, DataPointMetric } from './types';
 
 /** Trigger CSV download for overview metrics. */
@@ -19,34 +20,26 @@ export function exportOverviewCsv(
     'With Data',
     'Tolerant Rate %',
   ];
-  const csvRows = [headers.join(',')];
+  const rows: string[][] = [headers];
 
   for (const dp of metrics) {
-    csvRows.push(
-      [
-        `"${dp.label}"`,
-        dp.breakdown.identical,
-        dp.breakdown.rounding,
-        dp.breakdown.smallError,
-        dp.breakdown.hallucination,
-        dp.breakdown.missing,
-        dp.breakdown.unitError,
-        dp.breakdown.categoryError,
-        dp.breakdown.error,
-        dp.breakdown.bothNull,
-        dp.withAnyData,
-        dp.tolerantRate.toFixed(1),
-      ].join(',')
-    );
+    rows.push([
+      `"${dp.label}"`,
+      String(dp.breakdown.identical),
+      String(dp.breakdown.rounding),
+      String(dp.breakdown.smallError),
+      String(dp.breakdown.hallucination),
+      String(dp.breakdown.missing),
+      String(dp.breakdown.unitError),
+      String(dp.breakdown.categoryError),
+      String(dp.breakdown.error),
+      String(dp.breakdown.bothNull),
+      String(dp.withAnyData),
+      dp.tolerantRate.toFixed(1),
+    ]);
   }
 
-  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `overview-${selectedYear}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadCsv(rows, `overview-${selectedYear}.csv`);
 }
 
 /** Trigger CSV download for comparison rows. */
@@ -65,28 +58,20 @@ export function exportComparisonToCsv(
     'In Stage',
     'In Prod',
   ];
-  const csvRows = [headers.join(',')];
+  const csvRows: string[][] = [headers];
 
   for (const row of rows) {
-    csvRows.push(
-      [
-        `"${row.name.replace(/"/g, '""')}"`,
-        row.wikidataId,
-        row.stageValue ?? '',
-        row.prodValue ?? '',
-        row.diff ?? '',
-        row.discrepancy,
-        row.inStage ? 'yes' : 'no',
-        row.inProd ? 'yes' : 'no',
-      ].join(',')
-    );
+    csvRows.push([
+      `"${row.name.replace(/"/g, '""')}"`,
+      row.wikidataId,
+      String(row.stageValue ?? ''),
+      String(row.prodValue ?? ''),
+      String(row.diff ?? ''),
+      row.discrepancy,
+      row.inStage ? 'yes' : 'no',
+      row.inProd ? 'yes' : 'no',
+    ]);
   }
 
-  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${dataPointId}-comparison-${year}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadCsv(csvRows, `${dataPointId}-comparison-${year}.csv`);
 }

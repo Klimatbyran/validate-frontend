@@ -1,7 +1,7 @@
 import { Download } from 'lucide-react';
 import { DataPointMetric } from './types';
 import { calculateOverviewAggregates, exportOverviewCsv } from './utils';
-import { DataPointBar, ScopeSection, ScopeSummary } from './overview';
+import { DataPointBar, OverviewSection, ScopeSection, ScopeSummary } from './overview';
 
 interface OverviewViewProps {
   allDataPointMetrics: DataPointMetric[];
@@ -35,8 +35,8 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
   ]);
 
   return (
-    <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6 space-y-6">
-      <div className="flex justify-end">
+    <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6">
+      <div className="flex justify-end mb-6">
         <button
           onClick={() => exportOverviewCsv(allDataPointMetrics, selectedYear)}
           className="inline-flex items-center gap-2 px-3 py-2 bg-gray-03 text-gray-01 rounded-lg hover:bg-gray-02 hover:text-white transition-colors text-sm"
@@ -46,59 +46,71 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
         </button>
       </div>
 
-      {scope1Metrics.length > 0 && (
-        <ScopeSection
-          title={`Scope 1 (${selectedYear})`}
-          aggregates={scope1Aggregates}
-          metrics={scope1Metrics}
-          onSelectDataPoint={onSelectDataPoint}
-        />
-      )}
+      <div className="space-y-0">
+        {scope1Metrics.length > 0 && (
+          <OverviewSection isFirst>
+            <ScopeSection
+              title={`Scope 1 (${selectedYear})`}
+              aggregates={scope1Aggregates}
+              metrics={scope1Metrics}
+              onSelectDataPoint={onSelectDataPoint}
+            />
+          </OverviewSection>
+        )}
 
-      {scope2Metrics.length > 0 && (
-        <ScopeSection
-          title={`Scope 2 (${selectedYear})`}
-          aggregates={scope2Aggregates}
-          metrics={scope2Metrics}
-          onSelectDataPoint={onSelectDataPoint}
-        />
-      )}
+        {scope2Metrics.length > 0 && (
+          <OverviewSection>
+            <ScopeSection
+              title={`Scope 2 (${selectedYear})`}
+              aggregates={scope2Aggregates}
+              metrics={scope2Metrics}
+              onSelectDataPoint={onSelectDataPoint}
+            />
+          </OverviewSection>
+        )}
 
-      {scope3Metrics.length > 0 && (
-        <ScopeSection
-          title={`Scope 3 Categories (${selectedYear})`}
-          aggregates={scope3Aggregates}
-          metrics={scope3Metrics}
-          onSelectDataPoint={onSelectDataPoint}
-        />
-      )}
+        {scope3Metrics.length > 0 && (
+          <OverviewSection>
+            <ScopeSection
+              title={`Scope 3 Categories (${selectedYear})`}
+              aggregates={scope3Aggregates}
+              metrics={scope3Metrics}
+              onSelectDataPoint={onSelectDataPoint}
+            />
+          </OverviewSection>
+        )}
 
-      {otherMetrics.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-gray-01 mb-3">Other</h3>
-          <div className="space-y-2">
-            {otherMetrics.map((dp) => (
-              <DataPointBar key={dp.id} dp={dp} onSelect={onSelectDataPoint} />
-            ))}
-          </div>
-        </div>
-      )}
+        {otherMetrics.length > 0 && (
+          <OverviewSection>
+            <h3 className="text-sm font-semibold text-gray-01 mb-3">Other</h3>
+            <div className="space-y-2">
+              {otherMetrics.map((dp) => (
+                <DataPointBar key={dp.id} dp={dp} onSelect={onSelectDataPoint} />
+              ))}
+            </div>
+          </OverviewSection>
+        )}
 
-      {allScopesAggregates.totals.withAnyData > 0 && (
-        <ScopeSummary
-          title={`Overall Accuracy — Scope 1 + 2 + 3 (${selectedYear})`}
-          categoryCount={[...scope1Metrics, ...scope2Metrics, ...scope3Metrics].length}
-          aggregates={allScopesAggregates}
-        />
-      )}
+        {allScopesAggregates.totals.withAnyData > 0 && (
+          <OverviewSection>
+            <ScopeSummary
+              title={`Overall Accuracy — Scope 1 + 2 + 3 (${selectedYear})`}
+              categoryCount={[...scope1Metrics, ...scope2Metrics, ...scope3Metrics].length}
+              aggregates={allScopesAggregates}
+            />
+          </OverviewSection>
+        )}
 
-      {scope12Aggregates.totals.withAnyData > 0 && (
-        <ScopeSummary
-          title={`Overall Accuracy — Scope 1 + 2 (${selectedYear})`}
-          categoryCount={[...scope1Metrics, ...scope2Metrics].length}
-          aggregates={scope12Aggregates}
-        />
-      )}
+        {scope12Aggregates.totals.withAnyData > 0 && (
+          <OverviewSection>
+            <ScopeSummary
+              title={`Overall Accuracy — Scope 1 + 2 (${selectedYear})`}
+              categoryCount={[...scope1Metrics, ...scope2Metrics].length}
+              aggregates={scope12Aggregates}
+            />
+          </OverviewSection>
+        )}
+      </div>
     </div>
   );
 }

@@ -2,8 +2,7 @@ import { motion } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyRow } from './types';
-import { discrepancyConfig } from './discrepancyConfig.tsx';
-import { formatValue } from './utils';
+import { formatNumber } from '@/lib/utils';
 import { DiscrepancyBadge } from './DiscrepancyBadge';
 
 interface CompanyTableRowProps {
@@ -13,7 +12,6 @@ interface CompanyTableRowProps {
 }
 
 export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTableRowProps) {
-  const config = discrepancyConfig[row.discrepancy];
   const isMissingCompany = !row.inStage || !row.inProd;
 
   return (
@@ -21,7 +19,7 @@ export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTabl
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: Math.min(index * 0.01, 0.5) }}
-      className={cn('transition-colors hover:bg-gray-03/30', config.bgColor)}
+      className="transition-colors hover:bg-gray-03/30"
     >
       <td className="px-4 py-3">
         <div className="flex items-center gap-1.5 font-medium text-gray-01 text-sm">
@@ -45,10 +43,10 @@ export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTabl
         </div>
       </td>
       <td className="px-4 py-3 text-right font-mono text-sm text-gray-01">
-        {formatValue(row.stageValue)}
+        {formatNumber(row.stageValue)}
       </td>
       <td className="px-4 py-3 text-right font-mono text-sm text-gray-01">
-        {formatValue(row.prodValue)}
+        {formatNumber(row.prodValue)}
       </td>
       <td className="px-4 py-3 text-center">
         <DiscrepancyBadge row={row} />

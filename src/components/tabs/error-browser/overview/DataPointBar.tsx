@@ -10,11 +10,11 @@ interface DataPointBarProps {
 export function DataPointBar({ dp, onSelect }: DataPointBarProps) {
   const rate = dp.tolerantRate;
   const barColor = rate >= 85 ? 'bg-green-500' : rate >= 70 ? 'bg-yellow-500' : 'bg-red-500';
-  const bgColor = rate >= 85 ? 'bg-green-500/10' : rate >= 70 ? 'bg-yellow-500/10' : 'bg-red-500/10';
+  const bgColor = 'bg-gray-03/20';
 
   return (
     <div
-      className={cn('rounded-lg p-3 cursor-pointer hover:opacity-80 transition-opacity', bgColor)}
+      className={cn('rounded-lg p-3 cursor-pointer hover:opacity-90 transition-opacity', bgColor)}
       onClick={() => onSelect(dp.id)}
       title={`Click to view ${dp.label} in browser`}
     >
@@ -24,7 +24,14 @@ export function DataPointBar({ dp, onSelect }: DataPointBarProps) {
           <span className="text-xs text-gray-02">
             {dp.tolerantSuccess}/{dp.withAnyData}
           </span>
-          <span className="text-sm font-bold text-gray-01">{rate.toFixed(1)}%</span>
+          <span
+            className={cn(
+              'text-sm font-bold',
+              rate >= 85 ? 'text-green-400' : rate >= 70 ? 'text-yellow-400' : 'text-red-400'
+            )}
+          >
+            {rate.toFixed(1)}%
+          </span>
         </div>
       </div>
       <div className="h-2 bg-gray-03/50 rounded-full overflow-hidden">

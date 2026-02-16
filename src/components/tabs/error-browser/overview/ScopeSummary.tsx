@@ -21,7 +21,7 @@ const BREAKDOWN_ITEMS = [
 
 export function ScopeSummary({ title, categoryCount, aggregates }: ScopeSummaryProps) {
   return (
-    <div className="border-t-2 border-gray-02/30 pt-6">
+    <div>
       <h3 className="text-base font-semibold text-gray-01 mb-2">{title}</h3>
       <p className="text-xs text-gray-02 mb-4">
         {aggregates.totals.withAnyData} data points with values across {categoryCount} categories (
