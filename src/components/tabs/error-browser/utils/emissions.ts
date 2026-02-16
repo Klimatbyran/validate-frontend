@@ -1,4 +1,4 @@
-import { ReportingPeriod, DATA_POINTS } from './types';
+import { ReportingPeriod, DATA_POINTS } from '../types';
 
 // Emission values can be either a plain number or an object with { total: number }
 export function extractTotal(

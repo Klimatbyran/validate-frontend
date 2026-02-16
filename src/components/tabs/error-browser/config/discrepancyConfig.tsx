@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle2, AlertTriangle, XCircle, MinusCircle, Calculator, CircleDashed, ArrowLeftRight, AlertCircle, ChevronsUpDown } from 'lucide-react';
-import type { DiscrepancyType } from './types';
+import type { DiscrepancyType } from '../types';
 
 export const discrepancyConfig: Record<
   DiscrepancyType,

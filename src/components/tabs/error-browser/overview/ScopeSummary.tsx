@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { OverviewAggregates } from '../utils';
-import { AggregateMetrics } from '../AggregateMetrics';
+import { AggregateMetrics } from '../components/AggregateMetrics';
 
 interface ScopeSummaryProps {
   title: string;

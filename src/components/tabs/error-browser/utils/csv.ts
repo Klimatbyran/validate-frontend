@@ -1,5 +1,5 @@
 import { downloadCsv } from '@/lib/utils';
-import type { CompanyRow, DataPointMetric } from './types';
+import type { CompanyRow, DataPointMetric } from '../types';
 
 /** Trigger CSV download for overview metrics. */
 export function exportOverviewCsv(

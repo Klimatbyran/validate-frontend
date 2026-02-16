@@ -1,7 +1,7 @@
 import { Download } from 'lucide-react';
-import { DataPointMetric } from './types';
-import { calculateOverviewAggregates, exportOverviewCsv } from './utils';
-import { DataPointBar, OverviewSection, ScopeSection, ScopeSummary } from './overview';
+import { DataPointMetric } from '../types';
+import { calculateOverviewAggregates, exportOverviewCsv } from '../utils';
+import { DataPointBar, OverviewSection, ScopeSection, ScopeSummary } from '../overview';
 
 interface OverviewViewProps {
   allDataPointMetrics: DataPointMetric[];

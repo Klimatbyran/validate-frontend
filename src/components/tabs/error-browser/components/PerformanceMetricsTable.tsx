@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import type { PerformanceMetricRow } from './utils';
+import type { PerformanceMetricRow } from '../utils';
 
 export type { PerformanceMetricRow };
 

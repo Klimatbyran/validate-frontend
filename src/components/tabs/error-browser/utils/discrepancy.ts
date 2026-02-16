@@ -4,7 +4,7 @@ import {
   type Company,
   type CompanyRow,
   type ReportingPeriod,
-} from './types';
+} from '../types';
 import { getDataPointValue, pickReportingPeriodForYear } from './emissions';
 
 /** Build a map of companies by wikidataId for quick lookup. */
@@ -12,6 +12,26 @@ export function companiesToMapById(companies: Company[]): Map<string, Company> {
   const map = new Map<string, Company>();
   companies.forEach((c) => map.set(c.wikidataId, c));
   return map;
+}
+
+const UNIT_ERROR_POWERS = [10, 100, 1000, 10000, 100000, 1000000] as const;
+
+/** Return unit-error factor (stage/prod ratio) when values differ by a power of 10; otherwise undefined. */
+export function getUnitErrorFactor(
+  stageValue: number | null,
+  prodValue: number | null
+): number | undefined {
+  if (stageValue === null || prodValue === null) return undefined;
+  const absS = Math.abs(stageValue);
+  const absP = Math.abs(prodValue);
+  if (absS === 0 || absP === 0) return undefined;
+  const ratio = Math.max(absS, absP) / Math.min(absS, absP);
+  for (const power of UNIT_ERROR_POWERS) {
+    if (Math.abs(ratio - power) / power <= 0.05) {
+      return absS > absP ? power : 1 / power;
+    }
+  }
+  return undefined;
 }
 
 /** Same-scope data point descriptor for category-error detection. */
@@ -37,14 +57,7 @@ export function classifyDiscrepancy(
   if (diff === 0) return 'identical';
   if (diff <= roundingThreshold) return 'rounding';
 
-  const absStage = Math.abs(stageValue!);
-  const absProd = Math.abs(prodValue!);
-  if (absStage > 0 && absProd > 0) {
-    const ratio = Math.max(absStage, absProd) / Math.min(absStage, absProd);
-    for (const power of [10, 100, 1000, 10000, 100000, 1000000]) {
-      if (Math.abs(ratio - power) / power <= 0.05) return 'unit-error';
-    }
-  }
+  if (getUnitErrorFactor(stageValue, prodValue) !== undefined) return 'unit-error';
 
   const reference = Math.abs(prodValue!);
   if (reference > 0 && (diff / reference) <= 0.05) return 'small-error';

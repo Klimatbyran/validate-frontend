@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
-import { CompanyRow } from './types';
-import { discrepancyConfig } from './discrepancyConfig.tsx';
+import { CompanyRow } from '../types';
+import { discrepancyConfig } from '../config/discrepancyConfig';
 
 interface DiscrepancyBadgeProps {
   row: CompanyRow;

@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import { Download } from 'lucide-react';
 import { cn, downloadCsv } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { DiscrepancyType, WorstCompany } from './types';
-import { discrepancyConfig } from './discrepancyConfig.tsx';
+import { DiscrepancyType, WorstCompany } from '../types';
+import { discrepancyConfig } from '../config/discrepancyConfig';
 import { ErrorDistributionHistogram } from './ErrorDistributionHistogram';
 
 interface HardestReportsViewProps {

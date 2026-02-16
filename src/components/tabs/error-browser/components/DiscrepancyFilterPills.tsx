@@ -1,8 +1,8 @@
 import { Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { DiscrepancyType } from './types';
-import { discrepancyConfig } from './discrepancyConfig.tsx';
+import { DiscrepancyType } from '../types';
+import { discrepancyConfig } from '../config/discrepancyConfig';
 
 /** Filter pill order: default-on types first, then identical and both-null (off by default) last. */
 const FILTER_PILL_ORDER: DiscrepancyType[] = [

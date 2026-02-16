@@ -1,8 +1,8 @@
 import React from 'react';
 import { XCircle, Download } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { DiscrepancyType, CompanyRow, DATA_POINTS } from './types';
-import { computePerformanceMetrics, exportComparisonToCsv } from './utils';
+import { DiscrepancyType, CompanyRow, DATA_POINTS } from '../types';
+import { computePerformanceMetrics, exportComparisonToCsv } from '../utils';
 import { CompanyTableRow } from './CompanyTableRow';
 import { PerformanceMetricsTable } from './PerformanceMetricsTable';
 import { DiscrepancyFilterPills } from './DiscrepancyFilterPills';

@@ -1,4 +1,4 @@
-import type { CompanyRow, DataPointMetric } from './types';
+import type { CompanyRow, DataPointMetric } from '../types';
 
 export interface PerformanceMetricRow {
   label: string;

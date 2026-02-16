@@ -1,15 +1,16 @@
 import React from 'react';
-import { Company, CompanyRow, DataPointMetric, WorstCompany, DiscrepancyType, DATA_POINTS } from './types';
+import { Company, CompanyRow, DataPointMetric, WorstCompany, DiscrepancyType, DATA_POINTS } from '../types';
 import {
   getStageApiUrl,
   getProdApiUrl,
   pickReportingPeriodForYear,
   getDataPointValue,
   classifyDiscrepancy,
+  getUnitErrorFactor,
   companiesToMapById,
   reclassifyDiscrepancyForCategoryError,
   applyCategoryErrorToRows,
-} from './utils';
+} from '../utils';
 
 export function useErrorBrowserData(selectedYear: number, selectedDataPoint: string) {
   const [isLoading, setIsLoading] = React.useState(false);
@@ -70,20 +71,7 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
 
       const discrepancy = classifyDiscrepancy(stageValue, prodValue, 0.5);
       const diff = stageValue !== null && prodValue !== null ? stageValue - prodValue : null;
-
-      // Detect unit error factor for display
-      let unitErrorFactor: number | undefined;
-      if (discrepancy === 'unit-error' && stageValue !== null && prodValue !== null) {
-        const absS = Math.abs(stageValue);
-        const absP = Math.abs(prodValue);
-        const ratio = Math.max(absS, absP) / Math.min(absS, absP);
-        for (const power of [10, 100, 1000, 10000, 100000, 1000000]) {
-          if (Math.abs(ratio - power) / power <= 0.05) {
-            unitErrorFactor = absS > absP ? power : 1 / power;
-            break;
-          }
-        }
-      }
+      const unitErrorFactor = getUnitErrorFactor(stageValue, prodValue);
 
       rows.push({
         wikidataId, name, stageValue, prodValue, discrepancy, diff,

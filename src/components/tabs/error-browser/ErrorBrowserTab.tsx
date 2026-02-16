@@ -4,10 +4,10 @@ import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import type { ErrorBrowserViewMode } from './types';
-import { useErrorBrowserData } from './useErrorBrowserData';
-import { BrowserView } from './BrowserView';
-import { OverviewView } from './OverviewView';
-import { HardestReportsView } from './HardestReportsView';
+import { useErrorBrowserData } from './hooks/useErrorBrowserData';
+import { BrowserView } from './components/BrowserView';
+import { OverviewView } from './components/OverviewView';
+import { HardestReportsView } from './components/HardestReportsView';
 
 const VIEW_MODES: ErrorBrowserViewMode[] = ['browser', 'overview', 'worst'];
 

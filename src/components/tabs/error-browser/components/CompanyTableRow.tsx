@@ -1,8 +1,7 @@
 import { motion } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { CompanyRow } from './types';
-import { formatNumber } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
+import { CompanyRow } from '../types';
 import { DiscrepancyBadge } from './DiscrepancyBadge';
 
 interface CompanyTableRowProps {

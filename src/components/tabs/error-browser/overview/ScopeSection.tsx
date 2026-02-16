@@ -1,6 +1,6 @@
 import type { DataPointMetric } from '../types';
 import type { OverviewAggregates } from '../utils';
-import { AggregateMetrics } from '../AggregateMetrics';
+import { AggregateMetrics } from '../components/AggregateMetrics';
 import { DataPointBar } from './DataPointBar';
 
 interface ScopeSectionProps {
