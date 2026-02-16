@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, AlertTriangle, XCircle, MinusCircle, Calculator } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export type DiscrepancyType =
   | 'identical'      // a === b
@@ -176,8 +177,7 @@ export function ComparisonTable({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-        <span className="ml-3 text-gray-600">Loading comparison data...</span>
+        <LoadingSpinner label="Loading comparison data..." />
       </div>
     );
   }

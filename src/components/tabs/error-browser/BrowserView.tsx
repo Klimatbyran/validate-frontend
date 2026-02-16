@@ -1,5 +1,6 @@
 import React from 'react';
 import { XCircle, Download } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { DiscrepancyType, CompanyRow, DATA_POINTS } from './types';
 import { computePerformanceMetrics, exportComparisonToCsv } from './utils';
 import { CompanyTableRow } from './CompanyTableRow';
@@ -123,7 +124,7 @@ export function BrowserView({
           <button
             onClick={handleExportCsv}
             disabled={filteredRows.length === 0}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors text-sm"
+            className="inline-flex items-center gap-2 px-3 py-2 bg-gray-03 text-gray-01 rounded-lg hover:bg-gray-02 hover:text-white disabled:opacity-50 transition-colors text-sm"
           >
             <Download className="w-4 h-4" />
             Export CSV
@@ -158,8 +159,7 @@ export function BrowserView({
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-            <span className="ml-3 text-gray-02">Loading companies...</span>
+            <LoadingSpinner label="Loading companies..." />
           </div>
         ) : error ? (
           <div className="p-6 text-red-400">

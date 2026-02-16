@@ -45,17 +45,17 @@ export function ErrorBrowserTab() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {/* View toggle */}
-            <div className="flex rounded-lg overflow-hidden border border-gray-02/20">
+            {/* View toggle – match main app tabs (white/gray-01 when selected) */}
+            <div className="flex rounded-full overflow-hidden border border-gray-02/20 bg-gray-04/50 p-1">
               {(['browser', 'overview', 'worst'] as const).map(mode => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
                   className={cn(
-                    'px-3 py-2 text-sm font-medium transition-colors',
+                    'px-4 py-2 text-sm font-medium rounded-full transition-all',
                     viewMode === mode
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-03 text-gray-02 hover:text-gray-01'
+                      ? 'bg-gray-01 text-gray-05 shadow-sm'
+                      : 'text-gray-02 hover:text-gray-01'
                   )}
                 >
                   {mode === 'browser' ? 'Browser' : mode === 'overview' ? 'Overview' : 'Hardest Reports'}
@@ -65,7 +65,7 @@ export function ErrorBrowserTab() {
             <button
               onClick={fetchData}
               disabled={isLoading}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 bg-blue-04 text-white rounded-full hover:bg-blue-04/90 disabled:opacity-50 transition-colors text-sm font-medium"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh

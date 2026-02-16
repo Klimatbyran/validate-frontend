@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { DiscrepancyType, WorstCompany } from './types';
 import { discrepancyConfig } from './discrepancyConfig.tsx';
 import { ErrorDistributionHistogram } from './ErrorDistributionHistogram';
@@ -22,7 +23,7 @@ function exportHardestReportsCsv(worstCompanies: WorstCompany[], selectedYear: n
       .map(([type, count]) => `${type}:${count}`)
       .join('; ');
     const affectedDPs = company.errorDataPoints
-      .map(dp => dp.label)
+      .map((dp) => dp.label)
       .join('; ');
 
     csvRows.push([
@@ -63,8 +64,7 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-          <span className="ml-3 text-gray-02">Loading companies...</span>
+          <LoadingSpinner label="Loading companies..." />
         </div>
       ) : (
         <>
@@ -72,7 +72,7 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
             <button
               onClick={() => exportHardestReportsCsv(worstCompanies, selectedYear)}
               disabled={worstCompanies.length === 0}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors text-sm"
+              className="inline-flex items-center gap-2 px-3 py-2 bg-gray-03 text-gray-01 rounded-lg hover:bg-gray-02 hover:text-white disabled:opacity-50 transition-colors text-sm"
             >
               <Download className="w-4 h-4" />
               Export CSV

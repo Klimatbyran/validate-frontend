@@ -39,7 +39,7 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
       <div className="flex justify-end">
         <button
           onClick={() => exportOverviewCsv(allDataPointMetrics, selectedYear)}
-          className="inline-flex items-center gap-2 px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+          className="inline-flex items-center gap-2 px-3 py-2 bg-gray-03 text-gray-01 rounded-lg hover:bg-gray-02 hover:text-white transition-colors text-sm"
         >
           <Download className="w-4 h-4" />
           Export CSV
