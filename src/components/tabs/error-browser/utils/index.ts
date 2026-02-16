@@ -13,6 +13,7 @@ export {
 export {
   companiesToMapById,
   classifyDiscrepancy,
+  getUnitErrorFactor,
   reclassifyDiscrepancyForCategoryError,
   applyCategoryErrorToRows,
 } from './discrepancy';

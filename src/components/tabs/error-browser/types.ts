@@ -87,7 +87,6 @@ export interface CompanyRow {
 export interface DataPointMetric {
   id: string;
   label: string;
-  shortLabel: string;
   tolerantRate: number;
   tolerantSuccess: number;
   withAnyData: number;

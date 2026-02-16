@@ -153,7 +153,6 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
       return {
         id: dp.id,
         label: dp.label,
-        shortLabel: dp.category ? `Cat ${dp.category}` : dp.label.split(' ').slice(0, 2).join(' '),
         tolerantRate,
         tolerantSuccess,
         withAnyData,
