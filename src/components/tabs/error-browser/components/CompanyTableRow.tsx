@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, BadgeCheck } from 'lucide-react';
 import { cn, formatNumber } from '@/lib/utils';
 import { CompanyRow } from '../types';
 import { DiscrepancyBadge } from './DiscrepancyBadge';
@@ -45,7 +45,16 @@ export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTabl
         {formatNumber(row.stageValue)}
       </td>
       <td className="px-4 py-3 text-right font-mono text-sm text-gray-01">
-        {formatNumber(row.prodValue)}
+        <span className="inline-flex items-center justify-end gap-1.5">
+          {formatNumber(row.prodValue)}
+          {row.prodVerified && (
+            <BadgeCheck
+              className="w-4 h-4 text-green-500 shrink-0"
+              title="Verified"
+              aria-label="Verified"
+            />
+          )}
+        </span>
       </td>
       <td className="px-4 py-3 text-center">
         <DiscrepancyBadge row={row} />

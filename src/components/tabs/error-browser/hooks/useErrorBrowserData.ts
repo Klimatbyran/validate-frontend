@@ -5,6 +5,7 @@ import {
   getProdApiUrl,
   pickReportingPeriodForYear,
   getDataPointValue,
+  getDataPointVerified,
   classifyDiscrepancy,
   getUnitErrorFactor,
   companiesToMapById,
@@ -72,10 +73,11 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
       const discrepancy = classifyDiscrepancy(stageValue, prodValue, 0.5);
       const diff = stageValue !== null && prodValue !== null ? stageValue - prodValue : null;
       const unitErrorFactor = getUnitErrorFactor(stageValue, prodValue);
+      const prodVerified = getDataPointVerified(prodRP?.emissions, selectedDataPoint);
 
       rows.push({
         wikidataId, name, stageValue, prodValue, discrepancy, diff,
-        inStage: !!stageCompany, inProd: !!prodCompany, unitErrorFactor,
+        inStage: !!stageCompany, inProd: !!prodCompany, unitErrorFactor, prodVerified,
       });
     }
 

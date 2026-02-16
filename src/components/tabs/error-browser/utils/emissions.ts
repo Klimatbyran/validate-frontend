@@ -60,10 +60,10 @@ export function getDataPointValue(
 ): number | null {
   if (!emissions) return null;
 
-  if (dataPointId === 'scope1-total') return emissions.scope1?.total ?? null;
-  if (dataPointId === 'scope2-mb') return emissions.scope2?.mb ?? null;
-  if (dataPointId === 'scope2-lb') return emissions.scope2?.lb ?? null;
-  if (dataPointId === 'scope2-unknown') return emissions.scope2?.unknown ?? null;
+  if (dataPointId === 'scope1-total') return extractTotal(emissions.scope1);
+  if (dataPointId === 'scope2-mb') return extractTotal(emissions.scope2?.mb);
+  if (dataPointId === 'scope2-lb') return extractTotal(emissions.scope2?.lb);
+  if (dataPointId === 'scope2-unknown') return extractTotal(emissions.scope2?.unknown);
 
   if (dataPointId === 'stated-total') return extractTotal(emissions.statedTotalEmissions);
   if (dataPointId === 'calculated-total') return extractTotal(emissions.calculatedTotalEmissions);
@@ -78,4 +78,42 @@ export function getDataPointValue(
   if (dataPoint?.category) return getCategoryValue(scope3, dataPoint.category);
 
   return null;
+}
+
+/** Prod API: verified when metadata.verifiedBy is non-null. */
+function isVerifiedBy(value: { metadata?: { verifiedBy?: { name: string } | null } } | null | undefined): boolean {
+  return value != null && value.metadata?.verifiedBy != null;
+}
+
+/** Whether the given data point is marked as verified in emissions metadata (prod API uses metadata.verifiedBy). */
+export function getDataPointVerified(
+  emissions: ReportingPeriod['emissions'] | null | undefined,
+  dataPointId: string
+): boolean {
+  if (!emissions) return false;
+
+  if (dataPointId === 'scope1-total') return isVerifiedBy(emissions.scope1 ?? undefined);
+
+  if (dataPointId === 'scope2-mb' || dataPointId === 'scope2-lb' || dataPointId === 'scope2-unknown') {
+    return isVerifiedBy(emissions.scope2 ?? undefined);
+  }
+
+  if (dataPointId === 'stated-total') {
+    const st = emissions.statedTotalEmissions;
+    return typeof st === 'object' && st !== null && isVerifiedBy(st);
+  }
+  if (dataPointId === 'calculated-total') return false; // API: number | null, no metadata
+
+  const scope3 = emissions.scope3;
+  if (!scope3) return false;
+
+  if (dataPointId === 'scope3-stated-total') return isVerifiedBy(scope3.statedTotalEmissions ?? undefined);
+  if (dataPointId === 'scope3-calculated-total') return isVerifiedBy(scope3);
+
+  const dataPoint = DATA_POINTS.find((dp) => dp.id === dataPointId);
+  if (dataPoint?.category && Array.isArray(scope3.categories)) {
+    const cat = scope3.categories.find((c) => c.category === dataPoint.category);
+    return isVerifiedBy(cat ?? undefined);
+  }
+  return false;
 }

@@ -45,28 +45,34 @@ export interface Company {
   reportingPeriods?: ReportingPeriod[];
 }
 
+/** Prod API: verification is metadata.verifiedBy (non-null = verified). */
+export interface VerifiedBy {
+  name: string;
+}
+
 export interface ReportingPeriod {
   startDate: string;
   endDate: string;
   emissions?: {
-    statedTotalEmissions?: { total?: number | null } | number | null;
-    calculatedTotalEmissions?: { total?: number | null } | number | null;
-    scope1?: {
-      total?: number | null;
-    };
+    statedTotalEmissions?: { total?: number | null; metadata?: { verifiedBy?: VerifiedBy | null } } | number | null;
+    calculatedTotalEmissions?: number | null;
+    scope1?: { total?: number | null; metadata?: { verifiedBy?: VerifiedBy | null } } | null;
     scope2?: {
       mb?: number | null;
       lb?: number | null;
       unknown?: number | null;
-    };
+      metadata?: { verifiedBy?: VerifiedBy | null };
+    } | null;
     scope3?: {
-      statedTotalEmissions?: { total?: number | null } | number | null;
-      calculatedTotalEmissions?: { total?: number | null } | number | null;
+      statedTotalEmissions?: { total?: number | null; metadata?: { verifiedBy?: VerifiedBy | null } } | null;
+      calculatedTotalEmissions?: number | null;
       categories?: Array<{
         category: number;
         total: number | null;
+        metadata?: { verifiedBy?: VerifiedBy | null };
       }>;
-    };
+      metadata?: { verifiedBy?: VerifiedBy | null };
+    } | null;
   };
 }
 
@@ -79,6 +85,8 @@ export interface CompanyRow {
   diff: number | null;
   inStage: boolean;
   inProd: boolean;
+  /** When true, prod API metadata marks this data point as verified. */
+  prodVerified?: boolean;
   matchedDataPoint?: string;
   categoryErrorKind?: CategoryErrorKind;
   unitErrorFactor?: number;

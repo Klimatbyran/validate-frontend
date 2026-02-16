@@ -9,6 +9,7 @@ export {
   pickReportingPeriodForYear,
   getCategoryValue,
   getDataPointValue,
+  getDataPointVerified,
 } from './emissions';
 export {
   companiesToMapById,
