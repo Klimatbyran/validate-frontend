@@ -8,12 +8,17 @@ import axios from "axios";
 /**
  * Get auth API base URL based on environment
  * Similar pattern to getPublicApiUrl in utils.ts
+ *
+ * Use VITE_AUTH_API=local to force local proxy (/api/auth -> localhost:3000)
+ * when running dev or preview. Unset or "stage"/"prod" to use hostname-based URLs.
  */
 function getAuthApiBaseUrl(): string {
+  const forceLocal =
+    import.meta.env.VITE_AUTH_API === "local" || import.meta.env.VITE_AUTH_API === "true";
   const isDev = import.meta.env.DEV;
 
-  // In dev, use proxy path (configured in vite.config.ts)
-  if (isDev) {
+  // In dev, or when explicitly forcing local, use proxy path (vite.config.ts -> localhost:3000)
+  if (isDev || forceLocal) {
     return "/api/auth"; // Proxy will handle routing to localhost:3000
   }
 
@@ -55,24 +60,32 @@ export async function authenticateWithGithub(
     payload.state = state;
   }
   // baseURL already includes /api/auth, so just use /github
-  const response = await authApi.post("/github", payload);
-  return response.data;
+  try {
+    const response = await authApi.post("/github", payload);
+    return response.data;
+  } catch (err: unknown) {
+    const axiosError = err as { response?: { data?: { error?: string; message?: string } }; message?: string };
+    const msg =
+      axiosError.response?.data?.message ||
+      axiosError.response?.data?.error ||
+      axiosError.message;
+    throw new Error(msg || "Authentication failed");
+  }
 }
 
 /**
  * Get the callback URL for OAuth redirect
- * Based on current environment
+ * Based on current environment.
+ *
+ * Override: set VITE_AUTH_CALLBACK_URL (e.g. http://localhost:5173/auth/callback)
+ * if your OAuth app or backend only allows specific URLs. Otherwise we use
+ * window.location.origin + '/auth/callback'.
  */
 function getCallbackUrl(): string {
-  const isDev = import.meta.env.DEV;
-
-  if (isDev) {
-    // In dev, use current origin (localhost with port)
-    return `${window.location.origin}/auth/callback`;
+  const override = import.meta.env.VITE_AUTH_CALLBACK_URL;
+  if (override && typeof override === "string" && override.trim() !== "") {
+    return override.trim().replace(/\/$/, ""); // no trailing slash
   }
-
-  // In production/staging, use the current origin to ensure correct domain
-  // This ensures we redirect back to the same frontend that initiated the OAuth flow
   return `${window.location.origin}/auth/callback`;
 }
 
@@ -85,12 +98,15 @@ function getCallbackUrl(): string {
  * (can't use relative paths that go through proxy)
  */
 export function getGithubAuthUrl(): string {
+  const forceLocal =
+    import.meta.env.VITE_AUTH_API === "local" || import.meta.env.VITE_AUTH_API === "true";
   const isDev = import.meta.env.DEV;
+  const useLocalAuth = isDev || forceLocal;
   const callbackUrl = getCallbackUrl();
   const redirectUri = encodeURIComponent(callbackUrl);
 
-  // In dev, use relative path (goes through Vite proxy)
-  if (isDev) {
+  // In dev or when forcing local auth, use relative path (goes through Vite proxy)
+  if (useLocalAuth) {
     return `/api/auth/github?redirect_uri=${redirectUri}`;
   }
 

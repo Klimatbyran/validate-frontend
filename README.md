@@ -74,6 +74,19 @@ The development server will start on `http://localhost:5173` (or the next availa
 
 ## Development
 
+### Optional: Disable auth for local testing
+
+To use the app without logging in (e.g. when the auth callback URL isn’t set up yet), set:
+
+```bash
+# .env or .env.local
+VITE_DISABLE_AUTH=true
+```
+
+Or run: `VITE_DISABLE_AUTH=true npm run dev`
+
+The UI will treat you as logged in and won’t show the login modal. API requests are sent without a token; if the backend requires auth, those requests may still return 401. **Do not use in production.**
+
 ### Project Structure
 
 - `/src`: Source code

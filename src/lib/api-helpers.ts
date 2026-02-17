@@ -23,9 +23,12 @@ export async function authenticatedFetch(
 ): Promise<Response> {
   const isWrite = isWriteOperation(options.method);
 
+  const authDisabled =
+    import.meta.env.VITE_DISABLE_AUTH === "true" || import.meta.env.VITE_DISABLE_AUTH === "1";
+
   if (isWrite) {
     const token = localStorage.getItem("token");
-    if (!token) {
+    if (!token && !authDisabled) {
       // Show login modal and return a promise that will be resolved after login
       return new Promise((resolve, reject) => {
         window.dispatchEvent(
@@ -62,11 +65,13 @@ export async function authenticatedFetch(
       });
     }
 
-    // Add auth header for write operations
-    options.headers = {
-      ...options.headers,
-      Authorization: `Bearer ${token}`,
-    };
+    // Add auth header for write operations when we have a token
+    if (token) {
+      options.headers = {
+        ...options.headers,
+        Authorization: `Bearer ${token}`,
+      };
+    }
   }
 
   // For read operations, make the request without auth header
