@@ -7,8 +7,9 @@ import React, { useState } from "react";
 import { ChevronDown, ChevronRight, TrendingUp } from "lucide-react";
 import { JobDetailsDialog } from "../job-details-dialog";
 import { ViewToggle, useViewToggle } from "../ui/view-toggle";
-import type { SwimlaneCompany, QueueJob } from "@/lib/types";
+import type { SwimlaneCompany, SwimlaneYearData, QueueJob } from "@/lib/types";
 import { YearRow } from "@/components/swimlane/YearRow";
+import { isFollowUpQueue } from "@/lib/job-rerun-utils";
 
 interface CompanyCardProps {
   company: SwimlaneCompany;
@@ -24,6 +25,8 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
   const [selectedJob, setSelectedJob] = useState<QueueJob | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
+  const [missingQueueId, setMissingQueueId] = useState<string | undefined>();
+  const [selectedYearData, setSelectedYearData] = useState<SwimlaneYearData | undefined>();
 
   const latestYear = company.years?.[0];
   const totalYears = company.years?.length || 0;
@@ -123,6 +126,14 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
 
                     if (job) {
                       setSelectedJob(job);
+                      setMissingQueueId(undefined);
+                      setSelectedYearData(undefined);
+                      setIsDialogOpen(true);
+                    } else if (isFollowUpQueue(queueId)) {
+                      // Allow opening non-existent follow-up jobs
+                      setSelectedJob(null);
+                      setMissingQueueId(queueId);
+                      setSelectedYearData(targetRun);
                       setIsDialogOpen(true);
                     } else {
                       console.warn(
@@ -150,6 +161,8 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
         onRetry={() => {
           // Handle retry action
         }}
+        missingQueueId={missingQueueId}
+        yearData={selectedYearData}
       />
     </>
   );
