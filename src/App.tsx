@@ -13,6 +13,7 @@ import { UploadTab } from "./components/tabs/upload/UploadTab";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthCallback } from "@/pages/AuthCallback";
 import { GlobalLoginModal } from "@/components/GlobalLoginModal";
+import { ClimatePlansExplorer } from "@/views/climate-plans/ClimatePlansExplorer";
 
 function App() {
   const [currentTab, setCurrentTab] = useState("upload");
@@ -49,6 +50,7 @@ function App() {
                      */}{" "}
                     <TabsTrigger value="results">Resultat</TabsTrigger>
                     <TabsTrigger value="crawler">Crawler</TabsTrigger>
+                    <TabsTrigger value="climate-plans">Explore climate plans</TabsTrigger>
                   </TabsList>
 
                   <AnimatePresence mode="popLayout" initial={false}>
@@ -124,6 +126,16 @@ function App() {
                         <p className="text-gray-02">
                           Omg, no crawler to be found yet! Check back later.
                         </p>
+                      </motion.div>
+                    </TabsContent>
+
+                    <TabsContent key="climate-plans" value="climate-plans" asChild>
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                      >
+                        <ClimatePlansExplorer />
                       </motion.div>
                     </TabsContent>
                   </AnimatePresence>
