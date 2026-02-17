@@ -252,11 +252,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [logout]);
 
+  const authDisabled =
+    import.meta.env.VITE_DISABLE_AUTH === "true" || import.meta.env.VITE_DISABLE_AUTH === "1";
+  const devUser: User | null = authDisabled
+    ? { name: "Dev (auth disabled)", id: "", email: "", githubId: "", githubImageUrl: "" }
+    : null;
+
   const value: AuthContextType = {
     token,
-    user,
-    isLoading,
-    isAuthenticated: !!token && !!user,
+    user: authDisabled ? devUser : user,
+    isLoading: authDisabled ? false : isLoading,
+    isAuthenticated: authDisabled || (!!token && !!user),
     login,
     authenticate,
     logout,

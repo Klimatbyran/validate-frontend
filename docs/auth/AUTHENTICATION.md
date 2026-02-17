@@ -349,6 +349,13 @@ The callback URL is automatically determined using `window.location.origin`:
 - **Staging:** `https://validate-stage.klimatkollen.se/auth/callback`
 - **Production:** `https://validate.klimatkollen.se/auth/callback`
 
+**For local development**, the redirect URL must be allowed in two places or login will be rejected:
+
+1. **GitHub OAuth App** – GitHub → Settings → Developer settings → OAuth Apps → your app → **Authorization callback URL** must include e.g. `http://localhost:5173/auth/callback` (use the port Vite prints when you run `npm run dev`).
+2. **Garbo / auth backend** – If the backend validates `redirect_uri` against a whitelist, add the same URL there (e.g. `http://localhost:5173/auth/callback`).
+
+To use a different callback URL (e.g. a port already whitelisted), set `VITE_AUTH_CALLBACK_URL` in `.env` or `.env.local`, e.g. `VITE_AUTH_CALLBACK_URL=http://localhost:3002/auth/callback`.
+
 This ensures the callback always redirects back to the same frontend that initiated the OAuth flow, regardless of the environment.
 
 The callback URL is passed as `redirect_uri` query parameter when initiating OAuth:

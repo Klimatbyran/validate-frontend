@@ -160,8 +160,10 @@ api.interceptors.request.use(
     // Check if this is a write operation
     const method = config.method?.toUpperCase() || "";
     const isWriteOperation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+    const authDisabled =
+      import.meta.env.VITE_DISABLE_AUTH === "true" || import.meta.env.VITE_DISABLE_AUTH === "1";
 
-    if (isWriteOperation) {
+    if (isWriteOperation && !authDisabled) {
       const token = localStorage.getItem("token");
       if (!token) {
         // Show login modal and reject the request
@@ -214,25 +216,29 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       const method = config?.method?.toUpperCase() || "";
       const isWriteOperation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+      const authDisabled =
+        import.meta.env.VITE_DISABLE_AUTH === "true" || import.meta.env.VITE_DISABLE_AUTH === "1";
 
       // Clear invalid token
       localStorage.removeItem("token");
 
-      if (isWriteOperation) {
-        // For write operations, show login modal and allow retry after login
-        window.dispatchEvent(
-          new CustomEvent("show-login-modal", {
-            detail: {
-              action: () => {
-                // Retry the request after login
-                return api(config);
+      if (!authDisabled) {
+        if (isWriteOperation) {
+          // For write operations, show login modal and allow retry after login
+          window.dispatchEvent(
+            new CustomEvent("show-login-modal", {
+              detail: {
+                action: () => {
+                  // Retry the request after login
+                  return api(config);
+                },
               },
-            },
-          })
-        );
-      } else {
-        // For GET requests, just trigger auth-required event (silent failure)
-        window.dispatchEvent(new CustomEvent("auth-required"));
+            })
+          );
+        } else {
+          // For GET requests, just trigger auth-required event (silent failure)
+          window.dispatchEvent(new CustomEvent("auth-required"));
+        }
       }
 
       // Don't retry 401 errors automatically
