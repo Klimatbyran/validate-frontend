@@ -44,7 +44,8 @@ export default defineConfig({
       },
       // Auth API endpoints - must come before /api to match first
       "/api/auth": {
-        target: "http://localhost:3000", // Local auth API
+        //target: "http://localhost:3000", // Local auth API
+        target: "https://stage.klimatkollen.se", // Local auth API
         changeOrigin: true,
         secure: false,
         timeout: 30000,
@@ -126,9 +127,9 @@ export default defineConfig({
       },
       // Auth API proxy (for development)
       "/authapi": {
-        target: "http://localhost:3000", // Local auth API - adjust port if needed
+        //target: "http://localhost:3000", // Local auth API - adjust port if needed
         // For staging auth API, use:
-        // target: "https://stage.klimatkollen.se",
+        target: "https://stage.klimatkollen.se",
         changeOrigin: true,
         secure: false, // Set to false for localhost
         rewrite: (path) => path.replace(/^\/authapi/, ""), // Remove /authapi prefix

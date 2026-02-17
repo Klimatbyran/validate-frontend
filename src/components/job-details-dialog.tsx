@@ -109,7 +109,7 @@ export function JobDetailsDialog({
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ runOnly: followUpKey }),
+            body: JSON.stringify({ scopes: [followUpKey] }),
           }
         );
 
