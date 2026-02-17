@@ -9,6 +9,7 @@ import { ScreenshotSlideshow } from "./screenshot-slideshow";
 import { CollapsibleSection } from "./ui/collapsible-section";
 import { Image, ExternalLink, FileText, RotateCcw, AlertCircle } from "lucide-react";
 import { Scope3EmissionsDisplay } from "@/components/scope-emissions-display";
+import { EconomySection } from "@/components/scope/EconomySection";
 import { WikidataApprovalDisplay } from "./wikidata-approval-display";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,19 @@ function parseReturnValueData(job?: QueueJob): any {
 function getScopeData(returnValueData: any): any {
   const data = returnValueData?.value
   return data?.scope12 || data?.scope1 || data?.scope2;
+}
+
+// Helper to get economy data from return value
+function getEconomyData(returnValueData: any): any[] | null {
+  // returnValueData is already unwrapped (value level), so check for economy directly
+  if (returnValueData?.economy && Array.isArray(returnValueData.economy)) {
+    return returnValueData.economy;
+  }
+  // Also check nested value level
+  if (returnValueData?.value?.economy && Array.isArray(returnValueData.value.economy)) {
+    return returnValueData.value.economy;
+  }
+  return null;
 }
 
 // Helper to get scope 3 data from various sources
@@ -340,6 +354,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   // Get scope data for rendering
   const scopeData = getScopeData(returnValueData);
   const scope3Data = getScope3Data(processedData, returnValueData);
+  const economyData = getEconomyData(returnValueData);
   const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob);
   const wikidataId: string | undefined = React.useMemo(() => {
     const fromJob = getWikidataInfo(effectiveJob as any)?.node;
@@ -706,6 +721,12 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       {scope3Data && (
         <div className="mb-4">
           <Scope3EmissionsDisplay data={{ scope3: scope3Data }} wikidataId={wikidataId} />
+        </div>
+      )}
+      {/* Show Economy data if available */}
+      {economyData && (
+        <div className="mb-4">
+          <EconomySection data={{ economy: economyData }} wikidataId={wikidataId} />
         </div>
       )}
       {/* Show Screenshot slideshow if scopeData and PDF URL exist */}

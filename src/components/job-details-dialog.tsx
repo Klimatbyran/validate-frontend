@@ -18,6 +18,7 @@ import { authenticatedFetch } from "@/lib/api-helpers";
 import { buildRerunRequestData, QUEUE_TO_FOLLOW_UP_KEY } from "@/lib/job-rerun-utils";
 import { getQueueDisplayName } from "@/lib/workflow-config";
 import { findJobByQueueId } from "@/lib/workflow-utils";
+import { getWikidataInfo } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 interface JobDetailsDialogProps {
@@ -96,6 +97,8 @@ export function JobDetailsDialog({
     const followUpKey = QUEUE_TO_FOLLOW_UP_KEY[missingQueueId];
     const displayName = getQueueDisplayName(missingQueueId);
     const extractEmissionsJob = findJobByQueueId("extractEmissions", yearData);
+    const checkDBJob = findJobByQueueId("checkDB", yearData);
+    const wikidata = getWikidataInfo(checkDBJob);
 
     const handleRunAndSave = async () => {
       if (!extractEmissionsJob?.id) {
@@ -109,7 +112,10 @@ export function JobDetailsDialog({
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ scopes: [followUpKey] }),
+            body: JSON.stringify({
+              scopes: [followUpKey],
+              ...(wikidata ? { jobData: { wikidata } } : {}),
+            }),
           }
         );
 

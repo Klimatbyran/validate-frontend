@@ -23,6 +23,7 @@ import {
 import { OverviewStats } from "@/components/swimlane/OverviewStats";
 import { FilterBar } from "@/components/swimlane/FilterBar";
 import { CompanyCard } from "@/components/swimlane/CompanyCard";
+import { findJobByQueueId } from "@/lib/workflow-utils";
 
 export function SwimlaneQueueStatus() {
   const {
@@ -146,35 +147,90 @@ export function SwimlaneQueueStatus() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleRerunByWorker = (
-    workerName: "scope1" | "scope2" | "scope1+2" | "scope3",
-    limit: number | "all" = "all"
+  const handleRerunByWorker = async (
+    workerName: "scope1" | "scope2" | "scope1+2" | "scope3" | "economy" | "baseYear" | "industryGics",
+    limit: number | "all" = 5
   ) => {
-    toast.promise(
-      authenticatedFetch("/api/queues/rerun-by-worker", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workerName,
-          queues: ["followUpScope12"],
-          limit,
-        }),
-      }).then((res) => {
-        if (!res.ok) {
-          return res.text().then((text) => {
-            throw new Error(text || `HTTP ${res.status}`);
-          });
+    const workerToFollowUpKey: Record<string, string> = {
+      "scope1": "scope1",
+      "scope2": "scope2",
+      "scope1+2": "scope1+2",
+      "scope3": "scope3",
+      "economy": "economy",
+      "baseYear": "baseYear",
+      "industryGics": "industryGics",
+    };
+
+    const followUpKey = workerToFollowUpKey[workerName];
+    if (!followUpKey) return;
+
+    // Collect targets: for each company, find the latest year's extractEmissions job + wikidata from checkDB
+    const targets: Array<{
+      companyName: string;
+      extractEmissionsJobId: string;
+      wikidataNode: string | undefined;
+    }> = [];
+
+    for (const company of swimlaneCompanies) {
+      if (limit !== "all" && targets.length >= limit) break;
+
+      // Use the latest year (first in array, sorted by timestamp)
+      const latestYear = company.years[0];
+      if (!latestYear) continue;
+
+      const extractEmissionsJob = findJobByQueueId("extractEmissions", latestYear);
+      if (!extractEmissionsJob?.id) continue;
+
+      targets.push({
+        companyName: company.name,
+        extractEmissionsJobId: extractEmissionsJob.id,
+        wikidataNode: company.wikidataId,
+      });
+    }
+
+    if (targets.length === 0) {
+      toast.error(`Inga företag hittades att köra om ${workerName} för`);
+      return;
+    }
+
+    toast.info(`Kör om ${workerName} för ${targets.length} företag...`);
+
+    let successes = 0;
+    let failures = 0;
+
+    for (const target of targets) {
+      try {
+        const response = await authenticatedFetch(
+          `/api/queues/extractEmissions/${encodeURIComponent(target.extractEmissionsJobId)}/rerun-and-save`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              scopes: [followUpKey],
+              ...(target.wikidataNode ? { jobData: { wikidata: { node: target.wikidataNode } } } : {}),
+            }),
+          }
+        );
+
+        if (response.ok) {
+          successes++;
+          console.log(`[rerun-by-worker] ${workerName} OK for ${target.companyName}`);
+        } else {
+          failures++;
+          const errorText = await response.text();
+          console.error(`[rerun-by-worker] ${workerName} FAILED for ${target.companyName}: ${errorText}`);
         }
-      }),
-      {
-        loading: `Kör om senaste ${limit} jobben för ${workerName}...`,
-        success: `Startade om ${limit} jobb för ${workerName}`,
-        error: (err) =>
-          `Kunde inte köra om jobb för ${workerName}: ${
-            err?.message || "Okänt fel"
-          }`,
+      } catch (err) {
+        failures++;
+        console.error(`[rerun-by-worker] ${workerName} ERROR for ${target.companyName}:`, err);
       }
-    );
+    }
+
+    if (failures === 0) {
+      toast.success(`Startade om ${workerName} för ${successes} företag`);
+    } else {
+      toast.warning(`${workerName}: ${successes} lyckades, ${failures} misslyckades`);
+    }
   };
 
   if (isLoading && (!companies || companies.length === 0)) {
