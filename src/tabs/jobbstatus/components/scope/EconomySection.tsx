@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Banknote, Users, CheckCircle2 } from "lucide-react";
-import { useCompanyReferenceByYears } from "@/lib/company-reference-api";
+import { useCompanyReferenceByYears } from "../../lib/company-reference-api";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
 import { YearBadge } from "./YearBadge";
 import { DataCard } from "./DataCard";

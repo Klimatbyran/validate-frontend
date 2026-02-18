@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight, BarChart3, Activity } from "lucide-react";
-import { StatCard, CompactStatCard, PipelineStepCard } from "@/components/stat-cards";
+import { StatCard, CompactStatCard, PipelineStepCard } from "./StatCards";
 import { getAllPipelineSteps } from "@/lib/workflow-config";
 import {
   calculateStepJobStats,

@@ -2,9 +2,9 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/ui/button";
 import { WandIcon, Loader2 } from "lucide-react";
-import fetchCompanyReports from "@/lib/crawler-api";
-import { CompanyReport } from "@/lib/crawler-types";
-import ResultsList from "@/components/crawler/ResultsList";
+import fetchCompanyReports from "./lib/crawler-api";
+import { CompanyReport } from "./lib/crawler-types";
+import ResultsList from "./components/ResultsList";
 
 export function CrawlerTab() {
   const [companyNameInput, setCompanyNameInput] = useState<string>("");

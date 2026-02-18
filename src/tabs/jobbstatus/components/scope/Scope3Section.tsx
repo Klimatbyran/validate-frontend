@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Truck, CheckCircle2 } from "lucide-react";
-import { useCompanyReferenceByYears } from "@/lib/company-reference-api";
+import { useCompanyReferenceByYears } from "../../lib/company-reference-api";
 import { CopyJsonButton } from "./CopyJsonButton";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
 import { YearBadge } from "./YearBadge";

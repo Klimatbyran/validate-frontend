@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CompanyReport } from "@/lib/crawler-types";
+import { CompanyReport } from "../lib/crawler-types";
 import ResultItem from "./ResultItem";
 
 interface ResultsListProps {

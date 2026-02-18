@@ -1,6 +1,6 @@
-# Codebase Reorganization Plan
+# File Structure (Current)
 
-This document outlines a file structure that separates **shared** code (used by 2+ features) from **tab-specific** code, and provides step-by-step migration so nothing gets lost.
+This document describes the **current** file structure after the reorg. Shared code (used by 2+ features) lives in **components**, **hooks**, **lib**, and **ui**. Tab-only code lives under **tabs/<name>/**.
 
 ---
 
@@ -27,44 +27,19 @@ src/
 
 ---
 
-## 2. Proposed folder structure (detailed)
+## 2. Current folder structure (detailed)
 
 ```
 src/
 ├── components/
-│   ├── job-details/
-│   │   ├── SchemaSection.tsx
-│   │   ├── JobStatusSection.tsx
-│   │   ├── ErrorSection.tsx
-│   │   ├── ReturnValueSection.tsx
-│   │   ├── TechnicalDataSection.tsx
-│   │   ├── JobRelationshipsSection.tsx
-│   │   ├── JobMetadataSection.tsx
-│   │   ├── JobDialogHeader.tsx
-│   │   ├── JobDialogFooter.tsx
-│   │   └── DialogTabs.tsx
-│   ├── job-details-dialog.tsx
-│   ├── job-specific-data-view.tsx
-│   ├── scope/
-│   │   ├── Scope3Section.tsx
-│   │   ├── Scope12Section.tsx
-│   │   ├── EconomySection.tsx
-│   │   └── CopyJsonButton.tsx
-│   ├── scope-emissions-display.tsx
-│   ├── stat-cards.tsx
-│   ├── wikidata-approval-display.tsx
-│   ├── screenshot-slideshow.tsx
+│   ├── screenshot-slideshow.tsx   # shared: job details + SlideshowPage
 │   ├── ProtectedRoute.tsx
 │   ├── LoginModal.tsx
 │   └── GlobalLoginModal.tsx
 │
 ├── hooks/
 │   ├── useAuth.ts
-│   ├── useCompanies.ts
-│   ├── useQueues.ts
-│   ├── useQueueStats.ts
-│   ├── useQueueJobs.ts
-│   └── useGroupedCompanies.ts
+│   └── useCompanies.ts
 │
 ├── lib/
 │   ├── api.ts
@@ -73,7 +48,6 @@ src/
 │   ├── auth-types.ts
 │   ├── constants.ts
 │   ├── job-rerun-utils.ts
-│   ├── queue-store.ts
 │   ├── operators.ts
 │   ├── rx-api.ts
 │   ├── status-config.tsx
@@ -110,33 +84,57 @@ src/
 │   │   │   ├── UrlUploadForm.tsx
 │   │   │   ├── UploadList.tsx
 │   │   │   └── UploadListItem.tsx
-│   │   ├── lib/
-│   │   │   └── utils.ts          # (current components/tabs/upload/utils.ts)
+│   │   ├── lib/utils.ts
 │   │   └── types.ts
 │   │
 │   ├── processing/
-│   │   └── ProcessingTab.tsx     # wraps QueueStatus (move from ui/queue-status)
+│   │   └── ProcessingTab.tsx
 │   │
-│   ├── jobbstatus/               # swimlane
-│   │   ├── JobbstatusTab.tsx      # (current views/swimlane-queue-status.tsx)
+│   ├── jobbstatus/
+│   │   ├── JobbstatusTab.tsx
 │   │   ├── components/
 │   │   │   ├── OverviewStats.tsx
 │   │   │   ├── FilterBar.tsx
 │   │   │   ├── CompanyCard.tsx
-│   │   │   └── YearRow.tsx
+│   │   │   ├── YearRow.tsx
+│   │   │   ├── JobDetailsDialog.tsx
+│   │   │   ├── JobSpecificDataView.tsx
+│   │   │   ├── ScopeEmissionsDisplay.tsx
+│   │   │   ├── StatCards.tsx
+│   │   │   ├── WikidataApprovalDisplay.tsx
+│   │   │   ├── job-details/
+│   │   │   │   ├── SchemaSection.tsx
+│   │   │   │   ├── JobStatusSection.tsx
+│   │   │   │   ├── ErrorSection.tsx
+│   │   │   │   ├── ReturnValueSection.tsx
+│   │   │   │   ├── TechnicalDataSection.tsx
+│   │   │   │   ├── JobRelationshipsSection.tsx
+│   │   │   │   ├── JobMetadataSection.tsx
+│   │   │   │   ├── JobDialogHeader.tsx
+│   │   │   │   ├── JobDialogFooter.tsx
+│   │   │   │   └── DialogTabs.tsx
+│   │   │   └── scope/
+│   │   │       ├── Scope3Section.tsx
+│   │   │       ├── Scope12Section.tsx
+│   │   │       ├── EconomySection.tsx
+│   │   │       ├── CopyJsonButton.tsx
+│   │   │       ├── YearBadge.tsx
+│   │   │       ├── DataCard.tsx
+│   │   │       └── JsonRawDataBlock.tsx
 │   │   └── lib/
 │   │       ├── swimlane-transform.ts
 │   │       ├── swimlane-filters.ts
-│   │       └── calculation-utils.ts
+│   │       ├── calculation-utils.ts
+│   │       └── company-reference-api.ts
 │   │
 │   ├── workflow/
-│   │   ├── WorkflowTab.tsx       # thin wrapper or re-export
-│   │   └── WorkflowDiagram.tsx   # (current components/ui/workflow-diagram.tsx)
+│   │   ├── WorkflowTab.tsx
+│   │   └── WorkflowDiagram.tsx
 │   │
 │   ├── debug/
-│   │   └── DebugTab.tsx          # (current views/debug-view.tsx)
+│   │   └── DebugTab.tsx
 │   │
-│   ├── errors/                   # error-browser (rename for consistency with tab value)
+│   ├── errors/
 │   │   ├── ErrorBrowserTab.tsx
 │   │   ├── types.ts
 │   │   ├── components/
@@ -157,7 +155,7 @@ src/
 │   │   │   └── ScopeSummary.tsx
 │   │   ├── hooks/
 │   │   │   └── useErrorBrowserData.ts
-│   │   ├── lib/                  # rename from utils
+│   │   ├── lib/
 │   │   │   ├── index.ts
 │   │   │   ├── api.ts
 │   │   │   ├── csv.ts
@@ -168,10 +166,18 @@ src/
 │   │       └── discrepancyConfig.tsx
 │   │
 │   ├── results/
-│   │   └── ResultsTab.tsx        # placeholder (inline content from App today)
+│   │   └── ResultsTab.tsx
 │   │
 │   └── crawler/
-│       └── CrawlerTab.tsx       # (current views/CrawlerPage content)
+│       ├── CrawlerTab.tsx
+│       ├── components/
+│       │   ├── ResultsList.tsx
+│       │   └── ResultItem.tsx
+│       ├── lib/
+│       │   ├── crawler-api.ts
+│       │   └── crawler-types.ts
+│       └── hooks/
+│           └── useAllCompanyNames.ts
 │
 ├── pages/
 │   ├── AuthCallback.tsx
@@ -187,97 +193,37 @@ src/
 ```
 
 **Notes:**
-- **lib:** Shared lib keeps `workflow-utils` and `workflow-config` because job-details and jobbstatus both use them. Tab-specific lib under `tabs/jobbstatus/lib` holds swimlane-only code (`swimlane-transform`, `swimlane-filters`, `calculation-utils`).
-- **ui:** All current `components/ui/*` move to top-level `ui/` so shared primitives live in one place. `queue-status` and `workflow-diagram` move into their tabs (processing, workflow) since they’re single-use.
-- **tabs/errors:** Same as current error-browser; folder is named `errors` to match the tab value in App. Internal name can stay “error-browser” in component names.
+- **Job-details flow** (dialog, sections, scope, stat-cards, wikidata-approval) lives under **tabs/jobbstatus** because only CompanyCard (jobbstatus) uses it.
+- **Crawler** has its own **components**, **lib**, and **hooks** under **tabs/crawler**.
+- **Shared lib** keeps `workflow-utils`, `workflow-config`, etc. **tabs/jobbstatus/lib** holds swimlane + company-reference only.
+- **tabs/errors** uses `lib/` (not `utils/`). Folder name `errors` matches the tab value in App.
 
 ---
 
-## 3. File mapping (current → new)
+## 3. Current file locations (reference)
 
-Use this to verify every file is accounted for.
-
-| Current path | New path |
-|--------------|----------|
-| **Shared – no move** | |
-| `hooks/*.ts` | `hooks/*.ts` (unchanged) |
-| `contexts/AuthContext.tsx` | `contexts/AuthContext.tsx` |
-| `pages/AuthCallback.tsx` | `pages/AuthCallback.tsx` |
-| **lib (shared – remove tab-only)** | |
-| `lib/api.ts` | `lib/api.ts` |
-| `lib/api-helpers.ts` | `lib/api-helpers.ts` |
-| `lib/auth-api.ts` | `lib/auth-api.ts` |
-| `lib/auth-types.ts` | `lib/auth-types.ts` |
-| `lib/constants.ts` | `lib/constants.ts` |
-| `lib/job-rerun-utils.ts` | `lib/job-rerun-utils.ts` |
-| `lib/queue-store.ts` | `lib/queue-store.ts` |
-| `lib/operators.ts` | `lib/operators.ts` |
-| `lib/rx-api.ts` | `lib/rx-api.ts` |
-| `lib/status-config.tsx` | `lib/status-config.tsx` |
-| `lib/theme-colors.ts` | `lib/theme-colors.ts` |
-| `lib/types.ts` | `lib/types.ts` |
-| `lib/utils.ts` | `lib/utils.ts` |
-| `lib/workflow-config.ts` | `lib/workflow-config.ts` |
-| `lib/workflow-utils.ts` | `lib/workflow-utils.ts` |
-| `lib/swimlane-transform.ts` | `tabs/jobbstatus/lib/swimlane-transform.ts` |
-| `lib/swimlane-filters.ts` | `tabs/jobbstatus/lib/swimlane-filters.ts` |
-| `lib/calculation-utils.ts` | `tabs/jobbstatus/lib/calculation-utils.ts` |
-| **components → components (shared)** | |
-| `components/job-details/*.tsx` | `components/job-details/*.tsx` |
-| `components/job-details-dialog.tsx` | `components/job-details-dialog.tsx` |
-| `components/job-specific-data-view.tsx` | `components/job-specific-data-view.tsx` |
-| `components/scope/*.tsx` | `components/scope/*.tsx` |
-| `components/scope-emissions-display.tsx` | `components/scope-emissions-display.tsx` |
-| `components/stat-cards.tsx` | `components/stat-cards.tsx` |
-| `components/wikidata-approval-display.tsx` | `components/wikidata-approval-display.tsx` |
-| `components/screenshot-slideshow.tsx` | `components/screenshot-slideshow.tsx` |
-| `components/ProtectedRoute.tsx` | `components/ProtectedRoute.tsx` |
-| `components/LoginModal.tsx` | `components/LoginModal.tsx` |
-| `components/GlobalLoginModal.tsx` | `components/GlobalLoginModal.tsx` |
-| **components/ui → ui** | |
-| `components/ui/button.tsx` | `ui/button.tsx` |
-| `components/ui/dialog.tsx` | `ui/dialog.tsx` |
-| `components/ui/tabs.tsx` | `ui/tabs.tsx` |
-| `components/ui/loading-spinner.tsx` | `ui/loading-spinner.tsx` |
-| `components/ui/sonner.tsx` | `ui/sonner.tsx` |
-| `components/ui/view-toggle.tsx` | `ui/view-toggle.tsx` |
-| `components/ui/markdown-display.tsx` | `ui/markdown-display.tsx` |
-| `components/ui/collapsible-section.tsx` | `ui/collapsible-section.tsx` |
-| `components/ui/metadata-display.tsx` | `ui/metadata-display.tsx` |
-| `components/ui/value-renderer.tsx` | `ui/value-renderer.tsx` |
-| `components/ui/json-viewer.tsx` | `ui/json-viewer.tsx` |
-| `components/ui/fiscal-year-display.tsx` | `ui/fiscal-year-display.tsx` |
-| `components/ui/multi-progress-bar.tsx` | `ui/multi-progress-bar.tsx` |
-| `components/ui/wikidata-preview.tsx` | `ui/wikidata-preview.tsx` |
-| `components/ui/slideshow-image.tsx` | `ui/slideshow-image.tsx` |
-| `components/ui/slideshow-controls.tsx` | `ui/slideshow-controls.tsx` |
-| `components/ui/header.tsx` | `ui/header.tsx` |
-| **components/ui → tabs (single-use)** | |
-| `components/ui/queue-status.tsx` | `tabs/processing/ProcessingTab.tsx` (inlined or moved) |
-| `components/ui/workflow-diagram.tsx` | `tabs/workflow/WorkflowDiagram.tsx` |
-| **views → tabs or pages** | |
-| `views/swimlane-queue-status.tsx` | `tabs/jobbstatus/JobbstatusTab.tsx` |
-| `views/debug-view.tsx` | `tabs/debug/DebugTab.tsx` |
-| `views/CrawlerPage.tsx` | `tabs/crawler/CrawlerTab.tsx` |
-| `views/SlideshowPage.tsx` | `pages/SlideshowPage.tsx` |
-| **tabs/upload (rehome under src/tabs)** | |
-| `components/tabs/upload/UploadTab.tsx` | `tabs/upload/UploadTab.tsx` |
-| `components/tabs/upload/FileUploadZone.tsx` | `tabs/upload/components/FileUploadZone.tsx` |
-| `components/tabs/upload/UrlUploadForm.tsx` | `tabs/upload/components/UrlUploadForm.tsx` |
-| `components/tabs/upload/UploadList.tsx` | `tabs/upload/components/UploadList.tsx` |
-| `components/tabs/upload/UploadListItem.tsx` | `tabs/upload/components/UploadListItem.tsx` |
-| `components/tabs/upload/utils.ts` | `tabs/upload/lib/utils.ts` |
-| `components/tabs/upload/types.ts` | `tabs/upload/types.ts` |
-| **tabs/error-browser → tabs/errors** | |
-| `components/tabs/error-browser/*` | `tabs/errors/*` (same internal structure; `utils/` → `lib/`) |
-
-All other `src` files (`App.tsx`, `main.tsx`, `index.css`, `vite-env.d.ts`) stay where they are.
+| Location | Contents |
+|----------|----------|
+| **components/** | `screenshot-slideshow.tsx`, `ProtectedRoute.tsx`, `LoginModal.tsx`, `GlobalLoginModal.tsx` only |
+| **hooks/** | `useAuth`, `useCompanies` |
+| **lib/** | Shared API, auth, workflow, queue-store, utils, types, etc. (no tab-only code) |
+| **ui/** | All shared primitives: button, dialog, tabs, loading-spinner, collapsible-section, etc. |
+| **tabs/jobbstatus/** | Tab + components (OverviewStats, FilterBar, CompanyCard, YearRow, JobDetailsDialog, job-details/*, scope/*, etc.) + lib (swimlane-*, calculation-utils, company-reference-api) |
+| **tabs/crawler/** | CrawlerTab + components (ResultsList, ResultItem) + lib (crawler-api, crawler-types) + hooks (useAllCompanyNames) |
+| **tabs/upload/** | UploadTab + components/ + lib/utils.ts + types.ts |
+| **tabs/errors/** | ErrorBrowserTab + components/, overview/, hooks/, lib/, config/ |
+| **tabs/processing/** | ProcessingTab.tsx |
+| **tabs/workflow/** | WorkflowTab.tsx, WorkflowDiagram.tsx |
+| **tabs/debug/** | DebugTab.tsx |
+| **tabs/results/** | ResultsTab.tsx |
+| **pages/** | AuthCallback.tsx, SlideshowPage.tsx |
+| **contexts/** | AuthContext.tsx |
 
 ---
 
-## 4. Import path changes
+## 4. Import conventions
 
-The alias `@/*` → `src/*` is unchanged. After moves, update imports as follows:
+The alias `@/*` → `src/*` is unchanged. Imports in the codebase use:
 
 | Old import | New import |
 |------------|------------|
@@ -297,14 +243,14 @@ The alias `@/*` → `src/*` is unchanged. After moves, update imports as follows
 | `@/components/ui/workflow-diagram` | `@/tabs/workflow/WorkflowDiagram` |
 
 **Tab-internal imports:**  
-- In jobbstatus, use `@/tabs/jobbstatus/lib/...` and `@/tabs/jobbstatus/components/...` (or relative `../lib/`, `./components/`).  
-- In errors, change `../utils` to `../lib` and keep `@/lib/utils`, `@/ui/...` for shared code.
+- Jobbstatus and crawler use relative paths (e.g. `./components/...`, `../lib/...`) or `@/tabs/<name>/...`.  
+- Errors tab uses `../lib` (not `../utils`). Shared code stays `@/lib`, `@/ui`, `@/components/screenshot-slideshow`, etc.
 
 ---
 
-## 5. Step-by-step migration (safe order)
+## 5. Migration steps (completed)
 
-Do this in order to avoid broken imports mid-move.
+The following steps were followed to perform the reorg. Kept for reference.
 
 ### Phase A: Create new folders (no moves yet)
 
@@ -375,48 +321,38 @@ Do this in order to avoid broken imports mid-move.
 
 ---
 
-## 6. Nothing-lost checklist
+## 6. Nothing-lost checklist (completed)
 
-Before considering the reorg done, confirm:
+Used to verify the reorg; all items were confirmed:
 
-- [ ] Every file in the “File mapping” table has been moved (or intentionally left in place).
-- [ ] No file under `src` was deleted except after its content was moved.
-- [ ] All `@/components/ui/*` imports have been changed to `@/ui/*`.
-- [ ] All `@/views/*` imports have been replaced by `@/tabs/*` or `@/pages/*`.
-- [ ] All `@/lib/swimlane-*` and `@/lib/calculation-utils` imports point to `@/tabs/jobbstatus/lib/*`.
-- [ ] All `@/components/tabs/upload/*` imports point to `@/tabs/upload/*`.
-- [ ] All `@/components/tabs/error-browser/*` imports point to `@/tabs/errors/*`.
-- [ ] `App.tsx` renders each tab from `@/tabs/<name>/...`.
-- [ ] `npm run build` succeeds.
-- [ ] Lint passes; no unused files or dead imports in moved code.
+- [x] Every file accounted for; job-details/scope moved to jobbstatus; crawler to tabs/crawler.
+- [x] No file deleted except after move; empty `components/tabs/`, `views/` removed.
+- [x] All `@/components/ui/*` → `@/ui/*`.
+- [x] All `@/views/*` → `@/tabs/*` or `@/pages/*`.
+- [x] Jobbstatus and crawler use `@/tabs/.../lib/*` and relative paths.
+- [x] `App.tsx` renders each tab from `@/tabs/<name>/...`.
+- [x] Build and lint pass.
 
 ---
 
-## 7. Optional: keep “error-browser” name under `tabs/errors`
-
-If you prefer the folder to be `tabs/error-browser` instead of `tabs/errors`, use the same layout but name the folder `error-browser` and update imports to `@/tabs/error-browser/*`. The tab value in `App` can stay `"errors"` regardless.
-
----
-
-## 8. Summary
+## 7. Summary
 
 - **Shared:** `components/`, `hooks/`, `lib/`, `ui/` at `src/` for anything used in 2+ places.
 - **Tab-specific:** `tabs/<tab-name>/` with optional `components/`, `hooks/`, `lib/` (and `overview/`, `config/` where needed).
-- **Migration:** Create folders first, move shared UI to `ui/`, then tab-only lib, then views and tab components, then upload and error-browser, then cleanup and verify with build + checklist.
-
-Following this plan keeps the codebase consistent and makes it easy to find reusable vs tab-specific code while ensuring nothing is lost in the shuffle.
+- **Job-details and scope** live under `tabs/jobbstatus` (used only by CompanyCard). **Crawler** has its own components, lib, and hooks under `tabs/crawler`.
 
 ---
 
-## 9. Post-reorg cleanup (manual)
+## 8. Historical: post-reorg cleanup (done)
 
-After implementing the migration, you can remove obsolete paths so nothing is left behind:
+Obsolete paths were removed:
 
-- **`src/components/ui/`** – If the folder is empty (all primitives moved to `src/ui/`), remove the directory.
-- **`src/components/tabs/upload/`** – Remove; upload tab now lives under `src/tabs/upload/`.
-- **`src/components/tabs/error-browser/`** – Remove; error browser now lives under `src/tabs/errors/`.
-- **`src/views/`** – Remove if empty (views moved to `tabs/` or `pages/`).
-- **`src/components/swimlane/`** – Remove if empty (swimlane moved to `tabs/jobbstatus/components/`).
+- **`src/components/ui/`** – Removed; primitives moved to `src/ui/`.
+- **`src/components/tabs/`** – Removed; upload and error-browser moved to `src/tabs/`.
+- **`src/views/`** – Removed; views moved to `tabs/` or `pages/`.
+- **`src/components/swimlane/`** – Removed; moved to `tabs/jobbstatus/components/`.
+- **`src/components/job-details/`**, **scope/**, etc. – Removed; moved to `tabs/jobbstatus/components/`.
+- **`src/components/crawler/`**, **`src/lib/crawler-*`** – Removed; moved to `tabs/crawler/`.
 
 Example (from repo root):
 

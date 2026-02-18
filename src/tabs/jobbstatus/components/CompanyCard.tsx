@@ -5,7 +5,7 @@
 
 import React, { useState } from "react";
 import { ChevronDown, ChevronRight, TrendingUp } from "lucide-react";
-import { JobDetailsDialog } from "@/components/job-details-dialog";
+import { JobDetailsDialog } from "./JobDetailsDialog";
 import { ViewToggle, useViewToggle } from "@/ui/view-toggle";
 import type { SwimlaneCompany, SwimlaneYearData, QueueJob } from "@/lib/types";
 import { YearRow } from "./YearRow";

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogFooter } from "@/ui/dialog";
 import { toast } from "sonner";
 import { QueueJob, DetailedJobResponse, SwimlaneYearData } from "@/lib/types";
 import { HelpCircle, RotateCcw } from "lucide-react";
-import { JobSpecificDataView } from "./job-specific-data-view";
+import { JobSpecificDataView } from "./JobSpecificDataView";
 import { JobDialogHeader } from "./job-details/JobDialogHeader";
 import { DialogTabs } from "./job-details/DialogTabs";
 import { JobDialogFooter } from "./job-details/JobDialogFooter";
