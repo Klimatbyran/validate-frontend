@@ -4,7 +4,6 @@ type SearchQuery = {
 };
 
 const fetchCompanyReports = async (searchQuery: SearchQuery) => {
-  console.log([searchQuery]);
   try {
     const response = await fetch("http://localhost:3000/api/reports", {
       method: "POST",

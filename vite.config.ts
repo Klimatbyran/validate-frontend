@@ -28,7 +28,7 @@ export default defineConfig({
         configure: (proxy, _options) => {
           proxy.on("error", (err, _req, res) => {
             console.warn(
-              "Backend server not available on port 3000. Screenshots API will not work."
+              "Backend server not available on port 3000. Screenshots API will not work.",
             );
             if (res && !res.headersSent) {
               res.writeHead(503, { "Content-Type": "application/json" });
@@ -36,7 +36,7 @@ export default defineConfig({
                 JSON.stringify({
                   error: "Backend server not available",
                   message: "Please start the backend server on port 3000",
-                })
+                }),
               );
             }
           });
@@ -52,15 +52,16 @@ export default defineConfig({
         configure: (proxy, _options) => {
           proxy.on("error", (err, _req, res) => {
             console.warn(
-              "Auth API server not available on port 3000. Check if local auth API is running."
+              "Auth API server not available on port 3000. Check if local auth API is running.",
             );
             if (res && !res.headersSent) {
               res.writeHead(503, { "Content-Type": "application/json" });
               res.end(
                 JSON.stringify({
                   error: "Auth API server not available",
-                  message: "Please start the local auth API server on port 3000",
-                })
+                  message:
+                    "Please start the local auth API server on port 3000",
+                }),
               );
             }
           });
@@ -77,7 +78,7 @@ export default defineConfig({
         configure: (proxy, _options) => {
           proxy.on("error", (err, _req, res) => {
             console.warn(
-              "Pipeline API server not available at https://stage-pipeline-api.klimatkollen.se. Queue API will not work."
+              "Pipeline API server not available at https://stage-pipeline-api.klimatkollen.se. Queue API will not work.",
             );
             if (res && !res.headersSent) {
               res.writeHead(503, { "Content-Type": "application/json" });
@@ -89,7 +90,7 @@ export default defineConfig({
                   queues: [],
                   jobs: [],
                   stats: { total: 0, active: 0, completed: 0, failed: 0 },
-                })
+                }),
               );
             }
           });
@@ -101,7 +102,7 @@ export default defineConfig({
           proxy.on("proxyRes", (proxyRes, req, _res) => {
             // Log successful responses
             console.log(
-              `API call successful: ${req.method} ${req.url} -> ${proxyRes.statusCode}`
+              `API call successful: ${req.method} ${req.url} -> ${proxyRes.statusCode}`,
             );
           });
         },
@@ -128,15 +129,16 @@ export default defineConfig({
         configure: (proxy, _options) => {
           proxy.on("error", (err, _req, res) => {
             console.warn(
-              "Auth API server not available on port 3000. Check if local auth API is running."
+              "Auth API server not available on port 3000. Check if local auth API is running.",
             );
             if (res && !res.headersSent) {
               res.writeHead(503, { "Content-Type": "application/json" });
               res.end(
                 JSON.stringify({
                   error: "Auth API server not available",
-                  message: "Please start the local auth API server on port 3000",
-                })
+                  message:
+                    "Please start the local auth API server on port 3000",
+                }),
               );
             }
           });
