@@ -13,6 +13,32 @@ export const QUEUE_TO_SCOPES: Record<string, string[]> = {
 };
 
 /**
+ * Maps follow-up queue IDs to their FollowUpKey used by the backend.
+ * Used when triggering a follow-up job that didn't run via the extractEmissions parent.
+ */
+export const QUEUE_TO_FOLLOW_UP_KEY: Record<string, string> = {
+  followUpScope1: "scope1",
+  followUpScope2: "scope2",
+  followUpScope12: "scope1+2",
+  followUpScope3: "scope3",
+  followUpBiogenic: "biogenic",
+  followUpEconomy: "economy",
+  followUpGoals: "goals",
+  followUpInitiatives: "initiatives",
+  followUpBaseYear: "baseYear",
+  followUpIndustryGics: "industryGics",
+  followUpFiscalYear: "fiscalYear",
+  followUpCompanyTags: "companyTags",
+};
+
+/**
+ * Check if a queueId is a follow-up queue that can be triggered from extractEmissions.
+ */
+export function isFollowUpQueue(queueId: string): boolean {
+  return queueId in QUEUE_TO_FOLLOW_UP_KEY;
+}
+
+/**
  * Extracts job data from various possible locations.
  * Job data can be stored in different shapes depending on the API response.
  */

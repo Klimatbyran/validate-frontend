@@ -69,3 +69,21 @@ export function getWikidataInfo(
 
   return null;
 }
+
+/** Format a number for display (sv-SE locale), or "—" when null/undefined. Reusable across features. */
+export function formatNumber(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '—';
+  return value.toLocaleString('sv-SE');
+}
+
+/** Trigger a CSV file download. Rows are arrays of cell values (joined with commas). */
+export function downloadCsv(rows: string[][], filename: string): void {
+  const csvContent = rows.map((row) => row.join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
