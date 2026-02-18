@@ -50,7 +50,7 @@ export function DiscrepancyFilterPills({
           Show all
         </button>
       </div>
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex flex-wrap gap-3 items-center">
         {FILTER_PILL_ORDER.map((type) => {
           const config = discrepancyConfig[type];
           const count = counts[type];
@@ -67,16 +67,17 @@ export function DiscrepancyFilterPills({
               }}
               title={`Click to toggle, right-click to show only ${config.label}`}
               className={cn(
+                '!w-auto !min-w-0 h-9 px-4 text-sm',
                 isActive
                   ? `${config.bgColor} ${config.textColor} border-0 hover:opacity-90`
                   : 'border border-gray-03 text-gray-01 hover:bg-gray-03/40'
               )}
             >
-              <span className="mr-1.5">{config.icon}</span>
-              {config.label}
+              <span className="mr-1.5 shrink-0">{config.icon}</span>
+              <span className="whitespace-nowrap">{config.label}</span>
               <span
                 className={cn(
-                  'ml-2 px-2 py-0.5 rounded-full text-xs font-medium',
+                  'ml-2 px-2 py-0.5 rounded-full text-xs font-medium shrink-0',
                   isActive ? 'bg-white/20 text-white' : `${config.bgColor} ${config.textColor}`
                 )}
               >
