@@ -15,7 +15,7 @@ export function MarkdownVectorPagesDisplay({ value }: MarkdownDisplayProps) {
 
   return (
     <div className="space-y-3">
-      <div className="prose prose-sm max-w-none bg-white rounded p-3 border markdown-tables">
+      <div className="prose prose-sm prose-invert max-w-none bg-gray-04 rounded p-3 border border-gray-03 markdown-tables">
         <Markdown remarkPlugins={[remarkGfm]}>{processedValue}</Markdown>
       </div>
     </div>

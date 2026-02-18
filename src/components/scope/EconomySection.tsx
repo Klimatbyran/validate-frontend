@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { Banknote, Users, CheckCircle2 } from "lucide-react";
 import { useCompanyReferenceByYears } from "@/lib/company-reference-api";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
+import { YearBadge } from "./YearBadge";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 
 interface EconomyEntry {
   year: number;
@@ -79,11 +81,11 @@ function EconomyCard({
 }: EconomyCardProps) {
   return (
     <div
-      className={`bg-white rounded-2xl p-8 border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 w-full md:flex-1 min-h-[180px] flex flex-col justify-center ${className}`}
+      className={`bg-gray-03 rounded-2xl p-8 border border-gray-03 shadow-sm hover:shadow-md transition-all duration-200 w-full md:flex-1 min-h-[180px] flex flex-col justify-center ${className}`}
     >
       <div className="flex items-center space-x-2 mb-2">
         {icon}
-        <span className="font-semibold text-lg text-gray-900">{title}</span>
+        <span className="font-semibold text-lg text-gray-01">{title}</span>
       </div>
       {children}
     </div>
@@ -91,7 +93,7 @@ function EconomyCard({
 }
 
 const REF_PANEL_CLASS =
-  "bg-gray-04/80 border border-gray-03 rounded-xl p-4 mb-4 border-l-4 border-l-blue-03";
+  "bg-gray-04/80 border border-gray-03 rounded-xl p-4 mb-4 border-l-4 border-l-green-03";
 
 interface EconomyReferencePanelProps {
   wikidataId: string | undefined;
@@ -139,7 +141,7 @@ function EconomyReferencePanel({
   return (
     <div className={REF_PANEL_CLASS}>
       <div className="flex items-center gap-2 mb-2">
-        <CheckCircle2 className="w-4 h-4 text-blue-03" />
+        <CheckCircle2 className="w-4 h-4 text-green-03" />
         <span className="text-sm font-medium text-gray-01">
           Referensvärden ({latest}) från API i prod
         </span>
@@ -216,91 +218,83 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-04/50 rounded-lg p-4 border border-gray-03"
+      className="bg-gray-04/50 rounded-lg border border-gray-03"
     >
-      <div className="flex items-center space-x-2 mb-4">
-        <div className="p-2 rounded-full bg-blue-03/20">
-          <Banknote className="w-5 h-5 text-blue-03" />
-        </div>
-        <h3 className="text-lg font-medium text-blue-03">Ekonomi</h3>
-      </div>
+      <CollapsibleSection
+        defaultOpen
+        title="Ekonomi"
+        icon={<Banknote className="w-5 h-5 text-green-03" />}
+        accentIconBg="bg-green-03/20"
+        accentTextColor="text-green-03"
+      >
+        <EconomyReferencePanel
+          wikidataId={wikidataId}
+          latestYear={latestYear}
+          referenceByYear={referenceByYear}
+          isLoading={isLoading}
+          error={error}
+        />
 
-      <EconomyReferencePanel
-        wikidataId={wikidataId}
-        latestYear={latestYear}
-        referenceByYear={referenceByYear}
-        isLoading={isLoading}
-        error={error}
-      />
+        <div className="space-y-6">
+          {sortedData.map((entry, idx) => {
+            const economy = entry.economy;
+            if (!economy) return null;
 
-      <div className="space-y-6">
-        {sortedData.map((entry, idx) => {
-          const economy = entry.economy;
-          if (!economy) return null;
-
-          return (
-            <div key={entry.year} className="mb-14">
-              <div className="flex items-center mb-3 bg-blue-03/15 rounded-lg px-4 py-2 w-fit border border-blue-03/30">
-                <span className="text-2xl font-extrabold text-gray-01 mr-3">
-                  {entry.year}
-                </span>
-                {idx === 0 && (
-                  <span className="bg-blue-03/30 text-blue-03 text-xs font-semibold px-3 py-1 rounded-full ml-2 border border-blue-03/40">
-                    Senaste år
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-col md:flex-row md:items-stretch justify-center gap-4 md:gap-0 mt-2 relative max-w-2xl mx-auto">
-                {economy.turnover && economy.turnover.value != null && (
-                  <EconomyCard
-                    icon={<Banknote className="w-5 h-5 text-blue-600" />}
-                    title="Omsättning"
-                    className="mr-0 md:mr-2"
-                  >
-                    <div className="font-extrabold text-gray-900 text-2xl mb-1">
-                      {formatCurrency(
-                        economy.turnover.value,
-                        economy.turnover.currency
+            return (
+              <div key={entry.year} className="mb-14">
+                <YearBadge year={entry.year} isLatest={idx === 0} accent="green" />
+                  <div className="flex flex-col md:flex-row md:items-stretch justify-center gap-4 md:gap-0 mt-2 relative max-w-2xl mx-auto">
+                    {economy.turnover && economy.turnover.value != null && (
+                      <EconomyCard
+                        icon={<Banknote className="w-5 h-5 text-green-03" />}
+                        title="Omsättning"
+                        className="mr-0 md:mr-2"
+                      >
+                        <div className="font-extrabold text-gray-01 text-2xl mb-1">
+                          {formatCurrency(
+                            economy.turnover.value,
+                            economy.turnover.currency
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-02 mt-2">
+                          Nettoomsättning
+                        </div>
+                      </EconomyCard>
+                    )}
+                    {economy.turnover &&
+                      economy.turnover.value != null &&
+                      economy.employees &&
+                      economy.employees.value != null && (
+                        <div
+                          className="hidden md:block w-0.5 bg-gray-03 mx-2 rounded-full"
+                          style={{ minHeight: 140 }}
+                        />
                       )}
-                    </div>
-                    <div className="text-sm text-gray-500 mt-2">
-                      Nettoomsättning
-                    </div>
-                  </EconomyCard>
-                )}
-                {economy.turnover &&
-                  economy.turnover.value != null &&
-                  economy.employees &&
-                  economy.employees.value != null && (
-                    <div
-                      className="hidden md:block w-0.5 bg-gray-200 mx-2 rounded-full"
-                      style={{ minHeight: 140 }}
-                    />
-                  )}
-                {economy.employees && economy.employees.value != null && (
-                  <EconomyCard
-                    icon={<Users className="w-5 h-5 text-purple-600" />}
-                    title="Anställda"
-                    className="ml-0 md:ml-2"
-                  >
-                    <div className="font-extrabold text-gray-900 text-4xl mb-1">
-                      {formatNumber(economy.employees.value)}
-                    </div>
-                    <div className="text-base text-gray-700">
-                      {economy.employees.unit || ""}
-                    </div>
-                    <div className="text-sm text-gray-500 mt-2">
-                      {employeeUnitLabel(economy.employees.unit)}
-                    </div>
-                  </EconomyCard>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                    {economy.employees && economy.employees.value != null && (
+                      <EconomyCard
+                        icon={<Users className="w-5 h-5 text-pink-03" />}
+                        title="Anställda"
+                        className="ml-0 md:ml-2"
+                      >
+                        <div className="font-extrabold text-gray-01 text-4xl mb-1">
+                          {formatNumber(economy.employees.value)}
+                        </div>
+                        <div className="text-base text-gray-02">
+                          {economy.employees.unit || ""}
+                        </div>
+                        <div className="text-sm text-gray-02 mt-2">
+                          {employeeUnitLabel(economy.employees.unit)}
+                        </div>
+                      </EconomyCard>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+        </div>
 
-      <JsonRawDataBlock data={data} />
+        <JsonRawDataBlock data={data} />
+      </CollapsibleSection>
     </motion.div>
   );
 }

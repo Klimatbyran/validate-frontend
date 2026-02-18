@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Leaf, Building2, CheckCircle2 } from "lucide-react";
 import { useCompanyReferenceByYears } from "@/lib/company-reference-api";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
+import { YearBadge } from "./YearBadge";
 
 interface Scope12EmissionsData {
   scope12: Array<{
@@ -346,13 +347,7 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
       <div className="space-y-6">
         {sortedData.map((yearData, idx) => (
           <div key={yearData.year} className="mb-14">
-            {/* Year label area with soft background and left alignment */}
-            <div className="flex items-center mb-3 bg-green-03/15 rounded-lg px-4 py-2 w-fit border border-green-03/30">
-              <span className="text-2xl font-extrabold text-gray-01 mr-3">{yearData.year}</span>
-              {idx === 0 && (
-                <span className="bg-green-03/30 text-green-03 text-xs font-semibold px-3 py-1 rounded-full ml-2 border border-green-03/40">Senaste år</span>
-              )}
-            </div>
+            <YearBadge year={yearData.year} isLatest={idx === 0} accent="green" />
             <div className="flex flex-col md:flex-row md:items-stretch justify-center gap-4 md:gap-0 mt-2 relative max-w-2xl mx-auto">
               {(() => {
                 const snapshot = referenceByYear[yearData.year];

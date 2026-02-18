@@ -4,6 +4,7 @@ import { Truck, CheckCircle2 } from "lucide-react";
 import { useCompanyReferenceByYears } from "@/lib/company-reference-api";
 import { CopyJsonButton } from "./CopyJsonButton";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
+import { YearBadge } from "./YearBadge";
 
 interface Scope3EmissionsData {
   scope3: Array<{
@@ -217,12 +218,7 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
     const hasReferenceForYear = Boolean(referenceByYear[entry.year]);
     return (
       <div className="mb-14">
-        <div className="flex items-center mb-3 bg-orange-03/15 rounded-lg px-4 py-2 w-fit border border-orange-03/30">
-          <span className="text-2xl font-extrabold text-gray-01 mr-3">{entry.year}</span>
-          {isLatest && (
-            <span className="bg-orange-03/30 text-orange-03 text-xs font-semibold px-3 py-1 rounded-full ml-2 border border-orange-03/40">Senaste år</span>
-          )}
-        </div>
+        <YearBadge year={entry.year} isLatest={isLatest} accent="orange" />
         <div className="bg-gray-04 rounded-2xl p-8 border border-gray-03 shadow-sm">
           <div className="flex items-center space-x-2 mb-4">
             <Truck className="w-5 h-5 text-orange-03" />
