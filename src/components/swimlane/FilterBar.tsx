@@ -18,6 +18,8 @@ import {
 import { Button } from "@/components/ui/button";
 import type { FilterType, RunScope } from "@/lib/swimlane-filters";
 
+type RerunWorker = "scope1" | "scope2" | "scope3" | "economy" | "baseYear" | "industryGics";
+
 interface FilterBarProps {
   activeFilters: Set<FilterType>;
   runScope: RunScope;
@@ -27,9 +29,73 @@ interface FilterBarProps {
   onRunScopeChange: (scope: RunScope) => void;
   filteredCount: number;
   totalCount: number;
-  onRerunByWorker: (worker: "scope1+2" | "scope3") => void;
+  onRerunByWorker: (worker: RerunWorker, limit: number | "all") => void;
   companySearchQuery?: string;
   onCompanySearchChange?: (query: string) => void;
+}
+
+const RERUN_WORKERS: Array<{ id: RerunWorker; label: string }> = [
+  { id: "scope1", label: "Scope 1" },
+  { id: "scope2", label: "Scope 2" },
+  { id: "scope3", label: "Scope 3" },
+  { id: "economy", label: "Ekonomi" },
+  { id: "baseYear", label: "Basår" },
+  { id: "industryGics", label: "Bransch GICS" },
+];
+
+const LIMIT_OPTIONS: Array<{ value: number | "all"; label: string }> = [
+  { value: 1, label: "1" },
+  { value: 5, label: "5" },
+  { value: "all", label: "Alla" },
+];
+
+function RerunJobsSection({
+  onRerunByWorker,
+}: {
+  onRerunByWorker: (worker: RerunWorker, limit: number | "all") => void;
+}) {
+  const [rerunLimit, setRerunLimit] = useState<number | "all">(5);
+
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-3">
+      <div className="flex items-center gap-2">
+        <Activity className="w-4 h-4 text-gray-02" />
+        <span className="text-sm font-medium text-gray-01">
+          Kör specifika jobb:
+        </span>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        {RERUN_WORKERS.map((worker) => (
+          <Button
+            key={worker.id}
+            variant="ghost"
+            size="sm"
+            onClick={() => onRerunByWorker(worker.id, rerunLimit)}
+            className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
+          >
+            {worker.label}
+          </Button>
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-02">Antal:</span>
+        <select
+          value={String(rerunLimit)}
+          onChange={(e) => {
+            const val = e.target.value;
+            setRerunLimit(val === "all" ? "all" : Number(val));
+          }}
+          className="px-2 py-1 rounded-md border border-gray-03 bg-gray-05 text-gray-01 text-sm focus:outline-none focus:ring-2 focus:ring-blue-03/50 focus:border-blue-03"
+        >
+          {LIMIT_OPTIONS.map((opt) => (
+            <option key={String(opt.value)} value={String(opt.value)}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
 }
 
 export function FilterBar({
@@ -295,32 +361,7 @@ export function FilterBar({
         )}
 
         {/* Rerun Jobs Section - Inside filter container */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-3">
-          <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-gray-02" />
-            <span className="text-sm font-medium text-gray-01">
-              Kör om jobb:
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onRerunByWorker("scope1+2")}
-              className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
-            >
-              Scope 1+2 (5 st)
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onRerunByWorker("scope3")}
-              className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
-            >
-              Scope 3 (5 st)
-            </Button>
-          </div>
-        </div>
+        <RerunJobsSection onRerunByWorker={onRerunByWorker} />
       </div>
     </div>
   );

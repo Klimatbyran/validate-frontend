@@ -161,6 +161,7 @@ export function convertCompaniesToSwimlaneFormat(
       return {
         id: companyId,
         name: companyName,
+        wikidataId: company.wikidataId,
         years,
       };
     })

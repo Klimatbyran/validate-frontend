@@ -210,6 +210,7 @@ export interface SwimlaneYearData {
 export interface SwimlaneCompany {
   id: string;
   name: string;
+  wikidataId?: string;
   years: SwimlaneYearData[];
 }
 

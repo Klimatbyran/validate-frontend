@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { QueueJob, DetailedJobResponse } from "@/lib/types";
-import { HelpCircle } from "lucide-react";
+import { QueueJob, DetailedJobResponse, SwimlaneYearData } from "@/lib/types";
+import { HelpCircle, Play, RotateCcw } from "lucide-react";
 import { JobSpecificDataView } from "./job-specific-data-view";
 import { JobDialogHeader } from "./job-details/JobDialogHeader";
 import { DialogTabs } from "./job-details/DialogTabs";
@@ -15,7 +15,11 @@ import { JobStatusSection } from "./job-details/JobStatusSection";
 import { JobRelationshipsSection } from "./job-details/JobRelationshipsSection";
 import { SchemaSection } from "./job-details/SchemaSection";
 import { authenticatedFetch } from "@/lib/api-helpers";
-import { buildRerunRequestData } from "@/lib/job-rerun-utils";
+import { buildRerunRequestData, QUEUE_TO_FOLLOW_UP_KEY } from "@/lib/job-rerun-utils";
+import { getQueueDisplayName } from "@/lib/workflow-config";
+import { findJobByQueueId } from "@/lib/workflow-utils";
+import { getWikidataInfo } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface JobDetailsDialogProps {
   job: QueueJob | null;
@@ -23,6 +27,8 @@ interface JobDetailsDialogProps {
   onOpenChange: (open: boolean) => void;
   onApprove?: (approved: boolean) => void;
   onRetry?: () => void;
+  missingQueueId?: string;
+  yearData?: SwimlaneYearData;
 }
 
 export function JobDetailsDialog({
@@ -31,6 +37,8 @@ export function JobDetailsDialog({
   onOpenChange,
   onApprove,
   onRetry,
+  missingQueueId,
+  yearData,
 }: JobDetailsDialogProps) {
   const [activeTab, setActiveTab] = useState<"user" | "technical">("user");
   const [detailed, setDetailed] = useState<DetailedJobResponse | null>(null);
@@ -83,6 +91,84 @@ export function JobDetailsDialog({
       stacktrace: detailed.stacktrace || job.stacktrace,
     } as QueueJob;
   }, [job, detailed]);
+
+  // Handle missing follow-up job: show empty dialog with "Run and save" button
+  if (!job && missingQueueId && yearData) {
+    const followUpKey = QUEUE_TO_FOLLOW_UP_KEY[missingQueueId];
+    const displayName = getQueueDisplayName(missingQueueId);
+    const extractEmissionsJob = findJobByQueueId("extractEmissions", yearData);
+    const checkDBJob = findJobByQueueId("checkDB", yearData);
+    const wikidata = getWikidataInfo(checkDBJob);
+
+    const handleRunAndSave = async () => {
+      if (!extractEmissionsJob?.id) {
+        toast.error("Kan inte köra: hittade ingen extractEmissions-förälder för denna körning");
+        return;
+      }
+
+      try {
+        const response = await authenticatedFetch(
+          `/api/queues/extractEmissions/${encodeURIComponent(extractEmissionsJob.id)}/rerun-and-save`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              scopes: [followUpKey],
+              ...(wikidata ? { jobData: { wikidata } } : {}),
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          toast.error(`Kunde inte köra ${displayName}: ${errorText || "Okänt fel"}`);
+          return;
+        }
+
+        toast.success(`${displayName} körs och sparas`);
+        onOpenChange(false);
+      } catch (error) {
+        toast.error(`Ett fel uppstod: ${error instanceof Error ? error.message : "Okänt fel"}`);
+      }
+    };
+
+    return (
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
+          <div className="space-y-6 py-4">
+            <div className="text-center space-y-3">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-03/30">
+                <HelpCircle className="w-6 h-6 text-gray-02" />
+              </div>
+              <h2 className="text-lg font-semibold text-gray-01">{displayName}</h2>
+              <p className="text-sm text-gray-02">
+                Det här jobbet har inte körts ännu.
+              </p>
+            </div>
+
+            {!extractEmissionsJob && (
+              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-sm text-orange-300">
+                Kunde inte hitta ett extractEmissions-jobb i denna körning. Jobbet kan inte triggas utan en förälder.
+              </div>
+            )}
+
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRunAndSave}
+                disabled={!extractEmissionsJob}
+                className="text-green-03 hover:bg-green-03/10"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Kör och spara {displayName}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (!job) return null;
 
