@@ -185,7 +185,7 @@ export function DebugTab() {
 
   // Filter jobs based on selected thread
   const selectedJobs = selectedThreadId
-    ? allJobs.filter((job) => job.data.threadId === selectedThreadId)
+    ? allJobs.filter((job) => job.data?.threadId === selectedThreadId)
     : allJobs;
 
   return (
@@ -342,9 +342,9 @@ export function DebugTab() {
                           ?.name || job.queueId}
                       </span>
                     </td>
-                    <td className="p-4 text-gray-01">{job.data.company}</td>
+                    <td className="p-4 text-gray-01">{job.data?.company ?? ""}</td>
                     <td className="p-4 font-mono text-sm text-gray-02">
-                      {job.data.threadId}
+                      {job.data?.threadId ?? ""}
                     </td>
                     <td className="p-4">
                       <div className="flex items-center space-x-2">
