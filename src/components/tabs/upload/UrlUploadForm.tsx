@@ -33,14 +33,14 @@ export function UrlUploadForm({
                 "transition-colors focus-visible:outline-none",
                 "focus-visible:ring-2 focus-visible:ring-ring",
                 "focus-visible:ring-offset-2",
-                autoApprove ? "bg-green-03" : "bg-gray-03"
+                autoApprove ? "bg-green-03" : "bg-gray-03",
               )}
             >
               <span
                 className={cn(
                   "inline-block h-4 w-4 transform rounded-full",
                   "bg-white transition-transform",
-                  autoApprove ? "translate-x-6" : "translate-x-1"
+                  autoApprove ? "translate-x-6" : "translate-x-1",
                 )}
               />
             </button>
