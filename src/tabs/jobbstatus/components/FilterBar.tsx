@@ -57,27 +57,27 @@ function RerunJobsSection({
   const [rerunLimit, setRerunLimit] = useState<number | "all">(5);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-3">
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-4 border-t border-gray-03/50">
+      <div className="flex items-center gap-2 shrink-0">
         <Activity className="w-4 h-4 text-gray-02" />
         <span className="text-sm font-medium text-gray-01">
           Kör specifika jobb:
         </span>
       </div>
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-3 flex-wrap">
         {RERUN_WORKERS.map((worker) => (
           <Button
             key={worker.id}
             variant="ghost"
             size="sm"
             onClick={() => onRerunByWorker(worker.id, rerunLimit)}
-            className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
+            className="!w-auto !min-w-0 h-9 px-4 text-sm border border-gray-03 text-gray-01 hover:bg-gray-03/40"
           >
             {worker.label}
           </Button>
         ))}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0">
         <span className="text-xs text-gray-02">Antal:</span>
         <select
           value={String(rerunLimit)}
@@ -185,8 +185,8 @@ export function FilterBar({
 
   return (
     <div className="bg-gray-04/50 rounded-lg p-4 border border-gray-03">
-      <div className="flex flex-col gap-3">
-        {/* Company search and Filter Header */}
+      <div className="flex flex-col gap-4">
+        {/* Company search and Omfattning (scope) */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           {onCompanySearchChange && (
             <div className="relative flex-1 min-w-0 max-w-sm">
@@ -211,84 +211,81 @@ export function FilterBar({
               )}
             </div>
           )}
-          <div className="flex items-center justify-between sm:justify-end gap-2 flex-1">
-            <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-gray-02" />
-              <span className="text-sm font-medium text-gray-01">Filter:</span>
-            </div>
-
-            {/* Run Scope Toggle */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-02">Omfattning:</span>
-              <div className="flex items-center gap-1 bg-gray-03 rounded-full p-0.5">
-                <button
-                  onClick={() => onRunScopeChange("latest")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    runScope === "latest"
-                      ? "bg-gray-01 text-gray-05"
-                      : "text-gray-02 hover:text-gray-01"
-                  }`}
-                >
-                  Senaste körning
-                </button>
-                <button
-                  onClick={() => onRunScopeChange("all")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    runScope === "all"
-                      ? "bg-gray-01 text-gray-05"
-                      : "text-gray-02 hover:text-gray-01"
-                  }`}
-                >
-                  Alla körningar
-                </button>
-              </div>
+          <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
+            <span className="text-sm text-gray-02">Omfattning:</span>
+            <div className="flex items-center gap-1 bg-gray-03 rounded-full p-0.5">
+              <button
+                onClick={() => onRunScopeChange("latest")}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  runScope === "latest"
+                    ? "bg-gray-01 text-gray-05"
+                    : "text-gray-02 hover:text-gray-01"
+                }`}
+              >
+                Senaste körning
+              </button>
+              <button
+                onClick={() => onRunScopeChange("all")}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  runScope === "all"
+                    ? "bg-gray-01 text-gray-05"
+                    : "text-gray-02 hover:text-gray-01"
+                }`}
+              >
+                Alla körningar
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Filter Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          {primaryFilters.map((filter) => {
-            const isActive = activeFilters.has(filter.id);
-            const count = filterCounts[filter.id];
-            return (
-              <Button
-                key={filter.id}
-                variant={isActive ? "primary" : "ghost"}
-                size="sm"
-                onClick={() => onToggleFilter(filter.id)}
-                className={
-                  isActive
-                    ? filter.activeColor
-                    : "border border-gray-03 text-gray-01 hover:bg-gray-03/40"
-                }
-              >
-                {isActive && <X className="w-4 h-4 mr-1.5" />}
-                <span className="mr-1.5">{filter.icon}</span>
-                {filter.label}
-                {count > 0 && (
-                  <span
-                    className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${
-                      isActive
-                        ? "bg-white/20 text-white"
-                        : filter.badgeColorClass
-                    }`}
-                  >
-                    {count}
-                  </span>
-                )}
-              </Button>
-            );
-          })}
+        {/* Filter label in line with filter buttons (same layout as "Kör specifika jobb") */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
+            <Filter className="w-4 h-4 text-gray-02" />
+            <span className="text-sm font-medium text-gray-01">Filter:</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {primaryFilters.map((filter) => {
+              const isActive = activeFilters.has(filter.id);
+              const count = filterCounts[filter.id];
+              return (
+                <Button
+                  key={filter.id}
+                  variant={isActive ? "primary" : "ghost"}
+                  size="sm"
+                  onClick={() => onToggleFilter(filter.id)}
+                  className={`!w-auto !min-w-0 h-9 px-4 text-sm ${
+                    isActive
+                      ? filter.activeColor
+                      : "border border-gray-03 text-gray-01 hover:bg-gray-03/40"
+                  }`}
+                >
+                  {isActive && <X className="w-4 h-4 mr-1.5 shrink-0" />}
+                  <span className="mr-1.5 shrink-0">{filter.icon}</span>
+                  <span className="whitespace-nowrap">{filter.label}</span>
+                  {count > 0 && (
+                    <span
+                      className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${
+                        isActive
+                          ? "bg-white/20 text-white"
+                          : filter.badgeColorClass
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </Button>
+              );
+            })}
 
-          {/* More Filters Dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowMoreFilters(!showMoreFilters)}
-              className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
-            >
+            {/* More Filters Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowMoreFilters(!showMoreFilters)}
+                className="!w-auto !min-w-0 h-9 px-4 text-sm border border-gray-03 text-gray-01 hover:bg-gray-03/40"
+              >
               <MoreVertical className="w-4 h-4 mr-1.5" />
               Fler filter
               {activeFilters.size > 0 &&
@@ -339,18 +336,19 @@ export function FilterBar({
             )}
           </div>
 
-          {/* Clear Filters */}
-          {hasActiveFiltersOrSearch && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClearFilters}
-              className="text-gray-02 hover:text-gray-01 hover:bg-gray-03/40"
-            >
-              <X className="w-4 h-4 mr-1.5" />
-              Rensa filter
-            </Button>
-          )}
+            {/* Clear Filters */}
+            {hasActiveFiltersOrSearch && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClearFilters}
+                className="!w-auto !min-w-0 h-9 px-4 text-sm text-gray-02 hover:text-gray-01 hover:bg-gray-03/40"
+              >
+                <X className="w-4 h-4 mr-1.5" />
+                Rensa filter
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Filter Summary */}
