@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter } from "@/ui/dialog";
 import { toast } from "sonner";
 import { QueueJob, DetailedJobResponse, SwimlaneYearData } from "@/lib/types";
 import { HelpCircle, Play, RotateCcw } from "lucide-react";
@@ -19,7 +19,7 @@ import { buildRerunRequestData, QUEUE_TO_FOLLOW_UP_KEY } from "@/lib/job-rerun-u
 import { getQueueDisplayName } from "@/lib/workflow-config";
 import { findJobByQueueId } from "@/lib/workflow-utils";
 import { getWikidataInfo } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui/button";
 
 interface JobDetailsDialogProps {
   job: QueueJob | null;

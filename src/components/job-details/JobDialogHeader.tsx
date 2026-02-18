@@ -2,7 +2,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/ui/dialog";
 import { QueueJob } from "@/lib/types";
 import { getWikidataInfo } from "@/lib/utils";
 

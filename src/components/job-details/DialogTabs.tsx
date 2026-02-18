@@ -1,5 +1,5 @@
 import { Info, Code, FileText, Globe } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui/button";
 import { QueueJob } from "@/lib/types";
 import { getWikidataInfo } from "@/lib/utils";
 

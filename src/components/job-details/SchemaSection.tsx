@@ -1,6 +1,6 @@
 import { Code } from "lucide-react";
 import { QueueJob } from "@/lib/types";
-import { JsonViewer } from "../ui/json-viewer";
+import { JsonViewer } from "@/ui/json-viewer";
 
 interface SchemaSectionProps {
   job: QueueJob;

@@ -1,5 +1,5 @@
 import { QueueJob } from "@/lib/types";
-import { ValueRenderer } from "@/components/ui/value-renderer";
+import { ValueRenderer } from "@/ui/value-renderer";
 
 interface TechnicalDataSectionProps {
   job: QueueJob;

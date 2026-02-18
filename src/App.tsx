@@ -1,19 +1,21 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Header } from "@/components/ui/header";
-import { QueueStatus } from "@/components/ui/queue-status";
-import { SwimlaneQueueStatus } from "@/views/swimlane-queue-status";
-import { WorkflowDiagram } from "@/components/ui/workflow-diagram";
-import { DebugView } from "@/views/debug-view";
-import { Toaster } from "@/components/ui/sonner";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
+import { Header } from "@/ui/header";
+import { ProcessingTab } from "@/tabs/processing/ProcessingTab";
+import { JobbstatusTab } from "@/tabs/jobbstatus/JobbstatusTab";
+import { WorkflowTab } from "@/tabs/workflow/WorkflowTab";
+import { DebugTab } from "@/tabs/debug/DebugTab";
+import { Toaster } from "@/ui/sonner";
 import { Routes, Route } from "react-router-dom";
-import SlideshowPage from "./views/SlideshowPage";
-import { UploadTab } from "./components/tabs/upload/UploadTab";
+import SlideshowPage from "@/pages/SlideshowPage";
+import { UploadTab } from "@/tabs/upload/UploadTab";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthCallback } from "@/pages/AuthCallback";
 import { GlobalLoginModal } from "@/components/GlobalLoginModal";
-import { ErrorBrowserTab } from "@/components/tabs/error-browser/ErrorBrowserTab";
+import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
+import { CrawlerTab } from "@/tabs/crawler/CrawlerTab";
+import { ResultsTab } from "@/tabs/results/ResultsTab";
 
 function App() {
   const [currentTab, setCurrentTab] = useState("upload");
@@ -70,7 +72,7 @@ function App() {
                         exit={{ opacity: 0, x: 20 }}
                         className="space-y-6"
                       >
-                        <QueueStatus />
+                        <ProcessingTab />
                       </motion.div>
                     </TabsContent>
 
@@ -81,19 +83,19 @@ function App() {
                         exit={{ opacity: 0, x: 20 }}
                         className="space-y-6"
                       >
-                        <SwimlaneQueueStatus />
+                        <JobbstatusTab />
                       </motion.div>
                     </TabsContent>
 
                     <TabsContent key="workflow" value="workflow" asChild>
                       <motion.div>
-                        <WorkflowDiagram />
+                        <WorkflowTab />
                       </motion.div>
                     </TabsContent>
 
                     <TabsContent key="debug" value="debug" asChild>
                       <motion.div>
-                        <DebugView />
+                        <DebugTab />
                       </motion.div>
                     </TabsContent>
 
@@ -110,13 +112,7 @@ function App() {
                         exit={{ opacity: 0, x: 20 }}
                         className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6"
                       >
-                        <h2 className="text-xl text-gray-01 mb-4">
-                          Resultatöversikt
-                        </h2>
-                        <p className="text-gray-02">
-                          Här kommer resultaten att visas när bearbetningen är
-                          klar.
-                        </p>
+                        <ResultsTab />
                       </motion.div>
                     </TabsContent>
 
@@ -127,10 +123,7 @@ function App() {
                         exit={{ opacity: 0, x: 20 }}
                         className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6"
                       >
-                        <h2 className="text-xl text-gray-01 mb-4">Crawler</h2>
-                        <p className="text-gray-02">
-                          Omg, no crawler to be found yet! Check back later.
-                        </p>
+                        <CrawlerTab />
                       </motion.div>
                     </TabsContent>
                   </AnimatePresence>
