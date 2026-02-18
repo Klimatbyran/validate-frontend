@@ -39,6 +39,24 @@ export function isFollowUpQueue(queueId: string): boolean {
 }
 
 /**
+ * Builds the request body for POST .../rerun-and-save (extractEmissions parent).
+ * Use when triggering one or more follow-up scopes with optional wikidata context.
+ */
+export function buildRerunAndSaveBody(
+  scopes: string[],
+  wikidata?: { node?: string } | string | null
+): { scopes: string[]; jobData?: { wikidata: { node: string } } } {
+  const node =
+    typeof wikidata === "string"
+      ? wikidata
+      : wikidata?.node;
+  return {
+    scopes,
+    ...(node ? { jobData: { wikidata: { node } } } : {}),
+  };
+}
+
+/**
  * Extracts job data from various possible locations.
  * Job data can be stored in different shapes depending on the API response.
  */

@@ -93,21 +93,21 @@ export function OverviewStats({
               color="blue"
             />
             <CompactStatCard
-              value={stats.needsApprovalFields}
+              value={stats.companiesWithNeedsApproval}
               label="Approval"
               color="orange"
               onClick={
-                onFilterToggle && stats.needsApprovalFields > 0
+                onFilterToggle && stats.companiesWithNeedsApproval > 0
                   ? () => onFilterToggle("pending_approval")
                   : undefined
               }
             />
             <CompactStatCard
-              value={stats.failedFields}
+              value={stats.companiesWithFailed}
               label="Failed"
               color="pink"
               onClick={
-                onFilterToggle && stats.failedFields > 0
+                onFilterToggle && stats.companiesWithFailed > 0
                   ? () => onFilterToggle("has_failed")
                   : undefined
               }

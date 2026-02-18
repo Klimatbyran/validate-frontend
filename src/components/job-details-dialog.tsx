@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogFooter } from "@/ui/dialog";
 import { toast } from "sonner";
 import { QueueJob, DetailedJobResponse, SwimlaneYearData } from "@/lib/types";
-import { HelpCircle, Play, RotateCcw } from "lucide-react";
+import { HelpCircle, RotateCcw } from "lucide-react";
 import { JobSpecificDataView } from "./job-specific-data-view";
 import { JobDialogHeader } from "./job-details/JobDialogHeader";
 import { DialogTabs } from "./job-details/DialogTabs";
@@ -15,7 +15,7 @@ import { JobStatusSection } from "./job-details/JobStatusSection";
 import { JobRelationshipsSection } from "./job-details/JobRelationshipsSection";
 import { SchemaSection } from "./job-details/SchemaSection";
 import { authenticatedFetch } from "@/lib/api-helpers";
-import { buildRerunRequestData, QUEUE_TO_FOLLOW_UP_KEY } from "@/lib/job-rerun-utils";
+import { buildRerunRequestData, buildRerunAndSaveBody, QUEUE_TO_FOLLOW_UP_KEY } from "@/lib/job-rerun-utils";
 import { getQueueDisplayName } from "@/lib/workflow-config";
 import { findJobByQueueId } from "@/lib/workflow-utils";
 import { getWikidataInfo } from "@/lib/utils";
@@ -29,6 +29,8 @@ interface JobDetailsDialogProps {
   onRetry?: () => void;
   missingQueueId?: string;
   yearData?: SwimlaneYearData;
+  /** When true, this job is one of multiple runs for the same queue in this run (orange triangle on grid) */
+  isRerun?: boolean;
 }
 
 export function JobDetailsDialog({
@@ -39,6 +41,7 @@ export function JobDetailsDialog({
   onRetry,
   missingQueueId,
   yearData,
+  isRerun = false,
 }: JobDetailsDialogProps) {
   const [activeTab, setActiveTab] = useState<"user" | "technical">("user");
   const [detailed, setDetailed] = useState<DetailedJobResponse | null>(null);
@@ -112,10 +115,7 @@ export function JobDetailsDialog({
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              scopes: [followUpKey],
-              ...(wikidata ? { jobData: { wikidata } } : {}),
-            }),
+            body: JSON.stringify(buildRerunAndSaveBody([followUpKey], wikidata)),
           }
         );
 
@@ -345,7 +345,7 @@ export function JobDetailsDialog({
         <div className="space-y-6 my-6">
           {activeTab === "user" && (
             <>
-              <JobStatusSection job={job} />
+              <JobStatusSection job={job} isRerun={isRerun} />
               <JobRelationshipsSection job={job} />
 
               {/* Information Section */}
@@ -359,7 +359,10 @@ export function JobDetailsDialog({
                 />
               </div>
 
-              <ErrorSection job={job} setActiveTab={setActiveTab} />
+              <ErrorSection
+                job={effectiveJob ?? job}
+                setActiveTab={setActiveTab}
+              />
             </>
           )}
           {activeTab === "technical" && (
@@ -368,7 +371,7 @@ export function JobDetailsDialog({
               <ReturnValueSection job={effectiveJob ?? job} />
               <TechnicalDataSection job={job} />
               <ErrorSection
-                job={job}
+                job={effectiveJob ?? job}
                 setActiveTab={setActiveTab}
                 isFullError={true}
               />

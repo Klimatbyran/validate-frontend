@@ -134,6 +134,10 @@ export type QueueJobsResponse = z.infer<typeof QueueJobsResponseSchema>;
 // Queue management types
 export interface QueueJob extends Job {
   queueId: string;
+  /** Job status from API (e.g. "failed", "completed") */
+  status?: string;
+  /** Reason the job failed (from detailed API or list response) */
+  failedReason?: string;
 }
 
 // Type for detailed API response

@@ -102,48 +102,68 @@ export function getJobsForStep(
   const queueIds = getQueuesForPipelineStep(stepId);
 
   if (Array.isArray(data)) {
-    // All companies data - only get jobs from latest year per company
+    // All companies data - only get jobs from latest year per company (effective = latest per queue+thread)
     return data.flatMap((company) => {
-      const latestYear = company.years[0]; // Latest year is first in sorted array
-      return (
-        latestYear?.jobs?.filter((job) => queueIds.includes(job.queueId)) || []
-      );
+      const latestYear = company.years[0];
+      const effective = latestYear ? getEffectiveJobs(latestYear) : [];
+      return effective.filter((job) => queueIds.includes(job.queueId));
     });
   } else {
     // Single year data
-    return data.jobs?.filter((job) => queueIds.includes(job.queueId)) || [];
+    const effective = getEffectiveJobs(data);
+    return effective.filter((job) => queueIds.includes(job.queueId));
   }
 }
 
 /**
- * Find the latest job (by timestamp) for a specific queue ID in year data
+ * Get a stable "effective" timestamp for ordering jobs (latest run wins).
+ */
+function getJobOrderingTimestamp(job: any): number {
+  return (
+    job?.timestamp ??
+    job?.finishedOn ??
+    job?.processedOn ??
+    (job?.data as any)?.timestamp ??
+    0
+  );
+}
+
+/**
+ * When the same thread is run multiple times (reruns), keep only the latest job
+ * per (queueId, threadId) so filter counts and stats reflect the latest run only.
+ */
+export function getEffectiveJobs(yearData: SwimlaneYearData): any[] {
+  const jobs = yearData.jobs || [];
+  if (jobs.length === 0) return [];
+
+  const byKey = new Map<string, any>();
+  for (const job of jobs) {
+    const threadId =
+      (job.data as any)?.threadId ?? (job as any).threadId ?? "";
+    const key = `${job.queueId}\t${threadId}`;
+    const existing = byKey.get(key);
+    const jobTs = getJobOrderingTimestamp(job);
+    if (!existing || getJobOrderingTimestamp(existing) < jobTs) {
+      byKey.set(key, job);
+    }
+  }
+  return Array.from(byKey.values());
+}
+
+/**
+ * Find the latest job (by timestamp) for a specific queue ID in year data.
+ * Uses effective jobs (latest per queue+thread) so reruns don't double-count.
  */
 export function findJobByQueueId(
   queueId: string,
   yearData: SwimlaneYearData
 ): any | undefined {
-  if (!yearData.jobs || yearData.jobs.length === 0) {
-    return undefined;
-  }
-
-  const jobsForQueue = yearData.jobs.filter(
-    (job: any) => job.queueId === queueId
+  const effective = getEffectiveJobs(yearData);
+  const jobsForQueue = effective.filter((job: any) => job.queueId === queueId);
+  if (jobsForQueue.length === 0) return undefined;
+  return jobsForQueue.reduce((latest: any, cur: any) =>
+    getJobOrderingTimestamp(cur) > getJobOrderingTimestamp(latest) ? cur : latest
   );
-
-  if (jobsForQueue.length === 0) {
-    return undefined;
-  }
-
-  return jobsForQueue.reduce((latestJob: any, currentJob: any) => {
-    const latestTimestamp = latestJob?.timestamp || 0;
-    const currentTimestamp = currentJob?.timestamp || 0;
-
-    if (currentTimestamp > latestTimestamp) {
-      return currentJob;
-    }
-
-    return latestJob;
-  }, jobsForQueue[0]);
 }
 
 /**

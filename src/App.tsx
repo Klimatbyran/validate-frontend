@@ -121,7 +121,7 @@ function App() {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
-                        className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6"
+                        className="space-y-6"
                       >
                         <CrawlerTab />
                       </motion.div>
