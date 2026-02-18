@@ -7,6 +7,7 @@ import type { SwimlaneCompany, SwimlaneYearData, QueueJob } from "./types";
 import {
   getJobStatus as getJobStatusFromUtils,
   calculatePipelineStepStatus,
+  getEffectiveJobs,
 } from "./workflow-utils";
 
 export type FilterType =
@@ -45,7 +46,7 @@ export function hasPendingApproval(
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
   return yearsToCheck.some((year) =>
-    (year.jobs || []).some((job: QueueJob) => {
+    getEffectiveJobs(year).some((job: QueueJob) => {
       const status = getJobStatusFromUtils(job);
       return status === "needs_approval";
     })
@@ -61,7 +62,7 @@ export function hasFailedJobs(
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
   return yearsToCheck.some((year) =>
-    (year.jobs || []).some((job: QueueJob) => {
+    getEffectiveJobs(year).some((job: QueueJob) => {
       const status = getJobStatusFromUtils(job);
       return status === "failed";
     })
@@ -77,7 +78,7 @@ export function hasProcessingJobs(
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
   return yearsToCheck.some((year) =>
-    (year.jobs || []).some((job: QueueJob) => {
+    getEffectiveJobs(year).some((job: QueueJob) => {
       const status = getJobStatusFromUtils(job);
       return status === "processing";
     })
@@ -93,7 +94,7 @@ export function isFullyCompleted(
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
   return yearsToCheck.every((year) => {
-    const jobs = year.jobs || [];
+    const jobs = getEffectiveJobs(year);
     if (jobs.length === 0) return false;
     return jobs.every((job: QueueJob) => {
       const status = getJobStatusFromUtils(job);
@@ -111,7 +112,7 @@ export function hasIssues(
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
   return yearsToCheck.some((year) =>
-    (year.jobs || []).some((job: QueueJob) => {
+    getEffectiveJobs(year).some((job: QueueJob) => {
       const status = getJobStatusFromUtils(job);
       return status === "failed" || status === "needs_approval";
     })

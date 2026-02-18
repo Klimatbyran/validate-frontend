@@ -3,6 +3,8 @@
  * Centralizes repetitive math logic throughout the application
  */
 
+import { getEffectiveJobs } from "./workflow-utils";
+
 /**
  * Calculate percentage with safe division
  */
@@ -130,7 +132,7 @@ export function calculateOverallStatistics(
 
 /**
  * Calculate overall statistics for swimlane companies (latest year only)
- * Note: This function requires imports from workflow-utils and workflow-config
+ * Uses effective jobs (latest per queue+thread) so reruns don't double-count.
  */
 export function calculateSwimlaneOverallStats(
   companies: any[],
@@ -145,15 +147,14 @@ export function calculateSwimlaneOverallStats(
   let waitingFields = 0;
   let needsApprovalFields = 0;
 
-  // Count jobs from latest year only for each company
+  // Count jobs from latest year only for each company (effective = latest per queue+thread)
   companies.forEach((company) => {
-    // Only count from the latest year (first in the sorted array)
     const latestYear = company.years[0];
     if (latestYear) {
       totalJobs++;
 
-      // Count jobs from latest year only
-      (latestYear.jobs || []).forEach((job: any) => {
+      const effectiveJobs = getEffectiveJobs(latestYear);
+      effectiveJobs.forEach((job: any) => {
         const status = getJobStatus(job);
 
         switch (status) {
@@ -199,17 +200,30 @@ export function calculateSwimlaneOverallStats(
 
   const activeJobs = companies.reduce((acc, company) => {
     const latestYear = company.years[0];
+    const effective = latestYear ? getEffectiveJobs(latestYear) : [];
     if (
-      latestYear?.jobs?.some(
+      effective.some(
         (job: any) =>
           (job.processedOn && !job.finishedOn) ||
-          (!job.data.approved && !job.data.autoApprove)
+          (!job.data?.approved && !job.data?.autoApprove)
       )
     ) {
       return acc + 1;
     }
     return acc;
   }, 0);
+
+  // Company counts that match filter semantics (for overview cards that align with filter badges)
+  const companiesWithFailed = companies.filter((company) => {
+    const latestYear = company.years[0];
+    const effective = latestYear ? getEffectiveJobs(latestYear) : [];
+    return effective.some((job: any) => getJobStatus(job) === "failed");
+  }).length;
+  const companiesWithNeedsApproval = companies.filter((company) => {
+    const latestYear = company.years[0];
+    const effective = latestYear ? getEffectiveJobs(latestYear) : [];
+    return effective.some((job: any) => getJobStatus(job) === "needs_approval");
+  }).length;
 
   return {
     totalJobs,
@@ -223,5 +237,7 @@ export function calculateSwimlaneOverallStats(
     completionRate,
     activeJobs,
     stepStats,
+    companiesWithFailed,
+    companiesWithNeedsApproval,
   };
 }

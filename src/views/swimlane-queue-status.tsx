@@ -24,6 +24,7 @@ import { OverviewStats } from "@/components/swimlane/OverviewStats";
 import { FilterBar } from "@/components/swimlane/FilterBar";
 import { CompanyCard } from "@/components/swimlane/CompanyCard";
 import { findJobByQueueId } from "@/lib/workflow-utils";
+import { buildRerunAndSaveBody } from "@/lib/job-rerun-utils";
 
 export function SwimlaneQueueStatus() {
   const {
@@ -205,10 +206,9 @@ export function SwimlaneQueueStatus() {
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              scopes: [followUpKey],
-              ...(target.wikidataNode ? { jobData: { wikidata: { node: target.wikidataNode } } } : {}),
-            }),
+            body: JSON.stringify(
+              buildRerunAndSaveBody([followUpKey], target.wikidataNode)
+            ),
           }
         );
 

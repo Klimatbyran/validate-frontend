@@ -27,6 +27,7 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
   const [missingQueueId, setMissingQueueId] = useState<string | undefined>();
   const [selectedYearData, setSelectedYearData] = useState<SwimlaneYearData | undefined>();
+  const [selectedIsRerun, setSelectedIsRerun] = useState(false);
 
   const latestYear = company.years?.[0];
   const totalYears = company.years?.length || 0;
@@ -118,7 +119,7 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
                 <YearRow
                   yearData={latestRun}
                   expandLevel={expandLevel}
-                  onFieldClick={(queueId, runData) => {
+                  onFieldClick={(queueId, runData, options) => {
                     const targetRun = runData || latestRun;
                     const job = targetRun.jobs?.find(
                       (j: QueueJob) => j.queueId === queueId
@@ -127,13 +128,15 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
                     if (job) {
                       setSelectedJob(job);
                       setMissingQueueId(undefined);
-                      setSelectedYearData(undefined);
+                      setSelectedYearData(targetRun);
+                      setSelectedIsRerun(options?.isRerun ?? false);
                       setIsDialogOpen(true);
                     } else if (isFollowUpQueue(queueId)) {
                       // Allow opening non-existent follow-up jobs
                       setSelectedJob(null);
                       setMissingQueueId(queueId);
                       setSelectedYearData(targetRun);
+                      setSelectedIsRerun(false);
                       setIsDialogOpen(true);
                     } else {
                       console.warn(
@@ -163,6 +166,7 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
         }}
         missingQueueId={missingQueueId}
         yearData={selectedYearData}
+        isRerun={selectedIsRerun}
       />
     </>
   );

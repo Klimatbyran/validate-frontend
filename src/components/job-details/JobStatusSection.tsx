@@ -10,9 +10,11 @@ import { cn } from "@/lib/utils";
 
 interface JobStatusSectionProps {
   job: QueueJob;
+  /** When true, show explanation that this job was rerun (matches orange triangle on grid) */
+  isRerun?: boolean;
 }
 
-export function JobStatusSection({ job }: JobStatusSectionProps) {
+export function JobStatusSection({ job, isRerun = false }: JobStatusSectionProps) {
   const stage = getWorkflowStages().find((s) => s.id === job.queueId);
   const jobStatus = getJobStatus(job);
   const isActivelyProcessing = Boolean(job.processedOn && !job.finishedOn);
@@ -48,6 +50,20 @@ export function JobStatusSection({ job }: JobStatusSectionProps) {
           </div>
         </div>
       </div>
+
+      {isRerun && (
+        <div className="mt-4 pt-4 border-t border-gray-03 flex items-start gap-2 text-sm text-gray-02">
+          <span
+            className="flex-shrink-0 w-0 h-0 border-t-[10px] border-t-orange-03 border-l-[10px] border-l-transparent mt-0.5"
+            aria-hidden
+          />
+          <p>
+            <span className="font-medium text-gray-01">Jobbet har körts om:</span>{" "}
+            Det här jobbet är en av flera körningar för samma steg i denna run. Den
+            orange triangeln på rutan i vyn visar att jobbet har körts om.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
