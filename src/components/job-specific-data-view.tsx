@@ -734,10 +734,8 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         <CollapsibleSection
           title="Screenshots"
           icon={<Image />}
-          bgColor="bg-purple-100/40"
-          borderColor="border-purple-300"
-          textColor="text-purple-900"
-          iconColor="text-purple-700"
+          accentIconBg="bg-pink-03/20"
+          accentTextColor="text-pink-03"
         >
           <ScreenshotSlideshow pdfUrl={job.data.url} />
         </CollapsibleSection>

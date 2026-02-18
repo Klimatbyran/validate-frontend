@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { QueueJob, DetailedJobResponse, SwimlaneYearData } from "@/lib/types";
-import { HelpCircle, Play, RotateCcw } from "lucide-react";
+import { HelpCircle, RotateCcw } from "lucide-react";
 import { JobSpecificDataView } from "./job-specific-data-view";
 import { JobDialogHeader } from "./job-details/JobDialogHeader";
 import { DialogTabs } from "./job-details/DialogTabs";
@@ -15,7 +15,7 @@ import { JobStatusSection } from "./job-details/JobStatusSection";
 import { JobRelationshipsSection } from "./job-details/JobRelationshipsSection";
 import { SchemaSection } from "./job-details/SchemaSection";
 import { authenticatedFetch } from "@/lib/api-helpers";
-import { buildRerunRequestData, QUEUE_TO_FOLLOW_UP_KEY } from "@/lib/job-rerun-utils";
+import { buildRerunRequestData, buildRerunAndSaveBody, QUEUE_TO_FOLLOW_UP_KEY } from "@/lib/job-rerun-utils";
 import { getQueueDisplayName } from "@/lib/workflow-config";
 import { findJobByQueueId } from "@/lib/workflow-utils";
 import { getWikidataInfo } from "@/lib/utils";
@@ -112,10 +112,7 @@ export function JobDetailsDialog({
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              scopes: [followUpKey],
-              ...(wikidata ? { jobData: { wikidata } } : {}),
-            }),
+            body: JSON.stringify(buildRerunAndSaveBody([followUpKey], wikidata)),
           }
         );
 

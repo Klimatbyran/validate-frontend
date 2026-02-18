@@ -1,8 +1,8 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Leaf, Building2, CheckCircle2 } from 'lucide-react';
-import { getPublicApiUrl } from '@/lib/utils';
-import { CopyJsonButton } from './CopyJsonButton';
+import React from "react";
+import { motion } from "framer-motion";
+import { Leaf, Building2, CheckCircle2 } from "lucide-react";
+import { useCompanyReferenceByYears } from "@/lib/company-reference-api";
+import { JsonRawDataBlock } from "./JsonRawDataBlock";
 
 interface Scope12EmissionsData {
   scope12: Array<{
@@ -41,26 +41,6 @@ type Scope12ReferenceSnapshot = {
   // Optional combined Scope 1+2 value from prod API (if available)
   scope1And2?: { total: number | null; unit: string | null } | null;
 } | null;
-
-async function fetchCompanyById(companyId: string, signal: AbortSignal) {
-  const response = await fetch(
-    getPublicApiUrl(`/api/companies/${encodeURIComponent(companyId)}`),
-    { signal }
-  );
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.json();
-}
-
-function getReportingPeriods(company: any) {
-  return Array.isArray(company?.reportingPeriods) ? company.reportingPeriods : [];
-}
-
-function findPeriodEndingInYear(periods: any[], year: number) {
-  return periods.find((period: any) => {
-    const endDate = period?.endDate ? new Date(period.endDate) : null;
-    return endDate && endDate.getFullYear() === year;
-  });
-}
 
 function buildReferenceSnapshotFromPeriod(period: any): Scope12ReferenceSnapshot {
   if (!period?.emissions) return null;
@@ -227,45 +207,17 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
   // Sort years in descending order (newest first)
   const sortedData = [...data.scope12].sort((a, b) => b.year - a.year);
   const latestYear = sortedData[0];
-  const years = React.useMemo(() => Array.from(new Set(sortedData.map(e => e.year))), [sortedData]);
-  const yearsKey = React.useMemo(() => years.join(','), [years]);
+  const years = React.useMemo(
+    () => Array.from(new Set(sortedData.map((e) => e.year))),
+    [sortedData]
+  );
 
-  const [referenceByYear, setReferenceByYear] = React.useState<Record<number, Scope12ReferenceSnapshot>>({});
-  const [isLoadingRef, setIsLoadingRef] = React.useState(false);
-  const [refError, setRefError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (!wikidataId || years.length === 0) return;
-    const abortController = new AbortController();
-    let isMounted = true;
-    async function fetchReferencesForYears(companyId: string, ys: number[]) {
-      setIsLoadingRef(true);
-      setRefError(null);
-      try {
-        const company = await fetchCompanyById(companyId, abortController.signal);
-        const periods = getReportingPeriods(company);
-        const nextMap: Record<number, Scope12ReferenceSnapshot> = {};
-        for (const y of ys) {
-          const period = findPeriodEndingInYear(periods, y);
-          nextMap[y] = buildReferenceSnapshotFromPeriod(period);
-        }
-        if (isMounted) {
-          setReferenceByYear(nextMap);
-          setIsLoadingRef(false);
-        }
-      } catch (e: any) {
-        if (isMounted && e?.name !== 'AbortError') {
-          setRefError(e?.message || 'Kunde inte hämta referensdata');
-          setIsLoadingRef(false);
-        }
-      }
-    }
-    fetchReferencesForYears(wikidataId, years);
-    return () => {
-      isMounted = false;
-      abortController.abort();
-    };
-  }, [wikidataId, yearsKey]);
+  const { referenceByYear, isLoading: isLoadingRef, error: refError } =
+    useCompanyReferenceByYears(
+      wikidataId,
+      years,
+      buildReferenceSnapshotFromPeriod
+    );
 
   const hasScope1 =
     latestYear.scope1?.total !== undefined ||
@@ -287,9 +239,9 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
     if (!latest) return null;
     const snapshot = referenceByYear[latest];
     if (!snapshot) return (
-      <div className="bg-green-700 border border-green-800 rounded-xl p-4 mb-4">
-        {isLoadingRef && <div className="text-sm text-white">Hämtar…</div>}
-        {!isLoadingRef && refError && <div className="text-sm text-white">{refError}</div>}
+      <div className="bg-gray-04/80 border border-gray-03 rounded-xl p-4 mb-4 border-l-4 border-l-green-03">
+        {isLoadingRef && <div className="text-sm text-gray-02">Hämtar…</div>}
+        {!isLoadingRef && refError && <div className="text-sm text-gray-02">{refError}</div>}
       </div>
     );
     const ourS1 = latestYear.scope1;
@@ -313,57 +265,57 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
           : false
         : null;
     return (
-      <div className="bg-green-700 border border-green-800 rounded-xl p-4 mb-4">
+      <div className="bg-gray-04/80 border border-gray-03 rounded-xl p-4 mb-4 border-l-4 border-l-green-03">
         <div className="flex items-center gap-2 mb-2">
-          <CheckCircle2 className="w-4 h-4 text-white" />
-          <span className="text-sm font-medium text-white">Referensvärden ({latest}) från API i prod</span>
+          <CheckCircle2 className="w-4 h-4 text-green-03" />
+          <span className="text-sm font-medium text-gray-01">Referensvärden ({latest}) från API i prod</span>
         </div>
-        {isLoadingRef && <div className="text-sm text-white">Hämtar…</div>}
-        {!isLoadingRef && refError && <div className="text-sm text-white">{refError}</div>}
+        {isLoadingRef && <div className="text-sm text-gray-02">Hämtar…</div>}
+        {!isLoadingRef && refError && <div className="text-sm text-gray-02">{refError}</div>}
         {!isLoadingRef && !refError && (
-          <div className="divide-y divide-green-500/40">
+          <div className="divide-y divide-gray-03">
             {ourS1 && (
               <div className="flex items-center justify-between py-1.5">
-                <span className="text-sm text-white">Scope 1 totalt</span>
-                <span className="text-base font-bold text-white flex items-center gap-2">
+                <span className="text-sm text-gray-02">Scope 1 totalt</span>
+                <span className="text-base font-bold text-gray-01 flex items-center gap-2">
                   {snapshot.scope1?.total?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope1?.unit ?? ''}
-                  {s1Match ? <span className="text-green-400">✓</span> : <span className="text-red-300">✗</span>}
+                  {s1Match ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                 </span>
               </div>
             )}
             {ourS2?.mb != null && (
               <div className="flex items-center justify-between py-1.5">
-                <span className="text-sm text-white">Scope 2 marknadsbaserad</span>
-                <span className="text-sm font-semibold text-white flex items-center gap-2">
+                <span className="text-sm text-gray-02">Scope 2 marknadsbaserad</span>
+                <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
                   {snapshot.scope2?.mb?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope2?.unit ?? ''}
-                  {s2MbMatch ? <span className="text-green-400">✓</span> : <span className="text-red-300">✗</span>}
+                  {s2MbMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                 </span>
               </div>
             )}
             {ourS2?.lb != null && (
               <div className="flex items-center justify-between py-1.5">
-                <span className="text-sm text-white">Scope 2 platsbaserad</span>
-                <span className="text-sm font-semibold text-white flex items-center gap-2">
+                <span className="text-sm text-gray-02">Scope 2 platsbaserad</span>
+                <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
                   {snapshot.scope2?.lb?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope2?.unit ?? ''}
-                  {s2LbMatch ? <span className="text-green-400">✓</span> : <span className="text-red-300">✗</span>}
+                  {s2LbMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                 </span>
               </div>
             )}
             {ourS2?.unknown != null && (
               <div className="flex items-center justify-between py-1.5">
-                <span className="text-sm text-white">Scope 2 ospecificerad</span>
-                <span className="text-sm font-semibold text-white flex items-center gap-2">
+                <span className="text-sm text-gray-02">Scope 2 ospecificerad</span>
+                <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
                   {snapshot.scope2?.unknown?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope2?.unit ?? ''}
-                  {s2UnknownMatch ? <span className="text-green-400">✓</span> : <span className="text-red-300">✗</span>}
+                  {s2UnknownMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                 </span>
               </div>
             )}
             {ourCombined && (
               <div className="flex items-center justify-between py-1.5">
-                <span className="text-sm text-white">Scope 1+2 totalt</span>
-                <span className="text-sm font-semibold text-white flex items-center gap-2">
+                <span className="text-sm text-gray-02">Scope 1+2 totalt</span>
+                <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
                   {snapshotCombined?.total?.toLocaleString('sv-SE') ?? '—'} {snapshotCombined?.unit ?? ''}
-                  {combinedMatch != null && (combinedMatch ? <span className="text-green-400">✓</span> : <span className="text-red-300">✗</span>)}
+                  {combinedMatch != null && (combinedMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>)}
                 </span>
               </div>
             )}
@@ -377,13 +329,13 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-green-03/10 rounded-lg p-4 border border-green-03/20"
+      className="bg-gray-04/50 rounded-lg p-4 border border-gray-03"
     >
       <div className="flex items-center space-x-2 mb-4">
-        <div className="p-2 rounded-full bg-green-600">
-          <Leaf className="w-5 h-5 text-white" />
+        <div className="p-2 rounded-full bg-green-03/20">
+          <Leaf className="w-5 h-5 text-green-03" />
         </div>
-        <h3 className="text-lg font-medium text-white">
+        <h3 className="text-lg font-medium text-green-03">
           Växthusgasutsläpp Scope 1 & 2
         </h3>
       </div>
@@ -395,10 +347,10 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
         {sortedData.map((yearData, idx) => (
           <div key={yearData.year} className="mb-14">
             {/* Year label area with soft background and left alignment */}
-            <div className="flex items-center mb-3 bg-green-900/30 rounded-lg px-4 py-2 w-fit">
-              <span className="text-2xl font-extrabold text-white mr-3 drop-shadow-sm">{yearData.year}</span>
+            <div className="flex items-center mb-3 bg-green-03/15 rounded-lg px-4 py-2 w-fit border border-green-03/30">
+              <span className="text-2xl font-extrabold text-gray-01 mr-3">{yearData.year}</span>
               {idx === 0 && (
-                <span className="bg-green-600 text-white text-xs font-semibold px-3 py-1 rounded-full ml-2 shadow">Senaste år</span>
+                <span className="bg-green-03/30 text-green-03 text-xs font-semibold px-3 py-1 rounded-full ml-2 border border-green-03/40">Senaste år</span>
               )}
             </div>
             <div className="flex flex-col md:flex-row md:items-stretch justify-center gap-4 md:gap-0 mt-2 relative max-w-2xl mx-auto">
@@ -444,15 +396,7 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
         ))}
       </div>
 
-      <details className="mt-6 bg-gray-100 rounded p-4 border border-gray-200">
-        <summary className="cursor-pointer font-medium text-gray-700 mb-2">Visa rådata (JSON)</summary>
-        <div className="flex justify-end">
-          <CopyJsonButton getText={() => JSON.stringify(data, null, 2)} />
-        </div>
-        <pre className="text-xs text-gray-800 overflow-x-auto mt-2">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      </details>
+      <JsonRawDataBlock data={data} />
     </motion.div>
   );
 }
