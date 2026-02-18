@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { from, of } from "rxjs";
+import { useState, useEffect, useCallback } from "react";
+import { from, of, EMPTY } from "rxjs";
 import { mergeMap, map, toArray, catchError } from "rxjs/operators";
 import { motion } from "framer-motion";
 import {
@@ -13,80 +13,93 @@ import {
 import { useCompanies } from "@/hooks/useCompanies";
 import { Button } from "@/ui/button";
 import { getWorkflowStages } from "@/lib/workflow-config";
+import { fetchQueueJobs } from "@/lib/api";
 import { toast } from "sonner";
 import type { QueueJob } from "@/lib/types";
 
+type QueueWithJobs = { name: string; jobs: QueueJob[] };
+
 export function DebugTab() {
-  const { companies, isLoading, error } = useCompanies();
+  const { isLoading, error } = useCompanies();
+  const [queues, setQueues] = useState<QueueWithJobs[] | null>(null);
+  const [queuesLoading, setQueuesLoading] = useState(true);
   const [allJobs, setAllJobs] = useState<QueueJob[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 
-  // Use RxJS to process jobs reactively
+  const fetchQueues = useCallback(async (): Promise<QueueWithJobs[]> => {
+    const stages = getWorkflowStages();
+    const results = await Promise.all(
+      stages.map(async (stage) => {
+        try {
+          const res = await fetchQueueJobs(stage.id);
+          const jobs = (res.queue?.jobs ?? []).map((job) => ({
+            ...job,
+            queueId: res.queue.name,
+          }));
+          return { name: res.queue.name, jobs };
+        } catch {
+          return { name: stage.id, jobs: [] };
+        }
+      })
+    );
+    return results;
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setQueuesLoading(true);
+    fetchQueues()
+      .then((data) => {
+        if (!cancelled) setQueues(data);
+      })
+      .finally(() => {
+        if (!cancelled) setQueuesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchQueues]);
+
+  // Flatten queue jobs into allJobs, sorted by timestamp (newest first)
   useEffect(() => {
     if (!queues) return;
 
-    try {
-      // Create an observable from the queues data
-      const subscription = from(queues)
-        .pipe(
-          // Flatten the jobs from all queues
-          mergeMap((queue) => {
-            if (!queue || !queue.jobs || !Array.isArray(queue.jobs)) {
-              return of([]);
-            }
-            return from(queue.jobs).pipe(
-              map((job) => ({
-                ...job,
-                queueId: queue.name,
-              }))
-            );
-          }),
-          // Collect all jobs into an array
-          toArray(),
-          // Sort by timestamp, newest first
-          map((jobs) => {
-            return jobs.sort((a, b) => b.timestamp - a.timestamp);
-          }),
-          // Handle errors
-          catchError((err) => {
-            return of([]);
-          })
-        )
-        .subscribe({
-          next: (processedJobs) => {
-            setAllJobs(processedJobs);
-          },
-          error: (err) => {
-            setAllJobs([]);
-          },
-          complete: () => {},
-        });
+    const subscription = from(queues)
+      .pipe(
+        mergeMap((queue) => {
+          if (!queue?.jobs?.length) return EMPTY;
+          return from(queue.jobs).pipe(
+            map((job) => ({ ...job, queueId: queue.name }))
+          );
+        }),
+        toArray(),
+        map((jobs: QueueJob[]) => jobs.sort((a, b) => b.timestamp - a.timestamp)),
+        catchError(() => of([] as QueueJob[]))
+      )
+      .subscribe({
+        next: setAllJobs,
+        error: () => setAllJobs([]),
+      });
 
-      return () => {
-        subscription.unsubscribe();
-      };
-    } catch (error) {
-      setAllJobs([]);
-    }
+    return () => subscription.unsubscribe();
   }, [queues]);
 
   const handleRefresh = () => {
+    window.dispatchEvent(new CustomEvent("companies:refresh"));
     toast.promise(
-      refresh()
-        .then(() => {})
-        .catch((err) => {
-          throw err;
-        }),
+      fetchQueues().then((data) => {
+        setQueues(data);
+      }),
       {
         loading: "Uppdaterar debugvy...",
         success: "Debugvy uppdaterad",
-        error: (err) =>
-          `Kunde inte uppdatera debugvy: ${err.message || "Okänt fel"}`,
+        error: (err: Error) =>
+          `Kunde inte uppdatera debugvy: ${err?.message || "Okänt fel"}`,
       }
     );
   };
 
-  if (isLoading) {
+  if (isLoading || queuesLoading) {
     return (
       <div className="flex items-center justify-center p-4">
         <Loader2 className="w-6 h-6 text-gray-02 animate-spin" />
@@ -94,13 +107,13 @@ export function DebugTab() {
     );
   }
 
-  if (isError) {
+  if (error) {
     return (
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center text-pink-03">
             <AlertCircle className="w-6 h-6 mr-2" />
-            <span>{error?.message || "Ett fel uppstod"}</span>
+            <span>{error || "Ett fel uppstod"}</span>
           </div>
           <Button
             variant="ghost"
@@ -119,8 +132,8 @@ export function DebugTab() {
   // Group jobs by threadId and company
   const threads = allJobs.reduce(
     (acc, job) => {
-      const threadId = job.data.threadId;
-      const company = job.data.company || "Unknown";
+      const threadId = job.data?.threadId ?? `job-${job.id}`;
+      const company = job.data?.company || "Unknown";
 
       if (!acc[threadId]) {
         acc[threadId] = {
