@@ -29,6 +29,8 @@ interface JobDetailsDialogProps {
   onRetry?: () => void;
   missingQueueId?: string;
   yearData?: SwimlaneYearData;
+  /** When true, this job is one of multiple runs for the same queue in this run (orange triangle on grid) */
+  isRerun?: boolean;
 }
 
 export function JobDetailsDialog({
@@ -39,6 +41,7 @@ export function JobDetailsDialog({
   onRetry,
   missingQueueId,
   yearData,
+  isRerun = false,
 }: JobDetailsDialogProps) {
   const [activeTab, setActiveTab] = useState<"user" | "technical">("user");
   const [detailed, setDetailed] = useState<DetailedJobResponse | null>(null);
@@ -342,7 +345,7 @@ export function JobDetailsDialog({
         <div className="space-y-6 my-6">
           {activeTab === "user" && (
             <>
-              <JobStatusSection job={job} />
+              <JobStatusSection job={job} isRerun={isRerun} />
               <JobRelationshipsSection job={job} />
 
               {/* Information Section */}
@@ -356,7 +359,10 @@ export function JobDetailsDialog({
                 />
               </div>
 
-              <ErrorSection job={job} setActiveTab={setActiveTab} />
+              <ErrorSection
+                job={effectiveJob ?? job}
+                setActiveTab={setActiveTab}
+              />
             </>
           )}
           {activeTab === "technical" && (
@@ -365,7 +371,7 @@ export function JobDetailsDialog({
               <ReturnValueSection job={effectiveJob ?? job} />
               <TechnicalDataSection job={job} />
               <ErrorSection
-                job={job}
+                job={effectiveJob ?? job}
                 setActiveTab={setActiveTab}
                 isFullError={true}
               />

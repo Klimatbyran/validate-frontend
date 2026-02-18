@@ -4,6 +4,7 @@ import { Banknote, Users, CheckCircle2 } from "lucide-react";
 import { useCompanyReferenceByYears } from "@/lib/company-reference-api";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
 import { YearBadge } from "./YearBadge";
+import { DataCard } from "./DataCard";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 
 interface EconomyEntry {
@@ -64,32 +65,6 @@ function buildReferenceSnapshotFromPeriod(
         }
       : null,
   };
-}
-
-interface EconomyCardProps {
-  icon: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
-  className?: string;
-}
-
-function EconomyCard({
-  icon,
-  title,
-  children,
-  className = "",
-}: EconomyCardProps) {
-  return (
-    <div
-      className={`bg-gray-03 rounded-2xl p-8 border border-gray-03 shadow-sm hover:shadow-md transition-all duration-200 w-full md:flex-1 min-h-[180px] flex flex-col justify-center ${className}`}
-    >
-      <div className="flex items-center space-x-2 mb-2">
-        {icon}
-        <span className="font-semibold text-lg text-gray-01">{title}</span>
-      </div>
-      {children}
-    </div>
-  );
 }
 
 const REF_PANEL_CLASS =
@@ -245,7 +220,7 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
                 <YearBadge year={entry.year} isLatest={idx === 0} accent="green" />
                   <div className="flex flex-col md:flex-row md:items-stretch justify-center gap-4 md:gap-0 mt-2 relative max-w-2xl mx-auto">
                     {economy.turnover && economy.turnover.value != null && (
-                      <EconomyCard
+                      <DataCard
                         icon={<Banknote className="w-5 h-5 text-green-03" />}
                         title="Omsättning"
                         className="mr-0 md:mr-2"
@@ -259,7 +234,7 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
                         <div className="text-sm text-gray-02 mt-2">
                           Nettoomsättning
                         </div>
-                      </EconomyCard>
+                      </DataCard>
                     )}
                     {economy.turnover &&
                       economy.turnover.value != null &&
@@ -271,7 +246,7 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
                         />
                       )}
                     {economy.employees && economy.employees.value != null && (
-                      <EconomyCard
+                      <DataCard
                         icon={<Users className="w-5 h-5 text-pink-03" />}
                         title="Anställda"
                         className="ml-0 md:ml-2"
@@ -285,7 +260,7 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
                         <div className="text-sm text-gray-02 mt-2">
                           {employeeUnitLabel(economy.employees.unit)}
                         </div>
-                      </EconomyCard>
+                      </DataCard>
                     )}
                   </div>
                 </div>

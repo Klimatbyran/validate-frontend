@@ -4,6 +4,8 @@ import { Leaf, Building2, CheckCircle2 } from "lucide-react";
 import { useCompanyReferenceByYears } from "@/lib/company-reference-api";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
 import { YearBadge } from "./YearBadge";
+import { DataCard } from "./DataCard";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 
 interface Scope12EmissionsData {
   scope12: Array<{
@@ -78,25 +80,6 @@ function formatNumber(num: number | null | undefined): string {
   return num.toLocaleString('sv-SE');
 }
 
-interface EmissionCardProps {
-  icon: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
-  className?: string;
-}
-
-function EmissionCard({ icon, title, children, className = '' }: EmissionCardProps) {
-  return (
-    <div className={`bg-white rounded-2xl p-8 border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 w-full md:flex-1 min-h-[220px] flex flex-col justify-center ${className}`}>
-      <div className="flex items-center space-x-2 mb-2">
-        {icon}
-        <span className="font-semibold text-lg text-gray-900">{title}</span>
-      </div>
-      {children}
-    </div>
-  );
-}
-
 interface Scope2RowProps {
   label: string;
   value: number;
@@ -105,8 +88,8 @@ interface Scope2RowProps {
 function Scope2Row({ label, value }: Scope2RowProps) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-base text-gray-700">{label}</span>
-      <span className="font-extrabold text-gray-900 text-xl">{formatNumber(value)}</span>
+      <span className="text-base text-gray-02">{label}</span>
+      <span className="font-extrabold text-gray-01 text-xl">{formatNumber(value)}</span>
     </div>
   );
 }
@@ -134,30 +117,30 @@ function Scope1Card({ data, combinedScope1And2, matchStatus = 'none' }: Scope1Ca
   const title = hasScope1 ? 'Scope 1' : 'Scope 1+2';
   
   return (
-    <EmissionCard 
-      icon={<Building2 className="w-5 h-5 text-orange-600" />}
+    <DataCard
+      icon={<Building2 className="w-5 h-5 text-orange-03" />}
       title={title}
-      className="mr-0 md:mr-2"
+      className="mr-0 md:mr-2 min-h-[220px]"
     >
-      <div className="font-extrabold text-gray-900 text-4xl mb-1">
+      <div className="font-extrabold text-gray-01 text-4xl mb-1">
         {formatNumber(displayTotal)}
       </div>
-      <div className="text-base text-gray-700">
+      <div className="text-base text-gray-02">
         {displayUnit}
       </div>
-      <div className="text-sm text-gray-500 mt-2">
+      <div className="text-sm text-gray-02 mt-2">
         Direkta utsläpp
       </div>
       {matchStatus !== 'none' && (
         <div className="text-xs mt-2">
           {matchStatus === 'match' ? (
-            <span className="text-green-700">✓ Stämmer med prod</span>
+            <span className="text-green-03">✓ Stämmer med prod</span>
           ) : (
-            <span className="text-red-600">✗ Avviker från prod</span>
+            <span className="text-pink-03">✗ Avviker från prod</span>
           )}
         </div>
       )}
-    </EmissionCard>
+    </DataCard>
   );
 }
 
@@ -174,10 +157,10 @@ function Scope2Card({ data }: Scope2CardProps) {
   if (!data) return null;
   
   return (
-    <EmissionCard 
-      icon={<Building2 className="w-5 h-5 text-blue-600" />}
+    <DataCard
+      icon={<Building2 className="w-5 h-5 text-blue-03" />}
       title="Scope 2"
-      className="ml-0 md:ml-2"
+      className="ml-0 md:ml-2 min-h-[220px]"
     >
       <div className="space-y-2 mt-2">
         {data.mb != null && (
@@ -190,13 +173,13 @@ function Scope2Card({ data }: Scope2CardProps) {
           <Scope2Row label="Ospecificerad" value={data.unknown} />
         )}
       </div>
-      <div className="text-base text-gray-700 mt-2">
+      <div className="text-base text-gray-02 mt-2">
         {data.unit || 'tCO2e'}
       </div>
-      <div className="text-sm text-gray-500 mt-2">
+      <div className="text-sm text-gray-02 mt-2">
         Indirekta utsläpp (el, värme, kyla)
       </div>
-    </EmissionCard>
+    </DataCard>
   );
 }
 
@@ -327,71 +310,68 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-04/50 rounded-lg p-4 border border-gray-03"
+      className="bg-gray-04/50 rounded-lg border border-gray-03"
     >
-      <div className="flex items-center space-x-2 mb-4">
-        <div className="p-2 rounded-full bg-green-03/20">
-          <Leaf className="w-5 h-5 text-green-03" />
-        </div>
-        <h3 className="text-lg font-medium text-green-03">
-          Växthusgasutsläpp Scope 1 & 2
-        </h3>
-      </div>
+      <CollapsibleSection
+        defaultOpen
+        title="Växthusgasutsläpp Scope 1 & 2"
+        icon={<Leaf className="w-5 h-5 text-green-03" />}
+        accentIconBg="bg-green-03/20"
+        accentTextColor="text-green-03"
+      >
+        {renderRefPanel()}
 
-      {renderRefPanel()}
+        <div className="space-y-6">
+          {sortedData.map((yearData, idx) => (
+            <div key={yearData.year} className="mb-14">
+              <YearBadge year={yearData.year} isLatest={idx === 0} accent="green" />
+              <div className="flex flex-col md:flex-row md:items-stretch justify-center gap-4 md:gap-0 mt-2 relative max-w-2xl mx-auto">
+                {(() => {
+                  const snapshot = referenceByYear[yearData.year];
+                  let matchStatus: 'match' | 'mismatch' | 'none' = 'none';
 
-      {/* All years, each as a row of cards */}
-      <div className="space-y-6">
-        {sortedData.map((yearData, idx) => (
-          <div key={yearData.year} className="mb-14">
-            <YearBadge year={yearData.year} isLatest={idx === 0} accent="green" />
-            <div className="flex flex-col md:flex-row md:items-stretch justify-center gap-4 md:gap-0 mt-2 relative max-w-2xl mx-auto">
-              {(() => {
-                const snapshot = referenceByYear[yearData.year];
-                let matchStatus: 'match' | 'mismatch' | 'none' = 'none';
-
-                if (snapshot) {
-                  if (yearData.scope1 && typeof yearData.scope1.total === 'number') {
-                    const our = yearData.scope1.total ?? null;
-                    const prod = snapshot.scope1?.total ?? null;
-                    if (our != null && prod != null) {
-                      matchStatus = our === prod ? 'match' : 'mismatch';
-                    }
-                  } else if (yearData.scope1And2 && typeof yearData.scope1And2.total === 'number') {
-                    const prodCombined = snapshot.scope1And2;
-                    if (prodCombined && typeof prodCombined.total === "number") {
-                      matchStatus =
-                        yearData.scope1And2.total === prodCombined.total
-                          ? "match"
-                          : "mismatch";
-                    } else {
-                      // We have a combined value but prod explicitly has it null/absent → show clear mismatch
-                      matchStatus = "mismatch";
+                  if (snapshot) {
+                    if (yearData.scope1 && typeof yearData.scope1.total === 'number') {
+                      const our = yearData.scope1.total ?? null;
+                      const prod = snapshot.scope1?.total ?? null;
+                      if (our != null && prod != null) {
+                        matchStatus = our === prod ? 'match' : 'mismatch';
+                      }
+                    } else if (yearData.scope1And2 && typeof yearData.scope1And2.total === 'number') {
+                      const prodCombined = snapshot.scope1And2;
+                      if (prodCombined && typeof prodCombined.total === "number") {
+                        matchStatus =
+                          yearData.scope1And2.total === prodCombined.total
+                            ? "match"
+                            : "mismatch";
+                      } else {
+                        matchStatus = "mismatch";
+                      }
                     }
                   }
-                }
 
-                return (
-                  <Scope1Card
-                    data={yearData.scope1}
-                    combinedScope1And2={yearData.scope1And2}
-                    matchStatus={matchStatus}
-                  />
-                );
-              })()}
-              {yearData.scope1 && yearData.scope2 && (
-                <div className="hidden md:block w-0.5 bg-gray-200 mx-2 rounded-full" style={{ minHeight: 180 }} />
-              )}
-              <Scope2Card data={yearData.scope2} />
+                  return (
+                    <Scope1Card
+                      data={yearData.scope1}
+                      combinedScope1And2={yearData.scope1And2}
+                      matchStatus={matchStatus}
+                    />
+                  );
+                })()}
+                {yearData.scope1 && yearData.scope2 && (
+                  <div className="hidden md:block w-0.5 bg-gray-03 mx-2 rounded-full" style={{ minHeight: 180 }} />
+                )}
+                <Scope2Card data={yearData.scope2} />
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <JsonRawDataBlock data={data} />
+        <JsonRawDataBlock data={data} />
+      </CollapsibleSection>
     </motion.div>
   );
 }

@@ -24,10 +24,20 @@ export function CollapsibleSection({
 }: CollapsibleSectionProps) {
   const [open, setOpen] = React.useState(defaultOpen);
 
+  // Only sync state on user-initiated toggles (event.isTrusted). Avoids flicker when
+  // the browser fires a spurious toggle during initial render or when content updates.
+  const onToggle = React.useCallback(
+    (e: React.SyntheticEvent<HTMLDetailsElement>) => {
+      if (!(e.nativeEvent as Event).isTrusted) return;
+      setOpen(e.currentTarget.open);
+    },
+    []
+  );
+
   return (
     <details
       open={open}
-      onToggle={() => setOpen((prev) => !prev)}
+      onToggle={onToggle}
       className={`group/details bg-gray-04 border border-gray-03 rounded-lg mb-4 max-w-full overflow-x-auto ${className}`}
       style={{ padding: 0 }}
     >

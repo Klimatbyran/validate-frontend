@@ -48,7 +48,11 @@ function getStatusDisplay(
 interface YearRowProps {
   yearData: SwimlaneYearData;
   expandLevel: ViewLevel;
-  onFieldClick: (field: string, runData?: SwimlaneYearData) => void;
+  onFieldClick: (
+    field: string,
+    runData?: SwimlaneYearData,
+    options?: { isRerun?: boolean }
+  ) => void;
   allRuns?: SwimlaneYearData[];
   isExpanded?: boolean;
   onToggleExpand?: () => void;
@@ -200,7 +204,7 @@ export function YearRow({
                     return (
                       <button
                         key={queueId}
-                        onClick={() => onFieldClick(queueId, yearData)}
+                        onClick={() => onFieldClick(queueId, yearData, { isRerun })}
                         className={`
                         relative px-2 py-1 rounded border text-[10px] font-medium
                         hover:shadow-sm hover:scale-105 transition-all
@@ -276,7 +280,7 @@ export function YearRow({
                   return (
                     <button
                       key={queueId}
-                      onClick={() => onFieldClick(queueId, yearData)}
+                      onClick={() => onFieldClick(queueId, yearData, { isRerun })}
                       className={`relative flex items-start gap-3 p-3 bg-gray-03/50 rounded-lg hover:bg-gray-03 hover:shadow-sm transition-all text-left group ${
                         isActive ? "ring-2 ring-blue-03" : ""
                       }`}
