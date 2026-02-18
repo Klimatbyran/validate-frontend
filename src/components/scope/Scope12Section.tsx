@@ -5,7 +5,7 @@ import { useCompanyReferenceByYears } from "@/lib/company-reference-api";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
 import { YearBadge } from "./YearBadge";
 import { DataCard } from "./DataCard";
-import { CollapsibleSection } from "@/components/ui/collapsible-section";
+import { CollapsibleSection } from "@/ui/collapsible-section";
 
 interface Scope12EmissionsData {
   scope12: Array<{

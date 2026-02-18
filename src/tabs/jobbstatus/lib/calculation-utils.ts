@@ -3,7 +3,7 @@
  * Centralizes repetitive math logic throughout the application
  */
 
-import { getEffectiveJobs } from "./workflow-utils";
+import { getEffectiveJobs } from "@/lib/workflow-utils";
 
 /**
  * Calculate percentage with safe division

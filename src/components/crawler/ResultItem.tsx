@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Book, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { CompanyReport } from "@/lib/crawler-types";
-import { Button } from "../ui/button";
+import { Button } from "@/ui/button";
 
 interface ResultItemProps {
   report: CompanyReport;
