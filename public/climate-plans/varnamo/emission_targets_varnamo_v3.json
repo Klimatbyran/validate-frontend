@@ -1,0 +1,153 @@
+{
+  "Varnamo": {
+    "own_commitments": [
+      {
+        "goal_description": "Encourage zero and plus energy solutions in new and renovated buildings",
+        "reduction_percentage": "",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "",
+        "target_year": "",
+        "scope": "municipal_operations",
+        "scope_other": "",
+        "sector": "buildings",
+        "source_quote": "Uppmuntra noll- och plusenergilösningar vid ny- och ombyggnation.",
+        "commitment_strength": "ambition",
+        "commitment_strength_other": "",
+        "goal_type": "implementation",
+        "ghg_scopes_explicit": [],
+        "ghg_scopes_implicit": []
+      },
+      {
+        "goal_description": "Increase renewable energy production in municipal properties",
+        "reduction_percentage": "",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "",
+        "target_year": "",
+        "scope": "municipal_operations",
+        "scope_other": "",
+        "sector": "energy",
+        "source_quote": "Öka anläggningar som producerar förnybar energi i det egna fastighetsbeståndet.",
+        "commitment_strength": "ambition",
+        "commitment_strength_other": "",
+        "goal_type": "implementation",
+        "ghg_scopes_explicit": [],
+        "ghg_scopes_implicit": []
+      },
+      {
+        "goal_description": "Transition municipal vehicle fleet to fossil-independent vehicles",
+        "reduction_percentage": "",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "",
+        "target_year": "",
+        "scope": "municipal_operations",
+        "scope_other": "",
+        "sector": "transport",
+        "source_quote": "Vara en föregångare när det gäller att ställa om den egna fordonsflottan till fossiloberoende fordon.",
+        "commitment_strength": "ambition",
+        "commitment_strength_other": "",
+        "goal_type": "implementation",
+        "ghg_scopes_explicit": [],
+        "ghg_scopes_implicit": []
+      },
+      {
+        "goal_description": "Reduce municipal consumption impact",
+        "reduction_percentage": "",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "",
+        "target_year": "",
+        "scope": "municipal_operations",
+        "scope_other": "",
+        "sector": "consumption",
+        "source_quote": "Minska sin egen miljöpåverkan från konsumtion.",
+        "commitment_strength": "ambition",
+        "commitment_strength_other": "",
+        "goal_type": "implementation",
+        "ghg_scopes_explicit": [],
+        "ghg_scopes_implicit": [
+          "3"
+        ]
+      }
+    ],
+    "external_references": [
+      {
+        "reference_description": "Sweden's national goal of net zero emissions by 2045",
+        "source_organization": "Swedish national goal",
+        "target_value": "Net zero by 2045",
+        "source_quote": "Sverige ska senast år 2045 ha netto noll utsläpp av växthusgaser till atmosfären."
+      },
+      {
+        "reference_description": "Sweden's national goal for a fossil-independent vehicle fleet by 2030",
+        "source_organization": "Swedish national goal",
+        "target_value": "Fossil-independent vehicle fleet by 2030",
+        "source_quote": "En fossilt oberoende fordonsflotta till 2030"
+      },
+      {
+        "reference_description": "Sweden's national goal to reduce emissions by 63% by 2030 compared to 1990",
+        "source_organization": "Swedish national goal",
+        "target_value": "63% reduction by 2030 compared to 1990",
+        "source_quote": "Jämfört med 1990 års utsläpp ska vi till 2030 minska med 63 procent"
+      },
+      {
+        "reference_description": "Jönköping County's goal for emissions to be less than 1 ton per capita by 2045",
+        "source_organization": "Regional goal (Jönköping County)",
+        "target_value": "Less than 1 ton per capita by 2045",
+        "source_quote": "Senast 2045 är de totala utsläppen av växthusgaser från Jönköpings län lägre än 1 ton per invånare och år."
+      }
+    ],
+    "primary_target": {
+      "exists": false,
+      "reduction_percentage": "",
+      "baseline_year": "",
+      "target_year": "",
+      "scope": "",
+      "source_quote": "",
+      "confidence": "low"
+    },
+    "emissions_accounting": {
+      "accounting_type": "unclear",
+      "accounting_type_other": "",
+      "includes_consumption_based": false,
+      "methodology_described": false,
+      "methodology_reference": "",
+      "methodology_notes": "The document does not explicitly describe or reference an emissions accounting methodology.",
+      "source_quotes": []
+    },
+    "framework_alignment": {
+      "paris_agreement_mentioned": false,
+      "one_point_five_mentioned": false,
+      "carbon_budget_referenced": false,
+      "carbon_budget_description": "",
+      "swedish_climate_act_referenced": false,
+      "swedish_national_targets_referenced": true,
+      "eu_frameworks_referenced": false,
+      "eu_frameworks_named": [],
+      "alignment_character": "not_described",
+      "alignment_character_other": "",
+      "alignment_justification": "none",
+      "source_quotes": [
+        "Sverige ska senast år 2045 ha netto noll utsläpp av växthusgaser till atmosfären.",
+        "En fossilt oberoende fordonsflotta till 2030"
+      ]
+    },
+    "summary": {
+      "document_publication_year": "2023",
+      "has_quantified_targets": false,
+      "has_clear_baseline": false,
+      "has_clear_timeline": false,
+      "scope_clarity": "partial",
+      "sectoral_targets_consistent": "not_applicable",
+      "sectoral_consistency_notes": "",
+      "ghg_scopes_explicit": [],
+      "ghg_scopes_implicit": [
+        "3"
+      ],
+      "ghg_scope_notes": "No mention of GHG Protocol scopes but some targets imply scope 3 coverage",
+      "overall_assessment": "The plan outlines several implementation measures but lacks quantified emission reduction targets. It references Swedish national goals but does not commit to specific municipal targets."
+    }
+  },
+  "_version": "v3"
+}

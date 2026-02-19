@@ -1,0 +1,55 @@
+{
+  "Mullsjo": {
+    "policy_domain": {
+      "primary_focus": "both",
+      "mitigation_sections": [
+        "En klimatsmart kommun",
+        "Hållbar konsumtion och produktion"
+      ],
+      "adaptation_sections": [
+        "Natur, vatten och mark",
+        "Utbildning, kommunikation och engagemang"
+      ],
+      "mitigation_description": "The plan addresses mitigation through goals and measures aimed at reducing greenhouse gas emissions, promoting sustainable energy use, and encouraging sustainable consumption and production. Specific goals include reducing per capita greenhouse gas emissions, increasing the use of renewable energy, and promoting sustainable transportation.",
+      "adaptation_description": "The plan addresses adaptation by setting goals for climate resilience, such as ensuring the municipality is well adapted to climate change impacts, promoting ecosystem services, and improving water quality and biodiversity. It includes measures for risk and vulnerability assessments and increasing green infrastructure.",
+      "source_quotes": [
+        "Kommunen ska genom energikonsumtion och produktion, val av transporter och resor bidra till minskad klimatpåverkan och lägre direkta och indirekta utsläpp av växthusgaser.",
+        "Kommunen ska vara väl anpassad efter klimatförändringar och de samhällspåverkande konsekvenser som följer av dessa.",
+        "Kommunen ska arbeta för att främja ekosystemtjänster vid planering och drift."
+      ]
+    },
+    "spatial_scope": {
+      "primary_scope": "municipal_territory",
+      "primary_scope_other": "",
+      "limited_to_territory": true,
+      "addresses_metropolitan_or_regional": false,
+      "metropolitan_regional_description": "",
+      "distinguishes_operations_vs_territory": true,
+      "operations_vs_territory_description": "The plan applies to the entire geographic area of Mullsjö municipality and serves as a guiding document for all municipal operations, including municipal companies. It distinguishes between the municipality's own operations and the broader community by setting specific goals for municipal operations and broader community engagement.",
+      "source_quotes": [
+        "Programmet riktar sig till medarbetare, kommuninvånare, företag och föreningar inom kommunens geografiska område.",
+        "Miljöprogrammet gäller för hela Mullsjö kommun och fungerar samtidigt som ett styrdokument för kommunens samtliga verksamheter inklusive de kommunala bolagen."
+      ]
+    },
+    "temporal_scope": {
+      "plan_period_start": "2021",
+      "plan_period_end": "2030",
+      "has_revision_cycle": true,
+      "revision_cycle_description": "The program is to be reviewed for relevance at least once per mandate period and revised as needed. Indicators are followed up annually by the municipal executive committee.",
+      "interim_milestones": [],
+      "source_quotes": [
+        "Programmet ska hållas levande genom att aktualitetprövas minst en gång per mandatperiod och revideras vid behov.",
+        "Beslutade indikatorer följs årligen upp av kommunstyrelsen, för att se hur arbetet utvecklas."
+      ]
+    },
+    "summary": {
+      "document_type": "environmental_programme",
+      "document_type_other": "",
+      "document_title": "Miljöprogram 2021-2030",
+      "adopting_body": "Kommunfullmäktige",
+      "adoption_date": "2021-03-24",
+      "overall_assessment": "The Miljöprogram 2021-2030 for Mullsjö municipality is a comprehensive environmental programme that addresses both mitigation and adaptation. It covers the entire municipal territory and distinguishes between municipal operations and the broader community. The plan period is from 2021 to 2030, with a formal revision cycle aligned with the political mandate period. It includes specific goals and indicators for reducing emissions, promoting sustainable practices, and enhancing climate resilience."
+    }
+  },
+  "_version": "v1"
+}

@@ -1,0 +1,31 @@
+{
+  "municipalities": [
+    {
+      "id": "mullsjo",
+      "name": "Mullsjo",
+      "folder": "mullsjo",
+      "files": {
+        "plan_scope": "plan_scope_mullsjo_v1.json",
+        "emission_targets": "emission_targets_mullsjo_v3.json"
+      }
+    },
+    {
+      "id": "nassjo",
+      "name": "Nassjo",
+      "folder": "nassjo",
+      "files": {
+        "plan_scope": "plan_scope_nassjo_v1.json",
+        "emission_targets": "emission_targets_nassjo_v3.json"
+      }
+    },
+    {
+      "id": "varnamo",
+      "name": "Varnamo",
+      "folder": "varnamo",
+      "files": {
+        "plan_scope": "plan_scope_varnamo_v1.json",
+        "emission_targets": "emission_targets_varnamo_v3.json"
+      }
+    }
+  ]
+}

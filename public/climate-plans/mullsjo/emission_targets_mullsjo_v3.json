@@ -1,0 +1,178 @@
+{
+  "Mullsjo": {
+    "own_commitments": [
+      {
+        "goal_description": "Reduce greenhouse gas emissions to 3.0 tons per capita by 2030",
+        "reduction_percentage": "",
+        "absolute_target": "3.0 ton CO2e per capita",
+        "annual_reduction_rate": "",
+        "baseline_year": "2016",
+        "target_year": "2030",
+        "scope": "whole_municipality",
+        "scope_other": "",
+        "sector": "",
+        "source_quote": "Växthusgasutsläppen ska minska till 3,0 ton/invånare senast år 2030. Referens: 2016: 3.40 ton CO2e/invånare.",
+        "commitment_strength": "adopted_goal",
+        "commitment_strength_other": "",
+        "goal_type": "emission_reduction",
+        "ghg_scopes_explicit": [],
+        "ghg_scopes_implicit": [
+          "1",
+          "2",
+          "3"
+        ]
+      },
+      {
+        "goal_description": "Reduce total energy use per capita by 30% between 2016 and 2030",
+        "reduction_percentage": "30",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "2016",
+        "target_year": "2030",
+        "scope": "whole_municipality",
+        "scope_other": "",
+        "sector": "energy",
+        "source_quote": "Den totala energianvändningen inom kommunen ska minska med 30 procent (per invånare) mellan 2016 och 2030. Referens: 2015: 37 MWh/invånare",
+        "commitment_strength": "adopted_goal",
+        "commitment_strength_other": "",
+        "goal_type": "emission_reduction",
+        "ghg_scopes_explicit": [],
+        "ghg_scopes_implicit": [
+          "2"
+        ]
+      },
+      {
+        "goal_description": "Municipal operations to use only renewable energy (electricity and heat) from 2020 to 2030",
+        "reduction_percentage": "",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "2020",
+        "target_year": "2030",
+        "scope": "municipal_operations",
+        "scope_other": "",
+        "sector": "energy",
+        "source_quote": "Kommunens verksamheter ska under åren 2020-2030 fortsatt endast använda energi (el och värme) från fjärrvärme eller förnybara källor.",
+        "commitment_strength": "adopted_goal",
+        "commitment_strength_other": "",
+        "goal_type": "implementation",
+        "ghg_scopes_explicit": [],
+        "ghg_scopes_implicit": [
+          "2"
+        ]
+      },
+      {
+        "goal_description": "Municipal fleet to be fossil fuel-free by 2030",
+        "reduction_percentage": "",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "2018",
+        "target_year": "2030",
+        "scope": "municipal_operations",
+        "scope_other": "",
+        "sector": "transport",
+        "source_quote": "Den kommunala organisationens fordonsflotta ska vara fossilbränslefri år 2030. Referens: 2018: 29,1 procent.",
+        "commitment_strength": "adopted_goal",
+        "commitment_strength_other": "",
+        "goal_type": "implementation",
+        "ghg_scopes_explicit": [],
+        "ghg_scopes_implicit": [
+          "1"
+        ]
+      },
+      {
+        "goal_description": "50% of registered vehicles in the municipality to use renewable fuels and/or electricity by 2030",
+        "reduction_percentage": "",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "2018",
+        "target_year": "2030",
+        "scope": "whole_municipality",
+        "scope_other": "",
+        "sector": "transport",
+        "source_quote": "Minst 50 procent av de registrerade fordonen (personbil, lastbil och buss) i kommunen ska drivas med förnybara bränslen och/eller el år 2030. Referens: 2018: 13,3 procent.",
+        "commitment_strength": "adopted_goal",
+        "commitment_strength_other": "",
+        "goal_type": "implementation",
+        "ghg_scopes_explicit": [],
+        "ghg_scopes_implicit": [
+          "1"
+        ]
+      }
+    ],
+    "external_references": [
+      {
+        "reference_description": "Sweden's national climate goal to have no net emissions of greenhouse gases by 2045",
+        "source_organization": "Swedish national goal",
+        "target_value": "net zero by 2045",
+        "source_quote": "Sverige har ett nationellt klimatmål som innebär att vi senast år 2045 inte ska ha några nettoutsläpp av växthusgaser till atmosfären, för att därefter uppnå negativa utsläpp."
+      },
+      {
+        "reference_description": "Jönköping County's goal to have no net emissions by 2045 and be a 'plus energy county' by 2050",
+        "source_organization": "Regional goal (Jönköping County)",
+        "target_value": "net zero by 2045, plus energy by 2050",
+        "source_quote": "I Jönköpings län är målsättningen att inte ha några nettoutsläpp alls 2045. Länet ska vara ett vara ett 'plusenergilän' 2050."
+      },
+      {
+        "reference_description": "Paris Agreement's goal to limit global temperature increase to well below 2°C and pursue efforts to limit it to 1.5°C",
+        "source_organization": "Paris Agreement",
+        "target_value": "limit to 1.5°C",
+        "source_quote": "I avtalet slås fast att den globala temperaturökningen ska hållas under 2 grader och att man ska sträva efter att begränsa den till 1,5 grader."
+      }
+    ],
+    "primary_target": {
+      "exists": true,
+      "reduction_percentage": "",
+      "baseline_year": "2016",
+      "target_year": "2030",
+      "scope": "whole_municipality",
+      "source_quote": "Växthusgasutsläppen ska minska till 3,0 ton/invånare senast år 2030. Referens: 2016: 3.40 ton CO2e/invånare.",
+      "confidence": "high"
+    },
+    "emissions_accounting": {
+      "accounting_type": "both",
+      "accounting_type_other": "",
+      "includes_consumption_based": true,
+      "methodology_described": false,
+      "methodology_reference": "",
+      "methodology_notes": "The plan includes both territorial and consumption-based emissions, as indicated by the focus on both direct and indirect emissions and lifecycle impacts.",
+      "source_quotes": [
+        "Kommunen ska genom energikonsumtion och produktion, val av transporter och resor bidra till minskad klimatpåverkan och lägre direkta och indirekta utsläpp av växthusgaser."
+      ]
+    },
+    "framework_alignment": {
+      "paris_agreement_mentioned": true,
+      "one_point_five_mentioned": true,
+      "carbon_budget_referenced": false,
+      "carbon_budget_description": "",
+      "swedish_climate_act_referenced": true,
+      "swedish_national_targets_referenced": true,
+      "eu_frameworks_referenced": false,
+      "eu_frameworks_named": [],
+      "alignment_character": "guiding",
+      "alignment_character_other": "",
+      "alignment_justification": "normative",
+      "source_quotes": [
+        "Parisavtalet är ett internationellt avtal kopplat till FN:s klimatkonvention.",
+        "Sverige har ett nationellt klimatmål som innebär att vi senast år 2045 inte ska ha några nettoutsläpp av växthusgaser till atmosfären."
+      ]
+    },
+    "summary": {
+      "document_publication_year": "2021",
+      "has_quantified_targets": true,
+      "has_clear_baseline": true,
+      "has_clear_timeline": true,
+      "scope_clarity": "clear",
+      "sectoral_targets_consistent": "yes",
+      "sectoral_consistency_notes": "Sectoral targets such as energy use reduction and renewable energy adoption align with the overall municipal target of reducing emissions to 3.0 tons per capita by 2030.",
+      "ghg_scopes_explicit": [],
+      "ghg_scopes_implicit": [
+        "1",
+        "2",
+        "3"
+      ],
+      "ghg_scope_notes": "No explicit mention of GHG Protocol scopes, but targets imply coverage of scopes 1, 2, and 3 through direct, indirect, and consumption-based emissions.",
+      "overall_assessment": "The plan sets clear and ambitious targets for emission reductions and energy use, with a strong alignment to national and international frameworks. It includes both territorial and consumption-based emissions, although the methodology is not explicitly described."
+    }
+  },
+  "_version": "v3"
+}

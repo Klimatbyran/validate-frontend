@@ -1,0 +1,201 @@
+{
+  "Nassjo": {
+    "own_commitments": [
+      {
+        "goal_description": "Net zero emissions for the municipal group by 2045, covering scope 1 and 2 emissions",
+        "reduction_percentage": "100",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "",
+        "target_year": "2045",
+        "scope": "municipal_operations",
+        "scope_other": "",
+        "sector": "",
+        "source_quote": "Senast 2045 har kommunkoncernen ett nettonollutsläpp av växthusgaser beräknat enligt Green House Gas Protocol-standardens scope 1 och 2.",
+        "commitment_strength": "adopted_goal",
+        "commitment_strength_other": "",
+        "goal_type": "emission_reduction",
+        "ghg_scopes_explicit": [
+          "1",
+          "2"
+        ],
+        "ghg_scopes_implicit": []
+      },
+      {
+        "goal_description": "Reduce municipal group's GHG emissions (scope 1 and 2) by at least 10% by 2025 compared to 2022",
+        "reduction_percentage": "10",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "2022",
+        "target_year": "2025",
+        "scope": "municipal_operations",
+        "scope_other": "",
+        "sector": "",
+        "source_quote": "Kommunkoncernens utsläpp av växthusgaser, scope 1 och 2, har år 2025 minskat med minst 10 procent jämfört med 2022",
+        "commitment_strength": "adopted_goal",
+        "commitment_strength_other": "",
+        "goal_type": "emission_reduction",
+        "ghg_scopes_explicit": [
+          "1",
+          "2"
+        ],
+        "ghg_scopes_implicit": []
+      },
+      {
+        "goal_description": "Reduce municipal group's GHG emissions (scope 1 and 2) by at least 50% by 2030 compared to 2022",
+        "reduction_percentage": "50",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "2022",
+        "target_year": "2030",
+        "scope": "municipal_operations",
+        "scope_other": "",
+        "sector": "",
+        "source_quote": "Kommunkoncernens utsläpp av växthusgaser, scope 1 och 2, har år 2030 minskat med minst 50 procent jämfört med 2022",
+        "commitment_strength": "adopted_goal",
+        "commitment_strength_other": "",
+        "goal_type": "emission_reduction",
+        "ghg_scopes_explicit": [
+          "1",
+          "2"
+        ],
+        "ghg_scopes_implicit": []
+      },
+      {
+        "goal_description": "100% of electricity purchased by the municipal group to come from renewable sources",
+        "reduction_percentage": "",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "",
+        "target_year": "",
+        "scope": "municipal_operations",
+        "scope_other": "",
+        "sector": "energy",
+        "source_quote": "100 procent av den el som köps in till kommunkoncernen ska komma från förnyelsebara källor",
+        "commitment_strength": "adopted_goal",
+        "commitment_strength_other": "",
+        "goal_type": "implementation",
+        "ghg_scopes_explicit": [],
+        "ghg_scopes_implicit": [
+          "2"
+        ]
+      },
+      {
+        "goal_description": "Additional renewable energy production within the municipal group to start by 2026",
+        "reduction_percentage": "",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "",
+        "target_year": "2026",
+        "scope": "municipal_operations",
+        "scope_other": "",
+        "sector": "energy",
+        "source_quote": "Ytterligare förnybar energiproduktion inom kommunkoncernen har startat senast 2026",
+        "commitment_strength": "adopted_goal",
+        "commitment_strength_other": "",
+        "goal_type": "implementation",
+        "ghg_scopes_explicit": [],
+        "ghg_scopes_implicit": []
+      },
+      {
+        "goal_description": "Reduce energy use for heating, property operation, and lighting by at least 10% by 2028 compared to 2022",
+        "reduction_percentage": "10",
+        "absolute_target": "",
+        "annual_reduction_rate": "",
+        "baseline_year": "2022",
+        "target_year": "2028",
+        "scope": "municipal_operations",
+        "scope_other": "",
+        "sector": "buildings",
+        "source_quote": "Kommunkoncernens energianvändning för uppvärmning av byggnader, drift av fastigheter och belysning har minskat med minst 10 procent år 2028 jämfört med 2022",
+        "commitment_strength": "adopted_goal",
+        "commitment_strength_other": "",
+        "goal_type": "emission_reduction",
+        "ghg_scopes_explicit": [],
+        "ghg_scopes_implicit": [
+          "2"
+        ]
+      }
+    ],
+    "external_references": [
+      {
+        "reference_description": "Paris Agreement commitment to limit global warming to well below 2°C and pursue efforts to limit it to 1.5°C",
+        "source_organization": "Paris Agreement",
+        "target_value": "1.5°C",
+        "source_quote": "För att lyckas minska vår påverkan på klimatet och undvika att medeltemperaturen ökar mer än 1,5 grad globalt krävs stora insatser."
+      },
+      {
+        "reference_description": "Sweden's national goal of net zero emissions by 2045",
+        "source_organization": "Swedish national goal",
+        "target_value": "Net zero by 2045",
+        "source_quote": "Det långsiktiga klimatmålet innebär att Sverige senast år 2045 inte ska ha några nettoutsläpp av växthusgaser till atmosfären."
+      },
+      {
+        "reference_description": "EU directive on energy efficiency requiring a 11.7% reduction in energy use by 2030 compared to 2020",
+        "source_organization": "EU",
+        "target_value": "11.7% reduction by 2030",
+        "source_quote": "2023 antog EU ett direktiv om energieffektivitet. Enligt direktivet ska medlemsstaterna kollektivt säkerställa en minskning av energianvändningen med 11,7 procent till 2030 jämför med 2020."
+      }
+    ],
+    "primary_target": {
+      "exists": true,
+      "reduction_percentage": "",
+      "baseline_year": "",
+      "target_year": "2045",
+      "scope": "geographic_area",
+      "source_quote": "Utsläppen av koldioxid från Nässjö kommuns geografiska område ska årligen minska så att kommunen uppfyller sin del av Parisavtalet.",
+      "confidence": "medium"
+    },
+    "emissions_accounting": {
+      "accounting_type": "territorial",
+      "accounting_type_other": "",
+      "includes_consumption_based": false,
+      "methodology_described": true,
+      "methodology_reference": "SMHI Nationella emissionsdatabasen",
+      "methodology_notes": "Emissions are accounted for using territorial boundaries, with data sourced from SMHI's national emissions database.",
+      "source_quotes": [
+        "År 2021 var de totala utsläppen av växthusgaser 7 cirka 111 700 ton från Nässjö som geografisk plats.",
+        "Källa: SMHI Nationella emissionsdatabasen"
+      ]
+    },
+    "framework_alignment": {
+      "paris_agreement_mentioned": true,
+      "one_point_five_mentioned": true,
+      "carbon_budget_referenced": true,
+      "carbon_budget_description": "The plan references a carbon budget approach, noting the required annual reduction rate to meet Paris Agreement targets, and mentions the carbon budget for Jönköpings län.",
+      "swedish_climate_act_referenced": true,
+      "swedish_national_targets_referenced": true,
+      "eu_frameworks_referenced": true,
+      "eu_frameworks_named": [
+        "EU directive on energy efficiency"
+      ],
+      "alignment_character": "guiding",
+      "alignment_character_other": "",
+      "alignment_justification": "normative",
+      "source_quotes": [
+        "Utsläppen av koldioxid från Nässjö kommuns geografiska område ska årligen minska så att kommunen uppfyller sin del av Parisavtalet.",
+        "För att lyckas minska vår påverkan på klimatet och undvika att medeltemperaturen ökar mer än 1,5 grad globalt krävs stora insatser.",
+        "Det långsiktiga klimatmålet innebär att Sverige senast år 2045 inte ska ha några nettoutsläpp av växthusgaser till atmosfären."
+      ]
+    },
+    "summary": {
+      "document_publication_year": "2024",
+      "has_quantified_targets": true,
+      "has_clear_baseline": true,
+      "has_clear_timeline": true,
+      "scope_clarity": "clear",
+      "sectoral_targets_consistent": "yes",
+      "sectoral_consistency_notes": "Sectoral targets for the municipal group align with the overall target of net zero emissions by 2045.",
+      "ghg_scopes_explicit": [
+        "1",
+        "2"
+      ],
+      "ghg_scopes_implicit": [
+        "2"
+      ],
+      "ghg_scope_notes": "Explicitly covers scope 1 and 2 for municipal operations, with some scope 2 implications for energy use targets.",
+      "overall_assessment": "The plan includes clear and quantified targets for both the geographic area and municipal operations, with explicit references to GHG Protocol scopes 1 and 2. It aligns with national and EU frameworks, and references a carbon budget approach."
+    }
+  },
+  "_version": "v3"
+}
