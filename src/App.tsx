@@ -1,22 +1,22 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Routes, Route } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { Header } from "@/ui/header";
-import { ProcessingTab } from "@/tabs/processing/ProcessingTab";
-import { JobbstatusTab } from "@/tabs/jobbstatus/JobbstatusTab";
-import { WorkflowTab } from "@/tabs/workflow/WorkflowTab";
-import { DebugTab } from "@/tabs/debug/DebugTab";
 import { Toaster } from "@/ui/sonner";
-import { Routes, Route } from "react-router-dom";
-import SlideshowPage from "@/pages/SlideshowPage";
-import { UploadTab } from "@/tabs/upload/UploadTab";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthCallback } from "@/pages/AuthCallback";
 import { GlobalLoginModal } from "@/components/GlobalLoginModal";
-import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
-import { CrawlerTab } from "@/tabs/crawler/CrawlerTab";
-import { ResultsTab } from "@/tabs/results/ResultsTab";
+import SlideshowPage from "@/pages/SlideshowPage";
 import { ClimatePlansExplorer } from "@/tabs/climate-plans/ClimatePlansExplorer";
+import { CrawlerTab } from "@/tabs/crawler/CrawlerTab";
+import { DebugTab } from "@/tabs/debug/DebugTab";
+import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
+import { JobbstatusTab } from "@/tabs/jobbstatus/JobbstatusTab";
+import { ProcessingTab } from "@/tabs/processing/ProcessingTab";
+import { ResultsTab } from "@/tabs/results/ResultsTab";
+import { UploadTab } from "@/tabs/upload/UploadTab";
+import { WorkflowTab } from "@/tabs/workflow/WorkflowTab";
 
 function App() {
   const [currentTab, setCurrentTab] = useState("upload");
