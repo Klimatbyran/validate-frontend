@@ -17,8 +17,14 @@ export function useClimatePlans() {
     async function load() {
       try {
         const indexRes = await fetch("/climate-plans/index.json");
-        if (!indexRes.ok) throw new Error("Failed to load climate plans index");
-        const index: ClimatePlanIndex = await indexRes.json();
+        if (!indexRes.ok) {
+          throw new Error("Climate plans index not found. Add public/climate-plans/ with municipality subfolders and JSON data.");
+        }
+        const text = await indexRes.text();
+        if (!text.trim().startsWith("{")) {
+          throw new Error("Climate plans index not found. Add public/climate-plans/ with municipality subfolders and JSON data.");
+        }
+        const index: ClimatePlanIndex = JSON.parse(text);
 
         const plans: MunicipalityClimatePlan[] = [];
 
@@ -37,16 +43,22 @@ export function useClimatePlans() {
             continue;
           }
 
-          const planScopeRaw = planScopeRes?.ok ? await planScopeRes.json() : null;
-          const emissionTargetsRaw = emissionTargetsRes?.ok ? await emissionTargetsRes.json() : null;
+          let planScopeRaw: unknown = null;
+          let emissionTargetsRaw: unknown = null;
+          if (planScopeRes?.ok) {
+            const t = await planScopeRes.text();
+            if (t.trim().startsWith("{")) planScopeRaw = JSON.parse(t);
+          }
+          if (emissionTargetsRes?.ok) {
+            const t = await emissionTargetsRes.text();
+            if (t.trim().startsWith("{")) emissionTargetsRaw = JSON.parse(t);
+          }
 
           // Extract municipality data from top-level key (first non-_version key)
-          const planScopeKey = planScopeRaw
-            ? Object.keys(planScopeRaw).find((k) => k !== "_version")
-            : null;
-          const emissionTargetsKey = emissionTargetsRaw
-            ? Object.keys(emissionTargetsRaw).find((k) => k !== "_version")
-            : null;
+          const planScopeObj = planScopeRaw && typeof planScopeRaw === "object" ? (planScopeRaw as Record<string, unknown>) : null;
+          const emissionTargetsObj = emissionTargetsRaw && typeof emissionTargetsRaw === "object" ? (emissionTargetsRaw as Record<string, unknown>) : null;
+          const planScopeKey = planScopeObj ? Object.keys(planScopeObj).find((k) => k !== "_version") ?? null : null;
+          const emissionTargetsKey = emissionTargetsObj ? Object.keys(emissionTargetsObj).find((k) => k !== "_version") ?? null : null;
 
           // Use the JSON top-level key as display name, fall back to manifest name
           const displayName = planScopeKey || emissionTargetsKey || entry.name;
@@ -54,8 +66,8 @@ export function useClimatePlans() {
           plans.push({
             id: entry.id,
             name: displayName,
-            planScope: planScopeKey ? planScopeRaw[planScopeKey] as PlanScopeData : null as unknown as PlanScopeData,
-            emissionTargets: emissionTargetsKey ? emissionTargetsRaw[emissionTargetsKey] as EmissionTargetsData : null as unknown as EmissionTargetsData,
+            planScope: planScopeKey && planScopeObj ? (planScopeObj[planScopeKey] as PlanScopeData) : null,
+            emissionTargets: emissionTargetsKey && emissionTargetsObj ? (emissionTargetsObj[emissionTargetsKey] as EmissionTargetsData) : null,
           });
         }
 

@@ -15,7 +15,14 @@ function climatePlansManifest(): Plugin {
   const climatePlansDir = path.resolve(__dirname, "public/climate-plans");
 
   function generateManifest() {
-    if (!fs.existsSync(climatePlansDir)) return;
+    if (!fs.existsSync(climatePlansDir)) {
+      fs.mkdirSync(climatePlansDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(climatePlansDir, "index.json"),
+        JSON.stringify({ municipalities: [] }, null, 2) + "\n"
+      );
+      return;
+    }
 
     const entries = fs.readdirSync(climatePlansDir, { withFileTypes: true });
     const municipalities = [];

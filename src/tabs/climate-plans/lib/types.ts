@@ -143,6 +143,6 @@ export interface ClimatePlanIndex {
 export interface MunicipalityClimatePlan {
   id: string;
   name: string;
-  planScope: PlanScopeData;
-  emissionTargets: EmissionTargetsData;
+  planScope: PlanScopeData | null;
+  emissionTargets: EmissionTargetsData | null;
 }
