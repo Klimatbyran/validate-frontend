@@ -13,6 +13,50 @@ export const QUEUE_TO_SCOPES: Record<string, string[]> = {
 };
 
 /**
+ * Maps follow-up queue IDs to their FollowUpKey used by the backend.
+ * Used when triggering a follow-up job that didn't run via the extractEmissions parent.
+ */
+export const QUEUE_TO_FOLLOW_UP_KEY: Record<string, string> = {
+  followUpScope1: "scope1",
+  followUpScope2: "scope2",
+  followUpScope12: "scope1+2",
+  followUpScope3: "scope3",
+  followUpBiogenic: "biogenic",
+  followUpEconomy: "economy",
+  followUpGoals: "goals",
+  followUpInitiatives: "initiatives",
+  followUpBaseYear: "baseYear",
+  followUpIndustryGics: "industryGics",
+  followUpFiscalYear: "fiscalYear",
+  followUpCompanyTags: "companyTags",
+};
+
+/**
+ * Check if a queueId is a follow-up queue that can be triggered from extractEmissions.
+ */
+export function isFollowUpQueue(queueId: string): boolean {
+  return queueId in QUEUE_TO_FOLLOW_UP_KEY;
+}
+
+/**
+ * Builds the request body for POST .../rerun-and-save (extractEmissions parent).
+ * Use when triggering one or more follow-up scopes with optional wikidata context.
+ */
+export function buildRerunAndSaveBody(
+  scopes: string[],
+  wikidata?: { node?: string } | string | null
+): { scopes: string[]; jobData?: { wikidata: { node: string } } } {
+  const node =
+    typeof wikidata === "string"
+      ? wikidata
+      : wikidata?.node;
+  return {
+    scopes,
+    ...(node ? { jobData: { wikidata: { node } } } : {}),
+  };
+}
+
+/**
  * Extracts job data from various possible locations.
  * Job data can be stored in different shapes depending on the API response.
  */
