@@ -1,21 +1,22 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Routes, Route } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { Header } from "@/ui/header";
-import { ProcessingTab } from "@/tabs/processing/ProcessingTab";
-import { JobbstatusTab } from "@/tabs/jobbstatus/JobbstatusTab";
-import { WorkflowTab } from "@/tabs/workflow/WorkflowTab";
-import { DebugTab } from "@/tabs/debug/DebugTab";
 import { Toaster } from "@/ui/sonner";
-import { Routes, Route } from "react-router-dom";
-import SlideshowPage from "@/pages/SlideshowPage";
-import { UploadTab } from "@/tabs/upload/UploadTab";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthCallback } from "@/pages/AuthCallback";
 import { GlobalLoginModal } from "@/components/GlobalLoginModal";
-import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
+import SlideshowPage from "@/pages/SlideshowPage";
+import { ClimatePlansExplorer } from "@/tabs/climate-plans/ClimatePlansExplorer";
 import { CrawlerTab } from "@/tabs/crawler/CrawlerTab";
+import { DebugTab } from "@/tabs/debug/DebugTab";
+import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
+import { JobbstatusTab } from "@/tabs/jobbstatus/JobbstatusTab";
+import { ProcessingTab } from "@/tabs/processing/ProcessingTab";
 import { ResultsTab } from "@/tabs/results/ResultsTab";
+import { UploadTab } from "@/tabs/upload/UploadTab";
+import { WorkflowTab } from "@/tabs/workflow/WorkflowTab";
 
 function App() {
   const [currentTab, setCurrentTab] = useState("upload");
@@ -36,23 +37,24 @@ function App() {
               <div className="max-w-[1400px] mx-auto">
                 <Header />
 
-                  <Tabs
-                    value={currentTab}
-                    onValueChange={(value) => {
-                      setCurrentTab(value);
-                    }}
-                    className="space-y-6"
-                  >
-                    <TabsList className="bg-gray-04/50 backdrop-blur-sm">
-                      <TabsTrigger value="upload">Uppladdning</TabsTrigger>
-                      <TabsTrigger value="processing">Bearbetning</TabsTrigger>
-                      <TabsTrigger value="jobbstatus">Jobbstatus</TabsTrigger>
-                      <TabsTrigger value="workflow">Processflöde</TabsTrigger>
-                      <TabsTrigger value="debug">Debug</TabsTrigger>
-                      <TabsTrigger value="errors">Error Browser</TabsTrigger>
-                      <TabsTrigger value="results">Resultat</TabsTrigger>
-                      <TabsTrigger value="crawler">Crawler</TabsTrigger>
-                    </TabsList>
+                <Tabs
+                  value={currentTab}
+                  onValueChange={(value) => {
+                    setCurrentTab(value);
+                  }}
+                  className="space-y-6"
+                >
+                  <TabsList className="bg-gray-04/50 backdrop-blur-sm">
+                    <TabsTrigger value="upload">Uppladdning</TabsTrigger>
+                    <TabsTrigger value="processing">Bearbetning</TabsTrigger>
+                    <TabsTrigger value="jobbstatus">Jobbstatus</TabsTrigger>
+                    <TabsTrigger value="workflow">Processflöde</TabsTrigger>
+                    <TabsTrigger value="debug">Debug</TabsTrigger>
+                    <TabsTrigger value="errors">Error Browser</TabsTrigger>
+                    <TabsTrigger value="results">Resultat</TabsTrigger>
+                    <TabsTrigger value="crawler">Crawler</TabsTrigger>
+                    <TabsTrigger value="climate-plans">Explore climate plans</TabsTrigger>
+                  </TabsList>
 
                   <AnimatePresence mode="popLayout" initial={false}>
                     <TabsContent key="upload" value="upload" asChild>
@@ -124,6 +126,16 @@ function App() {
                         className="space-y-6"
                       >
                         <CrawlerTab />
+                      </motion.div>
+                    </TabsContent>
+
+                    <TabsContent key="climate-plans" value="climate-plans" asChild>
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                      >
+                        <ClimatePlansExplorer />
                       </motion.div>
                     </TabsContent>
                   </AnimatePresence>

@@ -1,13 +1,82 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 
 // https://vitejs.dev/config/
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Vite plugin that auto-generates climate-plans/index.json
+// by scanning public/climate-plans/ subfolders for JSON files.
+// Just drop a folder with plan_scope_*.json and emission_targets_*.json
+// and it gets picked up automatically.
+function climatePlansManifest(): Plugin {
+  const climatePlansDir = path.resolve(__dirname, "public/climate-plans");
+
+  function generateManifest() {
+    if (!fs.existsSync(climatePlansDir)) {
+      fs.mkdirSync(climatePlansDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(climatePlansDir, "index.json"),
+        JSON.stringify({ municipalities: [] }, null, 2) + "\n"
+      );
+      return;
+    }
+
+    const entries = fs.readdirSync(climatePlansDir, { withFileTypes: true });
+    const municipalities = [];
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const folder = entry.name;
+      const folderPath = path.join(climatePlansDir, folder);
+      const files = fs.readdirSync(folderPath);
+
+      const planScope = files.find((f) => f.startsWith("plan_scope") && f.endsWith(".json"));
+      const emissionTargets = files.find((f) => f.startsWith("emission_targets") && f.endsWith(".json"));
+
+      if (!planScope && !emissionTargets) continue;
+
+      // Derive display name from folder: mullsjo -> Mullsjö, nassjo -> Nässjö
+      // Falls back to capitalized folder name
+      const name = folder.charAt(0).toUpperCase() + folder.slice(1);
+
+      municipalities.push({
+        id: folder,
+        name,
+        folder,
+        files: {
+          ...(planScope && { plan_scope: planScope }),
+          ...(emissionTargets && { emission_targets: emissionTargets }),
+        },
+      });
+    }
+
+    fs.writeFileSync(
+      path.join(climatePlansDir, "index.json"),
+      JSON.stringify({ municipalities }, null, 2) + "\n"
+    );
+  }
+
+  return {
+    name: "climate-plans-manifest",
+    buildStart() {
+      generateManifest();
+    },
+    configureServer(server) {
+      // Regenerate when files change in the climate-plans directory
+      server.watcher.on("all", (event, filePath) => {
+        if (filePath.startsWith(climatePlansDir) && !filePath.endsWith("index.json")) {
+          generateManifest();
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), climatePlansManifest()],
   optimizeDeps: {
     exclude: ["lucide-react"],
   },
