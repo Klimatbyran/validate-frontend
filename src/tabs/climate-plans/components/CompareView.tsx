@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Target, Calendar, Scale, Globe, BarChart3, Check, X } from "lucide-react";
-import type { MunicipalityClimatePlan, OwnCommitment } from "@/lib/climate-plans/types";
+import type { MunicipalityClimatePlan, OwnCommitment } from "../lib/types";
 import { cn } from "@/lib/utils";
 
 interface CompareViewProps {

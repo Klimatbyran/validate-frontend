@@ -1,5 +1,5 @@
 import { ArrowLeft } from "lucide-react";
-import type { MunicipalityClimatePlan } from "@/lib/climate-plans/types";
+import type { MunicipalityClimatePlan } from "../lib/types";
 import { cn } from "@/lib/utils";
 
 interface MunicipalityDetailProps {

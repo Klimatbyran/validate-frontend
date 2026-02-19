@@ -4,7 +4,7 @@ import type {
   MunicipalityClimatePlan,
   PlanScopeData,
   EmissionTargetsData,
-} from "@/lib/climate-plans/types";
+} from "../lib/types";
 
 export function useClimatePlans() {
   const [municipalities, setMunicipalities] = useState<MunicipalityClimatePlan[]>([]);

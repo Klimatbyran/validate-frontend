@@ -13,7 +13,7 @@ import { UploadTab } from "./components/tabs/upload/UploadTab";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthCallback } from "@/pages/AuthCallback";
 import { GlobalLoginModal } from "@/components/GlobalLoginModal";
-import { ClimatePlansExplorer } from "@/views/climate-plans/ClimatePlansExplorer";
+import { ClimatePlansExplorer } from "@/tabs/climate-plans/ClimatePlansExplorer";
 
 function App() {
   const [currentTab, setCurrentTab] = useState("upload");

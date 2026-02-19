@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useClimatePlans } from "@/hooks/useClimatePlans";
-import { CompareView } from "./CompareView";
-import { MunicipalityDetail } from "./MunicipalityDetail";
+import { useClimatePlans } from "./hooks/useClimatePlans";
+import { CompareView } from "./components/CompareView";
+import { MunicipalityDetail } from "./components/MunicipalityDetail";
 
 export function ClimatePlansExplorer() {
   const { municipalities, isLoading, error } = useClimatePlans();
