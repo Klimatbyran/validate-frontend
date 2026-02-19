@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Target, Calendar, Scale, Globe, BarChart3, Check, X } from "lucide-react";
+import { Callout } from "@/ui/callout";
 import type { MunicipalityClimatePlan, OwnCommitment } from "../lib/types";
 import { cn } from "@/lib/utils";
 
@@ -132,11 +133,10 @@ function MunicipalitySummaryCard({ m, onClick }: { m: MunicipalityClimatePlan; o
 
       {/* Primary target — always shown for symmetry */}
       {pt?.exists ? (
-        <div className="bg-green-03/10 border border-green-03/20 rounded-lg p-3 mb-3">
-          <div className="text-xs text-green-03 font-medium uppercase tracking-wider mb-1">Primary target</div>
+        <Callout variant="success" title="Primary target" className="mb-3">
           <div className="text-2xl font-bold text-gray-01">{pt.target_year || "—"}</div>
           <Badge variant="default">{SCOPE_LABELS[pt.scope || ""] || pt.scope?.replace(/_/g, " ")}</Badge>
-        </div>
+        </Callout>
       ) : (
         <div className="bg-gray-03/20 border border-gray-03/30 rounded-lg p-3 mb-3 flex flex-col justify-center min-h-[88px]">
           <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-1">Primary target</div>
@@ -200,8 +200,7 @@ function TargetsPanel({ municipalities }: { municipalities: MunicipalityClimateP
             <div className="text-sm font-medium text-gray-01">{m.name}</div>
 
             {et.primary_target?.exists ? (
-              <div className="bg-green-03/10 border border-green-03/20 rounded-lg p-4">
-                <div className="text-xs text-green-03 font-medium uppercase tracking-wider mb-2">Primary target</div>
+              <Callout variant="success" title="Primary target">
                 <div className="text-xl font-bold text-gray-01 mb-2">
                   {et.primary_target.reduction_percentage
                     ? `${et.primary_target.reduction_percentage}% by ${et.primary_target.target_year}`
@@ -216,7 +215,7 @@ function TargetsPanel({ municipalities }: { municipalities: MunicipalityClimateP
                     </Badge>
                   )}
                 </div>
-              </div>
+              </Callout>
             ) : (
               <div className="bg-gray-03/20 border border-gray-03/30 rounded-lg p-4 flex flex-col justify-center min-h-[100px]">
                 <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-2">Primary target</div>

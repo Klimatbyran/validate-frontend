@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/ui/button";
+import { Callout } from "@/ui/callout";
 import { Check, ExternalLink, AlertCircle, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -92,16 +93,9 @@ export function WikidataApprovalDisplay({
 
       {/* Message */}
       {data.message && (
-        <div
-          className={cn(
-            "rounded-lg p-3 text-sm",
-            isApproved
-              ? "bg-green-03/10 text-green-03"
-              : "bg-orange-03/10 text-orange-03"
-          )}
-        >
+        <Callout variant={isApproved ? "success" : "warning"}>
           {data.message}
-        </div>
+        </Callout>
       )}
 
       {/* Wikidata Information */}
@@ -151,13 +145,11 @@ export function WikidataApprovalDisplay({
 
       {/* Approve Section (only for pending_approval) */}
       {isPending && (
-        <div className="bg-green-03/10 rounded-lg p-4 space-y-3 border border-green-03/20">
-          <h4 className="text-base font-medium text-green-03">
-            Godkänn Wikidata
-          </h4>
-          <p className="text-sm text-green-03/80">
-            Godkänn det föreslagna Wikidata ID:t. Jobbet kommer att köras om med godkännande.
-          </p>
+        <Callout
+          variant="success"
+          title="Godkänn Wikidata"
+          description="Godkänn det föreslagna Wikidata ID:t. Jobbet kommer att köras om med godkännande."
+        >
           <Button
             variant="primary"
             size="sm"
@@ -167,20 +159,16 @@ export function WikidataApprovalDisplay({
             <Check className="w-4 h-4 mr-2" />
             Godkänn
           </Button>
-        </div>
+        </Callout>
       )}
 
       {/* Override Section (only for pending_approval) */}
       {isPending && (
-        <div className="bg-blue-03/10 rounded-lg p-4 space-y-3 border border-blue-03/20">
-          <h4 className="text-base font-medium text-blue-03">
-            Överskriv Wikidata ID
-          </h4>
-          <p className="text-sm text-blue-03/80">
-            Om det föreslagna Wikidata ID:t inte är korrekt, kan du ange ett
-            annat ID här. Jobbet kommer att köras om med det nya ID:t.
-          </p>
-
+        <Callout
+          variant="info"
+          title="Överskriv Wikidata ID"
+          description="Om det föreslagna Wikidata ID:t inte är korrekt, kan du ange ett annat ID här. Jobbet kommer att köras om med det nya ID:t."
+        >
           <div className="space-y-2">
             <div>
               <label
@@ -224,7 +212,7 @@ export function WikidataApprovalDisplay({
               )}
             </div>
           </div>
-        </div>
+        </Callout>
       )}
 
       {/* Metadata */}
