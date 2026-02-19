@@ -3,9 +3,10 @@
  * Lets the user enter a new company name and re-run the job with it.
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { RotateCcw, AlertCircle } from "lucide-react";
 import { Button } from "@/ui/button";
+import { Callout } from "@/ui/callout";
 import { cn } from "@/lib/utils";
 
 interface CompanyNameOverrideDisplayProps {
@@ -46,13 +47,11 @@ export function CompanyNameOverrideDisplay({
 
   return (
     <div className="mb-4 space-y-4">
-      <div className="bg-blue-03/10 rounded-lg p-4 space-y-3 border border-blue-03/20">
-        <h4 className="text-base font-medium text-blue-03">Ändra företagsnamn</h4>
-        <p className="text-sm text-blue-03/80">
-          Om det företagsnamn som hittades i förkontrollen inte är korrekt, kan du ange ett
-          nytt namn här. Jobbet kommer att köras om med det nya namnet.
-        </p>
-
+      <Callout
+        variant="info"
+        title="Ändra företagsnamn"
+        description="Om det företagsnamn som hittades i förkontrollen inte är korrekt, kan du ange ett nytt namn här. Jobbet kommer att köras om med det nya namnet."
+      >
         {currentCompanyName && (
           <div className="bg-gray-03/20 rounded-lg p-3">
             <div className="text-xs text-gray-02 mb-1">Nuvarande företagsnamn</div>
@@ -103,7 +102,7 @@ export function CompanyNameOverrideDisplay({
             )}
           </div>
         </div>
-      </div>
+      </Callout>
     </div>
   );
 }

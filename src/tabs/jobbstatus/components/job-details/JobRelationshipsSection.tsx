@@ -1,4 +1,5 @@
 import { ArrowUpRight, GitBranch } from "lucide-react";
+import { Callout } from "@/ui/callout";
 import { QueueJob } from "@/lib/types";
 
 interface JobRelationshipsSectionProps {
@@ -9,11 +10,7 @@ export function JobRelationshipsSection({ job }: JobRelationshipsSectionProps) {
   if (!job.parent) return null;
 
   return (
-    <div className="bg-blue-03/10 rounded-lg p-4">
-      <h3 className="text-lg font-medium text-blue-03 mb-4 flex items-center">
-        <GitBranch className="w-5 h-5 mr-2" />
-        Jobbrelationer
-      </h3>
+    <Callout variant="info" title="Jobbrelationer" icon={<GitBranch className="w-5 h-5" />}>
       <div className="space-y-3">
         <div className="flex items-center space-x-2 text-blue-03">
           <ArrowUpRight className="w-5 h-4" />
@@ -23,6 +20,6 @@ export function JobRelationshipsSection({ job }: JobRelationshipsSectionProps) {
           </code>
         </div>
       </div>
-    </div>
+    </Callout>
   );
 }

@@ -10,7 +10,7 @@ import {
   buildOurNumberMapForYear,
   buildRefNumberMap,
 } from "../../lib/scope3-data";
-import { CopyJsonButton } from "./CopyJsonButton";
+import { CopyButton } from "@/ui/copy-button";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
 import { YearBadge } from "./YearBadge";
 
@@ -214,7 +214,7 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
                   <details className="mt-3 bg-gray-04 rounded border border-gray-03 p-3">
                     <summary className="cursor-pointer text-sm font-medium text-orange-03">Reference JSON ({latestScope3Year})</summary>
                     <div className="flex justify-end">
-                      <CopyJsonButton getText={() => JSON.stringify(referenceJson, null, 2)} />
+                      <CopyButton getText={() => JSON.stringify(referenceJson, null, 2)} />
                     </div>
                     <pre className="text-xs text-gray-02 overflow-x-auto mt-2">
                       {JSON.stringify(referenceJson, null, 2)}

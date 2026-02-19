@@ -1,4 +1,5 @@
 import { ArrowLeft } from "lucide-react";
+import { Callout } from "@/ui/callout";
 import type { MunicipalityClimatePlan } from "../lib/types";
 import { cn } from "@/lib/utils";
 
@@ -119,15 +120,14 @@ export function MunicipalityDetail({ municipality: m, onBack }: MunicipalityDeta
         {et && (
         <Card title="Goals & Targets">
           {et.primary_target?.exists && (
-            <div className="mb-4 p-3 bg-green-03/10 rounded-lg">
-              <div className="text-xs font-medium uppercase tracking-wider text-green-03 mb-1">Primary target</div>
+            <Callout variant="success" title="Primary target" className="mb-4">
               <div className="text-sm text-gray-01">
                 {et.primary_target.reduction_percentage && `${et.primary_target.reduction_percentage}% reduction `}
                 {et.primary_target.target_year && `by ${et.primary_target.target_year}`}
                 {et.primary_target.scope && ` (${et.primary_target.scope.replace(/_/g, " ")})`}
               </div>
               {et.primary_target.source_quote && <Quote text={et.primary_target.source_quote} />}
-            </div>
+            </Callout>
           )}
 
           <div className="text-xs font-medium uppercase tracking-wider text-gray-02 mb-2">

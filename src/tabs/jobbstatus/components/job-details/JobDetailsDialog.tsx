@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogFooter } from "@/ui/dialog";
+import { Callout } from "@/ui/callout";
 import { toast } from "sonner";
 import { QueueJob, DetailedJobResponse, SwimlaneYearData } from "@/lib/types";
 import { HelpCircle, RotateCcw } from "lucide-react";
@@ -287,21 +288,12 @@ export function JobDetailsDialog({
           <div className="space-y-6 my-6">
             {activeTab === "user" && (
               <>
-                <div className="bg-blue-03/10 rounded-lg p-4">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="p-2 rounded-full bg-blue-03/20">
-                      <HelpCircle className="w-5 h-5 text-blue-03" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-blue-03">
-                        Godkännande krävs
-                      </h3>
-                      <p className="text-sm text-blue-03/80">
-                        Vänligen granska informationen och godkänn eller avvisa.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <Callout
+                  variant="info"
+                  title="Godkännande krävs"
+                  description="Vänligen granska informationen och godkänn eller avvisa."
+                  icon={<HelpCircle className="w-5 h-5" />}
+                />
 
                 <div className="bg-gray-03/20 rounded-lg p-4">
                   <h3 className="text-lg font-medium text-gray-01 mb-4">
