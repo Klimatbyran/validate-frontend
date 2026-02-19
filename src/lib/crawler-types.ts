@@ -1,7 +1,5 @@
 export type Report = {
-  description: string;
-  position: number;
-  title: string;
+  position?: number;
   url: string;
 };
 

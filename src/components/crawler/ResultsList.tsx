@@ -3,10 +3,16 @@ import { CompanyReport } from "@/lib/crawler-types";
 import ResultItem from "./ResultItem";
 
 interface ResultsListProps {
-  reports: CompanyReport[] | null;
+  companyReports: CompanyReport[] | null;
+  setCompanyReports: React.Dispatch<
+    React.SetStateAction<CompanyReport[] | null>
+  >;
 }
 
-const ResultsList = ({ reports }: ResultsListProps) => {
+const ResultsList = ({
+  companyReports,
+  setCompanyReports,
+}: ResultsListProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -17,8 +23,15 @@ const ResultsList = ({ reports }: ResultsListProps) => {
         Search Results
       </h3>
 
-      {reports?.map((report, index) => {
-        return <ResultItem key={index} report={report} />;
+      {companyReports?.map((report, index) => {
+        return (
+          <ResultItem
+            key={index}
+            setCompanyReports={setCompanyReports}
+            companyReports={companyReports}
+            companyReport={report}
+          />
+        );
       })}
     </motion.div>
   );
