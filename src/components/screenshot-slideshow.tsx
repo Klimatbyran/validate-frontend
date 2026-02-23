@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { SlideshowControls } from "./ui/slideshow-controls";
-import { SlideshowImage } from "./ui/slideshow-image";
+import { SlideshowControls } from "@/ui/slideshow-controls";
+import { SlideshowImage } from "@/ui/slideshow-image";
 
 interface ScreenshotSlideshowProps {
   pdfUrl: string;

@@ -98,25 +98,38 @@
   table-layout: fixed;
 }
 
+/* Dark theme: all rows readable on dark background */
 .markdown-tables th,
 .markdown-tables td {
-  border: 1px solid #d1d5db;
+  border: 1px solid #2E2E2E; /* gray-03 */
   padding: 0.25rem 0.5rem;
   text-align: left;
+  color: #F7F7F7; /* gray-01 */
 }
 
 .markdown-tables th {
-  background-color: #f3f4f6;
+  background-color: #2E2E2E; /* gray-03 */
   font-weight: 600;
+  color: #F7F7F7;
+}
+
+.markdown-tables tbody tr:nth-child(odd) {
+  background-color: #121212; /* gray-04 */
 }
 
 .markdown-tables tbody tr:nth-child(even) {
-  background-color: #f9fafb; /* More specific selector */
+  background-color: #1a1a1a; /* slightly lighter than gray-04 for subtle stripe */
 }
 
 .markdown-tables hr {
   margin-top: 2rem;
   margin-bottom: 2rem;
+  border-color: #2E2E2E;
+}
+
+/* Chevron rotation when details/summary is open */
+details[open] summary [aria-hidden="true"].rotate-when-open {
+  transform: rotate(90deg);
 }
 
 /* Custom animations for swimlane component */
