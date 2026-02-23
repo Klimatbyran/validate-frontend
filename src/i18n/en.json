@@ -81,7 +81,23 @@
     "seeResults": "See results",
     "unknownError": "Unknown error occurred",
     "unknownCompany": "Unknown",
-    "linksPlaceholder": "https://example.com/rapport.pdf (one per line)"
+    "linksPlaceholder": "https://example.com/rapport.pdf (one per line)",
+    "selectAtLeastOneWorker": "Select at least one job to run",
+    "runOptionsTitle": "Options for new runs",
+    "batch": "Batch",
+    "batchAria": "Select batch",
+    "noBatch": "No batch",
+    "newBatch": "— New batch —",
+    "customBatchPlaceholder": "e.g. 2024-Q1-Reports",
+    "customBatchAria": "New batch name",
+    "runLabel": "Run:",
+    "runAll": "All",
+    "runPartial": "Partial",
+    "runOnly": "Run only:",
+    "forceReindex": "Force reindex",
+    "forceReindexDescription": "When on: run docling even if the report already exists in the vector DB (use after docling/OCR upgrade).",
+    "companyWithName": "Company: {{name}}",
+    "fileSizeMb": "{{size}} MB"
   },
   "processing": {
     "systemReady": "System Ready",
@@ -117,7 +133,12 @@
       "scope3": "Scope 3",
       "economy": "Economy",
       "baseYear": "Base year",
-      "industryGics": "Industry GICS"
+      "industryGics": "Industry GICS",
+      "biogenic": "Biogenic",
+      "goals": "Goals",
+      "initiatives": "Initiatives",
+      "lei": "LEI",
+      "descriptions": "Descriptions"
     },
     "limitAll": "All",
     "overview": {

@@ -81,7 +81,23 @@
     "seeResults": "Se resultat",
     "unknownError": "Ett okänt fel uppstod",
     "unknownCompany": "Okänd",
-    "linksPlaceholder": "https://example.com/rapport.pdf (en per rad)"
+    "linksPlaceholder": "https://example.com/rapport.pdf (en per rad)",
+    "selectAtLeastOneWorker": "Välj minst ett jobb att köra",
+    "runOptionsTitle": "Alternativ för nya körningar",
+    "batch": "Batch",
+    "batchAria": "Välj batch",
+    "noBatch": "Ingen batch",
+    "newBatch": "— Ny batch —",
+    "customBatchPlaceholder": "t.ex. 2024-Q1-Reports",
+    "customBatchAria": "Ny batchnamn",
+    "runLabel": "Kör:",
+    "runAll": "Alla",
+    "runPartial": "Delvis",
+    "runOnly": "Kör endast:",
+    "forceReindex": "Tvinga omindexering",
+    "forceReindexDescription": "Om på: kör docling även om rapporten redan finns i vektordatabasen (använd efter uppgradering av docling/OCR).",
+    "companyWithName": "Företag: {{name}}",
+    "fileSizeMb": "{{size}} MB"
   },
   "processing": {
     "systemReady": "Systemet redo",
@@ -117,7 +133,12 @@
       "scope3": "Scope 3",
       "economy": "Ekonomi",
       "baseYear": "Basår",
-      "industryGics": "Bransch GICS"
+      "industryGics": "Bransch GICS",
+      "biogenic": "Biogen",
+      "goals": "Mål",
+      "initiatives": "Initiativ",
+      "lei": "LEI",
+      "descriptions": "Beskrivningar"
     },
     "limitAll": "Alla",
     "overview": {
