@@ -207,6 +207,7 @@
     "notInStage": "Not in Stage",
     "notInProd": "Not in Prod",
     "verified": "Verified",
+    "foundIn": "Found in {{dataPoint}}",
     "discrepancyGeneric": "Right number placed in a safer/generic bucket (e.g. unknown, other)",
     "discrepancySwap": "Values are swapped between two categories — both have each other's value",
     "discrepancyWrongCategory": "Value placed in the wrong category (not a clean swap)",

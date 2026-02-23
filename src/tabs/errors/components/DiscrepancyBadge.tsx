@@ -8,7 +8,7 @@ interface DiscrepancyBadgeProps {
 }
 
 export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
-  const { formatNumber } = useI18n();
+  const { t, formatNumber } = useI18n();
   const config = discrepancyConfig[row.discrepancy] ?? discrepancyConfig['error'];
 
   return (
@@ -44,7 +44,7 @@ export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
       </div>
       {row.matchedDataPoint && (
         <div className="text-xs text-cyan-400/70 mt-0.5">
-          Found in {row.matchedDataPoint}
+          {t('errors.foundIn', { dataPoint: row.matchedDataPoint })}
         </div>
       )}
     </div>

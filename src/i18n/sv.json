@@ -12,12 +12,12 @@
     "no": "Nej"
   },
   "nav": {
-    "upload": "Laga upp",
+    "upload": "Ladda upp",
     "processing": "Bearbetning",
     "jobStatus": "Jobbstatus",
     "workflow": "Processflöde",
     "debug": "Debug",
-    "errorBrowser": "Error Browser",
+    "errorBrowser": "Felutforskare",
     "results": "Resultat",
     "crawler": "Crawler",
     "climatePlans": "Utforska klimatplaner"
@@ -84,8 +84,8 @@
     "linksPlaceholder": "https://example.com/rapport.pdf (en per rad)"
   },
   "processing": {
-    "systemReady": "System Ready",
-    "queueMonitoring": "Köövervakningen har förenklats. Gå till fliken \"Jobbstatus\" för att se företagens framsteg."
+    "systemReady": "Systemet redo",
+    "queueMonitoring": "Kövervakningen har förenklats. Gå till fliken \"Jobbstatus\" för att se företagens framsteg."
   },
   "results": {
     "overview": "Resultatöversikt",
@@ -157,7 +157,12 @@
       "statusLabel": "Status",
       "created": "Skapad",
       "rerunTitle": "Jobbet har körts om:",
-      "rerunExplanation": "Det här jobbet är en av flera körningar för samma steg i denna run. Den orange triangeln på rutan visar att jobbet har körts om."
+      "rerunExplanation": "Det här jobbet är en av flera körningar för samma steg i denna run. Den orange triangeln på rutan visar att jobbet har körts om.",
+      "runAndSaveError": "Kunde inte köra {{name}}: {{message}}",
+      "runAndSaveSuccess": "{{name}} körs och sparas",
+      "errorOccurred": "Ett fel uppstod: {{message}}",
+      "jobNotRunYet": "Det här jobbet har inte körts än.",
+      "noExtractEmissionsParent": "Hittade inget extractEmissions-jobb i denna körning. Jobbet kan inte startas utan ett förälderjobb."
     },
     "metadata": {
       "title": "Jobbmetadata",
@@ -202,6 +207,7 @@
     "notInStage": "Ej i Stage",
     "notInProd": "Ej i Prod",
     "verified": "Verifierad",
+    "foundIn": "Hittad i {{dataPoint}}",
     "discrepancyGeneric": "Rätt tal placerat i en säkrare/generisk grupp (t.ex. okänd, annat)",
     "discrepancySwap": "Värden är bytta mellan två kategorier — båda har varandras värde",
     "discrepancyWrongCategory": "Värde placerat i fel kategori (inte en ren bytning)",
