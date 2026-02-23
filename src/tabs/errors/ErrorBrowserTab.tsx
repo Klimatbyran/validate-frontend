@@ -80,7 +80,7 @@ export function ErrorBrowserTab() {
 
         {/* Year selector */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-02 uppercase tracking-wide">Year</label>
+          <label className="text-xs text-gray-02 uppercase tracking-wide">{t("errors.year")}</label>
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}

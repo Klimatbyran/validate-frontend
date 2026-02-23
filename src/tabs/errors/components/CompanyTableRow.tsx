@@ -28,7 +28,7 @@ export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTabl
           {difficultCompanyIds.has(row.wikidataId) && (
             <span
               className="text-red-400 cursor-help"
-              title={`Difficult report — ${difficultCompanyIds.get(row.wikidataId)} errors across all data points`}
+              title={t("errors.difficultReportTooltip", { count: difficultCompanyIds.get(row.wikidataId) ?? 0 })}
             >
               <AlertTriangle className="w-3.5 h-3.5" />
             </span>

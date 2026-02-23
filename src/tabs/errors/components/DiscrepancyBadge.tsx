@@ -20,7 +20,7 @@ export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
           config.textColor
         )}>
           {config.icon}
-          {config.label}
+          {t(`errors.filterType.${row.discrepancy}`)}
           {row.discrepancy === 'small-error' && row.stageValue !== null && row.prodValue !== null && Math.abs(row.prodValue) > 0 && (() => {
             const pct = Math.abs(row.stageValue - row.prodValue) / Math.abs(row.prodValue) * 100;
             return (
@@ -33,7 +33,7 @@ export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
         {row.unitErrorFactor !== undefined && (
           <span
             className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-mono font-medium bg-indigo-500/20 text-indigo-400 cursor-help"
-            title={`Stage value is ${row.unitErrorFactor >= 1 ? row.unitErrorFactor + '×' : '1/' + (1 / row.unitErrorFactor) + '×'} the prod value — likely a unit mismatch (e.g. tonnes vs kilotonnes)`}
+            title={t("errors.unitErrorTooltip", { factor: row.unitErrorFactor >= 1 ? formatNumber(row.unitErrorFactor) + '×' : '1/' + formatNumber(1 / row.unitErrorFactor) + '×' })}
           >
             {row.unitErrorFactor >= 1 ? `×${formatNumber(row.unitErrorFactor)}` : `÷${formatNumber(1 / row.unitErrorFactor)}`}
           </span>

@@ -176,18 +176,18 @@ export function BrowserView({
             <table className="min-w-full">
               <thead className="bg-gray-03/50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">Company</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">Stage</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">Prod (Truth)</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-02 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">Diff</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableCompany")}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableStage")}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableProdTruth")}</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableStatus")}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableDiff")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-03/50">
                 {filteredRows.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 py-8 text-center text-gray-02">
-                      No data to display. Try enabling more filters above.
+                      {t("errors.noDataTryFilters")}
                     </td>
                   </tr>
                 ) : (
@@ -207,7 +207,7 @@ export function BrowserView({
 
         {!isLoading && !error && (
           <div className="px-4 py-3 bg-gray-03/30 text-sm text-gray-02 border-t border-gray-03/50">
-            Showing {filteredRows.length} of {comparisonRows.length} companies for <strong className="text-gray-01">{selectedDataPointLabel}</strong> ({selectedYear})
+            {t("errors.showingForDataPoint", { filtered: filteredRows.length, total: comparisonRows.length, dataPoint: selectedDataPointLabel, year: selectedYear })}
           </div>
         )}
       </div>

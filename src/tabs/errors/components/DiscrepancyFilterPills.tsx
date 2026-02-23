@@ -1,6 +1,7 @@
 import { Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
+import { useI18n } from '@/contexts/I18nContext';
 import { DiscrepancyType } from '../types';
 import { discrepancyConfig } from '../config/discrepancyConfig';
 
@@ -38,16 +39,17 @@ export function DiscrepancyFilterPills({
   onShowAllTypes,
   onShowMissingCompanyChange,
 }: DiscrepancyFilterPillsProps) {
+  const { t } = useI18n();
   return (
     <div className="pt-4 border-t border-gray-03/50">
       <div className="flex items-center gap-2 mb-3">
         <Filter className="w-5 h-5 text-gray-02" />
-        <span className="text-sm font-medium text-gray-01">Filter</span>
+        <span className="text-sm font-medium text-gray-01">{t("errors.filterLabel")}</span>
         <button onClick={onShowDefaultTypes} className="text-xs text-gray-02 hover:text-gray-01 underline">
-          Reset
+          {t("errors.resetFilters")}
         </button>
         <button onClick={onShowAllTypes} className="text-xs text-gray-02 hover:text-gray-01 underline">
-          Show all
+          {t("errors.showAllFilters")}
         </button>
       </div>
       <div className="flex flex-wrap gap-3 items-center">
@@ -55,6 +57,7 @@ export function DiscrepancyFilterPills({
           const config = discrepancyConfig[type];
           const count = counts[type];
           const isActive = visibleTypes.has(type);
+          const typeLabel = t(`errors.filterType.${type}`);
           return (
             <Button
               key={type}
@@ -65,7 +68,7 @@ export function DiscrepancyFilterPills({
                 e.preventDefault();
                 onShowOnlyType(type);
               }}
-              title={`Click to toggle, right-click to show only ${config.label}`}
+              title={t("errors.filterPillTitle", { label: typeLabel })}
               className={cn(
                 '!w-auto !min-w-0 h-9 px-4 text-sm',
                 isActive
@@ -74,7 +77,7 @@ export function DiscrepancyFilterPills({
               )}
             >
               <span className="mr-1.5 shrink-0">{config.icon}</span>
-              <span className="whitespace-nowrap">{config.label}</span>
+              <span className="whitespace-nowrap">{typeLabel}</span>
               <span
                 className={cn(
                   'ml-2 px-2 py-0.5 rounded-full text-xs font-medium shrink-0',
@@ -95,7 +98,7 @@ export function DiscrepancyFilterPills({
           onChange={(e) => onShowMissingCompanyChange(e.target.checked)}
           className="rounded border-gray-02/50 bg-gray-03 text-blue-03 focus:ring-blue-03/50"
         />
-        <span>Include companies missing from one API ({counts.missingCompany})</span>
+        <span>{t("errors.includeMissingCompanies", { count: counts.missingCompany })}</span>
       </label>
     </div>
   );
