@@ -100,7 +100,7 @@ export function BrowserView({
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6 space-y-4">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex flex-col gap-1 flex-1 max-w-md">
-            <label className="text-xs text-gray-02 uppercase tracking-wide">Data Point</label>
+            <label className="text-xs text-gray-02 uppercase tracking-wide">{t("errors.dataPoint")}</label>
             <select
               value={selectedDataPoint}
               onChange={(e) => onDataPointChange(e.target.value)}
@@ -113,7 +113,7 @@ export function BrowserView({
           </div>
 
           <div className="flex flex-col gap-1 flex-1 max-w-xs">
-            <label className="text-xs text-gray-02 uppercase tracking-wide">Search</label>
+            <label className="text-xs text-gray-02 uppercase tracking-wide">{t("common.search")}</label>
             <input
               type="text"
               placeholder={t("errors.filterCompanies")}
@@ -129,7 +129,7 @@ export function BrowserView({
             className="inline-flex items-center gap-2 px-3 py-2 bg-gray-03 text-gray-01 rounded-lg hover:bg-gray-02 hover:text-white disabled:opacity-50 transition-colors text-sm"
           >
             <Download className="w-4 h-4" />
-            Export CSV
+            {t("errors.exportCsv")}
           </button>
         </div>
 
@@ -167,7 +167,7 @@ export function BrowserView({
           <div className="p-6 text-red-400">
             <div className="flex items-center gap-2">
               <XCircle className="w-5 h-5" />
-              <span className="font-medium">Error loading data</span>
+              <span className="font-medium">{t("errors.errorLoadingData")}</span>
             </div>
             <p className="mt-1 text-sm">{error}</p>
           </div>

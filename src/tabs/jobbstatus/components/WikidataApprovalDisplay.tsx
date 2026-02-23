@@ -220,15 +220,15 @@ export function WikidataApprovalDisplay({
       {/* Metadata */}
       {data.metadata && (
         <div className="bg-gray-03/20 rounded-lg p-3 space-y-2">
-          <div className="text-xs font-medium text-gray-02">Metadata</div>
+          <div className="text-xs font-medium text-gray-02">{t("wikidata.metadata")}</div>
           {data.metadata.source && (
             <div className="text-xs text-gray-01">
-              <span className="text-gray-02">Källa:</span> {data.metadata.source}
+              <span className="text-gray-02">{t("wikidata.source")}:</span> {data.metadata.source}
             </div>
           )}
           {data.metadata.comment && (
             <div className="text-xs text-gray-01">
-              <span className="text-gray-02">Kommentar:</span>{" "}
+              <span className="text-gray-02">{t("wikidata.comment")}:</span>{" "}
               {data.metadata.comment}
             </div>
           )}

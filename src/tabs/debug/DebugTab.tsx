@@ -135,7 +135,7 @@ export function DebugTab() {
   const threads = allJobs.reduce(
     (acc, job) => {
       const threadId = job.data?.threadId ?? `job-${job.id}`;
-      const company = job.data?.company || "Unknown";
+      const company = job.data?.company || t("debug.unknown");
 
       if (!acc[threadId]) {
         acc[threadId] = {
@@ -295,14 +295,14 @@ export function DebugTab() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-03">
-                <th className="text-left p-4 text-gray-02">ID</th>
-                <th className="text-left p-4 text-gray-02">Kö</th>
-                <th className="text-left p-4 text-gray-02">Företag</th>
-                <th className="text-left p-4 text-gray-02">Tråd ID</th>
-                <th className="text-left p-4 text-gray-02">Status</th>
-                <th className="text-left p-4 text-gray-02">Skapad</th>
-                <th className="text-left p-4 text-gray-02">Startad</th>
-                <th className="text-left p-4 text-gray-02">Avslutad</th>
+                <th className="text-left p-4 text-gray-02">{t("debug.tableId")}</th>
+                <th className="text-left p-4 text-gray-02">{t("debug.tableQueue")}</th>
+                <th className="text-left p-4 text-gray-02">{t("debug.tableCompany")}</th>
+                <th className="text-left p-4 text-gray-02">{t("debug.tableThreadId")}</th>
+                <th className="text-left p-4 text-gray-02">{t("debug.tableStatus")}</th>
+                <th className="text-left p-4 text-gray-02">{t("debug.tableCreated")}</th>
+                <th className="text-left p-4 text-gray-02">{t("debug.tableStarted")}</th>
+                <th className="text-left p-4 text-gray-02">{t("debug.tableEnded")}</th>
               </tr>
             </thead>
             <tbody>
@@ -354,11 +354,11 @@ export function DebugTab() {
                         <span className={statusColor}>
                           {job.finishedOn
                             ? job.isFailed
-                              ? "Misslyckad"
-                              : "Klar"
+                              ? t("status.failed")
+                              : t("status.completed")
                             : job.processedOn
-                            ? "Bearbetar"
-                            : "Väntar"}
+                            ? t("status.processing")
+                            : t("status.waiting")}
                         </span>
                       </div>
                     </td>

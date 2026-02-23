@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Target, Calendar, Scale, Globe, BarChart3, Check, X } from "lucide-react";
 import { Callout } from "@/ui/callout";
+import { useI18n } from "@/contexts/I18nContext";
 import type { MunicipalityClimatePlan, OwnCommitment } from "../lib/types";
 import { cn } from "@/lib/utils";
 
@@ -11,24 +12,25 @@ interface CompareViewProps {
 
 type Category = "targets" | "timeline" | "framework" | "scope" | "accounting";
 
-const CATEGORIES: { id: Category; label: string; icon: React.ReactNode }[] = [
-  { id: "targets", label: "Targets", icon: <Target size={16} /> },
-  { id: "timeline", label: "Timeline", icon: <Calendar size={16} /> },
-  { id: "framework", label: "Frameworks", icon: <Scale size={16} /> },
-  { id: "scope", label: "Scope", icon: <Globe size={16} /> },
-  { id: "accounting", label: "Accounting", icon: <BarChart3 size={16} /> },
+const CATEGORY_IDS: { id: Category; labelKey: string; icon: React.ReactNode }[] = [
+  { id: "targets", labelKey: "climate.compare.targets", icon: <Target size={16} /> },
+  { id: "timeline", labelKey: "climate.compare.timeline", icon: <Calendar size={16} /> },
+  { id: "framework", labelKey: "climate.compare.frameworks", icon: <Scale size={16} /> },
+  { id: "scope", labelKey: "climate.compare.scope", icon: <Globe size={16} /> },
+  { id: "accounting", labelKey: "climate.compare.accounting", icon: <BarChart3 size={16} /> },
 ];
 
 // --- Reusable badge components ---
 
 function YesNoBadge({ value }: { value: boolean }) {
+  const { t } = useI18n();
   return value ? (
     <span className="inline-flex items-center gap-1 bg-green-03/20 text-green-03 text-xs font-medium px-2 py-1 rounded-full">
-      <Check size={12} /> Yes
+      <Check size={12} /> {t("common.yes")}
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 bg-gray-03/40 text-gray-02 text-xs px-2 py-1 rounded-full">
-      <X size={12} /> No
+      <X size={12} /> {t("common.no")}
     </span>
   );
 }
@@ -103,7 +105,15 @@ const CONFIDENCE_STYLES: Record<string, { variant: "green" | "orange" | "default
 
 // --- Summary cards ---
 
+const scopeTKey: Record<string, string> = {
+  municipal_territory: "climate.compare.municipalTerritory",
+  municipal_operations: "climate.compare.municipalOperations",
+  whole_municipality: "climate.compare.wholeMunicipality",
+  geographic_area: "climate.compare.geographicArea",
+};
+
 function MunicipalitySummaryCard({ m, onClick }: { m: MunicipalityClimatePlan; onClick: () => void }) {
+  const { t } = useI18n();
   const et = m.emissionTargets;
   const ps = m.planScope;
   const pt = et?.primary_target;
@@ -133,14 +143,14 @@ function MunicipalitySummaryCard({ m, onClick }: { m: MunicipalityClimatePlan; o
 
       {/* Primary target — always shown for symmetry */}
       {pt?.exists ? (
-        <Callout variant="success" title="Primary target" className="mb-3">
+        <Callout variant="success" title={t("climate.compare.primaryTarget")} className="mb-3">
           <div className="text-2xl font-bold text-gray-01">{pt.target_year || "—"}</div>
-          <Badge variant="default">{SCOPE_LABELS[pt.scope || ""] || pt.scope?.replace(/_/g, " ")}</Badge>
+          <Badge variant="default">{pt.scope && (scopeTKey[pt.scope] ? t(scopeTKey[pt.scope]) : pt.scope.replace(/_/g, " ")) || "—"}</Badge>
         </Callout>
       ) : (
         <div className="bg-gray-03/20 border border-gray-03/30 rounded-lg p-3 mb-3 flex flex-col justify-center min-h-[88px]">
-          <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-1">Primary target</div>
-          <div className="text-lg text-gray-02">None</div>
+          <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-1">{t("climate.compare.primaryTarget")}</div>
+          <div className="text-lg text-gray-02">{t("climate.compare.none")}</div>
         </div>
       )}
 
@@ -150,19 +160,19 @@ function MunicipalitySummaryCard({ m, onClick }: { m: MunicipalityClimatePlan; o
           <div className="text-xl font-bold text-blue-03">
             {biggestReduction ? `${biggestReduction.reduction_percentage}%` : "—"}
           </div>
-          <div className="text-xs text-gray-02 uppercase">Max reduction</div>
+          <div className="text-xs text-gray-02 uppercase">{t("climate.compare.maxReduction")}</div>
         </div>
         <div className="text-center">
           <div className="text-xl font-bold text-gray-01">
             {ps?.temporal_scope?.plan_period_start || "—"}–{ps?.temporal_scope?.plan_period_end?.slice(-2) || "—"}
           </div>
-          <div className="text-xs text-gray-02 uppercase">Plan period</div>
+          <div className="text-xs text-gray-02 uppercase">{t("climate.compare.planPeriod")}</div>
         </div>
         <div className="text-center">
           <div className="text-xl font-bold text-orange-03">
             {et?.own_commitments?.length || 0}
           </div>
-          <div className="text-xs text-gray-02 uppercase">Goals</div>
+          <div className="text-xs text-gray-02 uppercase">{t("climate.compare.goals")}</div>
         </div>
       </div>
 
@@ -267,7 +277,7 @@ interface TimelineEvent {
 }
 
 function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimatePlan[] }) {
-  // Collect all events from all municipalities
+  const { t } = useI18n();
   const events: TimelineEvent[] = [];
 
   municipalities.forEach((m, mi) => {
@@ -275,10 +285,10 @@ function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimate
     const et = m.emissionTargets;
 
     if (ts?.plan_period_start) {
-      events.push({ year: Number(ts.plan_period_start), label: "Plan start", type: "plan_start", municipalityIndex: mi, municipalityName: m.name });
+      events.push({ year: Number(ts.plan_period_start), label: t("climate.compare.planStart"), type: "plan_start", municipalityIndex: mi, municipalityName: m.name });
     }
     if (ts?.plan_period_end) {
-      events.push({ year: Number(ts.plan_period_end), label: "Plan end", type: "plan_end", municipalityIndex: mi, municipalityName: m.name });
+      events.push({ year: Number(ts.plan_period_end), label: t("climate.compare.planEnd"), type: "plan_end", municipalityIndex: mi, municipalityName: m.name });
     }
 
     // Extract years from milestones
@@ -300,7 +310,7 @@ function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimate
     });
 
     if (et?.primary_target?.target_year) {
-      events.push({ year: Number(et.primary_target.target_year), label: "Primary target", type: "target", municipalityIndex: mi, municipalityName: m.name });
+      events.push({ year: Number(et.primary_target.target_year), label: t("climate.compare.primaryTarget"), type: "target", municipalityIndex: mi, municipalityName: m.name });
     }
   });
 
@@ -348,10 +358,10 @@ function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimate
           );
         })}
         <div className="flex items-center gap-3 ml-auto text-xs text-gray-02">
-          <span>▶ Start</span>
-          <span>■ End</span>
-          <span>◆ Milestone</span>
-          <span>★ Target</span>
+          <span>▶ {t("climate.compare.legendStart")}</span>
+          <span>■ {t("climate.compare.legendEnd")}</span>
+          <span>◆ {t("climate.compare.legendMilestone")}</span>
+          <span>★ {t("climate.compare.legendTarget")}</span>
         </div>
       </div>
 
@@ -421,7 +431,7 @@ function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimate
         {municipalities.map((m, mi) => {
           const ts = m.planScope?.temporal_scope;
           const color = MUNICIPALITY_COLORS[mi % MUNICIPALITY_COLORS.length];
-          if (!ts) return <div key={m.id} className="text-gray-02 text-sm">No data</div>;
+          if (!ts) return <div key={m.id} className="text-gray-02 text-sm">{t("climate.compare.noData")}</div>;
           return (
             <div key={m.id} className="space-y-3">
               <div className="flex items-center gap-2">
@@ -431,8 +441,8 @@ function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimate
 
               <div className="flex flex-wrap gap-1.5">
                 <Badge variant="blue">{ts.plan_period_start} – {ts.plan_period_end}</Badge>
-                {ts.has_revision_cycle && <Badge variant="green">Has revision cycle</Badge>}
-                {!ts.has_revision_cycle && <Badge>No revision cycle</Badge>}
+                {ts.has_revision_cycle && <Badge variant="green">{t("climate.compare.hasRevisionCycle")}</Badge>}
+                {!ts.has_revision_cycle && <Badge>{t("climate.compare.noRevisionCycle")}</Badge>}
               </div>
 
               {ts.revision_cycle_description && (
@@ -447,13 +457,14 @@ function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimate
 }
 
 function FrameworkPanel({ municipalities }: { municipalities: MunicipalityClimatePlan[] }) {
+  const { t } = useI18n();
   const frameworks = [
-    { key: "paris_agreement_mentioned" as const, label: "Paris Agreement" },
-    { key: "one_point_five_mentioned" as const, label: "1.5°C target" },
-    { key: "carbon_budget_referenced" as const, label: "Carbon budget" },
-    { key: "swedish_climate_act_referenced" as const, label: "Swedish Climate Act" },
-    { key: "swedish_national_targets_referenced" as const, label: "Swedish national targets" },
-    { key: "eu_frameworks_referenced" as const, label: "EU frameworks" },
+    { key: "paris_agreement_mentioned" as const, labelKey: "climate.detail.parisAgreement" },
+    { key: "one_point_five_mentioned" as const, labelKey: "climate.detail.onePointFiveTarget" },
+    { key: "carbon_budget_referenced" as const, labelKey: "climate.detail.carbonBudget" },
+    { key: "swedish_climate_act_referenced" as const, labelKey: "climate.detail.swedishClimateAct" },
+    { key: "swedish_national_targets_referenced" as const, labelKey: "climate.compare.swedishNationalTargets" },
+    { key: "eu_frameworks_referenced" as const, labelKey: "climate.detail.euFrameworks" },
   ];
 
   return (
@@ -472,7 +483,7 @@ function FrameworkPanel({ municipalities }: { municipalities: MunicipalityClimat
                     val ? "bg-green-03/20 text-green-03" : "bg-gray-03/30 text-gray-02"
                   )}>
                     {val ? <Check size={12} /> : <X size={12} />}
-                    {fw.label}
+                    {t(fw.labelKey)}
                   </span>
                 );
               })}
@@ -481,7 +492,7 @@ function FrameworkPanel({ municipalities }: { municipalities: MunicipalityClimat
             {/* EU frameworks named */}
             {m.emissionTargets?.framework_alignment?.eu_frameworks_referenced && (
               <div className="mt-2">
-                <div className="text-xs text-gray-02 mb-1">EU frameworks:</div>
+                <div className="text-xs text-gray-02 mb-1">{t("climate.compare.euFrameworksLabel")}</div>
                 <div className="flex flex-wrap gap-1.5">
                   {m.emissionTargets.framework_alignment.eu_frameworks_named?.length > 0
                     ? m.emissionTargets.framework_alignment.eu_frameworks_named.map((name, i) => (
@@ -500,10 +511,12 @@ function FrameworkPanel({ municipalities }: { municipalities: MunicipalityClimat
       <div>
         <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-3">External references</div>
         <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${municipalities.length}, 1fr)` }}>
-          {municipalities.map((m) => (
+          {municipalities.map((m) => {
+            const refs = m.emissionTargets?.external_references;
+            return (
             <div key={m.id} className="space-y-2">
-              {m.emissionTargets?.external_references?.length > 0
-                ? m.emissionTargets.external_references.map((r, i) => (
+              {refs && refs.length > 0
+                ? refs.map((r, i) => (
                     <div key={i} className="bg-gray-03/30 rounded-lg p-3">
                       <div className="text-sm text-gray-01 mb-1.5">{r.reference_description}</div>
                       <div className="flex flex-wrap gap-1.5">
@@ -515,7 +528,7 @@ function FrameworkPanel({ municipalities }: { municipalities: MunicipalityClimat
                 : <div className="bg-gray-03/20 rounded-lg p-3 text-sm text-gray-02 min-h-[52px] flex items-center">None</div>
               }
             </div>
-          ))}
+          ); })}
         </div>
       </div>
     </div>
@@ -653,6 +666,7 @@ function GoalCard({ c }: { c: OwnCommitment }) {
 // --- Main ---
 
 export function CompareView({ municipalities, onSelectMunicipality }: CompareViewProps) {
+  const { t } = useI18n();
   const [expandedCategory, setExpandedCategory] = useState<Category | null>(null);
 
   const toggleCategory = (cat: Category) => {
@@ -683,9 +697,9 @@ export function CompareView({ municipalities, onSelectMunicipality }: CompareVie
       {/* Category drill-down */}
       <div className="space-y-2">
         <div className="text-xs text-gray-02 uppercase tracking-wider font-medium">
-          Compare in detail
+          {t("climate.compare.compareInDetail")}
         </div>
-        {CATEGORIES.map((cat) => (
+        {CATEGORY_IDS.map((cat) => (
           <div key={cat.id}>
             <button
               onClick={() => toggleCategory(cat.id)}
@@ -698,7 +712,7 @@ export function CompareView({ municipalities, onSelectMunicipality }: CompareVie
             >
               <div className="flex items-center gap-3">
                 <span className="text-gray-02">{cat.icon}</span>
-                <span className="text-sm font-medium text-gray-01">{cat.label}</span>
+                <span className="text-sm font-medium text-gray-01">{t(cat.labelKey)}</span>
               </div>
               {expandedCategory === cat.id ? (
                 <ChevronUp size={16} className="text-gray-02" />
