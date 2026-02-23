@@ -6,14 +6,14 @@ import { authenticatedFetch } from "@/lib/api-helpers";
 import { FileUploadZone } from "./components/FileUploadZone";
 import { UrlUploadForm } from "./components/UrlUploadForm";
 import { UploadList } from "./components/UploadList";
-import { UploadRunOptions, type UploadWorkerId } from "./components/UploadRunOptions";
+import { UploadRunOptions } from "./components/UploadRunOptions";
 import { UploadedFile, UrlInput } from "./types";
+import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
+import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
 import {
-  validateUrls,
-  extractCompanyFromUrl,
   PARSE_PDF_API_ENDPOINT,
   BATCHES_API_ENDPOINT,
-  DEFAULT_RUN_ONLY,
+  NEW_BATCH_DROPDOWN_VALUE,
 } from "./lib/utils";
 
 interface UploadTabProps {
@@ -28,7 +28,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
   const [processedUrls, setProcessedUrls] = useState<UrlInput[]>([]);
   const [autoApprove, setAutoApprove] = useState(true);
   const [runAllWorkers, setRunAllWorkers] = useState(false);
-  const [selectedWorkers, setSelectedWorkers] = useState<UploadWorkerId[]>(
+  const [selectedWorkers, setSelectedWorkers] = useState<RunOnlyWorkerId[]>(
     DEFAULT_RUN_ONLY,
   );
   const [forceReindex, setForceReindex] = useState(false);
@@ -55,7 +55,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
   }, []);
 
   const effectiveBatchId =
-    !batchDropdownChoice ? "" : batchDropdownChoice === "__new__" ? customBatchName.trim() : batchDropdownChoice;
+    !batchDropdownChoice ? "" : batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE ? customBatchName.trim() : batchDropdownChoice;
 
   const handleFileSubmit = useCallback(async () => {
     if (uploadedFiles.length === 0) {
@@ -194,7 +194,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
     }
   }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId]);
 
-  const handleWorkerToggle = useCallback((workerId: UploadWorkerId, checked: boolean) => {
+  const handleWorkerToggle = useCallback((workerId: RunOnlyWorkerId, checked: boolean) => {
     setSelectedWorkers((prev) =>
       checked ? [...prev, workerId] : prev.filter((id) => id !== workerId),
     );

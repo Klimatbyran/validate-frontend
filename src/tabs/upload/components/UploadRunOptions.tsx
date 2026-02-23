@@ -1,15 +1,12 @@
 import { cn } from "@/lib/utils";
 import { RUN_ONLY_WORKERS, type RunOnlyWorkerId } from "@/lib/run-only-workers";
-
-export type UploadWorkerId = RunOnlyWorkerId;
-
-export const UPLOAD_WORKER_IDS = RUN_ONLY_WORKERS.map((w) => w.id);
+import { NEW_BATCH_DROPDOWN_VALUE } from "../lib/utils";
 
 interface UploadRunOptionsProps {
   runAllWorkers: boolean;
   onRunAllWorkersChange: (value: boolean) => void;
-  selectedWorkers: UploadWorkerId[];
-  onSelectedWorkersChange: (workerId: UploadWorkerId, checked: boolean) => void;
+  selectedWorkers: RunOnlyWorkerId[];
+  onSelectedWorkersChange: (workerId: RunOnlyWorkerId, checked: boolean) => void;
   forceReindex: boolean;
   onForceReindexChange: (value: boolean) => void;
   existingBatches: string[];
@@ -18,8 +15,6 @@ interface UploadRunOptionsProps {
   customBatchName: string;
   onCustomBatchNameChange: (value: string) => void;
 }
-
-const NEW_BATCH_VALUE = "__new__";
 
 export function UploadRunOptions({
   runAllWorkers,
@@ -53,9 +48,9 @@ export function UploadRunOptions({
               {id}
             </option>
           ))}
-          <option value={NEW_BATCH_VALUE}>— Ny batch —</option>
+          <option value={NEW_BATCH_DROPDOWN_VALUE}>— Ny batch —</option>
         </select>
-        {batchDropdownChoice === NEW_BATCH_VALUE && (
+        {batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE && (
           <input
             type="text"
             value={customBatchName}
