@@ -7,8 +7,6 @@ import { useState, useMemo, useEffect } from "react";
 import { Loader2, ArrowUp } from "lucide-react";
 import { Button } from "@/ui/button";
 import { useCompanies } from "@/hooks/useCompanies";
-import { authenticatedFetch } from "@/lib/api-helpers";
-import { toast } from "sonner";
 import { convertCompaniesToSwimlaneFormat } from "./lib/swimlane-transform";
 import {
   type FilterType,
@@ -20,11 +18,10 @@ import {
   hasIssues,
   hasPipelineStepIssues,
 } from "./lib/swimlane-filters";
+import { useRerunByWorker } from "./hooks/useRerunByWorker";
 import { OverviewStats } from "./components/OverviewStats";
 import { FilterBar } from "./components/FilterBar";
 import { CompanyCard } from "./components/CompanyCard";
-import { findJobByQueueId } from "@/lib/workflow-utils";
-import { buildRerunAndSaveBody } from "@/lib/job-rerun-utils";
 
 export function JobbstatusTab() {
   const {
@@ -148,90 +145,7 @@ export function JobbstatusTab() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleRerunByWorker = async (
-    workerName: "scope1" | "scope2" | "scope1+2" | "scope3" | "economy" | "baseYear" | "industryGics",
-    limit: number | "all" = 5
-  ) => {
-    const workerToFollowUpKey: Record<string, string> = {
-      "scope1": "scope1",
-      "scope2": "scope2",
-      "scope1+2": "scope1+2",
-      "scope3": "scope3",
-      "economy": "economy",
-      "baseYear": "baseYear",
-      "industryGics": "industryGics",
-    };
-
-    const followUpKey = workerToFollowUpKey[workerName];
-    if (!followUpKey) return;
-
-    // Collect targets: for each company, find the latest year's extractEmissions job + wikidata from checkDB
-    const targets: Array<{
-      companyName: string;
-      extractEmissionsJobId: string;
-      wikidataNode: string | undefined;
-    }> = [];
-
-    for (const company of swimlaneCompanies) {
-      if (limit !== "all" && targets.length >= limit) break;
-
-      // Use the latest year (first in array, sorted by timestamp)
-      const latestYear = company.years[0];
-      if (!latestYear) continue;
-
-      const extractEmissionsJob = findJobByQueueId("extractEmissions", latestYear);
-      if (!extractEmissionsJob?.id) continue;
-
-      targets.push({
-        companyName: company.name,
-        extractEmissionsJobId: extractEmissionsJob.id,
-        wikidataNode: company.wikidataId,
-      });
-    }
-
-    if (targets.length === 0) {
-      toast.error(`Inga företag hittades att köra om ${workerName} för`);
-      return;
-    }
-
-    toast.info(`Kör om ${workerName} för ${targets.length} företag...`);
-
-    let successes = 0;
-    let failures = 0;
-
-    for (const target of targets) {
-      try {
-        const response = await authenticatedFetch(
-          `/api/queues/extractEmissions/${encodeURIComponent(target.extractEmissionsJobId)}/rerun-and-save`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(
-              buildRerunAndSaveBody([followUpKey], target.wikidataNode)
-            ),
-          }
-        );
-
-        if (response.ok) {
-          successes++;
-          console.log(`[rerun-by-worker] ${workerName} OK for ${target.companyName}`);
-        } else {
-          failures++;
-          const errorText = await response.text();
-          console.error(`[rerun-by-worker] ${workerName} FAILED for ${target.companyName}: ${errorText}`);
-        }
-      } catch (err) {
-        failures++;
-        console.error(`[rerun-by-worker] ${workerName} ERROR for ${target.companyName}:`, err);
-      }
-    }
-
-    if (failures === 0) {
-      toast.success(`Startade om ${workerName} för ${successes} företag`);
-    } else {
-      toast.warning(`${workerName}: ${successes} lyckades, ${failures} misslyckades`);
-    }
-  };
+  const handleRerunByWorker = useRerunByWorker(swimlaneCompanies);
 
   if (isLoading && (!companies || companies.length === 0)) {
     return (

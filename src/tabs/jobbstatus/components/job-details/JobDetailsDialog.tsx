@@ -1,19 +1,20 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogFooter } from "@/ui/dialog";
+import { Callout } from "@/ui/callout";
 import { toast } from "sonner";
 import { QueueJob, DetailedJobResponse, SwimlaneYearData } from "@/lib/types";
 import { HelpCircle, RotateCcw } from "lucide-react";
 import { JobSpecificDataView } from "./JobSpecificDataView";
-import { JobDialogHeader } from "./job-details/JobDialogHeader";
-import { DialogTabs } from "./job-details/DialogTabs";
-import { JobDialogFooter } from "./job-details/JobDialogFooter";
-import { TechnicalDataSection } from "./job-details/TechnicalDataSection";
-import { ReturnValueSection } from "./job-details/ReturnValueSection";
-import { JobMetadataSection } from "./job-details/JobMetadataSection";
-import { ErrorSection } from "./job-details/ErrorSection";
-import { JobStatusSection } from "./job-details/JobStatusSection";
-import { JobRelationshipsSection } from "./job-details/JobRelationshipsSection";
-import { SchemaSection } from "./job-details/SchemaSection";
+import { JobDialogHeader } from "./JobDialogHeader";
+import { DialogTabs } from "./DialogTabs";
+import { JobDialogFooter } from "./JobDialogFooter";
+import { TechnicalDataSection } from "./TechnicalDataSection";
+import { ReturnValueSection } from "./ReturnValueSection";
+import { JobMetadataSection } from "./JobMetadataSection";
+import { ErrorSection } from "./ErrorSection";
+import { JobStatusSection } from "./JobStatusSection";
+import { JobRelationshipsSection } from "./JobRelationshipsSection";
+import { SchemaSection } from "./SchemaSection";
 import { authenticatedFetch } from "@/lib/api-helpers";
 import { buildRerunRequestData, buildRerunAndSaveBody, QUEUE_TO_FOLLOW_UP_KEY } from "@/lib/job-rerun-utils";
 import { getQueueDisplayName } from "@/lib/workflow-config";
@@ -287,21 +288,12 @@ export function JobDetailsDialog({
           <div className="space-y-6 my-6">
             {activeTab === "user" && (
               <>
-                <div className="bg-blue-03/10 rounded-lg p-4">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="p-2 rounded-full bg-blue-03/20">
-                      <HelpCircle className="w-5 h-5 text-blue-03" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-blue-03">
-                        Godkännande krävs
-                      </h3>
-                      <p className="text-sm text-blue-03/80">
-                        Vänligen granska informationen och godkänn eller avvisa.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <Callout
+                  variant="info"
+                  title="Godkännande krävs"
+                  description="Vänligen granska informationen och godkänn eller avvisa."
+                  icon={<HelpCircle className="w-5 h-5" />}
+                />
 
                 <div className="bg-gray-03/20 rounded-lg p-4">
                   <h3 className="text-lg font-medium text-gray-01 mb-4">

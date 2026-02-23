@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Callout } from "@/ui/callout";
 import { useClimatePlans } from "./hooks/useClimatePlans";
 import { CompareView } from "./components/CompareView";
 import { MunicipalityDetail } from "./components/MunicipalityDetail";
@@ -18,9 +19,9 @@ export function ClimatePlansExplorer() {
 
   if (error) {
     return (
-      <div className="bg-pink-03/10 border border-pink-03/30 rounded-lg p-6">
-        <div className="text-pink-03 text-sm">Failed to load climate plans: {error}</div>
-      </div>
+      <Callout variant="error">
+        Failed to load climate plans: {error}
+      </Callout>
     );
   }
 

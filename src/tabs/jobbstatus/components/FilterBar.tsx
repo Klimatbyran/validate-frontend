@@ -3,7 +3,7 @@
  * Handles filter UI, dropdown, run scope toggle, and rerun jobs
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   Filter,
   X,
@@ -12,13 +12,16 @@ import {
   XCircle,
   RotateCw,
   MoreVertical,
-  Activity,
   Search,
 } from "lucide-react";
 import { Button } from "@/ui/button";
 import type { FilterType, RunScope } from "@/tabs/jobbstatus/lib/swimlane-filters";
-
-type RerunWorker = "scope1" | "scope2" | "scope3" | "economy" | "baseYear" | "industryGics";
+import {
+  PRIMARY_FILTER_CONFIG,
+  SECONDARY_FILTER_CONFIG,
+  type RerunWorker,
+} from "@/tabs/jobbstatus/lib/filter-config";
+import { FilterBarRerunSection } from "./FilterBarRerunSection";
 
 interface FilterBarProps {
   activeFilters: Set<FilterType>;
@@ -34,69 +37,16 @@ interface FilterBarProps {
   onCompanySearchChange?: (query: string) => void;
 }
 
-const RERUN_WORKERS: Array<{ id: RerunWorker; label: string }> = [
-  { id: "scope1", label: "Scope 1" },
-  { id: "scope2", label: "Scope 2" },
-  { id: "scope3", label: "Scope 3" },
-  { id: "economy", label: "Ekonomi" },
-  { id: "baseYear", label: "Basår" },
-  { id: "industryGics", label: "Bransch GICS" },
-];
-
-const LIMIT_OPTIONS: Array<{ value: number | "all"; label: string }> = [
-  { value: 1, label: "1" },
-  { value: 5, label: "5" },
-  { value: "all", label: "Alla" },
-];
-
-function RerunJobsSection({
-  onRerunByWorker,
-}: {
-  onRerunByWorker: (worker: RerunWorker, limit: number | "all") => void;
-}) {
-  const [rerunLimit, setRerunLimit] = useState<number | "all">(5);
-
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-4 border-t border-gray-03/50">
-      <div className="flex items-center gap-2 shrink-0">
-        <Activity className="w-4 h-4 text-gray-02" />
-        <span className="text-sm font-medium text-gray-01">
-          Kör specifika jobb:
-        </span>
-      </div>
-      <div className="flex items-center gap-3 flex-wrap">
-        {RERUN_WORKERS.map((worker) => (
-          <Button
-            key={worker.id}
-            variant="ghost"
-            size="sm"
-            onClick={() => onRerunByWorker(worker.id, rerunLimit)}
-            className="!w-auto !min-w-0 h-9 px-4 text-sm border border-gray-03 text-gray-01 hover:bg-gray-03/40"
-          >
-            {worker.label}
-          </Button>
-        ))}
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="text-xs text-gray-02">Antal:</span>
-        <select
-          value={String(rerunLimit)}
-          onChange={(e) => {
-            const val = e.target.value;
-            setRerunLimit(val === "all" ? "all" : Number(val));
-          }}
-          className="px-2 py-1 rounded-md border border-gray-03 bg-gray-05 text-gray-01 text-sm focus:outline-none focus:ring-2 focus:ring-blue-03/50 focus:border-blue-03"
-        >
-          {LIMIT_OPTIONS.map((opt) => (
-            <option key={String(opt.value)} value={String(opt.value)}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
-  );
-}
+const PRIMARY_FILTER_ICONS: Record<FilterType, React.ReactNode> = {
+  pending_approval: <AlertTriangle className="w-4 h-4" />,
+  has_failed: <XCircle className="w-4 h-4" />,
+  has_processing: <RotateCw className="w-4 h-4" />,
+  has_issues: <AlertTriangle className="w-4 h-4" />,
+  fully_completed: <CheckCircle2 className="w-4 h-4" />,
+  preprocessing_issues: <AlertTriangle className="w-4 h-4" />,
+  data_extraction_issues: <AlertTriangle className="w-4 h-4" />,
+  finalize_issues: <AlertTriangle className="w-4 h-4" />,
+};
 
 export function FilterBar({
   activeFilters,
@@ -116,54 +66,15 @@ export function FilterBar({
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Primary filters (most commonly used)
-  const primaryFilters: Array<{
-    id: FilterType;
-    label: string;
-    icon: React.ReactNode;
-    badgeColorClass: string;
-    activeColor: string;
-  }> = [
-    {
-      id: "pending_approval",
-      label: "Väntar på godkännande",
-      icon: <AlertTriangle className="w-4 h-4" />,
-      badgeColorClass: "bg-orange-03/20 text-orange-03",
-      activeColor: "bg-orange-03 text-white hover:bg-orange-03/90",
-    },
-    {
-      id: "has_failed",
-      label: "Har misslyckade",
-      icon: <XCircle className="w-4 h-4" />,
-      badgeColorClass: "bg-pink-03/20 text-pink-03",
-      activeColor: "bg-pink-03 text-white hover:bg-pink-03/90",
-    },
-    {
-      id: "has_processing",
-      label: "Bearbetar",
-      icon: <RotateCw className="w-4 h-4" />,
-      badgeColorClass: "bg-blue-03/20 text-blue-03",
-      activeColor: "bg-blue-03 text-white hover:bg-blue-03/90",
-    },
-    {
-      id: "has_issues",
-      label: "Har problem",
-      icon: <AlertTriangle className="w-4 h-4" />,
-      badgeColorClass: "bg-orange-03/20 text-orange-03",
-      activeColor: "bg-orange-03 text-white hover:bg-orange-03/90",
-    },
-  ];
-
-  // Secondary filters (in dropdown)
-  const secondaryFilters: Array<{
-    id: FilterType;
-    label: string;
-  }> = [
-    { id: "fully_completed", label: "Fullständigt klart" },
-    { id: "preprocessing_issues", label: "Preprocessing-problem" },
-    { id: "data_extraction_issues", label: "Dataextraktion-problem" },
-    { id: "finalize_issues", label: "Finalisering-problem" },
-  ];
+  const primaryFilters = useMemo(
+    () =>
+      PRIMARY_FILTER_CONFIG.map((config) => ({
+        ...config,
+        icon: PRIMARY_FILTER_ICONS[config.id],
+      })),
+    []
+  );
+  const secondaryFilters = SECONDARY_FILTER_CONFIG;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -358,8 +269,7 @@ export function FilterBar({
           </div>
         )}
 
-        {/* Rerun Jobs Section - Inside filter container */}
-        <RerunJobsSection onRerunByWorker={onRerunByWorker} />
+        <FilterBarRerunSection onRerunByWorker={onRerunByWorker} />
       </div>
     </div>
   );

@@ -2,82 +2,19 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Leaf, Building2, CheckCircle2 } from "lucide-react";
 import { useCompanyReferenceByYears } from "../../lib/company-reference-api";
+import {
+  type Scope12EmissionsData,
+  buildReferenceSnapshotFromPeriod,
+  formatNumber,
+} from "../../lib/scope12-data";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
 import { YearBadge } from "./YearBadge";
 import { DataCard } from "./DataCard";
 import { CollapsibleSection } from "@/ui/collapsible-section";
 
-interface Scope12EmissionsData {
-  scope12: Array<{
-    year: number;
-    scope1?: {
-      total: number;
-      unit: 'tCO2e' | 'tCO2';
-    } | null;
-    scope2?: {
-      mb?: number;        // Market-based scope 2 emissions
-      lb?: number;        // Location-based scope 2 emissions  
-      unknown?: number;   // Unspecified scope 2 emissions
-      unit: 'tCO2e' | 'tCO2';
-    } | null;
-    // Optional combined Scope 1+2 value from the worker
-    scope1And2?: {
-      total: number;
-      unit: 'tCO2e' | 'tCO2';
-    } | null;
-  }>;
-}
-
 interface Scope12EmissionsDisplayProps {
   data: Scope12EmissionsData;
   wikidataId?: string;
-}
-
-type Scope12ReferenceSnapshot = {
-  scope1?: { total: number | null; unit: string | null } | null;
-  scope2?: {
-    mb?: number | null;
-    lb?: number | null;
-    unknown?: number | null;
-    unit: string | null;
-  } | null;
-  // Optional combined Scope 1+2 value from prod API (if available)
-  scope1And2?: { total: number | null; unit: string | null } | null;
-} | null;
-
-function buildReferenceSnapshotFromPeriod(period: any): Scope12ReferenceSnapshot {
-  if (!period?.emissions) return null;
-  const s1 = period.emissions.scope1;
-  const s2 = period.emissions.scope2;
-  const s12 = (period.emissions as any).scope1And2;
-  return {
-    scope1: s1
-      ? {
-          total: typeof s1.total === 'number' ? s1.total : (s1.total ?? null),
-          unit: s1.unit ?? null,
-        }
-      : null,
-    scope2: s2
-      ? {
-          mb: s2.mb ?? null,
-          lb: s2.lb ?? null,
-          unknown: s2.unknown ?? null,
-          unit: s2.unit ?? null,
-        }
-      : null,
-    scope1And2: s12
-      ? {
-          total:
-            typeof s12.total === "number" ? s12.total : (s12.total ?? null),
-          unit: s12.unit ?? null,
-        }
-      : null,
-  };
-}
-
-function formatNumber(num: number | null | undefined): string {
-  if (num == null) return '0';
-  return num.toLocaleString('sv-SE');
 }
 
 interface Scope2RowProps {

@@ -1,5 +1,6 @@
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/ui/button";
+import { Callout } from "@/ui/callout";
 import { QueueJob } from "@/lib/types";
 
 interface ErrorSectionProps {
@@ -25,12 +26,11 @@ export function ErrorSection({
   if (!hasContent) return null;
 
   return (
-    <div className="bg-pink-03/10 rounded-lg p-4 border border-pink-03/20">
-      <h3 className="text-lg font-medium text-pink-03 mb-3 flex items-center gap-2">
-        <AlertCircle className="w-5 h-5" />
-        {isFullError ? "Fullständigt felmeddelande" : "Senaste jobbet misslyckades"}
-      </h3>
-
+    <Callout
+      variant="error"
+      title={isFullError ? "Fullständigt felmeddelande" : "Senaste jobbet misslyckades"}
+      icon={<AlertCircle className="w-5 h-5" />}
+    >
       {failedReason && (
         <div className="mb-4">
           <div className="text-xs font-medium text-pink-03/80 uppercase tracking-wide mb-1">
@@ -70,6 +70,6 @@ export function ErrorSection({
           )}
         </>
       )}
-    </div>
+    </Callout>
   );
 }
