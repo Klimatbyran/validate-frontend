@@ -15,18 +15,30 @@ export function CrawlerTab() {
   const [isLoading, setIsLoading] = useState<boolean | null>(null);
 
   const handleClick = async () => {
-    setIsLoading(true);
-    const searchQuery = {
-      name: companyNameInput,
-      reportYear: reportYearInput,
-    };
+    if (!companyNameInput || !reportYearInput) return;
 
-    const data = await fetchCompanyReports(searchQuery);
+    setIsLoading(true);
+    const companyNames = companyNameInput.split(",").map((name) => name.trim());
+    const searchQueries = companyNames.map((name) => ({
+      name,
+      reportYear: reportYearInput,
+    }));
+
+    const data = await Promise.all(
+      searchQueries.map((query) => fetchCompanyReports(query)),
+    );
 
     if (data) {
-      setCompanyReports(data.results);
+      const transformedData = data.flatMap((response) =>
+        response.results.map((item: CompanyReport) => ({
+          companyName: item.companyName || "Unknown",
+          reportYear: item.reportYear || "Unknown",
+          results: item.results ?? [],
+        })),
+      );
+
+      setCompanyReports(transformedData);
       setIsLoading(false);
-      console.log("Company report:", data.results);
     }
   };
 
@@ -49,16 +61,18 @@ export function CrawlerTab() {
       >
         <h2 className="text-xl font-semibold text-gray-01 mb-6">Crawler</h2>
 
-        <div className="flex gap-4 items-center">
-          <h3>Find report for a company</h3>
-          <div className="flex gap-4 items-center">
-            <div className="flex gap-4">
-              <input
+        <div className="flex flex-col gap-2 justify-center">
+          <h3>Manual search for company reports</h3>
+          <div className="flex flex-col gap-4 justify-center">
+            <div className="flex flex-col gap-2">
+              <textarea
                 onChange={(e) => handleSearchInputChange(e)}
-                placeholder="Ex. Alfa Laval"
-                className="bg-gray-03/20 w-48 border p-2 flex items-center justify-center border-gray-03 rounded-lg text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
+                placeholder="Search for companies (seperate with commas)"
+                className="bg-gray-03/20 w-[500px] h-[100px] border p-2 flex items-center justify-center border-gray-03 rounded-lg text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
               />
+              <h3 className="pt-4">Report year</h3>
               <input
+                required
                 onChange={(e) => handleReportYearInputChange(e)}
                 placeholder="Ex. 2025"
                 className="bg-gray-03/20 w-48 border p-2 flex items-center justify-center border-gray-03 rounded-lg text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
@@ -81,7 +95,8 @@ export function CrawlerTab() {
                 Loading search results...
               </p>
               <p className="text-sm text-gray-02 mt-2">
-                Fetching company data from API
+                Hang in there as this may take a moment. The crawler is fetching
+                and processing.
               </p>
             </div>
           </div>
