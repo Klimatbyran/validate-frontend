@@ -63,7 +63,7 @@ export function ErrorBrowserTab() {
                       : 'text-gray-02 hover:text-gray-01'
                   )}
                 >
-                  {mode === 'browser' ? t("errors.browser") : mode === 'overview' ? t("errors.overview") : t("errors.hardestReports")}
+                  {mode === 'browser' ? t("errors.browser") : mode === 'overview' ? t("errors.overviewTab") : t("errors.hardestReports")}
                 </button>
               ))}
             </div>
