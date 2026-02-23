@@ -87,7 +87,10 @@ export function CrawlerTab() {
           </div>
         </div>
       ) : (
-        <ResultsList reports={companyReports} />
+        <ResultsList
+          setCompanyReports={setCompanyReports}
+          companyReports={companyReports}
+        />
       )}
     </div>
   );

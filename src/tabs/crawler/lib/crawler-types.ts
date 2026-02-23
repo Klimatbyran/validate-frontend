@@ -1,8 +1,5 @@
 export type Report = {
-  description: string;
-  position: number;
-  title: string;
-  url: string;
+  url: string | null;
 };
 
 export interface CompanyReport {
