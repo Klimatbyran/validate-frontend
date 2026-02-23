@@ -6,6 +6,11 @@ import { authenticatedFetch } from "@/lib/api-helpers";
 import { FileUploadZone } from "./components/FileUploadZone";
 import { UrlUploadForm } from "./components/UrlUploadForm";
 import { UploadList } from "./components/UploadList";
+import {
+  UploadRunOptions,
+  UPLOAD_WORKER_IDS,
+  type UploadWorkerId,
+} from "./components/UploadRunOptions";
 import { UploadedFile, UrlInput } from "./types";
 import {
   validateUrls,
@@ -19,12 +24,17 @@ interface UploadTabProps {
 }
 
 export function UploadTab({ onTabChange }: UploadTabProps) {
-  const [uploadMode, setUploadMode] = useState<"file" | "url">("file");
+  const [uploadMode, setUploadMode] = useState<"file" | "url">("url");
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [urlInput, setUrlInput] = useState("");
   const [processedUrls, setProcessedUrls] = useState<UrlInput[]>([]);
   const [autoApprove, setAutoApprove] = useState(true);
+  const [runAllWorkers, setRunAllWorkers] = useState(false);
+  const [selectedWorkers, setSelectedWorkers] = useState<UploadWorkerId[]>(
+    DEFAULT_RUN_ONLY as UploadWorkerId[],
+  );
+  const [forceReindex, setForceReindex] = useState(false);
 
   const handleFileSubmit = useCallback(async () => {
     if (uploadedFiles.length === 0) {
@@ -107,6 +117,12 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
       return;
     }
 
+    const runOnly = runAllWorkers ? UPLOAD_WORKER_IDS : selectedWorkers;
+    if (runOnly.length === 0) {
+      toast.error("Välj minst ett jobb att köra");
+      return;
+    }
+
     // Send batch job creation request to the custom API
     try {
       const response = await authenticatedFetch(PARSE_PDF_API_ENDPOINT, {
@@ -116,9 +132,9 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
         },
         body: JSON.stringify({
           autoApprove: Boolean(autoApprove),
-          forceReindex: true,
+          forceReindex: Boolean(forceReindex),
           replaceAllEmissions: true,
-          runOnly: DEFAULT_RUN_ONLY,
+          runOnly,
           urls: urls,
         }),
       });
@@ -154,7 +170,13 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
         error instanceof Error ? error.message : "Unknown error occurred";
       toast.error(`Kunde inte lägga till jobb: ${errorMessage}`);
     }
-  }, [urlInput, autoApprove]);
+  }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex]);
+
+  const handleWorkerToggle = useCallback((workerId: UploadWorkerId, checked: boolean) => {
+    setSelectedWorkers((prev) =>
+      checked ? [...prev, workerId] : prev.filter((id) => id !== workerId),
+    );
+  }, []);
 
   const handleContinue = useCallback(() => {
     const totalItems = uploadedFiles.length + processedUrls.length;
@@ -180,15 +202,33 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
         className="w-full"
       >
         <TabsList className="inline-flex bg-gray-04/50 p-1 rounded-full">
-          <TabsTrigger value="file" className="rounded-full">
-            <FileText className="w-4 h-4 mr-2" />
-            Filer
-          </TabsTrigger>
           <TabsTrigger value="url" className="rounded-full">
             <Link2 className="w-4 h-4 mr-2" />
             Länkar
           </TabsTrigger>
+          <TabsTrigger value="file" className="rounded-full">
+            <FileText className="w-4 h-4 mr-2" />
+            Filer
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="url" >
+          <UploadRunOptions
+            runAllWorkers={runAllWorkers}
+            onRunAllWorkersChange={setRunAllWorkers}
+            selectedWorkers={selectedWorkers}
+            onSelectedWorkersChange={handleWorkerToggle}
+            forceReindex={forceReindex}
+            onForceReindexChange={setForceReindex}
+          />
+          <UrlUploadForm
+            urlInput={urlInput}
+            onUrlInputChange={setUrlInput}
+            autoApprove={autoApprove}
+            onAutoApproveChange={setAutoApprove}
+            onSubmit={handleUrlSubmit}
+          />
+        </TabsContent>
 
         <TabsContent value="file">
           <FileUploadZone
@@ -198,16 +238,6 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
             onDrop={handleDrop}
             uploadedFiles={uploadedFiles}
             onFileSubmit={handleFileSubmit}
-          />
-        </TabsContent>
-
-        <TabsContent value="url">
-          <UrlUploadForm
-            urlInput={urlInput}
-            onUrlInputChange={setUrlInput}
-            autoApprove={autoApprove}
-            onAutoApproveChange={setAutoApprove}
-            onSubmit={handleUrlSubmit}
           />
         </TabsContent>
       </Tabs>

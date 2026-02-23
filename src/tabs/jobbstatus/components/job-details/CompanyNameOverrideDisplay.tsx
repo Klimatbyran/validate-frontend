@@ -54,8 +54,12 @@ export function CompanyNameOverrideDisplay({
       >
         {currentCompanyName && (
           <div className="bg-gray-03/20 rounded-lg p-3">
-            <div className="text-xs text-gray-02 mb-1">Nuvarande företagsnamn</div>
-            <div className="text-sm text-gray-01 font-medium">{currentCompanyName}</div>
+            <div className="text-xs text-gray-02 mb-1">
+              Nuvarande företagsnamn
+            </div>
+            <div className="text-sm text-gray-01 font-medium">
+              {currentCompanyName}
+            </div>
           </div>
         )}
 
@@ -80,7 +84,7 @@ export function CompanyNameOverrideDisplay({
                   "focus:outline-none focus:ring-2 focus:ring-blue-03 focus:border-transparent",
                   overrideError
                     ? "border-pink-03 focus:ring-pink-03"
-                    : "border-gray-03"
+                    : "border-gray-03",
                 )}
               />
               <Button
