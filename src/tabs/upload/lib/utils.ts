@@ -38,6 +38,11 @@ export function extractCompanyFromUrl(url: string): string {
 export const PARSE_PDF_API_ENDPOINT = "/api/queues/parsePdf";
 
 /**
+ * API endpoint to list existing batch IDs (for dropdown)
+ */
+export const BATCHES_API_ENDPOINT = "/api/processes/batches";
+
+/**
  * Default runOnly configuration for job submission
  */
 export const DEFAULT_RUN_ONLY = ["scope1", "scope2", "scope3"];

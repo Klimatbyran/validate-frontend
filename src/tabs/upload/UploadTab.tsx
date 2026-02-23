@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { FileText, Link2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import {
   validateUrls,
   extractCompanyFromUrl,
   PARSE_PDF_API_ENDPOINT,
+  BATCHES_API_ENDPOINT,
   DEFAULT_RUN_ONLY,
 } from "./lib/utils";
 
@@ -35,6 +36,30 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
     DEFAULT_RUN_ONLY as UploadWorkerId[],
   );
   const [forceReindex, setForceReindex] = useState(false);
+  const [existingBatches, setExistingBatches] = useState<string[]>([]);
+  const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
+  const [customBatchName, setCustomBatchName] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await authenticatedFetch(BATCHES_API_ENDPOINT);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const ids = Array.isArray(data) ? data : data?.batchIds ?? data?.batches ?? [];
+        if (Array.isArray(ids) && !cancelled) setExistingBatches(ids);
+      } catch {
+        // Non-fatal: dropdown will just be empty
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const effectiveBatchId =
+    !batchDropdownChoice ? "" : batchDropdownChoice === "__new__" ? customBatchName.trim() : batchDropdownChoice;
 
   const handleFileSubmit = useCallback(async () => {
     if (uploadedFiles.length === 0) {
@@ -132,6 +157,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
         },
         body: JSON.stringify({
           autoApprove: Boolean(autoApprove),
+          ...(effectiveBatchId ? { batchId: effectiveBatchId } : {}),
           forceReindex: Boolean(forceReindex),
           replaceAllEmissions: true,
           runOnly,
@@ -170,7 +196,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
         error instanceof Error ? error.message : "Unknown error occurred";
       toast.error(`Kunde inte lägga till jobb: ${errorMessage}`);
     }
-  }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex]);
+  }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId]);
 
   const handleWorkerToggle = useCallback((workerId: UploadWorkerId, checked: boolean) => {
     setSelectedWorkers((prev) =>
@@ -220,6 +246,11 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
             onSelectedWorkersChange={handleWorkerToggle}
             forceReindex={forceReindex}
             onForceReindexChange={setForceReindex}
+            existingBatches={existingBatches}
+            batchDropdownChoice={batchDropdownChoice}
+            onBatchDropdownChoiceChange={setBatchDropdownChoice}
+            customBatchName={customBatchName}
+            onCustomBatchNameChange={setCustomBatchName}
           />
           <UrlUploadForm
             urlInput={urlInput}

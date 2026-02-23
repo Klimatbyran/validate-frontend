@@ -12,7 +12,14 @@ interface UploadRunOptionsProps {
   onSelectedWorkersChange: (workerId: UploadWorkerId, checked: boolean) => void;
   forceReindex: boolean;
   onForceReindexChange: (value: boolean) => void;
+  existingBatches: string[];
+  batchDropdownChoice: string;
+  onBatchDropdownChoiceChange: (value: string) => void;
+  customBatchName: string;
+  onCustomBatchNameChange: (value: string) => void;
 }
+
+const NEW_BATCH_VALUE = "__new__";
 
 export function UploadRunOptions({
   runAllWorkers,
@@ -21,10 +28,44 @@ export function UploadRunOptions({
   onSelectedWorkersChange,
   forceReindex,
   onForceReindexChange,
+  existingBatches,
+  batchDropdownChoice,
+  onBatchDropdownChoiceChange,
+  customBatchName,
+  onCustomBatchNameChange,
 }: UploadRunOptionsProps) {
   return (
     <div className="bg-gray-04/50 backdrop-blur-sm rounded-lg p-6 space-y-4">
       <p className="text-sm font-medium text-gray-01">Alternativ för nya körningar</p>
+
+      {/* Batch: dropdown (no batch / existing / new) + optional text input for new name */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span className="text-sm text-gray-02 shrink-0">Batch:</span>
+        <select
+          value={batchDropdownChoice}
+          onChange={(e) => onBatchDropdownChoiceChange(e.target.value)}
+          className="h-8 min-w-[140px] rounded-md border border-gray-03 bg-gray-03/80 text-gray-01 text-sm focus:outline-none focus:ring-2 focus:ring-orange-03/50 px-2"
+          aria-label="Välj batch"
+        >
+          <option value="">Ingen batch</option>
+          {existingBatches.map((id) => (
+            <option key={id} value={id}>
+              {id}
+            </option>
+          ))}
+          <option value={NEW_BATCH_VALUE}>— Ny batch —</option>
+        </select>
+        {batchDropdownChoice === NEW_BATCH_VALUE && (
+          <input
+            type="text"
+            value={customBatchName}
+            onChange={(e) => onCustomBatchNameChange(e.target.value)}
+            placeholder="t.ex. 2024-Q1-Reports"
+            className="h-8 min-w-[180px] rounded-md border border-gray-03 bg-gray-03/20 text-gray-01 text-sm placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03/50 px-2"
+            aria-label="Ny batchnamn"
+          />
+        )}
+      </div>
 
       {/* Run all/partial + Kör endast – single row, pills inline */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
