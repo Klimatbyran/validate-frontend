@@ -67,7 +67,7 @@ const ResultItem = ({
   };
   return (
     <>
-      <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] overflow-hidden hover:shadow-md transition-shadow">
+      <div className="mt-4 bg-gray-04/80 backdrop-blur-sm rounded-[20px] overflow-hidden hover:shadow-md transition-shadow">
         <div className="w-full px-4 py-3 bg-gray-03/50 border-b border-gray-03 flex items-center justify-between">
           <button
             onClick={() => setIsDialogOpen(!isDialogOpen)}
