@@ -164,6 +164,15 @@
       "jobNotRunYet": "This job has not been run yet.",
       "noExtractEmissionsParent": "Could not find an extractEmissions job in this run. The job cannot be triggered without a parent."
     },
+    "metadata": {
+      "title": "Job metadata",
+      "id": "ID",
+      "queue": "Queue",
+      "created": "Created",
+      "started": "Started",
+      "finished": "Finished",
+      "attempts": "Attempts"
+    },
     "filters": {
       "pending_approval": "Pending approval",
       "has_failed": "Has failed",

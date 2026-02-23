@@ -27,7 +27,7 @@ interface JobStatusSectionProps {
 }
 
 export function JobStatusSection({ job, isRerun = false }: JobStatusSectionProps) {
-  const { t } = useI18n();
+  const { t, formatDate } = useI18n();
   const stage = getWorkflowStages().find((s) => s.id === job.queueId);
   const jobStatus = getJobStatus(job);
   const isActivelyProcessing = Boolean(job.processedOn && !job.finishedOn);
@@ -59,7 +59,7 @@ export function JobStatusSection({ job, isRerun = false }: JobStatusSectionProps
         <div>
           <div className="text-sm text-gray-02">{t("jobstatus.jobdetails.created")}</div>
           <div className="text-gray-01">
-            {new Date(job.timestamp).toLocaleString("sv-SE")}
+            {formatDate(job.timestamp)}
           </div>
         </div>
       </div>

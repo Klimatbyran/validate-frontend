@@ -21,7 +21,7 @@ import type { QueueJob } from "@/lib/types";
 type QueueWithJobs = { name: string; jobs: QueueJob[] };
 
 export function DebugTab() {
-  const { t } = useI18n();
+  const { t, formatDate } = useI18n();
   const { isLoading, error } = useCompanies();
   const [queues, setQueues] = useState<QueueWithJobs[] | null>(null);
   const [queuesLoading, setQueuesLoading] = useState(true);
@@ -363,16 +363,16 @@ export function DebugTab() {
                       </div>
                     </td>
                     <td className="p-4 text-gray-02">
-                      {new Date(job.timestamp).toLocaleString("sv-SE")}
+                      {formatDate(job.timestamp)}
                     </td>
                     <td className="p-4 text-gray-02">
                       {job.processedOn
-                        ? new Date(job.processedOn).toLocaleString("sv-SE")
+                        ? formatDate(job.processedOn)
                         : "-"}
                     </td>
                     <td className="p-4 text-gray-02">
                       {job.finishedOn
-                        ? new Date(job.finishedOn).toLocaleString("sv-SE")
+                        ? formatDate(job.finishedOn)
                         : "-"}
                     </td>
                   </tr>

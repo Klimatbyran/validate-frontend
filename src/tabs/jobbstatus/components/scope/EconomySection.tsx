@@ -36,17 +36,13 @@ export type EconomyReferenceSnapshot = {
   employees?: { value: number | null; unit: string | null } | null;
 } | null;
 
-function formatNumber(num: number | null | undefined): string {
-  if (num == null) return "—";
-  return num.toLocaleString("sv-SE");
-}
-
 function formatCurrency(
+  formatNumber: (v: number | null | undefined) => string,
   value: number | null | undefined,
   currency: string | null | undefined
 ): string {
   if (value == null) return "—";
-  const formatted = value.toLocaleString("sv-SE");
+  const formatted = formatNumber(value);
   return currency ? `${formatted} ${currency}` : formatted;
 }
 
@@ -86,7 +82,7 @@ function EconomyReferencePanel({
   isLoading,
   error,
 }: EconomyReferencePanelProps) {
-  const { t } = useI18n();
+  const { t, formatNumber } = useI18n();
   if (!wikidataId) return null;
   const latest = latestYear?.year;
   if (!latest) return null;
@@ -131,7 +127,7 @@ function EconomyReferencePanel({
             <div className="flex items-center justify-between py-1.5">
               <span className="text-sm text-gray-02">{t("scope.revenue")}</span>
               <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
-                {formatCurrency(prodTurnover, snapshot.turnover?.currency)}
+                {formatCurrency(formatNumber, prodTurnover, snapshot.turnover?.currency)}
                 {turnoverMatch != null &&
                   (turnoverMatch ? (
                     <span className="text-green-03">✓</span>
@@ -170,7 +166,7 @@ function employeeUnitLabel(t: (key: string) => string, unit: string | null | und
 }
 
 export function EconomySection({ data, wikidataId }: EconomySectionProps) {
-  const { t } = useI18n();
+  const { t, formatNumber } = useI18n();
   if (
     !data.economy ||
     !Array.isArray(data.economy) ||
@@ -230,6 +226,7 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
                       >
                         <div className="font-extrabold text-gray-01 text-2xl mb-1">
                           {formatCurrency(
+                            formatNumber,
                             economy.turnover.value,
                             economy.turnover.currency
                           )}

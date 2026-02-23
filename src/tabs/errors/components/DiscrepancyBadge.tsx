@@ -8,6 +8,7 @@ interface DiscrepancyBadgeProps {
 }
 
 export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
+  const { formatNumber } = useI18n();
   const config = discrepancyConfig[row.discrepancy] ?? discrepancyConfig['error'];
 
   return (
@@ -34,7 +35,7 @@ export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
             className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-mono font-medium bg-indigo-500/20 text-indigo-400 cursor-help"
             title={`Stage value is ${row.unitErrorFactor >= 1 ? row.unitErrorFactor + '×' : '1/' + (1 / row.unitErrorFactor) + '×'} the prod value — likely a unit mismatch (e.g. tonnes vs kilotonnes)`}
           >
-            {row.unitErrorFactor >= 1 ? `×${row.unitErrorFactor.toLocaleString()}` : `÷${(1 / row.unitErrorFactor).toLocaleString()}`}
+            {row.unitErrorFactor >= 1 ? `×${formatNumber(row.unitErrorFactor)}` : `÷${formatNumber(1 / row.unitErrorFactor)}`}
           </span>
         )}
         {row.categoryErrorKind && (

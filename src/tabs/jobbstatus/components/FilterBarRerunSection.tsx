@@ -47,7 +47,7 @@ export function FilterBarRerunSection({ onRerunByWorker }: FilterBarRerunSection
         >
           {LIMIT_OPTIONS.map((opt) => (
             <option key={String(opt.value)} value={String(opt.value)}>
-              {opt.value === "all" ? t("jobstatus.limitAll") : opt.label}
+              {opt.value === "all" ? t("jobstatus.limitAll") : String(opt.value)}
             </option>
           ))}
         </select>

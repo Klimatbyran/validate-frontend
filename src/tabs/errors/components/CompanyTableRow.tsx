@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { AlertTriangle, BadgeCheck } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
-import { cn, formatNumber } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { CompanyRow } from '../types';
 import { DiscrepancyBadge } from './DiscrepancyBadge';
 
@@ -12,7 +12,7 @@ interface CompanyTableRowProps {
 }
 
 export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTableRowProps) {
-  const { t } = useI18n();
+  const { t, formatNumber } = useI18n();
   const isMissingCompany = !row.inStage || !row.inProd;
 
   return (
@@ -68,7 +68,7 @@ export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTabl
               row.diff > 0 ? 'text-purple-400' : row.diff < 0 ? 'text-orange-400' : 'text-gray-02'
             )}
           >
-            {row.diff > 0 ? '+' : ''}{row.diff.toLocaleString('sv-SE')}
+            {row.diff !== null ? (row.diff > 0 ? '+' : '') + formatNumber(row.diff) : ''}
           </span>
         ) : (
           <span className="text-gray-02">—</span>

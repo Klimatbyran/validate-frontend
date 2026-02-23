@@ -159,6 +159,15 @@
       "rerunTitle": "Jobbet har körts om:",
       "rerunExplanation": "Det här jobbet är en av flera körningar för samma steg i denna run. Den orange triangeln på rutan visar att jobbet har körts om."
     },
+    "metadata": {
+      "title": "Jobbmetadata",
+      "id": "ID",
+      "queue": "Kö",
+      "created": "Skapad",
+      "started": "Startad",
+      "finished": "Avslutad",
+      "attempts": "Försök"
+    },
     "filters": {
       "pending_approval": "Väntar på godkännande",
       "has_failed": "Har misslyckade",

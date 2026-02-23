@@ -10,6 +10,7 @@ import {
   buildOurNumberMapForYear,
   buildRefNumberMap,
 } from "../../lib/scope3-data";
+import { useI18n } from "@/contexts/I18nContext";
 import { CopyButton } from "@/ui/copy-button";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
 import { YearBadge } from "./YearBadge";
@@ -20,6 +21,7 @@ interface Scope3EmissionsDisplayProps {
 }
 
 export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps) {
+  const { formatNumber } = useI18n();
   if (!data.scope3 || !Array.isArray(data.scope3) || data.scope3.length === 0) {
     return null;
   }
@@ -76,7 +78,7 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
       <div className="flex items-center justify-between">
         <span className="text-sm text-gray-02">Totalt ({latestScope3Year})</span>
         <span className="text-base font-bold text-gray-01 flex items-center gap-2">
-          {typeof snapshot.total === 'number' ? snapshot.total.toLocaleString('sv-SE') : '—'}
+          {typeof snapshot.total === 'number' ? formatNumber(snapshot.total) : '—'}
           {snapshot.unit ? ` ${snapshot.unit}` : ''}
           {(ourTotal !== null || snapshot.total !== null) && (
             isMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>
@@ -99,7 +101,7 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
             <div key={categoryNumber} className="flex items-center justify-between py-1.5">
               <span className="text-sm text-gray-02">{label}</span>
               <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
-                {typeof (ref?.total) === 'number' ? ref!.total!.toLocaleString('sv-SE') : '—'}{ref?.unit ? ` ${ref.unit}` : ''}
+                {typeof (ref?.total) === 'number' ? formatNumber(ref!.total!) : '—'}{ref?.unit ? ` ${ref.unit}` : ''}
                 {match ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
               </span>
             </div>
@@ -125,7 +127,7 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
             {normalized.total !== null && normalized.total !== undefined ? (
               <>
                 <div className="font-extrabold text-gray-01 text-4xl mb-1 flex items-center gap-2">
-                  {normalized.total.toLocaleString('sv-SE')}
+                  {formatNumber(normalized.total)}
                   {hasReferenceForYear && (() => {
                     const refSnapshot = referenceByYear[entry.year];
                     const refTotal = refSnapshot?.total ?? null;
@@ -149,7 +151,7 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
                   <div key={n} className="flex items-center justify-between py-2">
                     <span className="text-base text-gray-02">{SCOPE3_CATEGORY_NAMES[n] || `Category ${n}`}</span>
                     <span className="font-extrabold text-gray-01 text-xl flex items-center gap-2">
-                      {typeof (our?.total) === 'number' ? our!.total!.toLocaleString('sv-SE') : '—'}{our?.unit ? ` ${our.unit}` : ''}
+                      {typeof (our?.total) === 'number' ? formatNumber(our!.total!) : '—'}{our?.unit ? ` ${our.unit}` : ''}
                       {match ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                     </span>
                   </div>
@@ -163,7 +165,7 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
                   <div key={category.key} className="flex items-center justify-between py-2">
                     <span className="text-base text-gray-02">{category.label}</span>
                     <span className="font-extrabold text-gray-01 text-xl">
-                      {typeof category.total === 'number' ? category.total.toLocaleString('sv-SE') : '—'}{category.unit ? ` ${category.unit}` : ''}
+                      {typeof category.total === 'number' ? formatNumber(category.total) : '—'}{category.unit ? ` ${category.unit}` : ''}
                     </span>
                   </div>
                 ))}

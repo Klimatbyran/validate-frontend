@@ -6,7 +6,6 @@ import { useCompanyReferenceByYears } from "../../lib/company-reference-api";
 import {
   type Scope12EmissionsData,
   buildReferenceSnapshotFromPeriod,
-  formatNumber,
 } from "../../lib/scope12-data";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
 import { YearBadge } from "./YearBadge";
@@ -24,6 +23,7 @@ interface Scope2RowProps {
 }
 
 function Scope2Row({ label, value }: Scope2RowProps) {
+  const { formatNumber } = useI18n();
   return (
     <div className="flex items-center justify-between">
       <span className="text-base text-gray-02">{label}</span>
@@ -45,7 +45,7 @@ interface Scope1CardProps {
 }
 
 function Scope1Card({ data, combinedScope1And2, matchStatus = 'none' }: Scope1CardProps) {
-  const { t } = useI18n();
+  const { t, formatNumber } = useI18n();
   const hasScope1 = !!data && typeof data.total === 'number';
   const hasCombined = !!combinedScope1And2 && typeof combinedScope1And2.total === 'number';
 
@@ -124,7 +124,7 @@ function Scope2Card({ data }: Scope2CardProps) {
 }
 
 export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProps) {
-  const { t } = useI18n();
+  const { t, formatNumber } = useI18n();
   if (!data.scope12 || !Array.isArray(data.scope12) || data.scope12.length === 0) {
     return null;
   }
@@ -203,7 +203,7 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
               <div className="flex items-center justify-between py-1.5">
                 <span className="text-sm text-gray-02">{t("scope.scope1Total")}</span>
                 <span className="text-base font-bold text-gray-01 flex items-center gap-2">
-                  {snapshot.scope1?.total?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope1?.unit ?? ''}
+                  {snapshot.scope1?.total != null ? formatNumber(snapshot.scope1.total) : '—'} {snapshot.scope1?.unit ?? ''}
                   {s1Match ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                 </span>
               </div>
@@ -212,7 +212,7 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
               <div className="flex items-center justify-between py-1.5">
                 <span className="text-sm text-gray-02">{t("scope.scope2MarketBased")}</span>
                 <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
-                  {snapshot.scope2?.mb?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope2?.unit ?? ''}
+                  {snapshot.scope2?.mb != null ? formatNumber(snapshot.scope2.mb) : '—'} {snapshot.scope2?.unit ?? ''}
                   {s2MbMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                 </span>
               </div>
@@ -221,7 +221,7 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
               <div className="flex items-center justify-between py-1.5">
                 <span className="text-sm text-gray-02">{t("scope.scope2LocationBased")}</span>
                 <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
-                  {snapshot.scope2?.lb?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope2?.unit ?? ''}
+                  {snapshot.scope2?.lb != null ? formatNumber(snapshot.scope2.lb) : '—'} {snapshot.scope2?.unit ?? ''}
                   {s2LbMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                 </span>
               </div>
@@ -230,7 +230,7 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
               <div className="flex items-center justify-between py-1.5">
                 <span className="text-sm text-gray-02">{t("scope.scope2Unspecified")}</span>
                 <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
-                  {snapshot.scope2?.unknown?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope2?.unit ?? ''}
+                  {snapshot.scope2?.unknown != null ? formatNumber(snapshot.scope2.unknown) : '—'} {snapshot.scope2?.unit ?? ''}
                   {s2UnknownMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                 </span>
               </div>
@@ -239,7 +239,7 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
               <div className="flex items-center justify-between py-1.5">
                 <span className="text-sm text-gray-02">{t("scope.scope12Total")}</span>
                 <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
-                  {snapshotCombined?.total?.toLocaleString('sv-SE') ?? '—'} {snapshotCombined?.unit ?? ''}
+                  {snapshotCombined?.total != null ? formatNumber(snapshotCombined.total) : '—'} {snapshotCombined?.unit ?? ''}
                   {combinedMatch != null && (combinedMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>)}
                 </span>
               </div>

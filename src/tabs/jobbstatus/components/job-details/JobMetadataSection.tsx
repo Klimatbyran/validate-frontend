@@ -1,46 +1,44 @@
 import { QueueJob } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface JobMetadataSectionProps {
   job: QueueJob;
 }
 
 export function JobMetadataSection({ job }: JobMetadataSectionProps) {
+  const { t, formatDate, formatNumber } = useI18n();
   const metadataFields = [
     {
-      label: "ID",
+      label: t("jobstatus.metadata.id"),
       value: job.id,
       className: "font-mono",
     },
     {
-      label: "Kö",
+      label: t("jobstatus.metadata.queue"),
       value: job.queueId,
     },
     {
-      label: "Skapad",
-      value: new Date(job.timestamp).toLocaleString("sv-SE"),
+      label: t("jobstatus.metadata.created"),
+      value: formatDate(job.timestamp),
     },
     {
-      label: "Startad",
-      value: job.processedOn
-        ? new Date(job.processedOn).toLocaleString("sv-SE")
-        : "-",
+      label: t("jobstatus.metadata.started"),
+      value: job.processedOn ? formatDate(job.processedOn) : "-",
     },
     {
-      label: "Avslutad",
-      value: job.finishedOn
-        ? new Date(job.finishedOn).toLocaleString("sv-SE")
-        : "-",
+      label: t("jobstatus.metadata.finished"),
+      value: job.finishedOn ? formatDate(job.finishedOn) : "-",
     },
     {
-      label: "Försök",
-      value: job.attempts || 0,
+      label: t("jobstatus.metadata.attempts"),
+      value: formatNumber(job.attempts ?? 0),
     },
   ];
 
   return (
     <div className="bg-gray-03/20 rounded-lg p-4">
-      <h3 className="text-lg font-medium text-gray-01 mb-4">Jobbmetadata</h3>
+      <h3 className="text-lg font-medium text-gray-01 mb-4">{t("jobstatus.metadata.title")}</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         {metadataFields.map((field, index) => (
           <div key={index}>

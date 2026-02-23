@@ -33,10 +33,22 @@ function interpolate(str: string, params?: Record<string, string | number>): str
   return str.replace(/\{\{(\w+)\}\}/g, (_, key) => String(params[key] ?? ""));
 }
 
+/** BCP 47 locale for Intl (dates, numbers). */
+export const LOCALE_INTL: Record<Locale, string> = {
+  en: "en-US",
+  sv: "sv-SE",
+};
+
 interface I18nContextValue {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
+  /** BCP 47 locale for Intl (e.g. "en-US", "sv-SE"). Use with toLocaleString, Intl.NumberFormat, etc. */
+  localeIntl: string;
+  /** Format a number for display using the selected locale. */
+  formatNumber: (value: number | null | undefined) => string;
+  /** Format a date for display using the selected locale. */
+  formatDate: (date: Date | number | null | undefined) => string;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -66,9 +78,28 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     [locale]
   );
 
+  const localeIntl = LOCALE_INTL[locale];
+
+  const formatNumber = useCallback(
+    (value: number | null | undefined): string => {
+      if (value === null || value === undefined) return "—";
+      return value.toLocaleString(localeIntl);
+    },
+    [localeIntl]
+  );
+
+  const formatDate = useCallback(
+    (date: Date | number | null | undefined): string => {
+      if (date === null || date === undefined) return "—";
+      const d = typeof date === "number" ? new Date(date) : date;
+      return d.toLocaleString(localeIntl);
+    },
+    [localeIntl]
+  );
+
   const value = useMemo(
-    () => ({ locale, setLocale, t }),
-    [locale, setLocale, t]
+    () => ({ locale, setLocale, t, localeIntl, formatNumber, formatDate }),
+    [locale, setLocale, t, localeIntl, formatNumber, formatDate]
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
