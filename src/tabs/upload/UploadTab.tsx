@@ -6,11 +6,7 @@ import { authenticatedFetch } from "@/lib/api-helpers";
 import { FileUploadZone } from "./components/FileUploadZone";
 import { UrlUploadForm } from "./components/UrlUploadForm";
 import { UploadList } from "./components/UploadList";
-import {
-  UploadRunOptions,
-  UPLOAD_WORKER_IDS,
-  type UploadWorkerId,
-} from "./components/UploadRunOptions";
+import { UploadRunOptions, type UploadWorkerId } from "./components/UploadRunOptions";
 import { UploadedFile, UrlInput } from "./types";
 import {
   validateUrls,
@@ -142,13 +138,13 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
       return;
     }
 
-    const runOnly = runAllWorkers ? UPLOAD_WORKER_IDS : selectedWorkers;
-    if (runOnly.length === 0) {
+    if (!runAllWorkers && selectedWorkers.length === 0) {
       toast.error("Välj minst ett jobb att köra");
       return;
     }
 
     // Send batch job creation request to the custom API
+    // When "Alla" is chosen, omit runOnly so pipeline-api runs all steps.
     try {
       const response = await authenticatedFetch(PARSE_PDF_API_ENDPOINT, {
         method: "POST",
@@ -160,7 +156,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
           ...(effectiveBatchId ? { batchId: effectiveBatchId } : {}),
           forceReindex: Boolean(forceReindex),
           replaceAllEmissions: true,
-          runOnly,
+          ...(!runAllWorkers && selectedWorkers.length > 0 ? { runOnly: selectedWorkers } : {}),
           urls: urls,
         }),
       });
