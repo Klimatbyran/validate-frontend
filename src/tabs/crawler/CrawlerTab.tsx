@@ -102,10 +102,12 @@ export function CrawlerTab() {
           </div>
         </div>
       ) : (
-        <ResultsList
-          setCompanyReports={setCompanyReports}
-          companyReports={companyReports}
-        />
+        companyReports && (
+          <ResultsList
+            setCompanyReports={setCompanyReports}
+            companyReports={companyReports}
+          />
+        )
       )}
     </div>
   );
