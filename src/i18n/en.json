@@ -221,7 +221,6 @@
     "subtitle": "Compare emissions data between Stage and Prod APIs",
     "browser": "Browser",
     "overviewTab": "Overview",
-    "overview": "Overview",
     "hardestReports": "Hardest Reports",
     "loadingOverview": "Loading overview...",
     "filterCompanies": "Filter companies...",
