@@ -1,6 +1,7 @@
 /**
- * Hook for bulk rerun-by-worker (scope1, scope2, scope3, economy, etc.) in Jobbstatus tab.
+ * Hook for bulk rerun-by-worker in Jobbstatus tab.
  * Collects extractEmissions job targets from swimlane companies and calls rerun-and-save per company.
+ * Workers match the runOnly keys (industryGics, scope1, scope2, scope3, biogenic, economy, goals, initiatives, baseYear, lei, descriptions).
  */
 
 import { useCallback } from "react";
@@ -9,30 +10,13 @@ import { authenticatedFetch } from "@/lib/api-helpers";
 import { findJobByQueueId } from "@/lib/workflow-utils";
 import { buildRerunAndSaveBody } from "@/lib/job-rerun-utils";
 import { toast } from "sonner";
-
-export type RerunWorkerName =
-  | "scope1"
-  | "scope2"
-  | "scope1+2"
-  | "scope3"
-  | "economy"
-  | "baseYear"
-  | "industryGics";
-
-const WORKER_TO_FOLLOW_UP_KEY: Record<RerunWorkerName, string> = {
-  scope1: "scope1",
-  scope2: "scope2",
-  "scope1+2": "scope1+2",
-  scope3: "scope3",
-  economy: "economy",
-  baseYear: "baseYear",
-  industryGics: "industryGics",
-};
+import type { RerunWorker } from "../lib/filter-config";
+import { RUN_ONLY_TO_SCOPE_KEY } from "@/lib/run-only-workers";
 
 export function useRerunByWorker(swimlaneCompanies: SwimlaneCompany[]) {
   const handleRerunByWorker = useCallback(
-    async (workerName: RerunWorkerName, limit: number | "all" = 5) => {
-      const followUpKey = WORKER_TO_FOLLOW_UP_KEY[workerName];
+    async (workerName: RerunWorker, limit: number | "all" = 5) => {
+      const followUpKey = RUN_ONLY_TO_SCOPE_KEY[workerName];
       if (!followUpKey) return;
 
       const targets: Array<{

@@ -1,9 +1,9 @@
-import { RERUN_WORKERS } from "@/tabs/jobbstatus/lib/filter-config";
 import { cn } from "@/lib/utils";
+import { RUN_ONLY_WORKERS, type RunOnlyWorkerId } from "@/lib/run-only-workers";
 
-export type UploadWorkerId = (typeof RERUN_WORKERS)[number]["id"];
+export type UploadWorkerId = RunOnlyWorkerId;
 
-export const UPLOAD_WORKER_IDS = RERUN_WORKERS.map((w) => w.id) as UploadWorkerId[];
+export const UPLOAD_WORKER_IDS = RUN_ONLY_WORKERS.map((w) => w.id);
 
 interface UploadRunOptionsProps {
   runAllWorkers: boolean;
@@ -102,7 +102,7 @@ export function UploadRunOptions({
         >
           <span className="text-sm text-gray-02 shrink-0">Kör endast:</span>
           <div className="flex flex-wrap gap-1.5">
-            {RERUN_WORKERS.map((worker) => {
+            {RUN_ONLY_WORKERS.map((worker) => {
               const isSelected = selectedWorkers.includes(worker.id);
               return (
                 <button

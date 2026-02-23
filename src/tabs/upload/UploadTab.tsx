@@ -29,7 +29,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
   const [autoApprove, setAutoApprove] = useState(true);
   const [runAllWorkers, setRunAllWorkers] = useState(false);
   const [selectedWorkers, setSelectedWorkers] = useState<UploadWorkerId[]>(
-    DEFAULT_RUN_ONLY as UploadWorkerId[],
+    DEFAULT_RUN_ONLY,
   );
   const [forceReindex, setForceReindex] = useState(false);
   const [existingBatches, setExistingBatches] = useState<string[]>([]);

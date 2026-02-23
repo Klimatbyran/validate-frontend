@@ -42,7 +42,4 @@ export const PARSE_PDF_API_ENDPOINT = "/api/queues/parsePdf";
  */
 export const BATCHES_API_ENDPOINT = "/api/processes/batches";
 
-/**
- * Default runOnly configuration for job submission
- */
-export const DEFAULT_RUN_ONLY = ["scope1", "scope2", "scope3"];
+export { DEFAULT_RUN_ONLY } from "@/lib/run-only-workers";
