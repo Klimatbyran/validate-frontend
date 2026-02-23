@@ -5,16 +5,9 @@
 
 import type { FilterType } from "./swimlane-filters";
 
-export type RerunWorker = "scope1" | "scope2" | "scope3" | "economy" | "baseYear" | "industryGics";
-
-export const RERUN_WORKERS: Array<{ id: RerunWorker }> = [
-  { id: "scope1" },
-  { id: "scope2" },
-  { id: "scope3" },
-  { id: "economy" },
-  { id: "baseYear" },
-  { id: "industryGics" },
-];
+/** Re-export shared pipeline workers for jobstatus rerun UI. Labels shown via i18n: jobstatus.rerunWorkers.<id> */
+export type { RunOnlyWorkerId as RerunWorker } from "@/lib/run-only-workers";
+export { RUN_ONLY_WORKERS as RERUN_WORKERS } from "@/lib/run-only-workers";
 
 export const LIMIT_OPTIONS: Array<{ value: number | "all" }> = [
   { value: 1 },

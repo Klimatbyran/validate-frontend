@@ -82,7 +82,7 @@ export function CompanyNameOverrideDisplay({
                   "focus:outline-none focus:ring-2 focus:ring-blue-03 focus:border-transparent",
                   overrideError
                     ? "border-pink-03 focus:ring-pink-03"
-                    : "border-gray-03"
+                    : "border-gray-03",
                 )}
               />
               <Button

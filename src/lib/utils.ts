@@ -5,6 +5,33 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Validates URL strings and returns valid/invalid arrays. Reusable for any URL list input. */
+export function validateUrls(urlLines: string[]): {
+  valid: string[];
+  invalid: string[];
+} {
+  const valid: string[] = [];
+  const invalid: string[] = [];
+  for (const url of urlLines) {
+    try {
+      new URL(url);
+      valid.push(url);
+    } catch {
+      invalid.push(url);
+    }
+  }
+  return { valid, invalid };
+}
+
+/** Extracts company name from URL hostname (first segment). Falls back to "Unknown". */
+export function extractCompanyFromUrl(url: string): string {
+  try {
+    return new URL(url).hostname.split(".")[0] || "Unknown";
+  } catch {
+    return "Unknown";
+  }
+}
+
 // Checks if text contains markdown formatting patterns on any line:
 // Headers (# Title), lists (- item, 1. item), blockquotes (> text),
 // code blocks (```), or tables (| col |). Will match simple text
