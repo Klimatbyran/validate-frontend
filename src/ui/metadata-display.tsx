@@ -1,6 +1,7 @@
 import { Button } from '@/ui/button';
 import { toast } from 'sonner';
 import { Info, Code, Copy } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 import { MarkdownVectorPagesDisplay } from './markdown-display';
 import { CollapsibleSection } from './collapsible-section';
 
@@ -9,6 +10,7 @@ interface MetadataDisplayProps {
 }
 
 export function MetadataDisplay({ metadata }: MetadataDisplayProps) {
+  const { t } = useI18n();
   if (!metadata) return null;
 
   const sections = [
@@ -49,12 +51,12 @@ export function MetadataDisplay({ metadata }: MetadataDisplayProps) {
               onClick={() => {
                 const rawText = String(value);
                 navigator.clipboard.writeText(rawText);
-                toast.success('Raw markdown copied to clipboard');
+                toast.success(t('ui.rawMarkdownCopied'));
               }}
               className="text-gray-02 hover:bg-gray-03/40"
             >
               <Copy className="w-4 h-4 mr-1" />
-              Copy
+              {t('common.copy')}
             </Button>
           </div>
           <div className="text-xs text-gray-02 overflow-x-auto">

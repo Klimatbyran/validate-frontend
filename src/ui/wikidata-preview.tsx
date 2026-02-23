@@ -1,5 +1,6 @@
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface WikidataProps {
   data: {
@@ -12,6 +13,7 @@ interface WikidataProps {
 }
 
 export function WikidataPreview({ data }: WikidataProps) {
+  const { t } = useI18n();
   if (!data || Object.keys(data).length === 0) {
     return null;
   }
@@ -62,7 +64,7 @@ export function WikidataPreview({ data }: WikidataProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ml-2 text-blue-03 hover:text-blue-03/80"
-                title="Visa på Wikidata"
+                title={t("wikidata.viewOnWikidata")}
               >
                 <ExternalLink className="w-4 h-4" />
               </a>

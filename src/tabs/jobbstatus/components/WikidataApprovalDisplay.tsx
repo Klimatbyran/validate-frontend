@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/ui/button";
 import { Callout } from "@/ui/callout";
+import { useI18n } from "@/contexts/I18nContext";
 import { Check, ExternalLink, AlertCircle, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,7 @@ export function WikidataApprovalDisplay({
   onOverride,
   onApprove,
 }: WikidataApprovalDisplayProps) {
+  const { t } = useI18n();
   const [overrideId, setOverrideId] = useState("");
   const [overrideError, setOverrideError] = useState("");
 
@@ -44,26 +46,26 @@ export function WikidataApprovalDisplay({
 
     // Validate that it starts with Q
     if (value && !value.trim().startsWith("Q")) {
-      setOverrideError("Wikidata ID måste börja med Q");
+      setOverrideError(t("wikidata.mustStartWithQ"));
     } else if (value && !/^Q\d+$/.test(value.trim())) {
-      setOverrideError("Ogiltigt format. Wikidata ID ska vara Q följt av siffror (t.ex. Q123456)");
+      setOverrideError(t("wikidata.invalidFormat"));
     }
   };
 
   const handleOverrideSubmit = () => {
     if (!overrideId.trim()) {
-      setOverrideError("Ange ett Wikidata ID");
+      setOverrideError(t("wikidata.enterWikidataId"));
       return;
     }
 
     const trimmedId = overrideId.trim();
     if (!trimmedId.startsWith("Q")) {
-      setOverrideError("Wikidata ID måste börja med Q");
+      setOverrideError(t("wikidata.mustStartWithQ"));
       return;
     }
 
     if (!/^Q\d+$/.test(trimmedId)) {
-      setOverrideError("Ogiltigt format. Wikidata ID ska vara Q följt av siffror (t.ex. Q123456)");
+      setOverrideError(t("wikidata.invalidFormat"));
       return;
     }
 
@@ -79,13 +81,13 @@ export function WikidataApprovalDisplay({
         {isApproved ? (
           <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-green-03/20 border border-green-03">
             <Check className="w-4 h-4 text-green-03" />
-            <span className="text-sm font-medium text-green-03">Godkänd</span>
+            <span className="text-sm font-medium text-green-03">{t("wikidata.approved")}</span>
           </div>
         ) : (
           <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-orange-03/20 border border-orange-03">
             <AlertCircle className="w-4 h-4 text-orange-03" />
             <span className="text-sm font-medium text-orange-03">
-              Väntar på godkännande
+              {t("wikidata.pendingApproval")}
             </span>
           </div>
         )}
@@ -100,11 +102,11 @@ export function WikidataApprovalDisplay({
 
       {/* Wikidata Information */}
       <div className="bg-gray-03/20 rounded-lg p-4 space-y-3">
-        <h4 className="text-base font-medium text-gray-01">Wikidata Information</h4>
+        <h4 className="text-base font-medium text-gray-01">{t("wikidata.wikidataInfo")}</h4>
 
         <div className="space-y-2">
           <div>
-            <div className="text-xs text-gray-02 mb-1">ID</div>
+            <div className="text-xs text-gray-02 mb-1">{t("wikidata.id")}</div>
             <div className="flex items-center space-x-2">
               <code className="text-sm font-mono text-gray-01 bg-gray-04 px-2 py-1 rounded">
                 {data.wikidata.node}
@@ -128,13 +130,13 @@ export function WikidataApprovalDisplay({
           </div>
 
           <div>
-            <div className="text-xs text-gray-02 mb-1">Namn</div>
+            <div className="text-xs text-gray-02 mb-1">{t("wikidata.name")}</div>
             <div className="text-sm text-gray-01">{data.wikidata.label}</div>
           </div>
 
           {data.wikidata.description && (
             <div>
-              <div className="text-xs text-gray-02 mb-1">Beskrivning</div>
+              <div className="text-xs text-gray-02 mb-1">{t("wikidata.description")}</div>
               <div className="text-sm text-gray-01">
                 {data.wikidata.description}
               </div>
@@ -147,8 +149,8 @@ export function WikidataApprovalDisplay({
       {isPending && (
         <Callout
           variant="success"
-          title="Godkänn Wikidata"
-          description="Godkänn det föreslagna Wikidata ID:t. Jobbet kommer att köras om med godkännande."
+          title={t("wikidata.approveWikidata")}
+          description={t("wikidata.approveDescription")}
         >
           <Button
             variant="primary"
@@ -157,7 +159,7 @@ export function WikidataApprovalDisplay({
             className="bg-green-04 text-green-01 hover:bg-green-04/90"
           >
             <Check className="w-4 h-4 mr-2" />
-            Godkänn
+            {t("wikidata.approveButton")}
           </Button>
         </Callout>
       )}
@@ -166,8 +168,8 @@ export function WikidataApprovalDisplay({
       {isPending && (
         <Callout
           variant="info"
-          title="Överskriv Wikidata ID"
-          description="Om det föreslagna Wikidata ID:t inte är korrekt, kan du ange ett annat ID här. Jobbet kommer att köras om med det nya ID:t."
+          title={t("wikidata.overwriteWikidataId")}
+          description={t("wikidata.overwriteDescription")}
         >
           <div className="space-y-2">
             <div>
@@ -175,7 +177,7 @@ export function WikidataApprovalDisplay({
                 htmlFor="override-wikidata-id"
                 className="block text-xs text-gray-02 mb-1"
               >
-                Wikidata ID
+                {t("wikidata.wikidataIdLabel")}
               </label>
               <div className="flex items-center space-x-2">
                 <input
@@ -183,7 +185,7 @@ export function WikidataApprovalDisplay({
                   type="text"
                   value={overrideId}
                   onChange={(e) => handleOverrideChange(e.target.value)}
-                  placeholder="Q123456"
+                  placeholder={t("wikidata.placeholder")}
                   className={cn(
                     "flex-1 px-3 py-2 rounded-lg border text-sm",
                     "bg-gray-04 text-gray-01",
@@ -201,7 +203,7 @@ export function WikidataApprovalDisplay({
                   className="h-9 px-4"
                 >
                   <RotateCcw className="w-4 h-4 mr-2" />
-                  Spara och kör om
+                  {t("companyOverride.applyAndRerun")}
                 </Button>
               </div>
               {overrideError && (

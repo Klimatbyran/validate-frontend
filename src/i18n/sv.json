@@ -10,7 +10,7 @@
     "scrollToTop": "Scrolla till toppen"
   },
   "nav": {
-    "upload": "Uppladdning",
+    "upload": "Laga upp",
     "processing": "Bearbetning",
     "jobStatus": "Jobbstatus",
     "workflow": "Processflöde",
@@ -24,6 +24,15 @@
     "title": "Garbo AI",
     "by": "By Klimatkollen"
   },
+  "ui": {
+    "languageAria": "Språk",
+    "rawMarkdownCopied": "Rå markdown kopierad till urklipp",
+    "previousScreenshot": "Föregående skärmbild",
+    "nextScreenshot": "Nästa skärmbild",
+    "openFullscreenSlideshow": "Öppna bildspel i fullskärm",
+    "prev": "Föreg",
+    "next": "Nästa"
+  },
   "auth": {
     "login": "Logga in",
     "logout": "Logga ut",
@@ -32,7 +41,16 @@
     "loginRequiredMessage": "Du måste logga in för att utföra denna åtgärd.",
     "loginRequiredApp": "Du måste logga in för att använda denna applikation.",
     "loginWithGitHub": "Logga in med GitHub",
-    "redirectToGitHub": "Du kommer att omdirigeras till GitHub för autentisering."
+    "redirectToGitHub": "Du kommer att omdirigeras till GitHub för autentisering.",
+    "loginAborted": "Inloggning avbruten. Du måste godkänna åtkomst för att fortsätta.",
+    "noAuthCode": "Ingen autentiseringskod mottagen. Försök logga in igen.",
+    "authFailed": "Kunde inte autentisera. Kontrollera din internetanslutning och försök igen.",
+    "authenticating": "Autentiserar...",
+    "pleaseWait": "Vänta medan vi loggar in dig.",
+    "loginError": "Inloggningsfel",
+    "loginErrorWithParam": "Inloggningsfel: {{param}}",
+    "back": "Tillbaka",
+    "tryAgain": "Försök igen"
   },
   "upload": {
     "files": "Filer",
@@ -58,7 +76,10 @@
     "addLinks": "Lägg till länkar",
     "uploadedFiles": "Uppladdade filer ({{count}})",
     "addedLinks": "Tillagda länkar ({{count}})",
-    "seeResults": "Se resultat"
+    "seeResults": "Se resultat",
+    "unknownError": "Ett okänt fel uppstod",
+    "unknownCompany": "Okänd",
+    "linksPlaceholder": "https://example.com/rapport.pdf (en per rad)"
   },
   "processing": {
     "systemReady": "System Ready",
@@ -100,8 +121,41 @@
     "overview": {
       "title": "Processöversikt",
       "preprocessing": "Preprocessing",
-      "aiDataExtraction": "AI Data Extraction",
-      "finalize": "Finalize"
+      "aiDataExtraction": "AI-dataextrahering",
+      "finalize": "Slutför",
+      "companies": "Företag",
+      "reports": "Rapporter",
+      "activeJobs": "Aktiva jobb",
+      "completedFields": "Slutförda fält",
+      "totalJobs": "Totalt antal jobb",
+      "completed": "Slutfört",
+      "processing": "Bearbetar",
+      "approval": "Godkännande",
+      "failed": "Misslyckade",
+      "pipelineStepsOverview": "Översikt pipeline-steg"
+    },
+    "jobdetails": {
+      "cannotRunNoExtractParent": "Kan inte köra: hittade ingen extractEmissions-förälder för denna körning",
+      "jobApproved": "Jobbet godkänt",
+      "jobRejected": "Jobbet avvisat",
+      "cannotRerunMissingInfo": "Kunde inte köra om jobbet: saknar jobbinformation",
+      "jobRerunning": "Jobbet körs om",
+      "approvalRequired": "Godkännande krävs",
+      "approvalDescription": "Vänligen granska informationen och godkänn eller avvisa.",
+      "cannotRerunError": "Kunde inte köra om jobbet: {{message}}",
+      "fullErrorMessage": "Fullständigt felmeddelande",
+      "lastJobFailed": "Senaste jobbet misslyckades",
+      "jobRelationships": "Jobbrelationer",
+      "screenshots": "Screenshots",
+      "failureReason": "Orsak till misslyckande",
+      "stackTrace": "Stackspår",
+      "errorMessageOrStack": "Felmeddelande / stackspår",
+      "showFullErrorMessage": "Visa fullständigt felmeddelande",
+      "parent": "Förälder",
+      "statusLabel": "Status",
+      "created": "Skapad",
+      "rerunTitle": "Jobbet har körts om:",
+      "rerunExplanation": "Det här jobbet är en av flera körningar för samma steg i denna run. Den orange triangeln på rutan visar att jobbet har körts om."
     },
     "filters": {
       "pending_approval": "Väntar på godkännande",
@@ -126,12 +180,27 @@
     "enterName": "Ange ett företagsnamn"
   },
   "errors": {
-    "title": "Error Browser",
-    "subtitle": "Compare emissions data between Stage and Prod APIs",
-    "browser": "Browser",
-    "overview": "Overview",
-    "hardestReports": "Hardest Reports",
-    "loadingOverview": "Laddar översikt..."
+    "title": "Felöversikt",
+    "subtitle": "Jämför utsläppsdata mellan Stage- och Prod-API:er",
+    "browser": "Utforskare",
+    "overview": "Översikt",
+    "hardestReports": "Mest komplexa rapporter",
+    "loadingOverview": "Laddar översikt...",
+    "filterCompanies": "Filtrera företag...",
+    "loadingCompanies": "Laddar företag...",
+    "notInStage": "Ej i Stage",
+    "notInProd": "Ej i Prod",
+    "verified": "Verifierad",
+    "discrepancyGeneric": "Rätt tal placerat i en säkrare/generisk grupp (t.ex. okänd, annat)",
+    "discrepancySwap": "Värden är bytta mellan två kategorier — båda har varandras värde",
+    "discrepancyWrongCategory": "Värde placerat i fel kategori (inte en ren bytning)",
+    "discrepancyFalsePrecision": "Värde hör hemma i generisk grupp (okänd/annat) men placerat i specifik kategori — falsk precision",
+    "discrepancyDuplicate": "Samma värde finns i flera kategorier och driver upp totalen",
+    "discrepancyConservativeLabel": "Konservativ",
+    "discrepancySwapLabel": "Byt",
+    "discrepancyMixUpLabel": "Blandning",
+    "discrepancyOvercategorizedLabel": "Överkategoriserad",
+    "discrepancyDuplicatingLabel": "Duplicering"
   },
   "crawler": {
     "title": "Crawler",
@@ -150,6 +219,72 @@
     "comparison": "Jämförelse av klimatplaner"
   },
   "debug": {
-    "title": "Debug"
+    "title": "Debug",
+    "updatingView": "Uppdaterar debugvy...",
+    "viewUpdated": "Debugvy uppdaterad",
+    "errorOccurred": "Ett fel uppstod",
+    "threadJobs": "Trådens jobb",
+    "allJobs": "Alla jobb",
+    "updateDebugViewError": "Kunde inte uppdatera debugvy: {{message}}",
+    "tryAgain": "Försök igen",
+    "threads": "Trådar",
+    "activeThreads": "{{count}} aktiva trådar",
+    "refresh": "Uppdatera",
+    "jobs": "jobb"
+  },
+  "scope": {
+    "scope1": "Scope 1",
+    "scope1And2": "Scope 1+2",
+    "directEmissions": "Direkta utsläpp",
+    "matchesProd": "Stämmer med prod",
+    "deviatesFromProd": "Avviker från prod",
+    "scope2": "Scope 2",
+    "marketBased": "Marknadsbaserad",
+    "locationBased": "Platsbaserad",
+    "unspecified": "Ospecificerad",
+    "indirectEmissions": "Indirekta utsläpp (el, värme, kyla)",
+    "fetching": "Hämtar…",
+    "referenceValuesFromApi": "Referensvärden ({{year}}) från API i prod",
+    "scope1Total": "Scope 1 totalt",
+    "scope2MarketBased": "Scope 2 marknadsbaserad",
+    "scope2LocationBased": "Scope 2 platsbaserad",
+    "scope2Unspecified": "Scope 2 ospecificerad",
+    "scope12Total": "Scope 1+2 totalt",
+    "scope12Emissions": "Växthusgasutsläpp Scope 1 & 2",
+    "economy": "Ekonomi",
+    "averageCount": "Genomsnittligt antal",
+    "employeeCount": "Antal anställda",
+    "revenue": "Omsättning",
+    "employees": "Anställda",
+    "netRevenue": "Nettoomsättning",
+    "fte": "Heltidsekvivalenter",
+    "endOfYear": "Vid årets slut"
+  },
+  "wikidata": {
+    "invalidFormat": "Ogiltigt format. Wikidata ID ska vara Q följt av siffror (t.ex. Q123456)",
+    "enterWikidataId": "Ange ett Wikidata ID",
+    "approveWikidata": "Godkänn Wikidata",
+    "overwriteWikidataId": "Överskriv Wikidata ID",
+    "overwriteDescription": "Om det föreslagna Wikidata ID:t inte är korrekt, kan du ange ett annat ID här. Jobbet kommer att köras om med det nya ID:t.",
+    "placeholder": "Q123456",
+    "viewOnWikidata": "Visa på Wikidata",
+    "mustStartWithQ": "Wikidata ID måste börja med Q",
+    "approved": "Godkänd",
+    "pendingApproval": "Väntar på godkännande",
+    "approveDescription": "Godkänn det föreslagna Wikidata ID:t. Jobbet kommer att köras om med godkännande.",
+    "approveButton": "Godkänn",
+    "wikidataInfo": "Wikidata-information",
+    "id": "ID",
+    "name": "Namn",
+    "description": "Beskrivning",
+    "wikidataIdLabel": "Wikidata ID"
+  },
+  "status": {
+    "processingNow": "Bearbetar nu",
+    "completed": "Slutförd",
+    "failed": "Misslyckad",
+    "processing": "Bearbetar",
+    "needs_approval": "Väntar på godkännande",
+    "waiting": "Väntar"
   }
 }

@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Banknote, Users, CheckCircle2 } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 import { useCompanyReferenceByYears } from "../../lib/company-reference-api";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
 import { YearBadge } from "./YearBadge";
@@ -85,6 +86,7 @@ function EconomyReferencePanel({
   isLoading,
   error,
 }: EconomyReferencePanelProps) {
+  const { t } = useI18n();
   if (!wikidataId) return null;
   const latest = latestYear?.year;
   if (!latest) return null;
@@ -92,7 +94,7 @@ function EconomyReferencePanel({
     if (!snapshot)
     return (
       <div className={REF_PANEL_CLASS}>
-        {isLoading && <div className="text-sm text-gray-02">Hämtar…</div>}
+        {isLoading && <div className="text-sm text-gray-02">{t("scope.fetching")}</div>}
         {!isLoading && error && (
           <div className="text-sm text-gray-02">{error}</div>
         )}
@@ -118,16 +120,16 @@ function EconomyReferencePanel({
       <div className="flex items-center gap-2 mb-2">
         <CheckCircle2 className="w-4 h-4 text-green-03" />
         <span className="text-sm font-medium text-gray-01">
-          Referensvärden ({latest}) från API i prod
+          {t("scope.referenceValuesFromApi", { year: latest })}
         </span>
       </div>
-      {isLoading && <div className="text-sm text-gray-02">Hämtar…</div>}
+      {isLoading && <div className="text-sm text-gray-02">{t("scope.fetching")}</div>}
       {!isLoading && error && <div className="text-sm text-gray-02">{error}</div>}
       {!isLoading && !error && (
         <div className="divide-y divide-gray-03">
           {ourTurnover != null && (
             <div className="flex items-center justify-between py-1.5">
-              <span className="text-sm text-gray-02">Omsättning</span>
+              <span className="text-sm text-gray-02">{t("scope.revenue")}</span>
               <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
                 {formatCurrency(prodTurnover, snapshot.turnover?.currency)}
                 {turnoverMatch != null &&
@@ -141,7 +143,7 @@ function EconomyReferencePanel({
           )}
           {ourEmployees != null && (
             <div className="flex items-center justify-between py-1.5">
-              <span className="text-sm text-gray-02">Anställda</span>
+              <span className="text-sm text-gray-02">{t("scope.employees")}</span>
               <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
                 {formatNumber(prodEmployees)}{" "}
                 {snapshot.employees?.unit ?? ""}
@@ -160,14 +162,15 @@ function EconomyReferencePanel({
   );
 }
 
-function employeeUnitLabel(unit: string | null | undefined): string {
-  if (unit === "AVG") return "Genomsnittligt antal";
-  if (unit === "FTE") return "Heltidsekvivalenter";
-  if (unit === "EOY") return "Vid årets slut";
-  return "Antal anställda";
+function employeeUnitLabel(t: (key: string) => string, unit: string | null | undefined): string {
+  if (unit === "AVG") return t("scope.averageCount");
+  if (unit === "FTE") return t("scope.fte");
+  if (unit === "EOY") return t("scope.endOfYear");
+  return t("scope.employeeCount");
 }
 
 export function EconomySection({ data, wikidataId }: EconomySectionProps) {
+  const { t } = useI18n();
   if (
     !data.economy ||
     !Array.isArray(data.economy) ||
@@ -197,7 +200,7 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
     >
       <CollapsibleSection
         defaultOpen
-        title="Ekonomi"
+        title={t("scope.economy")}
         icon={<Banknote className="w-5 h-5 text-green-03" />}
         accentIconBg="bg-green-03/20"
         accentTextColor="text-green-03"
@@ -222,7 +225,7 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
                     {economy.turnover && economy.turnover.value != null && (
                       <DataCard
                         icon={<Banknote className="w-5 h-5 text-green-03" />}
-                        title="Omsättning"
+                        title={t("scope.revenue")}
                         className="mr-0 md:mr-2"
                       >
                         <div className="font-extrabold text-gray-01 text-2xl mb-1">
@@ -232,7 +235,7 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
                           )}
                         </div>
                         <div className="text-sm text-gray-02 mt-2">
-                          Nettoomsättning
+                          {t("scope.netRevenue")}
                         </div>
                       </DataCard>
                     )}
@@ -248,7 +251,7 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
                     {economy.employees && economy.employees.value != null && (
                       <DataCard
                         icon={<Users className="w-5 h-5 text-pink-03" />}
-                        title="Anställda"
+                        title={t("scope.employees")}
                         className="ml-0 md:ml-2"
                       >
                         <div className="font-extrabold text-gray-01 text-4xl mb-1">
@@ -258,7 +261,7 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
                           {economy.employees.unit || ""}
                         </div>
                         <div className="text-sm text-gray-02 mt-2">
-                          {employeeUnitLabel(economy.employees.unit)}
+                          {employeeUnitLabel(t, economy.employees.unit)}
                         </div>
                       </DataCard>
                     )}

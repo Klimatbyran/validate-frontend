@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useCompanies } from "@/hooks/useCompanies";
 import { Button } from "@/ui/button";
+import { useI18n } from "@/contexts/I18nContext";
 import { getWorkflowStages } from "@/lib/workflow-config";
 import { fetchQueueJobs } from "@/lib/api";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ import type { QueueJob } from "@/lib/types";
 type QueueWithJobs = { name: string; jobs: QueueJob[] };
 
 export function DebugTab() {
+  const { t } = useI18n();
   const { isLoading, error } = useCompanies();
   const [queues, setQueues] = useState<QueueWithJobs[] | null>(null);
   const [queuesLoading, setQueuesLoading] = useState(true);
@@ -91,10 +93,10 @@ export function DebugTab() {
         setQueues(data);
       }),
       {
-        loading: "Uppdaterar debugvy...",
-        success: "Debugvy uppdaterad",
+        loading: t("debug.updatingView"),
+        success: t("debug.viewUpdated"),
         error: (err: Error) =>
-          `Kunde inte uppdatera debugvy: ${err?.message || "Okänt fel"}`,
+          t("debug.updateDebugViewError", { message: err?.message || t("upload.unknownError") }),
       }
     );
   };
@@ -113,7 +115,7 @@ export function DebugTab() {
         <div className="flex items-center justify-between">
           <div className="flex items-center text-pink-03">
             <AlertCircle className="w-6 h-6 mr-2" />
-            <span>{error || "Ett fel uppstod"}</span>
+            <span>{error || t("debug.errorOccurred")}</span>
           </div>
           <Button
             variant="ghost"
@@ -122,7 +124,7 @@ export function DebugTab() {
             className="ml-4 whitespace-nowrap"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
-            Försök igen
+            {t("debug.tryAgain")}
           </Button>
         </div>
       </div>
@@ -198,9 +200,9 @@ export function DebugTab() {
       >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-3xl text-gray-01">Trådar</h3>
+            <h3 className="text-3xl text-gray-01">{t("debug.threads")}</h3>
             <p className="text-gray-02 mt-1">
-              {threadList.length} aktiva trådar
+              {t("debug.activeThreads", { count: threadList.length })}
             </p>
           </div>
           <Button
@@ -210,7 +212,7 @@ export function DebugTab() {
             className="text-gray-02 hover:text-gray-01"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
-            Uppdatera
+            {t("debug.refresh")}
           </Button>
         </div>
 
@@ -268,7 +270,7 @@ export function DebugTab() {
                   {thread.threadId}
                 </div>
                 <div className="text-sm text-gray-02 mt-1">
-                  {thread.jobs.length} jobb
+                  {thread.jobs.length} {t("debug.jobs")}
                 </div>
               </button>
             );
@@ -284,9 +286,9 @@ export function DebugTab() {
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-3xl text-gray-01">
-            {selectedThreadId ? "Trådens jobb" : "Alla jobb"}
+            {selectedThreadId ? t("debug.threadJobs") : t("debug.allJobs")}
           </h3>
-          <div className="text-sm text-gray-02">{selectedJobs.length} jobb</div>
+          <div className="text-sm text-gray-02">{selectedJobs.length} {t("debug.jobs")}</div>
         </div>
 
         <div className="overflow-x-auto">

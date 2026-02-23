@@ -145,7 +145,7 @@ toast.success(t("upload.linksAdded", { count: urls.length }));
     } catch (error) {
       console.error("Failed to add jobs:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
+        error instanceof Error ? error.message : t("upload.unknownError");
       toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
   }, [urlInput, autoApprove]);

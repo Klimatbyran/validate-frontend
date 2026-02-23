@@ -1,6 +1,7 @@
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/ui/button";
 import { Callout } from "@/ui/callout";
+import { useI18n } from "@/contexts/I18nContext";
 import { QueueJob } from "@/lib/types";
 
 interface ErrorSectionProps {
@@ -18,6 +19,7 @@ export function ErrorSection({
   setActiveTab,
   isFullError = false,
 }: ErrorSectionProps) {
+  const { t } = useI18n();
   const failed = isJobFailed(job);
   const failedReason = job.failedReason?.trim() || null;
   const stacktrace = Array.isArray(job.stacktrace) ? job.stacktrace : [];
@@ -28,13 +30,13 @@ export function ErrorSection({
   return (
     <Callout
       variant="error"
-      title={isFullError ? "Fullständigt felmeddelande" : "Senaste jobbet misslyckades"}
+      title={isFullError ? t("jobstatus.jobdetails.fullErrorMessage") : t("jobstatus.jobdetails.lastJobFailed")}
       icon={<AlertCircle className="w-5 h-5" />}
     >
       {failedReason && (
         <div className="mb-4">
           <div className="text-xs font-medium text-pink-03/80 uppercase tracking-wide mb-1">
-            Orsak till misslyckande
+            {t("jobstatus.jobdetails.failureReason")}
           </div>
           <p className="text-gray-01 text-sm whitespace-pre-wrap">
             {failedReason}
@@ -45,7 +47,7 @@ export function ErrorSection({
       {stacktrace.length > 0 && (
         <>
           <div className="text-xs font-medium text-pink-03/80 uppercase tracking-wide mb-1">
-            {isFullError ? "Stackspår" : "Felmeddelande / stackspår"}
+            {isFullError ? t("jobstatus.jobdetails.stackTrace") : t("jobstatus.jobdetails.errorMessageOrStack")}
           </div>
           {isFullError ? (
             <pre className="text-pink-03 text-sm overflow-x-auto bg-gray-04 rounded p-3 border border-gray-03">
@@ -63,7 +65,7 @@ export function ErrorSection({
                   onClick={() => setActiveTab("technical")}
                   className="mt-2 text-pink-03 hover:bg-pink-03/10"
                 >
-                  Visa fullständigt felmeddelande
+                  {t("jobstatus.jobdetails.showFullErrorMessage")}
                 </Button>
               )}
             </div>

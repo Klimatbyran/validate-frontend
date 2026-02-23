@@ -3,10 +3,22 @@ import { getWorkflowStages } from "@/lib/workflow-config";
 import {
   getStatusIcon as getCentralizedStatusIcon,
   getStatusBackgroundColor,
-  getStatusLabelSwedish,
 } from "@/lib/status-config";
 import { getJobStatus } from "@/lib/workflow-utils";
+import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
+
+function getStatusLabelKey(status: string, isActive?: boolean): string {
+  if (status === "processing" && isActive) return "status.processingNow";
+  const keyMap: Record<string, string> = {
+    completed: "status.completed",
+    failed: "status.failed",
+    processing: "status.processing",
+    needs_approval: "status.needs_approval",
+    waiting: "status.waiting",
+  };
+  return keyMap[status] ?? "status.waiting";
+}
 
 interface JobStatusSectionProps {
   job: QueueJob;
@@ -15,6 +27,7 @@ interface JobStatusSectionProps {
 }
 
 export function JobStatusSection({ job, isRerun = false }: JobStatusSectionProps) {
+  const { t } = useI18n();
   const stage = getWorkflowStages().find((s) => s.id === job.queueId);
   const jobStatus = getJobStatus(job);
   const isActivelyProcessing = Boolean(job.processedOn && !job.finishedOn);
@@ -25,11 +38,11 @@ export function JobStatusSection({ job, isRerun = false }: JobStatusSectionProps
     isActivelyProcessing
   );
   const statusColor = getStatusBackgroundColor(jobStatus);
-  const statusText = getStatusLabelSwedish(jobStatus, isActivelyProcessing);
+  const statusText = t(getStatusLabelKey(jobStatus, isActivelyProcessing));
 
   return (
     <div className="bg-gray-03/20 rounded-lg p-4">
-      <h3 className="text-lg font-medium text-gray-01 mb-4">Status</h3>
+      <h3 className="text-lg font-medium text-gray-01 mb-4">{t("jobstatus.jobdetails.statusLabel")}</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex items-center space-x-3">
           <div className={cn("p-2 rounded-full", statusColor)}>
@@ -44,7 +57,7 @@ export function JobStatusSection({ job, isRerun = false }: JobStatusSectionProps
         </div>
 
         <div>
-          <div className="text-sm text-gray-02">Skapad</div>
+          <div className="text-sm text-gray-02">{t("jobstatus.jobdetails.created")}</div>
           <div className="text-gray-01">
             {new Date(job.timestamp).toLocaleString("sv-SE")}
           </div>
@@ -58,9 +71,8 @@ export function JobStatusSection({ job, isRerun = false }: JobStatusSectionProps
             aria-hidden
           />
           <p>
-            <span className="font-medium text-gray-01">Jobbet har körts om:</span>{" "}
-            Det här jobbet är en av flera körningar för samma steg i denna run. Den
-            orange triangeln på rutan i vyn visar att jobbet har körts om.
+            <span className="font-medium text-gray-01">{t("jobstatus.jobdetails.rerunTitle")}</span>{" "}
+            {t("jobstatus.jobdetails.rerunExplanation")}
           </p>
         </div>
       )}

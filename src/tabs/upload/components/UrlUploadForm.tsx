@@ -51,7 +51,7 @@ export function UrlUploadForm({
         <textarea
           value={urlInput}
           onChange={(e) => onUrlInputChange(e.target.value)}
-          placeholder="https://example.com/rapport.pdf&#10;https://example.com/rapport2.pdf"
+          placeholder={t("upload.linksPlaceholder")}
           className="w-full h-32 bg-gray-03/20 border border-gray-03 rounded-lg p-3 text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
         />
         <div className="mt-4 flex justify-end">

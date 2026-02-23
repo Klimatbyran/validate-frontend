@@ -1,5 +1,6 @@
 import React from 'react';
 import { XCircle, Download } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 import { LoadingSpinner } from '@/ui/loading-spinner';
 import { DiscrepancyType, CompanyRow, DATA_POINTS } from '../types';
 import { computePerformanceMetrics, exportComparisonToCsv } from '../lib';
@@ -26,6 +27,7 @@ export function BrowserView({
   onDataPointChange,
   selectedYear,
 }: BrowserViewProps) {
+  const { t } = useI18n();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [visibleTypes, setVisibleTypes] = React.useState<Set<DiscrepancyType>>(
     new Set(['hallucination', 'missing', 'rounding', 'unit-error', 'small-error', 'error', 'category-error'])
@@ -114,7 +116,7 @@ export function BrowserView({
             <label className="text-xs text-gray-02 uppercase tracking-wide">Search</label>
             <input
               type="text"
-              placeholder="Filter companies..."
+              placeholder={t("errors.filterCompanies")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-gray-03 text-gray-01 rounded px-3 py-2 text-sm border border-gray-02/20 placeholder-gray-02"
@@ -159,7 +161,7 @@ export function BrowserView({
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <LoadingSpinner label="Loading companies..." />
+            <LoadingSpinner label={t("errors.loadingCompanies")} />
           </div>
         ) : error ? (
           <div className="p-6 text-red-400">

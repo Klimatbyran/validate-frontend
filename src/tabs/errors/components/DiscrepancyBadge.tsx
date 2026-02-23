@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/contexts/I18nContext';
 import { CompanyRow } from '../types';
 import { discrepancyConfig } from '../config/discrepancyConfig';
 
@@ -50,26 +51,32 @@ export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
 }
 
 function CategoryErrorKindBadge({ kind }: { kind: NonNullable<CompanyRow['categoryErrorKind']> }) {
+  const { t } = useI18n();
   const kindConfig = {
     conservative: {
-      bg: 'bg-green-500/20', text: 'text-green-400', dot: 'bg-green-400', label: 'Conservative',
-      title: 'Right number placed in a safer/generic bucket (e.g. unknown, other)',
+      bg: 'bg-green-500/20', text: 'text-green-400', dot: 'bg-green-400',
+      label: t('errors.discrepancyConservativeLabel'),
+      title: t('errors.discrepancyGeneric'),
     },
     swap: {
-      bg: 'bg-yellow-500/20', text: 'text-yellow-400', dot: 'bg-yellow-400', label: 'Swap',
-      title: "Values are swapped between two categories — both have each other's value",
+      bg: 'bg-yellow-500/20', text: 'text-yellow-400', dot: 'bg-yellow-400',
+      label: t('errors.discrepancySwapLabel'),
+      title: t('errors.discrepancySwap'),
     },
     'mix-up': {
-      bg: 'bg-orange-500/20', text: 'text-orange-400', dot: 'bg-orange-400', label: 'Mix-up',
-      title: 'Value placed in the wrong category (not a clean swap)',
+      bg: 'bg-orange-500/20', text: 'text-orange-400', dot: 'bg-orange-400',
+      label: t('errors.discrepancyMixUpLabel'),
+      title: t('errors.discrepancyWrongCategory'),
     },
     overcategorized: {
-      bg: 'bg-fuchsia-500/20', text: 'text-fuchsia-400', dot: 'bg-fuchsia-400', label: 'Overcategorized',
-      title: 'Value belongs in a generic bucket (unknown/other) but was placed in a specific category — false precision',
+      bg: 'bg-fuchsia-500/20', text: 'text-fuchsia-400', dot: 'bg-fuchsia-400',
+      label: t('errors.discrepancyOvercategorizedLabel'),
+      title: t('errors.discrepancyFalsePrecision'),
     },
     duplicating: {
-      bg: 'bg-red-500/20', text: 'text-red-400', dot: 'bg-red-400', label: 'Duplicating',
-      title: 'Same value appears in multiple categories, inflating totals',
+      bg: 'bg-red-500/20', text: 'text-red-400', dot: 'bg-red-400',
+      label: t('errors.discrepancyDuplicatingLabel'),
+      title: t('errors.discrepancyDuplicate'),
     },
   };
 

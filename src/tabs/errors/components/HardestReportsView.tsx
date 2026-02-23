@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Download } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 import { cn, downloadCsv } from '@/lib/utils';
 import { LoadingSpinner } from '@/ui/loading-spinner';
 import { DiscrepancyType, WorstCompany } from '../types';
@@ -42,6 +43,7 @@ function exportHardestReportsCsv(worstCompanies: WorstCompany[], selectedYear: n
 }
 
 export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs, selectedYear }: HardestReportsViewProps) {
+  const { t } = useI18n();
   // Build error distribution for histogram
   const distribution = React.useMemo(() => {
     if (worstCompanies.length === 0) return [];
@@ -63,7 +65,7 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <LoadingSpinner label="Loading companies..." />
+          <LoadingSpinner label={t("errors.loadingCompanies")} />
         </div>
       ) : (
         <>

@@ -65,7 +65,7 @@ export function Header() {
           transition={{ delay: 0.2 }}
           className="flex items-center gap-3"
         >
-          <div className="flex items-center gap-1 rounded-full border border-gray-03 bg-gray-04/50 p-0.5" role="group" aria-label="Language">
+          <div className="flex items-center gap-1 rounded-full border border-gray-03 bg-gray-04/50 p-0.5" role="group" aria-label={t("ui.languageAria")}>
             <button
               type="button"
               onClick={() => setLocale("en")}

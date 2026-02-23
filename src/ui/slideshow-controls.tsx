@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '@/contexts/I18nContext';
 import { Button } from './button';
 
 interface SlideshowControlsProps {
@@ -20,6 +21,7 @@ export const SlideshowControls: React.FC<SlideshowControlsProps> = ({
   showFullscreenButton = false,
   fullscreenMode = false
 }) => {
+  const { t } = useI18n();
   const progressClasses = fullscreenMode 
     ? "text-lg font-extrabold text-white tracking-wider drop-shadow-lg bg-black/50 rounded-full inline-block px-4 py-1"
     : "text-lg font-extrabold text-gray-01 tracking-wider drop-shadow-sm bg-gray-04/80 backdrop-blur-sm rounded-full inline-block px-4 py-1";
@@ -39,9 +41,9 @@ export const SlideshowControls: React.FC<SlideshowControlsProps> = ({
           variant="secondary"
           size="sm"
           onClick={onPrevious}
-          aria-label="Previous screenshot"
+          aria-label={t("ui.previousScreenshot")}
         >
-          Prev
+          {t("ui.prev")}
         </Button>
         
         {showFullscreenButton && onFullscreen && (
@@ -49,9 +51,9 @@ export const SlideshowControls: React.FC<SlideshowControlsProps> = ({
             variant="primary"
             size="default"
             onClick={onFullscreen}
-            aria-label="Open fullscreen slideshow"
+            aria-label={t("ui.openFullscreenSlideshow")}
           >
-            Open Fullscreen
+            {t("ui.openFullscreenSlideshow")}
           </Button>
         )}
         
@@ -59,9 +61,9 @@ export const SlideshowControls: React.FC<SlideshowControlsProps> = ({
           variant="secondary"
           size="sm"
           onClick={onNext}
-          aria-label="Next screenshot"
+          aria-label={t("ui.nextScreenshot")}
         >
-          Next
+          {t("ui.next")}
         </Button>
       </div>
     </>
