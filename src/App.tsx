@@ -17,9 +17,11 @@ import { ProcessingTab } from "@/tabs/processing/ProcessingTab";
 import { ResultsTab } from "@/tabs/results/ResultsTab";
 import { UploadTab } from "@/tabs/upload/UploadTab";
 import { WorkflowTab } from "@/tabs/workflow/WorkflowTab";
+import { useI18n } from "@/contexts/I18nContext";
 
 function App() {
   const [currentTab, setCurrentTab] = useState("upload");
+  const { t } = useI18n();
 
   return (
     <AuthProvider>
@@ -45,15 +47,15 @@ function App() {
                   className="space-y-6"
                 >
                   <TabsList className="bg-gray-04/50 backdrop-blur-sm">
-                    <TabsTrigger value="upload">Uppladdning</TabsTrigger>
-                    <TabsTrigger value="processing">Bearbetning</TabsTrigger>
-                    <TabsTrigger value="jobbstatus">Jobbstatus</TabsTrigger>
-                    <TabsTrigger value="workflow">Processflöde</TabsTrigger>
-                    <TabsTrigger value="debug">Debug</TabsTrigger>
-                    <TabsTrigger value="errors">Error Browser</TabsTrigger>
-                    <TabsTrigger value="results">Resultat</TabsTrigger>
-                    <TabsTrigger value="crawler">Crawler</TabsTrigger>
-                    <TabsTrigger value="climate-plans">Explore climate plans</TabsTrigger>
+                    <TabsTrigger value="upload">{t("nav.upload")}</TabsTrigger>
+                    <TabsTrigger value="processing">{t("nav.processing")}</TabsTrigger>
+                    <TabsTrigger value="jobbstatus">{t("nav.jobStatus")}</TabsTrigger>
+                    <TabsTrigger value="workflow">{t("nav.workflow")}</TabsTrigger>
+                    <TabsTrigger value="debug">{t("nav.debug")}</TabsTrigger>
+                    <TabsTrigger value="errors">{t("nav.errorBrowser")}</TabsTrigger>
+                    <TabsTrigger value="results">{t("nav.results")}</TabsTrigger>
+                    <TabsTrigger value="crawler">{t("nav.crawler")}</TabsTrigger>
+                    <TabsTrigger value="climate-plans">{t("nav.climatePlans")}</TabsTrigger>
                   </TabsList>
 
                   <AnimatePresence mode="popLayout" initial={false}>
@@ -146,7 +148,7 @@ function App() {
         />
         <Route path="/slideshow" element={<SlideshowPage />} />
       </Routes>
-    </AuthProvider>
+      </AuthProvider>
   );
 }
 

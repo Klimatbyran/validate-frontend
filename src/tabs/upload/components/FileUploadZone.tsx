@@ -1,5 +1,6 @@
 import { FileUp } from "lucide-react";
 import { motion } from "framer-motion";
+import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { cn } from "@/lib/utils";
 import { UploadedFile } from "../types";
@@ -21,6 +22,7 @@ export function FileUploadZone({
   uploadedFiles,
   onFileSubmit,
 }: FileUploadZoneProps) {
+  const { t } = useI18n();
   return (
     <>
       <div
@@ -46,10 +48,10 @@ export function FileUploadZone({
           />
         </motion.div>
         <p className="text-lg text-gray-01 text-center">
-          Dra och släpp PDF filer här
+          {t("upload.dragDropPdf")}
           <br />
           <span className="text-sm text-gray-02">
-            eller klicka för att välja filer
+            {t("upload.orClickToSelect")}
           </span>
         </p>
       </div>
@@ -57,7 +59,7 @@ export function FileUploadZone({
         <div className="mt-4 flex justify-end">
           <Button onClick={onFileSubmit}>
             <FileUp className="w-4 h-4 mr-2" />
-            Lägg till filer
+            {t("upload.addFiles")}
           </Button>
         </div>
       )}

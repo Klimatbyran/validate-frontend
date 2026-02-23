@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/contexts/I18nContext';
 import { LoadingSpinner } from '@/ui/loading-spinner';
 import type { ErrorBrowserViewMode } from './types';
 import { useErrorBrowserData } from './hooks/useErrorBrowserData';
@@ -12,6 +13,7 @@ import { HardestReportsView } from './components/HardestReportsView';
 const VIEW_MODES: ErrorBrowserViewMode[] = ['browser', 'overview', 'worst'];
 
 export function ErrorBrowserTab() {
+  const { t } = useI18n();
   const [selectedYear, setSelectedYear] = React.useState(2024);
   const [selectedDataPoint, setSelectedDataPoint] = React.useState('cat-1');
   const [viewMode, setViewMode] = React.useState<ErrorBrowserViewMode>('browser');
@@ -43,13 +45,12 @@ export function ErrorBrowserTab() {
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl text-gray-01 font-semibold">Error Browser</h2>
+            <h2 className="text-xl text-gray-01 font-semibold">{t("errors.title")}</h2>
             <p className="text-sm text-gray-02 mt-1">
-              Compare emissions data between Stage and Prod APIs
+              {t("errors.subtitle")}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {/* View toggle – match main app tabs (white/gray-01 when selected) */}
             <div className="flex rounded-full overflow-hidden border border-gray-02/20 bg-gray-04/50 p-1">
               {VIEW_MODES.map((mode) => (
                 <button
@@ -62,7 +63,7 @@ export function ErrorBrowserTab() {
                       : 'text-gray-02 hover:text-gray-01'
                   )}
                 >
-                  {mode === 'browser' ? 'Browser' : mode === 'overview' ? 'Overview' : 'Hardest Reports'}
+                  {mode === 'browser' ? t("errors.browser") : mode === 'overview' ? t("errors.overview") : t("errors.hardestReports")}
                 </button>
               ))}
             </div>
@@ -72,7 +73,7 @@ export function ErrorBrowserTab() {
               className="inline-flex items-center gap-2 px-3 py-2 bg-blue-04 text-white rounded-full hover:bg-blue-04/90 disabled:opacity-50 transition-colors text-sm font-medium"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
+              {t("common.refresh")}
             </button>
           </div>
         </div>
@@ -108,7 +109,7 @@ export function ErrorBrowserTab() {
       {viewMode === 'overview' && (
         isLoading ? (
           <div className="flex justify-center items-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
-            <LoadingSpinner label="Loading overview..." />
+            <LoadingSpinner label={t("errors.loadingOverview")} />
           </div>
         ) : (
           <OverviewView

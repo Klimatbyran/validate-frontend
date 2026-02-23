@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useCallback } from "react";
+import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
 
 export interface CopyButtonProps {
@@ -15,11 +16,14 @@ export interface CopyButtonProps {
 
 export function CopyButton({
   getText,
-  label = "Kopiera",
-  copiedLabel = "Kopierad",
+  label,
+  copiedLabel,
   className,
 }: CopyButtonProps) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
+  const displayLabel = label ?? t("common.copy");
+  const displayCopiedLabel = copiedLabel ?? t("common.copied");
 
   const handleCopy = useCallback(async () => {
     try {
@@ -41,7 +45,7 @@ export function CopyButton({
         className
       )}
     >
-      {copied ? copiedLabel : label}
+      {copied ? displayCopiedLabel : displayLabel}
     </button>
   );
 }

@@ -1,0 +1,155 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "copy": "Copy",
+    "copied": "Copied",
+    "filter": "Filter",
+    "clearFilters": "Clear filters",
+    "refresh": "Refresh",
+    "search": "Search",
+    "scrollToTop": "Scroll to top"
+  },
+  "nav": {
+    "upload": "Upload",
+    "processing": "Processing",
+    "jobStatus": "Job status",
+    "workflow": "Workflow",
+    "debug": "Debug",
+    "errorBrowser": "Error Browser",
+    "results": "Results",
+    "crawler": "Crawler",
+    "climatePlans": "Explore climate plans"
+  },
+  "brand": {
+    "title": "Garbo AI",
+    "by": "By Klimatkollen"
+  },
+  "auth": {
+    "login": "Log in",
+    "logout": "Log out",
+    "hi": "Hi",
+    "loginRequired": "Login required",
+    "loginRequiredMessage": "You must log in to perform this action.",
+    "loginRequiredApp": "You must log in to use this application.",
+    "loginWithGitHub": "Log in with GitHub",
+    "redirectToGitHub": "You will be redirected to GitHub for authentication."
+  },
+  "upload": {
+    "files": "Files",
+    "links": "Links",
+    "noPdfUploaded": "No PDF files uploaded",
+    "fileUploadNotSupported": "File upload is not yet supported. Use link mode instead.",
+    "onlyPdfAllowed": "Only PDF files are allowed",
+    "filesUploaded": "{{count}} file(s) uploaded",
+    "invalidUrlsSkipped": "{{count}} invalid URL(s) skipped",
+    "noValidPdfLinks": "No valid PDF links found",
+    "linksAdded": "{{count}} link(s) added",
+    "couldNotAddJobs": "Could not add jobs: {{message}}",
+    "addFilesOrLinksFirst": "Add files or links first",
+    "startingProcessing": "Starting processing...",
+    "itemsToProcess": "{{count}} {{type}}(s) to process",
+    "file": "file",
+    "link": "link",
+    "dragDropPdf": "Drag and drop PDF files here",
+    "orClickToSelect": "or click to select files",
+    "addFiles": "Add files",
+    "pastePdfLinks": "Paste PDF links (one per line)",
+    "autoApprove": "Auto-approve",
+    "addLinks": "Add links",
+    "uploadedFiles": "Uploaded files ({{count}})",
+    "addedLinks": "Added links ({{count}})",
+    "seeResults": "See results"
+  },
+  "processing": {
+    "systemReady": "System Ready",
+    "queueMonitoring": "Queue monitoring has been simplified. Check the \"Job status\" tab to view company progress."
+  },
+  "results": {
+    "overview": "Results overview",
+    "placeholder": "Results will appear here when processing is complete."
+  },
+  "jobstatus": {
+    "scope": "Scope",
+    "latestRun": "Latest run",
+    "allRuns": "All runs",
+    "searchCompany": "Search by company name...",
+    "searchCompanyAria": "Search companies",
+    "clearSearch": "Clear search",
+    "filter": "Filter",
+    "moreFilters": "More filters",
+    "additionalFilters": "Additional filters",
+    "showingCompanies": "Showing {{filtered}} of {{total}} companies",
+    "runSpecificJobs": "Run specific jobs:",
+    "count": "Count",
+    "loadMore": "Load more companies",
+    "loadingMore": "Loading more companies...",
+    "noCompaniesMatch": "No companies match the selected filters",
+    "noCompaniesFound": "No companies found",
+    "loadingCompanies": "Loading companies...",
+    "fetchingCompanies": "Fetching company data from API",
+    "errorLoadingCompanies": "Error loading companies: {{error}}",
+    "rerunWorkers": {
+      "scope1": "Scope 1",
+      "scope2": "Scope 2",
+      "scope3": "Scope 3",
+      "economy": "Economy",
+      "baseYear": "Base year",
+      "industryGics": "Industry GICS"
+    },
+    "limitAll": "All",
+    "overview": {
+      "title": "Process Overview",
+      "preprocessing": "Preprocessing",
+      "aiDataExtraction": "AI Data Extraction",
+      "finalize": "Finalize"
+    },
+    "filters": {
+      "pending_approval": "Pending approval",
+      "has_failed": "Has failed",
+      "has_processing": "Processing",
+      "fully_completed": "Fully completed",
+      "has_issues": "Has issues",
+      "preprocessing_issues": "Preprocessing issues",
+      "data_extraction_issues": "Data extraction issues",
+      "finalize_issues": "Finalization issues"
+    }
+  },
+  "companyOverride": {
+    "title": "Change company name",
+    "description": "If the company name found in the pre-check is not correct, you can enter a new name here. The job will be re-run with the new name.",
+    "currentName": "Current company name",
+    "newNameLabel": "New company name",
+    "placeholder": "Enter new company name",
+    "apply": "Apply",
+    "applyAndRerun": "Save and run again",
+    "nameRequired": "Company name cannot be empty",
+    "enterName": "Enter a company name"
+  },
+  "errors": {
+    "title": "Error Browser",
+    "subtitle": "Compare emissions data between Stage and Prod APIs",
+    "browser": "Browser",
+    "overview": "Overview",
+    "hardestReports": "Hardest Reports",
+    "loadingOverview": "Loading overview..."
+  },
+  "crawler": {
+    "title": "Crawler",
+    "manualSearch": "Manual search for company reports",
+    "searchPlaceholder": "Search for companies (separate with commas)",
+    "reportYear": "Report year",
+    "reportYearPlaceholder": "E.g. 2025",
+    "search": "Search",
+    "loadingResults": "Loading search results...",
+    "loadingDescription": "Hang in there as this may take a moment. The crawler is fetching and processing."
+  },
+  "climate": {
+    "loading": "Loading climate plans...",
+    "loadFailed": "Failed to load climate plans: {{error}}",
+    "noneFound": "No climate plans found. Add municipality data to public/climate-plans/.",
+    "comparison": "Climate Plans Comparison"
+  },
+  "debug": {
+    "title": "Debug"
+  }
+}

@@ -1,4 +1,5 @@
 import { Link2 } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -17,15 +18,16 @@ export function UrlUploadForm({
   onAutoApproveChange,
   onSubmit,
 }: UrlUploadFormProps) {
+  const { t } = useI18n();
   return (
     <div className="space-y-4">
       <div className="bg-gray-04/50 backdrop-blur-sm rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <label className="block text-sm font-medium text-gray-01">
-            Klistra in PDF-länkar (en per rad)
+            {t("upload.pastePdfLinks")}
           </label>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-02">Auto-godkänn</span>
+            <span className="text-sm text-gray-02">{t("upload.autoApprove")}</span>
             <button
               onClick={() => onAutoApproveChange(!autoApprove)}
               className={cn(
@@ -55,7 +57,7 @@ export function UrlUploadForm({
         <div className="mt-4 flex justify-end">
           <Button onClick={onSubmit} disabled={!urlInput.trim()}>
             <Link2 className="w-4 h-4 mr-2" />
-            Lägg till länkar
+            {t("upload.addLinks")}
           </Button>
         </div>
       </div>

@@ -14,6 +14,7 @@ import {
   MoreVertical,
   Search,
 } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import type { FilterType, RunScope } from "@/tabs/jobbstatus/lib/swimlane-filters";
 import {
@@ -61,6 +62,7 @@ export function FilterBar({
   companySearchQuery = "",
   onCompanySearchChange,
 }: FilterBarProps) {
+  const { t } = useI18n();
   const hasActiveFiltersOrSearch =
     activeFilters.size > 0 || (companySearchQuery?.trim() ?? "") !== "";
   const [showMoreFilters, setShowMoreFilters] = useState(false);
@@ -106,16 +108,16 @@ export function FilterBar({
                 type="text"
                 value={companySearchQuery}
                 onChange={(e) => onCompanySearchChange(e.target.value)}
-                placeholder="Sök på företagsnamn..."
+                placeholder={t("jobstatus.searchCompany")}
                 className="w-full pl-9 pr-8 py-2 rounded-md border border-gray-03 bg-gray-05 text-gray-01 text-sm placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-blue-03/50 focus:border-blue-03"
-                aria-label="Sök företag"
+                aria-label={t("jobstatus.searchCompanyAria")}
               />
               {companySearchQuery && (
                 <button
                   type="button"
                   onClick={() => onCompanySearchChange("")}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-02 hover:text-gray-01 rounded"
-                  aria-label="Rensa sökning"
+                  aria-label={t("jobstatus.clearSearch")}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -123,7 +125,7 @@ export function FilterBar({
             </div>
           )}
           <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
-            <span className="text-sm text-gray-02">Omfattning:</span>
+            <span className="text-sm text-gray-02">{t("jobstatus.scope")}:</span>
             <div className="flex items-center gap-1 bg-gray-03 rounded-full p-0.5">
               <button
                 onClick={() => onRunScopeChange("latest")}
@@ -133,7 +135,7 @@ export function FilterBar({
                     : "text-gray-02 hover:text-gray-01"
                 }`}
               >
-                Senaste körning
+                {t("jobstatus.latestRun")}
               </button>
               <button
                 onClick={() => onRunScopeChange("all")}
@@ -143,7 +145,7 @@ export function FilterBar({
                     : "text-gray-02 hover:text-gray-01"
                 }`}
               >
-                Alla körningar
+                {t("jobstatus.allRuns")}
               </button>
             </div>
           </div>
@@ -153,7 +155,7 @@ export function FilterBar({
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex items-center gap-2 shrink-0">
             <Filter className="w-4 h-4 text-gray-02" />
-            <span className="text-sm font-medium text-gray-01">Filter:</span>
+            <span className="text-sm font-medium text-gray-01">{t("jobstatus.filter")}:</span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {primaryFilters.map((filter) => {
@@ -173,7 +175,7 @@ export function FilterBar({
                 >
                   {isActive && <X className="w-4 h-4 mr-1.5 shrink-0" />}
                   <span className="mr-1.5 shrink-0">{filter.icon}</span>
-                  <span className="whitespace-nowrap">{filter.label}</span>
+                  <span className="whitespace-nowrap">{t(`jobstatus.filters.${filter.id}`)}</span>
                   {count > 0 && (
                     <span
                       className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${
@@ -198,7 +200,7 @@ export function FilterBar({
                 className="!w-auto !min-w-0 h-9 px-4 text-sm border border-gray-03 text-gray-01 hover:bg-gray-03/40"
               >
               <MoreVertical className="w-4 h-4 mr-1.5" />
-              Fler filter
+              {t("jobstatus.moreFilters")}
               {activeFilters.size > 0 &&
                 secondaryFilters.some((f) => activeFilters.has(f.id)) && (
                   <span className="ml-2 px-2 py-0.5 rounded-full bg-blue-03/20 text-blue-03 text-xs font-medium">
@@ -214,7 +216,7 @@ export function FilterBar({
             {showMoreFilters && (
               <div className="absolute left-0 top-full mt-2 z-50 bg-gray-04 border border-gray-03 rounded-lg shadow-lg p-2 min-w-[200px]">
                 <div className="text-xs font-semibold text-gray-02 mb-2 px-2">
-                  Ytterligare filter
+                  {t("jobstatus.additionalFilters")}
                 </div>
                 {secondaryFilters.map((filter) => {
                   const isActive = activeFilters.has(filter.id);
@@ -235,7 +237,7 @@ export function FilterBar({
                         {isActive && (
                           <CheckCircle2 className="w-4 h-4 text-blue-03" />
                         )}
-                        {filter.label}
+                        {t(`jobstatus.filters.${filter.id}`)}
                       </span>
                       {count > 0 && (
                         <span className="text-xs text-gray-02">{count}</span>
@@ -256,7 +258,7 @@ export function FilterBar({
                 className="!w-auto !min-w-0 h-9 px-4 text-sm text-gray-02 hover:text-gray-01 hover:bg-gray-03/40"
               >
                 <X className="w-4 h-4 mr-1.5" />
-                Rensa filter
+                {t("common.clearFilters")}
               </Button>
             )}
           </div>
@@ -265,7 +267,7 @@ export function FilterBar({
         {/* Filter Summary */}
         {hasActiveFiltersOrSearch && (
           <div className="text-sm text-gray-02 pt-2">
-            Visar {filteredCount} av {totalCount} företag
+            {t("jobstatus.showingCompanies", { filtered: filteredCount, total: totalCount })}
           </div>
         )}
 

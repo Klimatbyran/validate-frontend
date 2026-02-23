@@ -18,12 +18,14 @@ import {
   hasIssues,
   hasPipelineStepIssues,
 } from "./lib/swimlane-filters";
+import { useI18n } from "@/contexts/I18nContext";
 import { useRerunByWorker } from "./hooks/useRerunByWorker";
 import { OverviewStats } from "./components/OverviewStats";
 import { FilterBar } from "./components/FilterBar";
 import { CompanyCard } from "./components/CompanyCard";
 
 export function JobbstatusTab() {
+  const { t } = useI18n();
   const {
     companies,
     isLoading,
@@ -154,10 +156,10 @@ export function JobbstatusTab() {
           <Loader2 className="w-8 h-8 text-blue-03 animate-spin mx-auto" />
           <div>
             <p className="text-lg text-gray-01 font-medium">
-              Loading companies...
+              {t("jobstatus.loadingCompanies")}
             </p>
             <p className="text-sm text-gray-02 mt-2">
-              Fetching company data from API
+              {t("jobstatus.fetchingCompanies")}
             </p>
           </div>
         </div>
@@ -169,7 +171,7 @@ export function JobbstatusTab() {
     return (
       <div className="flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-red-03">Error loading companies: {error}</p>
+          <p className="text-red-03">{t("jobstatus.errorLoadingCompanies", { error: String(error) })}</p>
         </div>
       </div>
     );
@@ -179,7 +181,7 @@ export function JobbstatusTab() {
     return (
       <div className="flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-gray-02">No companies found</p>
+          <p className="text-gray-02">{t("jobstatus.noCompaniesFound")}</p>
         </div>
       </div>
     );
@@ -213,8 +215,8 @@ export function JobbstatusTab() {
           <div className="text-center py-12">
             <p className="text-gray-02">
               {activeFilters.size > 0
-                ? "Inga företag matchar de valda filtren"
-                : "Inga företag hittades"}
+                ? t("jobstatus.noCompaniesMatch")
+                : t("jobstatus.noCompaniesFound")}
             </p>
           </div>
         ) : (
@@ -236,8 +238,8 @@ export function JobbstatusTab() {
                   className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
                 >
                   {isLoadingMore
-                    ? "Laddar fler företag..."
-                    : "Ladda fler företag"}
+                    ? t("jobstatus.loadingMore")
+                    : t("jobstatus.loadMore")}
                 </Button>
               </div>
             )}
@@ -249,7 +251,7 @@ export function JobbstatusTab() {
         <button
           onClick={scrollToTop}
           className="fixed bottom-6 right-6 z-50 bg-gray-01 text-gray-05 rounded-full p-3 shadow-lg hover:bg-gray-02 transition-all hover:scale-110 active:scale-95"
-          aria-label="Scroll to top"
+          aria-label={t("common.scrollToTop")}
         >
           <ArrowUp className="w-5 h-5" />
         </button>

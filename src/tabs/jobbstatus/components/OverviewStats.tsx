@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight, BarChart3, Activity } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 import { StatCard, CompactStatCard, PipelineStepCard } from "./StatCards";
 import { getAllPipelineSteps } from "@/lib/workflow-config";
 import {
@@ -32,11 +33,17 @@ export function OverviewStats({
   );
   const [isExpanded, setIsExpanded] = useState(true);
 
-  // Map step names to filter types
+  const { t } = useI18n();
+  // Map step names (from workflow config) to filter types
   const stepToFilterMap: Record<string, FilterType> = {
     Preprocessing: "preprocessing_issues",
     "AI Data Extraction": "data_extraction_issues",
     Finalize: "finalize_issues",
+  };
+  const stepNameToKey: Record<string, string> = {
+    Preprocessing: "jobstatus.overview.preprocessing",
+    "AI Data Extraction": "jobstatus.overview.aiDataExtraction",
+    Finalize: "jobstatus.overview.finalize",
   };
 
   return (
@@ -51,7 +58,7 @@ export function OverviewStats({
           <ChevronRight className="w-5 h-5 text-gray-02" />
         )}
         <BarChart3 className="w-5 h-5 text-gray-02" />
-        <h2 className="text-3xl text-gray-01">Process Overview</h2>
+        <h2 className="text-3xl text-gray-01">{t("jobstatus.overview.title")}</h2>
       </button>
 
       {isExpanded && (
@@ -126,7 +133,7 @@ export function OverviewStats({
                 return (
                   <PipelineStepCard
                     key={index}
-                    name={step.name}
+                    name={stepNameToKey[step.name] ? t(stepNameToKey[step.name]) : step.name}
                     completed={step.completed}
                     processing={step.processing}
                     failed={step.failed}
