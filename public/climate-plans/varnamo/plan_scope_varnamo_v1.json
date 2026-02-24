@@ -1,0 +1,59 @@
+{
+  "Varnamo": {
+    "policy_domain": {
+      "primary_focus": "both",
+      "mitigation_sections": [
+        "Minskad klimatpåverkan",
+        "Ansvarsfull resurshantering"
+      ],
+      "adaptation_sections": [
+        "Hållbar bebyggd miljö och natur"
+      ],
+      "mitigation_description": "The plan addresses mitigation through strategic areas such as 'Minskad klimatpåverkan' which focuses on reducing greenhouse gas emissions by promoting energy efficiency, renewable energy, and sustainable transportation. It also includes 'Ansvarsfull resurshantering' which aims to transition to a circular economy to reduce waste and resource consumption.",
+      "adaptation_description": "The plan addresses adaptation primarily through the section 'Hållbar bebyggd miljö och natur', which focuses on sustainable urban planning and building resilience against climate impacts by promoting biodiversity and reducing exposure to environmental hazards.",
+      "source_quotes": [
+        "För att Värnamo kommun ska kunna arbeta med miljöfrågor på ett effektivt sätt har ett antal strategiska områden identifierats: Minskad klimatpåverkan, Hållbar bebyggd miljö och natur, Ansvarsfull resurshantering, Insikt och handlingskraft.",
+        "Minskad klimatpåverkan: Klimatförändringarna är en av vår tids största utmaningar. De ökade utsläppen av växthusgaser i atmosfären leder till en global uppvärmning och måste kraftigt begränsas.",
+        "Hållbar bebyggd miljö och natur: God samhällsplanering motverkar sociala klyftor och ljud-, luft- och ljusföroreningar men ser också till att skapa resiliens mot klimatförändringar och att stärka ekosystem."
+      ]
+    },
+    "spatial_scope": {
+      "primary_scope": "municipal_territory",
+      "primary_scope_other": "",
+      "limited_to_territory": false,
+      "addresses_metropolitan_or_regional": true,
+      "metropolitan_regional_description": "The plan references regional cooperation through the Jönköping County's climate and energy strategy, which aims for the county to become a climate-smart plus-energy region by 2045.",
+      "distinguishes_operations_vs_territory": true,
+      "operations_vs_territory_description": "The plan distinguishes between the municipality's own operations and the wider geographic area by setting specific actions for municipal operations, such as energy efficiency in municipal buildings, while also aiming to influence broader community behaviors and regional cooperation.",
+      "source_quotes": [
+        "Miljöplanen gäller för Värnamo kommuns alla politiker och tjänstepersoner och ska vara välkänd i kommunens nämnder och förvaltningar.",
+        "Regionalt har länets klimatråd tagit fram en klimat- och energistrategi med en vision om Jönköpings län som ett klimatsmart plusenergilän år 2045.",
+        "Värnamo kommun ska… Effektivisera energianvändningen i det egna fastighetsbeståndet."
+      ]
+    },
+    "temporal_scope": {
+      "plan_period_start": "2023",
+      "plan_period_end": "2035",
+      "has_revision_cycle": true,
+      "revision_cycle_description": "The plan includes an annual revision cycle for the action plan, which is updated every year by the municipal council. Additionally, the overall environmental plan is reviewed in the middle of each mandate period.",
+      "interim_milestones": [
+        "Annual action plan revision",
+        "Mid-mandate period review"
+      ],
+      "source_quotes": [
+        "Huvudsyftet med miljöplanen är att peka ut riktningen för kommunens miljöarbete fram till år 2035.",
+        "Åtgärdsplanen revideras årligen i kommunfullmäktige, då fylls listan på med nya åtgärder och inaktuella åtgärder tas bort.",
+        "Eftersom omvärlden ständigt förändras kan strategiska områden och ställningstaganden komma att behöva revideras, därför ses miljöplanen över i mitten av varje mandatperiod."
+      ]
+    },
+    "summary": {
+      "document_type": "environmental_programme",
+      "document_type_other": "",
+      "document_title": "Plan för Värnamo kommuns miljöarbete 2023-2035",
+      "adopting_body": "Kommunfullmäktige",
+      "adoption_date": "2023-02-23",
+      "overall_assessment": "The plan is a comprehensive environmental programme that addresses both mitigation and adaptation through strategic areas. It covers the entire municipal territory and distinguishes between municipal operations and broader community actions. The plan period is from 2023 to 2035, with annual revisions of the action plan and a mid-mandate review of the overall plan."
+    }
+  },
+  "_version": "v1"
+}
