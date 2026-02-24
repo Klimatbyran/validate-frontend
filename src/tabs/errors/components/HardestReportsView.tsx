@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Download } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 import { cn, downloadCsv } from '@/lib/utils';
 import { LoadingSpinner } from '@/ui/loading-spinner';
 import { DiscrepancyType, WorstCompany } from '../types';
@@ -42,6 +43,7 @@ function exportHardestReportsCsv(worstCompanies: WorstCompany[], selectedYear: n
 }
 
 export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs, selectedYear }: HardestReportsViewProps) {
+  const { t } = useI18n();
   // Build error distribution for histogram
   const distribution = React.useMemo(() => {
     if (worstCompanies.length === 0) return [];
@@ -63,7 +65,7 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <LoadingSpinner label="Loading companies..." />
+          <LoadingSpinner label={t("errors.loadingCompanies")} />
         </div>
       ) : (
         <>
@@ -74,7 +76,7 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
               className="inline-flex items-center gap-2 px-3 py-2 bg-gray-03 text-gray-01 rounded-lg hover:bg-gray-02 hover:text-white disabled:opacity-50 transition-colors text-sm"
             >
               <Download className="w-4 h-4" />
-              Export CSV
+              {t("errors.exportCsv")}
             </button>
           </div>
 
@@ -87,17 +89,17 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
               <thead className="bg-gray-03/50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">#</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">Company</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-02 uppercase tracking-wider">Errors</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">Breakdown</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">Affected Data Points</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.company")}</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.errors")}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.breakdown")}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.affectedDataPoints")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-03/50">
                 {worstCompanies.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 py-8 text-center text-gray-02">
-                      No companies with errors found.
+                      {t("errors.noCompaniesWithErrorsFound")}
                     </td>
                   </tr>
                 ) : (
@@ -113,10 +115,10 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
 
       {!isLoading && (
         <div className="px-4 py-3 bg-gray-03/30 text-sm text-gray-02 border-t border-gray-03/50">
-          {worstCompanies.length} companies with errors
+          {t("errors.companiesWithErrors", { count: worstCompanies.length })}
           {difficultCount > 0 && (
             <span className="ml-2 text-red-400">
-              ({difficultCount} difficult reports)
+              ({t("errors.difficultReports", { count: difficultCount })})
             </span>
           )}
         </div>

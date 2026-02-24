@@ -1,11 +1,13 @@
 import type { CompanyRow, DataPointMetric } from '../types';
 
 export interface PerformanceMetricRow {
-  label: string;
+  /** Translation key for the metric name (e.g. errors.metrics.exactMatch). */
+  labelKey: string;
   success: number;
   total: number;
   rate: number;
-  excludes: string;
+  /** Translation key for the notes/excludes text (e.g. errors.metrics.notes.nothing). */
+  excludesKey: string;
 }
 
 /** Build performance metrics from comparison rows for the browser view. */
@@ -47,15 +49,15 @@ export function computePerformanceMetrics(comparisonRows: CompanyRow[]): {
       success: identical,
       total: withAnyData,
       rate: withAnyData > 0 ? (identical / withAnyData) * 100 : 0,
-      label: 'Exact Match',
-      excludes: 'Nothing',
+      labelKey: 'errors.metrics.exactMatch',
+      excludesKey: 'errors.metrics.notes.nothing',
     },
     tolerant: {
       success: identical + rounding,
       total: withAnyData,
       rate: withAnyData > 0 ? ((identical + rounding) / withAnyData) * 100 : 0,
-      label: 'Precision-Tolerant',
-      excludes: 'Rounding (≤0.5)',
+      labelKey: 'errors.metrics.precisionTolerant',
+      excludesKey: 'errors.metrics.notes.rounding',
     },
     zeroInclusive: {
       success: identical + rounding + bothNull,
@@ -64,8 +66,8 @@ export function computePerformanceMetrics(comparisonRows: CompanyRow[]): {
         totalCompanies > 0
           ? ((identical + rounding + bothNull) / totalCompanies) * 100
           : 0,
-      label: 'Zero-Inclusive',
-      excludes: 'Rounding + both empty is correct',
+      labelKey: 'errors.metrics.zeroInclusive',
+      excludesKey: 'errors.metrics.notes.zeroInclusive',
     },
   };
 }

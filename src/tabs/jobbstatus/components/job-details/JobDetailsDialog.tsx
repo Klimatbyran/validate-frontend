@@ -1,25 +1,27 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogFooter } from "@/ui/dialog";
+import { Callout } from "@/ui/callout";
 import { toast } from "sonner";
 import { QueueJob, DetailedJobResponse, SwimlaneYearData } from "@/lib/types";
 import { HelpCircle, RotateCcw } from "lucide-react";
 import { JobSpecificDataView } from "./JobSpecificDataView";
-import { JobDialogHeader } from "./job-details/JobDialogHeader";
-import { DialogTabs } from "./job-details/DialogTabs";
-import { JobDialogFooter } from "./job-details/JobDialogFooter";
-import { TechnicalDataSection } from "./job-details/TechnicalDataSection";
-import { ReturnValueSection } from "./job-details/ReturnValueSection";
-import { JobMetadataSection } from "./job-details/JobMetadataSection";
-import { ErrorSection } from "./job-details/ErrorSection";
-import { JobStatusSection } from "./job-details/JobStatusSection";
-import { JobRelationshipsSection } from "./job-details/JobRelationshipsSection";
-import { SchemaSection } from "./job-details/SchemaSection";
+import { JobDialogHeader } from "./JobDialogHeader";
+import { DialogTabs } from "./DialogTabs";
+import { JobDialogFooter } from "./JobDialogFooter";
+import { TechnicalDataSection } from "./TechnicalDataSection";
+import { ReturnValueSection } from "./ReturnValueSection";
+import { JobMetadataSection } from "./JobMetadataSection";
+import { ErrorSection } from "./ErrorSection";
+import { JobStatusSection } from "./JobStatusSection";
+import { JobRelationshipsSection } from "./JobRelationshipsSection";
+import { SchemaSection } from "./SchemaSection";
 import { authenticatedFetch } from "@/lib/api-helpers";
 import { buildRerunRequestData, buildRerunAndSaveBody, QUEUE_TO_FOLLOW_UP_KEY } from "@/lib/job-rerun-utils";
 import { getQueueDisplayName } from "@/lib/workflow-config";
 import { findJobByQueueId } from "@/lib/workflow-utils";
 import { getWikidataInfo } from "@/lib/utils";
 import { Button } from "@/ui/button";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface JobDetailsDialogProps {
   job: QueueJob | null;
@@ -43,6 +45,7 @@ export function JobDetailsDialog({
   yearData,
   isRerun = false,
 }: JobDetailsDialogProps) {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"user" | "technical">("user");
   const [detailed, setDetailed] = useState<DetailedJobResponse | null>(null);
 
@@ -105,7 +108,7 @@ export function JobDetailsDialog({
 
     const handleRunAndSave = async () => {
       if (!extractEmissionsJob?.id) {
-        toast.error("Kan inte köra: hittade ingen extractEmissions-förälder för denna körning");
+        toast.error(t("jobstatus.jobdetails.cannotRunNoExtractParent"));
         return;
       }
 
@@ -121,14 +124,14 @@ export function JobDetailsDialog({
 
         if (!response.ok) {
           const errorText = await response.text();
-          toast.error(`Kunde inte köra ${displayName}: ${errorText || "Okänt fel"}`);
+          toast.error(t("jobstatus.jobdetails.runAndSaveError", { name: displayName, message: errorText || t("upload.unknownError") }));
           return;
         }
 
-        toast.success(`${displayName} körs och sparas`);
+        toast.success(t("jobstatus.jobdetails.runAndSaveSuccess", { name: displayName }));
         onOpenChange(false);
       } catch (error) {
-        toast.error(`Ett fel uppstod: ${error instanceof Error ? error.message : "Okänt fel"}`);
+        toast.error(t("jobstatus.jobdetails.errorOccurred", { message: error instanceof Error ? error.message : t("upload.unknownError") }));
       }
     };
 
@@ -142,13 +145,13 @@ export function JobDetailsDialog({
               </div>
               <h2 className="text-lg font-semibold text-gray-01">{displayName}</h2>
               <p className="text-sm text-gray-02">
-                Det här jobbet har inte körts ännu.
+                {t("jobstatus.jobdetails.jobNotRunYet")}
               </p>
             </div>
 
             {!extractEmissionsJob && (
               <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-sm text-orange-300">
-                Kunde inte hitta ett extractEmissions-jobb i denna körning. Jobbet kan inte triggas utan en förälder.
+                {t("jobstatus.jobdetails.noExtractEmissionsParent")}
               </div>
             )}
 
@@ -190,14 +193,14 @@ export function JobDetailsDialog({
     if (onApprove) {
       onApprove(approved);
       onOpenChange(false);
-      toast.success(approved ? "Jobbet godkänt" : "Jobbet avvisat");
+      toast.success(approved ? t("jobstatus.jobdetails.jobApproved") : t("jobstatus.jobdetails.jobRejected"));
     }
   };
 
   const handleRetry = async () => {
     if (!job || !effectiveJob || !effectiveJob.queueId || !effectiveJob.id) {
       console.error("Cannot retry: missing job information");
-      toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
+      toast.error(t("jobstatus.jobdetails.cannotRerunMissingInfo"));
       return;
     }
 
@@ -223,13 +226,13 @@ export function JobDetailsDialog({
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Failed to retry job:", errorText);
-        toast.error(`Kunde inte köra om jobbet: ${errorText || "Okänt fel"}`);
+        toast.error(t("jobstatus.jobdetails.cannotRerunError", { message: errorText || t("upload.unknownError") }));
         return;
       }
 
       const updatedJob = await response.json();
       console.log("Job retried successfully:", updatedJob);
-      toast.success("Jobbet körs om");
+      toast.success(t("jobstatus.jobdetails.jobRerunning"));
 
       // Refresh job data
       if (job.queueId && job.id) {
@@ -257,9 +260,9 @@ export function JobDetailsDialog({
     } catch (error) {
       console.error("Error retrying job:", error);
       toast.error(
-        `Ett fel uppstod vid omkörning: ${
-          error instanceof Error ? error.message : "Okänt fel"
-        }`
+        t("jobstatus.jobdetails.cannotRerunError", {
+          message: error instanceof Error ? error.message : t("upload.unknownError"),
+        })
       );
     }
   };
@@ -287,21 +290,12 @@ export function JobDetailsDialog({
           <div className="space-y-6 my-6">
             {activeTab === "user" && (
               <>
-                <div className="bg-blue-03/10 rounded-lg p-4">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="p-2 rounded-full bg-blue-03/20">
-                      <HelpCircle className="w-5 h-5 text-blue-03" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-blue-03">
-                        Godkännande krävs
-                      </h3>
-                      <p className="text-sm text-blue-03/80">
-                        Vänligen granska informationen och godkänn eller avvisa.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <Callout
+                  variant="info"
+                  title={t("jobstatus.jobdetails.approvalRequired")}
+                  description={t("jobstatus.jobdetails.approvalDescription")}
+                  icon={<HelpCircle className="w-5 h-5" />}
+                />
 
                 <div className="bg-gray-03/20 rounded-lg p-4">
                   <h3 className="text-lg font-medium text-gray-01 mb-4">

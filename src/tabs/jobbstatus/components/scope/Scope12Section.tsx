@@ -1,83 +1,20 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Leaf, Building2, CheckCircle2 } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 import { useCompanyReferenceByYears } from "../../lib/company-reference-api";
+import {
+  type Scope12EmissionsData,
+  buildReferenceSnapshotFromPeriod,
+} from "../../lib/scope12-data";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
 import { YearBadge } from "./YearBadge";
 import { DataCard } from "./DataCard";
 import { CollapsibleSection } from "@/ui/collapsible-section";
 
-interface Scope12EmissionsData {
-  scope12: Array<{
-    year: number;
-    scope1?: {
-      total: number;
-      unit: 'tCO2e' | 'tCO2';
-    } | null;
-    scope2?: {
-      mb?: number;        // Market-based scope 2 emissions
-      lb?: number;        // Location-based scope 2 emissions  
-      unknown?: number;   // Unspecified scope 2 emissions
-      unit: 'tCO2e' | 'tCO2';
-    } | null;
-    // Optional combined Scope 1+2 value from the worker
-    scope1And2?: {
-      total: number;
-      unit: 'tCO2e' | 'tCO2';
-    } | null;
-  }>;
-}
-
 interface Scope12EmissionsDisplayProps {
   data: Scope12EmissionsData;
   wikidataId?: string;
-}
-
-type Scope12ReferenceSnapshot = {
-  scope1?: { total: number | null; unit: string | null } | null;
-  scope2?: {
-    mb?: number | null;
-    lb?: number | null;
-    unknown?: number | null;
-    unit: string | null;
-  } | null;
-  // Optional combined Scope 1+2 value from prod API (if available)
-  scope1And2?: { total: number | null; unit: string | null } | null;
-} | null;
-
-function buildReferenceSnapshotFromPeriod(period: any): Scope12ReferenceSnapshot {
-  if (!period?.emissions) return null;
-  const s1 = period.emissions.scope1;
-  const s2 = period.emissions.scope2;
-  const s12 = (period.emissions as any).scope1And2;
-  return {
-    scope1: s1
-      ? {
-          total: typeof s1.total === 'number' ? s1.total : (s1.total ?? null),
-          unit: s1.unit ?? null,
-        }
-      : null,
-    scope2: s2
-      ? {
-          mb: s2.mb ?? null,
-          lb: s2.lb ?? null,
-          unknown: s2.unknown ?? null,
-          unit: s2.unit ?? null,
-        }
-      : null,
-    scope1And2: s12
-      ? {
-          total:
-            typeof s12.total === "number" ? s12.total : (s12.total ?? null),
-          unit: s12.unit ?? null,
-        }
-      : null,
-  };
-}
-
-function formatNumber(num: number | null | undefined): string {
-  if (num == null) return '0';
-  return num.toLocaleString('sv-SE');
 }
 
 interface Scope2RowProps {
@@ -86,6 +23,7 @@ interface Scope2RowProps {
 }
 
 function Scope2Row({ label, value }: Scope2RowProps) {
+  const { formatNumber } = useI18n();
   return (
     <div className="flex items-center justify-between">
       <span className="text-base text-gray-02">{label}</span>
@@ -107,6 +45,7 @@ interface Scope1CardProps {
 }
 
 function Scope1Card({ data, combinedScope1And2, matchStatus = 'none' }: Scope1CardProps) {
+  const { t, formatNumber } = useI18n();
   const hasScope1 = !!data && typeof data.total === 'number';
   const hasCombined = !!combinedScope1And2 && typeof combinedScope1And2.total === 'number';
 
@@ -114,7 +53,7 @@ function Scope1Card({ data, combinedScope1And2, matchStatus = 'none' }: Scope1Ca
 
   const displayTotal = hasScope1 ? data!.total : combinedScope1And2!.total;
   const displayUnit = (hasScope1 ? data!.unit : combinedScope1And2!.unit) || 'tCO2e';
-  const title = hasScope1 ? 'Scope 1' : 'Scope 1+2';
+  const title = hasScope1 ? t("scope.scope1") : t("scope.scope1And2");
   
   return (
     <DataCard
@@ -129,14 +68,14 @@ function Scope1Card({ data, combinedScope1And2, matchStatus = 'none' }: Scope1Ca
         {displayUnit}
       </div>
       <div className="text-sm text-gray-02 mt-2">
-        Direkta utsläpp
+        {t("scope.directEmissions")}
       </div>
       {matchStatus !== 'none' && (
         <div className="text-xs mt-2">
           {matchStatus === 'match' ? (
-            <span className="text-green-03">✓ Stämmer med prod</span>
+            <span className="text-green-03">✓ {t("scope.matchesProd")}</span>
           ) : (
-            <span className="text-pink-03">✗ Avviker från prod</span>
+            <span className="text-pink-03">✗ {t("scope.deviatesFromProd")}</span>
           )}
         </div>
       )}
@@ -154,36 +93,38 @@ interface Scope2CardProps {
 }
 
 function Scope2Card({ data }: Scope2CardProps) {
+  const { t } = useI18n();
   if (!data) return null;
   
   return (
     <DataCard
       icon={<Building2 className="w-5 h-5 text-blue-03" />}
-      title="Scope 2"
+      title={t("scope.scope2")}
       className="ml-0 md:ml-2 min-h-[220px]"
     >
       <div className="space-y-2 mt-2">
         {data.mb != null && (
-          <Scope2Row label="Marknadsbaserad" value={data.mb} />
+          <Scope2Row label={t("scope.marketBased")} value={data.mb} />
         )}
         {data.lb != null && (
-          <Scope2Row label="Platsbaserad" value={data.lb} />
+          <Scope2Row label={t("scope.locationBased")} value={data.lb} />
         )}
         {data.unknown != null && (
-          <Scope2Row label="Ospecificerad" value={data.unknown} />
+          <Scope2Row label={t("scope.unspecified")} value={data.unknown} />
         )}
       </div>
       <div className="text-base text-gray-02 mt-2">
         {data.unit || 'tCO2e'}
       </div>
       <div className="text-sm text-gray-02 mt-2">
-        Indirekta utsläpp (el, värme, kyla)
+        {t("scope.indirectEmissions")}
       </div>
     </DataCard>
   );
 }
 
 export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProps) {
+  const { t, formatNumber } = useI18n();
   if (!data.scope12 || !Array.isArray(data.scope12) || data.scope12.length === 0) {
     return null;
   }
@@ -224,7 +165,7 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
     const snapshot = referenceByYear[latest];
     if (!snapshot) return (
       <div className="bg-gray-04/80 border border-gray-03 rounded-xl p-4 mb-4 border-l-4 border-l-green-03">
-        {isLoadingRef && <div className="text-sm text-gray-02">Hämtar…</div>}
+        {isLoadingRef && <div className="text-sm text-gray-02">{t("scope.fetching")}</div>}
         {!isLoadingRef && refError && <div className="text-sm text-gray-02">{refError}</div>}
       </div>
     );
@@ -252,53 +193,53 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
       <div className="bg-gray-04/80 border border-gray-03 rounded-xl p-4 mb-4 border-l-4 border-l-green-03">
         <div className="flex items-center gap-2 mb-2">
           <CheckCircle2 className="w-4 h-4 text-green-03" />
-          <span className="text-sm font-medium text-gray-01">Referensvärden ({latest}) från API i prod</span>
+          <span className="text-sm font-medium text-gray-01">{t("scope.referenceValuesFromApi", { year: latest })}</span>
         </div>
-        {isLoadingRef && <div className="text-sm text-gray-02">Hämtar…</div>}
+        {isLoadingRef && <div className="text-sm text-gray-02">{t("scope.fetching")}</div>}
         {!isLoadingRef && refError && <div className="text-sm text-gray-02">{refError}</div>}
         {!isLoadingRef && !refError && (
           <div className="divide-y divide-gray-03">
             {ourS1 && (
               <div className="flex items-center justify-between py-1.5">
-                <span className="text-sm text-gray-02">Scope 1 totalt</span>
+                <span className="text-sm text-gray-02">{t("scope.scope1Total")}</span>
                 <span className="text-base font-bold text-gray-01 flex items-center gap-2">
-                  {snapshot.scope1?.total?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope1?.unit ?? ''}
+                  {snapshot.scope1?.total != null ? formatNumber(snapshot.scope1.total) : '—'} {snapshot.scope1?.unit ?? ''}
                   {s1Match ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                 </span>
               </div>
             )}
             {ourS2?.mb != null && (
               <div className="flex items-center justify-between py-1.5">
-                <span className="text-sm text-gray-02">Scope 2 marknadsbaserad</span>
+                <span className="text-sm text-gray-02">{t("scope.scope2MarketBased")}</span>
                 <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
-                  {snapshot.scope2?.mb?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope2?.unit ?? ''}
+                  {snapshot.scope2?.mb != null ? formatNumber(snapshot.scope2.mb) : '—'} {snapshot.scope2?.unit ?? ''}
                   {s2MbMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                 </span>
               </div>
             )}
             {ourS2?.lb != null && (
               <div className="flex items-center justify-between py-1.5">
-                <span className="text-sm text-gray-02">Scope 2 platsbaserad</span>
+                <span className="text-sm text-gray-02">{t("scope.scope2LocationBased")}</span>
                 <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
-                  {snapshot.scope2?.lb?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope2?.unit ?? ''}
+                  {snapshot.scope2?.lb != null ? formatNumber(snapshot.scope2.lb) : '—'} {snapshot.scope2?.unit ?? ''}
                   {s2LbMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                 </span>
               </div>
             )}
             {ourS2?.unknown != null && (
               <div className="flex items-center justify-between py-1.5">
-                <span className="text-sm text-gray-02">Scope 2 ospecificerad</span>
+                <span className="text-sm text-gray-02">{t("scope.scope2Unspecified")}</span>
                 <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
-                  {snapshot.scope2?.unknown?.toLocaleString('sv-SE') ?? '—'} {snapshot.scope2?.unit ?? ''}
+                  {snapshot.scope2?.unknown != null ? formatNumber(snapshot.scope2.unknown) : '—'} {snapshot.scope2?.unit ?? ''}
                   {s2UnknownMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                 </span>
               </div>
             )}
             {ourCombined && (
               <div className="flex items-center justify-between py-1.5">
-                <span className="text-sm text-gray-02">Scope 1+2 totalt</span>
+                <span className="text-sm text-gray-02">{t("scope.scope12Total")}</span>
                 <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
-                  {snapshotCombined?.total?.toLocaleString('sv-SE') ?? '—'} {snapshotCombined?.unit ?? ''}
+                  {snapshotCombined?.total != null ? formatNumber(snapshotCombined.total) : '—'} {snapshotCombined?.unit ?? ''}
                   {combinedMatch != null && (combinedMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>)}
                 </span>
               </div>
@@ -317,7 +258,7 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
     >
       <CollapsibleSection
         defaultOpen
-        title="Växthusgasutsläpp Scope 1 & 2"
+        title={t("scope.scope12Emissions")}
         icon={<Leaf className="w-5 h-5 text-green-03" />}
         accentIconBg="bg-green-03/20"
         accentTextColor="text-green-03"

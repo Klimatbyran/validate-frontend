@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/contexts/I18nContext';
 import type { DataPointMetric } from '../types';
 
 interface DataPointBarProps {
@@ -8,6 +9,7 @@ interface DataPointBarProps {
 }
 
 export function DataPointBar({ dp, onSelect }: DataPointBarProps) {
+  const { t } = useI18n();
   const rate = dp.tolerantRate;
   const barColor = rate >= 85 ? 'bg-green-500' : rate >= 70 ? 'bg-yellow-500' : 'bg-red-500';
   const bgColor = 'bg-gray-03/20';
@@ -16,7 +18,7 @@ export function DataPointBar({ dp, onSelect }: DataPointBarProps) {
     <div
       className={cn('rounded-lg p-3 cursor-pointer hover:opacity-90 transition-opacity', bgColor)}
       onClick={() => onSelect(dp.id)}
-      title={`Click to view ${dp.label} in browser`}
+      title={t("errors.overview.clickToViewInBrowser", { dataPoint: dp.label })}
     >
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-sm font-medium text-gray-01">{dp.label}</span>
@@ -44,14 +46,14 @@ export function DataPointBar({ dp, onSelect }: DataPointBarProps) {
       </div>
       {dp.withAnyData > 0 && (
         <div className="flex gap-3 mt-1.5 text-xs text-gray-02">
-          <span className="text-green-400">{dp.breakdown.identical} identical</span>
-          <span className="text-yellow-400">{dp.breakdown.rounding} rounding</span>
-          <span className="text-purple-400">{dp.breakdown.hallucination} halluc.</span>
-          <span className="text-orange-400">{dp.breakdown.missing} missing</span>
-          <span className="text-cyan-400">{dp.breakdown.categoryError} cat. err.</span>
-          <span className="text-indigo-400">{dp.breakdown.unitError} unit err.</span>
-          <span className="text-rose-400">{dp.breakdown.smallError} small err.</span>
-          <span className="text-red-400">{dp.breakdown.error} error</span>
+          <span className="text-green-400">{dp.breakdown.identical} {t("errors.overview.identical")}</span>
+          <span className="text-yellow-400">{dp.breakdown.rounding} {t("errors.overview.rounding")}</span>
+          <span className="text-purple-400">{dp.breakdown.hallucination} {t("errors.overview.hallucination")}</span>
+          <span className="text-orange-400">{dp.breakdown.missing} {t("errors.overview.missing")}</span>
+          <span className="text-cyan-400">{dp.breakdown.categoryError} {t("errors.overview.categoryError")}</span>
+          <span className="text-indigo-400">{dp.breakdown.unitError} {t("errors.overview.unitError")}</span>
+          <span className="text-rose-400">{dp.breakdown.smallError} {t("errors.overview.smallError")}</span>
+          <span className="text-red-400">{dp.breakdown.error} {t("errors.overview.error")}</span>
         </div>
       )}
     </div>

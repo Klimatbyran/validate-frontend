@@ -2,128 +2,26 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Truck, CheckCircle2 } from "lucide-react";
 import { useCompanyReferenceByYears } from "../../lib/company-reference-api";
-import { CopyJsonButton } from "./CopyJsonButton";
+import {
+  type Scope3EmissionsData,
+  buildReferenceSnapshotFromScope3,
+  SCOPE3_CATEGORY_NAMES,
+  normalizeYearEntry,
+  buildOurNumberMapForYear,
+  buildRefNumberMap,
+} from "../../lib/scope3-data";
+import { useI18n } from "@/contexts/I18nContext";
+import { CopyButton } from "@/ui/copy-button";
 import { JsonRawDataBlock } from "./JsonRawDataBlock";
 import { YearBadge } from "./YearBadge";
-
-interface Scope3EmissionsData {
-  scope3: Array<{
-    year: number;
-    scope3: {
-      statedTotalEmissions: { total: number | null; unit: string | null };
-      categories: Array<{ 
-        id: string; 
-        category: number; 
-        total: number | null; 
-        unit: string | null;
-        metadata?: any;
-      }>;
-      calculatedTotalEmissions?: number;
-      metadata?: any;
-    };
-  }>;
-}
 
 interface Scope3EmissionsDisplayProps {
   data: Scope3EmissionsData;
   wikidataId?: string;
 }
 
-type ReferenceCategory = { id?: string; name?: string; total?: number | null; unit?: string | null; category?: number };
-type ReferenceSnapshot = { total?: number | null; unit?: string | null; categories?: ReferenceCategory[] } | null;
-
-function buildReferenceSnapshotFromScope3(scope3: any): ReferenceSnapshot {
-  if (!scope3) return null;
-  const categories: ReferenceCategory[] = Array.isArray(scope3.categories)
-    ? scope3.categories.map((category: any) => ({
-        id: category.id,
-        name: category.name,
-        total: category.total ?? null,
-        unit: category.unit ?? null,
-        category: category.category,
-      }))
-    : [];
-  return {
-    total: scope3.statedTotalEmissions?.total ?? null,
-    unit: scope3.statedTotalEmissions?.unit ?? null,
-    categories,
-  };
-}
-
-// Standard GHG Protocol Scope 3 category names (1..15)
-const categoryNames: Record<number, string> = {
-  1: 'Purchased goods and services',
-  2: 'Capital goods',
-  3: 'Fuel- and energy-related activities (not in Scope 1 or 2)',
-  4: 'Upstream transportation and distribution',
-  5: 'Waste generated in operations',
-  6: 'Business travel',
-  7: 'Employee commuting',
-  8: 'Upstream leased assets',
-  9: 'Downstream transportation and distribution',
-  10: 'Processing of sold products',
-  11: 'Use of sold products',
-  12: 'End-of-life treatment of sold products',
-  13: 'Downstream leased assets',
-  14: 'Franchises',
-  15: 'Investments',
-};
-
-type NormalizedCategory = { key: string; label: string; total: number | null; unit: string | null; number?: number };
-type NormalizedYearEntry = { total: number | null; unit: string | null; categories: NormalizedCategory[] };
-
-// Normalize the scope3 data structure into a consistent format for the UI.
-function normalizeYearEntry(entry: any): NormalizedYearEntry {
-  const scope3 = entry.scope3;
-  const total = scope3?.statedTotalEmissions?.total ?? null;
-  const unit = scope3?.statedTotalEmissions?.unit ?? null;
-  const rawCategories = scope3?.categories ?? [];
-  const categories: NormalizedCategory[] = Array.isArray(rawCategories)
-    ? rawCategories.map((rawCategory: any) => {
-        const number = rawCategory.category;
-        const label = categoryNames[number] || `Category ${number}`;
-        return {
-          key: rawCategory.id || `cat-${number}`,
-          label,
-          total: rawCategory.total ?? null,
-          unit: rawCategory.unit ?? null,
-          number,
-        };
-      })
-    : [];
-  return { total, unit, categories };
-}
-
-
-// Build a quick-lookup map from category number -> { total, unit } for our local data.
-// Used to render and compare against the reference snapshot efficiently.
-function buildOurNumberMapForYear(year: number, sortedScope3ByYear: any[]) {
-  const yearEntry = sortedScope3ByYear.find(e => e.year === year);
-  if (!yearEntry) return {} as Record<number, { total: number | null; unit: string | null }>;
-  const normalized = normalizeYearEntry(yearEntry);
-  const map: Record<number, { total: number | null; unit: string | null }> = {};
-  for (const category of normalized.categories) {
-    if (typeof category.number === 'number') {
-      map[category.number] = { total: category.total ?? null, unit: category.unit ?? null };
-    }
-  }
-  return map;
-}
-
-// Build a quick-lookup map from category number -> { total, unit } for the reference data.
-function buildRefNumberMap(year: number, referenceByYear: Record<number, ReferenceSnapshot>) {
-  const map: Record<number, { total: number | null; unit: string | null }> = {};
-  const snapshot = referenceByYear[year];
-  if (!snapshot || !Array.isArray(snapshot.categories)) return map;
-  for (const c of snapshot.categories) {
-    if (typeof c.category === 'number') {
-      map[c.category] = { total: c.total ?? null, unit: c.unit ?? null };
-    }
-  }
-  return map;
-}
-
 export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps) {
+  const { formatNumber } = useI18n();
   if (!data.scope3 || !Array.isArray(data.scope3) || data.scope3.length === 0) {
     return null;
   }
@@ -180,7 +78,7 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
       <div className="flex items-center justify-between">
         <span className="text-sm text-gray-02">Totalt ({latestScope3Year})</span>
         <span className="text-base font-bold text-gray-01 flex items-center gap-2">
-          {typeof snapshot.total === 'number' ? snapshot.total.toLocaleString('sv-SE') : '—'}
+          {typeof snapshot.total === 'number' ? formatNumber(snapshot.total) : '—'}
           {snapshot.unit ? ` ${snapshot.unit}` : ''}
           {(ourTotal !== null || snapshot.total !== null) && (
             isMatch ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>
@@ -197,13 +95,13 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
         {categoryNumbers.map((categoryNumber) => {
           const ref = refNumberMapLatest[categoryNumber];
           const our = ourNumberMapForLatest[categoryNumber];
-          const label = categoryNames[categoryNumber] || `Category ${categoryNumber}`;
+          const label = SCOPE3_CATEGORY_NAMES[categoryNumber] || `Category ${categoryNumber}`;
           const match = (ref?.total ?? null) === (our?.total ?? null);
           return (
             <div key={categoryNumber} className="flex items-center justify-between py-1.5">
               <span className="text-sm text-gray-02">{label}</span>
               <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
-                {typeof (ref?.total) === 'number' ? ref!.total!.toLocaleString('sv-SE') : '—'}{ref?.unit ? ` ${ref.unit}` : ''}
+                {typeof (ref?.total) === 'number' ? formatNumber(ref!.total!) : '—'}{ref?.unit ? ` ${ref.unit}` : ''}
                 {match ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
               </span>
             </div>
@@ -229,7 +127,7 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
             {normalized.total !== null && normalized.total !== undefined ? (
               <>
                 <div className="font-extrabold text-gray-01 text-4xl mb-1 flex items-center gap-2">
-                  {normalized.total.toLocaleString('sv-SE')}
+                  {formatNumber(normalized.total)}
                   {hasReferenceForYear && (() => {
                     const refSnapshot = referenceByYear[entry.year];
                     const refTotal = refSnapshot?.total ?? null;
@@ -251,9 +149,9 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
                 const match = (our?.total ?? null) === (ref?.total ?? null);
                 return (
                   <div key={n} className="flex items-center justify-between py-2">
-                    <span className="text-base text-gray-02">{categoryNames[n] || `Category ${n}`}</span>
+                    <span className="text-base text-gray-02">{SCOPE3_CATEGORY_NAMES[n] || `Category ${n}`}</span>
                     <span className="font-extrabold text-gray-01 text-xl flex items-center gap-2">
-                      {typeof (our?.total) === 'number' ? our!.total!.toLocaleString('sv-SE') : '—'}{our?.unit ? ` ${our.unit}` : ''}
+                      {typeof (our?.total) === 'number' ? formatNumber(our!.total!) : '—'}{our?.unit ? ` ${our.unit}` : ''}
                       {match ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
                     </span>
                   </div>
@@ -267,7 +165,7 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
                   <div key={category.key} className="flex items-center justify-between py-2">
                     <span className="text-base text-gray-02">{category.label}</span>
                     <span className="font-extrabold text-gray-01 text-xl">
-                      {typeof category.total === 'number' ? category.total.toLocaleString('sv-SE') : '—'}{category.unit ? ` ${category.unit}` : ''}
+                      {typeof category.total === 'number' ? formatNumber(category.total) : '—'}{category.unit ? ` ${category.unit}` : ''}
                     </span>
                   </div>
                 ))}
@@ -318,7 +216,7 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
                   <details className="mt-3 bg-gray-04 rounded border border-gray-03 p-3">
                     <summary className="cursor-pointer text-sm font-medium text-orange-03">Reference JSON ({latestScope3Year})</summary>
                     <div className="flex justify-end">
-                      <CopyJsonButton getText={() => JSON.stringify(referenceJson, null, 2)} />
+                      <CopyButton getText={() => JSON.stringify(referenceJson, null, 2)} />
                     </div>
                     <pre className="text-xs text-gray-02 overflow-x-auto mt-2">
                       {JSON.stringify(referenceJson, null, 2)}

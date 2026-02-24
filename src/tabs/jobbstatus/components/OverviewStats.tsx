@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight, BarChart3, Activity } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 import { StatCard, CompactStatCard, PipelineStepCard } from "./StatCards";
 import { getAllPipelineSteps } from "@/lib/workflow-config";
 import {
@@ -32,11 +33,17 @@ export function OverviewStats({
   );
   const [isExpanded, setIsExpanded] = useState(true);
 
-  // Map step names to filter types
+  const { t } = useI18n();
+  // Map step names (from workflow config) to filter types
   const stepToFilterMap: Record<string, FilterType> = {
     Preprocessing: "preprocessing_issues",
     "AI Data Extraction": "data_extraction_issues",
     Finalize: "finalize_issues",
+  };
+  const stepNameToKey: Record<string, string> = {
+    Preprocessing: "jobstatus.overview.preprocessing",
+    "AI Data Extraction": "jobstatus.overview.aiDataExtraction",
+    Finalize: "jobstatus.overview.finalize",
   };
 
   return (
@@ -51,7 +58,7 @@ export function OverviewStats({
           <ChevronRight className="w-5 h-5 text-gray-02" />
         )}
         <BarChart3 className="w-5 h-5 text-gray-02" />
-        <h2 className="text-3xl text-gray-01">Process Overview</h2>
+        <h2 className="text-3xl text-gray-01">{t("jobstatus.overview.title")}</h2>
       </button>
 
       {isExpanded && (
@@ -59,19 +66,19 @@ export function OverviewStats({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <StatCard
               value={stats.totalCompanies}
-              label="Companies"
+              label={t("jobstatus.overview.companies")}
               color="gray"
             />
-            <StatCard value={stats.totalJobs} label="Reports" color="gray" />
+            <StatCard value={stats.totalJobs} label={t("jobstatus.overview.reports")} color="gray" />
             <StatCard
               value={stats.activeJobs}
-              label="Active Jobs"
+              label={t("jobstatus.overview.activeJobs")}
               color="blue"
               icon={<Activity className="w-3 h-3" />}
             />
             <StatCard
               value={`${stats.completionRate.toFixed(1)}%`}
-              label="Completed Fields"
+              label={t("jobstatus.overview.completedFields")}
               color="green"
             />
           </div>
@@ -79,22 +86,22 @@ export function OverviewStats({
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <CompactStatCard
               value={stats.totalFields}
-              label="Total Jobs"
+              label={t("jobstatus.overview.totalJobs")}
               color="gray"
             />
             <CompactStatCard
               value={stats.completedFields}
-              label="Completed"
+              label={t("jobstatus.overview.completed")}
               color="green"
             />
             <CompactStatCard
               value={stats.processingFields}
-              label="Processing"
+              label={t("jobstatus.overview.processing")}
               color="blue"
             />
             <CompactStatCard
               value={stats.companiesWithNeedsApproval}
-              label="Approval"
+              label={t("jobstatus.overview.approval")}
               color="orange"
               onClick={
                 onFilterToggle && stats.companiesWithNeedsApproval > 0
@@ -104,7 +111,7 @@ export function OverviewStats({
             />
             <CompactStatCard
               value={stats.companiesWithFailed}
-              label="Failed"
+              label={t("jobstatus.overview.failed")}
               color="pink"
               onClick={
                 onFilterToggle && stats.companiesWithFailed > 0
@@ -116,7 +123,7 @@ export function OverviewStats({
 
           <div className="border-t border-gray-03 pt-4">
             <h3 className="text-sm font-semibold text-gray-01 mb-3">
-              Pipeline Steps Overview
+              {t("jobstatus.overview.pipelineStepsOverview")}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {stats.stepStats.map((step, index) => {
@@ -126,7 +133,7 @@ export function OverviewStats({
                 return (
                   <PipelineStepCard
                     key={index}
-                    name={step.name}
+                    name={stepNameToKey[step.name] ? t(stepNameToKey[step.name]) : step.name}
                     completed={step.completed}
                     processing={step.processing}
                     failed={step.failed}

@@ -7,8 +7,6 @@ import { useState, useMemo, useEffect } from "react";
 import { Loader2, ArrowUp } from "lucide-react";
 import { Button } from "@/ui/button";
 import { useCompanies } from "@/hooks/useCompanies";
-import { authenticatedFetch } from "@/lib/api-helpers";
-import { toast } from "sonner";
 import { convertCompaniesToSwimlaneFormat } from "./lib/swimlane-transform";
 import {
   type FilterType,
@@ -20,13 +18,14 @@ import {
   hasIssues,
   hasPipelineStepIssues,
 } from "./lib/swimlane-filters";
+import { useI18n } from "@/contexts/I18nContext";
+import { useRerunByWorker } from "./hooks/useRerunByWorker";
 import { OverviewStats } from "./components/OverviewStats";
 import { FilterBar } from "./components/FilterBar";
 import { CompanyCard } from "./components/CompanyCard";
-import { findJobByQueueId } from "@/lib/workflow-utils";
-import { buildRerunAndSaveBody } from "@/lib/job-rerun-utils";
 
 export function JobbstatusTab() {
+  const { t } = useI18n();
   const {
     companies,
     isLoading,
@@ -148,90 +147,7 @@ export function JobbstatusTab() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleRerunByWorker = async (
-    workerName: "scope1" | "scope2" | "scope1+2" | "scope3" | "economy" | "baseYear" | "industryGics",
-    limit: number | "all" = 5
-  ) => {
-    const workerToFollowUpKey: Record<string, string> = {
-      "scope1": "scope1",
-      "scope2": "scope2",
-      "scope1+2": "scope1+2",
-      "scope3": "scope3",
-      "economy": "economy",
-      "baseYear": "baseYear",
-      "industryGics": "industryGics",
-    };
-
-    const followUpKey = workerToFollowUpKey[workerName];
-    if (!followUpKey) return;
-
-    // Collect targets: for each company, find the latest year's extractEmissions job + wikidata from checkDB
-    const targets: Array<{
-      companyName: string;
-      extractEmissionsJobId: string;
-      wikidataNode: string | undefined;
-    }> = [];
-
-    for (const company of swimlaneCompanies) {
-      if (limit !== "all" && targets.length >= limit) break;
-
-      // Use the latest year (first in array, sorted by timestamp)
-      const latestYear = company.years[0];
-      if (!latestYear) continue;
-
-      const extractEmissionsJob = findJobByQueueId("extractEmissions", latestYear);
-      if (!extractEmissionsJob?.id) continue;
-
-      targets.push({
-        companyName: company.name,
-        extractEmissionsJobId: extractEmissionsJob.id,
-        wikidataNode: company.wikidataId,
-      });
-    }
-
-    if (targets.length === 0) {
-      toast.error(`Inga företag hittades att köra om ${workerName} för`);
-      return;
-    }
-
-    toast.info(`Kör om ${workerName} för ${targets.length} företag...`);
-
-    let successes = 0;
-    let failures = 0;
-
-    for (const target of targets) {
-      try {
-        const response = await authenticatedFetch(
-          `/api/queues/extractEmissions/${encodeURIComponent(target.extractEmissionsJobId)}/rerun-and-save`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(
-              buildRerunAndSaveBody([followUpKey], target.wikidataNode)
-            ),
-          }
-        );
-
-        if (response.ok) {
-          successes++;
-          console.log(`[rerun-by-worker] ${workerName} OK for ${target.companyName}`);
-        } else {
-          failures++;
-          const errorText = await response.text();
-          console.error(`[rerun-by-worker] ${workerName} FAILED for ${target.companyName}: ${errorText}`);
-        }
-      } catch (err) {
-        failures++;
-        console.error(`[rerun-by-worker] ${workerName} ERROR for ${target.companyName}:`, err);
-      }
-    }
-
-    if (failures === 0) {
-      toast.success(`Startade om ${workerName} för ${successes} företag`);
-    } else {
-      toast.warning(`${workerName}: ${successes} lyckades, ${failures} misslyckades`);
-    }
-  };
+  const handleRerunByWorker = useRerunByWorker(swimlaneCompanies);
 
   if (isLoading && (!companies || companies.length === 0)) {
     return (
@@ -240,10 +156,10 @@ export function JobbstatusTab() {
           <Loader2 className="w-8 h-8 text-blue-03 animate-spin mx-auto" />
           <div>
             <p className="text-lg text-gray-01 font-medium">
-              Loading companies...
+              {t("jobstatus.loadingCompanies")}
             </p>
             <p className="text-sm text-gray-02 mt-2">
-              Fetching company data from API
+              {t("jobstatus.fetchingCompanies")}
             </p>
           </div>
         </div>
@@ -255,7 +171,7 @@ export function JobbstatusTab() {
     return (
       <div className="flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-red-03">Error loading companies: {error}</p>
+          <p className="text-red-03">{t("jobstatus.errorLoadingCompanies", { error: String(error) })}</p>
         </div>
       </div>
     );
@@ -265,7 +181,7 @@ export function JobbstatusTab() {
     return (
       <div className="flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-gray-02">No companies found</p>
+          <p className="text-gray-02">{t("jobstatus.noCompaniesFound")}</p>
         </div>
       </div>
     );
@@ -299,8 +215,8 @@ export function JobbstatusTab() {
           <div className="text-center py-12">
             <p className="text-gray-02">
               {activeFilters.size > 0
-                ? "Inga företag matchar de valda filtren"
-                : "Inga företag hittades"}
+                ? t("jobstatus.noCompaniesMatch")
+                : t("jobstatus.noCompaniesFound")}
             </p>
           </div>
         ) : (
@@ -322,8 +238,8 @@ export function JobbstatusTab() {
                   className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
                 >
                   {isLoadingMore
-                    ? "Laddar fler företag..."
-                    : "Ladda fler företag"}
+                    ? t("jobstatus.loadingMore")
+                    : t("jobstatus.loadMore")}
                 </Button>
               </div>
             )}
@@ -335,7 +251,7 @@ export function JobbstatusTab() {
         <button
           onClick={scrollToTop}
           className="fixed bottom-6 right-6 z-50 bg-gray-01 text-gray-05 rounded-full p-3 shadow-lg hover:bg-gray-02 transition-all hover:scale-110 active:scale-95"
-          aria-label="Scroll to top"
+          aria-label={t("common.scrollToTop")}
         >
           <ArrowUp className="w-5 h-5" />
         </button>

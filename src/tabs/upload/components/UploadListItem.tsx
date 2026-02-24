@@ -1,5 +1,6 @@
 import { File, Link2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useI18n } from "@/contexts/I18nContext";
 import { UploadedFile, UrlInput } from "../types";
 
 interface FileListItemProps {
@@ -11,6 +12,8 @@ interface UrlListItemProps {
 }
 
 export function FileListItem({ file }: FileListItemProps) {
+  const { t } = useI18n();
+  const sizeMb = (file.file.size / 1024 / 1024).toFixed(2);
   return (
     <motion.li
       key={file.id}
@@ -22,8 +25,7 @@ export function FileListItem({ file }: FileListItemProps) {
       <div className="flex-1">
         <p className="text-sm text-gray-01">{file.file.name}</p>
         <p className="text-sm text-gray-02">
-          Företag: {file.company} • {(file.file.size / 1024 / 1024).toFixed(2)}{" "}
-          MB
+          {t("upload.companyWithName", { name: file.company })} • {t("upload.fileSizeMb", { size: sizeMb })}
         </p>
       </div>
     </motion.li>
@@ -31,6 +33,7 @@ export function FileListItem({ file }: FileListItemProps) {
 }
 
 export function UrlListItem({ url }: UrlListItemProps) {
+  const { t } = useI18n();
   return (
     <motion.li
       key={url.id}
@@ -41,7 +44,7 @@ export function UrlListItem({ url }: UrlListItemProps) {
       <Link2 className="w-6 h-6 text-orange-03" />
       <div className="flex-1">
         <p className="text-sm text-gray-01 break-all">{url.url}</p>
-        <p className="text-sm text-gray-02">Företag: {url.company}</p>
+        <p className="text-sm text-gray-02">{t("upload.companyWithName", { name: url.company })}</p>
       </div>
     </motion.li>
   );

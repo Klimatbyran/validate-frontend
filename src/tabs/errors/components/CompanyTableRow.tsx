@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { AlertTriangle, BadgeCheck } from 'lucide-react';
-import { cn, formatNumber } from '@/lib/utils';
+import { useI18n } from '@/contexts/I18nContext';
+import { cn } from '@/lib/utils';
 import { CompanyRow } from '../types';
 import { DiscrepancyBadge } from './DiscrepancyBadge';
 
@@ -11,6 +12,7 @@ interface CompanyTableRowProps {
 }
 
 export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTableRowProps) {
+  const { t, formatNumber } = useI18n();
   const isMissingCompany = !row.inStage || !row.inProd;
 
   return (
@@ -26,7 +28,7 @@ export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTabl
           {difficultCompanyIds.has(row.wikidataId) && (
             <span
               className="text-red-400 cursor-help"
-              title={`Difficult report — ${difficultCompanyIds.get(row.wikidataId)} errors across all data points`}
+              title={t("errors.difficultReportTooltip", { count: difficultCompanyIds.get(row.wikidataId) ?? 0 })}
             >
               <AlertTriangle className="w-3.5 h-3.5" />
             </span>
@@ -36,7 +38,7 @@ export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTabl
           <span className="text-xs text-gray-02">{row.wikidataId}</span>
           {isMissingCompany && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">
-              {!row.inStage ? 'Not in Stage' : 'Not in Prod'}
+              {!row.inStage ? t('errors.notInStage') : t('errors.notInProd')}
             </span>
           )}
         </div>
@@ -50,8 +52,8 @@ export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTabl
           {row.prodVerified && (
             <BadgeCheck
               className="w-4 h-4 text-green-500 shrink-0"
-              title="Verified"
-              aria-label="Verified"
+              title={t("errors.verified")}
+              aria-label={t("errors.verified")}
             />
           )}
         </span>
@@ -66,7 +68,7 @@ export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTabl
               row.diff > 0 ? 'text-purple-400' : row.diff < 0 ? 'text-orange-400' : 'text-gray-02'
             )}
           >
-            {row.diff > 0 ? '+' : ''}{row.diff.toLocaleString('sv-SE')}
+            {row.diff !== null ? (row.diff > 0 ? '+' : '') + formatNumber(row.diff) : ''}
           </span>
         ) : (
           <span className="text-gray-02">—</span>

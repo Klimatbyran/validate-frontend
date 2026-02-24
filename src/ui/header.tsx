@@ -2,10 +2,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Bot, LogIn, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/contexts/I18nContext';
 import { Button } from './button';
 
 export function Header() {
   const { isAuthenticated, user, login, logout } = useAuth();
+  const { t, locale, setLocale } = useI18n();
 
   return (
     <motion.div
@@ -47,26 +49,42 @@ export function Header() {
               transition={{ delay: 0.1 }}
             >
               <h1 className="text-5xl text-gray-01 mb-1">
-                Garbo AI
+                {t("brand.title")}
               </h1>
               <p className="text-gray-02">
-                By Klimatkollen
+                {t("brand.by")}
               </p>
             </motion.div>
           </div>
         </div>
 
-        {/* Auth section - upper right */}
+        {/* Language toggle + Auth section - upper right */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
           className="flex items-center gap-3"
         >
+          <div className="flex items-center gap-1 rounded-full border border-gray-03 bg-gray-04/50 p-0.5" role="group" aria-label={t("ui.languageAria")}>
+            <button
+              type="button"
+              onClick={() => setLocale("en")}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${locale === "en" ? "bg-blue-03 text-white" : "text-gray-02 hover:text-gray-01"}`}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              onClick={() => setLocale("sv")}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${locale === "sv" ? "bg-blue-03 text-white" : "text-gray-02 hover:text-gray-01"}`}
+            >
+              SV
+            </button>
+          </div>
           {isAuthenticated && user ? (
             <div className="flex flex-col items-end gap-1">
               <span className="text-gray-01 text-sm">
-                Hej, <span className="font-medium">{user.name}</span>
+                {t("auth.hi")}, <span className="font-medium">{user.name}</span>
               </span>
               <Button
                 variant="ghost"
@@ -75,7 +93,7 @@ export function Header() {
                 className="flex items-center gap-2 text-sm"
               >
                 <LogOut className="w-4 h-4 text-blue-03" />
-                Logga ut
+                {t("auth.logout")}
               </Button>
             </div>
           ) : (
@@ -86,7 +104,7 @@ export function Header() {
               className="flex items-center gap-2"
             >
               <LogIn className="w-4 h-4" />
-              Logga in
+              {t("auth.login")}
             </Button>
           )}
         </motion.div>

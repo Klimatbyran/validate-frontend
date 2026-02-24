@@ -3,7 +3,7 @@
  * Handles filter UI, dropdown, run scope toggle, and rerun jobs
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   Filter,
   X,
@@ -12,13 +12,17 @@ import {
   XCircle,
   RotateCw,
   MoreVertical,
-  Activity,
   Search,
 } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import type { FilterType, RunScope } from "@/tabs/jobbstatus/lib/swimlane-filters";
-
-type RerunWorker = "scope1" | "scope2" | "scope3" | "economy" | "baseYear" | "industryGics";
+import {
+  PRIMARY_FILTER_CONFIG,
+  SECONDARY_FILTER_CONFIG,
+  type RerunWorker,
+} from "@/tabs/jobbstatus/lib/filter-config";
+import { FilterBarRerunSection } from "./FilterBarRerunSection";
 
 interface FilterBarProps {
   activeFilters: Set<FilterType>;
@@ -34,69 +38,16 @@ interface FilterBarProps {
   onCompanySearchChange?: (query: string) => void;
 }
 
-const RERUN_WORKERS: Array<{ id: RerunWorker; label: string }> = [
-  { id: "scope1", label: "Scope 1" },
-  { id: "scope2", label: "Scope 2" },
-  { id: "scope3", label: "Scope 3" },
-  { id: "economy", label: "Ekonomi" },
-  { id: "baseYear", label: "Basår" },
-  { id: "industryGics", label: "Bransch GICS" },
-];
-
-const LIMIT_OPTIONS: Array<{ value: number | "all"; label: string }> = [
-  { value: 1, label: "1" },
-  { value: 5, label: "5" },
-  { value: "all", label: "Alla" },
-];
-
-function RerunJobsSection({
-  onRerunByWorker,
-}: {
-  onRerunByWorker: (worker: RerunWorker, limit: number | "all") => void;
-}) {
-  const [rerunLimit, setRerunLimit] = useState<number | "all">(5);
-
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-4 border-t border-gray-03/50">
-      <div className="flex items-center gap-2 shrink-0">
-        <Activity className="w-4 h-4 text-gray-02" />
-        <span className="text-sm font-medium text-gray-01">
-          Kör specifika jobb:
-        </span>
-      </div>
-      <div className="flex items-center gap-3 flex-wrap">
-        {RERUN_WORKERS.map((worker) => (
-          <Button
-            key={worker.id}
-            variant="ghost"
-            size="sm"
-            onClick={() => onRerunByWorker(worker.id, rerunLimit)}
-            className="!w-auto !min-w-0 h-9 px-4 text-sm border border-gray-03 text-gray-01 hover:bg-gray-03/40"
-          >
-            {worker.label}
-          </Button>
-        ))}
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="text-xs text-gray-02">Antal:</span>
-        <select
-          value={String(rerunLimit)}
-          onChange={(e) => {
-            const val = e.target.value;
-            setRerunLimit(val === "all" ? "all" : Number(val));
-          }}
-          className="px-2 py-1 rounded-md border border-gray-03 bg-gray-05 text-gray-01 text-sm focus:outline-none focus:ring-2 focus:ring-blue-03/50 focus:border-blue-03"
-        >
-          {LIMIT_OPTIONS.map((opt) => (
-            <option key={String(opt.value)} value={String(opt.value)}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
-  );
-}
+const PRIMARY_FILTER_ICONS: Record<FilterType, React.ReactNode> = {
+  pending_approval: <AlertTriangle className="w-4 h-4" />,
+  has_failed: <XCircle className="w-4 h-4" />,
+  has_processing: <RotateCw className="w-4 h-4" />,
+  has_issues: <AlertTriangle className="w-4 h-4" />,
+  fully_completed: <CheckCircle2 className="w-4 h-4" />,
+  preprocessing_issues: <AlertTriangle className="w-4 h-4" />,
+  data_extraction_issues: <AlertTriangle className="w-4 h-4" />,
+  finalize_issues: <AlertTriangle className="w-4 h-4" />,
+};
 
 export function FilterBar({
   activeFilters,
@@ -111,59 +62,21 @@ export function FilterBar({
   companySearchQuery = "",
   onCompanySearchChange,
 }: FilterBarProps) {
+  const { t } = useI18n();
   const hasActiveFiltersOrSearch =
     activeFilters.size > 0 || (companySearchQuery?.trim() ?? "") !== "";
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Primary filters (most commonly used)
-  const primaryFilters: Array<{
-    id: FilterType;
-    label: string;
-    icon: React.ReactNode;
-    badgeColorClass: string;
-    activeColor: string;
-  }> = [
-    {
-      id: "pending_approval",
-      label: "Väntar på godkännande",
-      icon: <AlertTriangle className="w-4 h-4" />,
-      badgeColorClass: "bg-orange-03/20 text-orange-03",
-      activeColor: "bg-orange-03 text-white hover:bg-orange-03/90",
-    },
-    {
-      id: "has_failed",
-      label: "Har misslyckade",
-      icon: <XCircle className="w-4 h-4" />,
-      badgeColorClass: "bg-pink-03/20 text-pink-03",
-      activeColor: "bg-pink-03 text-white hover:bg-pink-03/90",
-    },
-    {
-      id: "has_processing",
-      label: "Bearbetar",
-      icon: <RotateCw className="w-4 h-4" />,
-      badgeColorClass: "bg-blue-03/20 text-blue-03",
-      activeColor: "bg-blue-03 text-white hover:bg-blue-03/90",
-    },
-    {
-      id: "has_issues",
-      label: "Har problem",
-      icon: <AlertTriangle className="w-4 h-4" />,
-      badgeColorClass: "bg-orange-03/20 text-orange-03",
-      activeColor: "bg-orange-03 text-white hover:bg-orange-03/90",
-    },
-  ];
-
-  // Secondary filters (in dropdown)
-  const secondaryFilters: Array<{
-    id: FilterType;
-    label: string;
-  }> = [
-    { id: "fully_completed", label: "Fullständigt klart" },
-    { id: "preprocessing_issues", label: "Preprocessing-problem" },
-    { id: "data_extraction_issues", label: "Dataextraktion-problem" },
-    { id: "finalize_issues", label: "Finalisering-problem" },
-  ];
+  const primaryFilters = useMemo(
+    () =>
+      PRIMARY_FILTER_CONFIG.map((config) => ({
+        ...config,
+        icon: PRIMARY_FILTER_ICONS[config.id],
+      })),
+    []
+  );
+  const secondaryFilters = SECONDARY_FILTER_CONFIG;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -195,16 +108,16 @@ export function FilterBar({
                 type="text"
                 value={companySearchQuery}
                 onChange={(e) => onCompanySearchChange(e.target.value)}
-                placeholder="Sök på företagsnamn..."
+                placeholder={t("jobstatus.searchCompany")}
                 className="w-full pl-9 pr-8 py-2 rounded-md border border-gray-03 bg-gray-05 text-gray-01 text-sm placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-blue-03/50 focus:border-blue-03"
-                aria-label="Sök företag"
+                aria-label={t("jobstatus.searchCompanyAria")}
               />
               {companySearchQuery && (
                 <button
                   type="button"
                   onClick={() => onCompanySearchChange("")}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-02 hover:text-gray-01 rounded"
-                  aria-label="Rensa sökning"
+                  aria-label={t("jobstatus.clearSearch")}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -212,7 +125,7 @@ export function FilterBar({
             </div>
           )}
           <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
-            <span className="text-sm text-gray-02">Omfattning:</span>
+            <span className="text-sm text-gray-02">{t("jobstatus.scope")}:</span>
             <div className="flex items-center gap-1 bg-gray-03 rounded-full p-0.5">
               <button
                 onClick={() => onRunScopeChange("latest")}
@@ -222,7 +135,7 @@ export function FilterBar({
                     : "text-gray-02 hover:text-gray-01"
                 }`}
               >
-                Senaste körning
+                {t("jobstatus.latestRun")}
               </button>
               <button
                 onClick={() => onRunScopeChange("all")}
@@ -232,7 +145,7 @@ export function FilterBar({
                     : "text-gray-02 hover:text-gray-01"
                 }`}
               >
-                Alla körningar
+                {t("jobstatus.allRuns")}
               </button>
             </div>
           </div>
@@ -242,7 +155,7 @@ export function FilterBar({
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex items-center gap-2 shrink-0">
             <Filter className="w-4 h-4 text-gray-02" />
-            <span className="text-sm font-medium text-gray-01">Filter:</span>
+            <span className="text-sm font-medium text-gray-01">{t("jobstatus.filter")}:</span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {primaryFilters.map((filter) => {
@@ -262,7 +175,7 @@ export function FilterBar({
                 >
                   {isActive && <X className="w-4 h-4 mr-1.5 shrink-0" />}
                   <span className="mr-1.5 shrink-0">{filter.icon}</span>
-                  <span className="whitespace-nowrap">{filter.label}</span>
+                  <span className="whitespace-nowrap">{t(`jobstatus.filters.${filter.id}`)}</span>
                   {count > 0 && (
                     <span
                       className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${
@@ -287,7 +200,7 @@ export function FilterBar({
                 className="!w-auto !min-w-0 h-9 px-4 text-sm border border-gray-03 text-gray-01 hover:bg-gray-03/40"
               >
               <MoreVertical className="w-4 h-4 mr-1.5" />
-              Fler filter
+              {t("jobstatus.moreFilters")}
               {activeFilters.size > 0 &&
                 secondaryFilters.some((f) => activeFilters.has(f.id)) && (
                   <span className="ml-2 px-2 py-0.5 rounded-full bg-blue-03/20 text-blue-03 text-xs font-medium">
@@ -303,7 +216,7 @@ export function FilterBar({
             {showMoreFilters && (
               <div className="absolute left-0 top-full mt-2 z-50 bg-gray-04 border border-gray-03 rounded-lg shadow-lg p-2 min-w-[200px]">
                 <div className="text-xs font-semibold text-gray-02 mb-2 px-2">
-                  Ytterligare filter
+                  {t("jobstatus.additionalFilters")}
                 </div>
                 {secondaryFilters.map((filter) => {
                   const isActive = activeFilters.has(filter.id);
@@ -324,7 +237,7 @@ export function FilterBar({
                         {isActive && (
                           <CheckCircle2 className="w-4 h-4 text-blue-03" />
                         )}
-                        {filter.label}
+                        {t(`jobstatus.filters.${filter.id}`)}
                       </span>
                       {count > 0 && (
                         <span className="text-xs text-gray-02">{count}</span>
@@ -345,7 +258,7 @@ export function FilterBar({
                 className="!w-auto !min-w-0 h-9 px-4 text-sm text-gray-02 hover:text-gray-01 hover:bg-gray-03/40"
               >
                 <X className="w-4 h-4 mr-1.5" />
-                Rensa filter
+                {t("common.clearFilters")}
               </Button>
             )}
           </div>
@@ -354,12 +267,11 @@ export function FilterBar({
         {/* Filter Summary */}
         {hasActiveFiltersOrSearch && (
           <div className="text-sm text-gray-02 pt-2">
-            Visar {filteredCount} av {totalCount} företag
+            {t("jobstatus.showingCompanies", { filtered: filteredCount, total: totalCount })}
           </div>
         )}
 
-        {/* Rerun Jobs Section - Inside filter container */}
-        <RerunJobsSection onRerunByWorker={onRerunByWorker} />
+        <FilterBarRerunSection onRerunByWorker={onRerunByWorker} />
       </div>
     </div>
   );

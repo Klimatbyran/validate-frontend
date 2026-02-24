@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { searchCompanyReports } from "./lib/crawler-utils";
+import { Loader2 } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 import { CompanyReport } from "./lib/crawler-types";
 import SearchResultsList from "./components/SearchResultsList";
 import CompaniesNamesList from "./components/CompaniesNamesList";
@@ -18,6 +19,7 @@ const VIEW_MODES: { value: CrawlerViewMode; label: string }[] = [
 
 export function CrawlerTab() {
   const [viewMode, setViewMode] = useState<CrawlerViewMode>("manual");
+  const { t } = useI18n();
   const [companyNameInput, setCompanyNameInput] = useState<string>("");
   const [reportYearInput, setReportYearInput] = useState<string>("");
   const [manualReports, setManualReports] = useState<CompanyReport[] | null>(
@@ -87,7 +89,9 @@ export function CrawlerTab() {
         className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6 flex flex-col justify-between"
       >
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xl font-semibold text-gray-01">Crawler</h2>
+          <h2 className="text-xl font-semibold text-gray-01">
+            {t("crawler.title")}
+          </h2>
           <div className="flex rounded-full overflow-hidden border border-gray-02/20 bg-gray-04/50 p-1">
             {VIEW_MODES.map((mode) => (
               <button
@@ -117,7 +121,7 @@ export function CrawlerTab() {
               />
               {(!companyNameInput || !reportYearInput) && (
                 <p className="text-sm text-gray-02 mt-4">
-                  Enter at least one company and a report year to search.
+                  {t("crawler.manualSearchGuard")}
                 </p>
               )}
             </>
@@ -132,7 +136,7 @@ export function CrawlerTab() {
               />
               {(!reportYearInput || !selectedCompanies.length) && (
                 <p className="text-sm text-gray-02 mt-4">
-                  Select at least one company and enter a report year to search.
+                  {t("crawler.databaseSearchGuard")}
                 </p>
               )}
             </>
@@ -146,10 +150,10 @@ export function CrawlerTab() {
             <Loader2 className="w-8 h-8 text-blue-03 animate-spin mx-auto" />
             <div>
               <p className="text-lg text-gray-01 font-medium">
-                Loading results...
+                {t("crawler.loadingResults")}
               </p>
               <p className="text-sm text-gray-02 mt-2">
-                Hang in there as this may take a moment.
+                {t("crawler.loadingDescription")}
               </p>
             </div>
           </div>

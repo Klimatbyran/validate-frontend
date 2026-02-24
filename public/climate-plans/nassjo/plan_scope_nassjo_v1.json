@@ -1,0 +1,66 @@
+{
+  "Nassjo": {
+    "policy_domain": {
+      "primary_focus": "mitigation",
+      "mitigation_sections": [
+        "Utsläpp av koldioxid och andra växthusgaser",
+        "Klimat- och energimål för Nässjö kommun",
+        "Åtgärdsområden",
+        "Transporter och resor",
+        "Samhällsplanering",
+        "Bebyggelse",
+        "Konsumtion och livsstil",
+        "Förnybar energi",
+        "Gröna näringar och natur",
+        "Näringsliv och affärsutveckling"
+      ],
+      "adaptation_sections": [],
+      "mitigation_description": "The plan focuses on reducing greenhouse gas emissions through various measures such as increasing renewable energy production, improving energy efficiency, and reducing fossil fuel dependency in transportation and building sectors. It sets overarching goals for the geographic area of Nässjö and specific targets for the municipal corporation.",
+      "adaptation_description": "The plan does not address adaptation measures. It explicitly states that climate adaptation is handled in other documents such as the safety and security action program and the comprehensive plan.",
+      "source_quotes": [
+        "Klimatanpassning ingår inte i denna strategi. Klimatanpassning hanteras i handlingsprogrammet för skydd och säkerhet och kommer även in som en del i en rad andra styrande dokument, exempelvis översiktsplan, vatten- och avloppsplan och vattentjänstplan.",
+        "Klimat- och energimålen för Nässjö kommun är uppdelade i övergripande mål, som gäller Nässjö kommun som geografiskt område, samt del- och etappmål, som gäller kommunkoncernen.",
+        "Utsläppen av koldioxid från Nässjö kommuns geografiska område ska årligen minska så att kommunen uppfyller sin del av Parisavtalet.",
+        "Genom en kombination av ökad produktion av förnybar energi och effektiv energianvändning är Nässjö kommun som geografiskt område en plusenergikommun år 2045."
+      ]
+    },
+    "spatial_scope": {
+      "primary_scope": "municipal_territory",
+      "limited_to_territory": false,
+      "addresses_metropolitan_or_regional": true,
+      "metropolitan_regional_description": "The plan aligns with the regional climate and energy strategy of Jönköping County, which involves cooperation with other municipalities in the region to achieve shared climate and energy goals.",
+      "distinguishes_operations_vs_territory": true,
+      "operations_vs_territory_description": "The plan distinguishes between overarching goals for the entire geographic area of Nässjö and specific targets for the municipal corporation's operations.",
+      "source_quotes": [
+        "Klimat- och energimålen för Nässjö kommun är uppdelade i övergripande mål, som gäller Nässjö kommun som geografiskt område, samt del- och etappmål, som gäller kommunkoncernen.",
+        "Jönköpings läns klimat- och energistrategi pekar ut fokusområden för att öka förutsättningarna att nå de regionala klimat- och energimålen. Fokusområdena visar var det krävs extra insatser för att målen till 2045 ska nås."
+      ]
+    },
+    "temporal_scope": {
+      "plan_period_start": "2024",
+      "plan_period_end": "2045",
+      "has_revision_cycle": true,
+      "revision_cycle_description": "The strategy is to be followed up annually and reported to the municipal council. In connection with reporting, the need to revise goals and measures is assessed.",
+      "interim_milestones": [
+        "2025 progress review",
+        "2030 progress review",
+        "2026 roadmap for scope 3 emissions"
+      ],
+      "source_quotes": [
+        "Klimat- och energistrategin ska årligen följas upp och rapporteras till kommunfullmäktige.",
+        "Uppföljningen ska innehålla utfall för övergripande mål, del- och etappmål samt uppföljning av åtgärdsområdena.",
+        "1.1. Kommunkoncernens utsläpp av växthusgaser, scope 1 och 2, har år 2025 minskat med minst 10 procent jämfört med 2022",
+        "1.2. Kommunkoncernens utsläpp av växthusgaser, scope 1 och 2, har år 2030 minskat med minst 50 procent jämfört med 2022",
+        "1.3. Senast år 2026 ska det finnas en färdplan för minskning av utsläppen enligt scope 3"
+      ]
+    },
+    "summary": {
+      "document_type": "climate_strategy",
+      "document_title": "Klimat- och energistrategi för Nässjö kommun 2024-2045",
+      "adopting_body": "Kommunfullmäktige",
+      "adoption_date": "2024-10-31",
+      "overall_assessment": "The plan is a comprehensive climate and energy strategy focusing primarily on mitigation. It sets clear goals for both the entire municipal territory and the municipal corporation's operations, aligning with regional strategies. The plan includes annual follow-ups and interim milestones to ensure progress towards its long-term goals."
+    }
+  },
+  "_version": "v1"
+}

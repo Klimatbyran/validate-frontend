@@ -1,4 +1,5 @@
 import { Download } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 import { DataPointMetric } from '../types';
 import { calculateOverviewAggregates, exportOverviewCsv } from '../lib';
 import { DataPointBar, OverviewSection, ScopeSection, ScopeSummary } from '../overview';
@@ -10,6 +11,7 @@ interface OverviewViewProps {
 }
 
 export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPoint }: OverviewViewProps) {
+  const { t } = useI18n();
   if (allDataPointMetrics.length === 0) return null;
 
   const scope1Metrics = allDataPointMetrics.filter((dp) => dp.id.startsWith('scope1-'));
@@ -42,7 +44,7 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
           className="inline-flex items-center gap-2 px-3 py-2 bg-gray-03 text-gray-01 rounded-lg hover:bg-gray-02 hover:text-white transition-colors text-sm"
         >
           <Download className="w-4 h-4" />
-          Export CSV
+          {t("errors.overview.exportCsv")}
         </button>
       </div>
 
@@ -50,7 +52,7 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
         {scope1Metrics.length > 0 && (
           <OverviewSection isFirst>
             <ScopeSection
-              title={`Scope 1 (${selectedYear})`}
+              title={t("errors.overview.scope1Title", { year: selectedYear })}
               aggregates={scope1Aggregates}
               metrics={scope1Metrics}
               onSelectDataPoint={onSelectDataPoint}
@@ -61,7 +63,7 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
         {scope2Metrics.length > 0 && (
           <OverviewSection>
             <ScopeSection
-              title={`Scope 2 (${selectedYear})`}
+              title={t("errors.overview.scope2Title", { year: selectedYear })}
               aggregates={scope2Aggregates}
               metrics={scope2Metrics}
               onSelectDataPoint={onSelectDataPoint}
@@ -72,7 +74,7 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
         {scope3Metrics.length > 0 && (
           <OverviewSection>
             <ScopeSection
-              title={`Scope 3 Categories (${selectedYear})`}
+              title={t("errors.overview.scope3Title", { year: selectedYear })}
               aggregates={scope3Aggregates}
               metrics={scope3Metrics}
               onSelectDataPoint={onSelectDataPoint}
@@ -82,7 +84,7 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
 
         {otherMetrics.length > 0 && (
           <OverviewSection>
-            <h3 className="text-sm font-semibold text-gray-01 mb-3">Other</h3>
+            <h3 className="text-sm font-semibold text-gray-01 mb-3">{t("errors.overview.other")}</h3>
             <div className="space-y-2">
               {otherMetrics.map((dp) => (
                 <DataPointBar key={dp.id} dp={dp} onSelect={onSelectDataPoint} />
@@ -94,7 +96,7 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
         {allScopesAggregates.totals.withAnyData > 0 && (
           <OverviewSection>
             <ScopeSummary
-              title={`Overall Accuracy — Scope 1 + 2 + 3 (${selectedYear})`}
+              title={t("errors.overview.overallScope123", { year: selectedYear })}
               categoryCount={[...scope1Metrics, ...scope2Metrics, ...scope3Metrics].length}
               aggregates={allScopesAggregates}
             />
@@ -104,7 +106,7 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
         {scope12Aggregates.totals.withAnyData > 0 && (
           <OverviewSection>
             <ScopeSummary
-              title={`Overall Accuracy — Scope 1 + 2 (${selectedYear})`}
+              title={t("errors.overview.overallScope12", { year: selectedYear })}
               categoryCount={[...scope1Metrics, ...scope2Metrics].length}
               aggregates={scope12Aggregates}
             />

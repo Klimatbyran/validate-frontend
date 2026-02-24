@@ -4,6 +4,7 @@
  */
 
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import {
   Dialog,
@@ -19,11 +20,12 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, login } = useAuth();
+  const { t } = useI18n();
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-05 flex items-center justify-center">
-        <div className="text-gray-02">Laddar...</div>
+        <div className="text-gray-02">{t("common.loading")}</div>
       </div>
     );
   }
@@ -33,17 +35,17 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       <Dialog open={true} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Inloggning krävs</DialogTitle>
+            <DialogTitle>{t("auth.loginRequired")}</DialogTitle>
             <DialogDescription>
-              Du måste logga in för att använda denna applikation.
+              {t("auth.loginRequiredApp")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 pt-4">
             <Button onClick={login} className="w-full">
-              Logga in med GitHub
+              {t("auth.loginWithGitHub")}
             </Button>
             <p className="text-sm text-gray-02 text-center">
-              Du kommer att omdirigeras till GitHub för autentisering.
+              {t("auth.redirectToGitHub")}
             </p>
           </div>
         </DialogContent>

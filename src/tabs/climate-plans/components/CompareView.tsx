@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Target, Calendar, Scale, Globe, BarChart3, Check, X } from "lucide-react";
+import { Callout } from "@/ui/callout";
+import { useI18n } from "@/contexts/I18nContext";
 import type { MunicipalityClimatePlan, OwnCommitment } from "../lib/types";
 import { cn } from "@/lib/utils";
 
@@ -10,24 +12,25 @@ interface CompareViewProps {
 
 type Category = "targets" | "timeline" | "framework" | "scope" | "accounting";
 
-const CATEGORIES: { id: Category; label: string; icon: React.ReactNode }[] = [
-  { id: "targets", label: "Targets", icon: <Target size={16} /> },
-  { id: "timeline", label: "Timeline", icon: <Calendar size={16} /> },
-  { id: "framework", label: "Frameworks", icon: <Scale size={16} /> },
-  { id: "scope", label: "Scope", icon: <Globe size={16} /> },
-  { id: "accounting", label: "Accounting", icon: <BarChart3 size={16} /> },
+const CATEGORY_IDS: { id: Category; labelKey: string; icon: React.ReactNode }[] = [
+  { id: "targets", labelKey: "climate.compare.targets", icon: <Target size={16} /> },
+  { id: "timeline", labelKey: "climate.compare.timeline", icon: <Calendar size={16} /> },
+  { id: "framework", labelKey: "climate.compare.frameworks", icon: <Scale size={16} /> },
+  { id: "scope", labelKey: "climate.compare.scope", icon: <Globe size={16} /> },
+  { id: "accounting", labelKey: "climate.compare.accounting", icon: <BarChart3 size={16} /> },
 ];
 
 // --- Reusable badge components ---
 
 function YesNoBadge({ value }: { value: boolean }) {
+  const { t } = useI18n();
   return value ? (
     <span className="inline-flex items-center gap-1 bg-green-03/20 text-green-03 text-xs font-medium px-2 py-1 rounded-full">
-      <Check size={12} /> Yes
+      <Check size={12} /> {t("common.yes")}
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 bg-gray-03/40 text-gray-02 text-xs px-2 py-1 rounded-full">
-      <X size={12} /> No
+      <X size={12} /> {t("common.no")}
     </span>
   );
 }
@@ -48,8 +51,9 @@ function Badge({ children, variant = "default" }: { children: React.ReactNode; v
 }
 
 function ScopeBadges({ explicit, implicit }: { explicit?: string[]; implicit?: string[] }) {
+  const { t } = useI18n();
   const all = new Set([...(explicit || []), ...(implicit || [])]);
-  if (all.size === 0) return <span className="text-xs text-gray-02">Not specified</span>;
+  if (all.size === 0) return <span className="text-xs text-gray-02">{t("climate.compare.notSpecified")}</span>;
   return (
     <div className="flex flex-wrap gap-1.5">
       {["1", "2", "3"].map((s) => (
@@ -59,39 +63,32 @@ function ScopeBadges({ explicit, implicit }: { explicit?: string[]; implicit?: s
             ? explicit?.includes(s) ? "bg-blue-03/20 text-blue-03" : "bg-blue-03/10 text-blue-03/60 border border-blue-03/20"
             : "bg-gray-03/30 text-gray-02"
         )}>
-          Scope {s}
-          {all.has(s) && !explicit?.includes(s) && <span className="text-xs ml-1">(implicit)</span>}
+          {t("climate.compare.scopeNumber", { n: s })}
+          {all.has(s) && !explicit?.includes(s) && <span className="text-xs ml-1">{t("climate.compare.implicit")}</span>}
         </span>
       ))}
     </div>
   );
 }
 
-// --- Human-readable labels for enum-like values ---
+// --- Human-readable labels for enum-like values (labelKey for i18n) ---
 
-const ACCOUNTING_TYPE_LABELS: Record<string, { label: string; badges: string[] }> = {
-  territorial: { label: "Territorial only", badges: ["Territorial"] },
-  consumption: { label: "Consumption-based only", badges: ["Consumption-based"] },
-  both: { label: "Territorial + Consumption-based", badges: ["Territorial", "Consumption-based"] },
+const ACCOUNTING_TYPE_KEYS: Record<string, { labelKey: string; badgeKeys: string[] }> = {
+  territorial: { labelKey: "climate.compare.territorialOnly", badgeKeys: ["climate.compare.territorialBadge"] },
+  consumption: { labelKey: "climate.compare.consumptionBasedOnly", badgeKeys: ["climate.compare.consumptionBasedBadge"] },
+  both: { labelKey: "climate.compare.territorialAndConsumption", badgeKeys: ["climate.compare.territorialBadge", "climate.compare.consumptionBasedBadge"] },
 };
 
-const SCOPE_LABELS: Record<string, string> = {
-  municipal_territory: "Municipal territory",
-  municipal_operations: "Municipal operations",
-  whole_municipality: "Whole municipality",
-  geographic_area: "Geographic area",
+const FOCUS_KEYS: Record<string, { labelKey: string; badges: { labelKey: string; variant: "blue" | "green" | "orange" }[] }> = {
+  mitigation: { labelKey: "climate.compare.mitigation", badges: [{ labelKey: "climate.compare.mitigation", variant: "green" }] },
+  adaptation: { labelKey: "climate.compare.adaptation", badges: [{ labelKey: "climate.compare.adaptation", variant: "blue" }] },
+  both: { labelKey: "climate.compare.mitigationAndAdaptation", badges: [{ labelKey: "climate.compare.mitigation", variant: "green" }, { labelKey: "climate.compare.adaptation", variant: "blue" }] },
 };
 
-const FOCUS_LABELS: Record<string, { label: string; badges: { label: string; variant: "blue" | "green" | "orange" }[] }> = {
-  mitigation: { label: "Mitigation", badges: [{ label: "Mitigation", variant: "green" }] },
-  adaptation: { label: "Adaptation", badges: [{ label: "Adaptation", variant: "blue" }] },
-  both: { label: "Mitigation + Adaptation", badges: [{ label: "Mitigation", variant: "green" }, { label: "Adaptation", variant: "blue" }] },
-};
-
-const STRENGTH_LABELS: Record<string, { label: string; variant: "green" | "blue" | "orange" | "default" }> = {
-  adopted_goal: { label: "Adopted goal", variant: "green" },
-  political_commitment: { label: "Political commitment", variant: "blue" },
-  aspiration: { label: "Aspiration", variant: "orange" },
+const STRENGTH_KEYS: Record<string, { labelKey: string; variant: "green" | "blue" | "orange" | "default" }> = {
+  adopted_goal: { labelKey: "climate.compare.adoptedGoal", variant: "green" },
+  political_commitment: { labelKey: "climate.compare.politicalCommitment", variant: "blue" },
+  aspiration: { labelKey: "climate.compare.aspiration", variant: "orange" },
 };
 
 const CONFIDENCE_STYLES: Record<string, { variant: "green" | "orange" | "default" }> = {
@@ -102,7 +99,15 @@ const CONFIDENCE_STYLES: Record<string, { variant: "green" | "orange" | "default
 
 // --- Summary cards ---
 
+const scopeTKey: Record<string, string> = {
+  municipal_territory: "climate.compare.municipalTerritory",
+  municipal_operations: "climate.compare.municipalOperations",
+  whole_municipality: "climate.compare.wholeMunicipality",
+  geographic_area: "climate.compare.geographicArea",
+};
+
 function MunicipalitySummaryCard({ m, onClick }: { m: MunicipalityClimatePlan; onClick: () => void }) {
+  const { t } = useI18n();
   const et = m.emissionTargets;
   const ps = m.planScope;
   const pt = et?.primary_target;
@@ -116,11 +121,11 @@ function MunicipalitySummaryCard({ m, onClick }: { m: MunicipalityClimatePlan; o
     : null;
 
   const frameworkFlags = [
-    { val: et?.framework_alignment?.paris_agreement_mentioned, label: "Paris" },
-    { val: et?.framework_alignment?.one_point_five_mentioned, label: "1.5°C" },
-    { val: et?.framework_alignment?.carbon_budget_referenced, label: "Carbon budget" },
-    { val: et?.framework_alignment?.swedish_climate_act_referenced, label: "SE Climate Act" },
-    { val: et?.framework_alignment?.eu_frameworks_referenced, label: "EU" },
+    { val: et?.framework_alignment?.paris_agreement_mentioned, labelKey: "climate.compare.frameworkShortParis" },
+    { val: et?.framework_alignment?.one_point_five_mentioned, labelKey: "climate.compare.frameworkShort1_5" },
+    { val: et?.framework_alignment?.carbon_budget_referenced, labelKey: "climate.compare.frameworkShortCarbonBudget" },
+    { val: et?.framework_alignment?.swedish_climate_act_referenced, labelKey: "climate.compare.frameworkShortSwedishClimateAct" },
+    { val: et?.framework_alignment?.eu_frameworks_referenced, labelKey: "climate.compare.frameworkShortEu" },
   ];
 
   return (
@@ -132,15 +137,14 @@ function MunicipalitySummaryCard({ m, onClick }: { m: MunicipalityClimatePlan; o
 
       {/* Primary target — always shown for symmetry */}
       {pt?.exists ? (
-        <div className="bg-green-03/10 border border-green-03/20 rounded-lg p-3 mb-3">
-          <div className="text-xs text-green-03 font-medium uppercase tracking-wider mb-1">Primary target</div>
+        <Callout variant="success" title={t("climate.compare.primaryTarget")} className="mb-3">
           <div className="text-2xl font-bold text-gray-01">{pt.target_year || "—"}</div>
-          <Badge variant="default">{SCOPE_LABELS[pt.scope || ""] || pt.scope?.replace(/_/g, " ")}</Badge>
-        </div>
+          <Badge variant="default">{pt.scope && (scopeTKey[pt.scope] ? t(scopeTKey[pt.scope]) : pt.scope.replace(/_/g, " ")) || "—"}</Badge>
+        </Callout>
       ) : (
         <div className="bg-gray-03/20 border border-gray-03/30 rounded-lg p-3 mb-3 flex flex-col justify-center min-h-[88px]">
-          <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-1">Primary target</div>
-          <div className="text-lg text-gray-02">None</div>
+          <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-1">{t("climate.compare.primaryTarget")}</div>
+          <div className="text-lg text-gray-02">{t("climate.compare.none")}</div>
         </div>
       )}
 
@@ -150,35 +154,35 @@ function MunicipalitySummaryCard({ m, onClick }: { m: MunicipalityClimatePlan; o
           <div className="text-xl font-bold text-blue-03">
             {biggestReduction ? `${biggestReduction.reduction_percentage}%` : "—"}
           </div>
-          <div className="text-xs text-gray-02 uppercase">Max reduction</div>
+          <div className="text-xs text-gray-02 uppercase">{t("climate.compare.maxReduction")}</div>
         </div>
         <div className="text-center">
           <div className="text-xl font-bold text-gray-01">
             {ps?.temporal_scope?.plan_period_start || "—"}–{ps?.temporal_scope?.plan_period_end?.slice(-2) || "—"}
           </div>
-          <div className="text-xs text-gray-02 uppercase">Plan period</div>
+          <div className="text-xs text-gray-02 uppercase">{t("climate.compare.planPeriod")}</div>
         </div>
         <div className="text-center">
           <div className="text-xl font-bold text-orange-03">
             {et?.own_commitments?.length || 0}
           </div>
-          <div className="text-xs text-gray-02 uppercase">Goals</div>
+          <div className="text-xs text-gray-02 uppercase">{t("climate.compare.goals")}</div>
         </div>
       </div>
 
       {/* Framework badges */}
       <div className="flex flex-wrap gap-1 mt-3">
         {frameworkFlags.map((fw) => (
-          <span key={fw.label} className={cn(
+          <span key={fw.labelKey} className={cn(
             "text-xs px-2 py-0.5 rounded-full",
             fw.val ? "bg-green-03/15 text-green-03" : "bg-gray-03/30 text-gray-02"
           )}>
-            {fw.label}
+            {t(fw.labelKey)}
           </span>
         ))}
       </div>
 
-      <div className="text-xs text-blue-03 mt-4">View full details →</div>
+      <div className="text-xs text-blue-03 mt-4">{t("climate.compare.viewFullDetails")}</div>
     </button>
   );
 }
@@ -186,11 +190,12 @@ function MunicipalitySummaryCard({ m, onClick }: { m: MunicipalityClimatePlan; o
 // --- Category panels ---
 
 function TargetsPanel({ municipalities }: { municipalities: MunicipalityClimatePlan[] }) {
+  const { t } = useI18n();
   return (
     <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${municipalities.length}, 1fr)` }}>
       {municipalities.map((m) => {
         const et = m.emissionTargets;
-        if (!et) return <div key={m.id} className="text-gray-02 text-sm">No data</div>;
+        if (!et) return <div key={m.id} className="text-gray-02 text-sm">{t("climate.compare.noData")}</div>;
 
         const reductionGoals = et.own_commitments.filter((c) => c.goal_type === "emission_reduction");
         const implementationGoals = et.own_commitments.filter((c) => c.goal_type === "implementation");
@@ -200,49 +205,48 @@ function TargetsPanel({ municipalities }: { municipalities: MunicipalityClimateP
             <div className="text-sm font-medium text-gray-01">{m.name}</div>
 
             {et.primary_target?.exists ? (
-              <div className="bg-green-03/10 border border-green-03/20 rounded-lg p-4">
-                <div className="text-xs text-green-03 font-medium uppercase tracking-wider mb-2">Primary target</div>
+              <Callout variant="success" title={t("climate.compare.primaryTarget")}>
                 <div className="text-xl font-bold text-gray-01 mb-2">
                   {et.primary_target.reduction_percentage
                     ? `${et.primary_target.reduction_percentage}% by ${et.primary_target.target_year}`
                     : `by ${et.primary_target.target_year}`}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  <Badge>{SCOPE_LABELS[et.primary_target.scope || ""] || et.primary_target.scope?.replace(/_/g, " ")}</Badge>
-                  {et.primary_target.baseline_year && <Badge>Baseline: {et.primary_target.baseline_year}</Badge>}
+                  <Badge>{scopeTKey[et.primary_target.scope || ""] ? t(scopeTKey[et.primary_target.scope || ""]) : et.primary_target.scope?.replace(/_/g, " ")}</Badge>
+                  {et.primary_target.baseline_year && <Badge>{t("climate.detail.baseline")}: {et.primary_target.baseline_year}</Badge>}
                   {et.primary_target.confidence && (
                     <Badge variant={CONFIDENCE_STYLES[et.primary_target.confidence]?.variant || "default"}>
-                      {et.primary_target.confidence} confidence
+                      {et.primary_target.confidence} {t("climate.compare.confidence")}
                     </Badge>
                   )}
                 </div>
-              </div>
+              </Callout>
             ) : (
               <div className="bg-gray-03/20 border border-gray-03/30 rounded-lg p-4 flex flex-col justify-center min-h-[100px]">
-                <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-2">Primary target</div>
-                <div className="text-lg text-gray-02">None</div>
+                <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-2">{t("climate.compare.primaryTarget")}</div>
+                <div className="text-lg text-gray-02">{t("climate.compare.none")}</div>
               </div>
             )}
 
             <div>
               <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-2">
-                Reduction goals
+                {t("climate.compare.reductionGoals")}
                 <Badge variant={reductionGoals.length > 0 ? "blue" : "default"}>{reductionGoals.length}</Badge>
               </div>
               {reductionGoals.length > 0
                 ? reductionGoals.map((c, i) => <GoalCard key={i} c={c} />)
-                : <div className="bg-gray-03/20 rounded-lg p-3 text-sm text-gray-02 min-h-[52px] flex items-center">None</div>
+                : <div className="bg-gray-03/20 rounded-lg p-3 text-sm text-gray-02 min-h-[52px] flex items-center">{t("climate.compare.none")}</div>
               }
             </div>
 
             <div>
               <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-2">
-                Implementation goals
+                {t("climate.compare.implementationGoals")}
                 <Badge variant={implementationGoals.length > 0 ? "orange" : "default"}>{implementationGoals.length}</Badge>
               </div>
               {implementationGoals.length > 0
                 ? implementationGoals.map((c, i) => <GoalCard key={i} c={c} />)
-                : <div className="bg-gray-03/20 rounded-lg p-3 text-sm text-gray-02 min-h-[52px] flex items-center">None</div>
+                : <div className="bg-gray-03/20 rounded-lg p-3 text-sm text-gray-02 min-h-[52px] flex items-center">{t("climate.compare.none")}</div>
               }
             </div>
           </div>
@@ -268,7 +272,7 @@ interface TimelineEvent {
 }
 
 function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimatePlan[] }) {
-  // Collect all events from all municipalities
+  const { t } = useI18n();
   const events: TimelineEvent[] = [];
 
   municipalities.forEach((m, mi) => {
@@ -276,10 +280,10 @@ function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimate
     const et = m.emissionTargets;
 
     if (ts?.plan_period_start) {
-      events.push({ year: Number(ts.plan_period_start), label: "Plan start", type: "plan_start", municipalityIndex: mi, municipalityName: m.name });
+      events.push({ year: Number(ts.plan_period_start), label: t("climate.compare.planStart"), type: "plan_start", municipalityIndex: mi, municipalityName: m.name });
     }
     if (ts?.plan_period_end) {
-      events.push({ year: Number(ts.plan_period_end), label: "Plan end", type: "plan_end", municipalityIndex: mi, municipalityName: m.name });
+      events.push({ year: Number(ts.plan_period_end), label: t("climate.compare.planEnd"), type: "plan_end", municipalityIndex: mi, municipalityName: m.name });
     }
 
     // Extract years from milestones
@@ -301,7 +305,7 @@ function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimate
     });
 
     if (et?.primary_target?.target_year) {
-      events.push({ year: Number(et.primary_target.target_year), label: "Primary target", type: "target", municipalityIndex: mi, municipalityName: m.name });
+      events.push({ year: Number(et.primary_target.target_year), label: t("climate.compare.primaryTarget"), type: "target", municipalityIndex: mi, municipalityName: m.name });
     }
   });
 
@@ -349,10 +353,10 @@ function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimate
           );
         })}
         <div className="flex items-center gap-3 ml-auto text-xs text-gray-02">
-          <span>▶ Start</span>
-          <span>■ End</span>
-          <span>◆ Milestone</span>
-          <span>★ Target</span>
+          <span>▶ {t("climate.compare.legendStart")}</span>
+          <span>■ {t("climate.compare.legendEnd")}</span>
+          <span>◆ {t("climate.compare.legendMilestone")}</span>
+          <span>★ {t("climate.compare.legendTarget")}</span>
         </div>
       </div>
 
@@ -422,7 +426,7 @@ function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimate
         {municipalities.map((m, mi) => {
           const ts = m.planScope?.temporal_scope;
           const color = MUNICIPALITY_COLORS[mi % MUNICIPALITY_COLORS.length];
-          if (!ts) return <div key={m.id} className="text-gray-02 text-sm">No data</div>;
+          if (!ts) return <div key={m.id} className="text-gray-02 text-sm">{t("climate.compare.noData")}</div>;
           return (
             <div key={m.id} className="space-y-3">
               <div className="flex items-center gap-2">
@@ -432,8 +436,8 @@ function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimate
 
               <div className="flex flex-wrap gap-1.5">
                 <Badge variant="blue">{ts.plan_period_start} – {ts.plan_period_end}</Badge>
-                {ts.has_revision_cycle && <Badge variant="green">Has revision cycle</Badge>}
-                {!ts.has_revision_cycle && <Badge>No revision cycle</Badge>}
+                {ts.has_revision_cycle && <Badge variant="green">{t("climate.compare.hasRevisionCycle")}</Badge>}
+                {!ts.has_revision_cycle && <Badge>{t("climate.compare.noRevisionCycle")}</Badge>}
               </div>
 
               {ts.revision_cycle_description && (
@@ -448,13 +452,14 @@ function TimelinePanel({ municipalities }: { municipalities: MunicipalityClimate
 }
 
 function FrameworkPanel({ municipalities }: { municipalities: MunicipalityClimatePlan[] }) {
+  const { t } = useI18n();
   const frameworks = [
-    { key: "paris_agreement_mentioned" as const, label: "Paris Agreement" },
-    { key: "one_point_five_mentioned" as const, label: "1.5°C target" },
-    { key: "carbon_budget_referenced" as const, label: "Carbon budget" },
-    { key: "swedish_climate_act_referenced" as const, label: "Swedish Climate Act" },
-    { key: "swedish_national_targets_referenced" as const, label: "Swedish national targets" },
-    { key: "eu_frameworks_referenced" as const, label: "EU frameworks" },
+    { key: "paris_agreement_mentioned" as const, labelKey: "climate.detail.parisAgreement" },
+    { key: "one_point_five_mentioned" as const, labelKey: "climate.detail.onePointFiveTarget" },
+    { key: "carbon_budget_referenced" as const, labelKey: "climate.detail.carbonBudget" },
+    { key: "swedish_climate_act_referenced" as const, labelKey: "climate.detail.swedishClimateAct" },
+    { key: "swedish_national_targets_referenced" as const, labelKey: "climate.compare.swedishNationalTargets" },
+    { key: "eu_frameworks_referenced" as const, labelKey: "climate.detail.euFrameworks" },
   ];
 
   return (
@@ -473,7 +478,7 @@ function FrameworkPanel({ municipalities }: { municipalities: MunicipalityClimat
                     val ? "bg-green-03/20 text-green-03" : "bg-gray-03/30 text-gray-02"
                   )}>
                     {val ? <Check size={12} /> : <X size={12} />}
-                    {fw.label}
+                    {t(fw.labelKey)}
                   </span>
                 );
               })}
@@ -482,13 +487,13 @@ function FrameworkPanel({ municipalities }: { municipalities: MunicipalityClimat
             {/* EU frameworks named */}
             {m.emissionTargets?.framework_alignment?.eu_frameworks_referenced && (
               <div className="mt-2">
-                <div className="text-xs text-gray-02 mb-1">EU frameworks:</div>
+                <div className="text-xs text-gray-02 mb-1">{t("climate.compare.euFrameworksLabel")}</div>
                 <div className="flex flex-wrap gap-1.5">
                   {m.emissionTargets.framework_alignment.eu_frameworks_named?.length > 0
                     ? m.emissionTargets.framework_alignment.eu_frameworks_named.map((name, i) => (
                         <Badge key={i} variant="blue">{name}</Badge>
                       ))
-                    : <Badge>Referenced (not named)</Badge>
+                    : <Badge>{t("climate.compare.referencedNotNamed")}</Badge>
                   }
                 </div>
               </div>
@@ -499,12 +504,14 @@ function FrameworkPanel({ municipalities }: { municipalities: MunicipalityClimat
 
       {/* External references */}
       <div>
-        <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-3">External references</div>
+        <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-3">{t("climate.compare.externalReferences")}</div>
         <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${municipalities.length}, 1fr)` }}>
-          {municipalities.map((m) => (
+          {municipalities.map((m) => {
+            const refs = m.emissionTargets?.external_references;
+            return (
             <div key={m.id} className="space-y-2">
-              {m.emissionTargets?.external_references?.length > 0
-                ? m.emissionTargets.external_references.map((r, i) => (
+              {refs && refs.length > 0
+                ? refs.map((r, i) => (
                     <div key={i} className="bg-gray-03/30 rounded-lg p-3">
                       <div className="text-sm text-gray-01 mb-1.5">{r.reference_description}</div>
                       <div className="flex flex-wrap gap-1.5">
@@ -513,10 +520,10 @@ function FrameworkPanel({ municipalities }: { municipalities: MunicipalityClimat
                       </div>
                     </div>
                   ))
-                : <div className="bg-gray-03/20 rounded-lg p-3 text-sm text-gray-02 min-h-[52px] flex items-center">None</div>
+                : <div className="bg-gray-03/20 rounded-lg p-3 text-sm text-gray-02 min-h-[52px] flex items-center">{t("climate.compare.none")}</div>
               }
             </div>
-          ))}
+          ); })}
         </div>
       </div>
     </div>
@@ -524,38 +531,39 @@ function FrameworkPanel({ municipalities }: { municipalities: MunicipalityClimat
 }
 
 function ScopePanel({ municipalities }: { municipalities: MunicipalityClimatePlan[] }) {
+  const { t } = useI18n();
   return (
     <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${municipalities.length}, 1fr)` }}>
       {municipalities.map((m) => {
         const pd = m.planScope?.policy_domain;
         const ss = m.planScope?.spatial_scope;
-        if (!pd && !ss) return <div key={m.id} className="text-gray-02 text-sm">No data</div>;
-        const focus = FOCUS_LABELS[pd?.primary_focus || ""];
+        if (!pd && !ss) return <div key={m.id} className="text-gray-02 text-sm">{t("climate.compare.noData")}</div>;
+        const focus = FOCUS_KEYS[pd?.primary_focus || ""];
         return (
           <div key={m.id} className="space-y-4">
             <div className="text-sm font-medium text-gray-01">{m.name}</div>
 
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-02 shrink-0">Focus</span>
+                <span className="text-xs text-gray-02 shrink-0">{t("climate.compare.focus")}</span>
                 {focus
-                  ? <div className="flex flex-wrap gap-1.5">{focus.badges.map((b, i) => <Badge key={i} variant={b.variant}>{b.label}</Badge>)}</div>
+                  ? <div className="flex flex-wrap gap-1.5">{focus.badges.map((b, i) => <Badge key={i} variant={b.variant}>{t(b.labelKey)}</Badge>)}</div>
                   : <Badge>{pd?.primary_focus?.replace(/_/g, " ") || "—"}</Badge>
                 }
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-02 shrink-0">Spatial scope</span>
-                <Badge variant="blue">{SCOPE_LABELS[ss?.primary_scope || ""] || ss?.primary_scope?.replace(/_/g, " ") || "—"}</Badge>
+                <span className="text-xs text-gray-02 shrink-0">{t("climate.compare.spatialScope")}</span>
+                <Badge variant="blue">{scopeTKey[ss?.primary_scope || ""] ? t(scopeTKey[ss?.primary_scope || ""]) : ss?.primary_scope?.replace(/_/g, " ") || "—"}</Badge>
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-02 shrink-0">Operations vs territory</span>
+                <span className="text-xs text-gray-02 shrink-0">{t("climate.compare.operationsVsTerritory")}</span>
                 <YesNoBadge value={ss?.distinguishes_operations_vs_territory || false} />
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-02 shrink-0">Regional alignment</span>
+                <span className="text-xs text-gray-02 shrink-0">{t("climate.compare.regionalAlignment")}</span>
                 <YesNoBadge value={ss?.addresses_metropolitan_or_regional || false} />
               </div>
             </div>
@@ -567,17 +575,18 @@ function ScopePanel({ municipalities }: { municipalities: MunicipalityClimatePla
 }
 
 function AccountingPanel({ municipalities }: { municipalities: MunicipalityClimatePlan[] }) {
+  const { t } = useI18n();
   return (
     <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${municipalities.length}, 1fr)` }}>
       {municipalities.map((m) => {
         const ea = m.emissionTargets?.emissions_accounting;
         const su = m.emissionTargets?.summary;
-        if (!ea) return <div key={m.id} className="text-gray-02 text-sm">No data</div>;
+        if (!ea) return <div key={m.id} className="text-gray-02 text-sm">{t("climate.compare.noData")}</div>;
 
-        const accountingInfo = ACCOUNTING_TYPE_LABELS[ea.accounting_type] || {
-          label: ea.accounting_type?.replace(/_/g, " "),
-          badges: [ea.accounting_type?.replace(/_/g, " ") || "Unknown"],
-        };
+        const accountingInfo = ACCOUNTING_TYPE_KEYS[ea.accounting_type];
+        const badgeLabels = accountingInfo
+          ? accountingInfo.badgeKeys.map((key) => t(key))
+          : [ea.accounting_type?.replace(/_/g, " ") || "—"];
 
         return (
           <div key={m.id} className="space-y-4">
@@ -585,38 +594,38 @@ function AccountingPanel({ municipalities }: { municipalities: MunicipalityClima
 
             {/* Accounting type as badges */}
             <div>
-              <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-2">Accounting approach</div>
+              <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-2">{t("climate.compare.accountingApproach")}</div>
               <div className="flex flex-wrap gap-1.5">
-                {accountingInfo.badges.map((b, i) => (
-                  <Badge key={i} variant="blue">{b}</Badge>
+                {badgeLabels.map((label, i) => (
+                  <Badge key={i} variant="blue">{label}</Badge>
                 ))}
               </div>
             </div>
 
             {/* GHG scopes */}
             <div>
-              <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-2">GHG scopes covered</div>
+              <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-2">{t("climate.compare.ghgScopesCovered")}</div>
               <ScopeBadges explicit={su?.ghg_scopes_explicit} implicit={su?.ghg_scopes_implicit} />
             </div>
 
             {/* Boolean checks */}
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-02 shrink-0">Consumption-based</span>
+                <span className="text-xs text-gray-02 shrink-0">{t("climate.detail.includesConsumptionBased")}</span>
                 <YesNoBadge value={ea.includes_consumption_based} />
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-02 shrink-0">Methodology described</span>
+                <span className="text-xs text-gray-02 shrink-0">{t("climate.detail.methodologyDescribed")}</span>
                 <YesNoBadge value={ea.methodology_described} />
               </div>
             </div>
 
             {/* Methodology reference */}
             <div>
-              <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-1">Data source</div>
+              <div className="text-xs text-gray-02 font-medium uppercase tracking-wider mb-1">{t("climate.compare.dataSource")}</div>
               {ea.methodology_reference
                 ? <Badge>{ea.methodology_reference}</Badge>
-                : <Badge>Not specified</Badge>
+                : <Badge>{t("climate.compare.notSpecified")}</Badge>
               }
             </div>
           </div>
@@ -629,9 +638,10 @@ function AccountingPanel({ municipalities }: { municipalities: MunicipalityClima
 // --- Goal card ---
 
 function GoalCard({ c }: { c: OwnCommitment }) {
+  const { t } = useI18n();
   const hasReduction = c.reduction_percentage && c.reduction_percentage !== "";
   const hasAbsolute = c.absolute_target && c.absolute_target !== "";
-  const strength = STRENGTH_LABELS[c.commitment_strength];
+  const strength = STRENGTH_KEYS[c.commitment_strength];
 
   return (
     <div className="bg-gray-03/30 rounded-lg p-3 mb-2">
@@ -639,13 +649,13 @@ function GoalCard({ c }: { c: OwnCommitment }) {
       <div className="flex flex-wrap gap-1.5">
         {hasReduction && <Badge variant="blue">{c.reduction_percentage}%</Badge>}
         {hasAbsolute && <Badge variant="blue">{c.absolute_target}</Badge>}
-        {c.target_year && <Badge>Target: {c.target_year}</Badge>}
-        {c.baseline_year && <Badge>Base: {c.baseline_year}</Badge>}
+        {c.target_year && <Badge>{t("climate.detail.target")}: {c.target_year}</Badge>}
+        {c.baseline_year && <Badge>{t("climate.detail.baseline")}: {c.baseline_year}</Badge>}
         {c.sector && <Badge variant="orange">{c.sector}</Badge>}
-        {c.ghg_scopes_explicit?.length > 0 && <Badge>Scope {c.ghg_scopes_explicit.join("+")}</Badge>}
-        {c.ghg_scopes_implicit?.length > 0 && <Badge>Scope {c.ghg_scopes_implicit.join("+")} (implicit)</Badge>}
-        {strength && <Badge variant={strength.variant}>{strength.label}</Badge>}
-        {c.scope && <Badge>{SCOPE_LABELS[c.scope] || c.scope.replace(/_/g, " ")}</Badge>}
+        {c.ghg_scopes_explicit?.length > 0 && <Badge>{t("climate.compare.scopeNumber", { n: c.ghg_scopes_explicit.join("+") })}</Badge>}
+        {c.ghg_scopes_implicit?.length > 0 && <Badge>{t("climate.compare.scopeNumber", { n: c.ghg_scopes_implicit.join("+") })} {t("climate.compare.implicit")}</Badge>}
+        {strength && <Badge variant={strength.variant}>{t(strength.labelKey)}</Badge>}
+        {c.scope && <Badge>{scopeTKey[c.scope] ? t(scopeTKey[c.scope]) : c.scope.replace(/_/g, " ")}</Badge>}
       </div>
     </div>
   );
@@ -654,6 +664,7 @@ function GoalCard({ c }: { c: OwnCommitment }) {
 // --- Main ---
 
 export function CompareView({ municipalities, onSelectMunicipality }: CompareViewProps) {
+  const { t } = useI18n();
   const [expandedCategory, setExpandedCategory] = useState<Category | null>(null);
 
   const toggleCategory = (cat: Category) => {
@@ -684,9 +695,9 @@ export function CompareView({ municipalities, onSelectMunicipality }: CompareVie
       {/* Category drill-down */}
       <div className="space-y-2">
         <div className="text-xs text-gray-02 uppercase tracking-wider font-medium">
-          Compare in detail
+          {t("climate.compare.compareInDetail")}
         </div>
-        {CATEGORIES.map((cat) => (
+        {CATEGORY_IDS.map((cat) => (
           <div key={cat.id}>
             <button
               onClick={() => toggleCategory(cat.id)}
@@ -699,7 +710,7 @@ export function CompareView({ municipalities, onSelectMunicipality }: CompareVie
             >
               <div className="flex items-center gap-3">
                 <span className="text-gray-02">{cat.icon}</span>
-                <span className="text-sm font-medium text-gray-01">{cat.label}</span>
+                <span className="text-sm font-medium text-gray-01">{t(cat.labelKey)}</span>
               </div>
               {expandedCategory === cat.id ? (
                 <ChevronUp size={16} className="text-gray-02" />

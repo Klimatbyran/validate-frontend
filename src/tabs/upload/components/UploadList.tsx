@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { UploadedFile, UrlInput } from "../types";
 import { FileListItem, UrlListItem } from "./UploadListItem";
@@ -17,6 +18,7 @@ export function UploadList({
   processedUrls,
   onContinue,
 }: UploadListProps) {
+  const { t } = useI18n();
   if (uploadedFiles.length === 0 && processedUrls.length === 0) {
     return null;
   }
@@ -30,11 +32,11 @@ export function UploadList({
       <div className="p-4 border-b border-gray-03 flex justify-between items-center">
         <h2 className="text-lg text-gray-01">
           {uploadMode === "file"
-            ? `Uppladdade filer (${uploadedFiles.length})`
-            : `Tillagda länkar (${processedUrls.length})`}
+            ? t("upload.uploadedFiles", { count: uploadedFiles.length })
+            : t("upload.addedLinks", { count: processedUrls.length })}
         </h2>
         <Button variant="primary" onClick={onContinue}>
-          Se resultat
+          {t("upload.seeResults")}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>

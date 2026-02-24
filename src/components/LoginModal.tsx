@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import {
   Dialog,
@@ -17,9 +18,11 @@ interface LoginModalProps {
 export function LoginModal({ 
   isOpen, 
   onClose,
-  message = "Du måste logga in för att utföra denna åtgärd."
+  message
 }: LoginModalProps) {
   const { login } = useAuth();
+  const { t } = useI18n();
+  const displayMessage = message ?? t("auth.loginRequiredMessage");
 
   const handleLogin = () => {
     login();
@@ -30,17 +33,17 @@ export function LoginModal({
     <Dialog open={isOpen} onOpenChange={onClose || (() => {})}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Inloggning krävs</DialogTitle>
+          <DialogTitle>{t("auth.loginRequired")}</DialogTitle>
           <DialogDescription>
-            {message}
+            {displayMessage}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 pt-4">
           <Button onClick={handleLogin} className="w-full">
-            Logga in med GitHub
+            {t("auth.loginWithGitHub")}
           </Button>
           <p className="text-sm text-gray-02 text-center">
-            Du kommer att omdirigeras till GitHub för autentisering.
+            {t("auth.redirectToGitHub")}
           </p>
         </div>
       </DialogContent>

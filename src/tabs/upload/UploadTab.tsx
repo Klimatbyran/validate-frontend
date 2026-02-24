@@ -1,17 +1,20 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { FileText, Link2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { toast } from "sonner";
+import { useI18n } from "@/contexts/I18nContext";
 import { authenticatedFetch } from "@/lib/api-helpers";
 import { FileUploadZone } from "./components/FileUploadZone";
 import { UrlUploadForm } from "./components/UrlUploadForm";
 import { UploadList } from "./components/UploadList";
+import { UploadRunOptions } from "./components/UploadRunOptions";
 import { UploadedFile, UrlInput } from "./types";
+import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
+import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
 import {
-  validateUrls,
-  extractCompanyFromUrl,
   PARSE_PDF_API_ENDPOINT,
-  DEFAULT_RUN_ONLY,
+  BATCHES_API_ENDPOINT,
+  NEW_BATCH_DROPDOWN_VALUE,
 } from "./lib/utils";
 
 interface UploadTabProps {
@@ -19,26 +22,56 @@ interface UploadTabProps {
 }
 
 export function UploadTab({ onTabChange }: UploadTabProps) {
-  const [uploadMode, setUploadMode] = useState<"file" | "url">("file");
+  const { t } = useI18n();
+  const [uploadMode, setUploadMode] = useState<"file" | "url">("url");
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [urlInput, setUrlInput] = useState("");
   const [processedUrls, setProcessedUrls] = useState<UrlInput[]>([]);
   const [autoApprove, setAutoApprove] = useState(true);
+  const [runAllWorkers, setRunAllWorkers] = useState(false);
+  const [selectedWorkers, setSelectedWorkers] = useState<RunOnlyWorkerId[]>(
+    DEFAULT_RUN_ONLY,
+  );
+  const [forceReindex, setForceReindex] = useState(false);
+  const [existingBatches, setExistingBatches] = useState<string[]>([]);
+  const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
+  const [customBatchName, setCustomBatchName] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await authenticatedFetch(BATCHES_API_ENDPOINT);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const ids = Array.isArray(data) ? data : data?.batchIds ?? data?.batches ?? [];
+        if (Array.isArray(ids) && !cancelled) setExistingBatches(ids);
+      } catch {
+        // Non-fatal: dropdown will just be empty
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const effectiveBatchId =
+    !batchDropdownChoice ? "" : batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE ? customBatchName.trim() : batchDropdownChoice;
 
   const handleFileSubmit = useCallback(async () => {
     if (uploadedFiles.length === 0) {
-      toast.error("Inga PDF-filer uppladdade");
+      toast.error(t("upload.noPdfUploaded"));
       return;
     }
 
     // For now, just show a message that file upload is not yet supported
-    toast.info("Filuppladdning stöds inte ännu. Använd länk-läget istället.");
+    toast.info(t("upload.fileUploadNotSupported"));
 
     // TODO: When implementing file upload functionality:
     // 1. Include autoApprove in the API request body (similar to handleUrlSubmit)
     // 2. Add autoApprove back to the dependency array below
-  }, [uploadedFiles]);
+  }, [uploadedFiles, t]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -59,7 +92,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
     );
 
     if (files.length === 0) {
-      toast.error("Endast PDF-filer är tillåtna");
+      toast.error(t("upload.onlyPdfAllowed"));
       return;
     }
 
@@ -71,12 +104,10 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
 
     setUploadedFiles((prev) => {
       const updatedFiles = [...prev, ...newFiles];
-      toast.success(
-        `${files.length} fil${files.length === 1 ? "" : "er"} uppladdade`
-      );
+      toast.success(t("upload.filesUploaded", { count: files.length }));
       return updatedFiles;
     });
-  }, []);
+  }, [t]);
 
   const handleUrlSubmit = useCallback(async () => {
     // Split the input by newlines and filter out empty lines
@@ -87,7 +118,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
       .filter((url) => url);
 
     if (urlLines.length === 0) {
-      toast.error("Inga giltiga PDF-länkar hittades");
+      toast.error(t("upload.noValidPdfLinks"));
       return;
     }
 
@@ -95,19 +126,21 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
     const { valid: urls, invalid: invalidUrls } = validateUrls(urlLines);
 
     if (invalidUrls.length > 0) {
-      toast.warning(
-        `${invalidUrls.length} ogiltig${
-          invalidUrls.length === 1 ? "" : "a"
-        } URL${invalidUrls.length === 1 ? "" : ":er"} hoppades över`
-      );
+      toast.warning(t("upload.invalidUrlsSkipped", { count: invalidUrls.length }));
     }
 
     if (urls.length === 0) {
-      toast.error("Inga giltiga PDF-länkar hittades");
+      toast.error(t("upload.noValidPdfLinks"));
+      return;
+    }
+
+    if (!runAllWorkers && selectedWorkers.length === 0) {
+      toast.error(t("upload.selectAtLeastOneWorker"));
       return;
     }
 
     // Send batch job creation request to the custom API
+    // When "Alla" is chosen, omit runOnly so pipeline-api runs all steps.
     try {
       const response = await authenticatedFetch(PARSE_PDF_API_ENDPOINT, {
         method: "POST",
@@ -116,9 +149,10 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
         },
         body: JSON.stringify({
           autoApprove: Boolean(autoApprove),
-          forceReindex: true,
+          ...(effectiveBatchId ? { batchId: effectiveBatchId } : {}),
+          forceReindex: Boolean(forceReindex),
           replaceAllEmissions: true,
-          runOnly: DEFAULT_RUN_ONLY,
+          ...(!runAllWorkers && selectedWorkers.length > 0 ? { runOnly: selectedWorkers } : {}),
           urls: urls,
         }),
       });
@@ -140,9 +174,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
 
       setProcessedUrls((prev) => {
         const updatedUrls = [...prev, ...newUrls];
-        toast.success(
-          `${urls.length} länk${urls.length === 1 ? "" : "ar"} tillagda`
-        );
+        toast.success(t("upload.linksAdded", { count: urls.length }));
         return updatedUrls;
       });
 
@@ -151,25 +183,32 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
     } catch (error) {
       console.error("Failed to add jobs:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-      toast.error(`Kunde inte lägga till jobb: ${errorMessage}`);
+        error instanceof Error ? error.message : t("upload.unknownError");
+      toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
-  }, [urlInput, autoApprove]);
+  }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, t]);
+
+  const handleWorkerToggle = useCallback((workerId: RunOnlyWorkerId, checked: boolean) => {
+    setSelectedWorkers((prev) =>
+      checked ? [...prev, workerId] : prev.filter((id) => id !== workerId),
+    );
+  }, []);
 
   const handleContinue = useCallback(() => {
     const totalItems = uploadedFiles.length + processedUrls.length;
     if (totalItems === 0) {
-      toast.error("Lägg till filer eller länkar först");
+      toast.error(t("upload.addFilesOrLinksFirst"));
       return;
     }
 
     onTabChange("processing");
-    toast("Påbörjar bearbetning...", {
-      description: `${totalItems} ${uploadMode === "file" ? "fil" : "länk"}${
-        totalItems === 1 ? "" : "ar"
-      } att processa`,
+    toast(t("upload.startingProcessing"), {
+      description: t("upload.itemsToProcess", {
+        count: totalItems,
+        type: uploadMode === "file" ? t("upload.file") : t("upload.link"),
+      }),
     });
-  }, [uploadedFiles.length, processedUrls.length, uploadMode, onTabChange]);
+  }, [uploadedFiles.length, processedUrls.length, uploadMode, onTabChange, t]);
 
   return (
     <div className="space-y-6">
@@ -180,15 +219,38 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
         className="w-full"
       >
         <TabsList className="inline-flex bg-gray-04/50 p-1 rounded-full">
-          <TabsTrigger value="file" className="rounded-full">
-            <FileText className="w-4 h-4 mr-2" />
-            Filer
-          </TabsTrigger>
           <TabsTrigger value="url" className="rounded-full">
             <Link2 className="w-4 h-4 mr-2" />
-            Länkar
+            {t("upload.links")}
+          </TabsTrigger>
+          <TabsTrigger value="file" className="rounded-full">
+            <FileText className="w-4 h-4 mr-2" />
+            {t("upload.files")}
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="url" >
+          <UploadRunOptions
+            runAllWorkers={runAllWorkers}
+            onRunAllWorkersChange={setRunAllWorkers}
+            selectedWorkers={selectedWorkers}
+            onSelectedWorkersChange={handleWorkerToggle}
+            forceReindex={forceReindex}
+            onForceReindexChange={setForceReindex}
+            existingBatches={existingBatches}
+            batchDropdownChoice={batchDropdownChoice}
+            onBatchDropdownChoiceChange={setBatchDropdownChoice}
+            customBatchName={customBatchName}
+            onCustomBatchNameChange={setCustomBatchName}
+          />
+          <UrlUploadForm
+            urlInput={urlInput}
+            onUrlInputChange={setUrlInput}
+            autoApprove={autoApprove}
+            onAutoApproveChange={setAutoApprove}
+            onSubmit={handleUrlSubmit}
+          />
+        </TabsContent>
 
         <TabsContent value="file">
           <FileUploadZone
@@ -198,16 +260,6 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
             onDrop={handleDrop}
             uploadedFiles={uploadedFiles}
             onFileSubmit={handleFileSubmit}
-          />
-        </TabsContent>
-
-        <TabsContent value="url">
-          <UrlUploadForm
-            urlInput={urlInput}
-            onUrlInputChange={setUrlInput}
-            autoApprove={autoApprove}
-            onAutoApproveChange={setAutoApprove}
-            onSubmit={handleUrlSubmit}
           />
         </TabsContent>
       </Tabs>

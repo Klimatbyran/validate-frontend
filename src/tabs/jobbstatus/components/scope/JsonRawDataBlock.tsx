@@ -1,4 +1,4 @@
-import { CopyJsonButton } from "./CopyJsonButton";
+import { CopyButton } from "@/ui/copy-button";
 
 interface JsonRawDataBlockProps {
   data: unknown;
@@ -14,7 +14,7 @@ export function JsonRawDataBlock({ data }: JsonRawDataBlockProps) {
         Visa rådata (JSON)
       </summary>
       <div className="flex justify-end">
-        <CopyJsonButton getText={() => JSON.stringify(data, null, 2)} />
+        <CopyButton getText={() => JSON.stringify(data, null, 2)} />
       </div>
       <pre className="text-xs text-gray-02 overflow-x-auto mt-2">
         {JSON.stringify(data, null, 2)}

@@ -1,5 +1,5 @@
-import { Scope12Section } from './scope/Scope12Section';
-import { Scope3Section } from './scope/Scope3Section';
+import { Scope12Section } from "./Scope12Section";
+import { Scope3Section } from "./Scope3Section";
 
 interface Scope12EmissionsData {
   scope12: Array<{
