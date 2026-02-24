@@ -61,8 +61,10 @@ export function ClimatePlansExplorer() {
             {t("climate.comparison")}
           </h2>
           <p className="text-sm text-gray-02 mt-1">
-            {municipalities.length} municipalit{municipalities.length === 1 ? "y" : "ies"} loaded
-            {municipalities.length === 1 && " — add more to compare"}
+            {municipalities.length === 1
+              ? t("climate.municipalitiesLoadedOne")
+              : t("climate.municipalitiesLoadedMany", { count: municipalities.length })}
+            {municipalities.length === 1 && t("climate.addMoreToCompare")}
           </p>
         </div>
       </div>
