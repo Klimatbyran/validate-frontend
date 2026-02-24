@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { FileText, Link2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { toast } from "sonner";
+import { useI18n } from "@/contexts/I18nContext";
 import { authenticatedFetch } from "@/lib/api-helpers";
 import { FileUploadZone } from "./components/FileUploadZone";
 import { UrlUploadForm } from "./components/UrlUploadForm";
@@ -21,6 +22,7 @@ interface UploadTabProps {
 }
 
 export function UploadTab({ onTabChange }: UploadTabProps) {
+  const { t } = useI18n();
   const [uploadMode, setUploadMode] = useState<"file" | "url">("url");
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -59,17 +61,17 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
 
   const handleFileSubmit = useCallback(async () => {
     if (uploadedFiles.length === 0) {
-      toast.error("Inga PDF-filer uppladdade");
+      toast.error(t("upload.noPdfUploaded"));
       return;
     }
 
     // For now, just show a message that file upload is not yet supported
-    toast.info("Filuppladdning stöds inte ännu. Använd länk-läget istället.");
+    toast.info(t("upload.fileUploadNotSupported"));
 
     // TODO: When implementing file upload functionality:
     // 1. Include autoApprove in the API request body (similar to handleUrlSubmit)
     // 2. Add autoApprove back to the dependency array below
-  }, [uploadedFiles]);
+  }, [uploadedFiles, t]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -90,7 +92,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
     );
 
     if (files.length === 0) {
-      toast.error("Endast PDF-filer är tillåtna");
+      toast.error(t("upload.onlyPdfAllowed"));
       return;
     }
 
@@ -102,12 +104,10 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
 
     setUploadedFiles((prev) => {
       const updatedFiles = [...prev, ...newFiles];
-      toast.success(
-        `${files.length} fil${files.length === 1 ? "" : "er"} uppladdade`
-      );
+      toast.success(t("upload.filesUploaded", { count: files.length }));
       return updatedFiles;
     });
-  }, []);
+  }, [t]);
 
   const handleUrlSubmit = useCallback(async () => {
     // Split the input by newlines and filter out empty lines
@@ -118,7 +118,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
       .filter((url) => url);
 
     if (urlLines.length === 0) {
-      toast.error("Inga giltiga PDF-länkar hittades");
+      toast.error(t("upload.noValidPdfLinks"));
       return;
     }
 
@@ -126,20 +126,16 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
     const { valid: urls, invalid: invalidUrls } = validateUrls(urlLines);
 
     if (invalidUrls.length > 0) {
-      toast.warning(
-        `${invalidUrls.length} ogiltig${
-          invalidUrls.length === 1 ? "" : "a"
-        } URL${invalidUrls.length === 1 ? "" : ":er"} hoppades över`
-      );
+      toast.warning(t("upload.invalidUrlsSkipped", { count: invalidUrls.length }));
     }
 
     if (urls.length === 0) {
-      toast.error("Inga giltiga PDF-länkar hittades");
+      toast.error(t("upload.noValidPdfLinks"));
       return;
     }
 
     if (!runAllWorkers && selectedWorkers.length === 0) {
-      toast.error("Välj minst ett jobb att köra");
+      toast.error(t("upload.selectAtLeastOneWorker"));
       return;
     }
 
@@ -178,9 +174,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
 
       setProcessedUrls((prev) => {
         const updatedUrls = [...prev, ...newUrls];
-        toast.success(
-          `${urls.length} länk${urls.length === 1 ? "" : "ar"} tillagda`
-        );
+        toast.success(t("upload.linksAdded", { count: urls.length }));
         return updatedUrls;
       });
 
@@ -189,10 +183,10 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
     } catch (error) {
       console.error("Failed to add jobs:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-      toast.error(`Kunde inte lägga till jobb: ${errorMessage}`);
+        error instanceof Error ? error.message : t("upload.unknownError");
+      toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
-  }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId]);
+  }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, t]);
 
   const handleWorkerToggle = useCallback((workerId: RunOnlyWorkerId, checked: boolean) => {
     setSelectedWorkers((prev) =>
@@ -203,17 +197,18 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
   const handleContinue = useCallback(() => {
     const totalItems = uploadedFiles.length + processedUrls.length;
     if (totalItems === 0) {
-      toast.error("Lägg till filer eller länkar först");
+      toast.error(t("upload.addFilesOrLinksFirst"));
       return;
     }
 
     onTabChange("processing");
-    toast("Påbörjar bearbetning...", {
-      description: `${totalItems} ${uploadMode === "file" ? "fil" : "länk"}${
-        totalItems === 1 ? "" : "ar"
-      } att processa`,
+    toast(t("upload.startingProcessing"), {
+      description: t("upload.itemsToProcess", {
+        count: totalItems,
+        type: uploadMode === "file" ? t("upload.file") : t("upload.link"),
+      }),
     });
-  }, [uploadedFiles.length, processedUrls.length, uploadMode, onTabChange]);
+  }, [uploadedFiles.length, processedUrls.length, uploadMode, onTabChange, t]);
 
   return (
     <div className="space-y-6">
@@ -226,11 +221,11 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
         <TabsList className="inline-flex bg-gray-04/50 p-1 rounded-full">
           <TabsTrigger value="url" className="rounded-full">
             <Link2 className="w-4 h-4 mr-2" />
-            Länkar
+            {t("upload.links")}
           </TabsTrigger>
           <TabsTrigger value="file" className="rounded-full">
             <FileText className="w-4 h-4 mr-2" />
-            Filer
+            {t("upload.files")}
           </TabsTrigger>
         </TabsList>
 

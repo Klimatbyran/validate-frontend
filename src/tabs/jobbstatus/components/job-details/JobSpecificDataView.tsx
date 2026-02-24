@@ -21,6 +21,7 @@ import {
 } from "../../lib/job-specific-data-parsing";
 import { CompanyNameOverrideDisplay } from "./CompanyNameOverrideDisplay";
 import { useJobRerunActions } from "../../hooks/useJobRerunActions";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface JobSpecificDataViewProps {
   data: any;
@@ -28,6 +29,7 @@ interface JobSpecificDataViewProps {
 }
 
 export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
+  const { t } = useI18n();
   const [detailed, setDetailed] = React.useState<any | null>(null);
   const [, setIsLoading] = React.useState(false);
 
@@ -302,7 +304,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       {/* Show Screenshot slideshow if scopeData and PDF URL exist */}
       {scopeData && job?.data?.url && (
         <CollapsibleSection
-          title="Screenshots"
+          title={t("jobstatus.jobdetails.screenshots")}
           icon={<Image />}
           accentIconBg="bg-pink-03/20"
           accentTextColor="text-pink-03"

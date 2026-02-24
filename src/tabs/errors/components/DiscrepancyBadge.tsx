@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/contexts/I18nContext';
 import { CompanyRow } from '../types';
 import { discrepancyConfig } from '../config/discrepancyConfig';
 
@@ -7,6 +8,7 @@ interface DiscrepancyBadgeProps {
 }
 
 export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
+  const { t, formatNumber } = useI18n();
   const config = discrepancyConfig[row.discrepancy] ?? discrepancyConfig['error'];
 
   return (
@@ -18,7 +20,7 @@ export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
           config.textColor
         )}>
           {config.icon}
-          {config.label}
+          {t(`errors.filterType.${row.discrepancy}`)}
           {row.discrepancy === 'small-error' && row.stageValue !== null && row.prodValue !== null && Math.abs(row.prodValue) > 0 && (() => {
             const pct = Math.abs(row.stageValue - row.prodValue) / Math.abs(row.prodValue) * 100;
             return (
@@ -31,9 +33,9 @@ export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
         {row.unitErrorFactor !== undefined && (
           <span
             className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-mono font-medium bg-indigo-500/20 text-indigo-400 cursor-help"
-            title={`Stage value is ${row.unitErrorFactor >= 1 ? row.unitErrorFactor + '×' : '1/' + (1 / row.unitErrorFactor) + '×'} the prod value — likely a unit mismatch (e.g. tonnes vs kilotonnes)`}
+            title={t("errors.unitErrorTooltip", { factor: row.unitErrorFactor >= 1 ? formatNumber(row.unitErrorFactor) + '×' : '1/' + formatNumber(1 / row.unitErrorFactor) + '×' })}
           >
-            {row.unitErrorFactor >= 1 ? `×${row.unitErrorFactor.toLocaleString()}` : `÷${(1 / row.unitErrorFactor).toLocaleString()}`}
+            {row.unitErrorFactor >= 1 ? `×${formatNumber(row.unitErrorFactor)}` : `÷${formatNumber(1 / row.unitErrorFactor)}`}
           </span>
         )}
         {row.categoryErrorKind && (
@@ -42,7 +44,7 @@ export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
       </div>
       {row.matchedDataPoint && (
         <div className="text-xs text-cyan-400/70 mt-0.5">
-          Found in {row.matchedDataPoint}
+          {t('errors.foundIn', { dataPoint: row.matchedDataPoint })}
         </div>
       )}
     </div>
@@ -50,26 +52,32 @@ export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
 }
 
 function CategoryErrorKindBadge({ kind }: { kind: NonNullable<CompanyRow['categoryErrorKind']> }) {
+  const { t } = useI18n();
   const kindConfig = {
     conservative: {
-      bg: 'bg-green-500/20', text: 'text-green-400', dot: 'bg-green-400', label: 'Conservative',
-      title: 'Right number placed in a safer/generic bucket (e.g. unknown, other)',
+      bg: 'bg-green-500/20', text: 'text-green-400', dot: 'bg-green-400',
+      label: t('errors.discrepancyConservativeLabel'),
+      title: t('errors.discrepancyGeneric'),
     },
     swap: {
-      bg: 'bg-yellow-500/20', text: 'text-yellow-400', dot: 'bg-yellow-400', label: 'Swap',
-      title: "Values are swapped between two categories — both have each other's value",
+      bg: 'bg-yellow-500/20', text: 'text-yellow-400', dot: 'bg-yellow-400',
+      label: t('errors.discrepancySwapLabel'),
+      title: t('errors.discrepancySwap'),
     },
     'mix-up': {
-      bg: 'bg-orange-500/20', text: 'text-orange-400', dot: 'bg-orange-400', label: 'Mix-up',
-      title: 'Value placed in the wrong category (not a clean swap)',
+      bg: 'bg-orange-500/20', text: 'text-orange-400', dot: 'bg-orange-400',
+      label: t('errors.discrepancyMixUpLabel'),
+      title: t('errors.discrepancyWrongCategory'),
     },
     overcategorized: {
-      bg: 'bg-fuchsia-500/20', text: 'text-fuchsia-400', dot: 'bg-fuchsia-400', label: 'Overcategorized',
-      title: 'Value belongs in a generic bucket (unknown/other) but was placed in a specific category — false precision',
+      bg: 'bg-fuchsia-500/20', text: 'text-fuchsia-400', dot: 'bg-fuchsia-400',
+      label: t('errors.discrepancyOvercategorizedLabel'),
+      title: t('errors.discrepancyFalsePrecision'),
     },
     duplicating: {
-      bg: 'bg-red-500/20', text: 'text-red-400', dot: 'bg-red-400', label: 'Duplicating',
-      title: 'Same value appears in multiple categories, inflating totals',
+      bg: 'bg-red-500/20', text: 'text-red-400', dot: 'bg-red-400',
+      label: t('errors.discrepancyDuplicatingLabel'),
+      title: t('errors.discrepancyDuplicate'),
     },
   };
 

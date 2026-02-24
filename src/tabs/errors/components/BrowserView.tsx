@@ -1,5 +1,6 @@
 import React from 'react';
 import { XCircle, Download } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
 import { LoadingSpinner } from '@/ui/loading-spinner';
 import { DiscrepancyType, CompanyRow, DATA_POINTS } from '../types';
 import { computePerformanceMetrics, exportComparisonToCsv } from '../lib';
@@ -26,6 +27,7 @@ export function BrowserView({
   onDataPointChange,
   selectedYear,
 }: BrowserViewProps) {
+  const { t } = useI18n();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [visibleTypes, setVisibleTypes] = React.useState<Set<DiscrepancyType>>(
     new Set(['hallucination', 'missing', 'rounding', 'unit-error', 'small-error', 'error', 'category-error'])
@@ -98,7 +100,7 @@ export function BrowserView({
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6 space-y-4">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex flex-col gap-1 flex-1 max-w-md">
-            <label className="text-xs text-gray-02 uppercase tracking-wide">Data Point</label>
+            <label className="text-xs text-gray-02 uppercase tracking-wide">{t("errors.dataPoint")}</label>
             <select
               value={selectedDataPoint}
               onChange={(e) => onDataPointChange(e.target.value)}
@@ -111,10 +113,10 @@ export function BrowserView({
           </div>
 
           <div className="flex flex-col gap-1 flex-1 max-w-xs">
-            <label className="text-xs text-gray-02 uppercase tracking-wide">Search</label>
+            <label className="text-xs text-gray-02 uppercase tracking-wide">{t("common.search")}</label>
             <input
               type="text"
-              placeholder="Filter companies..."
+              placeholder={t("errors.filterCompanies")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-gray-03 text-gray-01 rounded px-3 py-2 text-sm border border-gray-02/20 placeholder-gray-02"
@@ -127,7 +129,7 @@ export function BrowserView({
             className="inline-flex items-center gap-2 px-3 py-2 bg-gray-03 text-gray-01 rounded-lg hover:bg-gray-02 hover:text-white disabled:opacity-50 transition-colors text-sm"
           >
             <Download className="w-4 h-4" />
-            Export CSV
+            {t("errors.exportCsv")}
           </button>
         </div>
 
@@ -159,13 +161,13 @@ export function BrowserView({
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <LoadingSpinner label="Loading companies..." />
+            <LoadingSpinner label={t("errors.loadingCompanies")} />
           </div>
         ) : error ? (
           <div className="p-6 text-red-400">
             <div className="flex items-center gap-2">
               <XCircle className="w-5 h-5" />
-              <span className="font-medium">Error loading data</span>
+              <span className="font-medium">{t("errors.errorLoadingData")}</span>
             </div>
             <p className="mt-1 text-sm">{error}</p>
           </div>
@@ -174,18 +176,18 @@ export function BrowserView({
             <table className="min-w-full">
               <thead className="bg-gray-03/50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">Company</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">Stage</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">Prod (Truth)</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-02 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">Diff</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableCompany")}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableStage")}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableProdTruth")}</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableStatus")}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableDiff")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-03/50">
                 {filteredRows.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 py-8 text-center text-gray-02">
-                      No data to display. Try enabling more filters above.
+                      {t("errors.noDataTryFilters")}
                     </td>
                   </tr>
                 ) : (
@@ -205,7 +207,7 @@ export function BrowserView({
 
         {!isLoading && !error && (
           <div className="px-4 py-3 bg-gray-03/30 text-sm text-gray-02 border-t border-gray-03/50">
-            Showing {filteredRows.length} of {comparisonRows.length} companies for <strong className="text-gray-01">{selectedDataPointLabel}</strong> ({selectedYear})
+            {t("errors.showingForDataPoint", { filtered: filteredRows.length, total: comparisonRows.length, dataPoint: selectedDataPointLabel, year: selectedYear })}
           </div>
         )}
       </div>

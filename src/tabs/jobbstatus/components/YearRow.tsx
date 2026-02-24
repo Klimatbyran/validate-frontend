@@ -17,6 +17,7 @@ import {
 import { getStepIcon } from "@/lib/status-config";
 import type { SwimlaneYearData } from "@/lib/types";
 import type { ViewLevel } from "@/ui/view-toggle";
+import { useI18n } from "@/contexts/I18nContext";
 import { YearStepGrid } from "./YearStepGrid";
 
 interface YearRowProps {
@@ -40,6 +41,7 @@ export function YearRow({
   isExpanded,
   onToggleExpand,
 }: YearRowProps) {
+  const { formatDate } = useI18n();
   const yearStepStats = useMemo(() => {
     const pipelineSteps = getAllPipelineSteps();
     return pipelineSteps.map((step) => {
@@ -118,7 +120,7 @@ export function YearRow({
           </span>
           {yearData.latestTimestamp && (
             <span className="text-xs text-blue-02">
-              Latest: {new Date(yearData.latestTimestamp).toLocaleString()}
+              Latest: {formatDate(yearData.latestTimestamp)}
             </span>
           )}
         </div>
@@ -198,7 +200,7 @@ export function YearRow({
                     )}
                     {previousRun.latestTimestamp && (
                       <span className="text-xs text-gray-02">
-                        {new Date(previousRun.latestTimestamp).toLocaleString()}
+                        {formatDate(previousRun.latestTimestamp)}
                       </span>
                     )}
                   </div>

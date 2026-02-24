@@ -65,8 +65,3 @@ export function buildReferenceSnapshotFromPeriod(
       : null,
   };
 }
-
-export function formatNumber(num: number | null | undefined): string {
-  if (num == null) return "0";
-  return num.toLocaleString("sv-SE");
-}

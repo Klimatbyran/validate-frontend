@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import { RotateCcw, AlertCircle } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { Callout } from "@/ui/callout";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ export function CompanyNameOverrideDisplay({
   currentCompanyName,
   onOverride,
 }: CompanyNameOverrideDisplayProps) {
+  const { t } = useI18n();
   const [overrideName, setOverrideName] = useState("");
   const [overrideError, setOverrideError] = useState("");
 
@@ -25,18 +27,18 @@ export function CompanyNameOverrideDisplay({
     setOverrideName(value);
     setOverrideError("");
     if (value && !value.trim()) {
-      setOverrideError("Företagsnamn kan inte vara tomt");
+      setOverrideError(t("companyOverride.nameRequired"));
     }
   };
 
   const handleOverrideSubmit = () => {
     if (!overrideName.trim()) {
-      setOverrideError("Ange ett företagsnamn");
+      setOverrideError(t("companyOverride.enterName"));
       return;
     }
     const trimmedName = overrideName.trim();
     if (!trimmedName) {
-      setOverrideError("Företagsnamn kan inte vara tomt");
+      setOverrideError(t("companyOverride.nameRequired"));
       return;
     }
     if (onOverride) {
@@ -49,17 +51,13 @@ export function CompanyNameOverrideDisplay({
     <div className="mb-4 space-y-4">
       <Callout
         variant="info"
-        title="Ändra företagsnamn"
-        description="Om det företagsnamn som hittades i förkontrollen inte är korrekt, kan du ange ett nytt namn här. Jobbet kommer att köras om med det nya namnet."
+        title={t("companyOverride.title")}
+        description={t("companyOverride.description")}
       >
         {currentCompanyName && (
           <div className="bg-gray-03/20 rounded-lg p-3">
-            <div className="text-xs text-gray-02 mb-1">
-              Nuvarande företagsnamn
-            </div>
-            <div className="text-sm text-gray-01 font-medium">
-              {currentCompanyName}
-            </div>
+            <div className="text-xs text-gray-02 mb-1">{t("companyOverride.currentName")}</div>
+            <div className="text-sm text-gray-01 font-medium">{currentCompanyName}</div>
           </div>
         )}
 
@@ -69,7 +67,7 @@ export function CompanyNameOverrideDisplay({
               htmlFor="override-company-name"
               className="block text-xs text-gray-02 mb-1"
             >
-              Nytt företagsnamn
+              {t("companyOverride.newNameLabel")}
             </label>
             <div className="flex items-center space-x-2">
               <input
@@ -77,7 +75,7 @@ export function CompanyNameOverrideDisplay({
                 type="text"
                 value={overrideName}
                 onChange={(e) => handleOverrideChange(e.target.value)}
-                placeholder="Ange nytt företagsnamn"
+                placeholder={t("companyOverride.placeholder")}
                 className={cn(
                   "flex-1 px-3 py-2 rounded-lg border text-sm",
                   "bg-gray-04 text-gray-01",
@@ -95,7 +93,7 @@ export function CompanyNameOverrideDisplay({
                 className="h-9 px-4"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
-                Spara och kör om
+                {t("companyOverride.applyAndRerun")}
               </Button>
             </div>
             {overrideError && (

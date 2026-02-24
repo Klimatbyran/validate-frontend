@@ -1,3 +1,4 @@
+import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
 import { RUN_ONLY_WORKERS, type RunOnlyWorkerId } from "@/lib/run-only-workers";
 import { NEW_BATCH_DROPDOWN_VALUE } from "../lib/utils";
@@ -29,43 +30,45 @@ export function UploadRunOptions({
   customBatchName,
   onCustomBatchNameChange,
 }: UploadRunOptionsProps) {
+  const { t } = useI18n();
+
   return (
     <div className="bg-gray-04/50 backdrop-blur-sm rounded-lg p-6 space-y-4">
-      <p className="text-sm font-medium text-gray-01">Alternativ för nya körningar</p>
+      <p className="text-sm font-medium text-gray-01">{t("upload.runOptionsTitle")}</p>
 
       {/* Batch: dropdown (no batch / existing / new) + optional text input for new name */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span className="text-sm text-gray-02 shrink-0">Batch:</span>
+        <span className="text-sm text-gray-02 shrink-0">{t("upload.batch")}:</span>
         <select
           value={batchDropdownChoice}
           onChange={(e) => onBatchDropdownChoiceChange(e.target.value)}
           className="h-8 min-w-[140px] rounded-md border border-gray-03 bg-gray-03/80 text-gray-01 text-sm focus:outline-none focus:ring-2 focus:ring-orange-03/50 px-2"
-          aria-label="Välj batch"
+          aria-label={t("upload.batchAria")}
         >
-          <option value="">Ingen batch</option>
+          <option value="">{t("upload.noBatch")}</option>
           {existingBatches.map((id) => (
             <option key={id} value={id}>
               {id}
             </option>
           ))}
-          <option value={NEW_BATCH_DROPDOWN_VALUE}>— Ny batch —</option>
+          <option value={NEW_BATCH_DROPDOWN_VALUE}>{t("upload.newBatch")}</option>
         </select>
         {batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE && (
           <input
             type="text"
             value={customBatchName}
             onChange={(e) => onCustomBatchNameChange(e.target.value)}
-            placeholder="t.ex. 2024-Q1-Reports"
+            placeholder={t("upload.customBatchPlaceholder")}
             className="h-8 min-w-[180px] rounded-md border border-gray-03 bg-gray-03/20 text-gray-01 text-sm placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03/50 px-2"
-            aria-label="Ny batchnamn"
+            aria-label={t("upload.customBatchAria")}
           />
         )}
       </div>
 
-      {/* Run all/partial + Kör endast – single row, pills inline */}
+      {/* Run all/partial + run only – single row, pills inline */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-02">Kör:</span>
+          <span className="text-sm text-gray-02">{t("upload.runLabel")}</span>
           <div className="flex items-center gap-1 bg-gray-03 rounded-full p-0.5">
             <button
               type="button"
@@ -75,7 +78,7 @@ export function UploadRunOptions({
                 runAllWorkers ? "bg-gray-01 text-gray-05" : "text-gray-02 hover:text-gray-01",
               )}
             >
-              Alla
+              {t("upload.runAll")}
             </button>
             <button
               type="button"
@@ -85,7 +88,7 @@ export function UploadRunOptions({
                 !runAllWorkers ? "bg-gray-01 text-gray-05" : "text-gray-02 hover:text-gray-01",
               )}
             >
-              Delvis
+              {t("upload.runPartial")}
             </button>
           </div>
         </div>
@@ -95,7 +98,7 @@ export function UploadRunOptions({
             runAllWorkers && "opacity-50 pointer-events-none",
           )}
         >
-          <span className="text-sm text-gray-02 shrink-0">Kör endast:</span>
+          <span className="text-sm text-gray-02 shrink-0">{t("upload.runOnly")}</span>
           <div className="flex flex-wrap gap-1.5">
             {RUN_ONLY_WORKERS.map((worker) => {
               const isSelected = selectedWorkers.includes(worker.id);
@@ -111,7 +114,7 @@ export function UploadRunOptions({
                       : "text-gray-02 hover:text-gray-01 bg-gray-03/80 hover:bg-gray-03",
                   )}
                 >
-                  {worker.label}
+                  {t(`jobstatus.rerunWorkers.${worker.id}`)}
                 </button>
               );
             })}
@@ -122,7 +125,7 @@ export function UploadRunOptions({
       {/* Force reindex */}
       <div className="flex items-center justify-between pt-2 border-t border-gray-03/50">
         <label htmlFor="force-reindex" className="text-sm text-gray-01 cursor-pointer">
-          Tvinga omindexering
+          {t("upload.forceReindex")}
         </label>
         <button
           id="force-reindex"
@@ -145,8 +148,7 @@ export function UploadRunOptions({
         </button>
       </div>
       <p className="text-xs text-gray-02">
-        Om på: kör docling även om rapporten redan finns i vektordatabasen (använd efter
-        uppgradering av docling/OCR).
+        {t("upload.forceReindexDescription")}
       </p>
     </div>
   );
