@@ -1,0 +1,108 @@
+git pullimport { motion } from "framer-motion";
+import { CompanyDetails } from "../lib/crawler-types";
+import CompaniesNamesResultItem from "./CompaniesNamesResultItem";
+import { useCallback, useEffect, useState } from "react";
+import { fetchCompanyNamesList } from "../lib/crawler-api";
+
+interface CompaniesNamesListProps {
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean | null>>;
+  selectedCompanies: string[];
+  onSelectionChange: React.Dispatch<React.SetStateAction<string[]>>;
+}
+
+const CompaniesNamesList = ({
+  setIsLoading,
+  selectedCompanies,
+  onSelectionChange,
+}: CompaniesNamesListProps) => {
+  const [companyNamesList, setCompanyNamesList] = useState<
+    CompanyDetails[] | null
+  >(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      const data = await fetchCompanyNamesList();
+
+      if (data) {
+        setCompanyNamesList(data);
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleToggleCompany = useCallback(
+    (companyName: string) => {
+      onSelectionChange((prev) =>
+        prev.includes(companyName)
+          ? prev.filter((name) => name !== companyName)
+          : [...prev, companyName],
+      );
+    },
+    [onSelectionChange],
+  );
+
+  const handleSelectAllCompanies = () => {
+    if (selectedCompanies.length === companyNamesList?.length) {
+      onSelectionChange([]);
+    } else {
+      const allCompanyNames =
+        companyNamesList?.map((company) => company.name) || [];
+      onSelectionChange(allCompanyNames);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden"
+    >
+      <div className="overflow-x-auto">
+        <table className="min-w-full">
+          <thead className="bg-gray-03/50">
+            <tr>
+              <th className="px-4 py-3 text-left flex flex-col text-xs tracking-wider">
+                <span className="font-semibold text-gray-02 uppercase">
+                  Company
+                </span>
+                <span className="font-medium text-gray-02">
+                  Found {companyNamesList?.length} companies{" "}
+                </span>
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                Latest report in Database
+              </th>
+              <th className="pl-4 py-3 text-left flex flex-col text-xs tracking-wider">
+                <span className="font-semibold flex gap-2 text-gray-02 uppercase">
+                  Select{" "}
+                  <button className="flex" onClick={handleSelectAllCompanies}>
+                    <span className="flex gap-2">(Click to Select All )</span>
+                  </button>
+                </span>
+                <span className="font-medium text-gray-02">
+                  {selectedCompanies.length} selected
+                </span>
+              </th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-gray-03/50">
+            {companyNamesList?.length &&
+              companyNamesList.map((company, index) => (
+                <CompaniesNamesResultItem
+                  key={index}
+                  companyDetails={company}
+                  isSelected={selectedCompanies.includes(company.name)}
+                  onToggle={handleToggleCompany}
+                />
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </motion.div>
+  );
+};
+
+export default CompaniesNamesList;
