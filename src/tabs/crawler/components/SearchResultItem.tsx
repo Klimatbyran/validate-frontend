@@ -9,7 +9,7 @@ import {
 import { CompanyReport } from "../lib/crawler-types";
 import { Button } from "@/ui/button";
 
-interface ResultItemProps {
+interface SearchResultItemProps {
   companyReport: CompanyReport;
   companyReports: CompanyReport[] | null;
   setCompanyReports: React.Dispatch<
@@ -17,11 +17,11 @@ interface ResultItemProps {
   >;
 }
 
-const ResultItem = ({
+const SearchResultItem = ({
   companyReport,
   companyReports,
   setCompanyReports,
-}: ResultItemProps) => {
+}: SearchResultItemProps) => {
   console.log(companyReports);
   const { companyName, results } = companyReport;
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -148,4 +148,4 @@ const ResultItem = ({
   );
 };
 
-export default ResultItem;
+export default SearchResultItem;

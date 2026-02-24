@@ -1,18 +1,18 @@
 import { motion } from "framer-motion";
 import { CompanyReport } from "../lib/crawler-types";
-import ResultItem from "./ResultItem";
+import SearchResultItem from "./SearchResultItem";
 
-interface ResultsListProps {
+interface SearchResultsListProps {
   companyReports: CompanyReport[] | null;
   setCompanyReports: React.Dispatch<
     React.SetStateAction<CompanyReport[] | null>
   >;
 }
 
-const ResultsList = ({
+const SearchResultsList = ({
   companyReports,
   setCompanyReports,
-}: ResultsListProps) => {
+}: SearchResultsListProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -25,7 +25,7 @@ const ResultsList = ({
 
       {companyReports?.map((report, index) => {
         return (
-          <ResultItem
+          <SearchResultItem
             key={index}
             setCompanyReports={setCompanyReports}
             companyReports={companyReports}
@@ -37,4 +37,4 @@ const ResultsList = ({
   );
 };
 
-export default ResultsList;
+export default SearchResultsList;
