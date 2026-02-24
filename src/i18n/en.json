@@ -322,12 +322,27 @@
   "crawler": {
     "title": "Crawler",
     "manualSearch": "Manual search for company reports",
+    "manualSearchGuard": "Enter at least one company and a report year to search.",
+    "manualSearchDescription": "This search will look for the latest report for each entered company from the entered year. The search is performed live and is not limited to existing database entries.",
+    "databaseSearch": "Search in database",
+    "databaseSearchGuard": "Select at least one company and a year from the existing database.",
+    "databaseControlsDescription": "The search will return the latest report for each selected company from the selected year that is in the database.",
     "searchPlaceholder": "Search for companies (separate with commas)",
     "reportYear": "Report year",
     "reportYearPlaceholder": "E.g. 2025",
     "search": "Search",
+    "searchResults": "Search results",
     "loadingResults": "Loading search results...",
-    "loadingDescription": "Hang in there as this may take a moment. The crawler is fetching and processing."
+    "loadingDescription": "Hang in there as this may take a moment. The crawler is fetching and processing.",
+    "company": "Company",
+    "foundCompanies": "Found {{count}} companie(s)",
+    "latestReport": "Latest report in database",
+    "select": "Select",
+    "clickSelectAll": "Click to Select all",
+    "selectedCompanies": "{{count}} selected",
+    "foundReportLinks": "Found {{count}} possible report link(s)",
+    "lockReport": "Lock report",
+    "updateDb": "Update DB"
   },
   "climate": {
     "loading": "Loading climate plans...",

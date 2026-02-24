@@ -1,8 +1,9 @@
-git pullimport { motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { CompanyDetails } from "../lib/crawler-types";
 import CompaniesNamesResultItem from "./CompaniesNamesResultItem";
 import { useCallback, useEffect, useState } from "react";
 import { fetchCompanyNamesList } from "../lib/crawler-api";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface CompaniesNamesListProps {
   setIsLoading: React.Dispatch<React.SetStateAction<boolean | null>>;
@@ -15,6 +16,7 @@ const CompaniesNamesList = ({
   selectedCompanies,
   onSelectionChange,
 }: CompaniesNamesListProps) => {
+  const { t } = useI18n();
   const [companyNamesList, setCompanyNamesList] = useState<
     CompanyDetails[] | null
   >(null);
@@ -65,24 +67,30 @@ const CompaniesNamesList = ({
             <tr>
               <th className="px-4 py-3 text-left flex flex-col text-xs tracking-wider">
                 <span className="font-semibold text-gray-02 uppercase">
-                  Company
+                  {t("crawler.company")}
                 </span>
                 <span className="font-medium text-gray-02">
-                  Found {companyNamesList?.length} companies{" "}
+                  {t("foundCompanies", {
+                    count: companyNamesList?.length ?? 0,
+                  })}{" "}
                 </span>
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
-                Latest report in Database
+                {t("crawler.latestReport")}
               </th>
               <th className="pl-4 py-3 text-left flex flex-col text-xs tracking-wider">
                 <span className="font-semibold flex gap-2 text-gray-02 uppercase">
-                  Select{" "}
+                  {t("crawler.select")}{" "}
                   <button className="flex" onClick={handleSelectAllCompanies}>
-                    <span className="flex gap-2">(Click to Select All )</span>
+                    <span className="flex gap-2">
+                      ({t("crawler.clickSelectAll")})
+                    </span>
                   </button>
                 </span>
                 <span className="font-medium text-gray-02">
-                  {selectedCompanies.length} selected
+                  {t("crawler.selectedCompanies", {
+                    count: selectedCompanies.length,
+                  })}{" "}
                 </span>
               </th>
             </tr>

@@ -322,12 +322,26 @@
   "crawler": {
     "title": "Crawler",
     "manualSearch": "Manuell sökning efter företagsrapporter",
+    "manualSearchGuard": "Ange minst ett företag och ett rapportår för att söka.",
+    "manualSearchDescription": "Denna sökning letar efter den senaste rapporten för varje angivet företag från det angivna året. Sökningen sker i realtid och är inte begränsad till befintliga poster i databasen.",
+    "databaseSearch": "Sök i befintlig databas",
+    "databaseSearchGuard": "Välj minst ett företag och ett år från företag i den befintliga databasen.",
+    "databaseControlsDescription": "Sökningen returnerar den senaste rapporten för varje valt företag från det valda året som finns i databasen.",
     "searchPlaceholder": "Sök efter företag (separera med kommatecken)",
     "reportYear": "Rapportår",
     "reportYearPlaceholder": "T.ex. 2025",
     "search": "Sök",
     "loadingResults": "Laddar sökresultat...",
-    "loadingDescription": "Vänta medan crawler hämtar och bearbetar."
+    "loadingDescription": "Vänta medan crawler hämtar och bearbetar.",
+    "company": "Företag",
+    "foundCompanies": "Hittade {{count}} företag",
+    "latestReport": "Senaste rapporten i databasen",
+    "select": "Välj",
+    "clickSelectAll": "Klicka för att välja alla",
+    "selectedCompanies": "{{count}} valda",
+    "foundReportLinks": "Hittade {{count}} mojlig(a) rapportlänk(ar)",
+    "lockReport": "Lås rapport",
+    "updateDb": "Uppdatera DB"
   },
   "climate": {
     "loading": "Laddar klimatplaner...",

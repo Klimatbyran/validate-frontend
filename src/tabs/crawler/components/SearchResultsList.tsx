@@ -1,18 +1,21 @@
 import { motion } from "framer-motion";
 import { CompanyReport } from "../lib/crawler-types";
-import ResultItem from "./ResultItem";
+import SearchResultItem from "./SearchResultItem";
+import { useI18n } from "@/contexts/I18nContext";
 
-interface ResultsListProps {
+interface SearchResultsListProps {
   companyReports: CompanyReport[] | null;
   setCompanyReports: React.Dispatch<
     React.SetStateAction<CompanyReport[] | null>
   >;
 }
 
-const ResultsList = ({
+const SearchResultsList = ({
   companyReports,
   setCompanyReports,
-}: ResultsListProps) => {
+}: SearchResultsListProps) => {
+  const { t } = useI18n();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -20,12 +23,12 @@ const ResultsList = ({
       className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6 flex flex-col justify-between"
     >
       <h3 className="text-xl font-semibold text-gray-01 mb-6">
-        Search Results
+        {t("crawler.searchResults")}
       </h3>
 
       {companyReports?.map((report, index) => {
         return (
-          <ResultItem
+          <SearchResultItem
             key={index}
             setCompanyReports={setCompanyReports}
             companyReports={companyReports}
@@ -37,4 +40,4 @@ const ResultsList = ({
   );
 };
 
-export default ResultsList;
+export default SearchResultsList;

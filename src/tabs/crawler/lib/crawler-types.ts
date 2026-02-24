@@ -7,3 +7,8 @@ export interface CompanyReport {
   reportYear: string;
   results: Report[];
 }
+
+export interface CompanyDetails {
+  name: string;
+  wikidataId?: string;
+}

@@ -3,7 +3,7 @@ type SearchQuery = {
   reportYear: string;
 };
 
-const fetchCompanyReports = async (searchQuery: SearchQuery) => {
+export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
   try {
     const response = await fetch("http://localhost:3000/api/reports", {
       method: "POST",
@@ -26,4 +26,20 @@ const fetchCompanyReports = async (searchQuery: SearchQuery) => {
   }
 };
 
-export default fetchCompanyReports;
+export const fetchCompanyNamesList = async () => {
+  try {
+    const response = await fetch("http://localhost:3000/api/companies/names");
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    } else {
+      console.error("Failed to fetch company names:", response.statusText);
+      throw new Error(`Failed to fetch company names: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error("Error fetching company names:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Failed to fetch company names");
+  }
+};

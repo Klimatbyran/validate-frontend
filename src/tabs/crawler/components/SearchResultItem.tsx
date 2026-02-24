@@ -8,8 +8,9 @@ import {
 } from "lucide-react";
 import { CompanyReport } from "../lib/crawler-types";
 import { Button } from "@/ui/button";
+import { useI18n } from "@/contexts/I18nContext";
 
-interface ResultItemProps {
+interface SearchResultItemProps {
   companyReport: CompanyReport;
   companyReports: CompanyReport[] | null;
   setCompanyReports: React.Dispatch<
@@ -17,12 +18,12 @@ interface ResultItemProps {
   >;
 }
 
-const ResultItem = ({
+const SearchResultItem = ({
   companyReport,
   companyReports,
   setCompanyReports,
-}: ResultItemProps) => {
-  console.log(companyReports);
+}: SearchResultItemProps) => {
+  const { t } = useI18n();
   const { companyName, results } = companyReport;
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [lockedReport, setLockedReport] = useState<boolean>(false);
@@ -62,8 +63,6 @@ const ResultItem = ({
     setCompanyReports(updatedCompanyReports || []);
     setSelectedReport(null);
     setLockedReport(false);
-
-    console.log(companyReports);
   };
   return (
     <>
@@ -93,7 +92,7 @@ const ResultItem = ({
                     size="sm"
                     className="border border-white text-gray-01 hover:bg-gray-03/100"
                   >
-                    Lock report
+                    {t("crawler.lockReport")}
                   </Button>
                   <Button
                     onClick={() => handlePushToDb()}
@@ -102,13 +101,12 @@ const ResultItem = ({
                     size="sm"
                     className="border border-white text-gray-01 hover:bg-gray-03/100"
                   >
-                    Update DB
+                    {t("crawler.updateDb")}
                   </Button>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-xs text-gray-02 mt-1">
-                Found {results.length} possible report link
-                {results.length > 1 ? "s" : ""}
+                {t("crawler.foundReportLinks", { count: results.length })}
               </div>
             </div>
           </button>
@@ -148,4 +146,4 @@ const ResultItem = ({
   );
 };
 
-export default ResultItem;
+export default SearchResultItem;
