@@ -1,3 +1,5 @@
+import { useI18n } from "@/contexts/I18nContext";
+
 type YearBadgeAccent = "green" | "blue" | "orange";
 
 const ACCENT_CLASSES: Record<
@@ -30,14 +32,15 @@ interface YearBadgeProps {
 }
 
 /**
- * Shared year label + optional "Senaste år" pill for scope sections (Economy, Scope12, Scope3).
+ * Shared year label + optional "Latest year" pill for scope sections (Economy, Scope12, Scope3).
  */
 export function YearBadge({ year, isLatest = false, accent }: YearBadgeProps) {
+  const { t } = useI18n();
   const classes = ACCENT_CLASSES[accent];
   return (
     <div className={`flex items-center mb-3 ${classes.wrapper}`}>
       <span className="text-2xl font-extrabold text-gray-01 mr-3">{year}</span>
-      {isLatest && <span className={classes.pill}>Senaste år</span>}
+      {isLatest && <span className={classes.pill}>{t("scope.latestYear")}</span>}
     </div>
   );
 }

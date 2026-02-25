@@ -12,10 +12,13 @@ import { buildRerunAndSaveBody } from "@/lib/job-rerun-utils";
 import { toast } from "sonner";
 import type { RerunWorker } from "../lib/filter-config";
 import { RUN_ONLY_TO_SCOPE_KEY } from "@/lib/run-only-workers";
+import { useI18n } from "@/contexts/I18nContext";
 
 export function useRerunByWorker(swimlaneCompanies: SwimlaneCompany[]) {
+  const { t } = useI18n();
   const handleRerunByWorker = useCallback(
     async (workerName: RerunWorker, limit: number | "all" = 5) => {
+      const workerLabel = t(`jobstatus.rerunWorkers.${workerName}`);
       const followUpKey = RUN_ONLY_TO_SCOPE_KEY[workerName];
       if (!followUpKey) return;
 
@@ -39,11 +42,11 @@ export function useRerunByWorker(swimlaneCompanies: SwimlaneCompany[]) {
       }
 
       if (targets.length === 0) {
-        toast.error(`Inga företag hittades att köra om ${workerName} för`);
+        toast.error(t("jobstatus.rerunByWorker.noCompanies", { worker: workerLabel }));
         return;
       }
 
-      toast.info(`Kör om ${workerName} för ${targets.length} företag...`);
+      toast.info(t("jobstatus.rerunByWorker.starting", { worker: workerLabel, count: targets.length }));
 
       let successes = 0;
       let failures = 0;
@@ -73,12 +76,12 @@ export function useRerunByWorker(swimlaneCompanies: SwimlaneCompany[]) {
       }
 
       if (failures === 0) {
-        toast.success(`Startade om ${workerName} för ${successes} företag`);
+        toast.success(t("jobstatus.rerunByWorker.success", { worker: workerLabel, count: successes }));
       } else {
-        toast.warning(`${workerName}: ${successes} lyckades, ${failures} misslyckades`);
+        toast.warning(t("jobstatus.rerunByWorker.partial", { worker: workerLabel, successes, failures }));
       }
     },
-    [swimlaneCompanies]
+    [swimlaneCompanies, t]
   );
 
   return handleRerunByWorker;

@@ -10,6 +10,7 @@ import { ViewToggle, useViewToggle } from "@/ui/view-toggle";
 import type { SwimlaneCompany, SwimlaneYearData, QueueJob } from "@/lib/types";
 import { YearRow } from "./YearRow";
 import { isFollowUpQueue } from "@/lib/job-rerun-utils";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface CompanyCardProps {
   company: SwimlaneCompany;
@@ -17,6 +18,7 @@ interface CompanyCardProps {
 }
 
 export function CompanyCard({ company, positionInList }: CompanyCardProps) {
+  const { t } = useI18n();
   const {
     currentView: expandLevel,
     setCurrentView: setExpandLevel,
@@ -71,10 +73,12 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
               <div className="flex items-center gap-2 text-xs text-gray-02 mt-1">
                 <TrendingUp className="w-3 h-3" />
                 <span>
-                  {totalYears} {totalYears === 1 ? "year" : "years"} of data
+                  {totalYears === 1
+                    ? t("jobstatus.yearsOfData", { count: 1 })
+                    : t("jobstatus.yearsOfData_other", { count: totalYears })}
                 </span>
                 <span>•</span>
-                <span>Latest: {latestYear?.year || "N/A"}</span>
+                <span>{t("jobstatus.latestLabel")}: {latestYear?.year ?? t("jobstatus.na")}</span>
               </div>
             </div>
           </button>

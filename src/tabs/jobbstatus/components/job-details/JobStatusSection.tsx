@@ -50,7 +50,7 @@ export function JobStatusSection({ job, isRerun = false }: JobStatusSectionProps
           </div>
           <div>
             <div className="font-medium text-gray-01">
-              {stage?.name || job.queueId}
+              {job.queueId && t(`jobstatus.queues.${job.queueId}`) !== `jobstatus.queues.${job.queueId}` ? t(`jobstatus.queues.${job.queueId}`) : (stage?.name || job.queueId)}
             </div>
             <div className="text-sm text-gray-02">{statusText}</div>
           </div>

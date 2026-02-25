@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/ui/tabs";
 import { Button } from "@/ui/button";
 import { QueueJob } from "@/lib/types";
 import { getWikidataInfo } from "@/lib/utils";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface DialogTabsProps {
   activeTab: "user" | "technical";
@@ -11,6 +12,7 @@ interface DialogTabsProps {
 }
 
 export function DialogTabs({ activeTab, setActiveTab, job }: DialogTabsProps) {
+  const { t } = useI18n();
   const wikidataInfo = getWikidataInfo(job);
 
   return (
@@ -19,11 +21,11 @@ export function DialogTabs({ activeTab, setActiveTab, job }: DialogTabsProps) {
         <TabsList className="bg-gray-04/50 h-auto p-1">
           <TabsTrigger value="user" className="gap-2 px-4 py-2">
             <Info className="w-4 h-4 shrink-0" />
-            Översikt
+            {t("jobstatus.jobdetails.tabOverview")}
           </TabsTrigger>
           <TabsTrigger value="technical" className="gap-2 px-4 py-2">
             <Code className="w-4 h-4 shrink-0" />
-            Tekniska detaljer
+            {t("jobstatus.jobdetails.tabTechnical")}
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -36,7 +38,7 @@ export function DialogTabs({ activeTab, setActiveTab, job }: DialogTabsProps) {
             className="flex items-center"
           >
             <FileText className="w-4 h-4 mr-2" />
-            Report
+            {t("jobstatus.jobdetails.reportLink")}
           </a>
         </Button>
       )}
@@ -49,7 +51,7 @@ export function DialogTabs({ activeTab, setActiveTab, job }: DialogTabsProps) {
             className="flex items-center"
           >
             <Globe className="w-4 h-4 mr-2" />
-            Wikidata
+            {t("jobstatus.jobdetails.wikidataLink")}
           </a>
         </Button>
       )}

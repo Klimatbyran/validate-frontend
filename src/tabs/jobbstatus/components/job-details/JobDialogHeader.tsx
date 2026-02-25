@@ -5,12 +5,14 @@ import {
 } from "@/ui/dialog";
 import { QueueJob } from "@/lib/types";
 import { getWikidataInfo } from "@/lib/utils";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface JobDialogHeaderProps {
   job: QueueJob;
 }
 
 export function JobDialogHeader({ job }: JobDialogHeaderProps) {
+  const { t } = useI18n();
   return (
     <DialogHeader>
       <div className="flex items-center justify-between">
@@ -20,7 +22,7 @@ export function JobDialogHeader({ job }: JobDialogHeaderProps) {
           </DialogTitle>
           {getWikidataInfo(job)?.node && (
             <div className="text-sm text-gray-02 mb-2">
-              WikidataID: {getWikidataInfo(job)?.node}
+              {t("jobstatus.jobdetails.wikidataIdLabel")}: {getWikidataInfo(job)?.node}
             </div>
           )}
           {job.data.description && (

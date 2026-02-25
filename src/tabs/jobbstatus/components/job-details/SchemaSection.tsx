@@ -1,12 +1,14 @@
 import { Code } from "lucide-react";
 import { QueueJob } from "@/lib/types";
 import { JsonViewer } from "@/ui/json-viewer";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface SchemaSectionProps {
   job: QueueJob;
 }
 
 export function SchemaSection({ job }: SchemaSectionProps) {
+  const { t } = useI18n();
   if (!job.data.schema) return null;
 
   return (
@@ -15,7 +17,7 @@ export function SchemaSection({ job }: SchemaSectionProps) {
         <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-03/20 mr-2">
           <Code className="w-4 h-4 text-blue-03" />
         </span>
-        Schema
+        {t("jobstatus.jobdetails.schema")}
       </h3>
       <div className="bg-gray-04 rounded-lg p-3 border border-gray-03">
         <JsonViewer data={job.data.schema} />

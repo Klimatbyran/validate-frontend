@@ -1,5 +1,6 @@
 import { Check, X, RotateCcw } from "lucide-react";
 import { Button } from "@/ui/button";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface JobDialogFooterProps {
   needsApproval: boolean;
@@ -16,6 +17,7 @@ export function JobDialogFooter({
   onApprove,
   onRetry,
 }: JobDialogFooterProps) {
+  const { t } = useI18n();
   return (
     <div className="flex justify-between w-full">
       <div>
@@ -26,7 +28,7 @@ export function JobDialogFooter({
             className="text-blue-03 hover:bg-blue-03/10"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
-            Försök igen
+            {t("jobstatus.jobdetails.tryAgain")}
           </Button>
         )}
       </div>
@@ -38,7 +40,7 @@ export function JobDialogFooter({
             className="border-pink-03 text-pink-03 hover:bg-pink-03/10"
           >
             <X className="w-4 h-4 mr-2" />
-            Avvisa
+            {t("jobstatus.jobdetails.reject")}
           </Button>
           <Button
             variant="primary"
@@ -50,7 +52,7 @@ export function JobDialogFooter({
             }
           >
             <Check className="w-4 h-4 mr-2" />
-            Godkänn
+            {t("jobstatus.jobdetails.approve")}
           </Button>
         </div>
       )}

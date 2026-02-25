@@ -141,7 +141,8 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
     useCompanyReferenceByYears(
       wikidataId,
       years,
-      buildReferenceSnapshotFromPeriod
+      buildReferenceSnapshotFromPeriod,
+      t("scope.referenceFetchError")
     );
 
   const hasScope1 =

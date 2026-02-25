@@ -16,7 +16,7 @@ export function JobMetadataSection({ job }: JobMetadataSectionProps) {
     },
     {
       label: t("jobstatus.metadata.queue"),
-      value: job.queueId,
+      value: job.queueId && t(`jobstatus.queues.${job.queueId}`) !== `jobstatus.queues.${job.queueId}` ? t(`jobstatus.queues.${job.queueId}`) : job.queueId,
     },
     {
       label: t("jobstatus.metadata.created"),

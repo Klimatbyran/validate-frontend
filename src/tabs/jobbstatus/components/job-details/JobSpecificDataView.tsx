@@ -121,8 +121,8 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
 
   const renderValue = (value: any): React.ReactNode => {
     if (value === null)
-      return <span className="text-gray-02">Inget värde</span>;
-    if (typeof value === "boolean") return value ? "Ja" : "Nej";
+      return <span className="text-gray-02">{t("jobstatus.jobdetails.noValue")}</span>;
+    if (typeof value === "boolean") return value ? t("common.yes") : t("common.no");
     if (typeof value === "string") {
       return isMarkdown(value) ? (
         <MarkdownVectorPagesDisplay value={value} />
@@ -230,7 +230,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
                   <FileText className="w-5 h-5 text-blue-03" />
                 </div>
                 <div>
-                  <h4 className="text-base font-medium text-gray-01">Rapport</h4>
+                  <h4 className="text-base font-medium text-gray-01">{t("jobstatus.jobdetails.reportLabel")}</h4>
                   <p className="text-sm text-gray-02 truncate max-w-md">{jobUrl}</p>
                 </div>
               </div>
@@ -354,50 +354,50 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             className="text-blue-03 hover:bg-blue-03/10"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
-            Kör om jobbet
+            {t("jobstatus.jobdetails.rerunJob")}
           </Button>
           {isFollowUpScope12Job && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleRerunAndSave("followUpScope12", ["scope1", "scope2"], "Scope 1+2")}
+              onClick={() => handleRerunAndSave("followUpScope12", ["scope1", "scope2"], t("jobstatus.jobdetails.rerunAndSaveScope12"))}
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
-              Kör om och spara Scope 1+2
+              {t("jobstatus.jobdetails.rerunAndSaveScope12")}
             </Button>
           )}
           {isFollowUpScope1Job && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleRerunAndSave("followUpScope1", ["scope1"], "Scope 1")}
+              onClick={() => handleRerunAndSave("followUpScope1", ["scope1"], t("jobstatus.jobdetails.rerunAndSaveScope1"))}
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
-              Kör om och spara Scope 1
+              {t("jobstatus.jobdetails.rerunAndSaveScope1")}
             </Button>
           )}
           {isFollowUpScope2Job && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleRerunAndSave("followUpScope2", ["scope2"], "Scope 2")}
+              onClick={() => handleRerunAndSave("followUpScope2", ["scope2"], t("jobstatus.jobdetails.rerunAndSaveScope2"))}
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
-              Kör om och spara Scope 2
+              {t("jobstatus.jobdetails.rerunAndSaveScope2")}
             </Button>
           )}
           {isFollowUpScope3Job && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleRerunAndSave("followUpScope3", ["scope3"], "Scope 3")}
+              onClick={() => handleRerunAndSave("followUpScope3", ["scope3"], t("jobstatus.jobdetails.rerunAndSaveScope3"))}
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
-              Kör om och spara Scope 3
+              {t("jobstatus.jobdetails.rerunAndSaveScope3")}
             </Button>
           )}
         </div>

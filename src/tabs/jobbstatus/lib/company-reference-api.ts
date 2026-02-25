@@ -41,11 +41,13 @@ export interface UseCompanyReferenceByYearsResult<T> {
 /**
  * Fetches company by wikidata id, gets reporting periods, and builds a snapshot
  * per year using the provided builder. Used by EconomySection, Scope12Section, Scope3Section.
+ * Pass errorFallback (e.g. t("scope.referenceFetchError")) for a translated error message.
  */
 export function useCompanyReferenceByYears<T>(
   wikidataId: string | undefined,
   years: number[],
-  buildSnapshotFromPeriod: (period: any) => T
+  buildSnapshotFromPeriod: (period: any) => T,
+  errorFallback?: string
 ): UseCompanyReferenceByYearsResult<T> {
   const [referenceByYear, setReferenceByYear] = React.useState<
     Record<number, T>
@@ -81,7 +83,7 @@ export function useCompanyReferenceByYears<T>(
         }
       } catch (e: any) {
         if (isMounted && e?.name !== "AbortError") {
-          setError(e?.message || "Kunde inte hämta referensdata");
+          setError(e?.message || errorFallback || "Could not fetch reference data");
           setIsLoading(false);
         }
       }
@@ -91,7 +93,7 @@ export function useCompanyReferenceByYears<T>(
       isMounted = false;
       abortController.abort();
     };
-  }, [wikidataId, yearsKey]);
+  }, [wikidataId, yearsKey, errorFallback]);
 
   return { referenceByYear, isLoading, error };
 }
