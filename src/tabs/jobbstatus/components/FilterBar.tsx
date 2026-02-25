@@ -13,7 +13,6 @@ import {
   RotateCw,
   MoreVertical,
   Search,
-  ChevronDown,
   RefreshCw,
 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
@@ -28,6 +27,7 @@ import {
   type RerunWorker,
 } from "@/tabs/jobbstatus/lib/filter-config";
 import { FilterBarRerunSection } from "./FilterBarRerunSection";
+import { BatchFilterDropdown } from "./BatchFilterDropdown";
 
 interface FilterBarProps {
   activeFilters: Set<FilterType>;
@@ -91,9 +91,7 @@ export function FilterBar({
     selectedBatchIds.length > 0 ||
     (companySearchQuery?.trim() ?? "") !== "";
   const [showMoreFilters, setShowMoreFilters] = useState(false);
-  const [showBatchDropdown, setShowBatchDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const batchDropdownRef = useRef<HTMLDivElement>(null);
 
   const primaryFilters = useMemo(
     () =>
@@ -105,35 +103,23 @@ export function FilterBar({
   );
   const secondaryFilters = SECONDARY_FILTER_CONFIG;
 
-  // Close dropdowns when clicking outside
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
-        setShowMoreFilters(false);
-      }
       if (
-        batchDropdownRef.current &&
-        !batchDropdownRef.current.contains(target)
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
       ) {
-        setShowBatchDropdown(false);
+        setShowMoreFilters(false);
       }
     };
 
-    if (showMoreFilters || showBatchDropdown) {
+    if (showMoreFilters) {
       document.addEventListener("mousedown", handleClickOutside);
       return () =>
         document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [showMoreFilters, showBatchDropdown]);
-
-  const toggleBatch = (batchId: string) => {
-    if (!onBatchFilterChange) return;
-    const next = selectedBatchIds.includes(batchId)
-      ? selectedBatchIds.filter((id) => id !== batchId)
-      : [...selectedBatchIds, batchId];
-    onBatchFilterChange(next);
-  };
+  }, [showMoreFilters]);
 
   return (
     <div className="bg-gray-04/50 rounded-lg p-4 border border-gray-03">
@@ -215,87 +201,12 @@ export function FilterBar({
             </span>
           </div>
           {onBatchFilterChange && (
-            <div className="relative shrink-0" ref={batchDropdownRef}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowBatchDropdown(!showBatchDropdown)}
-                className={`!w-auto !min-w-0 h-9 px-4 text-sm border border-gray-03 text-gray-01 hover:bg-gray-03/40 flex items-center gap-2 ${
-                  selectedBatchIds.length > 0
-                    ? "border-blue-03 bg-blue-03/10 text-blue-03"
-                    : ""
-                }`}
-                aria-expanded={showBatchDropdown}
-                aria-haspopup="listbox"
-                aria-label={t("jobstatus.batch")}
-              >
-                <span className="whitespace-nowrap">
-                  {t("jobstatus.batch")}
-                </span>
-                <ChevronDown className="w-4 h-4 shrink-0" />
-                {selectedBatchIds.length > 0 && (
-                  <span className="ml-1 px-2 py-0.5 rounded-full bg-gray-03/50 text-xs font-medium">
-                    {selectedBatchIds.length}
-                  </span>
-                )}
-              </Button>
-              {showBatchDropdown && (
-                <div
-                  className="absolute left-0 top-full mt-2 z-50 bg-gray-04 border border-gray-03 rounded-lg shadow-lg p-2 min-w-[220px] max-h-[280px] overflow-y-auto"
-                  role="listbox"
-                  aria-multiselectable="true"
-                  aria-label={t("jobstatus.batch")}
-                >
-                  <div className="text-xs font-semibold text-gray-02 mb-2 px-2">
-                    {t("jobstatus.batch")}
-                  </div>
-                  {batchesLoading ? (
-                    <div
-                      className="w-full text-left px-3 py-2 rounded text-sm text-gray-02 flex items-center gap-2 cursor-default"
-                      role="option"
-                      aria-disabled="true"
-                      aria-live="polite"
-                    >
-                      <span className="flex-shrink-0 w-4 h-4 rounded border border-gray-03" aria-hidden />
-                      <span className="truncate">
-                        {t("jobstatus.batchLoading")}
-                      </span>
-                    </div>
-                  ) : existingBatches.length === 0 ? (
-                    <p className="px-3 py-2 text-sm text-gray-02">
-                      {t("jobstatus.batchEmpty")}
-                    </p>
-                  ) : (
-                    existingBatches.map((batchId) => {
-                      const isSelected = selectedBatchIds.includes(batchId);
-                      return (
-                        <button
-                          key={batchId}
-                          type="button"
-                          role="option"
-                          aria-selected={isSelected}
-                          onClick={() => toggleBatch(batchId)}
-                          className="w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center gap-2 hover:bg-gray-03/50 text-gray-01"
-                        >
-                          <span
-                            className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
-                              isSelected
-                                ? "bg-blue-03 border-blue-03"
-                                : "border-gray-03"
-                            }`}
-                          >
-                            {isSelected && (
-                              <CheckCircle2 className="w-3 h-3 text-white" />
-                            )}
-                          </span>
-                          <span className="truncate">{batchId}</span>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-            </div>
+            <BatchFilterDropdown
+              existingBatches={existingBatches}
+              batchesLoading={batchesLoading}
+              selectedBatchIds={selectedBatchIds}
+              onBatchFilterChange={onBatchFilterChange}
+            />
           )}
           <div className="flex flex-wrap items-center gap-3">
             {primaryFilters.map((filter) => {
