@@ -35,11 +35,13 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
   );
   const [forceReindex, setForceReindex] = useState(false);
   const [existingBatches, setExistingBatches] = useState<string[]>([]);
+  const [batchesLoading, setBatchesLoading] = useState(true);
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState("");
 
   useEffect(() => {
     let cancelled = false;
+    setBatchesLoading(true);
     (async () => {
       try {
         const res = await authenticatedFetch(BATCHES_API_ENDPOINT);
@@ -49,6 +51,8 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
         if (Array.isArray(ids) && !cancelled) setExistingBatches(ids);
       } catch {
         // Non-fatal: dropdown will just be empty
+      } finally {
+        if (!cancelled) setBatchesLoading(false);
       }
     })();
     return () => {
@@ -238,6 +242,7 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
             forceReindex={forceReindex}
             onForceReindexChange={setForceReindex}
             existingBatches={existingBatches}
+            batchesLoading={batchesLoading}
             batchDropdownChoice={batchDropdownChoice}
             onBatchDropdownChoiceChange={setBatchDropdownChoice}
             customBatchName={customBatchName}

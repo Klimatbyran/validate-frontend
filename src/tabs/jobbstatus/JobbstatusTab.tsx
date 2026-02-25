@@ -7,6 +7,8 @@ import { useState, useMemo, useEffect } from "react";
 import { Loader2, ArrowUp } from "lucide-react";
 import { Button } from "@/ui/button";
 import { useCompanies } from "@/hooks/useCompanies";
+import { authenticatedFetch } from "@/lib/api-helpers";
+import { BATCHES_API_ENDPOINT } from "@/tabs/upload/lib/utils";
 import { convertCompaniesToSwimlaneFormat } from "./lib/swimlane-transform";
 import {
   type FilterType,
@@ -39,7 +41,30 @@ export function JobbstatusTab() {
   );
   const [runScope, setRunScope] = useState<RunScope>("latest");
   const [companySearchQuery, setCompanySearchQuery] = useState("");
+  const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
+  const [existingBatches, setExistingBatches] = useState<string[]>([]);
+  const [batchesLoading, setBatchesLoading] = useState(true);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
+
+  // Fetch available batches for filter
+  useEffect(() => {
+    let cancelled = false;
+    setBatchesLoading(true);
+    (async () => {
+      try {
+        const res = await authenticatedFetch(BATCHES_API_ENDPOINT);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const ids = Array.isArray(data) ? data : data?.batchIds ?? data?.batches ?? [];
+        if (Array.isArray(ids) && !cancelled) setExistingBatches(ids);
+      } catch {
+        // Non-fatal: batch dropdown will be empty
+      } finally {
+        if (!cancelled) setBatchesLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Convert CustomAPICompany to SwimlaneCompany format
   const swimlaneCompanies = useMemo(() => {
@@ -74,7 +99,7 @@ export function JobbstatusTab() {
     };
   }, [swimlaneCompanies, runScope]);
 
-  // Filter companies based on active filters (AND logic) and company name search
+  // Filter companies based on active filters (AND logic), batch filter, and company name search
   const filteredCompanies = useMemo(() => {
     const searchTrimmed = companySearchQuery.trim().toLowerCase();
     const statusFiltered =
@@ -109,11 +134,19 @@ export function JobbstatusTab() {
             });
           });
 
-    if (!searchTrimmed) return statusFiltered;
-    return statusFiltered.filter((company) =>
+    const batchFiltered =
+      selectedBatchIds.length === 0
+        ? statusFiltered
+        : statusFiltered.filter((company) => {
+            const companyBatchIds = company.batchIds ?? [];
+            return selectedBatchIds.some((id) => companyBatchIds.includes(id));
+          });
+
+    if (!searchTrimmed) return batchFiltered;
+    return batchFiltered.filter((company) =>
       company.name.toLowerCase().includes(searchTrimmed)
     );
-  }, [swimlaneCompanies, activeFilters, runScope, companySearchQuery]);
+  }, [swimlaneCompanies, activeFilters, runScope, companySearchQuery, selectedBatchIds]);
 
   // Toggle filter
   const toggleFilter = (filter: FilterType) => {
@@ -128,10 +161,11 @@ export function JobbstatusTab() {
     });
   };
 
-  // Clear all filters and company search
+  // Clear all filters, batch filter, and company search
   const clearFilters = () => {
     setActiveFilters(new Set());
     setCompanySearchQuery("");
+    setSelectedBatchIds([]);
   };
 
   useEffect(() => {
@@ -207,6 +241,10 @@ export function JobbstatusTab() {
           onRerunByWorker={handleRerunByWorker}
           companySearchQuery={companySearchQuery}
           onCompanySearchChange={setCompanySearchQuery}
+          existingBatches={existingBatches}
+          batchesLoading={batchesLoading}
+          selectedBatchIds={selectedBatchIds}
+          onBatchFilterChange={setSelectedBatchIds}
         />
       </div>
 
@@ -214,7 +252,7 @@ export function JobbstatusTab() {
         {filteredCompanies.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-02">
-              {activeFilters.size > 0
+              {activeFilters.size > 0 || selectedBatchIds.length > 0
                 ? t("jobstatus.noCompaniesMatch")
                 : t("jobstatus.noCompaniesFound")}
             </p>

@@ -158,10 +158,19 @@ export function convertCompaniesToSwimlaneFormat(
         company.processes?.[0]?.id ||
         `${companyName}-${company.processes?.[0]?.startedAt || Date.now()}`;
 
+      const batchIds = Array.from(
+        new Set(
+          company.processes
+            .map((p) => p.batchId)
+            .filter((id): id is string => typeof id === "string" && id.length > 0)
+        )
+      );
+
       return {
         id: companyId,
         name: companyName,
         wikidataId: company.wikidataId,
+        ...(batchIds.length > 0 ? { batchIds } : {}),
         years,
       };
     })

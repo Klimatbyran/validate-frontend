@@ -11,6 +11,7 @@ interface UploadRunOptionsProps {
   forceReindex: boolean;
   onForceReindexChange: (value: boolean) => void;
   existingBatches: string[];
+  batchesLoading?: boolean;
   batchDropdownChoice: string;
   onBatchDropdownChoiceChange: (value: string) => void;
   customBatchName: string;
@@ -25,6 +26,7 @@ export function UploadRunOptions({
   forceReindex,
   onForceReindexChange,
   existingBatches,
+  batchesLoading = false,
   batchDropdownChoice,
   onBatchDropdownChoiceChange,
   customBatchName,
@@ -52,6 +54,11 @@ export function UploadRunOptions({
             </option>
           ))}
           <option value={NEW_BATCH_DROPDOWN_VALUE}>{t("upload.newBatch")}</option>
+          {batchesLoading && (
+            <option value="" disabled>
+              {t("upload.batchLoading")}
+            </option>
+          )}
         </select>
         {batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE && (
           <input
