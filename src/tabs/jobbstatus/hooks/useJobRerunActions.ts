@@ -7,6 +7,7 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 import { authenticatedFetch } from "@/lib/api-helpers";
 import { buildRerunRequestData } from "@/lib/job-rerun-utils";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface UseJobRerunActionsArgs {
   job: { queueId?: string; id?: string } | undefined;
@@ -21,6 +22,7 @@ export function useJobRerunActions({
   detailed,
   setDetailed,
 }: UseJobRerunActionsArgs) {
+  const { t } = useI18n();
   const refreshJobData = useCallback(async () => {
     if (!job?.queueId || !job?.id) return;
     try {
@@ -38,7 +40,7 @@ export function useJobRerunActions({
 
   const handleWikidataApprove = useCallback(async () => {
     if (!effectiveJob?.queueId || !effectiveJob?.id) {
-      toast.error("Kunde inte godkänna: saknar jobbinformation");
+      toast.error(t("jobstatus.jobdetails.toastCannotApprove"));
       return;
     }
     try {
@@ -52,20 +54,20 @@ export function useJobRerunActions({
       );
       if (!response.ok) {
         const errorText = await response.text();
-        toast.error(`Kunde inte godkänna jobbet: ${errorText || "Okänt fel"}`);
+        toast.error(t("jobstatus.jobdetails.toastApproveError", { message: errorText || t("upload.unknownError") }));
         return;
       }
-      toast.success("Jobbet godkänt och körs om");
+      toast.success(t("jobstatus.jobdetails.toastApproveSuccess"));
       await refreshJobData();
     } catch (error) {
-      toast.error(`Ett fel uppstod vid godkännande: ${error instanceof Error ? error.message : "Okänt fel"}`);
+      toast.error(t("jobstatus.jobdetails.toastApproveFailed", { message: error instanceof Error ? error.message : t("upload.unknownError") }));
     }
-  }, [effectiveJob?.queueId, effectiveJob?.id, refreshJobData]);
+  }, [effectiveJob?.queueId, effectiveJob?.id, refreshJobData, t]);
 
   const handleWikidataOverride = useCallback(
     async (overrideWikidataId: string) => {
       if (!effectiveJob?.queueId || !effectiveJob?.id) {
-        toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
+        toast.error(t("jobstatus.jobdetails.toastCannotRerun"));
         return;
       }
       try {
@@ -79,22 +81,22 @@ export function useJobRerunActions({
         );
         if (!response.ok) {
           const errorText = await response.text();
-          toast.error(`Kunde inte köra om jobbet: ${errorText || "Okänt fel"}`);
+          toast.error(t("jobstatus.jobdetails.toastRerunError", { message: errorText || t("upload.unknownError") }));
           return;
         }
-        toast.success("Jobbet körs om med det nya Wikidata ID:t");
+        toast.success(t("jobstatus.jobdetails.toastRerunWikidataSuccess"));
         await refreshJobData();
       } catch (error) {
-        toast.error(`Ett fel uppstod vid omkörning: ${error instanceof Error ? error.message : "Okänt fel"}`);
+        toast.error(t("jobstatus.jobdetails.toastRerunFailed", { message: error instanceof Error ? error.message : t("upload.unknownError") }));
       }
     },
-    [effectiveJob?.queueId, effectiveJob?.id, refreshJobData]
+    [effectiveJob?.queueId, effectiveJob?.id, refreshJobData, t]
   );
 
   const handleCompanyNameOverride = useCallback(
     async (overrideCompanyName: string) => {
       if (!effectiveJob?.queueId || !effectiveJob?.id) {
-        toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
+        toast.error(t("jobstatus.jobdetails.toastCannotRerun"));
         return;
       }
       try {
@@ -110,21 +112,21 @@ export function useJobRerunActions({
         );
         if (!response.ok) {
           const errorText = await response.text();
-          toast.error(`Kunde inte köra om jobbet: ${errorText || "Okänt fel"}`);
+          toast.error(t("jobstatus.jobdetails.toastRerunError", { message: errorText || t("upload.unknownError") }));
           return;
         }
-        toast.success("Jobbet körs om med det nya företagsnamnet");
+        toast.success(t("jobstatus.jobdetails.toastRerunCompanySuccess"));
         await refreshJobData();
       } catch (error) {
-        toast.error(`Ett fel uppstod vid omkörning: ${error instanceof Error ? error.message : "Okänt fel"}`);
+        toast.error(t("jobstatus.jobdetails.toastRerunFailed", { message: error instanceof Error ? error.message : t("upload.unknownError") }));
       }
     },
-    [effectiveJob?.queueId, effectiveJob?.id, refreshJobData]
+    [effectiveJob?.queueId, effectiveJob?.id, refreshJobData, t]
   );
 
   const handleRerun = useCallback(async () => {
     if (!effectiveJob?.queueId || !effectiveJob?.id) {
-      toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
+      toast.error(t("jobstatus.jobdetails.toastCannotRerun"));
       return;
     }
     const requestData = buildRerunRequestData(
@@ -144,20 +146,20 @@ export function useJobRerunActions({
       );
       if (!response.ok) {
         const errorText = await response.text();
-        toast.error(`Kunde inte köra om jobbet: ${errorText || "Okänt fel"}`);
+        toast.error(t("jobstatus.jobdetails.toastRerunError", { message: errorText || t("upload.unknownError") }));
         return;
       }
-      toast.success("Jobbet körs om");
+      toast.success(t("jobstatus.jobdetails.toastRerunSuccess"));
       await refreshJobData();
     } catch (error) {
-      toast.error(`Ett fel uppstod vid omkörning: ${error instanceof Error ? error.message : "Okänt fel"}`);
+      toast.error(t("jobstatus.jobdetails.toastRerunFailed", { message: error instanceof Error ? error.message : t("upload.unknownError") }));
     }
-  }, [effectiveJob, job, detailed, refreshJobData]);
+  }, [effectiveJob, job, detailed, refreshJobData, t]);
 
   const handleRerunAndSave = useCallback(
     async (queueName: string, scopes: string[], label: string) => {
       if (!effectiveJob?.id) {
-        toast.error("Kunde inte köra om jobbet: saknar jobbinformation");
+        toast.error(t("jobstatus.jobdetails.toastCannotRerun"));
         return;
       }
       try {
@@ -171,16 +173,16 @@ export function useJobRerunActions({
         );
         if (!response.ok) {
           const errorText = await response.text();
-          toast.error(`Kunde inte köra om och spara ${label}: ${errorText || "Okänt fel"}`);
+          toast.error(t("jobstatus.jobdetails.toastRerunAndSaveError", { label, message: errorText || t("upload.unknownError") }));
           return;
         }
-        toast.success(`${label} körs om och sparas`);
+        toast.success(t("jobstatus.jobdetails.toastRerunAndSaveSuccess", { label }));
         await refreshJobData();
       } catch (error) {
-        toast.error(`Ett fel uppstod vid omkörning: ${error instanceof Error ? error.message : "Okänt fel"}`);
+        toast.error(t("jobstatus.jobdetails.toastRerunFailed", { message: error instanceof Error ? error.message : t("upload.unknownError") }));
       }
     },
-    [effectiveJob?.id, refreshJobData]
+    [effectiveJob?.id, refreshJobData, t]
   );
 
   return {

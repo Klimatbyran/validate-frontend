@@ -185,7 +185,8 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
   const { referenceByYear, isLoading, error } = useCompanyReferenceByYears(
     wikidataId,
     years,
-    buildReferenceSnapshotFromPeriod
+    buildReferenceSnapshotFromPeriod,
+    t("scope.referenceFetchError")
   );
 
   return (

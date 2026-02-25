@@ -17,6 +17,7 @@ import {
   getCompactStyles,
 } from "@/lib/status-config";
 import type { SwimlaneYearData, QueueJob } from "@/lib/types";
+import { useI18n } from "@/contexts/I18nContext";
 
 function getStatusDisplay(
   job: QueueJob | undefined,
@@ -65,6 +66,12 @@ export function YearStepGrid({
   currentThreadId,
   containerClassName = "",
 }: YearStepGridProps) {
+  const { t } = useI18n();
+  const stepNameKeyMap: Record<string, string> = {
+    preprocessing: "jobstatus.overview.preprocessing",
+    "data-extraction": "jobstatus.overview.aiDataExtraction",
+    finalize: "jobstatus.overview.finalize",
+  };
   const wrapperClass =
     variant === "compact"
       ? "p-7 space-y-2 bg-gray-05"
@@ -75,8 +82,10 @@ export function YearStepGrid({
     <div className={finalWrapperClass}>
       {yearStepStats.map((step, stepIndex) => {
         const queueIds = getQueuesForPipelineStep(step.id);
+        const stepLabel = stepNameKeyMap[step.id] ? t(stepNameKeyMap[step.id]) : step.name;
         const cells = queueIds.map((queueId) => {
-          const fieldName = getQueueDisplayName(queueId);
+          const queueKey = `jobstatus.queues.${queueId}`;
+          const fieldName = t(queueKey) !== queueKey ? t(queueKey) : getQueueDisplayName(queueId);
           const job = findJobByQueueId(queueId, yearData);
           const allJobsForQueueAndThread =
             currentThreadId != null && allRuns
@@ -151,7 +160,7 @@ export function YearStepGrid({
                   {fieldName}
                   {isActive && (
                     <span className="ml-2 text-blue-03 text-xs">
-                      (Active)
+                      ({t("jobstatus.activeLabel")})
                     </span>
                   )}
                 </div>
@@ -169,7 +178,7 @@ export function YearStepGrid({
               <div className="flex items-start gap-2">
                 <div className="flex-shrink-0 w-24 pt-1">
                   <span className="text-[10px] font-semibold text-gray-02 uppercase tracking-wide">
-                    {step.name}
+                    {stepLabel}
                   </span>
                 </div>
                 <div className="flex-1 flex flex-wrap gap-1.5">{cells}</div>
@@ -178,7 +187,7 @@ export function YearStepGrid({
               <>
                 <div className="flex items-center gap-2 mb-2 pb-1.5">
                   <span className="text-xs font-bold text-gray-01 uppercase tracking-wide">
-                    {step.name}
+                    {stepLabel}
                   </span>
                   <div className="flex-1 h-px bg-gray-03" />
                 </div>

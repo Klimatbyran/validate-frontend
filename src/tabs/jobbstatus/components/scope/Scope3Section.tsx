@@ -21,7 +21,7 @@ interface Scope3EmissionsDisplayProps {
 }
 
 export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps) {
-  const { formatNumber } = useI18n();
+  const { t, formatNumber } = useI18n();
   if (!data.scope3 || !Array.isArray(data.scope3) || data.scope3.length === 0) {
     return null;
   }
@@ -35,7 +35,8 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
   const { referenceByYear, isLoading, error } = useCompanyReferenceByYears(
     wikidataId,
     years,
-    (period) => buildReferenceSnapshotFromScope3(period?.emissions?.scope3)
+    (period) => buildReferenceSnapshotFromScope3(period?.emissions?.scope3),
+    t("scope.referenceFetchError")
   );
 
   // A compact, normalized representation of the fetched reference snapshot.
@@ -120,10 +121,10 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
         <div className="bg-gray-04 rounded-2xl p-8 border border-gray-03 shadow-sm">
           <div className="flex items-center space-x-2 mb-4">
             <Truck className="w-5 h-5 text-orange-03" />
-            <span className="font-semibold text-lg text-gray-01">Scope 3</span>
+            <span className="font-semibold text-lg text-gray-01">{t("scope.scope3")}</span>
           </div>
           <div className="mb-6 pb-4 border-b border-gray-03">
-            <div className="text-sm text-gray-02 mb-2">Totalt (statedTotalEmissions)</div>
+            <div className="text-sm text-gray-02 mb-2">{t("scope.statedTotalLabel")}</div>
             {normalized.total !== null && normalized.total !== undefined ? (
               <>
                 <div className="font-extrabold text-gray-01 text-4xl mb-1 flex items-center gap-2">
@@ -149,7 +150,7 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
                 const match = (our?.total ?? null) === (ref?.total ?? null);
                 return (
                   <div key={n} className="flex items-center justify-between py-2">
-                    <span className="text-base text-gray-02">{SCOPE3_CATEGORY_NAMES[n] || `Category ${n}`}</span>
+                    <span className="text-base text-gray-02">{SCOPE3_CATEGORY_NAMES[n] || t("scope.categoryLabel", { n })}</span>
                     <span className="font-extrabold text-gray-01 text-xl flex items-center gap-2">
                       {typeof (our?.total) === 'number' ? formatNumber(our!.total!) : '—'}{our?.unit ? ` ${our.unit}` : ''}
                       {match ? <span className="text-green-03">✓</span> : <span className="text-pink-03">✗</span>}
@@ -188,7 +189,7 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
           <Truck className="w-5 h-5 text-orange-03" />
         </div>
         <h3 className="text-lg font-medium text-orange-03">
-          Växthusgasutsläpp Scope 3
+          {t("scope.scope3Emissions")}
         </h3>
       </div>
 
@@ -197,10 +198,10 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
           <div className="bg-gray-04/80 border border-gray-03 rounded-xl p-4 border-l-4 border-l-orange-03">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle2 className="w-4 h-4 text-orange-03" />
-              <span className="text-sm font-medium text-gray-01">Referensvärden ({latestScope3Year}) från API i prod</span>
+              <span className="text-sm font-medium text-gray-01">{t("scope.referenceValuesFromApi", { year: latestScope3Year })}</span>
             </div>
             {isLoading && (
-              <div className="text-sm text-gray-02">Hämtar…</div>
+              <div className="text-sm text-gray-02">{t("scope.fetching")}</div>
             )}
             {!isLoading && error && (
               <div className="text-sm text-gray-02">{error}</div>

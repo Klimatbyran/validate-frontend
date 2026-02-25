@@ -1,14 +1,16 @@
 import { QueueJob } from "@/lib/types";
 import { ValueRenderer } from "@/ui/value-renderer";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface TechnicalDataSectionProps {
   job: QueueJob;
 }
 
 export function TechnicalDataSection({ job }: TechnicalDataSectionProps) {
+  const { t } = useI18n();
   return (
     <div className="bg-gray-03/20 rounded-lg p-4">
-      <h3 className="text-lg font-medium text-gray-01 mb-4">Teknisk data</h3>
+      <h3 className="text-lg font-medium text-gray-01 mb-4">{t("jobstatus.jobdetails.technicalData")}</h3>
       <div className="grid grid-cols-1 gap-4">
         {Object.entries(job.data).map(([key, value]) => {
           if (

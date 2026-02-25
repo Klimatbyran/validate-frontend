@@ -101,7 +101,8 @@ export function JobDetailsDialog({
   // Handle missing follow-up job: show empty dialog with "Run and save" button
   if (!job && missingQueueId && yearData) {
     const followUpKey = QUEUE_TO_FOLLOW_UP_KEY[missingQueueId];
-    const displayName = getQueueDisplayName(missingQueueId);
+    const queueKey = `jobstatus.queues.${missingQueueId}`;
+    const displayName = t(queueKey) !== queueKey ? t(queueKey) : getQueueDisplayName(missingQueueId);
     const extractEmissionsJob = findJobByQueueId("extractEmissions", yearData);
     const checkDBJob = findJobByQueueId("checkDB", yearData);
     const wikidata = getWikidataInfo(checkDBJob);
@@ -164,7 +165,7 @@ export function JobDetailsDialog({
                 className="text-green-03 hover:bg-green-03/10"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
-                Kör och spara {displayName}
+                {t("jobstatus.jobdetails.runAndSaveButton", { name: displayName })}
               </Button>
             </div>
           </div>
@@ -299,7 +300,7 @@ export function JobDetailsDialog({
 
                 <div className="bg-gray-03/20 rounded-lg p-4">
                   <h3 className="text-lg font-medium text-gray-01 mb-4">
-                    Information
+                    {t("jobstatus.jobdetails.information")}
                   </h3>
                   <JobSpecificDataView
                     data={getFilteredJobDataWithoutSchema()}
@@ -345,7 +346,7 @@ export function JobDetailsDialog({
               {/* Information Section */}
               <div className="bg-gray-03/20 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-gray-01 mb-4">
-                  Information
+                  {t("jobstatus.jobdetails.information")}
                 </h3>
                 <JobSpecificDataView
                   data={getFilteredJobDataWithoutSchema()}
