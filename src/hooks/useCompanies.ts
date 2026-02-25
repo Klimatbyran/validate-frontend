@@ -15,6 +15,7 @@ export function useCompanies() {
   const [hasMorePages, setHasMorePages] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isFetchingRef = useRef(false);
+  const userRefreshRequestedRef = useRef(false);
   const fetchAndEnhanceRef = useRef<() => Promise<void>>(() => Promise.resolve());
   const processPollersRef = useRef<
     Map<
@@ -30,10 +31,13 @@ export function useCompanies() {
 
     const fetchAndEnhance = async () => {
       if (isFetchingRef.current) {
+        userRefreshRequestedRef.current = false;
         return;
       }
       isFetchingRef.current = true;
-      setIsRefreshing(true);
+      const isUserRefresh = userRefreshRequestedRef.current;
+      userRefreshRequestedRef.current = false;
+      if (isUserRefresh) setIsRefreshing(true);
 
       try {
         setError(null);
@@ -57,7 +61,7 @@ export function useCompanies() {
         );
       } finally {
         setIsLoading(false);
-        setIsRefreshing(false);
+        if (isUserRefresh) setIsRefreshing(false);
         isFetchingRef.current = false;
       }
     };
@@ -217,6 +221,7 @@ export function useCompanies() {
   }, []);
 
   const refresh = () => {
+    userRefreshRequestedRef.current = true;
     fetchAndEnhanceRef.current();
   };
 
