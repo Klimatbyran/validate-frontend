@@ -6,7 +6,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Loader2, ArrowUp } from "lucide-react";
 import { Button } from "@/ui/button";
-import { useCompanies } from "@/hooks/useCompanies";
+import { useCompaniesContext } from "@/contexts/CompaniesContext";
 import { authenticatedFetch } from "@/lib/api-helpers";
 import { BATCHES_API_ENDPOINT } from "@/tabs/upload/lib/utils";
 import { convertCompaniesToSwimlaneFormat } from "./lib/swimlane-transform";
@@ -35,7 +35,9 @@ export function JobbstatusTab() {
     loadMoreCompanies,
     isLoadingMore,
     hasMorePages,
-  } = useCompanies();
+    refresh,
+    isRefreshing,
+  } = useCompaniesContext();
   const [activeFilters, setActiveFilters] = useState<Set<FilterType>>(
     new Set()
   );
@@ -45,6 +47,11 @@ export function JobbstatusTab() {
   const [existingBatches, setExistingBatches] = useState<string[]>([]);
   const [batchesLoading, setBatchesLoading] = useState(true);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
+
+  // Refetch when user opens/returns to this tab so data is fresh (hook guards against duplicate in-flight requests)
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   // Fetch available batches for filter
   useEffect(() => {
@@ -183,7 +190,8 @@ export function JobbstatusTab() {
 
   const handleRerunByWorker = useRerunByWorker(swimlaneCompanies);
 
-  if (isLoading && (!companies || companies.length === 0)) {
+  // Show loading whenever initial/preload fetch is in progress (so immediate tab switch still shows loading)
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center space-y-4">
@@ -245,6 +253,8 @@ export function JobbstatusTab() {
           batchesLoading={batchesLoading}
           selectedBatchIds={selectedBatchIds}
           onBatchFilterChange={setSelectedBatchIds}
+          onRefresh={refresh}
+          isRefreshing={isRefreshing}
         />
       </div>
 

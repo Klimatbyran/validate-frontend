@@ -14,6 +14,7 @@ import {
   MoreVertical,
   Search,
   ChevronDown,
+  RefreshCw,
 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
@@ -48,6 +49,10 @@ interface FilterBarProps {
   selectedBatchIds?: string[];
   /** Called when user changes batch selection */
   onBatchFilterChange?: (ids: string[]) => void;
+  /** Optional: refresh company data (e.g. when returning to tab) */
+  onRefresh?: () => void;
+  /** True while a refresh is in progress (optional, for button loading state) */
+  isRefreshing?: boolean;
 }
 
 const PRIMARY_FILTER_ICONS: Record<FilterType, React.ReactNode> = {
@@ -77,6 +82,8 @@ export function FilterBar({
   batchesLoading = false,
   selectedBatchIds = [],
   onBatchFilterChange,
+  onRefresh,
+  isRefreshing = false,
 }: FilterBarProps) {
   const { t } = useI18n();
   const hasActiveFiltersOrSearch =
@@ -157,6 +164,20 @@ export function FilterBar({
             </div>
           )}
           <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
+            {onRefresh && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className="!w-auto !min-w-0 h-9 px-3 text-gray-01 hover:bg-gray-03/40"
+                aria-label={t("common.refresh")}
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+              </Button>
+            )}
             <span className="text-sm text-gray-02">
               {t("jobstatus.scope")}:
             </span>

@@ -10,7 +10,7 @@ import {
   XCircle,
   RefreshCw,
 } from "lucide-react";
-import { useCompanies } from "@/hooks/useCompanies";
+import { useCompaniesContext } from "@/contexts/CompaniesContext";
 import { Button } from "@/ui/button";
 import { useI18n } from "@/contexts/I18nContext";
 import { getWorkflowStages } from "@/lib/workflow-config";
@@ -22,7 +22,7 @@ type QueueWithJobs = { name: string; jobs: QueueJob[] };
 
 export function DebugTab() {
   const { t, formatDate } = useI18n();
-  const { isLoading, error } = useCompanies();
+  const { isLoading, error } = useCompaniesContext();
   const [queues, setQueues] = useState<QueueWithJobs[] | null>(null);
   const [queuesLoading, setQueuesLoading] = useState(true);
   const [allJobs, setAllJobs] = useState<QueueJob[]>([]);

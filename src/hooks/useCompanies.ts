@@ -13,7 +13,9 @@ export function useCompanies() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMorePages, setHasMorePages] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const isFetchingRef = useRef(false);
+  const fetchAndEnhanceRef = useRef<() => Promise<void>>(() => Promise.resolve());
   const processPollersRef = useRef<
     Map<
       string,
@@ -31,6 +33,7 @@ export function useCompanies() {
         return;
       }
       isFetchingRef.current = true;
+      setIsRefreshing(true);
 
       try {
         setError(null);
@@ -54,9 +57,11 @@ export function useCompanies() {
         );
       } finally {
         setIsLoading(false);
+        setIsRefreshing(false);
         isFetchingRef.current = false;
       }
     };
+    fetchAndEnhanceRef.current = fetchAndEnhance;
 
     function startProcessPollers(currentCompanies: CustomAPICompany[]) {
       const pollers = processPollersRef.current;
@@ -211,6 +216,10 @@ export function useCompanies() {
     };
   }, []);
 
+  const refresh = () => {
+    fetchAndEnhanceRef.current();
+  };
+
   return {
     companies,
     isLoading,
@@ -218,5 +227,7 @@ export function useCompanies() {
     loadMoreCompanies,
     isLoadingMore,
     hasMorePages,
+    refresh,
+    isRefreshing,
   };
 }
