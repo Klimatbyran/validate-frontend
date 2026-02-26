@@ -5,6 +5,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { Loader2, ArrowUp } from "lucide-react";
+import { Button } from "@/ui/button";
 import { useCompaniesContext } from "@/contexts/CompaniesContext";
 import { useBatches } from "@/hooks/useBatches";
 import { convertCompaniesToSwimlaneFormat } from "./lib/swimlane-transform";
@@ -30,6 +31,9 @@ export function JobbstatusTab() {
     companies,
     isLoading,
     error,
+    loadMoreCompanies,
+    isLoadingMore,
+    hasMorePages,
     refresh,
     isRefreshing,
   } = useCompaniesContext();
@@ -245,6 +249,21 @@ export function JobbstatusTab() {
                 positionInList={companyIndex + 1}
               />
             ))}
+            {hasMorePages && (
+              <div className="flex justify-center pt-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={loadMoreCompanies}
+                  disabled={isLoadingMore}
+                  className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
+                >
+                  {isLoadingMore
+                    ? t("jobstatus.loadingMore")
+                    : t("jobstatus.loadMore")}
+                </Button>
+              </div>
+            )}
           </>
         )}
       </div>

@@ -11,6 +11,9 @@ export interface CompaniesContextValue {
   companies: CustomAPICompany[];
   isLoading: boolean;
   error: string | null;
+  loadMoreCompanies: () => Promise<void>;
+  isLoadingMore: boolean;
+  hasMorePages: boolean;
   refresh: () => void;
   isRefreshing: boolean;
 }

@@ -6,13 +6,16 @@ import {
 } from "@/lib/api";
 import type { CustomAPICompany } from "@/lib/types";
 
-/** Single fetch size when API returns all companies (no real pagination). */
-const FETCH_PAGE_SIZE = 10000;
+/** API allows pageSize 1–500. */
+const PAGE_SIZE = 500;
 
 export function useCompanies() {
   const [companies, setCompanies] = useState<CustomAPICompany[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMorePages, setHasMorePages] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isFetchingRef = useRef(false);
   const userRefreshRequestedRef = useRef(false);
@@ -41,9 +44,11 @@ export function useCompanies() {
       try {
         setError(null);
 
-        const data = await fetchCompaniesPage(1, FETCH_PAGE_SIZE);
+        const data = await fetchCompaniesPage(1, PAGE_SIZE);
         const list = Array.isArray(data) ? [...data] : [];
 
+        setHasMorePages(list.length === PAGE_SIZE);
+        setCurrentPage(1);
         setCompanies(list);
         startProcessPollers(list);
       } catch (err) {
@@ -177,6 +182,29 @@ export function useCompanies() {
     };
   }, []);
 
+  async function loadMoreCompanies() {
+    if (isLoadingMore || !hasMorePages) return;
+    setIsLoadingMore(true);
+    setError(null);
+    try {
+      const nextPage = currentPage + 1;
+      const nextPageCompanies = await fetchCompaniesPage(nextPage, PAGE_SIZE);
+      if (nextPageCompanies.length === 0) {
+        setHasMorePages(false);
+        return;
+      }
+      setCompanies((prev) => [...prev, ...nextPageCompanies]);
+      setCurrentPage(nextPage);
+      if (nextPageCompanies.length < PAGE_SIZE) setHasMorePages(false);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load more companies"
+      );
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
+
   const refresh = useCallback(() => {
     userRefreshRequestedRef.current = true;
     fetchAndEnhanceRef.current();
@@ -186,6 +214,9 @@ export function useCompanies() {
     companies,
     isLoading,
     error,
+    loadMoreCompanies,
+    isLoadingMore,
+    hasMorePages,
     refresh,
     isRefreshing,
   };

@@ -511,56 +511,44 @@ export function fetchProcessesByCompany(): Promise<CustomAPICompany[]> {
   });
 }
 
+function parseCompaniesResponse(data: unknown): CustomAPICompany[] {
+  const d = data as any;
+  const directCompanies = Array.isArray(d?.companies) ? d.companies : null;
+  const nestedCompanies = Array.isArray(d?.data?.companies)
+    ? d.data.companies
+    : null;
+  const itemsArray = Array.isArray(d?.items) ? d.items : null;
+  const resultsArray = Array.isArray(d?.results) ? d.results : null;
+  if (directCompanies) return directCompanies as CustomAPICompany[];
+  if (nestedCompanies) return nestedCompanies as CustomAPICompany[];
+  if (itemsArray) return itemsArray as CustomAPICompany[];
+  if (resultsArray) return resultsArray as CustomAPICompany[];
+  if (Array.isArray(d)) return d as CustomAPICompany[];
+  if (import.meta.env.DEV) {
+    console.warn(
+      "fetchCompanies/fetchCompaniesPage: unexpected response shape",
+      data
+    );
+  }
+  return [];
+}
+
+/** Fetches all companies. API does not support pagination; no query params sent. */
+export async function fetchCompanies(): Promise<CustomAPICompany[]> {
+  const response = await api.get<unknown>("/processes/companies");
+  return parseCompaniesResponse(response.data);
+}
+
 export async function fetchCompaniesPage(
   page: number,
   pageSize: number
 ): Promise<CustomAPICompany[]> {
   const safePage = Math.max(1, page);
   const safePageSize = Math.max(1, pageSize);
-
   const response = await api.get<unknown>("/processes/companies", {
-    params: {
-      page: safePage,
-      pageSize: safePageSize,
-    },
+    params: { page: safePage, pageSize: safePageSize },
   });
-
-  const data = response.data as any;
-
-  // Try several common paginated shapes in a deterministic order
-  const directCompanies = Array.isArray(data?.companies) ? data.companies : null;
-  const nestedCompanies = Array.isArray(data?.data?.companies)
-    ? data.data.companies
-    : null;
-  const itemsArray = Array.isArray(data?.items) ? data.items : null;
-  const resultsArray = Array.isArray(data?.results) ? data.results : null;
-
-  if (directCompanies) {
-    return directCompanies as CustomAPICompany[];
-  }
-  if (nestedCompanies) {
-    return nestedCompanies as CustomAPICompany[];
-  }
-  if (itemsArray) {
-    return itemsArray as CustomAPICompany[];
-  }
-  if (resultsArray) {
-    return resultsArray as CustomAPICompany[];
-  }
-
-  // Fallback: backend might still return a plain array at the top level
-  if (Array.isArray(data)) {
-    return data as CustomAPICompany[];
-  }
-
-  if (import.meta.env.DEV) {
-    console.warn(
-      "fetchCompaniesPage: unexpected response shape, expected an array or a { companies | items | results } wrapper",
-      data
-    );
-  }
-
-  return [];
+  return parseCompaniesResponse(response.data);
 }
 
 export function fetchProcessById(processId: string): Promise<CustomAPIProcess | null> {
