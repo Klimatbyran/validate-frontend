@@ -54,6 +54,7 @@ export function SingleSelectDropdown({
 }: SingleSelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -64,6 +65,42 @@ export function SingleSelectDropdown({
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!ref.current?.contains(document.activeElement)) return;
+      const panel = panelRef.current;
+      const buttons = panel
+        ? Array.from(panel.querySelectorAll<HTMLButtonElement>('button[role="option"]'))
+        : [];
+      const currentIndex = buttons.indexOf(document.activeElement as HTMLButtonElement);
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const next = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, buttons.length - 1);
+        buttons[next]?.focus();
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const prev = currentIndex <= 0 ? buttons.length - 1 : currentIndex - 1;
+        buttons[prev]?.focus();
+        return;
+      }
+      if (e.key === "Enter" && currentIndex >= 0 && buttons[currentIndex]) {
+        e.preventDefault();
+        buttons[currentIndex].click();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
   const select = (optionValue: string) => {
@@ -99,6 +136,7 @@ export function SingleSelectDropdown({
       </Button>
       {open && (
         <div
+          ref={panelRef}
           className={cn(
             "absolute left-0 top-full mt-1.5 z-[100] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto",
             panelClassName

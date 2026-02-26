@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   fetchCompaniesPage,
   fetchProcessById,
@@ -6,13 +6,13 @@ import {
 } from "@/lib/api";
 import type { CustomAPICompany } from "@/lib/types";
 
+/** Single fetch size when API returns all companies (no real pagination). */
+const FETCH_PAGE_SIZE = 10000;
+
 export function useCompanies() {
   const [companies, setCompanies] = useState<CustomAPICompany[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMorePages, setHasMorePages] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isFetchingRef = useRef(false);
   const userRefreshRequestedRef = useRef(false);
@@ -23,7 +23,6 @@ export function useCompanies() {
       { interval: number; max: number; isPolling: boolean; stopped: boolean }
     >
   >(new Map());
-  const PAGE_SIZE = 300;
 
   useEffect(() => {
     const SLOW_REFRESH_MS = 60000;
@@ -42,18 +41,11 @@ export function useCompanies() {
       try {
         setError(null);
 
-        const firstPageCompanies = await fetchCompaniesPage(1, PAGE_SIZE);
+        const data = await fetchCompaniesPage(1, FETCH_PAGE_SIZE);
+        const list = Array.isArray(data) ? [...data] : [];
 
-        const data = Array.isArray(firstPageCompanies)
-          ? [...firstPageCompanies]
-          : [];
-
-        setHasMorePages(data.length === PAGE_SIZE);
-        setCurrentPage(1);
-        setCompanies([...data]);
-        setCurrentPage(1);
-
-        startProcessPollers(data);
+        setCompanies(list);
+        startProcessPollers(list);
       } catch (err) {
         console.error("useCompanies - fetch error:", err);
         setError(
@@ -152,41 +144,6 @@ export function useCompanies() {
     };
   }, []);
 
-  async function loadMoreCompanies() {
-    if (isLoadingMore || !hasMorePages) {
-      return;
-    }
-
-    setIsLoadingMore(true);
-    setError(null);
-
-    try {
-      const nextPage = currentPage + 1;
-      const nextPageCompanies = await fetchCompaniesPage(nextPage, PAGE_SIZE);
-
-      if (nextPageCompanies.length === 0) {
-        setHasMorePages(false);
-        return;
-      }
-
-      setCompanies((previousCompanies) => [
-        ...previousCompanies,
-        ...nextPageCompanies,
-      ]);
-      setCurrentPage(nextPage);
-
-      if (nextPageCompanies.length < PAGE_SIZE) {
-        setHasMorePages(false);
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load more companies"
-      );
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }
-
   useEffect(() => {
     let timer: number | undefined;
     let busy = false;
@@ -220,18 +177,15 @@ export function useCompanies() {
     };
   }, []);
 
-  const refresh = () => {
+  const refresh = useCallback(() => {
     userRefreshRequestedRef.current = true;
     fetchAndEnhanceRef.current();
-  };
+  }, []);
 
   return {
     companies,
     isLoading,
     error,
-    loadMoreCompanies,
-    isLoadingMore,
-    hasMorePages,
     refresh,
     isRefreshing,
   };

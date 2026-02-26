@@ -5,10 +5,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { Loader2, ArrowUp } from "lucide-react";
-import { Button } from "@/ui/button";
 import { useCompaniesContext } from "@/contexts/CompaniesContext";
-import { authenticatedFetch } from "@/lib/api-helpers";
-import { BATCHES_API_ENDPOINT } from "@/tabs/upload/lib/utils";
+import { useBatches } from "@/hooks/useBatches";
 import { convertCompaniesToSwimlaneFormat } from "./lib/swimlane-transform";
 import {
   type FilterType,
@@ -32,9 +30,6 @@ export function JobbstatusTab() {
     companies,
     isLoading,
     error,
-    loadMoreCompanies,
-    isLoadingMore,
-    hasMorePages,
     refresh,
     isRefreshing,
   } = useCompaniesContext();
@@ -44,34 +39,8 @@ export function JobbstatusTab() {
   const [runScope, setRunScope] = useState<RunScope>("latest");
   const [companySearchQuery, setCompanySearchQuery] = useState("");
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
-  const [existingBatches, setExistingBatches] = useState<string[]>([]);
-  const [batchesLoading, setBatchesLoading] = useState(true);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
-
-  // Refetch when user opens/returns to this tab so data is fresh (hook guards against duplicate in-flight requests)
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  // Fetch available batches for filter
-  useEffect(() => {
-    let cancelled = false;
-    setBatchesLoading(true);
-    (async () => {
-      try {
-        const res = await authenticatedFetch(BATCHES_API_ENDPOINT);
-        if (!res.ok || cancelled) return;
-        const data = await res.json();
-        const ids = Array.isArray(data) ? data : data?.batchIds ?? data?.batches ?? [];
-        if (Array.isArray(ids) && !cancelled) setExistingBatches(ids);
-      } catch {
-        // Non-fatal: batch dropdown will be empty
-      } finally {
-        if (!cancelled) setBatchesLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  const { batches: existingBatches, isLoading: batchesLoading } = useBatches();
 
   // Convert CustomAPICompany to SwimlaneCompany format
   const swimlaneCompanies = useMemo(() => {
@@ -276,21 +245,6 @@ export function JobbstatusTab() {
                 positionInList={companyIndex + 1}
               />
             ))}
-            {hasMorePages && (
-              <div className="flex justify-center pt-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={loadMoreCompanies}
-                  disabled={isLoadingMore}
-                  className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
-                >
-                  {isLoadingMore
-                    ? t("jobstatus.loadingMore")
-                    : t("jobstatus.loadMore")}
-                </Button>
-              </div>
-            )}
           </>
         )}
       </div>

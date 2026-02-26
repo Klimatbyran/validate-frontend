@@ -41,12 +41,9 @@ interface FilterBarProps {
   onRerunByWorker: (worker: RerunWorker, limit: number | "all") => void;
   companySearchQuery?: string;
   onCompanySearchChange?: (query: string) => void;
-  /** Available batch IDs for multi-select filter */  existingBatches?: string[];
-
+  existingBatches?: string[];
   batchesLoading?: boolean;
-
   selectedBatchIds?: string[];
-
   onBatchFilterChange?: (ids: string[]) => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;

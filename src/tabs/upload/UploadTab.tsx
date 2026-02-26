@@ -1,8 +1,9 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { FileText, Link2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
+import { useBatches } from "@/hooks/useBatches";
 import { authenticatedFetch } from "@/lib/api-helpers";
 import { FileUploadZone } from "./components/FileUploadZone";
 import { UrlUploadForm } from "./components/UrlUploadForm";
@@ -11,11 +12,7 @@ import { UploadRunOptions } from "./components/UploadRunOptions";
 import { UploadedFile, UrlInput } from "./types";
 import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
-import {
-  PARSE_PDF_API_ENDPOINT,
-  BATCHES_API_ENDPOINT,
-  NEW_BATCH_DROPDOWN_VALUE,
-} from "./lib/utils";
+import { PARSE_PDF_API_ENDPOINT, NEW_BATCH_DROPDOWN_VALUE } from "./lib/utils";
 
 interface UploadTabProps {
   onTabChange: (tab: string) => void;
@@ -34,31 +31,9 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
     DEFAULT_RUN_ONLY,
   );
   const [forceReindex, setForceReindex] = useState(false);
-  const [existingBatches, setExistingBatches] = useState<string[]>([]);
-  const [batchesLoading, setBatchesLoading] = useState(true);
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-    setBatchesLoading(true);
-    (async () => {
-      try {
-        const res = await authenticatedFetch(BATCHES_API_ENDPOINT);
-        if (!res.ok || cancelled) return;
-        const data = await res.json();
-        const ids = Array.isArray(data) ? data : data?.batchIds ?? data?.batches ?? [];
-        if (Array.isArray(ids) && !cancelled) setExistingBatches(ids);
-      } catch {
-        // Non-fatal: dropdown will just be empty
-      } finally {
-        if (!cancelled) setBatchesLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { batches: existingBatches, isLoading: batchesLoading } = useBatches();
 
   const effectiveBatchId =
     !batchDropdownChoice ? "" : batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE ? customBatchName.trim() : batchDropdownChoice;

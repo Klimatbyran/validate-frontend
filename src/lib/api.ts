@@ -25,6 +25,9 @@ import {
   finalize,
 } from "rxjs/operators";
 
+/** API path for listing batch IDs (used by Upload and Job status). */
+export const BATCHES_API_ENDPOINT = "/api/processes/batches";
+
 // RxJS-based rate limiter for API requests
 class RxRateLimiter {
   private queue$ = new Subject<{

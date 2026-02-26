@@ -55,6 +55,7 @@ export function MultiSelectDropdown({
 }: MultiSelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -65,6 +66,42 @@ export function MultiSelectDropdown({
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!ref.current?.contains(document.activeElement)) return;
+      const panel = panelRef.current;
+      const buttons = panel
+        ? Array.from(panel.querySelectorAll<HTMLButtonElement>('button[role="option"]'))
+        : [];
+      const currentIndex = buttons.indexOf(document.activeElement as HTMLButtonElement);
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const next = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, buttons.length - 1);
+        buttons[next]?.focus();
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const prev = currentIndex <= 0 ? buttons.length - 1 : currentIndex - 1;
+        buttons[prev]?.focus();
+        return;
+      }
+      if (e.key === "Enter" && currentIndex >= 0 && buttons[currentIndex]) {
+        e.preventDefault();
+        buttons[currentIndex].click();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
   const toggle = (optionId: string) => {
@@ -84,7 +121,7 @@ export function MultiSelectDropdown({
         size="sm"
         onClick={() => setOpen(!open)}
         className={cn(
-          "!w-auto !min-w-0 h-9 px-4 text-sm border border-gray-03 text-gray-01 hover:bg-gray-03/40 flex items-center gap-2",
+          "!w-auto !min-w-0 h-9 px-4 text-sm rounded-md border border-gray-03 bg-gray-05 text-gray-01 hover:bg-gray-03/40 flex items-center gap-2",
           hasSelection && "border-blue-03 bg-blue-03/10 text-blue-03",
           triggerClassName
         )}
@@ -93,7 +130,7 @@ export function MultiSelectDropdown({
         aria-label={ariaLabel ?? triggerLabel}
       >
         <span className="whitespace-nowrap">{triggerLabel}</span>
-        <ChevronDown className="w-4 h-4 shrink-0" />
+        <ChevronDown className="w-4 h-4 shrink-0 text-gray-02" />
         {hasSelection && (
           <span className="ml-1 px-2 py-0.5 rounded-full bg-gray-03/50 text-xs font-medium">
             {selectedIds.length}
@@ -102,8 +139,9 @@ export function MultiSelectDropdown({
       </Button>
       {open && (
         <div
+          ref={panelRef}
           className={cn(
-            "absolute left-0 top-full mt-2 z-50 bg-gray-04 border border-gray-03 rounded-lg shadow-lg p-2 overflow-y-auto",
+            "absolute left-0 top-full mt-1.5 z-[100] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto",
             panelClassName
           )}
           style={{
@@ -117,7 +155,7 @@ export function MultiSelectDropdown({
           <div className="text-xs font-semibold text-gray-02 mb-2 px-2">
             {triggerLabel}
           </div>
-          {loading ? (
+          {loading && (
             <div
               className="w-full text-left px-3 py-2 rounded text-sm text-gray-02 flex items-center gap-2 cursor-default"
               role="option"
@@ -130,11 +168,8 @@ export function MultiSelectDropdown({
               />
               <span className="truncate">{loadingLabel ?? "Loading…"}</span>
             </div>
-          ) : options.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-gray-02">
-              {emptyLabel ?? "No options"}
-            </p>
-          ) : (
+          )}
+          {options.length > 0 &&
             options.map((optionId) => {
               const isSelected = selectedIds.includes(optionId);
               return (
@@ -157,7 +192,11 @@ export function MultiSelectDropdown({
                   <span className="truncate">{label(optionId)}</span>
                 </button>
               );
-            })
+            })}
+          {!loading && options.length === 0 && (
+            <p className="px-3 py-2 text-sm text-gray-02">
+              {emptyLabel ?? "No options"}
+            </p>
           )}
         </div>
       )}
