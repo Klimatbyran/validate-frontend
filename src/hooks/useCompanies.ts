@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   fetchCompaniesPage,
   fetchProcessById,
   fetchQueueStats,
 } from "@/lib/api";
 import type { CustomAPICompany } from "@/lib/types";
+
+/** API allows pageSize 1–500. Use 200 to avoid long load times and timeouts. */
+const PAGE_SIZE = 200;
 
 export function useCompanies() {
   const [companies, setCompanies] = useState<CustomAPICompany[]>([]);
@@ -13,14 +16,16 @@ export function useCompanies() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMorePages, setHasMorePages] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const isFetchingRef = useRef(false);
+  const userRefreshRequestedRef = useRef(false);
+  const fetchAndEnhanceRef = useRef<() => Promise<void>>(() => Promise.resolve());
   const processPollersRef = useRef<
     Map<
       string,
       { interval: number; max: number; isPolling: boolean; stopped: boolean }
     >
   >(new Map());
-  const PAGE_SIZE = 300;
 
   useEffect(() => {
     const SLOW_REFRESH_MS = 60000;
@@ -28,25 +33,24 @@ export function useCompanies() {
 
     const fetchAndEnhance = async () => {
       if (isFetchingRef.current) {
+        userRefreshRequestedRef.current = false;
         return;
       }
       isFetchingRef.current = true;
+      const isUserRefresh = userRefreshRequestedRef.current;
+      userRefreshRequestedRef.current = false;
+      if (isUserRefresh) setIsRefreshing(true);
 
       try {
         setError(null);
 
-        const firstPageCompanies = await fetchCompaniesPage(1, PAGE_SIZE);
+        const data = await fetchCompaniesPage(1, PAGE_SIZE);
+        const list = Array.isArray(data) ? [...data] : [];
 
-        const data = Array.isArray(firstPageCompanies)
-          ? [...firstPageCompanies]
-          : [];
-
-        setHasMorePages(data.length === PAGE_SIZE);
+        setHasMorePages(list.length === PAGE_SIZE);
         setCurrentPage(1);
-        setCompanies([...data]);
-        setCurrentPage(1);
-
-        startProcessPollers(data);
+        setCompanies(list);
+        startProcessPollers(list);
       } catch (err) {
         console.error("useCompanies - fetch error:", err);
         setError(
@@ -54,9 +58,11 @@ export function useCompanies() {
         );
       } finally {
         setIsLoading(false);
+        if (isUserRefresh) setIsRefreshing(false);
         isFetchingRef.current = false;
       }
     };
+    fetchAndEnhanceRef.current = fetchAndEnhance;
 
     function startProcessPollers(currentCompanies: CustomAPICompany[]) {
       const pollers = processPollersRef.current;
@@ -143,41 +149,6 @@ export function useCompanies() {
     };
   }, []);
 
-  async function loadMoreCompanies() {
-    if (isLoadingMore || !hasMorePages) {
-      return;
-    }
-
-    setIsLoadingMore(true);
-    setError(null);
-
-    try {
-      const nextPage = currentPage + 1;
-      const nextPageCompanies = await fetchCompaniesPage(nextPage, PAGE_SIZE);
-
-      if (nextPageCompanies.length === 0) {
-        setHasMorePages(false);
-        return;
-      }
-
-      setCompanies((previousCompanies) => [
-        ...previousCompanies,
-        ...nextPageCompanies,
-      ]);
-      setCurrentPage(nextPage);
-
-      if (nextPageCompanies.length < PAGE_SIZE) {
-        setHasMorePages(false);
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load more companies"
-      );
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }
-
   useEffect(() => {
     let timer: number | undefined;
     let busy = false;
@@ -211,6 +182,34 @@ export function useCompanies() {
     };
   }, []);
 
+  async function loadMoreCompanies() {
+    if (isLoadingMore || !hasMorePages) return;
+    setIsLoadingMore(true);
+    setError(null);
+    try {
+      const nextPage = currentPage + 1;
+      const nextPageCompanies = await fetchCompaniesPage(nextPage, PAGE_SIZE);
+      if (nextPageCompanies.length === 0) {
+        setHasMorePages(false);
+        return;
+      }
+      setCompanies((prev) => [...prev, ...nextPageCompanies]);
+      setCurrentPage(nextPage);
+      if (nextPageCompanies.length < PAGE_SIZE) setHasMorePages(false);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load more companies"
+      );
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
+
+  const refresh = useCallback(() => {
+    userRefreshRequestedRef.current = true;
+    fetchAndEnhanceRef.current();
+  }, []);
+
   return {
     companies,
     isLoading,
@@ -218,5 +217,7 @@ export function useCompanies() {
     loadMoreCompanies,
     isLoadingMore,
     hasMorePages,
+    refresh,
+    isRefreshing,
   };
 }

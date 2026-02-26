@@ -215,6 +215,8 @@ export interface SwimlaneCompany {
   id: string;
   name: string;
   wikidataId?: string;
+  /** Unique batch IDs from all processes (for batch filter). */
+  batchIds?: string[];
   years: SwimlaneYearData[];
 }
 
@@ -271,6 +273,8 @@ export interface CustomAPIProcess {
   company?: string;
   wikidataId?: string;
   year?: number;
+  /** Batch ID when the process was started (e.g. from upload run options). */
+  batchId?: string;
   status: "active" | "completed" | "failed" | "waiting";
   jobs: CustomAPIJob[];
   startedAt?: number;

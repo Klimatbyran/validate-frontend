@@ -13,16 +13,21 @@ import {
   RotateCw,
   MoreVertical,
   Search,
+  RefreshCw,
 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
-import type { FilterType, RunScope } from "@/tabs/jobbstatus/lib/swimlane-filters";
+import type {
+  FilterType,
+  RunScope,
+} from "@/tabs/jobbstatus/lib/swimlane-filters";
 import {
   PRIMARY_FILTER_CONFIG,
   SECONDARY_FILTER_CONFIG,
   type RerunWorker,
 } from "@/tabs/jobbstatus/lib/filter-config";
 import { FilterBarRerunSection } from "./FilterBarRerunSection";
+import { BatchFilterDropdown } from "./BatchFilterDropdown";
 
 interface FilterBarProps {
   activeFilters: Set<FilterType>;
@@ -36,6 +41,12 @@ interface FilterBarProps {
   onRerunByWorker: (worker: RerunWorker, limit: number | "all") => void;
   companySearchQuery?: string;
   onCompanySearchChange?: (query: string) => void;
+  existingBatches?: string[];
+  batchesLoading?: boolean;
+  selectedBatchIds?: string[];
+  onBatchFilterChange?: (ids: string[]) => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 const PRIMARY_FILTER_ICONS: Record<FilterType, React.ReactNode> = {
@@ -61,10 +72,18 @@ export function FilterBar({
   onRerunByWorker,
   companySearchQuery = "",
   onCompanySearchChange,
+  existingBatches = [],
+  batchesLoading = false,
+  selectedBatchIds = [],
+  onBatchFilterChange,
+  onRefresh,
+  isRefreshing = false,
 }: FilterBarProps) {
   const { t } = useI18n();
   const hasActiveFiltersOrSearch =
-    activeFilters.size > 0 || (companySearchQuery?.trim() ?? "") !== "";
+    activeFilters.size > 0 ||
+    selectedBatchIds.length > 0 ||
+    (companySearchQuery?.trim() ?? "") !== "";
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -74,7 +93,7 @@ export function FilterBar({
         ...config,
         icon: PRIMARY_FILTER_ICONS[config.id],
       })),
-    []
+    [],
   );
   const secondaryFilters = SECONDARY_FILTER_CONFIG;
 
@@ -125,7 +144,23 @@ export function FilterBar({
             </div>
           )}
           <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
-            <span className="text-sm text-gray-02">{t("jobstatus.scope")}:</span>
+            {onRefresh && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className="!w-auto !min-w-0 h-9 px-3 text-gray-01 hover:bg-gray-03/40"
+                aria-label={t("common.refresh")}
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+              </Button>
+            )}
+            <span className="text-sm text-gray-02">
+              {t("jobstatus.scope")}:
+            </span>
             <div className="flex items-center gap-1 bg-gray-03 rounded-full p-0.5">
               <button
                 onClick={() => onRunScopeChange("latest")}
@@ -151,12 +186,22 @@ export function FilterBar({
           </div>
         </div>
 
-        {/* Filter label in line with filter buttons (same layout as "Kör specifika jobb") */}
+        {/* Batch multi-select and Filter label */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex items-center gap-2 shrink-0">
             <Filter className="w-4 h-4 text-gray-02" />
-            <span className="text-sm font-medium text-gray-01">{t("jobstatus.filter")}:</span>
+            <span className="text-sm font-medium text-gray-01">
+              {t("jobstatus.filter")}:
+            </span>
           </div>
+          {onBatchFilterChange && (
+            <BatchFilterDropdown
+              existingBatches={existingBatches}
+              batchesLoading={batchesLoading}
+              selectedBatchIds={selectedBatchIds}
+              onBatchFilterChange={onBatchFilterChange}
+            />
+          )}
           <div className="flex flex-wrap items-center gap-3">
             {primaryFilters.map((filter) => {
               const isActive = activeFilters.has(filter.id);
@@ -175,7 +220,9 @@ export function FilterBar({
                 >
                   {isActive && <X className="w-4 h-4 mr-1.5 shrink-0" />}
                   <span className="mr-1.5 shrink-0">{filter.icon}</span>
-                  <span className="whitespace-nowrap">{t(`jobstatus.filters.${filter.id}`)}</span>
+                  <span className="whitespace-nowrap">
+                    {t(`jobstatus.filters.${filter.id}`)}
+                  </span>
                   {count > 0 && (
                     <span
                       className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${
@@ -199,55 +246,55 @@ export function FilterBar({
                 onClick={() => setShowMoreFilters(!showMoreFilters)}
                 className="!w-auto !min-w-0 h-9 px-4 text-sm border border-gray-03 text-gray-01 hover:bg-gray-03/40"
               >
-              <MoreVertical className="w-4 h-4 mr-1.5" />
-              {t("jobstatus.moreFilters")}
-              {activeFilters.size > 0 &&
-                secondaryFilters.some((f) => activeFilters.has(f.id)) && (
-                  <span className="ml-2 px-2 py-0.5 rounded-full bg-blue-03/20 text-blue-03 text-xs font-medium">
-                    {
-                      secondaryFilters.filter((f) => activeFilters.has(f.id))
-                        .length
-                    }
-                  </span>
-                )}
-            </Button>
+                <MoreVertical className="w-4 h-4 mr-1.5" />
+                {t("jobstatus.moreFilters")}
+                {activeFilters.size > 0 &&
+                  secondaryFilters.some((f) => activeFilters.has(f.id)) && (
+                    <span className="ml-2 px-2 py-0.5 rounded-full bg-blue-03/20 text-blue-03 text-xs font-medium">
+                      {
+                        secondaryFilters.filter((f) => activeFilters.has(f.id))
+                          .length
+                      }
+                    </span>
+                  )}
+              </Button>
 
-            {/* Dropdown Menu */}
-            {showMoreFilters && (
-              <div className="absolute left-0 top-full mt-2 z-50 bg-gray-04 border border-gray-03 rounded-lg shadow-lg p-2 min-w-[200px]">
-                <div className="text-xs font-semibold text-gray-02 mb-2 px-2">
-                  {t("jobstatus.additionalFilters")}
-                </div>
-                {secondaryFilters.map((filter) => {
-                  const isActive = activeFilters.has(filter.id);
-                  const count = filterCounts[filter.id];
-                  return (
-                    <button
-                      key={filter.id}
-                      onClick={() => {
-                        onToggleFilter(filter.id);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center justify-between ${
-                        isActive
-                          ? "bg-blue-03/20 text-blue-03"
-                          : "text-gray-01 hover:bg-gray-03/50"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        {isActive && (
-                          <CheckCircle2 className="w-4 h-4 text-blue-03" />
+              {/* Dropdown Menu */}
+              {showMoreFilters && (
+                <div className="absolute left-0 top-full mt-2 z-50 bg-gray-04 border border-gray-03 rounded-lg shadow-lg p-2 min-w-[200px]">
+                  <div className="text-xs font-semibold text-gray-02 mb-2 px-2">
+                    {t("jobstatus.additionalFilters")}
+                  </div>
+                  {secondaryFilters.map((filter) => {
+                    const isActive = activeFilters.has(filter.id);
+                    const count = filterCounts[filter.id];
+                    return (
+                      <button
+                        key={filter.id}
+                        onClick={() => {
+                          onToggleFilter(filter.id);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center justify-between ${
+                          isActive
+                            ? "bg-blue-03/20 text-blue-03"
+                            : "text-gray-01 hover:bg-gray-03/50"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          {isActive && (
+                            <CheckCircle2 className="w-4 h-4 text-blue-03" />
+                          )}
+                          {t(`jobstatus.filters.${filter.id}`)}
+                        </span>
+                        {count > 0 && (
+                          <span className="text-xs text-gray-02">{count}</span>
                         )}
-                        {t(`jobstatus.filters.${filter.id}`)}
-                      </span>
-                      {count > 0 && (
-                        <span className="text-xs text-gray-02">{count}</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* Clear Filters */}
             {hasActiveFiltersOrSearch && (
@@ -267,7 +314,10 @@ export function FilterBar({
         {/* Filter Summary */}
         {hasActiveFiltersOrSearch && (
           <div className="text-sm text-gray-02 pt-2">
-            {t("jobstatus.showingCompanies", { filtered: filteredCount, total: totalCount })}
+            {t("jobstatus.showingCompanies", {
+              filtered: filteredCount,
+              total: totalCount,
+            })}
           </div>
         )}
 

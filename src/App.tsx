@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { Header } from "@/ui/header";
 import { Toaster } from "@/ui/sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CompaniesProvider } from "@/contexts/CompaniesContext";
 import { AuthCallback } from "@/pages/AuthCallback";
 import { GlobalLoginModal } from "@/components/GlobalLoginModal";
 import SlideshowPage from "@/pages/SlideshowPage";
@@ -38,7 +39,7 @@ function App() {
               <Toaster />
               <div className="max-w-[1400px] mx-auto">
                 <Header />
-
+                <CompaniesProvider>
                 <Tabs
                   value={currentTab}
                   onValueChange={(value) => {
@@ -142,6 +143,7 @@ function App() {
                     </TabsContent>
                   </AnimatePresence>
                 </Tabs>
+                </CompaniesProvider>
               </div>
             </div>
           }
