@@ -41,17 +41,14 @@ interface FilterBarProps {
   onRerunByWorker: (worker: RerunWorker, limit: number | "all") => void;
   companySearchQuery?: string;
   onCompanySearchChange?: (query: string) => void;
-  /** Available batch IDs for multi-select filter */
-  existingBatches?: string[];
-  /** True while batch list is being fetched */
+  /** Available batch IDs for multi-select filter */  existingBatches?: string[];
+
   batchesLoading?: boolean;
-  /** Currently selected batch IDs (subset of existingBatches) */
+
   selectedBatchIds?: string[];
-  /** Called when user changes batch selection */
+
   onBatchFilterChange?: (ids: string[]) => void;
-  /** Optional: refresh company data (e.g. when returning to tab) */
   onRefresh?: () => void;
-  /** True while a refresh is in progress (optional, for button loading state) */
   isRefreshing?: boolean;
 }
 

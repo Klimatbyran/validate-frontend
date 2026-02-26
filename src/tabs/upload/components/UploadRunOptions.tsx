@@ -2,6 +2,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
 import { RUN_ONLY_WORKERS, type RunOnlyWorkerId } from "@/lib/run-only-workers";
 import { NEW_BATCH_DROPDOWN_VALUE } from "../lib/utils";
+import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 
 interface UploadRunOptionsProps {
   runAllWorkers: boolean;
@@ -41,25 +42,24 @@ export function UploadRunOptions({
       {/* Batch: dropdown (no batch / existing / new) + optional text input for new name */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="text-sm text-gray-02 shrink-0">{t("upload.batch")}:</span>
-        <select
+        <SingleSelectDropdown
+          options={["", ...existingBatches, NEW_BATCH_DROPDOWN_VALUE]}
           value={batchDropdownChoice}
-          onChange={(e) => onBatchDropdownChoiceChange(e.target.value)}
-          className="h-8 min-w-[140px] rounded-md border border-gray-03 bg-gray-03/80 text-gray-01 text-sm focus:outline-none focus:ring-2 focus:ring-orange-03/50 px-2"
-          aria-label={t("upload.batchAria")}
-        >
-          <option value="">{t("upload.noBatch")}</option>
-          {existingBatches.map((id) => (
-            <option key={id} value={id}>
-              {id}
-            </option>
-          ))}
-          <option value={NEW_BATCH_DROPDOWN_VALUE}>{t("upload.newBatch")}</option>
-          {batchesLoading && (
-            <option value="" disabled>
-              {t("upload.batchLoading")}
-            </option>
-          )}
-        </select>
+          onChange={onBatchDropdownChoiceChange}
+          placeholder={t("upload.noBatch")}
+          ariaLabel={t("upload.batchAria")}
+          loading={batchesLoading}
+          loadingLabel={t("upload.batchLoading")}
+          emptyLabel={t("upload.noBatch")}
+          getOptionLabel={(v) =>
+            v === ""
+              ? t("upload.noBatch")
+              : v === NEW_BATCH_DROPDOWN_VALUE
+                ? t("upload.newBatch")
+                : v
+          }
+          panelMinWidth={200}
+        />
         {batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE && (
           <input
             type="text"

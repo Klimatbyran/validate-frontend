@@ -4,6 +4,7 @@ import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/contexts/I18nContext';
 import { LoadingSpinner } from '@/ui/loading-spinner';
+import { SingleSelectDropdown } from '@/ui/single-select-dropdown';
 import type { ErrorBrowserViewMode } from './types';
 import { useErrorBrowserData } from './hooks/useErrorBrowserData';
 import { BrowserView } from './components/BrowserView';
@@ -41,8 +42,8 @@ export function ErrorBrowserTab() {
       exit={{ opacity: 0, x: 20 }}
       className="space-y-6"
     >
-      {/* Header */}
-      <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6">
+      {/* Header: relative z-10 so year dropdown panel paints above view content below */}
+      <div className="relative z-10 bg-gray-04/80 backdrop-blur-sm rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl text-gray-01 font-semibold">{t("errors.title")}</h2>
@@ -81,15 +82,14 @@ export function ErrorBrowserTab() {
         {/* Year selector */}
         <div className="flex flex-col gap-1">
           <label className="text-xs text-gray-02 uppercase tracking-wide">{t("errors.year")}</label>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="bg-gray-03 text-gray-01 rounded px-3 py-2 text-sm border border-gray-02/20 w-fit"
-          >
-            {[2025, 2024, 2023, 2022, 2021, 2020].map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
+          <SingleSelectDropdown
+            options={['2025', '2024', '2023', '2022', '2021', '2020']}
+            value={String(selectedYear)}
+            onChange={(v) => setSelectedYear(Number(v))}
+            placeholder={t("errors.year")}
+            ariaLabel={t("errors.year")}
+            panelMinWidth={100}
+          />
         </div>
       </div>
 

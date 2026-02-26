@@ -2,6 +2,7 @@ import React from 'react';
 import { XCircle, Download } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
 import { LoadingSpinner } from '@/ui/loading-spinner';
+import { SingleSelectDropdown } from '@/ui/single-select-dropdown';
 import { DiscrepancyType, CompanyRow, DATA_POINTS } from '../types';
 import { computePerformanceMetrics, exportComparisonToCsv } from '../lib';
 import { CompanyTableRow } from './CompanyTableRow';
@@ -101,15 +102,16 @@ export function BrowserView({
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex flex-col gap-1 flex-1 max-w-md">
             <label className="text-xs text-gray-02 uppercase tracking-wide">{t("errors.dataPoint")}</label>
-            <select
+            <SingleSelectDropdown
+              options={DATA_POINTS.map((dp) => dp.id)}
               value={selectedDataPoint}
-              onChange={(e) => onDataPointChange(e.target.value)}
-              className="bg-gray-03 text-gray-01 rounded px-3 py-2 text-sm border border-gray-02/20"
-            >
-              {DATA_POINTS.map(dp => (
-                <option key={dp.id} value={dp.id}>{dp.label}</option>
-              ))}
-            </select>
+              onChange={onDataPointChange}
+              placeholder={t("errors.dataPoint")}
+              ariaLabel={t("errors.dataPoint")}
+              getOptionLabel={(id) => DATA_POINTS.find((dp) => dp.id === id)?.label ?? id}
+              panelMinWidth={260}
+              panelMaxHeight={320}
+            />
           </div>
 
           <div className="flex flex-col gap-1 flex-1 max-w-xs">
