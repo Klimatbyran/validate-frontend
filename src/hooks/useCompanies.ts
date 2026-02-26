@@ -6,8 +6,8 @@ import {
 } from "@/lib/api";
 import type { CustomAPICompany } from "@/lib/types";
 
-/** API allows pageSize 1–500. */
-const PAGE_SIZE = 500;
+/** API allows pageSize 1–500. Use 200 to avoid long load times and timeouts. */
+const PAGE_SIZE = 200;
 
 export function useCompanies() {
   const [companies, setCompanies] = useState<CustomAPICompany[]>([]);
