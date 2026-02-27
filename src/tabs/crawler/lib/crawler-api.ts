@@ -5,7 +5,7 @@ type SearchQuery = {
 
 export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
   try {
-    const response = await fetch("http://localhost:3000/api/reports", {
+    const response = await fetch("https://stage.klimatkollen.se/api/reports/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -28,7 +28,9 @@ export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
 
 export const fetchCompanyNamesList = async () => {
   try {
-    const response = await fetch("http://localhost:3000/api/companies/names");
+    const response = await fetch(
+      "http://stage.klimatkollen.se/api/companies/names",
+    );
     if (response.ok) {
       const data = await response.json();
       return data;
