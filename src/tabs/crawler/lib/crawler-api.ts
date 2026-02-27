@@ -6,7 +6,7 @@ type SearchQuery = {
 export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
   try {
     const response = await fetch(
-      "https://stage-api.klimatkollen.se/api/reports/",
+      "https://stage.klimatkollen.se/api/reports/",
       {
         method: "POST",
         headers: {
@@ -32,7 +32,7 @@ export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
 export const fetchCompanyNamesList = async () => {
   try {
     const response = await fetch(
-      "http://stage-api.klimatkollen.se/api/companies/names",
+      "http://stage.klimatkollen.se/api/companies/names",
     );
     if (response.ok) {
       const data = await response.json();
