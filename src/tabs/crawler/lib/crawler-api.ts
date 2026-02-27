@@ -5,13 +5,16 @@ type SearchQuery = {
 
 export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
   try {
-    const response = await fetch("https://stage.klimatkollen.se/api/reports/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      "https://stage-api.klimatkollen.se/api/reports/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([searchQuery]),
       },
-      body: JSON.stringify([searchQuery]),
-    });
+    );
 
     if (response.ok) {
       const data = await response.json();
@@ -29,7 +32,7 @@ export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
 export const fetchCompanyNamesList = async () => {
   try {
     const response = await fetch(
-      "http://stage.klimatkollen.se/api/companies/names",
+      "http://stage-api.klimatkollen.se/api/companies/names",
     );
     if (response.ok) {
       const data = await response.json();
