@@ -70,7 +70,7 @@ const CompaniesNamesList = ({
                   {t("crawler.company")}
                 </span>
                 <span className="font-medium text-gray-02">
-                  {t("foundCompanies", {
+                  {t("crawler.foundCompanies", {
                     count: companyNamesList?.length ?? 0,
                   })}{" "}
                 </span>

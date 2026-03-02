@@ -19,12 +19,12 @@ const ManualSearchControls = ({
 
   return (
     <>
-      <h3>{t("crawler.manualSearchDescription")}</h3>
-      <div className="flex flex-col gap-4 justify-center">
+      <h3 className="max-w-[750px]">{t("crawler.manualSearchDescription")}</h3>
+      <div className="flex flex-col gap-4 justify-center mt-4">
         <div className="flex flex-col gap-2">
           <textarea
             onChange={onCompanyNamesChange}
-            placeholder="Search for companies (separate with commas)"
+            placeholder={t("crawler.searchPlaceholder")}
             className="bg-gray-03/20 w-[500px] h-[100px] border p-2 flex items-center justify-center border-gray-03 rounded-lg text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
           />
           <h3 className="pt-4">{t("crawler.reportYear")}</h3>
