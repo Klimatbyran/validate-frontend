@@ -13,7 +13,8 @@ const CompaniesNamesResultItem = ({
   isSelected,
   onToggle,
 }: CompaniesNamesResultItemProps) => {
-  const { name, reportingPeriods } = companyDetails;
+  const { wikidataId, name, reportingPeriods } = companyDetails;
+  console.log(companyDetails);
 
   const latestReportYear =
     reportingPeriods?.[0]?.endDate?.split("-")[0] ?? "N/A";
@@ -22,7 +23,13 @@ const CompaniesNamesResultItem = ({
     <tr className="transition-colors hover:bg-gray-03/30">
       <td className="px-4 py-3 text-sm text-gray-01">
         <div className="flex items-center justify-between gap-3">
-          <span>{name}</span>
+          <a
+            href={`http://klimatkollen.se/companies/${wikidataId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {name}
+          </a>
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-gray-02">{latestReportYear}</td>
