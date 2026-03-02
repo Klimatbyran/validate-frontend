@@ -415,7 +415,7 @@
     "loadingResults": "Laddar sökresultat...",
     "loadingDescription": "Vänta medan crawler hämtar och bearbetar.",
     "company": "Företag",
-    "foundCompanies": "Hittade {{count}} företag",
+    "foundCompanies": "Hittade {{count}}",
     "latestReport": "Senaste rapporten i databasen",
     "select": "Välj",
     "clickSelectAll": "Klicka för att välja alla",

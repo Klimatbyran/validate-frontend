@@ -416,7 +416,7 @@
     "loadingResults": "Loading search results...",
     "loadingDescription": "Hang in there as this may take a moment. The crawler is fetching and processing.",
     "company": "Company",
-    "foundCompanies": "Found {{count}} companie(s)",
+    "foundCompanies": "Found {{count}}",
     "latestReport": "Latest report in database",
     "select": "Select",
     "clickSelectAll": "Click to Select all",

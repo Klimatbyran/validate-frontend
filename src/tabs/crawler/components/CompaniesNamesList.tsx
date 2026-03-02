@@ -17,9 +17,9 @@ const CompaniesNamesList = ({
   onSelectionChange,
 }: CompaniesNamesListProps) => {
   const { t } = useI18n();
-  const [companyNamesList, setCompanyNamesList] = useState<
-    CompanyDetails[] | null
-  >(null);
+  const [companiesList, setcompaniesList] = useState<CompanyDetails[] | null>(
+    null,
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,7 +27,7 @@ const CompaniesNamesList = ({
       const data = await fetchCompanyNamesList();
 
       if (data) {
-        setCompanyNamesList(data);
+        setcompaniesList(data);
         setIsLoading(false);
       }
     };
@@ -46,14 +46,21 @@ const CompaniesNamesList = ({
   );
 
   const handleSelectAllCompanies = () => {
-    if (selectedCompanies.length === companyNamesList?.length) {
+    if (selectedCompanies.length === companiesList?.length) {
       onSelectionChange([]);
     } else {
       const allCompanyNames =
-        companyNamesList?.map((company) => company.name) || [];
+        companiesList?.map((company) => company.name) || [];
       onSelectionChange(allCompanyNames);
     }
   };
+
+  const companiesListWithSortedPeriods = companiesList?.map((company) => ({
+    ...company,
+    reportingPeriods: [...company.reportingPeriods].sort((a, b) =>
+      b.endDate.localeCompare(a.endDate),
+    ),
+  }));
 
   return (
     <motion.div
@@ -70,8 +77,8 @@ const CompaniesNamesList = ({
                   {t("crawler.company")}
                 </span>
                 <span className="font-medium text-gray-02">
-                  {t("foundCompanies", {
-                    count: companyNamesList?.length ?? 0,
+                  {t("crawler.foundCompanies", {
+                    count: companiesListWithSortedPeriods?.length ?? 0,
                   })}{" "}
                 </span>
               </th>
@@ -97,8 +104,8 @@ const CompaniesNamesList = ({
           </thead>
 
           <tbody className="divide-y divide-gray-03/50">
-            {companyNamesList?.length &&
-              companyNamesList.map((company, index) => (
+            {companiesListWithSortedPeriods?.length &&
+              companiesListWithSortedPeriods.map((company, index) => (
                 <CompaniesNamesResultItem
                   key={index}
                   companyDetails={company}
