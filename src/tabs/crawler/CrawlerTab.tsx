@@ -12,11 +12,6 @@ import DatabaseSearchControls from "./components/DatabaseSearchControls";
 
 type CrawlerViewMode = "manual" | "database";
 
-const VIEW_MODES: { value: CrawlerViewMode; label: string }[] = [
-  { value: "manual", label: "Manual Search" },
-  { value: "database", label: "Database Search" },
-];
-
 export function CrawlerTab() {
   const [viewMode, setViewMode] = useState<CrawlerViewMode>("manual");
   const { t } = useI18n();
@@ -30,6 +25,11 @@ export function CrawlerTab() {
   >(null);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean | null>(null);
+
+  const VIEW_MODES: { value: CrawlerViewMode; label: string }[] = [
+    { value: "manual", label: t("crawler.crawlerMode") },
+    { value: "database", label: t("crawler.databaseMode") },
+  ];
 
   const handleSearchClick = async () => {
     if (!companyNameInput || !reportYearInput) return;
