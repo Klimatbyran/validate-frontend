@@ -1,15 +1,20 @@
-import { getPublicApiUrl } from '@/lib/utils';
+/**
+ * Errors tab API: always stage vs prod (comparison).
+ * Use getStageApiUrl / getProdApiUrl so we always fetch both environments.
+ */
+import {
+  getStageKkApiUrl,
+  getProdKkApiUrl,
+} from "@/config/api-env";
 
-/** Stage API URL for company data (dev proxy or direct). */
+const COMPANIES_PATH = "/api/companies";
+
+/** Stage API URL for company data. Use for comparison (always stage). */
 export function getStageApiUrl(): string {
-  const isDev = import.meta.env.DEV;
-  if (isDev) {
-    return '/stagekkapi/api/companies';
-  }
-  return 'https://stage-api.klimatkollen.se/api/companies';
+  return getStageKkApiUrl(COMPANIES_PATH);
 }
 
-/** Prod API URL for company data. */
+/** Prod API URL for company data. Use for comparison (always prod). */
 export function getProdApiUrl(): string {
-  return getPublicApiUrl('/api/companies');
+  return getProdKkApiUrl(COMPANIES_PATH);
 }
