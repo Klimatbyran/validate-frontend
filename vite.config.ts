@@ -7,10 +7,20 @@ import { fileURLToPath } from "url";
 // https://vitejs.dev/config/
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Default API base URLs when env vars are not set (staging). */
+/** Default API base URLs by mode when env vars are not set. */
 const DEFAULT_URLS = {
-  pipeline: "https://stage-pipeline-api.klimatkollen.se",
-  auth: "https://stage.klimatkollen.se",
+  stage: {
+    pipeline: "https://stage-pipeline-api.klimatkollen.se",
+    auth: "https://stage.klimatkollen.se",
+  },
+  prod: {
+    pipeline: "https://pipeline-api.klimatkollen.se",
+    auth: "https://api.klimatkollen.se",
+  },
+  local: {
+    pipeline: "http://localhost:3001",
+    auth: "http://localhost:3000",
+  },
   screenshots: "http://localhost:3000",
   kkApi: "https://api.klimatkollen.se",
   kkStageApi: "https://stage-api.klimatkollen.se",
@@ -20,10 +30,21 @@ function normalizeUrl(url: string): string {
   return url.replace(/\/+$/, "") || url;
 }
 
+/** Resolve proxy targets: VITE_API_MODE (local|stage|prod) or per-URL env overrides. */
 function getProxyTargets(env: Record<string, string>) {
+  const mode = (env.VITE_API_MODE || "stage") as "local" | "stage" | "prod";
+  const modeDefaults =
+    mode === "local"
+      ? DEFAULT_URLS.local
+      : mode === "prod"
+        ? DEFAULT_URLS.prod
+        : DEFAULT_URLS.stage;
+
   return {
-    pipeline: normalizeUrl(env.VITE_PIPELINE_API_URL ?? DEFAULT_URLS.pipeline),
-    auth: normalizeUrl(env.VITE_AUTH_API_URL ?? DEFAULT_URLS.auth),
+    pipeline: normalizeUrl(
+      env.VITE_PIPELINE_API_URL ?? modeDefaults.pipeline,
+    ),
+    auth: normalizeUrl(env.VITE_AUTH_API_URL ?? modeDefaults.auth),
     screenshots: normalizeUrl(
       env.VITE_SCREENSHOTS_API_URL ?? DEFAULT_URLS.screenshots,
     ),
