@@ -14,7 +14,6 @@ const CompaniesNamesResultItem = ({
   onToggle,
 }: CompaniesNamesResultItemProps) => {
   const { wikidataId, name, reportingPeriods } = companyDetails;
-  console.log(companyDetails);
 
   const latestReportYear =
     reportingPeriods?.[0]?.endDate?.split("-")[0] ?? "N/A";
