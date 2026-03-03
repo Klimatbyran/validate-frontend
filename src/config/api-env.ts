@@ -49,7 +49,3 @@ export function getProdGarboUrl(path: string): string {
   return `${GARBO_PROD_ORIGIN}${p}`;
 }
 
-/** Prod garbo URL (alias for job status reference). */
-export function getPublicApiUrl(path: string): string {
-  return getProdGarboUrl(path);
-}

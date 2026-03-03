@@ -246,28 +246,6 @@ export default defineConfig(({ mode }) => {
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
         },
-        "/authapi": {
-          target: urls.auth,
-          changeOrigin: true,
-          secure: !urls.auth.startsWith("http://"),
-          rewrite: (path) => path.replace(/^\/authapi/, ""),
-          timeout: PROXY_TIMEOUT_MS,
-          proxyTimeout: PROXY_TIMEOUT_MS,
-          configure: (proxy, _options) => {
-            proxy.on("error", (err, _req, res) => {
-              console.warn(`Auth API not available at ${urls.auth}.`);
-              if (res && !res.headersSent) {
-                res.writeHead(503, { "Content-Type": "application/json" });
-                res.end(
-                  JSON.stringify({
-                    error: "Auth API not available",
-                    message: `Auth backend not reachable at ${urls.auth}`,
-                  }),
-                );
-              }
-            });
-          },
-        },
       },
     },
   };

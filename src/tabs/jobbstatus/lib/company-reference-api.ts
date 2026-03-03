@@ -1,5 +1,5 @@
 import React from "react";
-import { getPublicApiUrl } from "@/lib/utils";
+import { getProdGarboUrl } from "@/config/api-env";
 
 /**
  * Shared API helpers for fetching company reference data (used by scope sections
@@ -11,7 +11,7 @@ export async function fetchCompanyById(
   signal: AbortSignal
 ): Promise<any> {
   const response = await fetch(
-    getPublicApiUrl(`/api/companies/${encodeURIComponent(companyId)}`),
+    getProdGarboUrl(`/api/companies/${encodeURIComponent(companyId)}`),
     { signal }
   );
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
