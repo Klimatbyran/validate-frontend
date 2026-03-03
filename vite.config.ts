@@ -19,7 +19,7 @@ function climatePlansManifest(): Plugin {
       fs.mkdirSync(climatePlansDir, { recursive: true });
       fs.writeFileSync(
         path.join(climatePlansDir, "index.json"),
-        JSON.stringify({ municipalities: [] }, null, 2) + "\n"
+        JSON.stringify({ municipalities: [] }, null, 2) + "\n",
       );
       return;
     }
@@ -33,8 +33,12 @@ function climatePlansManifest(): Plugin {
       const folderPath = path.join(climatePlansDir, folder);
       const files = fs.readdirSync(folderPath);
 
-      const planScope = files.find((f) => f.startsWith("plan_scope") && f.endsWith(".json"));
-      const emissionTargets = files.find((f) => f.startsWith("emission_targets") && f.endsWith(".json"));
+      const planScope = files.find(
+        (f) => f.startsWith("plan_scope") && f.endsWith(".json"),
+      );
+      const emissionTargets = files.find(
+        (f) => f.startsWith("emission_targets") && f.endsWith(".json"),
+      );
 
       if (!planScope && !emissionTargets) continue;
 
@@ -55,7 +59,7 @@ function climatePlansManifest(): Plugin {
 
     fs.writeFileSync(
       path.join(climatePlansDir, "index.json"),
-      JSON.stringify({ municipalities }, null, 2) + "\n"
+      JSON.stringify({ municipalities }, null, 2) + "\n",
     );
   }
 
@@ -67,7 +71,10 @@ function climatePlansManifest(): Plugin {
     configureServer(server) {
       // Regenerate when files change in the climate-plans directory
       server.watcher.on("all", (event, filePath) => {
-        if (filePath.startsWith(climatePlansDir) && !filePath.endsWith("index.json")) {
+        if (
+          filePath.startsWith(climatePlansDir) &&
+          !filePath.endsWith("index.json")
+        ) {
           generateManifest();
         }
       });
