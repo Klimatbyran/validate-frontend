@@ -1,3 +1,7 @@
+/**
+ * Crawler tab API: uses same backend as pipeline (relative /api).
+ * Respects VITE_API_MODE and proxy overrides: local, stage, or prod.
+ */
 type SearchQuery = {
   name: string;
   reportYear: string;
@@ -5,7 +9,7 @@ type SearchQuery = {
 
 export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
   try {
-    const response = await fetch("http://localhost:3000/api/reports/", {
+    const response = await fetch("/api/reports/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -28,7 +32,7 @@ export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
 
 export const fetchCompanyNamesList = async () => {
   try {
-    const response = await fetch("http://localhost:3000/api/reports/list");
+    const response = await fetch("/api/reports/list/");
     if (response.ok) {
       const data = await response.json();
       return data;
