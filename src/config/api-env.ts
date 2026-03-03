@@ -1,77 +1,73 @@
 /**
- * Central API environment config: single-backend (auth, crawler, pipeline) vs
- * comparison (errors tab = always stage + prod).
+ * API config: pipeline vs garbo, with optional per-backend overrides.
  *
- * - Single-backend: one target at a time (local | stage | prod) via VITE_API_MODE.
- * - Comparison: always stage and prod; use getStageKkApiUrl / getProdKkApiUrl.
+ * Three cases:
+ * 1. Pipeline (job status, upload, etc.): target = local | stage | prod. App uses relative /api; vite sets proxy from target.
+ * 2. Garbo (auth, crawler, etc.): target = local | stage | prod. URLs from getGarbo* below.
+ * 3. Error browser: always both stage and prod (getStageGarboUrl / getProdGarboUrl). No target.
+ *
+ * Overrides:
+ * - VITE_API_MODE = joint (sets both pipeline and garbo when not overridden). Default: stage.
+ * - VITE_PIPELINE_TARGET = pipeline only (overrides joint for pipeline).
+ * - VITE_GARBO_TARGET = garbo only (overrides joint for garbo).
  */
 
-export type ApiMode = "local" | "stage" | "prod";
+export type ApiTarget = "local" | "stage" | "prod";
 
-const KK_STAGE_ORIGIN = "https://stage-api.klimatkollen.se";
-const KK_PROD_ORIGIN = "https://api.klimatkollen.se";
-const AUTH_STAGE_ORIGIN = "https://stage.klimatkollen.se";
-const AUTH_PROD_ORIGIN = "https://api.klimatkollen.se";
+const GARBO_STAGE_ORIGIN = "https://stage-api.klimatkollen.se";
+const GARBO_PROD_ORIGIN = "https://api.klimatkollen.se";
 
-/** Resolve API mode: env override, then hostname when deployed, else dev default "stage". */
-export function getApiMode(): ApiMode {
-  const envMode = import.meta.env.VITE_API_MODE as string | undefined;
-  if (envMode === "local" || envMode === "stage" || envMode === "prod") {
-    return envMode;
-  }
-  if (!import.meta.env.DEV) {
-    const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+function jointMode(): ApiTarget {
+  const v = import.meta.env.VITE_API_MODE as string | undefined;
+  if (v === "local" || v === "stage" || v === "prod") return v;
+  if (!import.meta.env.DEV && typeof window !== "undefined") {
+    const hostname = window.location.hostname;
     if (hostname.includes("stage") || hostname.includes("staging")) return "stage";
     return "prod";
   }
   return "stage";
 }
 
-// --- Single-backend: one API at a time (auth, pipeline proxy, crawler/reports) ---
+/** Pipeline target. Used by vite for /api proxy. App uses relative /api only. */
+export function getPipelineTarget(): ApiTarget {
+  const v = import.meta.env.VITE_PIPELINE_TARGET as string | undefined;
+  if (v === "local" || v === "stage" || v === "prod") return v;
+  return jointMode();
+}
 
-/** Auth API base URL. In dev uses proxy /api/auth (target set in vite.config). Deployed uses stage or prod by hostname. */
-export function getAuthApiBaseUrl(): string {
+/** Garbo target. Used for all garbo URLs (auth, crawler, etc.). */
+export function getGarboTarget(): ApiTarget {
+  const v = import.meta.env.VITE_GARBO_TARGET as string | undefined;
+  if (v === "local" || v === "stage" || v === "prod") return v;
+  return jointMode();
+}
+
+// --- Garbo (single target: auth, crawler, etc.) ---
+
+/** Garbo base URL (auth = base + "/auth", crawler = base + "/reports/", etc.). Dev: /garbo-local, /garbo-stage, or /garbo (proxy). */
+export function getGarboApiBaseUrl(): string {
+  const target = getGarboTarget();
   if (import.meta.env.DEV) {
-    return "/api/auth";
+    if (target === "prod") return "/garbo/api";
+    if (target === "local") return "/garbo-local/api";
+    return "/garbo-stage/api";
   }
-  const mode = getApiMode();
-  if (mode === "stage") return `${AUTH_STAGE_ORIGIN}/api/auth`;
-  return `${AUTH_PROD_ORIGIN}/api/auth`;
+  const effective = target === "local" ? "stage" : target;
+  return effective === "stage" ? `${GARBO_STAGE_ORIGIN}/api` : `${GARBO_PROD_ORIGIN}/api`;
 }
 
-/**
- * Klimatkollen API base URL for single-backend use (e.g. a feature that needs
- * one KK API by mode). Crawler uses relative /api (pipeline backend) instead.
- */
-export function getKkApiBaseUrl(): string {
-  const mode = getApiMode();
-  if (import.meta.env.DEV) {
-    if (mode === "prod") return "/kkapi/api";
-    return "/stagekkapi/api";
-  }
-  if (mode === "stage") return `${KK_STAGE_ORIGIN}/api`;
-  return `${KK_PROD_ORIGIN}/api`;
-}
+// --- Error browser: always stage + prod (no target) ---
 
-/** Prod public API (for job status reference data that compares to prod). Path e.g. /api/companies/123. */
-export function getPublicApiUrl(path: string): string {
+/** Garbo stage URL. Use for comparison only (errors tab). Path e.g. /api/companies. */
+export function getStageGarboUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
-  if (import.meta.env.DEV) return `/kkapi${p}`;
-  return `${KK_PROD_ORIGIN}${p}`;
+  if (import.meta.env.DEV) return `/garbo-stage${p}`;
+  return `${GARBO_STAGE_ORIGIN}${p}`;
 }
 
-// --- Comparison: always stage and prod (errors tab) ---
-
-/** Stage Klimatkollen URL for a path. Use for comparison views that always need stage. Path e.g. /api/companies. */
-export function getStageKkApiUrl(path: string): string {
+/** Garbo prod URL. Use for comparison (errors tab) or prod-only (e.g. company reference). Path e.g. /api/companies. */
+export function getProdGarboUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
-  if (import.meta.env.DEV) return `/stagekkapi${p}`;
-  return `${KK_STAGE_ORIGIN}${p}`;
-}
-
-/** Prod Klimatkollen URL for a path. Use for comparison views that always need prod. Path e.g. /api/companies. */
-export function getProdKkApiUrl(path: string): string {
-  const p = path.startsWith("/") ? path : `/${path}`;
-  if (import.meta.env.DEV) return `/kkapi${p}`;
-  return `${KK_PROD_ORIGIN}${p}`;
+  if (import.meta.env.DEV) return `/garbo${p}`;
+  return `${GARBO_PROD_ORIGIN}${p}`;
 }

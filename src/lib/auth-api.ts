@@ -1,17 +1,12 @@
 /**
- * Auth API client - separate from pipeline API.
- * Base URL comes from config (single-backend: local / stage / prod via VITE_API_MODE).
+ * Auth API client (garbo base + /auth). Follows garbo target (VITE_GARBO_TARGET or VITE_API_MODE).
  */
 
 import axios from "axios";
-import { getAuthApiBaseUrl } from "@/config/api-env";
+import { getGarboApiBaseUrl } from "@/config/api-env";
 
-/**
- * Create auth API client instance
- * Uses relative path in dev (via proxy), absolute URL in prod
- */
 export const authApi = axios.create({
-  baseURL: getAuthApiBaseUrl(),
+  baseURL: getGarboApiBaseUrl() + "/auth",
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -33,7 +28,6 @@ export async function authenticateWithGithub(
   if (state) {
     payload.state = state;
   }
-  // baseURL already includes /api/auth, so just use /github
   const response = await authApi.post("/github", payload);
   return response.data;
 }
@@ -62,9 +56,6 @@ function getCallbackUrl(): string {
 export function getGithubAuthUrl(): string {
   const callbackUrl = getCallbackUrl();
   const redirectUri = encodeURIComponent(callbackUrl);
-  if (import.meta.env.DEV) {
-    return `/api/auth/github?redirect_uri=${redirectUri}`;
-  }
-  const baseUrl = getAuthApiBaseUrl();
-  return `${baseUrl}/github?redirect_uri=${redirectUri}`;
+  const base = getGarboApiBaseUrl() + "/auth";
+  return `${base}/github?redirect_uri=${redirectUri}`;
 }
