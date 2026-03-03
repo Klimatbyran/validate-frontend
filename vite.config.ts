@@ -22,8 +22,8 @@ const DEFAULT_URLS = {
     auth: "http://localhost:3000",
   },
   screenshots: "http://localhost:3000",
-  kkApi: "https://api.klimatkollen.se",
-  kkStageApi: "https://stage-api.klimatkollen.se",
+  garboProd: "https://api.klimatkollen.se",
+  garboStage: "https://stage-api.klimatkollen.se",
 } as const;
 
 function normalizeUrl(url: string): string {
@@ -48,9 +48,11 @@ function getProxyTargets(env: Record<string, string>) {
     screenshots: normalizeUrl(
       env.VITE_SCREENSHOTS_API_URL ?? DEFAULT_URLS.screenshots,
     ),
-    kkApi: normalizeUrl(env.VITE_KK_API_URL ?? DEFAULT_URLS.kkApi),
-    kkStageApi: normalizeUrl(
-      env.VITE_KK_STAGE_API_URL ?? DEFAULT_URLS.kkStageApi,
+    garboProd: normalizeUrl(
+      env.VITE_GARBO_PROD_URL ?? DEFAULT_URLS.garboProd,
+    ),
+    garboStage: normalizeUrl(
+      env.VITE_GARBO_STAGE_URL ?? DEFAULT_URLS.garboStage,
     ),
   };
 }
@@ -228,19 +230,19 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
-        "/kkapi": {
-          target: urls.kkApi,
+        "/garbo": {
+          target: urls.garboProd,
           changeOrigin: true,
           secure: true,
-          rewrite: (path) => path.replace(/^\/kkapi/, "/api"),
+          rewrite: (path) => path.replace(/^\/garbo/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
         },
-        "/stagekkapi": {
-          target: urls.kkStageApi,
+        "/garbo-stage": {
+          target: urls.garboStage,
           changeOrigin: true,
-          secure: !urls.kkStageApi.startsWith("http://"),
-          rewrite: (path) => path.replace(/^\/stagekkapi/, ""),
+          secure: !urls.garboStage.startsWith("http://"),
+          rewrite: (path) => path.replace(/^\/garbo-stage/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
         },

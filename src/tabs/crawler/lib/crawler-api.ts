@@ -1,15 +1,19 @@
-/**
- * Crawler tab API: uses same backend as pipeline (relative /api).
- * Respects VITE_API_MODE and proxy overrides: local, stage, or prod.
- */
+import { getGarboApiBaseUrl } from "@/config/api-env";
+
+/** Crawler uses garbo API only. Base follows VITE_API_MODE (stage/prod). */
 type SearchQuery = {
   name: string;
   reportYear: string;
 };
 
+function reportsUrl(path: string): string {
+  const base = getGarboApiBaseUrl();
+  return `${base.replace(/\/+$/, "")}/${path.replace(/^\//, "")}`;
+}
+
 export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
   try {
-    const response = await fetch("/api/reports/", {
+    const response = await fetch(reportsUrl("reports/"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -32,7 +36,7 @@ export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
 
 export const fetchCompanyNamesList = async () => {
   try {
-    const response = await fetch("/api/reports/list/");
+    const response = await fetch(reportsUrl("reports/list/"));
     if (response.ok) {
       const data = await response.json();
       return data;
