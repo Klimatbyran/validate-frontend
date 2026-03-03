@@ -490,7 +490,7 @@ export function fetchProcessesByCompany(): Promise<CustomAPICompany[]> {
   return new Promise((resolve, reject) => {
     try {
       const subscription = rateLimiter
-        .throttle(() => api.get("/processes/companies"))
+        .throttle(() => api.get("/processes/companies", { timeout: 300000 }))
         .pipe(
           map((response) => response.data || []),
           catchError((error) => {
@@ -535,7 +535,7 @@ function parseCompaniesResponse(data: unknown): CustomAPICompany[] {
 
 /** Fetches all companies. API does not support pagination; no query params sent. */
 export async function fetchCompanies(): Promise<CustomAPICompany[]> {
-  const response = await api.get<unknown>("/processes/companies");
+  const response = await api.get<unknown>("/processes/companies", { timeout: 300000 });
   return parseCompaniesResponse(response.data);
 }
 
@@ -547,6 +547,7 @@ export async function fetchCompaniesPage(
   const safePageSize = Math.max(1, pageSize);
   const response = await api.get<unknown>("/processes/companies", {
     params: { page: safePage, pageSize: safePageSize },
+    timeout: 300000,
   });
   return parseCompaniesResponse(response.data);
 }
@@ -579,7 +580,7 @@ export function fetchQueueStats(): Promise<CustomAPIQueueStats[]> {
   return new Promise((resolve, reject) => {
     try {
       const subscription = rateLimiter
-        .throttle(() => api.get("/queues/stats"))
+        .throttle(() => api.get("/queues/stats", { timeout: 300000 }))
         .pipe(
           map((response) => response.data || []),
           catchError((error) => {
