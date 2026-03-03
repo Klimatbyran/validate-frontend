@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Book,
   ChevronDown,
@@ -6,35 +6,52 @@ import {
   ExternalLink,
   CheckCircle2,
 } from "lucide-react";
-import { CompanyReport } from "../lib/crawler-types";
+import { CompanyReport, LockedReport } from "../lib/crawler-types";
 import { Button } from "@/ui/button";
 import { useI18n } from "@/contexts/I18nContext";
 
 interface SearchResultItemProps {
   companyReport: CompanyReport;
   companyReports: CompanyReport[] | null;
-  setCompanyReports: React.Dispatch<
+  lockedReports: LockedReport[];
+  setManualReports: React.Dispatch<
     React.SetStateAction<CompanyReport[] | null>
   >;
+  setLockedReports: React.Dispatch<React.SetStateAction<LockedReport[]>>;
   reportYear: string;
 }
 
 const SearchResultItem = ({
   companyReport,
-  companyReports,
-  setCompanyReports,
+  setLockedReports,
+  lockedReports,
+  setManualReports,
   reportYear,
 }: SearchResultItemProps) => {
   const { t } = useI18n();
   const { companyName, results } = companyReport;
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  const [lockedReport, setLockedReport] = useState<boolean>(false);
+  const [isLockedReport, setIsLockedReport] = useState<boolean>(false);
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
+
+  useEffect(() => {
+    const lockedEntry = lockedReports.find(
+      (report) =>
+        report.companyName === companyName && report.reportYear === reportYear,
+    );
+
+    if (lockedEntry) {
+      setSelectedReport(lockedEntry.url);
+      setIsLockedReport(true);
+    } else {
+      setIsLockedReport(false);
+    }
+  }, [lockedReports, companyName, reportYear]);
 
   const handleReportSelect = (url: string) => {
     if (selectedReport === url) {
       setSelectedReport(null);
-      setLockedReport(false);
+      setIsLockedReport(false);
     } else {
       setSelectedReport(url);
     }
@@ -43,21 +60,41 @@ const SearchResultItem = ({
   const handleSaveReport = () => {
     if (!selectedReport) return;
 
-    const updatedResults = [{ url: selectedReport }];
+    const nextLockedReport: LockedReport = {
+      companyName,
+      reportYear,
+      url: selectedReport,
+    };
 
-    setLockedReport(true);
-    setCompanyReports((prevReports) =>
-      prevReports
-        ? prevReports.map((c) =>
-            c.companyName === companyReport.companyName
-              ? { ...c, reportYear: reportYear, results: updatedResults }
-              : c,
-          )
-        : null,
-    );
+    setIsLockedReport(true);
+    setLockedReports((prevReports) => {
+      const existingIndex = prevReports.findIndex(
+        (report) => report.companyName === companyName,
+      );
+
+      if (existingIndex === -1) {
+        return [...prevReports, nextLockedReport];
+      }
+
+      return prevReports.map((report, index) =>
+        index === existingIndex ? nextLockedReport : report,
+      );
+    });
+
+    setManualReports((prevReports) => {
+      if (!prevReports) return prevReports;
+
+      return prevReports.map((report) =>
+        report.companyName === companyName
+          ? {
+              ...report,
+              reportYear,
+              results: [{ url: selectedReport }],
+            }
+          : report,
+      );
+    });
   };
-  console.log(selectedReport);
-  console.log(companyReports);
 
   /* const handlePushToDb = () => {
     const updatedCompanyReports = companyReports?.filter((company) => {
@@ -91,7 +128,7 @@ const SearchResultItem = ({
                 <div className="flex items-center gap-6">
                   <Button
                     onClick={() => handleSaveReport()}
-                    disabled={!selectedReport || lockedReport}
+                    disabled={!selectedReport || isLockedReport}
                     variant="ghost"
                     size="sm"
                     className="border border-white text-gray-01 hover:bg-gray-03/100"

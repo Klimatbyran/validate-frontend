@@ -1,20 +1,24 @@
 import { motion } from "framer-motion";
-import { CompanyReport } from "../lib/crawler-types";
+import { CompanyReport, LockedReport } from "../lib/crawler-types";
 import SearchResultItem from "./SearchResultItem";
 import { useI18n } from "@/contexts/I18nContext";
 
 interface SearchResultsListProps {
   companyReports: CompanyReport[] | null;
-  setCompanyReports: React.Dispatch<
+  setManualReports: React.Dispatch<
     React.SetStateAction<CompanyReport[] | null>
   >;
+  setLockedReports: React.Dispatch<React.SetStateAction<LockedReport[]>>;
+  lockedReports: LockedReport[];
   reportYear: string;
 }
 
 const SearchResultsList = ({
   companyReports,
-  setCompanyReports,
+  setManualReports,
   reportYear,
+  setLockedReports,
+  lockedReports,
 }: SearchResultsListProps) => {
   const { t } = useI18n();
 
@@ -32,7 +36,9 @@ const SearchResultsList = ({
         return (
           <SearchResultItem
             key={index}
-            setCompanyReports={setCompanyReports}
+            setLockedReports={setLockedReports}
+            lockedReports={lockedReports}
+            setManualReports={setManualReports}
             companyReports={companyReports}
             companyReport={report}
             reportYear={reportYear}

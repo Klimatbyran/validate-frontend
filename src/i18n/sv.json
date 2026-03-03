@@ -424,7 +424,8 @@
     "selectedCompanies": "{{count}} valda",
     "foundReportLinks": "Hittade {{count}} mojlig(a) rapportlänk(ar)",
     "lockReport": "Lås rapport",
-    "updateDb": "Uppdatera DB"
+    "updateDb": "Uppdatera DB",
+    "exportCsv": "Exportera CSV"
   },
   "climate": {
     "loading": "Laddar klimatplaner...",
