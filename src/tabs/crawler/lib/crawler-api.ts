@@ -1,11 +1,28 @@
+import { getPublicApiUrl } from "@/lib/utils";
+
+/** Stage API URL for company data (dev proxy or direct). */
+export function getStageApiUrl(): string {
+  const isDev = import.meta.env.DEV;
+  if (isDev) {
+    return "/stagekkapi/api/";
+  }
+  return "https://stage-api.klimatkollen.se/api/";
+}
+
+/** Prod API URL for company data. */
+export function getProdApiUrl(): string {
+  return getPublicApiUrl("/api/companies");
+}
+
 type SearchQuery = {
   name: string;
   reportYear: string;
 };
 
 export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
+  const baseUrl = getStageApiUrl();
   try {
-    const response = await fetch("http://localhost:3000/api/reports/", {
+    const response = await fetch(`${baseUrl}/reports/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -27,8 +44,9 @@ export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
 };
 
 export const fetchCompanyNamesList = async () => {
+  const baseUrl = getStageApiUrl();
   try {
-    const response = await fetch("http://localhost:3000/api/reports/list");
+    const response = await fetch(`${baseUrl}/reports/list/`);
     if (response.ok) {
       const data = await response.json();
       return data;
