@@ -1,6 +1,5 @@
 import { fetchCompanyReports } from "./crawler-api";
 import type { CompanyReport, LockedReport } from "./crawler-types";
-import * as XLSX from "xlsx";
 
 interface SearchCompanyReportsParams {
   companyNames: string[];
@@ -34,19 +33,21 @@ export const searchCompanyReports = async ({
 };
 
 export const writeCrawledReportsToCsv = (companyReports: LockedReport[]) => {
-  const rows = companyReports.map((report) => ({
-    companyName: report.companyName,
-    reportYear: report.reportYear,
-    url: report.url,
-  }));
-  const worksheet = XLSX.utils.json_to_sheet(rows, {
-    header: ["companyName", "reportYear", "url"],
-  });
-  const csvBody = XLSX.utils.sheet_to_csv(worksheet, {
-    FS: ";",
-    RS: "\r\n",
-  });
-  const csvContent = `\ufeff${csvBody}`;
+  const escapeCsvValue = (value: string) => {
+    const escaped = value.replace(/"/g, '""');
+    return `"${escaped}"`;
+  };
+  const header = ["companyName", "reportYear", "url"]
+    .map(escapeCsvValue)
+    .join(";");
+  const rows = companyReports.map((report) =>
+    [
+      escapeCsvValue(report.companyName),
+      escapeCsvValue(report.reportYear),
+      escapeCsvValue(report.url),
+    ].join(";"),
+  );
+  const csvContent = `\ufeff${[header, ...rows].join("\r\n")}`;
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
