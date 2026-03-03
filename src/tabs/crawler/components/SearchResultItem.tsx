@@ -16,12 +16,14 @@ interface SearchResultItemProps {
   setCompanyReports: React.Dispatch<
     React.SetStateAction<CompanyReport[] | null>
   >;
+  reportYear: string;
 }
 
 const SearchResultItem = ({
   companyReport,
   companyReports,
   setCompanyReports,
+  reportYear,
 }: SearchResultItemProps) => {
   const { t } = useI18n();
   const { companyName, results } = companyReport;
@@ -48,14 +50,16 @@ const SearchResultItem = ({
       prevReports
         ? prevReports.map((c) =>
             c.companyName === companyReport.companyName
-              ? { ...c, results: updatedResults }
+              ? { ...c, reportYear: reportYear, results: updatedResults }
               : c,
           )
         : null,
     );
   };
+  console.log(selectedReport);
+  console.log(companyReports);
 
-  const handlePushToDb = () => {
+  /* const handlePushToDb = () => {
     const updatedCompanyReports = companyReports?.filter((company) => {
       return company.companyName !== companyReport?.companyName;
     });
@@ -63,7 +67,7 @@ const SearchResultItem = ({
     setCompanyReports(updatedCompanyReports || []);
     setSelectedReport(null);
     setLockedReport(false);
-  };
+  }; */
   return (
     <>
       <div className="mt-4 bg-gray-04/80 backdrop-blur-sm rounded-[20px] overflow-hidden hover:shadow-md transition-shadow">
@@ -94,7 +98,7 @@ const SearchResultItem = ({
                   >
                     {t("crawler.lockReport")}
                   </Button>
-                  <Button
+                  {/* <Button
                     onClick={() => handlePushToDb()}
                     disabled={!lockedReport}
                     variant="ghost"
@@ -102,7 +106,7 @@ const SearchResultItem = ({
                     className="border border-white text-gray-01 hover:bg-gray-03/100"
                   >
                     {t("crawler.updateDb")}
-                  </Button>
+                  </Button> */}
                 </div>
               </div>
               <div className="flex items-center gap-2 text-xs text-gray-02 mt-1">

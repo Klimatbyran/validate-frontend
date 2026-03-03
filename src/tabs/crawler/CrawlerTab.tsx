@@ -163,6 +163,7 @@ export function CrawlerTab() {
         <SearchResultsList
           setCompanyReports={setManualReports}
           companyReports={manualReports}
+          reportYear={reportYearInput}
         />
       )}
 

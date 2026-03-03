@@ -8,11 +8,13 @@ interface SearchResultsListProps {
   setCompanyReports: React.Dispatch<
     React.SetStateAction<CompanyReport[] | null>
   >;
+  reportYear: string;
 }
 
 const SearchResultsList = ({
   companyReports,
   setCompanyReports,
+  reportYear,
 }: SearchResultsListProps) => {
   const { t } = useI18n();
 
@@ -33,6 +35,7 @@ const SearchResultsList = ({
             setCompanyReports={setCompanyReports}
             companyReports={companyReports}
             companyReport={report}
+            reportYear={reportYear}
           />
         );
       })}
