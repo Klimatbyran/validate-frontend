@@ -127,7 +127,10 @@ const SearchResultItem = ({
                 </div>
                 <div className="flex items-center gap-6">
                   <Button
-                    onClick={() => handleSaveReport()}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleSaveReport();
+                    }}
                     disabled={!selectedReport || isLockedReport}
                     variant="ghost"
                     size="sm"

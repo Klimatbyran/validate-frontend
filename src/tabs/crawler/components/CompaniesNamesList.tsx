@@ -104,7 +104,7 @@ const CompaniesNamesList = ({
           </thead>
 
           <tbody className="divide-y divide-gray-03/50">
-            {companiesListWithSortedPeriods?.length &&
+            {companiesListWithSortedPeriods &&
               companiesListWithSortedPeriods.map((company, index) => (
                 <CompaniesNamesResultItem
                   key={index}
