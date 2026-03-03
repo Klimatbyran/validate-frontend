@@ -7,53 +7,45 @@ import { fileURLToPath } from "url";
 // https://vitejs.dev/config/
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Default API base URLs by mode when env vars are not set. */
-const DEFAULT_URLS = {
-  stage: {
-    pipeline: "https://stage-pipeline-api.klimatkollen.se",
-    auth: "https://stage.klimatkollen.se",
+/** Pipeline and garbo URLs by target. Joint VITE_API_MODE or per-backend VITE_PIPELINE_TARGET / VITE_GARBO_TARGET. */
+const URLS_BY_TARGET = {
+  pipeline: {
+    local: "http://localhost:3001",
+    stage: "https://stage-pipeline-api.klimatkollen.se",
+    prod: "https://pipeline-api.klimatkollen.se",
   },
-  prod: {
-    pipeline: "https://pipeline-api.klimatkollen.se",
-    auth: "https://api.klimatkollen.se",
+  garbo: {
+    local: "http://localhost:3000",
+    stage: "https://stage-api.klimatkollen.se",
+    prod: "https://api.klimatkollen.se",
   },
-  local: {
-    pipeline: "http://localhost:3001",
-    auth: "http://localhost:3000",
-  },
-  screenshots: "http://localhost:3000",
-  garboProd: "https://api.klimatkollen.se",
-  garboStage: "https://stage-api.klimatkollen.se",
 } as const;
+
+const GARBO_STAGE = URLS_BY_TARGET.garbo.stage;
+const GARBO_PROD = URLS_BY_TARGET.garbo.prod;
 
 function normalizeUrl(url: string): string {
   return url.replace(/\/+$/, "") || url;
 }
 
-/** Resolve proxy targets: VITE_API_MODE (local|stage|prod) or per-URL env overrides. */
+function targetFromEnv(env: Record<string, string>, key: string, joint: string): "local" | "stage" | "prod" {
+  const v = env[key] || env.VITE_API_MODE || joint;
+  return v === "local" || v === "prod" ? v : "stage";
+}
+
+/** Resolve proxy targets from pipeline target and garbo target (joint or overrides). */
 function getProxyTargets(env: Record<string, string>) {
-  const mode = (env.VITE_API_MODE || "stage") as "local" | "stage" | "prod";
-  const modeDefaults =
-    mode === "local"
-      ? DEFAULT_URLS.local
-      : mode === "prod"
-        ? DEFAULT_URLS.prod
-        : DEFAULT_URLS.stage;
+  const joint = env.VITE_API_MODE || "stage";
+  const pipelineTarget = targetFromEnv(env, "VITE_PIPELINE_TARGET", joint);
+
+  const pipelineUrl = env.VITE_PIPELINE_API_URL ?? URLS_BY_TARGET.pipeline[pipelineTarget];
 
   return {
-    pipeline: normalizeUrl(
-      env.VITE_PIPELINE_API_URL ?? modeDefaults.pipeline,
-    ),
-    auth: normalizeUrl(env.VITE_AUTH_API_URL ?? modeDefaults.auth),
-    screenshots: normalizeUrl(
-      env.VITE_SCREENSHOTS_API_URL ?? DEFAULT_URLS.screenshots,
-    ),
-    garboProd: normalizeUrl(
-      env.VITE_GARBO_PROD_URL ?? DEFAULT_URLS.garboProd,
-    ),
-    garboStage: normalizeUrl(
-      env.VITE_GARBO_STAGE_URL ?? DEFAULT_URLS.garboStage,
-    ),
+    pipeline: normalizeUrl(pipelineUrl),
+    screenshots: normalizeUrl(env.VITE_SCREENSHOTS_API_URL ?? "http://localhost:3000"),
+    garboProd: normalizeUrl(env.VITE_GARBO_PROD_URL ?? GARBO_PROD),
+    garboStage: normalizeUrl(env.VITE_GARBO_STAGE_URL ?? GARBO_STAGE),
+    garboLocal: normalizeUrl(env.VITE_GARBO_LOCAL_URL ?? GARBO_STAGE),
   };
 }
 
@@ -176,27 +168,6 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
-        "/api/auth": {
-          target: urls.auth,
-          changeOrigin: true,
-          secure: !urls.auth.startsWith("http://"),
-          timeout: PROXY_TIMEOUT_MS,
-          proxyTimeout: PROXY_TIMEOUT_MS,
-          configure: (proxy, _options) => {
-            proxy.on("error", (err, _req, res) => {
-              console.warn(`Auth API not available at ${urls.auth}.`);
-              if (res && !res.headersSent) {
-                res.writeHead(503, { "Content-Type": "application/json" });
-                res.end(
-                  JSON.stringify({
-                    error: "Auth API not available",
-                    message: `Auth backend not reachable at ${urls.auth}`,
-                  }),
-                );
-              }
-            });
-          },
-        },
         "/api": {
           target: urls.pipeline,
           changeOrigin: true,
@@ -243,6 +214,14 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: !urls.garboStage.startsWith("http://"),
           rewrite: (path) => path.replace(/^\/garbo-stage/, ""),
+          timeout: PROXY_TIMEOUT_MS,
+          proxyTimeout: PROXY_TIMEOUT_MS,
+        },
+        "/garbo-local": {
+          target: urls.garboLocal,
+          changeOrigin: true,
+          secure: !urls.garboLocal.startsWith("http://"),
+          rewrite: (path) => path.replace(/^\/garbo-local/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
         },
