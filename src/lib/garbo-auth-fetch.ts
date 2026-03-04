@@ -26,7 +26,10 @@ export interface GarboAuthFetchOptions extends RequestInit {
 }
 
 /**
- * Fetch with Garbo auth: Bearer token from storage, credentials: include.
+ * Fetch with Garbo auth: Bearer token from storage.
+ * Uses credentials: "omit" so cross-origin requests (e.g. validate-stage → stage-api)
+ * don't require Access-Control-Allow-Credentials: true from the server. Auth is via
+ * the Authorization header only; cookies are not used for these API calls.
  * On response, if x-auth-token header is present, updates storage and dispatches token-updated.
  */
 export async function garboAuthFetch(
@@ -36,7 +39,7 @@ export async function garboAuthFetch(
   const { skipAuthRefresh, ...init } = options;
   const headers = new Headers(init.headers);
   Object.entries(getAuthHeaders()).forEach(([k, v]) => headers.set(k, v));
-  const res = await fetch(url, { ...init, headers, credentials: "include" });
+  const res = await fetch(url, { ...init, headers, credentials: "omit" });
   if (!skipAuthRefresh) handleAuthResponse(res);
   return res;
 }
