@@ -26,6 +26,7 @@
   "editor": {
     "title": "Editor",
     "subtitle": "Edit database data: tag options, and later company data (tags, emissions, etc.).",
+    "viewMode": "View mode",
     "manageTagOptions": "Manage Tag Options",
     "tagOptions": {
       "description": "Tag options define the allowed values for company tags. Add, update, or remove options below.",
@@ -334,6 +335,7 @@
   "errors": {
     "title": "Error Browser",
     "subtitle": "Compare emissions data between Stage and Prod APIs",
+    "viewMode": "View mode",
     "browser": "Browser",
     "overviewTab": "Overview",
     "hardestReports": "Hardest Reports",
@@ -436,6 +438,7 @@
   },
   "crawler": {
     "title": "Crawler",
+    "viewMode": "View mode",
     "crawlerMode": "Crawler Search",
     "databaseMode": "Database Search",
     "manualSearch": "Manual search for company reports",

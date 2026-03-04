@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { useI18n } from "@/contexts/I18nContext";
+import { ViewModePills } from "@/ui/view-mode-pills";
 import { searchCompanyReports } from "./lib/crawler-utils";
 import { Loader2 } from "lucide-react";
-import { useI18n } from "@/contexts/I18nContext";
 import { CompanyReport, LockedReport } from "./lib/crawler-types";
 import SearchResultsList from "./components/SearchResultsList";
 import CompaniesNamesList from "./components/CompaniesNamesList";
@@ -31,9 +31,9 @@ export function CrawlerTab() {
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean | null>(null);
 
-  const VIEW_MODES: { value: CrawlerViewMode; label: string }[] = [
-    { value: "manual", label: t("crawler.crawlerMode") },
-    { value: "database", label: t("crawler.databaseMode") },
+  const viewModeOptions = [
+    { value: "manual" as const, label: t("crawler.crawlerMode") },
+    { value: "database" as const, label: t("crawler.databaseMode") },
   ];
 
   const handleSearchClick = async () => {
@@ -119,22 +119,12 @@ export function CrawlerTab() {
           <h2 className="text-xl font-semibold text-gray-01">
             {t("crawler.title")}
           </h2>
-          <div className="flex rounded-full overflow-hidden border border-gray-02/20 bg-gray-04/50 p-1">
-            {VIEW_MODES.map((mode) => (
-              <button
-                key={mode.value}
-                onClick={() => setViewMode(mode.value)}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium rounded-full transition-all",
-                  viewMode === mode.value
-                    ? "bg-gray-01 text-gray-05 shadow-sm"
-                    : "text-gray-02 hover:text-gray-01",
-                )}
-              >
-                {mode.label}
-              </button>
-            ))}
-          </div>
+          <ViewModePills
+            options={viewModeOptions}
+            value={viewMode}
+            onValueChange={setViewMode}
+            ariaLabel={t("crawler.viewMode")}
+          />
         </div>
 
         <div className="flex flex-col gap-2 justify-center">

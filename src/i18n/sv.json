@@ -26,6 +26,7 @@
   "editor": {
     "title": "Redigerare",
     "subtitle": "Redigera databasdata: taggalternativ och senare företagsdata (taggar, utsläpp m.m.).",
+    "viewMode": "Visningsläge",
     "manageTagOptions": "Hantera taggalternativ",
     "tagOptions": {
       "description": "Taggalternativ definierar tillåtna värden för företagstaggar. Lägg till, uppdatera eller ta bort nedan.",
@@ -334,6 +335,7 @@
   "errors": {
     "title": "Felöversikt",
     "subtitle": "Jämför utsläppsdata mellan Stage- och Prod-API:er",
+    "viewMode": "Visningsläge",
     "browser": "Utforskare",
     "overviewTab": "Översikt",
     "hardestReports": "Mest komplexa rapporter",
@@ -436,6 +438,7 @@
   },
   "crawler": {
     "title": "Crawler",
+    "viewMode": "Visningsläge",
     "crawlerMode": "Sök med crawler",
     "databaseMode": "Sök mot databas",
     "manualSearch": "Manuell sökning efter företagsrapporter",
