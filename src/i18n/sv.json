@@ -423,7 +423,7 @@
     "clickSelectAll": "Klicka för att välja alla",
     "selectedCompanies": "{{count}} valda",
     "foundReportLinks": "Hittade {{count}} mojlig(a) rapportlänk(ar)",
-    "lockReport": "Lås rapport",
+    "lockReports": "Lås rapporter",
     "updateDb": "Uppdatera DB",
     "exportCsv": "Exportera CSV"
   },

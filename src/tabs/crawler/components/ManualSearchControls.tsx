@@ -1,6 +1,5 @@
-import { Button } from "@/ui/button";
+import ControlsBase from "./ControlsBase";
 import { useI18n } from "@/contexts/I18nContext";
-import { BookDownIcon, WandIcon } from "lucide-react";
 
 interface ManualSearchControlsProps {
   onCompanyNamesChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
@@ -9,6 +8,9 @@ interface ManualSearchControlsProps {
   onExport: () => void;
   isSearchDisabled: boolean;
   isExportDisabled: boolean;
+  isLockDisabled: boolean;
+  onLockReports: () => void;
+  selectedReports: Record<string, string>;
 }
 
 const ManualSearchControls = ({
@@ -18,6 +20,8 @@ const ManualSearchControls = ({
   onExport,
   isSearchDisabled,
   isExportDisabled,
+  onLockReports,
+  isLockDisabled,
 }: ManualSearchControlsProps) => {
   const { t } = useI18n();
 
@@ -39,17 +43,14 @@ const ManualSearchControls = ({
             className="bg-gray-03/20 w-48 border p-2 mb-4 flex items-center justify-center border-gray-03 rounded-lg text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
           />
         </div>
-        <div className="w-full flex justify-between">
-          <Button size={"sm"} onClick={onSearch} disabled={isSearchDisabled}>
-            {t("crawler.search")}
-            <WandIcon className="w-4 h-4 ml-4" />
-          </Button>
-
-          <Button size={"sm"} onClick={onExport} disabled={isExportDisabled}>
-            {t("crawler.exportCsv")}
-            <BookDownIcon className="w-4 h-4 ml-4" />
-          </Button>
-        </div>
+        <ControlsBase
+          onSearch={onSearch}
+          onExport={onExport}
+          isSearchDisabled={isSearchDisabled}
+          isExportDisabled={isExportDisabled}
+          isLockDisabled={isLockDisabled}
+          onLockReports={onLockReports}
+        />
       </div>
     </>
   );

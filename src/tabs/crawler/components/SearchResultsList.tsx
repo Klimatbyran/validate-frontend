@@ -11,16 +11,31 @@ interface SearchResultsListProps {
   setLockedReports: React.Dispatch<React.SetStateAction<LockedReport[]>>;
   lockedReports: LockedReport[];
   reportYear: string;
+  selectedReports: Record<string, string>;
+  setSelectedReports: React.Dispatch<
+    React.SetStateAction<Record<string, string>>
+  >;
 }
 
 const SearchResultsList = ({
   companyReports,
-  setManualReports,
   reportYear,
-  setLockedReports,
-  lockedReports,
+  selectedReports,
+  setSelectedReports,
 }: SearchResultsListProps) => {
   const { t } = useI18n();
+
+  const handleSelect = (companyName: string, url: string | null) => {
+    setSelectedReports((prev) => {
+      const updated = { ...prev };
+      if (url) {
+        updated[companyName] = url;
+      } else {
+        delete updated[companyName];
+      }
+      return updated;
+    });
+  };
 
   return (
     <motion.div
@@ -32,19 +47,15 @@ const SearchResultsList = ({
         {t("crawler.searchResults")}
       </h3>
 
-      {companyReports?.map((report, index) => {
-        return (
-          <SearchResultItem
-            key={index}
-            setLockedReports={setLockedReports}
-            lockedReports={lockedReports}
-            setManualReports={setManualReports}
-            companyReports={companyReports}
-            companyReport={report}
-            reportYear={reportYear}
-          />
-        );
-      })}
+      {companyReports?.map((report, index) => (
+        <SearchResultItem
+          key={index}
+          companyReport={report}
+          reportYear={reportYear}
+          selectedReport={selectedReports[report.companyName]}
+          onSelect={handleSelect}
+        />
+      ))}
     </motion.div>
   );
 };
