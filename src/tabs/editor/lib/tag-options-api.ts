@@ -1,0 +1,91 @@
+/**
+ * Tag options API (garbo /api/tag-options).
+ * All endpoints require auth; uses shared garboAuthFetch (Bearer + x-auth-token).
+ */
+
+import { getGarboApiBaseUrl } from "@/config/api-env";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
+import type { TagOption, CreateTagOptionBody, UpdateTagOptionBody } from "./types";
+
+const BASE = getGarboApiBaseUrl();
+
+function tagOptionsUrl(path = ""): string {
+  const segment = path.replace(/^\//, "");
+  return segment ? `${BASE}/tag-options/${segment}` : `${BASE}/tag-options`;
+}
+
+/** List all tag options (ordered by slug). Requires auth. */
+export async function fetchTagOptions(): Promise<TagOption[]> {
+  const res = await garboAuthFetch(tagOptionsUrl(), {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+  if (res.status === 401) {
+    throw new Error("Please log in to view tag options.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to fetch tag options: ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  return Array.isArray(data) ? data : data.tagOptions ?? data.items ?? [];
+}
+
+/** Create a tag option. Returns created option. 409 if slug exists. Requires auth. */
+export async function createTagOption(
+  body: CreateTagOptionBody
+): Promise<TagOption> {
+  const res = await garboAuthFetch(tagOptionsUrl(), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 401) {
+    throw new Error("Please log in to create tag options.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    if (res.status === 409) throw new Error("Tag option with this slug already exists.");
+    throw new Error(`Failed to create tag option: ${res.status} ${text}`);
+  }
+  return res.json();
+}
+
+/** Update a tag option by id. On slug change, companies are updated in a transaction. Requires auth. */
+export async function updateTagOption(
+  id: string,
+  body: UpdateTagOptionBody
+): Promise<TagOption> {
+  const res = await garboAuthFetch(tagOptionsUrl(id), {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 401) {
+    throw new Error("Please log in to update tag options.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    if (res.status === 409) throw new Error("Another tag option already has this slug.");
+    throw new Error(`Failed to update tag option: ${res.status} ${text}`);
+  }
+  return res.json();
+}
+
+/** Delete a tag option and remove the tag from all companies (transaction). Requires auth. */
+export async function deleteTagOption(id: string): Promise<void> {
+  const res = await garboAuthFetch(tagOptionsUrl(id), { method: "DELETE" });
+  if (res.status === 401) {
+    throw new Error("Please log in to delete tag options.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to delete tag option: ${res.status} ${text}`);
+  }
+}

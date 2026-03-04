@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
-import { useI18n } from "@/contexts/I18nContext";
+import { useOptionalI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import {
   Dialog,
@@ -8,6 +8,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/dialog";
+
+const FALLBACK: Record<string, string> = {
+  "auth.loginRequired": "Login required",
+  "auth.loginRequiredMessage": "You must log in to perform this action.",
+  "auth.loginWithGitHub": "Log in with GitHub",
+  "auth.redirectToGitHub": "You will be redirected to GitHub for authentication.",
+};
+
+function interpolate(str: string, params?: Record<string, string | number>): string {
+  if (!params) return str;
+  return str.replace(/\{\{(\w+)\}\}/g, (_, k) => String(params[k] ?? ""));
+}
+
+function getT(key: string, params?: Record<string, string | number>): string {
+  const value = FALLBACK[key] ?? key;
+  return interpolate(value, params);
+}
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -21,7 +38,8 @@ export function LoginModal({
   message
 }: LoginModalProps) {
   const { login } = useAuth();
-  const { t } = useI18n();
+  const i18n = useOptionalI18n();
+  const t = i18n?.t ?? getT;
   const displayMessage = message ?? t("auth.loginRequiredMessage");
 
   const handleLogin = () => {

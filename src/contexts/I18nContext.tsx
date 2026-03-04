@@ -110,3 +110,8 @@ export function useI18n(): I18nContextValue {
   if (!ctx) throw new Error("useI18n must be used within I18nProvider");
   return ctx;
 }
+
+/** Use i18n when available; returns null when outside I18nProvider (e.g. in some portals). */
+export function useOptionalI18n(): I18nContextValue | null {
+  return React.useContext(I18nContext);
+}

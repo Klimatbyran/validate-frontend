@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useI18n } from '@/contexts/I18nContext';
+import { ViewModePills } from '@/ui/view-mode-pills';
 import { LoadingSpinner } from '@/ui/loading-spinner';
 import { SingleSelectDropdown } from '@/ui/single-select-dropdown';
 import type { ErrorBrowserViewMode } from './types';
@@ -13,11 +13,22 @@ import { HardestReportsView } from './components/HardestReportsView';
 
 const VIEW_MODES: ErrorBrowserViewMode[] = ['browser', 'overview', 'worst'];
 
+const VIEW_MODE_LABEL_KEYS: Record<ErrorBrowserViewMode, string> = {
+  browser: 'errors.browser',
+  overview: 'errors.overviewTab',
+  worst: 'errors.hardestReports',
+};
+
 export function ErrorBrowserTab() {
   const { t } = useI18n();
   const [selectedYear, setSelectedYear] = React.useState(2024);
   const [selectedDataPoint, setSelectedDataPoint] = React.useState('cat-1');
   const [viewMode, setViewMode] = React.useState<ErrorBrowserViewMode>('browser');
+
+  const viewModeOptions = React.useMemo(
+    () => VIEW_MODES.map((value) => ({ value, label: t(VIEW_MODE_LABEL_KEYS[value]) })),
+    [t]
+  );
 
   const {
     isLoading,
@@ -52,22 +63,12 @@ export function ErrorBrowserTab() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex rounded-full overflow-hidden border border-gray-02/20 bg-gray-04/50 p-1">
-              {VIEW_MODES.map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setViewMode(mode)}
-                  className={cn(
-                    'px-4 py-2 text-sm font-medium rounded-full transition-all',
-                    viewMode === mode
-                      ? 'bg-gray-01 text-gray-05 shadow-sm'
-                      : 'text-gray-02 hover:text-gray-01'
-                  )}
-                >
-                  {mode === 'browser' ? t("errors.browser") : mode === 'overview' ? t("errors.overviewTab") : t("errors.hardestReports")}
-                </button>
-              ))}
-            </div>
+            <ViewModePills
+              options={viewModeOptions}
+              value={viewMode}
+              onValueChange={setViewMode}
+              ariaLabel={t("errors.viewMode")}
+            />
             <button
               onClick={fetchData}
               disabled={isLoading}

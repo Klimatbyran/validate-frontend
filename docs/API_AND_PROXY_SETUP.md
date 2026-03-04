@@ -89,7 +89,13 @@ By default, local/stage/prod URLs are fixed (e.g. stage-api.klimatkollen.se for 
 4. **Check the browser console** (DevTools) – on load you’ll see e.g. `[validate] garbo target: stage | pipeline target: stage`.
 5. **Check the network tab** – pipeline requests will show `/pipeline-local`, `/pipeline-stage`, or `/pipeline`; garbo requests will show `/garbo-local`, `/garbo-stage`, or `/garbo`.
 
-When you change `.env`, restart the dev server so the proxy and app config pick up the new values.
+When you change `.env`, **restart the dev server** so the proxy and app config pick up the new values. Env is read when the dev server starts.
+
+**If garbo still hits stage when you set local:**  
+1. Use the exact variable **`VITE_GARBO_TARGET=local`** (not `GARBO_TARGET`; the `VITE_` prefix is required for the app to see it).  
+2. Put it in **`.env.development`** or **`.env.development.local`** in the project root (copy from `.env.development.example` if needed).  
+3. Restart the dev server (`npm run dev`).  
+4. In the browser console on load you should see `[validate] garbo target: local | pipeline target: ...`. In the network tab, garbo requests should go to `http://localhost:5173/garbo-local/...`.
 
 ---
 

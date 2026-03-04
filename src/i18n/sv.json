@@ -20,7 +20,42 @@
     "errorBrowser": "Felutforskare",
     "results": "Resultat",
     "crawler": "Crawler",
-    "climatePlans": "Utforska klimatplaner"
+    "climatePlans": "Utforska klimatplaner",
+    "editor": "Redigerare"
+  },
+  "editor": {
+    "title": "Redigerare",
+    "subtitle": "Redigera databasdata: taggalternativ och senare företagsdata (taggar, utsläpp m.m.).",
+    "viewMode": "Visningsläge",
+    "manageTagOptions": "Hantera taggalternativ",
+    "tagOptions": {
+      "description": "Taggalternativ definierar tillåtna värden för företagstaggar. Lägg till, uppdatera eller ta bort nedan.",
+      "loading": "Laddar taggalternativ...",
+      "loadError": "Kunde inte ladda taggalternativ",
+      "empty": "Inga taggalternativ ännu. Lägg till ett för att komma igång.",
+      "slug": "Slug",
+      "label": "Etikett",
+      "actions": "Åtgärder",
+      "add": "Lägg till taggalternativ",
+      "addTitle": "Lägg till taggalternativ",
+      "editTitle": "Redigera taggalternativ",
+      "edit": "Redigera",
+      "delete": "Ta bort",
+      "deleteTitle": "Ta bort taggalternativ",
+      "cancel": "Avbryt",
+      "create": "Skapa",
+      "save": "Spara",
+      "slugRequired": "Slug krävs.",
+      "slugInvalid": "Slug får bara innehålla små bokstäver, siffror och bindestreck (t.ex. large-cap).",
+      "labelPlaceholder": "Valfri visningsetikett",
+      "dialogDescription": "Slug används i databasen och API:et; etikett är valfri och kan användas för visning.",
+      "slugFormatHint": "Slug: endast små bokstäver, siffror och bindestreck (t.ex. large-cap).",
+      "slugChangeHint": "Om du ändrar sluggen uppdateras alla företag som använder denna tagg.",
+      "confirmDelete": "Ta bort taggalternativet \"{{slug}}\"? Taggen tas bort från alla företag.",
+      "created": "Taggalternativ skapat",
+      "updated": "Taggalternativ uppdaterat",
+      "deleted": "Taggalternativ borttaget"
+    }
   },
   "brand": {
     "title": "Garbo AI",
@@ -300,6 +335,7 @@
   "errors": {
     "title": "Felöversikt",
     "subtitle": "Jämför utsläppsdata mellan Stage- och Prod-API:er",
+    "viewMode": "Visningsläge",
     "browser": "Utforskare",
     "overviewTab": "Översikt",
     "hardestReports": "Mest komplexa rapporter",
@@ -402,6 +438,7 @@
   },
   "crawler": {
     "title": "Crawler",
+    "viewMode": "Visningsläge",
     "crawlerMode": "Sök med crawler",
     "databaseMode": "Sök mot databas",
     "manualSearch": "Manuell sökning efter företagsrapporter",

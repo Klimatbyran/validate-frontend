@@ -12,6 +12,7 @@ import SlideshowPage from "@/pages/SlideshowPage";
 import { ClimatePlansExplorer } from "@/tabs/climate-plans/ClimatePlansExplorer";
 import { CrawlerTab } from "@/tabs/crawler/CrawlerTab";
 import { DebugTab } from "@/tabs/debug/DebugTab";
+import { EditorTab } from "@/tabs/editor/EditorTab";
 import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
 import { JobbstatusTab } from "@/tabs/jobbstatus/JobbstatusTab";
 import { ProcessingTab } from "@/tabs/processing/ProcessingTab";
@@ -56,6 +57,7 @@ function App() {
                     <TabsTrigger value="errors">{t("nav.errorBrowser")}</TabsTrigger>
                     <TabsTrigger value="results">{t("nav.results")}</TabsTrigger>
                     <TabsTrigger value="crawler">{t("nav.crawler")}</TabsTrigger>
+                    <TabsTrigger value="editor">{t("nav.editor")}</TabsTrigger>
                     <TabsTrigger value="climate-plans">{t("nav.climatePlans")}</TabsTrigger>
                   </TabsList>
 
@@ -129,6 +131,17 @@ function App() {
                         className="space-y-6"
                       >
                         <CrawlerTab />
+                      </motion.div>
+                    </TabsContent>
+
+                    <TabsContent key="editor" value="editor" asChild>
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className="space-y-6"
+                      >
+                        <EditorTab />
                       </motion.div>
                     </TabsContent>
 
