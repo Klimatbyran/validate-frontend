@@ -2,7 +2,7 @@
  * API config: pipeline + garbo, with env overrides.
  *
  * Garbo: API base (stage-api / api) for backend calls; origin (stage / klimatkollen) for app links.
- * Pipeline: app uses /api; Vite proxy target from env. Garbo stage/prod URLs defined here; Vite imports for dev proxy.
+ * Pipeline: in dev app uses /pipeline-* (Vite proxy); in prod uses /api. Garbo stage/prod URLs here; Vite imports for dev proxy.
  * Env: VITE_API_MODE (joint), VITE_PIPELINE_TARGET, VITE_GARBO_TARGET. Default: stage.
  *
  * Single-target paths: in the network tab you see which backend you're hitting.
