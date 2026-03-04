@@ -1,5 +1,6 @@
 import axios, { AxiosError } from "axios";
 import { getPipelineApiBaseUrl, getPipelineUrl } from "@/config/api-env";
+import { TOKEN_STORAGE_KEY } from "@/lib/auth-constants";
 import {
   QueueJobsResponse,
   CustomAPIProcess,
@@ -166,7 +167,7 @@ api.interceptors.request.use(
     const isWriteOperation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
 
     if (isWriteOperation) {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem(TOKEN_STORAGE_KEY);
       if (!token) {
         // Show login modal and reject the request
         // Store the config so we can retry after login
@@ -185,7 +186,7 @@ api.interceptors.request.use(
     }
 
     // Add Authorization header if token exists (for all requests)
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -203,7 +204,7 @@ api.interceptors.response.use(
     // Update token if server sends new one in response header
     const newToken = response.headers["x-auth-token"];
     if (newToken) {
-      localStorage.setItem("token", newToken);
+      localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
       // Dispatch event to update AuthContext
       window.dispatchEvent(
         new CustomEvent("token-updated", { detail: newToken })
@@ -220,7 +221,7 @@ api.interceptors.response.use(
       const isWriteOperation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
 
       // Clear invalid token
-      localStorage.removeItem("token");
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
 
       if (isWriteOperation) {
         // For write operations, show login modal and allow retry after login

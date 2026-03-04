@@ -3,6 +3,8 @@
  * Provides authenticatedFetch for direct fetch() calls
  */
 
+import { TOKEN_STORAGE_KEY } from "@/lib/auth-constants";
+
 function isWriteOperation(method: string | undefined): boolean {
   const upperMethod = method?.toUpperCase() || "";
   return ["POST", "PUT", "PATCH", "DELETE"].includes(upperMethod);
@@ -24,7 +26,7 @@ export async function authenticatedFetch(
   const isWrite = isWriteOperation(options.method);
 
   if (isWrite) {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
     if (!token) {
       // Show login modal and return a promise that will be resolved after login
       return new Promise((resolve, reject) => {
@@ -34,7 +36,7 @@ export async function authenticatedFetch(
               action: async () => {
                 // Retry the fetch after login
                 try {
-                  const token = localStorage.getItem("token");
+                  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
                   if (!token) {
                     reject(new Error("Authentication required"));
                     return;

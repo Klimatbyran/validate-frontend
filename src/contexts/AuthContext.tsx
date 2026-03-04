@@ -5,6 +5,7 @@
 import { createContext, useEffect, useState, useCallback } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
+import { TOKEN_STORAGE_KEY } from "@/lib/auth-constants";
 import { AuthContextType, TokenPayload, User } from "@/lib/auth-types";
 import { authenticateWithGithub, getGithubAuthUrl } from "@/lib/auth-api";
 
@@ -12,7 +13,6 @@ export const AuthContext = createContext<AuthContextType | undefined>(
   undefined
 );
 
-const TOKEN_STORAGE_KEY = "token";
 const POST_LOGIN_REDIRECT_KEY = "postLoginRedirect";
 
 function decodeToken(token: string): User | null {

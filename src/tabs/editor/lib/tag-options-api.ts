@@ -1,48 +1,22 @@
 /**
  * Tag options API (garbo /api/tag-options).
- * All endpoints require auth: send JWT in Authorization header; use x-auth-token from response for subsequent requests.
+ * All endpoints require auth; uses shared garboAuthFetch (Bearer + x-auth-token).
  */
 
 import { getGarboApiBaseUrl } from "@/config/api-env";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import type { TagOption, CreateTagOptionBody, UpdateTagOptionBody } from "./types";
 
 const BASE = getGarboApiBaseUrl();
-const TOKEN_STORAGE_KEY = "token";
 
 function tagOptionsUrl(path = ""): string {
   const segment = path.replace(/^\//, "");
   return segment ? `${BASE}/tag-options/${segment}` : `${BASE}/tag-options`;
 }
 
-function getAuthHeaders(): Record<string, string> {
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem(TOKEN_STORAGE_KEY) : null;
-  if (!token) return {};
-  return { Authorization: `Bearer ${token}` };
-}
-
-function handleAuthResponse(res: Response): void {
-  const newToken = res.headers.get("x-auth-token");
-  if (newToken && typeof localStorage !== "undefined") {
-    localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
-    window.dispatchEvent(new CustomEvent("token-updated", { detail: newToken }));
-  }
-}
-
-async function garboFetch(
-  url: string,
-  options: RequestInit & { skipAuthRefresh?: boolean } = {}
-): Promise<Response> {
-  const { skipAuthRefresh, ...init } = options;
-  const headers = new Headers(init.headers);
-  Object.entries(getAuthHeaders()).forEach(([k, v]) => headers.set(k, v));
-  const res = await fetch(url, { ...init, headers, credentials: "include" });
-  if (!skipAuthRefresh) handleAuthResponse(res);
-  return res;
-}
-
 /** List all tag options (ordered by slug). Requires auth. */
 export async function fetchTagOptions(): Promise<TagOption[]> {
-  const res = await garboFetch(tagOptionsUrl(), {
+  const res = await garboAuthFetch(tagOptionsUrl(), {
     method: "GET",
     headers: { Accept: "application/json" },
   });
@@ -61,7 +35,7 @@ export async function fetchTagOptions(): Promise<TagOption[]> {
 export async function createTagOption(
   body: CreateTagOptionBody
 ): Promise<TagOption> {
-  const res = await garboFetch(tagOptionsUrl(), {
+  const res = await garboAuthFetch(tagOptionsUrl(), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -85,7 +59,7 @@ export async function updateTagOption(
   id: string,
   body: UpdateTagOptionBody
 ): Promise<TagOption> {
-  const res = await garboFetch(tagOptionsUrl(id), {
+  const res = await garboAuthFetch(tagOptionsUrl(id), {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -106,7 +80,7 @@ export async function updateTagOption(
 
 /** Delete a tag option and remove the tag from all companies (transaction). Requires auth. */
 export async function deleteTagOption(id: string): Promise<void> {
-  const res = await garboFetch(tagOptionsUrl(id), { method: "DELETE" });
+  const res = await garboAuthFetch(tagOptionsUrl(id), { method: "DELETE" });
   if (res.status === 401) {
     throw new Error("Please log in to delete tag options.");
   }

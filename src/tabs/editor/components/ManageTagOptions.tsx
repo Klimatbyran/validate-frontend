@@ -1,15 +1,8 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Plus } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/ui/dialog";
+import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { toast } from "sonner";
 import type { TagOption } from "../lib/types";
@@ -138,39 +131,23 @@ export function ManageTagOptions() {
         />
       )}
 
-      {/* Delete confirmation – same Dialog style as form modal */}
-      <Dialog
+      <ConfirmDialog
         open={!!deleteConfirmOption}
         onOpenChange={(open) => !open && closeDeleteConfirm()}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("editor.tagOptions.deleteTitle")}</DialogTitle>
-            <DialogDescription>
-              {deleteConfirmOption
-                ? t("editor.tagOptions.confirmDelete", {
-                    slug: deleteConfirmOption.slug,
-                  })
-                : ""}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={closeDeleteConfirm}>
-              {t("editor.tagOptions.cancel")}
-            </Button>
-            <Button
-              type="button"
-              variant="danger"
-              size="sm"
-              onClick={handleConfirmDelete}
-              disabled={actionLoading}
-            >
-              {actionLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {t("editor.tagOptions.delete")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title={t("editor.tagOptions.deleteTitle")}
+        description={
+          deleteConfirmOption
+            ? t("editor.tagOptions.confirmDelete", {
+                slug: deleteConfirmOption.slug,
+              })
+            : ""
+        }
+        cancelLabel={t("editor.tagOptions.cancel")}
+        confirmLabel={t("editor.tagOptions.delete")}
+        confirmVariant="danger"
+        onConfirm={handleConfirmDelete}
+        isLoading={actionLoading}
+      />
 
       <TagOptionFormModal
         open={formOpen}
