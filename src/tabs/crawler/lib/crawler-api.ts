@@ -1,6 +1,6 @@
 import { getGarboApiBaseUrl } from "@/config/api-env";
 
-/** Crawler uses garbo API only. Base follows VITE_API_MODE (stage/prod). */
+/** Crawler uses garbo API only. Base follows VITE_GARBO_TARGET / VITE_API_MODE. */
 type SearchQuery = {
   name: string;
   reportYear: string;
@@ -8,12 +8,14 @@ type SearchQuery = {
 
 function reportsUrl(path: string): string {
   const base = getGarboApiBaseUrl();
-  return `${base.replace(/\/+$/, "")}/${path.replace(/^\//, "")}`;
+  const segment = path.replace(/^\//, "").replace(/\/+$/, "");
+  const url = segment ? `${base}/${segment}` : base;
+  return url.replace(/\/+$/, "");
 }
 
-export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
+export const updateCompanyReports = async (searchQuery: SearchQuery) => {
   try {
-    const response = await fetch(reportsUrl("reports/"), {
+    const response = await fetch(reportsUrl("reports"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -35,19 +37,20 @@ export const fetchCompanyReports = async (searchQuery: SearchQuery) => {
 };
 
 export const fetchCompanyNamesList = async () => {
+  const url = reportsUrl("reports/list");
   try {
-    const response = await fetch(reportsUrl("reports/list/"));
+    const response = await fetch(url);
     if (response.ok) {
       const data = await response.json();
       return data;
     } else {
-      console.error("Failed to fetch company names:", response.statusText);
-      throw new Error(`Failed to fetch company names: ${response.statusText}`);
+      const msg = `Failed to fetch company names: ${response.status} ${response.statusText} (${url})`;
+      console.error(msg);
+      throw new Error(msg);
     }
   } catch (error) {
-    console.error("Error fetching company names:", error);
-    throw error instanceof Error
-      ? error
-      : new Error("Failed to fetch company names");
+    const msg = `Failed to fetch company names (${url})`;
+    console.error(msg, error);
+    throw error instanceof Error ? error : new Error(msg);
   }
 };

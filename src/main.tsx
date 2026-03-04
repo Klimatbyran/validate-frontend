@@ -4,6 +4,12 @@ import App from './App.tsx';
 import './index.css';
 import { BrowserRouter } from 'react-router-dom';
 import { I18nProvider } from '@/contexts/I18nContext';
+import { getGarboTarget, getPipelineTarget } from '@/config/api-env';
+
+// Intentionally keeping this log for debugging purposes and help during development
+if (import.meta.env.DEV) {
+  console.log("[validate] garbo target:", getGarboTarget(), "| pipeline target:", getPipelineTarget());
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -6,6 +6,7 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { authenticatedFetch } from "@/lib/api-helpers";
+import { getPipelineUrl } from "@/config/api-env";
 import { buildRerunRequestData } from "@/lib/job-rerun-utils";
 import { useI18n } from "@/contexts/I18nContext";
 
@@ -27,7 +28,7 @@ export function useJobRerunActions({
     if (!job?.queueId || !job?.id) return;
     try {
       const res = await fetch(
-        `/api/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`
+        getPipelineUrl(`/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`)
       );
       if (res.ok) {
         const json = await res.json();
@@ -45,7 +46,7 @@ export function useJobRerunActions({
     }
     try {
       const response = await authenticatedFetch(
-        `/api/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+        getPipelineUrl(`/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -72,7 +73,7 @@ export function useJobRerunActions({
       }
       try {
         const response = await authenticatedFetch(
-          `/api/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+          getPipelineUrl(`/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`),
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -101,7 +102,7 @@ export function useJobRerunActions({
       }
       try {
         const response = await authenticatedFetch(
-          `/api/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+          getPipelineUrl(`/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`),
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -137,7 +138,7 @@ export function useJobRerunActions({
     );
     try {
       const response = await authenticatedFetch(
-        `/api/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+        getPipelineUrl(`/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -164,7 +165,7 @@ export function useJobRerunActions({
       }
       try {
         const response = await authenticatedFetch(
-          `/api/queues/${queueName}/${encodeURIComponent(effectiveJob.id)}/rerun-and-save`,
+          getPipelineUrl(`/queues/${queueName}/${encodeURIComponent(effectiveJob.id)}/rerun-and-save`),
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

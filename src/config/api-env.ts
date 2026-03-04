@@ -1,21 +1,23 @@
 /**
- * API config: pipeline vs garbo, with optional per-backend overrides.
+ * API config: pipeline + garbo, with env overrides.
  *
- * Three cases:
- * 1. Pipeline (job status, upload, etc.): target = local | stage | prod. App uses relative /api; vite sets proxy from target.
- * 2. Garbo (auth, crawler, etc.): target = local | stage | prod. URLs from getGarbo* below.
- * 3. Error browser: always both stage and prod (getStageGarboUrl / getProdGarboUrl). No target.
+ * Garbo: API base (stage-api / api) for backend calls; origin (stage / klimatkollen) for app links.
+ * Pipeline: app uses /api; Vite proxy target from env. Garbo stage/prod URLs defined here; Vite imports for dev proxy.
+ * Env: VITE_API_MODE (joint), VITE_PIPELINE_TARGET, VITE_GARBO_TARGET. Default: stage.
  *
- * Overrides:
- * - VITE_API_MODE = joint (sets both pipeline and garbo when not overridden). Default: stage.
- * - VITE_PIPELINE_TARGET = pipeline only (overrides joint for pipeline).
- * - VITE_GARBO_TARGET = garbo only (overrides joint for garbo).
+ * Single-target paths: in the network tab you see which backend you're hitting.
+ * Pipeline: /pipeline-local (this machine), /pipeline-stage, /pipeline (prod). Garbo: /garbo-local, /garbo-stage, /garbo.
  */
 
 export type ApiTarget = "local" | "stage" | "prod";
 
-const GARBO_STAGE_ORIGIN = "https://stage-api.klimatkollen.se";
-const GARBO_PROD_ORIGIN = "https://api.klimatkollen.se";
+// Frontend app origin (where the FE is served). Use for redirects, "back to site" links, etc.
+export const GARBO_STAGE_ORIGIN = "https://stage.klimatkollen.se";
+export const GARBO_PROD_ORIGIN = "https://klimatkollen.se";
+
+// API base origin (backend the FE calls). Used here for prod URLs; vite.config imports for dev proxy.
+export const GARBO_STAGE_API = "https://stage-api.klimatkollen.se";
+export const GARBO_PROD_API = "https://api.klimatkollen.se";
 
 function jointMode(): ApiTarget {
   const v = import.meta.env.VITE_API_MODE as string | undefined;
@@ -28,11 +30,30 @@ function jointMode(): ApiTarget {
   return "stage";
 }
 
-/** Pipeline target. Used by vite for /api proxy. App uses relative /api only. */
+/** Pipeline target. Used for pipeline API base URL and vite proxy. */
 export function getPipelineTarget(): ApiTarget {
   const v = import.meta.env.VITE_PIPELINE_TARGET as string | undefined;
   if (v === "local" || v === "stage" || v === "prod") return v;
   return jointMode();
+}
+
+// --- Pipeline (single target: job status, upload, etc.) ---
+
+/** Pipeline API base URL. Dev: /pipeline-local (this machine), /pipeline-stage, or /pipeline (prod). Prod: /api. No trailing slash. */
+export function getPipelineApiBaseUrl(): string {
+  const target = getPipelineTarget();
+  if (import.meta.env.DEV) {
+    if (target === "prod") return "/pipeline";
+    if (target === "local") return "/pipeline-local";
+    return "/pipeline-stage";
+  }
+  return "/api";
+}
+
+/** Pipeline URL for a path (e.g. /processes/batches). No trailing slash on result. */
+export function getPipelineUrl(path: string): string {
+  const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
+  return getPipelineApiBaseUrl() + p;
 }
 
 /** Garbo target. Used for all garbo URLs (auth, crawler, etc.). */
@@ -44,30 +65,33 @@ export function getGarboTarget(): ApiTarget {
 
 // --- Garbo (single target: auth, crawler, etc.) ---
 
-/** Garbo base URL (auth = base + "/auth", crawler = base + "/reports/", etc.). Dev: /garbo-local, /garbo-stage, or /garbo (proxy). */
+/** Garbo base URL (auth = base + "/auth", etc.). Dev: /garbo-local (this machine), /garbo-stage, or /garbo (prod). No trailing slash. */
 export function getGarboApiBaseUrl(): string {
   const target = getGarboTarget();
+  let url: string;
   if (import.meta.env.DEV) {
-    if (target === "prod") return "/garbo/api";
-    if (target === "local") return "/garbo-local/api";
-    return "/garbo-stage/api";
+    if (target === "prod") url = "/garbo/api";
+    else if (target === "local") url = "/garbo-local/api";
+    else url = "/garbo-stage/api";
+  } else {
+    const effective = target === "local" ? "stage" : target;
+    url = effective === "stage" ? `${GARBO_STAGE_API}/api` : `${GARBO_PROD_API}/api`;
   }
-  const effective = target === "local" ? "stage" : target;
-  return effective === "stage" ? `${GARBO_STAGE_ORIGIN}/api` : `${GARBO_PROD_ORIGIN}/api`;
+  return url.replace(/\/+$/, "");
 }
 
 // --- Error browser: always stage + prod (no target) ---
 
-/** Garbo stage URL. Use for comparison only (errors tab). Path e.g. /api/companies. */
+/** Garbo stage API URL. Use for comparison only (errors tab). Path e.g. /api/companies. No trailing slash. */
 export function getStageGarboUrl(path: string): string {
-  const p = path.startsWith("/") ? path : `/${path}`;
+  const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
   if (import.meta.env.DEV) return `/garbo-stage${p}`;
-  return `${GARBO_STAGE_ORIGIN}${p}`;
+  return `${GARBO_STAGE_API}${p}`;
 }
 
-/** Garbo prod URL. Use for comparison (errors tab) or prod-only (e.g. company reference). Path e.g. /api/companies. */
+/** Garbo prod API URL. Use for comparison (errors tab) or prod-only (e.g. company reference). Path e.g. /api/companies. No trailing slash. */
 export function getProdGarboUrl(path: string): string {
-  const p = path.startsWith("/") ? path : `/${path}`;
+  const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
   if (import.meta.env.DEV) return `/garbo${p}`;
-  return `${GARBO_PROD_ORIGIN}${p}`;
+  return `${GARBO_PROD_API}${p}`;
 }

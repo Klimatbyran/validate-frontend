@@ -2,6 +2,7 @@ import { Observable, throwError, timer, of } from 'rxjs';
 import { mergeMap, retryWhen, tap, catchError, finalize } from 'rxjs/operators';
 import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { toast } from 'sonner';
+import { getPipelineApiBaseUrl } from "@/config/api-env";
 
 // Create a reactive wrapper around axios
 export class RxHttpClient {
@@ -84,7 +85,7 @@ export class RxHttpClient {
 
 // Create a singleton instance
 export const rxHttp = new RxHttpClient({
-  baseURL: '/api',
+  baseURL: getPipelineApiBaseUrl(),
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',

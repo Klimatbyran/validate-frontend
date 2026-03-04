@@ -16,6 +16,7 @@ import { JobStatusSection } from "./JobStatusSection";
 import { JobRelationshipsSection } from "./JobRelationshipsSection";
 import { SchemaSection } from "./SchemaSection";
 import { authenticatedFetch } from "@/lib/api-helpers";
+import { getPipelineUrl } from "@/config/api-env";
 import { buildRerunRequestData, buildRerunAndSaveBody, QUEUE_TO_FOLLOW_UP_KEY } from "@/lib/job-rerun-utils";
 import { getQueueDisplayName } from "@/lib/workflow-config";
 import { findJobByQueueId } from "@/lib/workflow-utils";
@@ -60,9 +61,7 @@ export function JobDetailsDialog({
       if (!job.queueId || !job.id) return;
       try {
         const res = await fetch(
-          `/api/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(
-            job.id
-          )}`
+          getPipelineUrl(`/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`)
         );
         if (!res.ok) return;
         const json = await res.json();
@@ -115,7 +114,7 @@ export function JobDetailsDialog({
 
       try {
         const response = await authenticatedFetch(
-          `/api/queues/extractEmissions/${encodeURIComponent(extractEmissionsJob.id)}/rerun-and-save`,
+          getPipelineUrl(`/queues/extractEmissions/${encodeURIComponent(extractEmissionsJob.id)}/rerun-and-save`),
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -214,9 +213,7 @@ export function JobDetailsDialog({
 
     try {
       const response = await authenticatedFetch(
-        `/api/queues/${encodeURIComponent(
-          effectiveJob.queueId
-        )}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+        getPipelineUrl(`/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -239,9 +236,7 @@ export function JobDetailsDialog({
       if (job.queueId && job.id) {
         try {
           const res = await fetch(
-            `/api/queues/${encodeURIComponent(
-              job.queueId
-            )}/${encodeURIComponent(job.id)}`
+            getPipelineUrl(`/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`)
           );
           if (res.ok) {
             const json = await res.json();

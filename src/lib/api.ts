@@ -1,4 +1,5 @@
 import axios, { AxiosError } from "axios";
+import { getPipelineApiBaseUrl, getPipelineUrl } from "@/config/api-env";
 import {
   QueueJobsResponse,
   CustomAPIProcess,
@@ -26,7 +27,7 @@ import {
 } from "rxjs/operators";
 
 /** API path for listing batch IDs (used by Upload and Job status). */
-export const BATCHES_API_ENDPOINT = "/api/processes/batches";
+export const BATCHES_API_ENDPOINT = getPipelineUrl("/processes/batches");
 
 // RxJS-based rate limiter for API requests
 class RxRateLimiter {
@@ -135,7 +136,7 @@ const rateLimiter = new RxRateLimiter(1000);
 
 // Create a custom axios instance with retries
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: getPipelineApiBaseUrl(),
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",

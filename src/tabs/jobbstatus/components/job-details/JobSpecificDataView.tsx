@@ -21,6 +21,7 @@ import {
 } from "../../lib/job-specific-data-parsing";
 import { CompanyNameOverrideDisplay } from "./CompanyNameOverrideDisplay";
 import { useJobRerunActions } from "../../hooks/useJobRerunActions";
+import { getPipelineUrl } from "@/config/api-env";
 import { useI18n } from "@/contexts/I18nContext";
 
 interface JobSpecificDataViewProps {
@@ -40,7 +41,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       if (!job.queueId || !job.id) return;
       try {
         setIsLoading(true);
-        const res = await fetch(`/api/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`);
+        const res = await fetch(getPipelineUrl(`/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`));
         if (!res.ok) return;
         const json = await res.json();
         if (!aborted) setDetailed(json);
