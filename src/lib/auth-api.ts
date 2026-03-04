@@ -32,20 +32,8 @@ export async function authenticateWithGithub(
   return response.data;
 }
 
-/**
- * Get the callback URL for OAuth redirect
- * Based on current environment
- */
+/** OAuth redirect: always current origin so user returns to this app. */
 function getCallbackUrl(): string {
-  const isDev = import.meta.env.DEV;
-
-  if (isDev) {
-    // In dev, use current origin (localhost with port)
-    return `${window.location.origin}/auth/callback`;
-  }
-
-  // In production/staging, use the current origin to ensure correct domain
-  // This ensures we redirect back to the same frontend that initiated the OAuth flow
   return `${window.location.origin}/auth/callback`;
 }
 
