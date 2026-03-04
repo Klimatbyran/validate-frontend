@@ -9,15 +9,21 @@ import {
   DialogTitle,
 } from "@/ui/dialog";
 
-const FALLBACK = {
+const FALLBACK: Record<string, string> = {
   "auth.loginRequired": "Login required",
   "auth.loginRequiredMessage": "You must log in to perform this action.",
   "auth.loginWithGitHub": "Log in with GitHub",
   "auth.redirectToGitHub": "You will be redirected to GitHub for authentication.",
-} as const;
+};
 
-function getT(key: string): string {
-  return (FALLBACK as Record<string, string>)[key] ?? key;
+function interpolate(str: string, params?: Record<string, string | number>): string {
+  if (!params) return str;
+  return str.replace(/\{\{(\w+)\}\}/g, (_, k) => String(params[k] ?? ""));
+}
+
+function getT(key: string, params?: Record<string, string | number>): string {
+  const value = FALLBACK[key] ?? key;
+  return interpolate(value, params);
 }
 
 interface LoginModalProps {

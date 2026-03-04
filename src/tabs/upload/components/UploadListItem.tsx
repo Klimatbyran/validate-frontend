@@ -15,7 +15,7 @@ export function FileListItem({ file }: FileListItemProps) {
   const { t } = useI18n();
   const rawFile = file?.file;
   const sizeMb = rawFile ? (rawFile.size / 1024 / 1024).toFixed(2) : "—";
-  const name = rawFile?.name ?? file?.id ?? "—";
+  const name = rawFile?.name || file?.id || "—";
   const company = file?.company ?? "";
   return (
     <motion.li
