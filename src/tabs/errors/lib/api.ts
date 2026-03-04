@@ -1,20 +1,14 @@
 /**
- * Errors tab API: always stage vs prod (comparison).
- * Use getStageApiUrl / getProdApiUrl so we always fetch both environments.
+ * Errors tab: always stage + prod garbo (comparison).
  */
-import {
-  getStageKkApiUrl,
-  getProdKkApiUrl,
-} from "@/config/api-env";
+import { getStageGarboUrl, getProdGarboUrl } from "@/config/api-env";
 
 const COMPANIES_PATH = "/api/companies";
 
-/** Stage API URL for company data. Use for comparison (always stage). */
 export function getStageApiUrl(): string {
-  return getStageKkApiUrl(COMPANIES_PATH);
+  return getStageGarboUrl(COMPANIES_PATH);
 }
 
-/** Prod API URL for company data. Use for comparison (always prod). */
 export function getProdApiUrl(): string {
-  return getProdKkApiUrl(COMPANIES_PATH);
+  return getProdGarboUrl(COMPANIES_PATH);
 }

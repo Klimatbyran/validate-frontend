@@ -1,5 +1,6 @@
 import { CheckCircle2 } from "lucide-react";
 import { memo } from "react";
+import { GARBO_PROD_ORIGIN } from "@/config/api-env";
 import { CompanyDetails } from "../lib/crawler-types";
 
 interface CompaniesNamesResultItemProps {
@@ -23,7 +24,7 @@ const CompaniesNamesResultItem = ({
       <td className="px-4 py-3 text-sm text-gray-01">
         <div className="flex items-center justify-between gap-3">
           <a
-            href={`http://klimatkollen.se/companies/${wikidataId}`}
+            href={`${GARBO_PROD_ORIGIN}/companies/${wikidataId}`}
             target="_blank"
             rel="noopener noreferrer"
           >

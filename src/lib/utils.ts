@@ -42,8 +42,6 @@ export function isMarkdown(value: string) {
 
 
 
-// Re-export from central config (prod API for reference data)
-export { getPublicApiUrl } from "@/config/api-env";
 // Utility function to check if a string is valid JSON
 export function isJsonString(str: string): boolean {
   try {

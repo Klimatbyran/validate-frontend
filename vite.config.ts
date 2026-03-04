@@ -3,55 +3,47 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import { GARBO_PROD_API, GARBO_STAGE_API } from "./src/config/api-env";
 
 // https://vitejs.dev/config/
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Default API base URLs by mode when env vars are not set. */
-const DEFAULT_URLS = {
-  stage: {
-    pipeline: "https://stage-pipeline-api.klimatkollen.se",
-    auth: "https://stage.klimatkollen.se",
+/** Pipeline URLs and garbo "on this machine" backend. Garbo stage/prod from api-env. */
+const URLS_BY_TARGET = {
+  pipeline: {
+    local: "http://localhost:3001",
+    stage: "https://stage-pipeline-api.klimatkollen.se",
+    prod: "https://pipeline-api.klimatkollen.se",
   },
-  prod: {
-    pipeline: "https://pipeline-api.klimatkollen.se",
-    auth: "https://api.klimatkollen.se",
-  },
-  local: {
-    pipeline: "http://localhost:3001",
-    auth: "http://localhost:3000",
-  },
-  screenshots: "http://localhost:3000",
-  kkApi: "https://api.klimatkollen.se",
-  kkStageApi: "https://stage-api.klimatkollen.se",
+  /** Garbo backend when target is local (garbo running on this machine, e.g. localhost:3000). */
+  garboBackendLocal: "http://localhost:3000",
 } as const;
 
 function normalizeUrl(url: string): string {
   return url.replace(/\/+$/, "") || url;
 }
 
-/** Resolve proxy targets: VITE_API_MODE (local|stage|prod) or per-URL env overrides. */
+function targetFromEnv(env: Record<string, string>, key: string, joint: string): "local" | "stage" | "prod" {
+  const v = env[key] || env.VITE_API_MODE || joint;
+  return v === "local" || v === "prod" ? v : "stage";
+}
+
+/** Resolve proxy targets from pipeline target and garbo target (joint or overrides). */
 function getProxyTargets(env: Record<string, string>) {
-  const mode = (env.VITE_API_MODE || "stage") as "local" | "stage" | "prod";
-  const modeDefaults =
-    mode === "local"
-      ? DEFAULT_URLS.local
-      : mode === "prod"
-        ? DEFAULT_URLS.prod
-        : DEFAULT_URLS.stage;
+  const joint = env.VITE_API_MODE || "stage";
+  const pipelineTarget = targetFromEnv(env, "VITE_PIPELINE_TARGET", joint);
+  const garboTarget = targetFromEnv(env, "VITE_GARBO_TARGET", joint);
 
   return {
-    pipeline: normalizeUrl(
-      env.VITE_PIPELINE_API_URL ?? modeDefaults.pipeline,
-    ),
-    auth: normalizeUrl(env.VITE_AUTH_API_URL ?? modeDefaults.auth),
-    screenshots: normalizeUrl(
-      env.VITE_SCREENSHOTS_API_URL ?? DEFAULT_URLS.screenshots,
-    ),
-    kkApi: normalizeUrl(env.VITE_KK_API_URL ?? DEFAULT_URLS.kkApi),
-    kkStageApi: normalizeUrl(
-      env.VITE_KK_STAGE_API_URL ?? DEFAULT_URLS.kkStageApi,
-    ),
+    pipelineTarget,
+    garboTarget,
+    pipelineLocal: normalizeUrl(env.VITE_PIPELINE_API_URL ?? URLS_BY_TARGET.pipeline.local),
+    pipelineStage: normalizeUrl(env.VITE_PIPELINE_STAGE_URL ?? URLS_BY_TARGET.pipeline.stage),
+    pipelineProd: normalizeUrl(env.VITE_PIPELINE_PROD_URL ?? URLS_BY_TARGET.pipeline.prod),
+    screenshots: normalizeUrl(env.VITE_SCREENSHOTS_API_URL ?? "http://localhost:3000"),
+    garboProd: normalizeUrl(env.VITE_GARBO_PROD_URL ?? GARBO_PROD_API),
+    garboStage: normalizeUrl(env.VITE_GARBO_STAGE_URL ?? GARBO_STAGE_API),
+    garboBackendLocal: normalizeUrl(env.VITE_GARBO_LOCAL_URL ?? URLS_BY_TARGET.garboBackendLocal),
   };
 }
 
@@ -132,12 +124,42 @@ function climatePlansManifest(): Plugin {
 
 const PROXY_TIMEOUT_MS = 30000;
 
-// Proxy targets are driven by env: set VITE_PIPELINE_API_URL, VITE_AUTH_API_URL, etc.
-// See .env.development.example for switching between staging and local backends.
+function pipelineProxyConfigure(targetUrl: string) {
+  return (proxy: any, _options: any) => {
+    proxy.on("error", (_err: any, _req: any, res: any) => {
+      if (res && typeof res.writeHead === "function" && !res.headersSent) {
+        res.writeHead(503, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            error: "Pipeline API not available",
+            message: `Pipeline not reachable at ${targetUrl}`,
+            queues: [],
+            jobs: [],
+            stats: { total: 0, active: 0, completed: 0, failed: 0 },
+          }),
+        );
+      }
+    });
+    proxy.on("proxyReq", (proxyReq: any) => {
+      proxyReq.setHeader("Connection", "keep-alive");
+      proxyReq.setHeader("Keep-Alive", "timeout=30");
+    });
+    proxy.on("proxyRes", (proxyRes: any, req: any) => {
+      console.log(`API: ${req.method} ${req.url} -> ${proxyRes.statusCode}`);
+    });
+  };
+}
+
+// Proxy targets: .env.development or .env.development.example.
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const urls = getProxyTargets(env);
+  if (mode === "development") {
+    const pipelineUrl = urls.pipelineTarget === "local" ? urls.pipelineLocal : urls.pipelineTarget === "prod" ? urls.pipelineProd : urls.pipelineStage;
+    console.log("[vite] pipeline target:", urls.pipelineTarget, "->", pipelineUrl);
+    console.log("[vite] garbo target:", urls.garboTarget, "->", urls.garboStage, urls.garboProd, urls.garboBackendLocal);
+  }
 
   return {
     plugins: [react(), climatePlansManifest()],
@@ -174,97 +196,58 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
-        "/api/auth": {
-          target: urls.auth,
+        // More specific first: pipeline paths so network tab shows which backend (local, stage, prod)
+        "/pipeline-local": {
+          target: urls.pipelineLocal,
           changeOrigin: true,
-          secure: !urls.auth.startsWith("http://"),
+          secure: !urls.pipelineLocal.startsWith("http://"),
+          rewrite: (path) => "/api" + path.replace(/^\/pipeline-local/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
-          configure: (proxy, _options) => {
-            proxy.on("error", (err, _req, res) => {
-              console.warn(`Auth API not available at ${urls.auth}.`);
-              if (res && !res.headersSent) {
-                res.writeHead(503, { "Content-Type": "application/json" });
-                res.end(
-                  JSON.stringify({
-                    error: "Auth API not available",
-                    message: `Auth backend not reachable at ${urls.auth}`,
-                  }),
-                );
-              }
-            });
-          },
+          configure: pipelineProxyConfigure(urls.pipelineLocal),
         },
-        "/api": {
-          target: urls.pipeline,
+        "/pipeline-stage": {
+          target: urls.pipelineStage,
           changeOrigin: true,
-          secure: !urls.pipeline.startsWith("http://"),
+          secure: !urls.pipelineStage.startsWith("http://"),
+          rewrite: (path) => "/api" + path.replace(/^\/pipeline-stage/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
-          configure: (proxy, _options) => {
-            proxy.on("error", (err, _req, res) => {
-              console.warn(`Pipeline API not available at ${urls.pipeline}.`);
-              if (res && !res.headersSent) {
-                res.writeHead(503, { "Content-Type": "application/json" });
-                res.end(
-                  JSON.stringify({
-                    error: "Pipeline API not available",
-                    message: `Pipeline API not reachable at ${urls.pipeline}`,
-                    queues: [],
-                    jobs: [],
-                    stats: { total: 0, active: 0, completed: 0, failed: 0 },
-                  }),
-                );
-              }
-            });
-            proxy.on("proxyReq", (proxyReq, req, _res) => {
-              proxyReq.setHeader("Connection", "keep-alive");
-              proxyReq.setHeader("Keep-Alive", "timeout=30");
-            });
-            proxy.on("proxyRes", (proxyRes, req, _res) => {
-              console.log(
-                `API: ${req.method} ${req.url} -> ${proxyRes.statusCode}`,
-              );
-            });
-          },
+          configure: pipelineProxyConfigure(urls.pipelineStage),
         },
-        "/kkapi": {
-          target: urls.kkApi,
+        "/pipeline": {
+          target: urls.pipelineProd,
           changeOrigin: true,
-          secure: true,
-          rewrite: (path) => path.replace(/^\/kkapi/, "/api"),
+          secure: !urls.pipelineProd.startsWith("http://"),
+          rewrite: (path) => "/api" + path.replace(/^\/pipeline/, ""),
+          timeout: PROXY_TIMEOUT_MS,
+          proxyTimeout: PROXY_TIMEOUT_MS,
+          configure: pipelineProxyConfigure(urls.pipelineProd),
+        },
+        // More specific first: /garbo-stage and /garbo-local (this machine) then /garbo (prod)
+        "/garbo-stage": {
+          target: urls.garboStage,
+          changeOrigin: true,
+          secure: !urls.garboStage.startsWith("http://"),
+          rewrite: (path) => path.replace(/^\/garbo-stage/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
         },
-        "/stagekkapi": {
-          target: urls.kkStageApi,
+        "/garbo-local": {
+          target: urls.garboBackendLocal,
           changeOrigin: true,
-          secure: !urls.kkStageApi.startsWith("http://"),
-          rewrite: (path) => path.replace(/^\/stagekkapi/, ""),
+          secure: !urls.garboBackendLocal.startsWith("http://"),
+          rewrite: (path) => path.replace(/^\/garbo-local/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
         },
-        "/authapi": {
-          target: urls.auth,
+        "/garbo": {
+          target: urls.garboProd,
           changeOrigin: true,
-          secure: !urls.auth.startsWith("http://"),
-          rewrite: (path) => path.replace(/^\/authapi/, ""),
+          secure: !urls.garboProd.startsWith("http://"),
+          rewrite: (path) => path.replace(/^\/garbo/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
-          configure: (proxy, _options) => {
-            proxy.on("error", (err, _req, res) => {
-              console.warn(`Auth API not available at ${urls.auth}.`);
-              if (res && !res.headersSent) {
-                res.writeHead(503, { "Content-Type": "application/json" });
-                res.end(
-                  JSON.stringify({
-                    error: "Auth API not available",
-                    message: `Auth backend not reachable at ${urls.auth}`,
-                  }),
-                );
-              }
-            });
-          },
         },
       },
     },

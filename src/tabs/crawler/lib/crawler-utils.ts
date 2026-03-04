@@ -1,5 +1,5 @@
-import { fetchCompanyReports } from "./crawler-api";
 import type { CompanyReport, LockedReport } from "./crawler-types";
+import { updateCompanyReports } from "./crawler-api";
 
 interface SearchCompanyReportsParams {
   companyNames: string[];
@@ -20,7 +20,7 @@ export const searchCompanyReports = async ({
   }));
 
   const data = await Promise.all(
-    searchQueries.map((query) => fetchCompanyReports(query)),
+    searchQueries.map((query) => updateCompanyReports(query)),
   );
 
   return data.flatMap((response) =>

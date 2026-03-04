@@ -7,6 +7,7 @@
 import { useCallback } from "react";
 import type { SwimlaneCompany } from "@/lib/types";
 import { authenticatedFetch } from "@/lib/api-helpers";
+import { getPipelineUrl } from "@/config/api-env";
 import { findJobByQueueId } from "@/lib/workflow-utils";
 import { buildRerunAndSaveBody } from "@/lib/job-rerun-utils";
 import { toast } from "sonner";
@@ -54,7 +55,7 @@ export function useRerunByWorker(swimlaneCompanies: SwimlaneCompany[]) {
       for (const target of targets) {
         try {
           const response = await authenticatedFetch(
-            `/api/queues/extractEmissions/${encodeURIComponent(target.extractEmissionsJobId)}/rerun-and-save`,
+            getPipelineUrl(`/queues/extractEmissions/${encodeURIComponent(target.extractEmissionsJobId)}/rerun-and-save`),
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
