@@ -402,7 +402,7 @@
   },
   "crawler": {
     "title": "Crawler",
-    "crawlerMode": "Crawler Searh",
+    "crawlerMode": "Crawler Search",
     "databaseMode": "Database Search",
     "manualSearch": "Manual search for company reports",
     "manualSearchGuard": "Enter at least one company and a report year to search.",
@@ -424,8 +424,9 @@
     "clickSelectAll": "Click to Select all",
     "selectedCompanies": "{{count}} selected",
     "foundReportLinks": "Found {{count}} possible report link(s)",
-    "lockReport": "Lock report",
-    "updateDb": "Update DB"
+    "lockReports": "Lock reports",
+    "updateDb": "Update DB",
+    "exportCsv": "Export CSV"
   },
   "climate": {
     "loading": "Loading climate plans...",

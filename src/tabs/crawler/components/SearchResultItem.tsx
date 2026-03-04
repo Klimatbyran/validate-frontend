@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Book,
   ChevronDown,
@@ -7,63 +7,32 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { CompanyReport } from "../lib/crawler-types";
-import { Button } from "@/ui/button";
 import { useI18n } from "@/contexts/I18nContext";
 
 interface SearchResultItemProps {
   companyReport: CompanyReport;
-  companyReports: CompanyReport[] | null;
-  setCompanyReports: React.Dispatch<
-    React.SetStateAction<CompanyReport[] | null>
-  >;
+  reportYear: string;
+  selectedReport?: string;
+  onSelect: (companyName: string, url: string | null) => void;
 }
 
 const SearchResultItem = ({
   companyReport,
-  companyReports,
-  setCompanyReports,
+  selectedReport,
+  onSelect,
 }: SearchResultItemProps) => {
   const { t } = useI18n();
   const { companyName, results } = companyReport;
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  const [lockedReport, setLockedReport] = useState<boolean>(false);
-  const [selectedReport, setSelectedReport] = useState<string | null>(null);
 
   const handleReportSelect = (url: string) => {
     if (selectedReport === url) {
-      setSelectedReport(null);
-      setLockedReport(false);
+      onSelect(companyName, null);
     } else {
-      setSelectedReport(url);
+      onSelect(companyName, url);
     }
   };
 
-  const handleSaveReport = () => {
-    if (!selectedReport) return;
-
-    const updatedResults = [{ url: selectedReport }];
-
-    setLockedReport(true);
-    setCompanyReports((prevReports) =>
-      prevReports
-        ? prevReports.map((c) =>
-            c.companyName === companyReport.companyName
-              ? { ...c, results: updatedResults }
-              : c,
-          )
-        : null,
-    );
-  };
-
-  const handlePushToDb = () => {
-    const updatedCompanyReports = companyReports?.filter((company) => {
-      return company.companyName !== companyReport?.companyName;
-    });
-
-    setCompanyReports(updatedCompanyReports || []);
-    setSelectedReport(null);
-    setLockedReport(false);
-  };
   return (
     <>
       <div className="mt-4 bg-gray-04/80 backdrop-blur-sm rounded-[20px] overflow-hidden hover:shadow-md transition-shadow">
@@ -83,26 +52,6 @@ const SearchResultItem = ({
                 <div className="flex items-center gap-2">
                   <Book className="w-4 h-4 text-white" />
                   <h3 className="font-bold text-gray-01">{companyName}</h3>
-                </div>
-                <div className="flex items-center gap-6">
-                  <Button
-                    onClick={() => handleSaveReport()}
-                    disabled={!selectedReport || lockedReport}
-                    variant="ghost"
-                    size="sm"
-                    className="border border-white text-gray-01 hover:bg-gray-03/100"
-                  >
-                    {t("crawler.lockReport")}
-                  </Button>
-                  <Button
-                    onClick={() => handlePushToDb()}
-                    disabled={!lockedReport}
-                    variant="ghost"
-                    size="sm"
-                    className="border border-white text-gray-01 hover:bg-gray-03/100"
-                  >
-                    {t("crawler.updateDb")}
-                  </Button>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-xs text-gray-02 mt-1">

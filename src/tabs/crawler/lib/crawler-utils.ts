@@ -1,5 +1,5 @@
+import type { CompanyReport, LockedReport } from "./crawler-types";
 import { updateCompanyReports } from "./crawler-api";
-import type { CompanyReport } from "./crawler-types";
 
 interface SearchCompanyReportsParams {
   companyNames: string[];
@@ -30,4 +30,30 @@ export const searchCompanyReports = async ({
       results: item.results ?? [],
     })),
   );
+};
+
+export const writeCrawledReportsToCsv = (companyReports: LockedReport[]) => {
+  const escapeCsvValue = (value: string) => {
+    const escaped = value.replace(/"/g, '""');
+    return `"${escaped}"`;
+  };
+  const header = ["companyName", "reportYear", "url"]
+    .map(escapeCsvValue)
+    .join(";");
+  const rows = companyReports.map((report) =>
+    [
+      escapeCsvValue(report.companyName),
+      escapeCsvValue(report.reportYear),
+      escapeCsvValue(report.url),
+    ].join(";"),
+  );
+  const csvContent = `\ufeff${[header, ...rows].join("\r\n")}`;
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `company_reports_${Date.now()}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };

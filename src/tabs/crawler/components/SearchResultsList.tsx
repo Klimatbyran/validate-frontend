@@ -1,20 +1,41 @@
 import { motion } from "framer-motion";
-import { CompanyReport } from "../lib/crawler-types";
+import { CompanyReport, LockedReport } from "../lib/crawler-types";
 import SearchResultItem from "./SearchResultItem";
 import { useI18n } from "@/contexts/I18nContext";
 
 interface SearchResultsListProps {
   companyReports: CompanyReport[] | null;
-  setCompanyReports: React.Dispatch<
+  setManualReports: React.Dispatch<
     React.SetStateAction<CompanyReport[] | null>
+  >;
+  setLockedReports: React.Dispatch<React.SetStateAction<LockedReport[]>>;
+  lockedReports: LockedReport[];
+  reportYear: string;
+  selectedReports: Record<string, string>;
+  setSelectedReports: React.Dispatch<
+    React.SetStateAction<Record<string, string>>
   >;
 }
 
 const SearchResultsList = ({
   companyReports,
-  setCompanyReports,
+  reportYear,
+  selectedReports,
+  setSelectedReports,
 }: SearchResultsListProps) => {
   const { t } = useI18n();
+
+  const handleSelect = (companyName: string, url: string | null) => {
+    setSelectedReports((prev) => {
+      const updated = { ...prev };
+      if (url) {
+        updated[companyName] = url;
+      } else {
+        delete updated[companyName];
+      }
+      return updated;
+    });
+  };
 
   return (
     <motion.div
@@ -26,16 +47,15 @@ const SearchResultsList = ({
         {t("crawler.searchResults")}
       </h3>
 
-      {companyReports?.map((report, index) => {
-        return (
-          <SearchResultItem
-            key={index}
-            setCompanyReports={setCompanyReports}
-            companyReports={companyReports}
-            companyReport={report}
-          />
-        );
-      })}
+      {companyReports?.map((report, index) => (
+        <SearchResultItem
+          key={index}
+          companyReport={report}
+          reportYear={reportYear}
+          selectedReport={selectedReports[report.companyName]}
+          onSelect={handleSelect}
+        />
+      ))}
     </motion.div>
   );
 };

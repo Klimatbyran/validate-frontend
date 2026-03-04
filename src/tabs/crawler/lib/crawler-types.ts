@@ -2,6 +2,11 @@ export type Report = {
   url: string | null;
 };
 
+export type LockedReport = {
+  companyName: string;
+  reportYear: string;
+  url: string;
+};
 export interface ReportingPeriod {
   startDate: string;
   endDate: string;
