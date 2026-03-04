@@ -20,7 +20,41 @@
     "errorBrowser": "Error Browser",
     "results": "Results",
     "crawler": "Crawler",
-    "climatePlans": "Explore climate plans"
+    "climatePlans": "Explore climate plans",
+    "editor": "Editor"
+  },
+  "editor": {
+    "title": "Editor",
+    "subtitle": "Edit database data: tag options, and later company data (tags, emissions, etc.).",
+    "manageTagOptions": "Manage Tag Options",
+    "tagOptions": {
+      "description": "Tag options define the allowed values for company tags. Add, update, or remove options below.",
+      "loading": "Loading tag options...",
+      "loadError": "Failed to load tag options",
+      "empty": "No tag options yet. Add one to get started.",
+      "slug": "Slug",
+      "label": "Label",
+      "actions": "Actions",
+      "add": "Add tag option",
+      "addTitle": "Add tag option",
+      "editTitle": "Edit tag option",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Remove tag option",
+      "cancel": "Cancel",
+      "create": "Create",
+      "save": "Save",
+      "slugRequired": "Slug is required.",
+      "slugInvalid": "Slug must contain only lowercase letters, numbers, and hyphens (e.g. large-cap).",
+      "labelPlaceholder": "Optional display label",
+      "dialogDescription": "Slug is used in the database and API; label is optional and can be used for display.",
+      "slugFormatHint": "Slug: lowercase letters, numbers, and hyphens only (e.g. large-cap).",
+      "slugChangeHint": "Changing the slug will update all companies that use this tag.",
+      "confirmDelete": "Remove tag option \"{{slug}}\"? This will also remove the tag from all companies.",
+      "created": "Tag option created",
+      "updated": "Tag option updated",
+      "deleted": "Tag option deleted"
+    }
   },
   "brand": {
     "title": "Garbo AI",

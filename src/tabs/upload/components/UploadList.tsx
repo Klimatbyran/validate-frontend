@@ -19,7 +19,9 @@ export function UploadList({
   onContinue,
 }: UploadListProps) {
   const { t } = useI18n();
-  if (uploadedFiles.length === 0 && processedUrls.length === 0) {
+  const fileCount = uploadedFiles?.length ?? 0;
+  const urlCount = processedUrls?.length ?? 0;
+  if (fileCount === 0 && urlCount === 0) {
     return null;
   }
 
@@ -32,8 +34,8 @@ export function UploadList({
       <div className="p-4 border-b border-gray-03 flex justify-between items-center">
         <h2 className="text-lg text-gray-01">
           {uploadMode === "file"
-            ? t("upload.uploadedFiles", { count: uploadedFiles.length })
-            : t("upload.addedLinks", { count: processedUrls.length })}
+            ? t("upload.uploadedFiles", { count: fileCount })
+            : t("upload.addedLinks", { count: urlCount })}
         </h2>
         <Button variant="primary" onClick={onContinue}>
           {t("upload.seeResults")}
@@ -42,10 +44,12 @@ export function UploadList({
       </div>
       <ul className="divide-y divide-gray-03">
         {uploadMode === "file"
-          ? uploadedFiles.map((file) => (
+          ? (uploadedFiles ?? []).filter(Boolean).map((file) => (
               <FileListItem key={file.id} file={file} />
             ))
-          : processedUrls.map((url) => <UrlListItem key={url.id} url={url} />)}
+          : (processedUrls ?? []).filter(Boolean).map((url) => (
+              <UrlListItem key={url.id} url={url} />
+            ))}
       </ul>
     </motion.div>
   );

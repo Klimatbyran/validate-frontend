@@ -13,7 +13,10 @@ interface UrlListItemProps {
 
 export function FileListItem({ file }: FileListItemProps) {
   const { t } = useI18n();
-  const sizeMb = (file.file.size / 1024 / 1024).toFixed(2);
+  const rawFile = file?.file;
+  const sizeMb = rawFile ? (rawFile.size / 1024 / 1024).toFixed(2) : "—";
+  const name = rawFile?.name ?? file?.id ?? "—";
+  const company = file?.company ?? "";
   return (
     <motion.li
       key={file.id}
@@ -23,9 +26,9 @@ export function FileListItem({ file }: FileListItemProps) {
     >
       <File className="w-6 h-6 text-orange-03" />
       <div className="flex-1">
-        <p className="text-sm text-gray-01">{file.file.name}</p>
+        <p className="text-sm text-gray-01">{name}</p>
         <p className="text-sm text-gray-02">
-          {t("upload.companyWithName", { name: file.company })} • {t("upload.fileSizeMb", { size: sizeMb })}
+          {t("upload.companyWithName", { name: company })} • {t("upload.fileSizeMb", { size: sizeMb })}
         </p>
       </div>
     </motion.li>
@@ -34,6 +37,8 @@ export function FileListItem({ file }: FileListItemProps) {
 
 export function UrlListItem({ url }: UrlListItemProps) {
   const { t } = useI18n();
+  const urlStr = url?.url ?? "";
+  const company = url?.company ?? "";
   return (
     <motion.li
       key={url.id}
@@ -43,8 +48,8 @@ export function UrlListItem({ url }: UrlListItemProps) {
     >
       <Link2 className="w-6 h-6 text-orange-03" />
       <div className="flex-1">
-        <p className="text-sm text-gray-01 break-all">{url.url}</p>
-        <p className="text-sm text-gray-02">{t("upload.companyWithName", { name: url.company })}</p>
+        <p className="text-sm text-gray-01 break-all">{urlStr}</p>
+        <p className="text-sm text-gray-02">{t("upload.companyWithName", { name: company })}</p>
       </div>
     </motion.li>
   );
