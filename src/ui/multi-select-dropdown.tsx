@@ -117,6 +117,7 @@ export function MultiSelectDropdown({
   return (
     <div className="relative shrink-0" ref={ref}>
       <Button
+        type="button"
         variant="ghost"
         size="sm"
         onClick={() => setOpen(!open)}

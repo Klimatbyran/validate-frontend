@@ -9,7 +9,8 @@
     "search": "Sök",
     "scrollToTop": "Scrolla till toppen",
     "yes": "Ja",
-    "no": "Nej"
+    "no": "Nej",
+    "optional": "valfritt"
   },
   "nav": {
     "upload": "Ladda upp",
@@ -28,6 +29,64 @@
     "subtitle": "Redigera databasdata: taggalternativ och senare företagsdata (taggar, utsläpp m.m.).",
     "viewMode": "Visningsläge",
     "manageTagOptions": "Hantera taggalternativ",
+    "multiCompany": "Flera företag",
+    "singleCompany": "Ett företag",
+    "fieldEdit": {
+      "value": "Värde",
+      "source": "Källa",
+      "comment": "Kommentar",
+      "sourcePlaceholder": "t.ex. rapport-URL eller Årsredovisning 2024",
+      "commentPlaceholder": "Granskarens anteckning",
+      "markVerified": "Markera som verifierad",
+      "verifyOnly": "Endast verifiera",
+      "cancel": "Avbryt",
+      "save": "Spara"
+    },
+    "companies": {
+      "filters": "Filter",
+      "year": "År",
+      "tag": "Tagg",
+      "allYears": "Alla år",
+      "allTags": "Alla taggar",
+      "loading": "Laddar företag...",
+      "loadError": "Kunde inte ladda företag",
+      "empty": "Inga företag matchar filtren",
+      "company": "Företag",
+      "tags": "Taggar",
+      "reportUrl": "Rapport-URL",
+      "scope1": "Scope 1",
+      "scope2": "Scope 2",
+      "economy": "Ekonomi",
+      "edit": "Redigera",
+      "verify": "Verifiera",
+      "select": "Välj",
+      "selectAll": "Välj alla",
+      "clearSelection": "Rensa val",
+      "companiesSelected": "{{count}} valda",
+      "bulkUpdateTags": "Uppdatera taggar i bulk",
+      "bulkUpdateTagsSuccess": "Taggar uppdaterade för {{count}} företag",
+      "bulkUpdateTagsError": "Kunde inte uppdatera alla företag",
+      "bulkUpdateTagsModal": {
+        "title": "Uppdatera taggar i bulk",
+        "description": "Lägg samma taggar på {{count}} företag. Varje företag får de valda taggarna (ersätter befintliga taggar).",
+        "submit": "Uppdatera {{count}} företag"
+      }
+    },
+    "singleCompanyView": {
+      "searchPlaceholder": "Sök på företagsnamn eller Wikidata-ID...",
+      "selectCompany": "Välj ett företag",
+      "loadingDetail": "Laddar företag...",
+      "loadError": "Kunde inte ladda företag",
+      "sections": {
+        "core": "Grundinfo",
+        "tags": "Taggar",
+        "reportingPeriods": "Rapporteringsperioder",
+        "goals": "Mål",
+        "initiatives": "Initiativ",
+        "industry": "Bransch",
+        "baseYear": "Basår"
+      }
+    },
     "tagOptions": {
       "description": "Taggalternativ definierar tillåtna värden för företagstaggar. Lägg till, uppdatera eller ta bort nedan.",
       "loading": "Laddar taggalternativ...",
