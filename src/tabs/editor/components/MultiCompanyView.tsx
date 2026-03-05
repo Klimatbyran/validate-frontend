@@ -6,7 +6,7 @@ import { LoadingSpinner } from "@/ui/loading-spinner";
 import { toast } from "sonner";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
-import { listCompanies, updateCompanyTags, updateReportingPeriods } from "../lib/companies-api";
+import { listCompanies, updateCompany, updateCompanyTags, updateReportingPeriods } from "../lib/companies-api";
 import { fetchTagOptions } from "../lib/tag-options-api";
 import type {
   GarboCompanyListItem,
@@ -134,8 +134,13 @@ export function MultiCompanyView() {
         let success = 0;
         let failed = 0;
         for (const wikidataId of ids) {
+          const company = companies.find((c) => c.wikidataId === wikidataId);
+          if (!company) {
+            failed++;
+            continue;
+          }
           try {
-            await updateCompanyTags(wikidataId, tags);
+            await updateCompany(wikidataId, { name: company.name, tags });
             success++;
           } catch {
             failed++;
@@ -143,6 +148,11 @@ export function MultiCompanyView() {
         }
         if (failed === 0) {
           toast.success(t("editor.companies.bulkUpdateTagsSuccess", { count: ids.length }));
+          setCompanies((prev) =>
+            prev.map((c) =>
+              selectedWikidataIds.has(c.wikidataId) ? { ...c, tags } : c
+            )
+          );
         } else {
           toast.warning(
             t("editor.companies.bulkUpdateTagsSuccess", { count: success }) +
@@ -159,7 +169,7 @@ export function MultiCompanyView() {
         setActionLoading(false);
       }
     },
-    [selectedWikidataIds, t, loadCompanies]
+    [selectedWikidataIds, companies, t, loadCompanies]
   );
 
   const handleSaveEdit = useCallback(
@@ -174,7 +184,10 @@ export function MultiCompanyView() {
           const tags = value
             ? value.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean)
             : [];
-          await updateCompanyTags(editState.wikidataId, tags);
+          await updateCompany(editState.wikidataId, {
+            name: editState.companyName,
+            tags,
+          });
           toast.success(t("editor.tagOptions.updated"));
           setCompanies((prev) =>
             prev.map((c) =>
