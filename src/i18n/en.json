@@ -96,6 +96,8 @@
     "fileUploadNotSupported": "File upload is not yet supported. Use link mode instead.",
     "onlyPdfAllowed": "Only PDF files are allowed",
     "filesUploaded": "{{count}} file(s) uploaded",
+    "filesSubmitted": "{{count}} file(s) submitted",
+    "uploadAndProcess": "Upload and process",
     "invalidUrlsSkipped": "{{count}} invalid URL(s) skipped",
     "noValidPdfLinks": "No valid PDF links found",
     "linksAdded": "{{count}} link(s) added",

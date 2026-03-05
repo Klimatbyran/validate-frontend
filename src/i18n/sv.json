@@ -96,6 +96,8 @@
     "fileUploadNotSupported": "Filuppladdning stöds inte ännu. Använd länk-läget istället.",
     "onlyPdfAllowed": "Endast PDF-filer är tillåtna",
     "filesUploaded": "{{count}} fil(er) uppladdade",
+    "filesSubmitted": "{{count}} fil(er) skickade",
+    "uploadAndProcess": "Ladda upp och processa",
     "invalidUrlsSkipped": "{{count}} ogiltig(a) URL(er) hoppades över",
     "noValidPdfLinks": "Inga giltiga PDF-länkar hittades",
     "linksAdded": "{{count}} länk(ar) tillagda",

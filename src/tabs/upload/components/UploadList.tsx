@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { UploadedFile, UrlInput } from "../types";
-import { FileListItem, UrlListItem } from "./UploadListItem";
+import { FileListItem, UrlListItem, SubmittedFileListItem } from "./UploadListItem";
 
 interface UploadListProps {
   uploadMode: "file" | "url";
@@ -21,9 +21,12 @@ export function UploadList({
   const { t } = useI18n();
   const fileCount = uploadedFiles?.length ?? 0;
   const urlCount = processedUrls?.length ?? 0;
-  if (fileCount === 0 && urlCount === 0) {
+  const totalCount = fileCount + urlCount;
+  if (totalCount === 0) {
     return null;
   }
+
+  const submittedFileUrls = (processedUrls ?? []).filter((u) => u?.url?.startsWith("uploaded:"));
 
   return (
     <motion.div
@@ -34,7 +37,7 @@ export function UploadList({
       <div className="p-4 border-b border-gray-03 flex justify-between items-center">
         <h2 className="text-lg text-gray-01">
           {uploadMode === "file"
-            ? t("upload.uploadedFiles", { count: fileCount })
+            ? t("upload.uploadedFiles", { count: totalCount })
             : t("upload.addedLinks", { count: urlCount })}
         </h2>
         <Button variant="primary" onClick={onContinue}>
@@ -44,9 +47,16 @@ export function UploadList({
       </div>
       <ul className="divide-y divide-gray-03">
         {uploadMode === "file"
-          ? (uploadedFiles ?? []).filter(Boolean).map((file) => (
-              <FileListItem key={file.id} file={file} />
-            ))
+          ? (
+              <>
+                {(uploadedFiles ?? []).filter(Boolean).map((file) => (
+                  <FileListItem key={file.id} file={file} />
+                ))}
+                {submittedFileUrls.map((url) => (
+                  <SubmittedFileListItem key={url.id} url={url} />
+                ))}
+              </>
+            )
           : (processedUrls ?? []).filter(Boolean).map((url) => (
               <UrlListItem key={url.id} url={url} />
             ))}
