@@ -447,7 +447,7 @@
     "databaseSearch": "Search in database",
     "databaseSearchGuard": "Select at least one company and a year from the existing database.",
     "databaseControlsDescription": "The search will return the reports for each selected company from the selected year that is in the database.",
-    "searchPlaceholder": "Search for companies (separate with commas)",
+    "searchPlaceholder": "Search for companies (one company per line)",
     "reportYear": "Report year",
     "reportYearPlaceholder": "E.g. 2025",
     "search": "Search",

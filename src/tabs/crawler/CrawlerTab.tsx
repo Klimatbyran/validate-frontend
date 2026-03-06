@@ -41,7 +41,7 @@ export function CrawlerTab() {
 
     setIsLoading(true);
     const companyNames = companyNameInput
-      .split(",")
+      .split(/\r?\n/)
       .map((name) => name.trim())
       .filter(Boolean);
 
