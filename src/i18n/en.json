@@ -463,7 +463,12 @@
     "foundReportLinks": "Found {{count}} possible report link(s)",
     "lockReports": "Lock reports",
     "updateDb": "Update DB",
-    "exportCsv": "Export CSV"
+    "exportCsv": "Export CSV",
+    "selectYear": "Select year",
+    "filterDisable": "Disable filter",
+    "filterEnable": "Enable filter",
+    "filterDescription": "Only show companies without a report from the chosen year in the list",
+    "none": "None"
   },
   "climate": {
     "loading": "Loading climate plans...",

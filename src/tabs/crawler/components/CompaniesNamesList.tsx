@@ -9,12 +9,16 @@ interface CompaniesNamesListProps {
   setIsLoading: React.Dispatch<React.SetStateAction<boolean | null>>;
   selectedCompanies: string[];
   onSelectionChange: React.Dispatch<React.SetStateAction<string[]>>;
+  filterYear?: number | null;
+  filterEnabled?: boolean;
 }
 
 const CompaniesNamesList = ({
   setIsLoading,
   selectedCompanies,
   onSelectionChange,
+  filterYear,
+  filterEnabled,
 }: CompaniesNamesListProps) => {
   const { t } = useI18n();
   const [companiesList, setcompaniesList] = useState<CompanyDetails[] | null>(
@@ -56,13 +60,24 @@ const CompaniesNamesList = ({
   };
 
   const companiesListWithSortedPeriods = useMemo(() => {
-    return companiesList?.map((company) => ({
+    let filtered = companiesList;
+    if (filterEnabled && filterYear && !isNaN(filterYear)) {
+      filtered =
+        companiesList?.filter((company) => {
+          // Exclude companies that have a reporting period ending in filterYear
+          return !company.reportingPeriods.some((rp) => {
+            const endYear = new Date(rp.endDate).getFullYear();
+            return endYear === filterYear;
+          });
+        }) || null;
+    }
+    return filtered?.map((company) => ({
       ...company,
       reportingPeriods: [...company.reportingPeriods].sort((a, b) =>
         b.endDate.localeCompare(a.endDate),
       ),
     }));
-  }, [companiesList]);
+  }, [companiesList, filterYear, filterEnabled]);
 
   return (
     <>
@@ -70,9 +85,9 @@ const CompaniesNamesList = ({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden"
+          className="relative bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden"
         >
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto z-0">
             <table className="min-w-full">
               <thead className="bg-gray-03/50">
                 <tr>

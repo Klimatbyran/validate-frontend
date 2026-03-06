@@ -462,7 +462,10 @@
     "foundReportLinks": "Hittade {{count}} mojlig(a) rapportlänk(ar)",
     "lockReports": "Lås rapporter",
     "updateDb": "Uppdatera DB",
-    "exportCsv": "Exportera CSV"
+    "exportCsv": "Exportera CSV",
+    "selectYear": "Välj år",
+    "filterDescription": "Visa endast företag utan en rapport från det valda året i listan",
+    "none": "Inget"
   },
   "climate": {
     "loading": "Laddar klimatplaner...",
