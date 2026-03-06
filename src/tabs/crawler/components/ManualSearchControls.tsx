@@ -27,7 +27,9 @@ const ManualSearchControls = ({
 
   return (
     <>
-      <h3 className="max-w-[750px]">{t("crawler.manualSearchDescription")}</h3>
+      <h3 className="max-w-[750px] text-gray-02">
+        {t("crawler.manualSearchDescription")}
+      </h3>
       <div className="flex flex-col gap-4 justify-center mt-4">
         <div className="flex flex-col gap-2">
           <textarea

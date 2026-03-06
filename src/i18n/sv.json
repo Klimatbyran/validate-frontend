@@ -462,7 +462,9 @@
     "foundReportLinks": "Hittade {{count}} mojlig(a) rapportlänk(ar)",
     "lockReports": "Lås rapporter",
     "updateDb": "Uppdatera DB",
-    "exportCsv": "Exportera CSV"
+    "exportCsv": "Exportera CSV",
+    "selectYear": "Välj år",
+    "none": "Inget"
   },
   "climate": {
     "loading": "Laddar klimatplaner...",

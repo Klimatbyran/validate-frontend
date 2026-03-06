@@ -18,6 +18,8 @@ export function CrawlerTab() {
   const [viewMode, setViewMode] = useState<CrawlerViewMode>("manual");
   const [companyNameInput, setCompanyNameInput] = useState<string>("");
   const [reportYearInput, setReportYearInput] = useState<string>("");
+  const [filterEnabled, setFilterEnabled] = useState<boolean>(false);
+  const [filterYear, setFilterYear] = useState<number | null>(null);
   const [manualReports, setManualReports] = useState<CompanyReport[] | null>(
     null,
   );
@@ -70,7 +72,7 @@ export function CrawlerTab() {
   };
 
   const handleReportYearInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     setReportYearInput(e.target.value);
   };
@@ -160,6 +162,11 @@ export function CrawlerTab() {
                 onExport={handleExportClick}
                 isExportDisabled={!lockedReports.length}
                 isLockDisabled={Object.keys(selectedReports).length === 0}
+                filterEnabled={filterEnabled}
+                setFilterEnabled={setFilterEnabled}
+                filterYear={filterYear}
+                setFilterYear={setFilterYear}
+                searchYear={reportYearInput}
               />
               {(!reportYearInput || !selectedCompanies.length) && (
                 <p className="text-sm text-gray-02 mt-4">
@@ -215,6 +222,8 @@ export function CrawlerTab() {
           setIsLoading={setIsLoading}
           selectedCompanies={selectedCompanies}
           onSelectionChange={setSelectedCompanies}
+          filterYear={filterYear}
+          filterEnabled={filterEnabled}
         />
       )}
     </div>
