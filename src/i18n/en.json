@@ -467,6 +467,7 @@
     "selectYear": "Select year",
     "filterDisable": "Disable filter",
     "filterEnable": "Enable filter",
+    "filterDescription": "Only show companies without a report from the chosen year in the list",
     "none": "None"
   },
   "climate": {

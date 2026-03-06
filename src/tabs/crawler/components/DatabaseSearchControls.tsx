@@ -38,31 +38,9 @@ const DatabaseSearchControls = ({
   const [filterInput, setFilterInput] = useState("");
   return (
     <>
-      <h3 className="text-gray-02 mb-8">
-        {t("crawler.databaseControlsDescription")}
-      </h3>
-      <div className="flex items-center">
-        <input
-          required
-          onChange={onReportYearChange}
-          value={searchYear}
-          placeholder="Ex. 2025"
-          className="bg-gray-03/20 w-48 border mr-4 p-2 flex items-center justify-center border-gray-03 rounded-lg text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
-        />
-        <ControlsBase
-          onSearch={onSearch}
-          onExport={onExport}
-          isSearchDisabled={isSearchDisabled}
-          isExportDisabled={isExportDisabled}
-          isLockDisabled={isLockDisabled}
-          onLockReports={onLockReports}
-        />
-      </div>
-      <div className="flex flex-col gap-2 mt-8">
-        <p className="text-gray-02">
-          Only show companies without a report from the chosen year
-        </p>
-        <div className="flex gap-4">
+      <div className="flex flex-col gap-2">
+        <p className="text-gray-02">{t("crawler.filterDescription")}</p>
+        <div className="flex gap-4 mb-8">
           <input
             type="text"
             value={filterInput}
@@ -96,6 +74,26 @@ const DatabaseSearchControls = ({
               : t("crawler.filterEnable")}
           </button>
         </div>
+      </div>
+      <h3 className="text-gray-02">
+        {t("crawler.databaseControlsDescription")}
+      </h3>
+      <div className="flex items-center">
+        <input
+          required
+          onChange={onReportYearChange}
+          value={searchYear}
+          placeholder="Ex. 2025"
+          className="bg-gray-03/20 w-48 border mr-4 p-2 flex items-center justify-center border-gray-03 rounded-lg text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
+        />
+        <ControlsBase
+          onSearch={onSearch}
+          onExport={onExport}
+          isSearchDisabled={isSearchDisabled}
+          isExportDisabled={isExportDisabled}
+          isLockDisabled={isLockDisabled}
+          onLockReports={onLockReports}
+        />
       </div>
     </>
   );

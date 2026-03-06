@@ -464,6 +464,7 @@
     "updateDb": "Uppdatera DB",
     "exportCsv": "Exportera CSV",
     "selectYear": "Välj år",
+    "filterDescription": "Visa endast företag utan en rapport från det valda året i listan",
     "none": "Inget"
   },
   "climate": {
