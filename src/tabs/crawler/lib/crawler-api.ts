@@ -6,7 +6,7 @@ type SearchQuery = {
   reportYear: string;
 };
 
-function reportsUrl(path: string): string {
+export function reportsUrl(path: string): string {
   const base = getGarboApiBaseUrl();
   const segment = path.replace(/^\//, "").replace(/\/+$/, "");
   const url = segment ? `${base}/${segment}` : base;
