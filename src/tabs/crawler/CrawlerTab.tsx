@@ -108,8 +108,6 @@ export function CrawlerTab() {
     ]);
   };
 
-  console.log("Selected Reports:", selectedReports);
-
   return (
     <div className="flex flex-col gap-6">
       <motion.div

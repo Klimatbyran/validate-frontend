@@ -1,11 +1,29 @@
 import type { CompanyReport, LockedReport } from "./crawler-types";
 import { updateCompanyReports } from "./crawler-api";
+import { reportsUrl } from "./crawler-api";
+
+export interface ReportWithPreview extends Report {
+  previewUrl: string;
+}
 
 interface SearchCompanyReportsParams {
   companyNames: string[];
   reportYear: string;
 }
 
+export const generateReportPreviews = (
+  results: Report[],
+): ReportWithPreview[] => {
+  return results.map((result) => {
+    const previewUrl = result.url ? generateReportPreview(result.url) : "";
+    return { ...result, previewUrl };
+  });
+};
+
+/**
+ * Fetches company reports for given names and year.
+ * Returns an array of CompanyReport objects.
+ */
 export const searchCompanyReports = async ({
   companyNames,
   reportYear,
@@ -14,25 +32,29 @@ export const searchCompanyReports = async ({
     return [];
   }
 
-  const searchQueries = companyNames.map((name) => ({
-    name,
-    reportYear,
-  }));
+  const searchQueries: { name: string; reportYear: string }[] =
+    companyNames.map((name) => ({
+      name,
+      reportYear,
+    }));
 
-  const data = await Promise.all(
+  const data: CompanyReport[][] = await Promise.all(
     searchQueries.map((query) => updateCompanyReports(query)),
   );
 
-  return data.flatMap((response) =>
-    response.results.map((item: CompanyReport) => ({
-      companyName: item.companyName || "Unknown",
-      reportYear: item.reportYear || "Unknown",
-      results: item.results ?? [],
-    })),
-  );
+  return data.flat().map((item) => ({
+    companyName: item.companyName || "Unknown",
+    reportYear: item.reportYear || "Unknown",
+    results: item.results ?? [],
+  }));
 };
 
-export const writeCrawledReportsToCsv = (companyReports: LockedReport[]) => {
+/**
+ * Writes crawled reports to CSV file and triggers download.
+ */
+export const writeCrawledReportsToCsv = (
+  companyReports: LockedReport[],
+): void => {
   const escapeCsvValue = (value: string) => {
     const escaped = value.replace(/"/g, '""');
     return `"${escaped}"`;
@@ -56,4 +78,17 @@ export const writeCrawledReportsToCsv = (companyReports: LockedReport[]) => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+};
+
+/**
+ * Returns the direct preview image URL for a report.
+ */
+export const generateReportPreview = (reportUrl: string): string => {
+  if (!reportUrl) return "";
+
+  const url =
+    reportsUrl("reports/preview?pdfUrl=") + encodeURIComponent(reportUrl);
+
+  // Use relative path for FE/BE compatibility
+  return url;
 };
