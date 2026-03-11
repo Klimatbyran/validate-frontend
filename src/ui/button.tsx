@@ -17,7 +17,7 @@ const buttonVariants = cva(
       },
       size: {
         default: "h-12 px-6 py-3",
-        sm: "min-w-32 max-w-52 h-9 px-4",
+        sm: "min-w-32 max-w-64 h-9 px-4",
         lg: "h-14 px-8",
         icon: "h-9 w-9",
       },

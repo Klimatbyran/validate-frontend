@@ -25,3 +25,9 @@ export interface CompanyDetails {
   wikidataId?: string;
   reportingPeriods: ReportingPeriod[];
 }
+
+export type SelectedReport = {
+  companyName: string;
+  reportYear: string;
+  url: string;
+};

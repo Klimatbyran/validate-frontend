@@ -461,7 +461,7 @@
     "clickSelectAll": "Click to Select all",
     "selectedCompanies": "{{count}} selected",
     "foundReportLinks": "Found {{count}} possible report link(s)",
-    "lockReports": "Lock reports",
+    "waitingRoom": "Add to waiting room",
     "updateDb": "Update DB",
     "exportCsv": "Export CSV",
     "selectYear": "Select year",

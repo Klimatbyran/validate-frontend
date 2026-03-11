@@ -4,7 +4,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { searchCompanyReports } from "./lib/crawler-utils";
 import { Loader2 } from "lucide-react";
-import { CompanyReport, LockedReport } from "./lib/crawler-types";
+import type { CompanyReport, SelectedReport } from "./lib/crawler-types";
 import SearchResultsList from "./components/SearchResultsList";
 import CompaniesNamesList from "./components/CompaniesNamesList";
 import ManualSearchControls from "./components/ManualSearchControls";
@@ -26,10 +26,7 @@ export function CrawlerTab() {
   const [databaseReports, setDatabaseReports] = useState<
     CompanyReport[] | null
   >(null);
-  const [lockedReports, setLockedReports] = useState<LockedReport[]>([]);
-  const [selectedReports, setSelectedReports] = useState<
-    Record<string, string>
-  >({});
+  const [selectedReports, setSelectedReports] = useState<SelectedReport[]>([]);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean | null>(null);
 
@@ -60,9 +57,9 @@ export function CrawlerTab() {
   };
 
   const handleExportClick = () => {
-    if (!lockedReports || !lockedReports.length) return;
+    if (!selectedReports || !selectedReports.length) return;
 
-    writeCrawledReportsToCsv(lockedReports);
+    writeCrawledReportsToCsv(selectedReports);
   };
 
   const handleSearchInputChange = (
@@ -94,19 +91,20 @@ export function CrawlerTab() {
     }
   };
 
-  const handleLockReports = () => {
-    const newLocked = Object.entries(selectedReports).map(
-      ([companyName, url]) => ({
-        companyName,
-        reportYear: reportYearInput,
-        url,
-      }),
-    );
-    setLockedReports((prev) => [
-      ...prev.filter((r) => !selectedReports[r.companyName]),
-      ...newLocked,
-    ]);
+  const handleSelectReport = (report: SelectedReport | null) => {
+    setSelectedReports((prev) => {
+      if (report) {
+        const filtered = prev.filter(
+          (r) => r.companyName !== report.companyName,
+        );
+        return [...filtered, report];
+      } else {
+        return prev;
+      }
+    });
   };
+
+  console.log(selectedReports);
 
   return (
     <div className="flex flex-col gap-6">
@@ -136,10 +134,7 @@ export function CrawlerTab() {
                 onSearch={handleSearchClick}
                 onExport={handleExportClick}
                 isSearchDisabled={!companyNameInput || !reportYearInput}
-                isExportDisabled={!lockedReports.length}
-                onLockReports={handleLockReports}
                 selectedReports={selectedReports}
-                isLockDisabled={Object.keys(selectedReports).length === 0}
               />
               {(!companyNameInput || !reportYearInput) && (
                 <p className="text-sm text-gray-02 mt-4">
@@ -155,11 +150,8 @@ export function CrawlerTab() {
                 onReportYearChange={handleReportYearInputChange}
                 onSearch={handleDatabaseSearchClick}
                 isSearchDisabled={!selectedCompanies.length || !reportYearInput}
-                onLockReports={handleLockReports}
                 selectedReports={selectedReports}
                 onExport={handleExportClick}
-                isExportDisabled={!lockedReports.length}
-                isLockDisabled={Object.keys(selectedReports).length === 0}
                 filterEnabled={filterEnabled}
                 setFilterEnabled={setFilterEnabled}
                 filterYear={filterYear}
@@ -194,24 +186,20 @@ export function CrawlerTab() {
       {viewMode === "manual" && manualReports && (
         <SearchResultsList
           setManualReports={setManualReports}
-          setLockedReports={setLockedReports}
-          lockedReports={lockedReports}
           companyReports={manualReports}
           reportYear={reportYearInput}
           selectedReports={selectedReports}
-          setSelectedReports={setSelectedReports}
+          handleSelectReport={handleSelectReport}
         />
       )}
 
       {viewMode === "database" && databaseReports && (
         <SearchResultsList
-          setLockedReports={setLockedReports}
-          lockedReports={lockedReports}
           setManualReports={setDatabaseReports}
           companyReports={databaseReports}
           reportYear={reportYearInput}
           selectedReports={selectedReports}
-          setSelectedReports={setSelectedReports}
+          handleSelectReport={handleSelectReport}
         />
       )}
 

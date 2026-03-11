@@ -1,4 +1,5 @@
 import ControlsBase from "./ControlsBase";
+import type { SelectedReport } from "../lib/crawler-types";
 import { useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 
@@ -8,11 +9,8 @@ interface DatabaseSearchControlsProps {
   ) => void;
   onSearch: () => void;
   isSearchDisabled: boolean;
-  isLockDisabled: boolean;
-  onLockReports: () => void;
-  selectedReports: Record<string, string>;
+  selectedReports: SelectedReport[];
   onExport: () => void;
-  isExportDisabled: boolean;
   filterEnabled: boolean;
   setFilterEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   filterYear: number | null;
@@ -24,10 +22,8 @@ const DatabaseSearchControls = ({
   onReportYearChange,
   onSearch,
   isSearchDisabled,
-  isLockDisabled,
-  onLockReports,
+  selectedReports,
   onExport,
-  isExportDisabled,
   filterEnabled,
   setFilterEnabled,
   setFilterYear,
@@ -90,9 +86,7 @@ const DatabaseSearchControls = ({
           onSearch={onSearch}
           onExport={onExport}
           isSearchDisabled={isSearchDisabled}
-          isExportDisabled={isExportDisabled}
-          isLockDisabled={isLockDisabled}
-          onLockReports={onLockReports}
+          selectedReports={selectedReports}
         />
       </div>
     </>

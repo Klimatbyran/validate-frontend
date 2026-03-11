@@ -1,4 +1,5 @@
 import ControlsBase from "./ControlsBase";
+import type { SelectedReport } from "../lib/crawler-types";
 import { useI18n } from "@/contexts/I18nContext";
 
 interface ManualSearchControlsProps {
@@ -6,11 +7,8 @@ interface ManualSearchControlsProps {
   onReportYearChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSearch: () => void;
   onExport: () => void;
+  selectedReports: SelectedReport[];
   isSearchDisabled: boolean;
-  isExportDisabled: boolean;
-  isLockDisabled: boolean;
-  onLockReports: () => void;
-  selectedReports: Record<string, string>;
 }
 
 const ManualSearchControls = ({
@@ -19,9 +17,7 @@ const ManualSearchControls = ({
   onSearch,
   onExport,
   isSearchDisabled,
-  isExportDisabled,
-  onLockReports,
-  isLockDisabled,
+  selectedReports,
 }: ManualSearchControlsProps) => {
   const { t } = useI18n();
 
@@ -49,9 +45,7 @@ const ManualSearchControls = ({
           onSearch={onSearch}
           onExport={onExport}
           isSearchDisabled={isSearchDisabled}
-          isExportDisabled={isExportDisabled}
-          isLockDisabled={isLockDisabled}
-          onLockReports={onLockReports}
+          selectedReports={selectedReports}
         />
       </div>
     </>
