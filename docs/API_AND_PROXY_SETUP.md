@@ -112,6 +112,8 @@ Garbo uses two kinds of URLs (per garbo team):
 
 The app uses the API base for requests and the origin constants (`GARBO_STAGE_ORIGIN`, `GARBO_PROD_ORIGIN`) only where it needs to point users at the frontend app.
 
+In **production**, the app uses relative paths for both backends: `/api` (pipeline) and `/garbo-api` (Garbo). Nginx in the container proxies these to the backends (per `BACKEND_API_URL` and `GARBO_API_URL` in k8s), so the browser only talks to the same origin and CORS is not required. Stage vs prod is determined by the deployment overlay (staging vs production) setting those env vars. If you ever call Garbo from a different origin (e.g. Errors tab comparing stage and prod), see **[Garbo CORS requirements](GARBO_CORS_REQUIREMENTS.md)**.
+
 ---
 
 ## Reference

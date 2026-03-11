@@ -1,12 +1,9 @@
 /**
  * API config: pipeline + garbo, with env overrides.
  *
- * Garbo: API base (stage-api / api) for backend calls; origin (stage / klimatkollen) for app links.
- * Pipeline: in dev app uses /pipeline-* (Vite proxy); in prod uses /api. Garbo stage/prod URLs here; Vite imports for dev proxy.
+ * Dev: Vite proxy. Pipeline: /pipeline-local, /pipeline-stage, /pipeline. Garbo: /garbo-local, /garbo-stage, /garbo.
+ * Prod: relative paths. Pipeline: /api. Garbo: /garbo-api. Both are proxied by nginx in the deployment (BACKEND_API_URL, GARBO_API_URL).
  * Env: VITE_API_MODE (joint), VITE_PIPELINE_TARGET, VITE_GARBO_TARGET. Default: stage.
- *
- * Single-target paths: in the network tab you see which backend you're hitting.
- * Pipeline: /pipeline-local (this machine), /pipeline-stage, /pipeline (prod). Garbo: /garbo-local, /garbo-stage, /garbo.
  */
 
 export type ApiTarget = "local" | "stage" | "prod";
@@ -65,7 +62,7 @@ export function getGarboTarget(): ApiTarget {
 
 // --- Garbo (single target: auth, crawler, etc.) ---
 
-/** Garbo base URL (auth = base + "/auth", etc.). Dev: /garbo-local (this machine), /garbo-stage, or /garbo (prod). No trailing slash. */
+/** Garbo base URL (auth = base + "/auth", etc.). Dev: /garbo-local, /garbo-stage, or /garbo (Vite proxy). Prod: /garbo-api (proxied by ingress/nginx). No trailing slash. */
 export function getGarboApiBaseUrl(): string {
   const target = getGarboTarget();
   let url: string;
@@ -74,8 +71,8 @@ export function getGarboApiBaseUrl(): string {
     else if (target === "local") url = "/garbo-local/api";
     else url = "/garbo-stage/api";
   } else {
-    const effective = target === "local" ? "stage" : target;
-    url = effective === "stage" ? `${GARBO_STAGE_API}/api` : `${GARBO_PROD_API}/api`;
+    // Production: use relative path; nginx/k8s proxies /garbo-api to Garbo (stage or prod per deployment).
+    url = "/garbo-api";
   }
   return url.replace(/\/+$/, "");
 }
