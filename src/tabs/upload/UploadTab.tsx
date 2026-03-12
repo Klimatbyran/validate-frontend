@@ -73,7 +73,17 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("File upload error:", errorText);
-        throw new Error(`Failed to add jobs: ${errorText}`);
+        let message = errorText;
+        try {
+          const parsed = JSON.parse(errorText) as { error?: string };
+          if (typeof parsed?.error === "string") message = parsed.error;
+        } catch {
+          /* use errorText as message */
+        }
+        if (response.status === 413) {
+          throw new Error(t("upload.fileTooLarge"));
+        }
+        throw new Error(message);
       }
 
       const newUrls: UrlInput[] = uploadedFiles.map(({ file, id, company }) => ({
