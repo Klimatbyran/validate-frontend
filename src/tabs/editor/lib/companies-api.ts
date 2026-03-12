@@ -184,3 +184,76 @@ export async function updateReportingPeriods(
     throw new Error(`Failed to update reporting periods: ${res.status} ${text}`);
   }
 }
+
+/** Industry GICS option from GET /api/industry-gics. */
+export interface IndustryGicsOption {
+  code: string;
+  label?: string;
+  subIndustryName?: string;
+  sector?: string;
+  group?: string;
+  industry?: string;
+}
+
+/** List industry GICS codes (GET /api/industry-gics). Requires auth. */
+export async function fetchIndustryGics(
+  signal?: AbortSignal
+): Promise<IndustryGicsOption[]> {
+  const url = `${BASE}/industry-gics`.replace(/\/+/g, "/");
+  const res = await garboAuthFetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    signal,
+  });
+  if (res.status === 401) {
+    throw new Error("Please log in to load industry options.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to load industry options: ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  return Array.isArray(data) ? data : data.options ?? data.items ?? [];
+}
+
+/** Set company industry (POST /api/companies/:wikidataId/industry). */
+export async function updateCompanyIndustry(
+  wikidataId: string,
+  body: { industry: { subIndustryCode: string }; metadata?: GarboMetadata; verified?: boolean }
+): Promise<void> {
+  const res = await garboAuthFetch(
+    fullUrl(companiesPath(`${encodeURIComponent(wikidataId)}/industry`)),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body),
+    }
+  );
+  if (res.status === 401) throw new Error("Please log in to update industry.");
+  if (res.status === 404) throw new Error("Company not found.");
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to update industry: ${res.status} ${text}`);
+  }
+}
+
+/** Set company base year (POST /api/companies/:wikidataId/base-year). */
+export async function updateCompanyBaseYear(
+  wikidataId: string,
+  body: { baseYear: number; metadata?: GarboMetadata; verified?: boolean }
+): Promise<void> {
+  const res = await garboAuthFetch(
+    fullUrl(companiesPath(`${encodeURIComponent(wikidataId)}/base-year`)),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body),
+    }
+  );
+  if (res.status === 401) throw new Error("Please log in to update base year.");
+  if (res.status === 404) throw new Error("Company not found.");
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to update base year: ${res.status} ${text}`);
+  }
+}

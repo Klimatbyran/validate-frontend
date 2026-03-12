@@ -28,7 +28,13 @@ export interface GarboCompanyListItem {
   wikidataId: string;
   name: string;
   tags?: string[];
+  /** If list API returns industry (e.g. for sector filter). */
+  industry?: { subIndustryCode?: string } | null;
   reportingPeriods?: GarboReportingPeriodSummary[];
+  /** True if any emissions field has no verifiedBy (computed by Garbo). */
+  hasUnverifiedEmissions?: boolean;
+  /** True if any verifiable field (emissions, economy, industry, baseYear) has no verifiedBy (computed by Garbo). */
+  hasUnverifiedData?: boolean;
 }
 
 /** Summary of a reporting period (for list/grid). */
