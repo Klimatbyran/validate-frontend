@@ -59,7 +59,7 @@ export function FileUploadZone({
         <div className="mt-4 flex justify-end">
           <Button onClick={onFileSubmit}>
             <FileUp className="w-4 h-4 mr-2" />
-            {t("upload.addFiles")}
+            {t("upload.uploadAndProcess")}
           </Button>
         </div>
       )}

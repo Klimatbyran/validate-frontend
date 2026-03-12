@@ -68,7 +68,7 @@ function App() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                       >
-                        <UploadTab onTabChange={setCurrentTab} />
+                        <UploadTab />
                       </motion.div>
                     </TabsContent>
 
