@@ -3,16 +3,20 @@ import { motion } from "framer-motion";
 import { useI18n } from "@/contexts/I18nContext";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { ManageTagOptions } from "./components/ManageTagOptions";
+import { MultiCompanyView } from "./components/MultiCompanyView";
+import { SingleCompanyView } from "./components/SingleCompanyView";
 
-export type EditorViewMode = "tag-options";
+export type EditorViewMode = "tag-options" | "multi-company" | "single-company";
 
 const VIEW_MODES: { value: EditorViewMode; labelKey: string }[] = [
+  { value: "multi-company", labelKey: "editor.multiCompany" },
+  { value: "single-company", labelKey: "editor.singleCompany" },
   { value: "tag-options", labelKey: "editor.manageTagOptions" },
 ];
 
 export function EditorTab() {
   const { t } = useI18n();
-  const [viewMode, setViewMode] = useState<EditorViewMode>("tag-options");
+  const [viewMode, setViewMode] = useState<EditorViewMode>("multi-company");
   const pillOptions = useMemo(
     () => VIEW_MODES.map((m) => ({ value: m.value, label: t(m.labelKey) })),
     [t]
@@ -41,6 +45,16 @@ export function EditorTab() {
         {viewMode === "tag-options" && (
           <div className="pt-2">
             <ManageTagOptions />
+          </div>
+        )}
+        {viewMode === "multi-company" && (
+          <div className="pt-2">
+            <MultiCompanyView />
+          </div>
+        )}
+        {viewMode === "single-company" && (
+          <div className="pt-2">
+            <SingleCompanyView />
           </div>
         )}
       </motion.div>
