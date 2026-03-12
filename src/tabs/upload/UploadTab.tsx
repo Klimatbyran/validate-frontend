@@ -14,11 +14,7 @@ import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
 import { PARSE_PDF_API_ENDPOINT, PARSE_PDF_UPLOAD_ENDPOINT, NEW_BATCH_DROPDOWN_VALUE } from "./lib/utils";
 
-interface UploadTabProps {
-  onTabChange: (tab: string) => void;
-}
-
-export function UploadTab({ onTabChange }: UploadTabProps) {
+export function UploadTab() {
   const { t } = useI18n();
   const [uploadMode, setUploadMode] = useState<"file" | "url">("url");
   const [isDragging, setIsDragging] = useState(false);
@@ -223,22 +219,6 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
     );
   }, []);
 
-  const handleContinue = useCallback(() => {
-    const totalItems = uploadedFiles.length + processedUrls.length;
-    if (totalItems === 0) {
-      toast.error(t("upload.addFilesOrLinksFirst"));
-      return;
-    }
-
-    onTabChange("processing");
-    toast(t("upload.startingProcessing"), {
-      description: t("upload.itemsToProcess", {
-        count: totalItems,
-        type: uploadMode === "file" ? t("upload.file") : t("upload.link"),
-      }),
-    });
-  }, [uploadedFiles.length, processedUrls.length, uploadMode, onTabChange, t]);
-
   return (
     <div className="space-y-6">
       {/* Upload Mode Tabs */}
@@ -313,7 +293,6 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
         uploadMode={uploadMode}
         uploadedFiles={uploadedFiles}
         processedUrls={processedUrls}
-        onContinue={handleContinue}
       />
     </div>
   );
