@@ -464,7 +464,14 @@
     "exportCsv": "Exportera CSV",
     "selectYear": "Välj år",
     "filterDescription": "Visa endast företag utan en rapport från det valda året i listan",
-    "none": "Inget"
+    "none": "Inget",
+    "waitingRoomResults": "Resultat",
+    "waitingRoomStatus": "Status",
+    "successful": "Lyckad",
+    "partiallySuccessful": "Delvis lyckad",
+    "failed": "Misslyckades",
+    "waitingRoomFailureReason": "Orsak för misslyckande",
+    "waitingRoomDuplicateFailure": "En rapport för detta företag och år finns redan i väntrummet."
   },
   "climate": {
     "loading": "Laddar klimatplaner...",

@@ -468,7 +468,14 @@
     "filterDisable": "Disable filter",
     "filterEnable": "Enable filter",
     "filterDescription": "Only show companies without a report from the chosen year in the list",
-    "none": "None"
+    "none": "None",
+    "waitingRoomResults": "Results",
+    "waitingRoomStatus": "Status",
+    "successful": "Successful",
+    "partiallySuccessful": "Partially successful",
+    "failed": "Failed",
+    "waitingRoomFailureReason": "Reason for failure: ",
+    "waitingRoomDuplicateFailure": "A report for this company and year already exists in the waiting room. "
   },
   "climate": {
     "loading": "Loading climate plans...",

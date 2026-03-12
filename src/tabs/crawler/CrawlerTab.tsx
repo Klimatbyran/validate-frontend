@@ -4,38 +4,50 @@ import { useI18n } from "@/contexts/I18nContext";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { searchCompanyReports } from "./lib/crawler-utils";
 import { Loader2 } from "lucide-react";
-import type { CompanyReport, SelectedReport } from "./lib/crawler-types";
+import type {
+  CompanyReport,
+  SelectedReport,
+  CrawlerViewMode,
+} from "./lib/crawler-types";
 import SearchResultsList from "./components/SearchResultsList";
 import CompaniesNamesList from "./components/CompaniesNamesList";
 import ManualSearchControls from "./components/ManualSearchControls";
 import DatabaseSearchControls from "./components/DatabaseSearchControls";
+import WaitingRoomList from "./components/WaitingRoomList";
 import { writeCrawledReportsToCsv } from "./lib/crawler-utils";
-
-type CrawlerViewMode = "manual" | "database";
+import { saveToWaitingRoom } from "./lib/crawler-api";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/ui/dialog";
 
 export function CrawlerTab() {
   const { t } = useI18n();
   const [viewMode, setViewMode] = useState<CrawlerViewMode>("manual");
-  const [companyNameInput, setCompanyNameInput] = useState<string>("");
-  const [reportYearInput, setReportYearInput] = useState<string>("");
-  const [filterEnabled, setFilterEnabled] = useState<boolean>(false);
-  const [filterYear, setFilterYear] = useState<number | null>(null);
   const [manualReports, setManualReports] = useState<CompanyReport[] | null>(
     null,
   );
   const [databaseReports, setDatabaseReports] = useState<
     CompanyReport[] | null
   >(null);
+  const [companyNameInput, setCompanyNameInput] = useState<string>("");
+  const [reportYearInput, setReportYearInput] = useState<string>("");
+  const [filterEnabled, setFilterEnabled] = useState<boolean>(false);
+  const [filterYear, setFilterYear] = useState<number | null>(null);
   const [selectedReports, setSelectedReports] = useState<SelectedReport[]>([]);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean | null>(null);
+  const [waitingRoomResponse, setWaitingRoomResponse] = useState<any>(null);
 
   const viewModeOptions = [
     { value: "manual" as const, label: t("crawler.crawlerMode") },
     { value: "database" as const, label: t("crawler.databaseMode") },
   ];
 
-  const handleSearchClick = async () => {
+  const handleManualSearchClick = async () => {
     if (!companyNameInput || !reportYearInput) return;
 
     setIsLoading(true);
@@ -55,6 +67,29 @@ export function CrawlerTab() {
       setIsLoading(false);
     }
   };
+
+  const handleSelectReport = (report: SelectedReport | null) => {
+    setSelectedReports((prev) => {
+      if (report) {
+        const filtered = prev.filter(
+          (r) => r.companyName !== report.companyName,
+        );
+        return [...filtered, report];
+      } else {
+        return prev;
+      }
+    });
+  };
+
+  const handleAddToWaitingRoomClick = async () => {
+    if (!selectedReports || !selectedReports.length) return;
+
+    const response = await saveToWaitingRoom(selectedReports);
+    if (response) {
+      setWaitingRoomResponse(response);
+    }
+  };
+  console.log(waitingRoomResponse);
 
   const handleExportClick = () => {
     if (!selectedReports || !selectedReports.length) return;
@@ -91,21 +126,34 @@ export function CrawlerTab() {
     }
   };
 
-  const handleSelectReport = (report: SelectedReport | null) => {
-    setSelectedReports((prev) => {
-      if (report) {
-        const filtered = prev.filter(
-          (r) => r.companyName !== report.companyName,
-        );
-        return [...filtered, report];
-      } else {
-        return prev;
-      }
-    });
-  };
+  const responseType = !waitingRoomResponse
+    ? null
+    : waitingRoomResponse.failed.length === 0
+      ? "success"
+      : waitingRoomResponse.failed.length > 0 &&
+          waitingRoomResponse.successes.length > 0
+        ? "partial"
+        : "failed";
 
-  console.log(selectedReports);
+  const responseStatus =
+    responseType === "success"
+      ? t("crawler.successful")
+      : responseType === "partial"
+        ? t("crawler.partiallySuccessful")
+        : responseType === "failed"
+          ? t("crawler.failed")
+          : "";
 
+  const responseStatusClassName =
+    responseType === "success"
+      ? "text-green-600"
+      : responseType === "partial"
+        ? "text-yellow-600"
+        : responseType === "failed"
+          ? "text-red-600"
+          : "text-gray-01";
+
+  console.log("Response status:", waitingRoomResponse);
   return (
     <div className="flex flex-col gap-6">
       <motion.div
@@ -113,6 +161,61 @@ export function CrawlerTab() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6 flex flex-col justify-between"
       >
+        {waitingRoomResponse && (
+          <Dialog
+            open={waitingRoomResponse !== null}
+            onOpenChange={() => setWaitingRoomResponse(null)}
+          >
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{t("crawler.waitingRoomResults")}</DialogTitle>
+                <DialogDescription className="text-md">
+                  {t("crawler.waitingRoomStatus")}:{" "}
+                  <span className={responseStatusClassName}>
+                    {responseStatus}
+                  </span>
+                  {/*          {waitingRoomResponse.message && (
+                    <p className="mt-2 text-sm text-gray-02">
+                      {waitingRoomResponse.message}
+                    </p>
+                  )} */}
+                  {waitingRoomResponse.failed &&
+                    waitingRoomResponse.failed.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-01 font-medium">
+                          {t("crawler.failed")}:
+                        </p>
+                        <WaitingRoomList
+                          variant="failed"
+                          items={waitingRoomResponse.failed}
+                        />
+                      </div>
+                    )}
+                  {waitingRoomResponse.successes &&
+                    waitingRoomResponse.successes.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-01 font-medium">
+                          {t("crawler.successful")}:
+                        </p>
+                        <WaitingRoomList
+                          variant="success"
+                          items={waitingRoomResponse.successes}
+                        />
+                      </div>
+                    )}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col gap-4 pt-4">
+                {/* <Button onClick={login} className="w-full">
+                  {t("auth.loginWithGitHub")}
+                </Button>
+                <p className="text-sm text-gray-02 text-center">
+                  {t("auth.redirectToGitHub")}
+                </p> */}
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-semibold text-gray-01">
             {t("crawler.title")}
@@ -131,10 +234,11 @@ export function CrawlerTab() {
               <ManualSearchControls
                 onCompanyNamesChange={handleSearchInputChange}
                 onReportYearChange={handleReportYearInputChange}
-                onSearch={handleSearchClick}
+                onSearch={handleManualSearchClick}
                 onExport={handleExportClick}
                 isSearchDisabled={!companyNameInput || !reportYearInput}
                 selectedReports={selectedReports}
+                handleAddToWaitingRoomClick={handleAddToWaitingRoomClick}
               />
               {(!companyNameInput || !reportYearInput) && (
                 <p className="text-sm text-gray-02 mt-4">
@@ -157,6 +261,7 @@ export function CrawlerTab() {
                 filterYear={filterYear}
                 setFilterYear={setFilterYear}
                 searchYear={reportYearInput}
+                handleAddToWaitingRoomClick={handleAddToWaitingRoomClick}
               />
               {(!reportYearInput || !selectedCompanies.length) && (
                 <p className="text-sm text-gray-02 mt-4">

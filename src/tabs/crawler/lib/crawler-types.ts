@@ -31,3 +31,10 @@ export type SelectedReport = {
   reportYear: string;
   url: string;
 };
+
+export type CrawlerViewMode = "manual" | "database";
+
+export type crawlerSearchQuery = {
+  name: string;
+  reportYear: string;
+};
