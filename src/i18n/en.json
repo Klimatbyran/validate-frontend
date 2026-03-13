@@ -474,7 +474,7 @@
     "successful": "Successful",
     "partiallySuccessful": "Partially successful",
     "failed": "Failed",
-    "waitingRoomFailureReason": "Reason for failure: ",
+    "waitingRoomFailureReason": "Reason for failure",
     "waitingRoomDuplicateFailure": "A report for this company and year already exists in the waiting room. "
   },
   "climate": {

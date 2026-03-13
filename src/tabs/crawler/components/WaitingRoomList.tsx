@@ -22,11 +22,11 @@ const WaitingRoomList = ({ items, variant }: WaitingRoomListProps) => {
   const isSuccess = variant === "success";
 
   return (
-    <ul className="list-disc list-inside text-sm text-gray-02 mt-1 space-y-2">
+    <ul className="list-disc list-inside text-sm text-gray-02 mt-1 space-y-2 h-auto">
       {items.map((report, index) => (
         <li
           key={`${variant}-${report.companyName ?? "unknown"}-${report.reportYear ?? index}`}
-          className="flex flex-wrap items-center gap-x-4 gap-y-1"
+          className="flex flex-wrap items-center gap-x-4 gap-y-1 pb-2 border-b border-gray-03/60 last:border-b-0"
         >
           <span className="font-medium text-gray-01">
             {report.companyName ?? t("upload.unknownCompany")}
@@ -66,7 +66,10 @@ const WaitingRoomList = ({ items, variant }: WaitingRoomListProps) => {
             <div>
               <span>{t("crawler.waitingRoomFailureReason")}: </span>
               <span className="text-red-500">
-                {t("crawler.waitingRoomDuplicateFailure")}{" "}
+                {report.message ??
+                  (report.error === "duplicate"
+                    ? t("crawler.waitingRoomDuplicateFailure")
+                    : t("upload.unknownError"))}
               </span>
             </div>
           )}

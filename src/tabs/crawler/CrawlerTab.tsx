@@ -8,6 +8,7 @@ import type {
   CompanyReport,
   SelectedReport,
   CrawlerViewMode,
+  SaveReportsListResponse,
 } from "./lib/crawler-types";
 import SearchResultsList from "./components/SearchResultsList";
 import CompaniesNamesList from "./components/CompaniesNamesList";
@@ -40,7 +41,8 @@ export function CrawlerTab() {
   const [selectedReports, setSelectedReports] = useState<SelectedReport[]>([]);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean | null>(null);
-  const [waitingRoomResponse, setWaitingRoomResponse] = useState<any>(null);
+  const [waitingRoomResponse, setWaitingRoomResponse] =
+    useState<SaveReportsListResponse | null>(null);
 
   const viewModeOptions = [
     { value: "manual" as const, label: t("crawler.crawlerMode") },
@@ -84,12 +86,26 @@ export function CrawlerTab() {
   const handleAddToWaitingRoomClick = async () => {
     if (!selectedReports || !selectedReports.length) return;
 
-    const response = await saveToWaitingRoom(selectedReports);
-    if (response) {
-      setWaitingRoomResponse(response);
+    try {
+      const response = await saveToWaitingRoom(selectedReports);
+      if (response) {
+        setWaitingRoomResponse(response);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      setWaitingRoomResponse({
+        message: errorMessage,
+        successes: [],
+        failed: selectedReports.map((r) => ({
+          companyName: r.companyName,
+          reportYear: r.reportYear,
+          error: "unknown",
+          message: errorMessage,
+        })),
+      });
     }
   };
-  console.log(waitingRoomResponse);
 
   const handleExportClick = () => {
     if (!selectedReports || !selectedReports.length) return;
@@ -153,7 +169,6 @@ export function CrawlerTab() {
           ? "text-red-600"
           : "text-gray-01";
 
-  console.log("Response status:", waitingRoomResponse);
   return (
     <div className="flex flex-col gap-6">
       <motion.div
@@ -174,38 +189,35 @@ export function CrawlerTab() {
                   <span className={responseStatusClassName}>
                     {responseStatus}
                   </span>
-                  {/*          {waitingRoomResponse.message && (
-                    <p className="mt-2 text-sm text-gray-02">
-                      {waitingRoomResponse.message}
-                    </p>
-                  )} */}
-                  {waitingRoomResponse.failed &&
-                    waitingRoomResponse.failed.length > 0 && (
-                      <div className="mt-4">
-                        <p className="text-sm text-gray-01 font-medium">
-                          {t("crawler.failed")}:
-                        </p>
-                        <WaitingRoomList
-                          variant="failed"
-                          items={waitingRoomResponse.failed}
-                        />
-                      </div>
-                    )}
-                  {waitingRoomResponse.successes &&
-                    waitingRoomResponse.successes.length > 0 && (
-                      <div className="mt-4">
-                        <p className="text-sm text-gray-01 font-medium">
-                          {t("crawler.successful")}:
-                        </p>
-                        <WaitingRoomList
-                          variant="success"
-                          items={waitingRoomResponse.successes}
-                        />
-                      </div>
-                    )}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-4 pt-4">
+                {waitingRoomResponse.successes &&
+                  waitingRoomResponse.successes.length > 0 && (
+                    <div>
+                      <p className="text-sm text-gray-01 font-medium mb-2">
+                        {t("crawler.successful")}:
+                      </p>
+                      <WaitingRoomList
+                        variant="success"
+                        items={waitingRoomResponse.successes}
+                      />
+                    </div>
+                  )}
+
+                {waitingRoomResponse.failed &&
+                  waitingRoomResponse.failed.length > 0 && (
+                    <div>
+                      <p className="text-sm text-gray-01 font-medium mb-2">
+                        {t("crawler.failed")}:
+                      </p>
+                      <WaitingRoomList
+                        variant="failed"
+                        items={waitingRoomResponse.failed}
+                      />
+                    </div>
+                  )}
+
                 {/* <Button onClick={login} className="w-full">
                   {t("auth.loginWithGitHub")}
                 </Button>

@@ -1,5 +1,9 @@
 import { getGarboApiBaseUrl } from "@/config/api-env";
-import type { crawlerSearchQuery, Report } from "./crawler-types";
+import type {
+  crawlerSearchQuery,
+  SaveReportsListResponse,
+  SelectedReport,
+} from "./crawler-types";
 
 /** Crawler uses garbo API only. Base follows VITE_GARBO_TARGET / VITE_API_MODE. */
 
@@ -52,7 +56,9 @@ export const fetchCompanyNamesList = async () => {
   }
 };
 
-export const saveToWaitingRoom = async (reports: Report[]) => {
+export const saveToWaitingRoom = async (
+  reports: SelectedReport[],
+): Promise<SaveReportsListResponse> => {
   try {
     const response = await fetch(reportsUrl("reports/save-reports"), {
       method: "POST",
@@ -62,41 +68,29 @@ export const saveToWaitingRoom = async (reports: Report[]) => {
       body: JSON.stringify(reports),
     });
 
-    console.log(JSON.stringify(reports));
-
-    let responseBody = null;
+    let responseBody: SaveReportsListResponse | { message?: string } | null =
+      null;
     try {
-      responseBody = await response.json();
+      responseBody = (await response.json()) as SaveReportsListResponse;
     } catch (e) {
       responseBody = null;
     }
 
     if (!response.ok) {
-      // Handle 409 (duplicates)
       if (response.status === 409 && responseBody) {
-        // Backend returns {successes, failed, message}
-        return responseBody;
+        return responseBody as SaveReportsListResponse;
       }
-      const errorMsg =
-        responseBody && responseBody.message
-          ? responseBody.message
-          : `Failed to save to waiting room: ${response.status} ${response.statusText}`;
+      const errorMsg = responseBody?.message
+        ? responseBody.message
+        : `Failed to save to waiting room: ${response.status} ${response.statusText}`;
       throw new Error(errorMsg);
     }
-    // Success
-    if (responseBody && responseBody.successes) {
-      return responseBody;
+
+    if (responseBody) {
+      return responseBody as SaveReportsListResponse;
     }
-    // Fallback: just return all companies as successes
-    return {
-      successes: reports.map((r) =>
-        typeof r === "object" && "companyName" in r
-          ? (r as any).companyName
-          : "Unknown",
-      ),
-      failed: [],
-      message: "All reports saved successfully.",
-    };
+
+    throw new Error("Response doesn't match the schema");
   } catch (error) {
     const msg = "Failed to save to waiting room";
     console.error(msg, error);
