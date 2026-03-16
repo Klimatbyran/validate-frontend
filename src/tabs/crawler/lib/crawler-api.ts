@@ -1,10 +1,11 @@
 import { getGarboApiBaseUrl } from "@/config/api-env";
+import type {
+  crawlerSearchQuery,
+  SaveReportsListResponse,
+  SelectedReport,
+} from "./crawler-types";
 
 /** Crawler uses garbo API only. Base follows VITE_GARBO_TARGET / VITE_API_MODE. */
-type SearchQuery = {
-  name: string;
-  reportYear: string;
-};
 
 export function reportsUrl(path: string): string {
   const base = getGarboApiBaseUrl();
@@ -13,7 +14,7 @@ export function reportsUrl(path: string): string {
   return url.replace(/\/+$/, "");
 }
 
-export const updateCompanyReports = async (searchQuery: SearchQuery) => {
+export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
   try {
     const response = await fetch(reportsUrl("reports"), {
       method: "POST",
@@ -50,6 +51,48 @@ export const fetchCompanyNamesList = async () => {
     }
   } catch (error) {
     const msg = `Failed to fetch company names (${url})`;
+    console.error(msg, error);
+    throw error instanceof Error ? error : new Error(msg);
+  }
+};
+
+export const saveToWaitingRoom = async (
+  reports: SelectedReport[],
+): Promise<SaveReportsListResponse> => {
+  try {
+    const response = await fetch(reportsUrl("reports/save-reports"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(reports),
+    });
+
+    let responseBody: SaveReportsListResponse | { message?: string } | null =
+      null;
+    try {
+      responseBody = (await response.json()) as SaveReportsListResponse;
+    } catch {
+      responseBody = null;
+    }
+
+    if (!response.ok) {
+      if (response.status === 409 && responseBody) {
+        return responseBody as SaveReportsListResponse;
+      }
+      const errorMsg = responseBody?.message
+        ? responseBody.message
+        : `Failed to save to waiting room: ${response.status} ${response.statusText}`;
+      throw new Error(errorMsg);
+    }
+
+    if (responseBody) {
+      return responseBody as SaveReportsListResponse;
+    }
+
+    throw new Error("Response does not match waiting room schema");
+  } catch (error) {
+    const msg = "Failed to save to waiting room";
     console.error(msg, error);
     throw error instanceof Error ? error : new Error(msg);
   }

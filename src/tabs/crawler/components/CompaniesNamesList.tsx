@@ -7,8 +7,8 @@ import { useI18n } from "@/contexts/I18nContext";
 
 interface CompaniesNamesListProps {
   setIsLoading: React.Dispatch<React.SetStateAction<boolean | null>>;
-  selectedCompanies: string[];
   onSelectionChange: React.Dispatch<React.SetStateAction<string[]>>;
+  selectedCompanies: string[];
   filterYear?: number | null;
   filterEnabled?: boolean;
 }
