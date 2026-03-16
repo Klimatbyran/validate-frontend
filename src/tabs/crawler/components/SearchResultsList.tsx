@@ -6,12 +6,12 @@ import { useI18n } from "@/contexts/I18nContext";
 
 interface SearchResultsListProps {
   companyReports: CompanyReport[] | null;
-  setManualReports: React.Dispatch<
-    React.SetStateAction<CompanyReport[] | null>
-  >;
   reportYear: string;
   selectedReports: SelectedReport[];
-  handleSelectReport: (report: SelectedReport | null) => void;
+  handleSelectReport: (
+    companyName: string,
+    report: SelectedReport | null,
+  ) => void;
 }
 
 const SearchResultsList = ({
@@ -42,7 +42,10 @@ const SearchResultsList = ({
               ?.url
           }
           onSelect={(companyName, url) =>
-            handleSelectReport(url ? { companyName, reportYear, url } : null)
+            handleSelectReport(
+              companyName,
+              url ? { companyName, reportYear, url } : null,
+            )
           }
         />
       ))}

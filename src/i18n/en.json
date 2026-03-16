@@ -461,7 +461,7 @@
     "clickSelectAll": "Click to Select all",
     "selectedCompanies": "{{count}} selected",
     "foundReportLinks": "Found {{count}} possible report link(s)",
-    "waitingRoom": "Add to waiting room",
+    "waitingRoom": "To waiting room",
     "updateDb": "Update DB",
     "exportCsv": "Export CSV",
     "selectYear": "Select year",
@@ -475,7 +475,12 @@
     "partiallySuccessful": "Partially successful",
     "failed": "Failed",
     "waitingRoomFailureReason": "Reason for failure",
-    "waitingRoomDuplicateFailure": "A report for this company and year already exists in the waiting room. "
+    "waitingRoomDuplicateFailure": "A report for this company and year already exists in the waiting room.",
+    "unknownError": "An unknown error occurred while adding to the waiting room.",
+    "reportLink": "Report",
+    "wikidataIdLabel": "Wikidata ID",
+    "reportIdLabel": "Report ID",
+    "unknownCompany": "Unknown"
   },
   "climate": {
     "loading": "Loading climate plans...",

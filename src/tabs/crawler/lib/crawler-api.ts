@@ -72,7 +72,7 @@ export const saveToWaitingRoom = async (
       null;
     try {
       responseBody = (await response.json()) as SaveReportsListResponse;
-    } catch (e) {
+    } catch {
       responseBody = null;
     }
 
@@ -90,7 +90,7 @@ export const saveToWaitingRoom = async (
       return responseBody as SaveReportsListResponse;
     }
 
-    throw new Error("Response doesn't match the schema");
+    throw new Error("Response does not match waiting room schema");
   } catch (error) {
     const msg = "Failed to save to waiting room";
     console.error(msg, error);

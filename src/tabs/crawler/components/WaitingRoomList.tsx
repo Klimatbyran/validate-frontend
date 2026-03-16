@@ -29,7 +29,7 @@ const WaitingRoomList = ({ items, variant }: WaitingRoomListProps) => {
           className="flex flex-wrap items-center gap-x-4 gap-y-1 pb-2 border-b border-gray-03/60 last:border-b-0"
         >
           <span className="font-medium text-gray-01">
-            {report.companyName ?? t("upload.unknownCompany")}
+            {report.companyName ?? t("crawler.unknownCompany")}
           </span>
 
           {report.reportYear && (
@@ -42,13 +42,12 @@ const WaitingRoomList = ({ items, variant }: WaitingRoomListProps) => {
             <>
               {report.id && (
                 <span>
-                  {t("jobstatus.metadata.id")}: {report.id}
+                  {t("crawler.reportIdLabel")}: {report.id}
                 </span>
               )}
               {report.wikidataId && (
                 <span>
-                  {t("jobstatus.jobdetails.wikidataIdLabel")}:{" "}
-                  {report.wikidataId}
+                  {t("crawler.wikidataIdLabel")}: {report.wikidataId}
                 </span>
               )}
               {report.url && (
@@ -58,7 +57,7 @@ const WaitingRoomList = ({ items, variant }: WaitingRoomListProps) => {
                   rel="noreferrer"
                   className="text-blue-03 underline break-all"
                 >
-                  {t("jobstatus.jobdetails.reportLink")}
+                  {t("crawler.reportLink")}
                 </a>
               )}
             </>
@@ -69,7 +68,7 @@ const WaitingRoomList = ({ items, variant }: WaitingRoomListProps) => {
                 {report.message ??
                   (report.error === "duplicate"
                     ? t("crawler.waitingRoomDuplicateFailure")
-                    : t("upload.unknownError"))}
+                    : t("crawler.unknownError"))}
               </span>
             </div>
           )}

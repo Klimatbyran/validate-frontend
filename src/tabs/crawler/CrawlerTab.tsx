@@ -70,15 +70,16 @@ export function CrawlerTab() {
     }
   };
 
-  const handleSelectReport = (report: SelectedReport | null) => {
+  const handleSelectReport = (
+    companyName: string,
+    report: SelectedReport | null,
+  ) => {
     setSelectedReports((prev) => {
       if (report) {
-        const filtered = prev.filter(
-          (r) => r.companyName !== report.companyName,
-        );
+        const filtered = prev.filter((r) => r.companyName !== companyName);
         return [...filtered, report];
       } else {
-        return prev;
+        return prev.filter((r) => r.companyName !== companyName);
       }
     });
   };
@@ -217,13 +218,6 @@ export function CrawlerTab() {
                       />
                     </div>
                   )}
-
-                {/* <Button onClick={login} className="w-full">
-                  {t("auth.loginWithGitHub")}
-                </Button>
-                <p className="text-sm text-gray-02 text-center">
-                  {t("auth.redirectToGitHub")}
-                </p> */}
               </div>
             </DialogContent>
           </Dialog>
@@ -302,7 +296,6 @@ export function CrawlerTab() {
       )}
       {viewMode === "manual" && manualReports && (
         <SearchResultsList
-          setManualReports={setManualReports}
           companyReports={manualReports}
           reportYear={reportYearInput}
           selectedReports={selectedReports}
@@ -312,7 +305,6 @@ export function CrawlerTab() {
 
       {viewMode === "database" && databaseReports && (
         <SearchResultsList
-          setManualReports={setDatabaseReports}
           companyReports={databaseReports}
           reportYear={reportYearInput}
           selectedReports={selectedReports}

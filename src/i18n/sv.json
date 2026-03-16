@@ -460,7 +460,7 @@
     "clickSelectAll": "Klicka för att välja alla",
     "selectedCompanies": "{{count}} valda",
     "foundReportLinks": "Hittade {{count}} mojlig(a) rapportlänk(ar)",
-    "waitingRoom": "Lägg till i väntrummet",
+    "waitingRoom": "Lägg i väntrum",
     "exportCsv": "Exportera CSV",
     "selectYear": "Välj år",
     "filterDescription": "Visa endast företag utan en rapport från det valda året i listan",
@@ -471,7 +471,12 @@
     "partiallySuccessful": "Delvis lyckad",
     "failed": "Misslyckades",
     "waitingRoomFailureReason": "Orsak för misslyckande",
-    "waitingRoomDuplicateFailure": "En rapport för detta företag och år finns redan i väntrummet."
+    "waitingRoomDuplicateFailure": "En rapport för detta företag och år finns redan i väntrummet.",
+    "unknownError": "Ett okänt fel uppstod.",
+    "reportLink": "Rapport",
+    "wikidataIdLabel": "Wikidata ID",
+    "reportIdLabel": "Rapport ID",
+    "unknownCompany": "Okänt"
   },
   "climate": {
     "loading": "Laddar klimatplaner...",
