@@ -10,6 +10,7 @@ import { CompanyReport } from "../lib/crawler-types";
 import { useI18n } from "@/contexts/I18nContext";
 import { generateReportPreviews } from "../lib/crawler-utils";
 import { LoadingSpinner } from "@/ui/loading-spinner";
+import { CopyButton } from "@/ui/copy-button";
 import ReactDOM from "react-dom";
 
 interface SearchResultItemProps {
@@ -167,6 +168,10 @@ const SearchResultItem = ({
                       {result?.url?.substring(0, 100) + "..."}
                       <ExternalLink className="w-4 h-4 ml-2" />
                     </a>
+                    <CopyButton
+                      getText={() => String(result.url ?? "")}
+                      className="px-2 py-0.5 border-gray-03/70 bg-gray-03/20 text-gray-02 hover:bg-gray-03/40"
+                    />
                   </span>
                 </div>
                 <button
