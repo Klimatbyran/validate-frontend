@@ -3,6 +3,7 @@
     "loading": "Laddar...",
     "copy": "Kopiera",
     "copied": "Kopierad",
+    "copyFailed": "Kopiering misslyckades",
     "filter": "Filter",
     "clearFilters": "Rensa filter",
     "refresh": "Uppdatera",

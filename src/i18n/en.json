@@ -3,6 +3,7 @@
     "loading": "Loading...",
     "copy": "Copy",
     "copied": "Copied",
+    "copyFailed": "Copy failed",
     "filter": "Filter",
     "clearFilters": "Clear filters",
     "refresh": "Refresh",
