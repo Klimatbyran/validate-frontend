@@ -49,9 +49,22 @@ export function CrawlerTab() {
     { value: "database" as const, label: t("crawler.databaseMode") },
   ];
 
+  const resetSearchSlate = ({
+    clearCompanySelection = false,
+  }: { clearCompanySelection?: boolean } = {}) => {
+    setSelectedReports([]);
+    setManualReports(null);
+    setDatabaseReports(null);
+
+    if (clearCompanySelection) {
+      setSelectedCompanies([]);
+    }
+  };
+
   const handleManualSearchClick = async () => {
     if (!companyNameInput || !reportYearInput) return;
 
+    resetSearchSlate();
     setIsLoading(true);
     const companyNames = companyNameInput
       .split(/\r?\n/)
@@ -91,6 +104,7 @@ export function CrawlerTab() {
       const response = await saveToWaitingRoom(selectedReports);
       if (response) {
         setWaitingRoomResponse(response);
+        resetSearchSlate({ clearCompanySelection: true });
       }
     } catch (error) {
       const errorMessage =
@@ -112,6 +126,7 @@ export function CrawlerTab() {
     if (!selectedReports || !selectedReports.length) return;
 
     writeCrawledReportsToCsv(selectedReports);
+    resetSearchSlate({ clearCompanySelection: true });
   };
 
   const handleSearchInputChange = (
@@ -129,11 +144,13 @@ export function CrawlerTab() {
   const handleDatabaseSearchClick = async () => {
     if (!selectedCompanies.length || !reportYearInput) return;
 
+    const companyNames = selectedCompanies;
+    resetSearchSlate();
     setIsLoading(true);
 
     try {
       const transformedData = await searchCompanyReports({
-        companyNames: selectedCompanies,
+        companyNames,
         reportYear: reportYearInput,
       });
 
