@@ -68,7 +68,7 @@ function getProxyTargets(env: Record<string, string>) {
 function climatePlansManifest(): Plugin {
   const climatePlansDir = path.resolve(__dirname, "public/climate-plans");
 
-  function generateManifest() {
+  const generateManifest = () => {
     if (!fs.existsSync(climatePlansDir)) {
       fs.mkdirSync(climatePlansDir, { recursive: true });
       fs.writeFileSync(
@@ -115,7 +115,7 @@ function climatePlansManifest(): Plugin {
       path.join(climatePlansDir, "index.json"),
       JSON.stringify({ municipalities }, null, 2) + "\n",
     );
-  }
+  };
 
   return {
     name: "climate-plans-manifest",
@@ -124,7 +124,7 @@ function climatePlansManifest(): Plugin {
     },
     configureServer(server) {
       // Regenerate when files change in the climate-plans directory
-      server.watcher.on("all", (event, filePath) => {
+      server.watcher.on("all", (_event, filePath) => {
         if (
           filePath.startsWith(climatePlansDir) &&
           !filePath.endsWith("index.json")
