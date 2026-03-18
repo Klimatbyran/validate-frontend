@@ -27,6 +27,12 @@ server {
         proxy_read_timeout 30s;
     }
 
+    # Safety: ensure /garbo-api (no trailing slash) doesn't fall through to the SPA.
+    # Client code should normally call /garbo-api/<endpoint>, which hits location /garbo-api/.
+    location = /garbo-api {
+        return 308 /garbo-api/;
+    }
+
     # Garbo API proxy - /garbo-api -> Garbo backend (auth, companies, tag-options, etc.)
     location /garbo-api/ {
         proxy_pass ${GARBO_API_URL}/;
