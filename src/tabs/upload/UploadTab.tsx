@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { FileText, Link2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { toast } from "sonner";
@@ -13,6 +13,8 @@ import { UploadedFile, UrlInput } from "./types";
 import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
 import { PARSE_PDF_API_ENDPOINT, PARSE_PDF_UPLOAD_ENDPOINT, NEW_BATCH_DROPDOWN_VALUE } from "./lib/utils";
+import { fetchTagOptions } from "@/tabs/editor/lib/tag-options-api";
+import type { TagOption } from "@/tabs/editor/lib/types";
 
 export function UploadTab() {
   const { t } = useI18n();
@@ -30,9 +32,38 @@ export function UploadTab() {
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState("");
   const { batches: existingBatches, isLoading: batchesLoading } = useBatches();
+  const [tagOptions, setTagOptions] = useState<TagOption[]>([]);
+  const [tagsLoading, setTagsLoading] = useState(false);
+  const [tagsError, setTagsError] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const effectiveBatchId =
     !batchDropdownChoice ? "" : batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE ? customBatchName.trim() : batchDropdownChoice;
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setTagsLoading(true);
+      try {
+        const opts = await fetchTagOptions();
+        if (cancelled) return;
+        setTagsError(null);
+        // ensure stable ordering (API says ordered by slug but keep defensive)
+        setTagOptions([...opts].sort((a, b) => a.slug.localeCompare(b.slug)));
+      } catch (e) {
+        if (cancelled) return;
+        console.error("Failed to fetch tag options:", e);
+        const msg = e instanceof Error ? e.message : String(e);
+        setTagsError(msg);
+        setTagOptions([]);
+      } finally {
+        if (!cancelled) setTagsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
 
   const handleFileSubmit = useCallback(async () => {
     if (uploadedFiles.length === 0) {
@@ -54,6 +85,9 @@ export function UploadTab() {
     formData.append("replaceAllEmissions", "true");
     if (effectiveBatchId) {
       formData.append("batchId", effectiveBatchId);
+    }
+    if (selectedTags.length > 0) {
+      formData.append("tags", JSON.stringify(selectedTags));
     }
     if (!runAllWorkers && selectedWorkers.length > 0) {
       formData.append("runOnly", JSON.stringify(selectedWorkers));
@@ -96,7 +130,7 @@ export function UploadTab() {
         error instanceof Error ? error.message : t("upload.unknownError");
       toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
-  }, [uploadedFiles, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, t]);
+  }, [uploadedFiles, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, selectedTags, t]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -178,6 +212,7 @@ export function UploadTab() {
           forceReindex: Boolean(forceReindex),
           replaceAllEmissions: true,
           ...(!runAllWorkers && selectedWorkers.length > 0 ? { runOnly: selectedWorkers } : {}),
+          ...(selectedTags.length > 0 ? { tags: selectedTags } : {}),
           urls: urls,
         }),
       });
@@ -211,7 +246,7 @@ export function UploadTab() {
         error instanceof Error ? error.message : t("upload.unknownError");
       toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
-  }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, t]);
+  }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, selectedTags, t]);
 
   const handleWorkerToggle = useCallback((workerId: RunOnlyWorkerId, checked: boolean) => {
     setSelectedWorkers((prev) =>
@@ -252,6 +287,11 @@ export function UploadTab() {
             onBatchDropdownChoiceChange={setBatchDropdownChoice}
             customBatchName={customBatchName}
             onCustomBatchNameChange={setCustomBatchName}
+            tagOptions={tagOptions}
+            tagsLoading={tagsLoading}
+            tagsError={tagsError}
+            selectedTags={selectedTags}
+            onSelectedTagsChange={setSelectedTags}
           />
           <UrlUploadForm
             urlInput={urlInput}
@@ -276,6 +316,11 @@ export function UploadTab() {
             onBatchDropdownChoiceChange={setBatchDropdownChoice}
             customBatchName={customBatchName}
             onCustomBatchNameChange={setCustomBatchName}
+            tagOptions={tagOptions}
+            tagsLoading={tagsLoading}
+            tagsError={tagsError}
+            selectedTags={selectedTags}
+            onSelectedTagsChange={setSelectedTags}
           />
           <FileUploadZone
             isDragging={isDragging}

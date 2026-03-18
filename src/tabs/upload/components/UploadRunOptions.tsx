@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 import { RUN_ONLY_WORKERS, type RunOnlyWorkerId } from "@/lib/run-only-workers";
 import { NEW_BATCH_DROPDOWN_VALUE } from "../lib/utils";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
+import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
+import type { TagOption } from "@/tabs/editor/lib/types";
 
 interface UploadRunOptionsProps {
   runAllWorkers: boolean;
@@ -17,6 +19,11 @@ interface UploadRunOptionsProps {
   onBatchDropdownChoiceChange: (value: string) => void;
   customBatchName: string;
   onCustomBatchNameChange: (value: string) => void;
+  tagOptions: TagOption[];
+  tagsLoading?: boolean;
+  selectedTags: string[];
+  onSelectedTagsChange: (tags: string[]) => void;
+  tagsError?: string | null;
 }
 
 export function UploadRunOptions({
@@ -32,14 +39,20 @@ export function UploadRunOptions({
   onBatchDropdownChoiceChange,
   customBatchName,
   onCustomBatchNameChange,
+  tagOptions,
+  tagsLoading = false,
+  selectedTags,
+  onSelectedTagsChange,
+  tagsError = null,
 }: UploadRunOptionsProps) {
   const { t } = useI18n();
+  const tagLabelBySlug = new Map(tagOptions.map((o) => [o.slug, o.label]));
 
   return (
     <div className="bg-gray-04/50 backdrop-blur-sm rounded-lg p-6 space-y-4">
       <p className="text-sm font-medium text-gray-01">{t("upload.runOptionsTitle")}</p>
 
-      {/* Batch: dropdown (no batch / existing / new) + optional text input for new name */}
+      {/* Batch + Tags */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="text-sm text-gray-02 shrink-0">{t("upload.batch")}:</span>
         <SingleSelectDropdown
@@ -70,7 +83,27 @@ export function UploadRunOptions({
             aria-label={t("upload.customBatchAria")}
           />
         )}
+
+        <span className="text-sm text-gray-02 shrink-0">{t("upload.tags")}:</span>
+        <MultiSelectDropdown
+          options={tagOptions.map((o) => o.slug)}
+          selectedIds={selectedTags}
+          onChange={onSelectedTagsChange}
+          triggerLabel={t("upload.tags")}
+          ariaLabel={t("upload.tagsAria")}
+          loading={tagsLoading}
+          loadingLabel={t("upload.tagsLoading")}
+          emptyLabel={t("upload.tagsEmpty")}
+          getOptionLabel={(slug) => tagLabelBySlug.get(slug) ?? slug}
+          panelMinWidth={240}
+        />
       </div>
+      {tagsError && (
+        <div className="rounded-lg border border-gray-03 bg-gray-04/80 p-4">
+          <p className="text-gray-01 font-medium">{t("editor.tagOptions.loadError")}</p>
+          <p className="text-sm text-gray-02 mt-1">{tagsError}</p>
+        </div>
+      )}
 
       {/* Run all/partial + run only – single row, pills inline */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
