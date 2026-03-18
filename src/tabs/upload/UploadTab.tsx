@@ -1,10 +1,9 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { FileText, Link2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { useBatches } from "@/hooks/useBatches";
-import { authenticatedFetch } from "@/lib/api-helpers";
 import { FileUploadZone } from "./components/FileUploadZone";
 import { UrlUploadForm } from "./components/UrlUploadForm";
 import { UploadList } from "./components/UploadList";
@@ -12,9 +11,9 @@ import { UploadRunOptions } from "./components/UploadRunOptions";
 import { UploadedFile, UrlInput } from "./types";
 import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
-import { PARSE_PDF_API_ENDPOINT, PARSE_PDF_UPLOAD_ENDPOINT, NEW_BATCH_DROPDOWN_VALUE } from "./lib/utils";
-import { fetchTagOptions } from "@/tabs/editor/lib/tag-options-api";
-import type { TagOption } from "@/tabs/editor/lib/types";
+import { NEW_BATCH_DROPDOWN_VALUE } from "./lib/utils";
+import { createJobsFromUrls, uploadPdfsToParsePdf } from "./lib/upload-api";
+import { useTagOptions } from "./hooks/useTagOptions";
 
 export function UploadTab() {
   const { t } = useI18n();
@@ -32,38 +31,11 @@ export function UploadTab() {
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState("");
   const { batches: existingBatches, isLoading: batchesLoading } = useBatches();
-  const [tagOptions, setTagOptions] = useState<TagOption[]>([]);
-  const [tagsLoading, setTagsLoading] = useState(false);
-  const [tagsError, setTagsError] = useState<string | null>(null);
+  const { tagOptions, loading: tagsLoading, error: tagsError } = useTagOptions();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const effectiveBatchId =
     !batchDropdownChoice ? "" : batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE ? customBatchName.trim() : batchDropdownChoice;
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setTagsLoading(true);
-      try {
-        const opts = await fetchTagOptions();
-        if (cancelled) return;
-        setTagsError(null);
-        // ensure stable ordering (API says ordered by slug but keep defensive)
-        setTagOptions([...opts].sort((a, b) => a.slug.localeCompare(b.slug)));
-      } catch (e) {
-        if (cancelled) return;
-        console.error("Failed to fetch tag options:", e);
-        const msg = e instanceof Error ? e.message : String(e);
-        setTagsError(msg);
-        setTagOptions([]);
-      } finally {
-        if (!cancelled) setTagsLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [t]);
 
   const handleFileSubmit = useCallback(async () => {
     if (uploadedFiles.length === 0) {
@@ -76,28 +48,18 @@ export function UploadTab() {
       return;
     }
 
-    const formData = new FormData();
-    for (const { file } of uploadedFiles) {
-      formData.append("files", file);
-    }
-    formData.append("autoApprove", String(Boolean(autoApprove)));
-    formData.append("forceReindex", String(Boolean(forceReindex)));
-    formData.append("replaceAllEmissions", "true");
-    if (effectiveBatchId) {
-      formData.append("batchId", effectiveBatchId);
-    }
-    if (selectedTags.length > 0) {
-      formData.append("tags", JSON.stringify(selectedTags));
-    }
-    if (!runAllWorkers && selectedWorkers.length > 0) {
-      formData.append("runOnly", JSON.stringify(selectedWorkers));
-    }
+    const runOnly = !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
+    const batchId = effectiveBatchId || undefined;
+    const tags = selectedTags.length > 0 ? selectedTags : undefined;
 
     try {
-      const response = await authenticatedFetch(PARSE_PDF_UPLOAD_ENDPOINT, {
-        method: "POST",
-        body: formData,
-        // Do not set Content-Type; browser sets multipart boundary
+      const response = await uploadPdfsToParsePdf({
+        files: uploadedFiles.map(({ file }) => file),
+        autoApprove,
+        forceReindex,
+        batchId,
+        runOnly,
+        tags,
       });
 
       if (!response.ok) {
@@ -201,29 +163,18 @@ export function UploadTab() {
     // Send batch job creation request to the custom API
     // When "Alla" is chosen, omit runOnly so pipeline-api runs all steps.
     try {
-      const response = await authenticatedFetch(PARSE_PDF_API_ENDPOINT, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          autoApprove: Boolean(autoApprove),
-          ...(effectiveBatchId ? { batchId: effectiveBatchId } : {}),
-          forceReindex: Boolean(forceReindex),
-          replaceAllEmissions: true,
-          ...(!runAllWorkers && selectedWorkers.length > 0 ? { runOnly: selectedWorkers } : {}),
-          ...(selectedTags.length > 0 ? { tags: selectedTags } : {}),
-          urls: urls,
-        }),
+      const runOnly = !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
+      const batchId = effectiveBatchId || undefined;
+      const tags = selectedTags.length > 0 ? selectedTags : undefined;
+
+      const result = await createJobsFromUrls({
+        urls,
+        autoApprove,
+        forceReindex,
+        batchId,
+        runOnly,
+        tags,
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Job submission error:", errorText);
-        throw new Error(`Failed to add jobs: ${errorText}`);
-      }
-
-      const result = await response.json();
       console.log("Jobs created successfully:", result);
 
       const newUrls = urls.map((url) => ({
@@ -275,23 +226,29 @@ export function UploadTab() {
 
         <TabsContent value="url" >
           <UploadRunOptions
-            runAllWorkers={runAllWorkers}
-            onRunAllWorkersChange={setRunAllWorkers}
-            selectedWorkers={selectedWorkers}
-            onSelectedWorkersChange={handleWorkerToggle}
-            forceReindex={forceReindex}
-            onForceReindexChange={setForceReindex}
-            existingBatches={existingBatches}
-            batchesLoading={batchesLoading}
-            batchDropdownChoice={batchDropdownChoice}
-            onBatchDropdownChoiceChange={setBatchDropdownChoice}
-            customBatchName={customBatchName}
-            onCustomBatchNameChange={setCustomBatchName}
-            tagOptions={tagOptions}
-            tagsLoading={tagsLoading}
-            tagsError={tagsError}
-            selectedTags={selectedTags}
-            onSelectedTagsChange={setSelectedTags}
+            batch={{
+              existingBatches,
+              batchesLoading,
+              batchDropdownChoice,
+              onBatchDropdownChoiceChange: setBatchDropdownChoice,
+              customBatchName,
+              onCustomBatchNameChange: setCustomBatchName,
+            }}
+            tags={{
+              tagOptions,
+              tagsLoading,
+              tagsError,
+              selectedTags,
+              onSelectedTagsChange: setSelectedTags,
+            }}
+            workers={{
+              runAllWorkers,
+              onRunAllWorkersChange: setRunAllWorkers,
+              selectedWorkers,
+              onSelectedWorkersChange: handleWorkerToggle,
+              forceReindex,
+              onForceReindexChange: setForceReindex,
+            }}
           />
           <UrlUploadForm
             urlInput={urlInput}
@@ -304,23 +261,29 @@ export function UploadTab() {
 
         <TabsContent value="file">
           <UploadRunOptions
-            runAllWorkers={runAllWorkers}
-            onRunAllWorkersChange={setRunAllWorkers}
-            selectedWorkers={selectedWorkers}
-            onSelectedWorkersChange={handleWorkerToggle}
-            forceReindex={forceReindex}
-            onForceReindexChange={setForceReindex}
-            existingBatches={existingBatches}
-            batchesLoading={batchesLoading}
-            batchDropdownChoice={batchDropdownChoice}
-            onBatchDropdownChoiceChange={setBatchDropdownChoice}
-            customBatchName={customBatchName}
-            onCustomBatchNameChange={setCustomBatchName}
-            tagOptions={tagOptions}
-            tagsLoading={tagsLoading}
-            tagsError={tagsError}
-            selectedTags={selectedTags}
-            onSelectedTagsChange={setSelectedTags}
+            batch={{
+              existingBatches,
+              batchesLoading,
+              batchDropdownChoice,
+              onBatchDropdownChoiceChange: setBatchDropdownChoice,
+              customBatchName,
+              onCustomBatchNameChange: setCustomBatchName,
+            }}
+            tags={{
+              tagOptions,
+              tagsLoading,
+              tagsError,
+              selectedTags,
+              onSelectedTagsChange: setSelectedTags,
+            }}
+            workers={{
+              runAllWorkers,
+              onRunAllWorkersChange: setRunAllWorkers,
+              selectedWorkers,
+              onSelectedWorkersChange: handleWorkerToggle,
+              forceReindex,
+              onForceReindexChange: setForceReindex,
+            }}
           />
           <FileUploadZone
             isDragging={isDragging}

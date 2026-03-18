@@ -1,195 +1,31 @@
 import { useI18n } from "@/contexts/I18nContext";
-import { cn } from "@/lib/utils";
-import { RUN_ONLY_WORKERS, type RunOnlyWorkerId } from "@/lib/run-only-workers";
-import { NEW_BATCH_DROPDOWN_VALUE } from "../lib/utils";
-import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
-import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
-import type { TagOption } from "@/tabs/editor/lib/types";
+import { UploadBatchOptions, type UploadBatchOptionsProps } from "./UploadBatchOptions";
+import { UploadTagsOptions, type UploadTagsOptionsProps } from "./UploadTagsOptions";
+import { UploadWorkerRunOptions, type UploadWorkerRunOptionsProps } from "./UploadWorkerRunOptions";
 
 interface UploadRunOptionsProps {
-  runAllWorkers: boolean;
-  onRunAllWorkersChange: (value: boolean) => void;
-  selectedWorkers: RunOnlyWorkerId[];
-  onSelectedWorkersChange: (workerId: RunOnlyWorkerId, checked: boolean) => void;
-  forceReindex: boolean;
-  onForceReindexChange: (value: boolean) => void;
-  existingBatches: string[];
-  batchesLoading?: boolean;
-  batchDropdownChoice: string;
-  onBatchDropdownChoiceChange: (value: string) => void;
-  customBatchName: string;
-  onCustomBatchNameChange: (value: string) => void;
-  tagOptions: TagOption[];
-  tagsLoading?: boolean;
-  selectedTags: string[];
-  onSelectedTagsChange: (tags: string[]) => void;
-  tagsError?: string | null;
+  batch: UploadBatchOptionsProps;
+  tags: UploadTagsOptionsProps;
+  workers: UploadWorkerRunOptionsProps;
 }
 
 export function UploadRunOptions({
-  runAllWorkers,
-  onRunAllWorkersChange,
-  selectedWorkers,
-  onSelectedWorkersChange,
-  forceReindex,
-  onForceReindexChange,
-  existingBatches,
-  batchesLoading = false,
-  batchDropdownChoice,
-  onBatchDropdownChoiceChange,
-  customBatchName,
-  onCustomBatchNameChange,
-  tagOptions,
-  tagsLoading = false,
-  selectedTags,
-  onSelectedTagsChange,
-  tagsError = null,
+  batch,
+  tags,
+  workers,
 }: UploadRunOptionsProps) {
   const { t } = useI18n();
-  const tagLabelBySlug = new Map(tagOptions.map((o) => [o.slug, o.label]));
 
   return (
     <div className="bg-gray-04/50 backdrop-blur-sm rounded-lg p-6 space-y-4">
       <p className="text-sm font-medium text-gray-01">{t("upload.runOptionsTitle")}</p>
 
-      {/* Batch + Tags */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span className="text-sm text-gray-02 shrink-0">{t("upload.batch")}:</span>
-        <SingleSelectDropdown
-          options={["", ...existingBatches, NEW_BATCH_DROPDOWN_VALUE]}
-          value={batchDropdownChoice}
-          onChange={onBatchDropdownChoiceChange}
-          placeholder={t("upload.noBatch")}
-          ariaLabel={t("upload.batchAria")}
-          loading={batchesLoading}
-          loadingLabel={t("upload.batchLoading")}
-          emptyLabel={t("upload.noBatch")}
-          getOptionLabel={(v) =>
-            v === ""
-              ? t("upload.noBatch")
-              : v === NEW_BATCH_DROPDOWN_VALUE
-                ? t("upload.newBatch")
-                : v
-          }
-          panelMinWidth={200}
-        />
-        {batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE && (
-          <input
-            type="text"
-            value={customBatchName}
-            onChange={(e) => onCustomBatchNameChange(e.target.value)}
-            placeholder={t("upload.customBatchPlaceholder")}
-            className="h-8 min-w-[180px] rounded-md border border-gray-03 bg-gray-03/20 text-gray-01 text-sm placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03/50 px-2"
-            aria-label={t("upload.customBatchAria")}
-          />
-        )}
-
-        <span className="text-sm text-gray-02 shrink-0">{t("upload.tags")}:</span>
-        <MultiSelectDropdown
-          options={tagOptions.map((o) => o.slug)}
-          selectedIds={selectedTags}
-          onChange={onSelectedTagsChange}
-          triggerLabel={t("upload.tags")}
-          ariaLabel={t("upload.tagsAria")}
-          loading={tagsLoading}
-          loadingLabel={t("upload.tagsLoading")}
-          emptyLabel={t("upload.tagsEmpty")}
-          getOptionLabel={(slug) => tagLabelBySlug.get(slug) ?? slug}
-          panelMinWidth={240}
-        />
-      </div>
-      {tagsError && (
-        <div className="rounded-lg border border-gray-03 bg-gray-04/80 p-4">
-          <p className="text-gray-01 font-medium">{t("editor.tagOptions.loadError")}</p>
-          <p className="text-sm text-gray-02 mt-1">{tagsError}</p>
-        </div>
-      )}
-
-      {/* Run all/partial + run only – single row, pills inline */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-02">{t("upload.runLabel")}</span>
-          <div className="flex items-center gap-1 bg-gray-03 rounded-full p-0.5">
-            <button
-              type="button"
-              onClick={() => onRunAllWorkersChange(true)}
-              className={cn(
-                "px-3 py-1 rounded-full text-xs font-medium transition-colors",
-                runAllWorkers ? "bg-gray-01 text-gray-05" : "text-gray-02 hover:text-gray-01",
-              )}
-            >
-              {t("upload.runAll")}
-            </button>
-            <button
-              type="button"
-              onClick={() => onRunAllWorkersChange(false)}
-              className={cn(
-                "px-3 py-1 rounded-full text-xs font-medium transition-colors",
-                !runAllWorkers ? "bg-gray-01 text-gray-05" : "text-gray-02 hover:text-gray-01",
-              )}
-            >
-              {t("upload.runPartial")}
-            </button>
-          </div>
-        </div>
-        <div
-          className={cn(
-            "flex flex-wrap items-center gap-2 transition-opacity",
-            runAllWorkers && "opacity-50 pointer-events-none",
-          )}
-        >
-          <span className="text-sm text-gray-02 shrink-0">{t("upload.runOnly")}</span>
-          <div className="flex flex-wrap gap-1.5">
-            {RUN_ONLY_WORKERS.map((worker) => {
-              const isSelected = selectedWorkers.includes(worker.id);
-              return (
-                <button
-                  key={worker.id}
-                  type="button"
-                  onClick={() => onSelectedWorkersChange(worker.id, !isSelected)}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-xs font-medium transition-colors",
-                    isSelected
-                      ? "bg-gray-01 text-gray-05"
-                      : "text-gray-02 hover:text-gray-01 bg-gray-03/80 hover:bg-gray-03",
-                  )}
-                >
-                  {t(`jobstatus.rerunWorkers.${worker.id}`)}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <UploadBatchOptions {...batch} />
+        <UploadTagsOptions {...tags} />
       </div>
 
-      {/* Force reindex */}
-      <div className="flex items-center justify-between pt-2 border-t border-gray-03/50">
-        <label htmlFor="force-reindex" className="text-sm text-gray-01 cursor-pointer">
-          {t("upload.forceReindex")}
-        </label>
-        <button
-          id="force-reindex"
-          type="button"
-          role="switch"
-          aria-checked={forceReindex}
-          onClick={() => onForceReindexChange(!forceReindex)}
-          className={cn(
-            "relative inline-flex h-6 w-11 items-center rounded-full",
-            "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            forceReindex ? "bg-orange-03" : "bg-gray-03",
-          )}
-        >
-          <span
-            className={cn(
-              "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-              forceReindex ? "translate-x-6" : "translate-x-1",
-            )}
-          />
-        </button>
-      </div>
-      <p className="text-xs text-gray-02">
-        {t("upload.forceReindexDescription")}
-      </p>
+      <UploadWorkerRunOptions {...workers} />
     </div>
   );
 }
