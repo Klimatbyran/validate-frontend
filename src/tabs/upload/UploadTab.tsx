@@ -12,7 +12,7 @@ import { UploadRunOptions } from "./components/UploadRunOptions";
 import { UploadedFile, UrlInput } from "./types";
 import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
-import { PARSE_PDF_API_ENDPOINT, NEW_BATCH_DROPDOWN_VALUE } from "./lib/utils";
+import { GARBO_SAVE_REPORTS_ENDPOINT, NEW_BATCH_DROPDOWN_VALUE, PARSE_PDF_API_ENDPOINT } from "./lib/utils";
 
 interface UploadTabProps {
   onTabChange: (tab: string) => void;
@@ -118,9 +118,31 @@ export function UploadTab({ onTabChange }: UploadTabProps) {
       return;
     }
 
-    // Send batch job creation request to the custom API
-    // When "Alla" is chosen, omit runOnly so pipeline-api runs all steps.
     try {
+      // First, persist reports to Garbo's reports table so they appear in the registry/master list.
+      // We use extractCompanyFromUrl for a best-effort companyName and a placeholder reportYear for now.
+      try {
+        await authenticatedFetch(GARBO_SAVE_REPORTS_ENDPOINT, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(
+            urls.map((url) => ({
+              companyName: extractCompanyFromUrl(url),
+              wikidataId: null,
+              reportYear: "Unknown",
+              url,
+            })),
+          ),
+        });
+      } catch (err) {
+        // Log but do not block the pipeline job submission if registry write fails.
+        console.error("Failed to save reports to Garbo reports table:", err);
+      }
+
+      // Send batch job creation request to pipeline-api.
+      // When "Alla" is chosen, omit runOnly so pipeline-api runs all steps.
       const response = await authenticatedFetch(PARSE_PDF_API_ENDPOINT, {
         method: "POST",
         headers: {
