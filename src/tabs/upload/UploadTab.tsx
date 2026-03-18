@@ -12,7 +12,7 @@ import { UploadedFile, UrlInput } from "./types";
 import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
 import { NEW_BATCH_DROPDOWN_VALUE } from "./lib/utils";
-import { createJobsFromUrls, uploadPdfsToParsePdf } from "./lib/upload-api";
+import { UploadApiError, createJobsFromUrls, uploadPdfsToParsePdf } from "./lib/upload-api";
 import { useTagOptions } from "./hooks/useTagOptions";
 
 export function UploadTab() {
@@ -37,6 +37,10 @@ export function UploadTab() {
   const effectiveBatchId =
     !batchDropdownChoice ? "" : batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE ? customBatchName.trim() : batchDropdownChoice;
 
+  const runOnly = !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
+  const batchId = effectiveBatchId || undefined;
+  const tags = selectedTags.length > 0 ? selectedTags : undefined;
+
   const handleFileSubmit = useCallback(async () => {
     if (uploadedFiles.length === 0) {
       toast.error(t("upload.noPdfUploaded"));
@@ -48,12 +52,8 @@ export function UploadTab() {
       return;
     }
 
-    const runOnly = !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
-    const batchId = effectiveBatchId || undefined;
-    const tags = selectedTags.length > 0 ? selectedTags : undefined;
-
     try {
-      const response = await uploadPdfsToParsePdf({
+      await uploadPdfsToParsePdf({
         files: uploadedFiles.map(({ file }) => file),
         autoApprove,
         forceReindex,
@@ -61,22 +61,6 @@ export function UploadTab() {
         runOnly,
         tags,
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("File upload error:", errorText);
-        let message = errorText;
-        try {
-          const parsed = JSON.parse(errorText) as { error?: string };
-          if (typeof parsed?.error === "string") message = parsed.error;
-        } catch {
-          /* use errorText as message */
-        }
-        if (response.status === 413) {
-          throw new Error(t("upload.fileTooLarge"));
-        }
-        throw new Error(message);
-      }
 
       const newUrls: UrlInput[] = uploadedFiles.map(({ file, id, company }) => ({
         url: `uploaded:${file.name}`,
@@ -88,8 +72,11 @@ export function UploadTab() {
       toast.success(t("upload.filesSubmitted", { count: uploadedFiles.length }));
     } catch (error) {
       console.error("Failed to upload files:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : t("upload.unknownError");
+      if (error instanceof UploadApiError && error.status === 413) {
+        toast.error(t("upload.fileTooLarge"));
+        return;
+      }
+      const errorMessage = error instanceof Error ? error.message : t("upload.unknownError");
       toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
   }, [uploadedFiles, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, selectedTags, t]);
@@ -163,10 +150,6 @@ export function UploadTab() {
     // Send batch job creation request to the custom API
     // When "Alla" is chosen, omit runOnly so pipeline-api runs all steps.
     try {
-      const runOnly = !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
-      const batchId = effectiveBatchId || undefined;
-      const tags = selectedTags.length > 0 ? selectedTags : undefined;
-
       const result = await createJobsFromUrls({
         urls,
         autoApprove,
@@ -193,8 +176,11 @@ export function UploadTab() {
       setUrlInput("");
     } catch (error) {
       console.error("Failed to add jobs:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : t("upload.unknownError");
+      if (error instanceof UploadApiError && error.status === 413) {
+        toast.error(t("upload.fileTooLarge"));
+        return;
+      }
+      const errorMessage = error instanceof Error ? error.message : t("upload.unknownError");
       toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
   }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, selectedTags, t]);

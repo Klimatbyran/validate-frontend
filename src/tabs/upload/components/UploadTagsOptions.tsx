@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import type { TagOption } from "@/tabs/editor/lib/types";
@@ -18,7 +19,10 @@ export function UploadTagsOptions({
   onSelectedTagsChange,
 }: UploadTagsOptionsProps) {
   const { t } = useI18n();
-  const tagLabelBySlug = new Map(tagOptions.map((o) => [o.slug, o.label]));
+  const tagLabelBySlug = useMemo(
+    () => new Map(tagOptions.map((o) => [o.slug, o.label])),
+    [tagOptions],
+  );
 
   return (
     <>
