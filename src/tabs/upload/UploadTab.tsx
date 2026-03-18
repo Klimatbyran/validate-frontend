@@ -4,7 +4,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { useBatches } from "@/hooks/useBatches";
-import { authenticatedFetch } from "@/lib/api-helpers";
 import { FileUploadZone } from "./components/FileUploadZone";
 import { UrlUploadForm } from "./components/UrlUploadForm";
 import { UploadList } from "./components/UploadList";
@@ -12,7 +11,9 @@ import { UploadRunOptions } from "./components/UploadRunOptions";
 import { UploadedFile, UrlInput } from "./types";
 import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
-import { PARSE_PDF_API_ENDPOINT, PARSE_PDF_UPLOAD_ENDPOINT, NEW_BATCH_DROPDOWN_VALUE } from "./lib/utils";
+import { NEW_BATCH_DROPDOWN_VALUE } from "./lib/utils";
+import { UploadApiError, createJobsFromUrls, uploadPdfsToParsePdf } from "./lib/upload-api";
+import { useTagOptions } from "./hooks/useTagOptions";
 
 export function UploadTab() {
   const { t } = useI18n();
@@ -30,9 +31,15 @@ export function UploadTab() {
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState("");
   const { batches: existingBatches, isLoading: batchesLoading } = useBatches();
+  const { tagOptions, loading: tagsLoading, error: tagsError } = useTagOptions();
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const effectiveBatchId =
     !batchDropdownChoice ? "" : batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE ? customBatchName.trim() : batchDropdownChoice;
+
+  const runOnly = !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
+  const batchId = effectiveBatchId || undefined;
+  const tags = selectedTags.length > 0 ? selectedTags : undefined;
 
   const handleFileSubmit = useCallback(async () => {
     if (uploadedFiles.length === 0) {
@@ -45,42 +52,15 @@ export function UploadTab() {
       return;
     }
 
-    const formData = new FormData();
-    for (const { file } of uploadedFiles) {
-      formData.append("files", file);
-    }
-    formData.append("autoApprove", String(Boolean(autoApprove)));
-    formData.append("forceReindex", String(Boolean(forceReindex)));
-    formData.append("replaceAllEmissions", "true");
-    if (effectiveBatchId) {
-      formData.append("batchId", effectiveBatchId);
-    }
-    if (!runAllWorkers && selectedWorkers.length > 0) {
-      formData.append("runOnly", JSON.stringify(selectedWorkers));
-    }
-
     try {
-      const response = await authenticatedFetch(PARSE_PDF_UPLOAD_ENDPOINT, {
-        method: "POST",
-        body: formData,
-        // Do not set Content-Type; browser sets multipart boundary
+      await uploadPdfsToParsePdf({
+        files: uploadedFiles.map(({ file }) => file),
+        autoApprove,
+        forceReindex,
+        batchId,
+        runOnly,
+        tags,
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("File upload error:", errorText);
-        let message = errorText;
-        try {
-          const parsed = JSON.parse(errorText) as { error?: string };
-          if (typeof parsed?.error === "string") message = parsed.error;
-        } catch {
-          /* use errorText as message */
-        }
-        if (response.status === 413) {
-          throw new Error(t("upload.fileTooLarge"));
-        }
-        throw new Error(message);
-      }
 
       const newUrls: UrlInput[] = uploadedFiles.map(({ file, id, company }) => ({
         url: `uploaded:${file.name}`,
@@ -92,11 +72,14 @@ export function UploadTab() {
       toast.success(t("upload.filesSubmitted", { count: uploadedFiles.length }));
     } catch (error) {
       console.error("Failed to upload files:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : t("upload.unknownError");
+      if (error instanceof UploadApiError && error.status === 413) {
+        toast.error(t("upload.fileTooLarge"));
+        return;
+      }
+      const errorMessage = error instanceof Error ? error.message : t("upload.unknownError");
       toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
-  }, [uploadedFiles, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, t]);
+  }, [uploadedFiles, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, selectedTags, t]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -167,28 +150,14 @@ export function UploadTab() {
     // Send batch job creation request to the custom API
     // When "Alla" is chosen, omit runOnly so pipeline-api runs all steps.
     try {
-      const response = await authenticatedFetch(PARSE_PDF_API_ENDPOINT, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          autoApprove: Boolean(autoApprove),
-          ...(effectiveBatchId ? { batchId: effectiveBatchId } : {}),
-          forceReindex: Boolean(forceReindex),
-          replaceAllEmissions: true,
-          ...(!runAllWorkers && selectedWorkers.length > 0 ? { runOnly: selectedWorkers } : {}),
-          urls: urls,
-        }),
+      const result = await createJobsFromUrls({
+        urls,
+        autoApprove,
+        forceReindex,
+        batchId,
+        runOnly,
+        tags,
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Job submission error:", errorText);
-        throw new Error(`Failed to add jobs: ${errorText}`);
-      }
-
-      const result = await response.json();
       console.log("Jobs created successfully:", result);
 
       const newUrls = urls.map((url) => ({
@@ -207,11 +176,14 @@ export function UploadTab() {
       setUrlInput("");
     } catch (error) {
       console.error("Failed to add jobs:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : t("upload.unknownError");
+      if (error instanceof UploadApiError && error.status === 413) {
+        toast.error(t("upload.fileTooLarge"));
+        return;
+      }
+      const errorMessage = error instanceof Error ? error.message : t("upload.unknownError");
       toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
-  }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, t]);
+  }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, selectedTags, t]);
 
   const handleWorkerToggle = useCallback((workerId: RunOnlyWorkerId, checked: boolean) => {
     setSelectedWorkers((prev) =>
@@ -240,18 +212,29 @@ export function UploadTab() {
 
         <TabsContent value="url" >
           <UploadRunOptions
-            runAllWorkers={runAllWorkers}
-            onRunAllWorkersChange={setRunAllWorkers}
-            selectedWorkers={selectedWorkers}
-            onSelectedWorkersChange={handleWorkerToggle}
-            forceReindex={forceReindex}
-            onForceReindexChange={setForceReindex}
-            existingBatches={existingBatches}
-            batchesLoading={batchesLoading}
-            batchDropdownChoice={batchDropdownChoice}
-            onBatchDropdownChoiceChange={setBatchDropdownChoice}
-            customBatchName={customBatchName}
-            onCustomBatchNameChange={setCustomBatchName}
+            batch={{
+              existingBatches,
+              batchesLoading,
+              batchDropdownChoice,
+              onBatchDropdownChoiceChange: setBatchDropdownChoice,
+              customBatchName,
+              onCustomBatchNameChange: setCustomBatchName,
+            }}
+            tags={{
+              tagOptions,
+              tagsLoading,
+              tagsError,
+              selectedTags,
+              onSelectedTagsChange: setSelectedTags,
+            }}
+            workers={{
+              runAllWorkers,
+              onRunAllWorkersChange: setRunAllWorkers,
+              selectedWorkers,
+              onSelectedWorkersChange: handleWorkerToggle,
+              forceReindex,
+              onForceReindexChange: setForceReindex,
+            }}
           />
           <UrlUploadForm
             urlInput={urlInput}
@@ -264,18 +247,29 @@ export function UploadTab() {
 
         <TabsContent value="file">
           <UploadRunOptions
-            runAllWorkers={runAllWorkers}
-            onRunAllWorkersChange={setRunAllWorkers}
-            selectedWorkers={selectedWorkers}
-            onSelectedWorkersChange={handleWorkerToggle}
-            forceReindex={forceReindex}
-            onForceReindexChange={setForceReindex}
-            existingBatches={existingBatches}
-            batchesLoading={batchesLoading}
-            batchDropdownChoice={batchDropdownChoice}
-            onBatchDropdownChoiceChange={setBatchDropdownChoice}
-            customBatchName={customBatchName}
-            onCustomBatchNameChange={setCustomBatchName}
+            batch={{
+              existingBatches,
+              batchesLoading,
+              batchDropdownChoice,
+              onBatchDropdownChoiceChange: setBatchDropdownChoice,
+              customBatchName,
+              onCustomBatchNameChange: setCustomBatchName,
+            }}
+            tags={{
+              tagOptions,
+              tagsLoading,
+              tagsError,
+              selectedTags,
+              onSelectedTagsChange: setSelectedTags,
+            }}
+            workers={{
+              runAllWorkers,
+              onRunAllWorkersChange: setRunAllWorkers,
+              selectedWorkers,
+              onSelectedWorkersChange: handleWorkerToggle,
+              forceReindex,
+              onForceReindexChange: setForceReindex,
+            }}
           />
           <FileUploadZone
             isDragging={isDragging}
