@@ -20,7 +20,6 @@
     "workflow": "Processflöde",
     "debug": "Debug",
     "errorBrowser": "Felutforskare",
-    "results": "Resultat",
     "crawler": "Crawler",
     "climatePlans": "Utforska klimatplaner",
     "editor": "Redigerare"
@@ -232,14 +231,6 @@
     "forceReindexDescription": "Om på: kör docling även om rapporten redan finns i vektordatabasen (använd efter uppgradering av docling/OCR).",
     "companyWithName": "Företag: {{name}}",
     "fileSizeMb": "{{size}} MB"
-  },
-  "processing": {
-    "systemReady": "Systemet redo",
-    "queueMonitoring": "Kövervakningen har förenklats. Gå till fliken \"Jobbstatus\" för att se företagens framsteg."
-  },
-  "results": {
-    "overview": "Resultatöversikt",
-    "placeholder": "Här kommer resultaten att visas när bearbetningen är klar."
   },
   "jobstatus": {
     "scope": "Omfattning",

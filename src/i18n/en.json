@@ -20,7 +20,6 @@
     "workflow": "Workflow",
     "debug": "Debug",
     "errorBrowser": "Error Browser",
-    "results": "Results",
     "crawler": "Crawler",
     "climatePlans": "Explore climate plans",
     "editor": "Editor"
@@ -232,14 +231,6 @@
     "forceReindexDescription": "When on: run docling even if the report already exists in the vector DB (use after docling/OCR upgrade).",
     "companyWithName": "Company: {{name}}",
     "fileSizeMb": "{{size}} MB"
-  },
-  "processing": {
-    "systemReady": "System Ready",
-    "queueMonitoring": "Queue monitoring has been simplified. Check the \"Job status\" tab to view company progress."
-  },
-  "results": {
-    "overview": "Results overview",
-    "placeholder": "Results will appear here when processing is complete."
   },
   "jobstatus": {
     "scope": "Scope",
