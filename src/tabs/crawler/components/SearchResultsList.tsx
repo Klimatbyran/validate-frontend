@@ -1,41 +1,26 @@
 import { motion } from "framer-motion";
-import { CompanyReport, LockedReport } from "../lib/crawler-types";
+import { CompanyReport } from "../lib/crawler-types";
+import type { SelectedReport } from "../lib/crawler-types";
 import SearchResultItem from "./SearchResultItem";
 import { useI18n } from "@/contexts/I18nContext";
 
 interface SearchResultsListProps {
   companyReports: CompanyReport[] | null;
-  setManualReports: React.Dispatch<
-    React.SetStateAction<CompanyReport[] | null>
-  >;
-  setLockedReports: React.Dispatch<React.SetStateAction<LockedReport[]>>;
-  lockedReports: LockedReport[];
   reportYear: string;
-  selectedReports: Record<string, string>;
-  setSelectedReports: React.Dispatch<
-    React.SetStateAction<Record<string, string>>
-  >;
+  selectedReports: SelectedReport[];
+  handleSelectReport: (
+    companyName: string,
+    report: SelectedReport | null,
+  ) => void;
 }
 
 const SearchResultsList = ({
   companyReports,
   reportYear,
   selectedReports,
-  setSelectedReports,
+  handleSelectReport,
 }: SearchResultsListProps) => {
   const { t } = useI18n();
-
-  const handleSelect = (companyName: string, url: string | null) => {
-    setSelectedReports((prev) => {
-      const updated = { ...prev };
-      if (url) {
-        updated[companyName] = url;
-      } else {
-        delete updated[companyName];
-      }
-      return updated;
-    });
-  };
 
   return (
     <motion.div
@@ -52,8 +37,16 @@ const SearchResultsList = ({
           key={index}
           companyReport={report}
           reportYear={reportYear}
-          selectedReport={selectedReports[report.companyName]}
-          onSelect={handleSelect}
+          selectedReport={
+            selectedReports.find((r) => r.companyName === report.companyName)
+              ?.url
+          }
+          onSelect={(companyName, url) =>
+            handleSelectReport(
+              companyName,
+              url ? { companyName, reportYear, url } : null,
+            )
+          }
         />
       ))}
     </motion.div>

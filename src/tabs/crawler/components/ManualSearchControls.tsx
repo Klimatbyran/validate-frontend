@@ -1,4 +1,5 @@
 import ControlsBase from "./ControlsBase";
+import type { SelectedReport } from "../lib/crawler-types";
 import { useI18n } from "@/contexts/I18nContext";
 
 interface ManualSearchControlsProps {
@@ -6,11 +7,9 @@ interface ManualSearchControlsProps {
   onReportYearChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSearch: () => void;
   onExport: () => void;
+  handleAddToWaitingRoomClick?: () => void;
+  selectedReports: SelectedReport[];
   isSearchDisabled: boolean;
-  isExportDisabled: boolean;
-  isLockDisabled: boolean;
-  onLockReports: () => void;
-  selectedReports: Record<string, string>;
 }
 
 const ManualSearchControls = ({
@@ -19,15 +18,16 @@ const ManualSearchControls = ({
   onSearch,
   onExport,
   isSearchDisabled,
-  isExportDisabled,
-  onLockReports,
-  isLockDisabled,
+  selectedReports,
+  handleAddToWaitingRoomClick,
 }: ManualSearchControlsProps) => {
   const { t } = useI18n();
 
   return (
     <>
-      <h3 className="max-w-[750px]">{t("crawler.manualSearchDescription")}</h3>
+      <h3 className="max-w-[750px] text-gray-02">
+        {t("crawler.manualSearchDescription")}
+      </h3>
       <div className="flex flex-col gap-4 justify-center mt-4">
         <div className="flex flex-col gap-2">
           <textarea
@@ -47,9 +47,8 @@ const ManualSearchControls = ({
           onSearch={onSearch}
           onExport={onExport}
           isSearchDisabled={isSearchDisabled}
-          isExportDisabled={isExportDisabled}
-          isLockDisabled={isLockDisabled}
-          onLockReports={onLockReports}
+          selectedReports={selectedReports}
+          handleAddToWaitingRoomClick={handleAddToWaitingRoomClick}
         />
       </div>
     </>
