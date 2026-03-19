@@ -140,6 +140,7 @@ const PROXY_TIMEOUT_MS = 30000;
 
 function pipelineProxyConfigure(targetUrl: string) {
   return (proxy: any, _options: any) => {
+    void _options;
     proxy.on("error", (_err: any, _req: any, res: any) => {
       if (res && typeof res.writeHead === "function" && !res.headersSent) {
         res.writeHead(503, { "Content-Type": "application/json" });
@@ -208,6 +209,7 @@ export default defineConfig(({ mode }) => {
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
           configure: (proxy, _options) => {
+            void _options;
             proxy.on("error", (_err, _req, res) => {
               console.warn(
                 `Screenshots API not available at ${urls.screenshots}. Screenshots will not work.`,

@@ -125,12 +125,10 @@ function Scope2Card({ data }: Scope2CardProps) {
 
 export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProps) {
   const { t, formatNumber } = useI18n();
-  if (!data.scope12 || !Array.isArray(data.scope12) || data.scope12.length === 0) {
-    return null;
-  }
+  const scope12Entries = Array.isArray(data.scope12) ? data.scope12 : [];
 
   // Sort years in descending order (newest first)
-  const sortedData = [...data.scope12].sort((a, b) => b.year - a.year);
+  const sortedData = [...scope12Entries].sort((a, b) => b.year - a.year);
   const latestYear = sortedData[0];
   const years = React.useMemo(
     () => Array.from(new Set(sortedData.map((e) => e.year))),
@@ -144,6 +142,10 @@ export function Scope12Section({ data, wikidataId }: Scope12EmissionsDisplayProp
       buildReferenceSnapshotFromPeriod,
       t("scope.referenceFetchError")
     );
+
+  if (scope12Entries.length === 0) {
+    return null;
+  }
 
   const hasScope1 =
     latestYear.scope1?.total !== undefined ||

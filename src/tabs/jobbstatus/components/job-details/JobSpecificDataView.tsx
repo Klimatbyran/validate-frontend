@@ -137,9 +137,8 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     return String(value);
   };
 
-  if (typeof processedData !== "object") {
-    return <div>{String(processedData)}</div>;
-  }
+  const isProcessedObject =
+    processedData !== null && typeof processedData === "object";
 
   // Get scope data for rendering
   const scopeData = getScopeData(returnValueData);
@@ -206,7 +205,9 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         detailedKeys: detailed ? Object.keys(detailed) : [],
         detailedDataKeys: (detailed as any)?.data ? Object.keys((detailed as any).data) : [],
       });
-    } catch (_) {}
+    } catch {
+      // ignore debug logging errors
+    }
   }, [job?.id, job?.queueId, Boolean(job?.returnvalue), wikidataId, Boolean(scope3Data), effectiveJob, detailed]);
 
   // Helper flags for follow-up scope jobs
@@ -218,6 +219,10 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     effectiveJob && effectiveJob.queueId === "followUpScope1";
   const isFollowUpScope2Job =
     effectiveJob && effectiveJob.queueId === "followUpScope2";
+
+  if (!isProcessedObject) {
+    return <div>{String(processedData)}</div>;
+  }
 
   return (
     <div className="space-y-3 text-sm">

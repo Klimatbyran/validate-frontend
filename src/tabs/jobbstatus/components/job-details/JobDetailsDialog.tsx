@@ -184,7 +184,9 @@ export function JobDetailsDialog({
       company: job.data?.company,
       mergedPreview: { ...job.data },
     });
-  } catch (_) {}
+  } catch {
+    // ignore debug logging errors
+  }
 
   const needsApproval = !job.data.approved && !job.data.autoApprove;
   const canRetry = Boolean(job.isFailed);
@@ -266,7 +268,10 @@ export function JobDetailsDialog({
   // Filter out schema and metadata fields from job data for user-friendly view
   const getFilteredJobDataWithoutSchema = () => {
     const merged = (job.data || {}) as Record<string, unknown>;
-    const { companyName, description, schema, ...rest } = merged;
+    const rest: Record<string, unknown> = { ...merged };
+    delete rest.companyName;
+    delete rest.description;
+    delete rest.schema;
     return rest;
   };
 
