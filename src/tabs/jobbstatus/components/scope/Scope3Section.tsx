@@ -22,13 +22,11 @@ interface Scope3EmissionsDisplayProps {
 
 export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps) {
   const { t, formatNumber } = useI18n();
-  if (!data.scope3 || !Array.isArray(data.scope3) || data.scope3.length === 0) {
-    return null;
-  }
+  const scope3Entries = Array.isArray(data.scope3) ? data.scope3 : [];
 
   const sortedScope3ByYear = React.useMemo(() => {
-    return [...data.scope3].sort((a, b) => b.year - a.year);
-  }, [data.scope3]);
+    return [...scope3Entries].sort((a, b) => b.year - a.year);
+  }, [scope3Entries]);
   const years = React.useMemo(() => Array.from(new Set(sortedScope3ByYear.map(e => e.year))), [sortedScope3ByYear]);
   const latestScope3Year = years[0] as number | undefined;
 
@@ -176,6 +174,10 @@ export function Scope3Section({ data, wikidataId }: Scope3EmissionsDisplayProps)
         </div>
       </div>
     );
+  }
+
+  if (scope3Entries.length === 0) {
+    return null;
   }
 
   return (

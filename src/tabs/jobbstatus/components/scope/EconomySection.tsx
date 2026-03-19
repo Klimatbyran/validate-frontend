@@ -167,15 +167,9 @@ function employeeUnitLabel(t: (key: string) => string, unit: string | null | und
 
 export function EconomySection({ data, wikidataId }: EconomySectionProps) {
   const { t, formatNumber } = useI18n();
-  if (
-    !data.economy ||
-    !Array.isArray(data.economy) ||
-    data.economy.length === 0
-  ) {
-    return null;
-  }
 
-  const sortedData = [...data.economy].sort((a, b) => b.year - a.year);
+  const economyEntries = Array.isArray(data.economy) ? data.economy : [];
+  const sortedData = [...economyEntries].sort((a, b) => b.year - a.year);
   const latestYear = sortedData[0];
   const years = React.useMemo(
     () => Array.from(new Set(sortedData.map((e) => e.year))),
@@ -188,6 +182,10 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
     buildReferenceSnapshotFromPeriod,
     t("scope.referenceFetchError")
   );
+
+  if (economyEntries.length === 0) {
+    return null;
+  }
 
   return (
     <motion.div

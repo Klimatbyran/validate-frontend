@@ -13,8 +13,8 @@ export function FiscalYearDisplay({ data }: FiscalYearProps) {
     return null;
   }
 
-  let startMonthNum: number | undefined = data.fiscalYear.startMonth;
-  let endMonthNum: number | undefined = data.fiscalYear.endMonth;
+  const startMonthNum: number | undefined = data.fiscalYear.startMonth;
+  const endMonthNum: number | undefined = data.fiscalYear.endMonth;
 
   const getMonthName = (monthNumber: number) => {
     const months = [

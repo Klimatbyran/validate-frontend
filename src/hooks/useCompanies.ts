@@ -107,7 +107,7 @@ export function useCompanies() {
             return;
           }
         }
-      } catch (_) {
+      } catch {
         // ignore errors, will backoff
       } finally {
         state.isPolling = false;
@@ -150,7 +150,6 @@ export function useCompanies() {
   }, []);
 
   useEffect(() => {
-    let timer: number | undefined;
     let busy = false;
     const prev = new Map<string, string>();
 
@@ -176,10 +175,8 @@ export function useCompanies() {
       }
     };
 
-    timer = window.setInterval(tick, 2000);
-    return () => {
-      if (timer) window.clearInterval(timer);
-    };
+    const timer = window.setInterval(tick, 2000);
+    return () => window.clearInterval(timer);
   }, []);
 
   async function loadMoreCompanies() {

@@ -77,14 +77,14 @@ class RxRateLimiter {
         if (item.error) {
           try {
             item.observer.error(item.error);
-          } catch (err) {
+          } catch {
             // Observer might be closed, ignore
           }
         } else {
           try {
             item.observer.next(item.result);
             item.observer.complete();
-          } catch (err) {
+          } catch {
             // Observer might be closed, ignore
           }
         }
@@ -103,21 +103,21 @@ class RxRateLimiter {
           next: (value) => {
             try {
               observer.next(value);
-            } catch (err) {
+            } catch {
               // Observer might be closed, ignore
             }
           },
           error: (err) => {
             try {
               observer.error(err);
-            } catch (error) {
+            } catch {
               // Observer might be closed, ignore
             }
           },
           complete: () => {
             try {
               observer.complete();
-            } catch (err) {
+            } catch {
               // Observer might be closed, ignore
             }
           },
@@ -639,13 +639,14 @@ function handleApiError(error: unknown, context?: string): Error {
         return new Error(
           `${errorPrefix}Ett serverfel har inträffat (${statusCode})`
         );
-      default:
+      default: {
         // Include response data in error message if available
         const errorMessage =
           responseData?.message || responseData?.error || error.message;
         return new Error(
           `${errorPrefix}Ett fel uppstod (${statusCode}): ${errorMessage}`
         );
+      }
     }
   }
 

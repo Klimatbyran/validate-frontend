@@ -1,5 +1,5 @@
-import { Observable, throwError, timer, of } from 'rxjs';
-import { mergeMap, retryWhen, tap, catchError, finalize } from 'rxjs/operators';
+import { Observable, throwError, timer } from 'rxjs';
+import { mergeMap, retryWhen, catchError, finalize } from 'rxjs/operators';
 import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { toast } from 'sonner';
 import { getPipelineApiBaseUrl } from "@/config/api-env";
@@ -134,10 +134,12 @@ export function handleApiErrorRx(error: any, context?: string): Observable<never
         case 504:
           errorMessage = `${errorPrefix}Ett serverfel har inträffat (${statusCode})`;
           break;
-        default:
+        default: {
           // Include response data in error message if available
           const responseMessage = responseData?.message || responseData?.error || error.message;
           errorMessage = `${errorPrefix}Ett fel uppstod (${statusCode}): ${responseMessage}`;
+          break;
+        }
       }
     }
   } else {
