@@ -10,7 +10,6 @@ import {
   XCircle,
   RefreshCw,
 } from "lucide-react";
-import { useCompaniesContext } from "@/contexts/CompaniesContext";
 import { Button } from "@/ui/button";
 import { useI18n } from "@/contexts/I18nContext";
 import { getWorkflowStages } from "@/lib/workflow-config";
@@ -18,13 +17,14 @@ import { fetchQueueJobs } from "@/lib/api";
 import { toast } from "sonner";
 import type { QueueJob } from "@/lib/types";
 
-type QueueWithJobs = { name: string; jobs: QueueJob[] };
+type QueueWithJobs = { name: string; jobs: QueueJob[]; error?: string };
 
 export function DebugTab() {
   const { t, formatDate } = useI18n();
-  const { isLoading, error } = useCompaniesContext();
   const [queues, setQueues] = useState<QueueWithJobs[] | null>(null);
   const [queuesLoading, setQueuesLoading] = useState(true);
+  const [debugError, setDebugError] = useState<string | null>(null);
+  const [failedStages, setFailedStages] = useState<string[]>([]);
   const [allJobs, setAllJobs] = useState<QueueJob[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 
@@ -39,8 +39,10 @@ export function DebugTab() {
             queueId: res.queue.name,
           }));
           return { name: res.queue.name, jobs };
-        } catch {
-          return { name: stage.id, jobs: [] };
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to fetch queue jobs";
+          return { name: stage.id, jobs: [], error: message };
         }
       })
     );
@@ -50,9 +52,14 @@ export function DebugTab() {
   useEffect(() => {
     let cancelled = false;
     setQueuesLoading(true);
+    setDebugError(null);
+    setFailedStages([]);
     fetchQueues()
       .then((data) => {
-        if (!cancelled) setQueues(data);
+        if (cancelled) return;
+        setQueues(data);
+        setFailedStages(data.filter((q) => q.error).map((q) => q.name));
+        if (data.every((q) => q.jobs.length === 0)) setDebugError(null);
       })
       .finally(() => {
         if (!cancelled) setQueuesLoading(false);
@@ -91,6 +98,7 @@ export function DebugTab() {
     toast.promise(
       fetchQueues().then((data) => {
         setQueues(data);
+        setFailedStages(data.filter((q) => q.error).map((q) => q.name));
       }),
       {
         loading: t("debug.updatingView"),
@@ -101,7 +109,7 @@ export function DebugTab() {
     );
   };
 
-  if (isLoading || queuesLoading) {
+  if (queuesLoading) {
     return (
       <div className="flex items-center justify-center p-4">
         <Loader2 className="w-6 h-6 text-gray-02 animate-spin" />
@@ -109,13 +117,13 @@ export function DebugTab() {
     );
   }
 
-  if (error) {
+  if (debugError) {
     return (
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center text-pink-03">
             <AlertCircle className="w-6 h-6 mr-2" />
-            <span>{error || t("debug.errorOccurred")}</span>
+            <span>{debugError || t("debug.errorOccurred")}</span>
           </div>
           <Button
             variant="ghost"
@@ -185,6 +193,8 @@ export function DebugTab() {
     (a, b) => b.latestTimestamp - a.latestTimestamp
   );
 
+  const totalJobs = allJobs.length;
+
   // Filter jobs based on selected thread
   const selectedJobs = selectedThreadId
     ? allJobs.filter((job) => job.data?.threadId === selectedThreadId)
@@ -192,6 +202,18 @@ export function DebugTab() {
 
   return (
     <div className="space-y-6">
+      {failedStages.length > 0 && totalJobs === 0 ? (
+        <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] p-6">
+          <div className="flex items-center text-pink-03">
+            <AlertCircle className="w-6 h-6 mr-2" />
+            <span>
+              {t("debug.errorOccurred")}: {failedStages.slice(0, 5).join(", ")}
+              {failedStages.length > 5 ? ` (+${failedStages.length - 5} more)` : ""}
+            </span>
+          </div>
+        </div>
+      ) : null}
+
       {/* Thread Overview */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
