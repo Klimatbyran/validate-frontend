@@ -1,11 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronDown, ChevronRight, Search } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Minus,
+  Search,
+} from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { listCompanies, getCompany } from "../lib/companies-api";
 import { fetchTagOptions } from "../lib/tag-options-api";
-import type { GarboCompanyDetail, GarboCompanyListItem, TagOption } from "../lib/types";
+import type {
+  GarboCompanyDetail,
+  GarboCompanyListItem,
+  GarboMinimalMetadata,
+  TagOption,
+} from "../lib/types";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { CompanyEditDetail } from "./CompanyEditDetail";
@@ -25,6 +38,17 @@ function companyHasPeriodInYear(
   );
 }
 
+function companyHasPeriodsInYears(
+  company: GarboCompanyListItem,
+  years: string[]
+): boolean {
+  if (!years.length) return true;
+  // AND: must have all selected years
+  return years.every((y) =>
+    (company.reportingPeriods ?? []).some((p) => getPeriodYear(p) === y)
+  );
+}
+
 function companyMatchesSearch(
   company: GarboCompanyListItem,
   query: string
@@ -36,6 +60,172 @@ function companyMatchesSearch(
   return name.includes(q) || id.includes(q);
 }
 
+function isAIGenerated(meta: GarboMinimalMetadata | null | undefined): boolean {
+  if (!meta) return false;
+  const verifiedBy = meta.verifiedBy;
+  const noVerifier =
+    !verifiedBy ||
+    (typeof verifiedBy.name === "string" && verifiedBy.name.trim() === "");
+  const isGarbo = meta.user?.name === "Garbo (Klimatkollen)";
+  return noVerifier || isGarbo;
+}
+
+type VerificationState = "none" | "verified" | "unverified";
+
+function stateFromAIGenerated(
+  hasValue: boolean,
+  aiGenerated: boolean
+): VerificationState {
+  if (!hasValue) return "none";
+  return aiGenerated ? "unverified" : "verified";
+}
+
+function getCompanyVerificationOverview(company: GarboCompanyListItem): {
+  emissions: VerificationState;
+  economy: VerificationState;
+  industry: VerificationState;
+  baseYear: VerificationState;
+  hasUnverifiedEmissions: boolean;
+  hasUnverifiedData: boolean;
+  perYear: Array<{ year: string; emissions: VerificationState; economy: VerificationState }>;
+} {
+  const periods = company.reportingPeriods ?? [];
+
+  const perYearMap = new Map<
+    string,
+    { emissions: VerificationState; economy: VerificationState }
+  >();
+
+  let emissionsAnyHasValue = false;
+  let emissionsAnyUnverified = false;
+
+  let economyAnyHasValue = false;
+  let economyAnyUnverified = false;
+
+  for (const p of periods) {
+    const y = getPeriodYear(p);
+    if (!y) continue;
+
+    // --- emissions ---
+    const e = p.emissions;
+    const emissionsPoints: Array<{
+      hasValue: boolean;
+      meta: GarboMinimalMetadata | null | undefined;
+    }> = [];
+
+    if (e) {
+      emissionsPoints.push({
+        hasValue: e.scope1?.total !== null && e.scope1?.total !== undefined,
+        meta: e.scope1?.metadata,
+      });
+      emissionsPoints.push({
+        hasValue:
+          e.scope1And2?.total !== null && e.scope1And2?.total !== undefined,
+        meta: e.scope1And2?.metadata,
+      });
+      emissionsPoints.push({
+        hasValue:
+          e.scope2?.mb !== null && e.scope2?.mb !== undefined ||
+          e.scope2?.lb !== null && e.scope2?.lb !== undefined ||
+          e.scope2?.unknown !== null && e.scope2?.unknown !== undefined,
+        meta: e.scope2?.metadata,
+      });
+      emissionsPoints.push({
+        hasValue:
+          e.statedTotalEmissions?.total !== null &&
+          e.statedTotalEmissions?.total !== undefined,
+        meta: e.statedTotalEmissions?.metadata,
+      });
+      emissionsPoints.push({
+        hasValue:
+          e.scope3?.statedTotalEmissions?.total !== null &&
+          e.scope3?.statedTotalEmissions?.total !== undefined,
+        meta: e.scope3?.statedTotalEmissions?.metadata,
+      });
+      (e.scope3?.categories ?? []).forEach((c) => {
+        emissionsPoints.push({
+          hasValue: c.total !== null && c.total !== undefined,
+          meta: c.metadata,
+        });
+      });
+    }
+
+    const emissionsHasValue = emissionsPoints.some((p) => p.hasValue);
+    const emissionsIsUnverified = emissionsPoints.some(
+      (p) => p.hasValue && isAIGenerated(p.meta)
+    );
+    const emissionsState = stateFromAIGenerated(emissionsHasValue, emissionsIsUnverified);
+
+    // --- economy ---
+    const econ = p.economy;
+    const turnoverHasValue =
+      econ?.turnover?.value !== null && econ?.turnover?.value !== undefined;
+    const employeesHasValue =
+      econ?.employees?.value !== null && econ?.employees?.value !== undefined;
+    const econHasValue = turnoverHasValue || employeesHasValue;
+    const econIsUnverified =
+      (turnoverHasValue && isAIGenerated(econ?.turnover?.metadata)) ||
+      (employeesHasValue && isAIGenerated(econ?.employees?.metadata));
+    const economyState = stateFromAIGenerated(Boolean(econHasValue), econIsUnverified);
+
+    perYearMap.set(y, { emissions: emissionsState, economy: economyState });
+
+    if (emissionsHasValue) {
+      emissionsAnyHasValue = true;
+      if (emissionsIsUnverified) emissionsAnyUnverified = true;
+    }
+    if (econHasValue) {
+      economyAnyHasValue = true;
+      if (econIsUnverified) economyAnyUnverified = true;
+    }
+  }
+
+  const emissions =
+    !emissionsAnyHasValue ? "none" : emissionsAnyUnverified ? "unverified" : "verified";
+  const economy =
+    !economyAnyHasValue ? "none" : economyAnyUnverified ? "unverified" : "verified";
+
+  const industryHasValue = Boolean(company.industry?.subIndustryCode);
+  const industryMeta = (company as any).industry?.metadata as GarboMinimalMetadata | null | undefined;
+  const industry = stateFromAIGenerated(industryHasValue, isAIGenerated(industryMeta));
+
+  const baseYearObj = (company as any).baseYear as
+    | { year?: number | null; metadata?: GarboMinimalMetadata | null }
+    | null
+    | undefined;
+  const baseYearHasValue = baseYearObj?.year !== null && baseYearObj?.year !== undefined;
+  const baseYear = stateFromAIGenerated(Boolean(baseYearHasValue), isAIGenerated(baseYearObj?.metadata));
+
+  const hasUnverifiedEmissions = emissionsAnyUnverified;
+  const hasUnverifiedData =
+    hasUnverifiedEmissions ||
+    economyAnyUnverified ||
+    (industryHasValue && isAIGenerated(industryMeta)) ||
+    (baseYearHasValue && isAIGenerated(baseYearObj?.metadata));
+
+  const perYear = Array.from(perYearMap.entries())
+    .map(([year, v]) => ({ year, ...v }))
+    .sort((a, b) => b.year.localeCompare(a.year));
+
+  return {
+    emissions,
+    economy,
+    industry,
+    baseYear,
+    hasUnverifiedEmissions,
+    hasUnverifiedData,
+    perYear,
+  };
+}
+
+function StatusIcon({ state }: { state: VerificationState }) {
+  if (state === "verified")
+    return <CheckCircle2 className="w-4 h-4 text-green-03" />;
+  if (state === "unverified")
+    return <AlertCircle className="w-4 h-4 text-orange-03" />;
+  return <Minus className="w-4 h-4 text-gray-03" />;
+}
+
 export function SingleCompanyView() {
   const { t } = useI18n();
   const [companyList, setCompanyList] = useState<GarboCompanyListItem[]>([]);
@@ -45,7 +235,7 @@ export function SingleCompanyView() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTags, setFilterTags] = useState<string[]>([]);
-  const [filterYear, setFilterYear] = useState<string>("");
+  const [filterYears, setFilterYears] = useState<string[]>([]);
   const [filterSector, setFilterSector] = useState<string>("");
   const [filterHasUnverifiedEmissions, setFilterHasUnverifiedEmissions] = useState(false);
   const [filterHasUnverifiedData, setFilterHasUnverifiedData] = useState(false);
@@ -127,22 +317,42 @@ export function SingleCompanyView() {
     return Array.from(set).sort();
   }, [companyList]);
 
+  const companyOverviewById = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof getCompanyVerificationOverview>>();
+    companyList.forEach((c) => {
+      map.set(c.wikidataId, getCompanyVerificationOverview(c));
+    });
+    return map;
+  }, [companyList]);
+
   const filteredCompanies = useMemo(() => {
     return companyList.filter((c) => {
+      const overview = companyOverviewById.get(c.wikidataId);
       if (!companyMatchesSearch(c, searchQuery)) return false;
       if (filterTags.length && !filterTags.some((t) => c.tags?.includes(t)))
         return false;
-      if (filterYear && !companyHasPeriodInYear(c, filterYear)) return false;
+      if (filterYears.length && !companyHasPeriodsInYears(c, filterYears))
+        return false;
       if (
         filterSector &&
         (c.industry?.subIndustryCode ?? "") !== filterSector
       )
         return false;
-      if (filterHasUnverifiedEmissions && !c.hasUnverifiedEmissions) return false;
-      if (filterHasUnverifiedData && !c.hasUnverifiedData) return false;
+      if (filterHasUnverifiedEmissions && !overview?.hasUnverifiedEmissions)
+        return false;
+      if (filterHasUnverifiedData && !overview?.hasUnverifiedData) return false;
       return true;
     });
-  }, [companyList, searchQuery, filterTags, filterYear, filterSector, filterHasUnverifiedEmissions, filterHasUnverifiedData]);
+  }, [
+    companyList,
+    companyOverviewById,
+    searchQuery,
+    filterTags,
+    filterYears,
+    filterSector,
+    filterHasUnverifiedEmissions,
+    filterHasUnverifiedData,
+  ]);
 
   const goBack = useCallback(() => {
     setSelectedCompanyId(null);
@@ -187,159 +397,255 @@ export function SingleCompanyView() {
 
   return (
     <div className="space-y-4">
-      <details
-        open={filtersOpen}
-        onToggle={(e) => setFiltersOpen((e.target as HTMLDetailsElement).open)}
-        className="group rounded-lg border border-gray-03 bg-gray-04/80"
-      >
-        <summary className="flex items-center gap-2 px-4 py-3 cursor-pointer list-none text-gray-01 font-medium hover:bg-gray-03/30 select-none rounded-t-lg">
-          {filtersOpen ? (
-            <ChevronDown className="w-4 h-4 text-gray-02" />
-          ) : (
-            <ChevronRight className="w-4 h-4 text-gray-02" />
-          )}
-          <Search className="w-4 h-4 text-gray-02" />
-          {t("editor.singleCompanyView.searchAndFilters")}
-        </summary>
-        <div className="px-4 pb-4 pt-1 space-y-4 border-t border-gray-03/50 rounded-b-lg">
-          <div>
-            <label className="block text-xs font-medium text-gray-02 mb-1">
-              {t("editor.singleCompanyView.searchByNameOrId")}
-            </label>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t("editor.singleCompanyView.searchPlaceholder")}
-              className="w-full max-w-md px-3 py-2 rounded-lg border border-gray-03 bg-gray-05 text-gray-01 placeholder:text-gray-03 focus:outline-none focus:ring-2 focus:ring-blue-03"
-            />
-          </div>
-          <div className="flex flex-wrap gap-4">
+      <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg border border-gray-03 p-4 flex flex-col gap-4">
+        <details
+          open={filtersOpen}
+          onToggle={(e) => setFiltersOpen((e.target as HTMLDetailsElement).open)}
+          className="group"
+        >
+          <summary className="flex items-center gap-2 px-0 py-1 cursor-pointer list-none text-gray-01 font-medium hover:text-gray-02 select-none">
+            {filtersOpen ? (
+              <ChevronDown className="w-4 h-4 text-gray-02" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-02" />
+            )}
+            <Search className="w-4 h-4 text-gray-02" />
+            {t("editor.singleCompanyView.searchAndFilters")}
+          </summary>
+          <div className="pt-4 space-y-4 border-t border-gray-03/50 mt-2">
             <div>
               <label className="block text-xs font-medium text-gray-02 mb-1">
-                {t("editor.companies.tag")}
+                {t("editor.singleCompanyView.searchByNameOrId")}
               </label>
-              <MultiSelectDropdown
-                options={tagOptions.map((o) => o.slug)}
-                selectedIds={filterTags}
-                onChange={setFilterTags}
-                triggerLabel={t("editor.companies.tags")}
-                getOptionLabel={(slug) =>
-                  tagOptions.find((o) => o.slug === slug)?.label ?? slug
-                }
-                emptyLabel={t("editor.companies.allTags")}
-                triggerClassName="min-w-[140px]"
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("editor.singleCompanyView.searchPlaceholder")}
+                className="w-full max-w-md px-3 py-2 rounded-lg border border-gray-03 bg-gray-05 text-gray-01 placeholder:text-gray-03 focus:outline-none focus:ring-2 focus:ring-blue-03"
               />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-02 mb-1">
-                {t("editor.companies.year")}
-              </label>
-              <SingleSelectDropdown
-                options={["", ...years]}
-                value={filterYear}
-                onChange={setFilterYear}
-                placeholder={t("editor.companies.allYears")}
-                getOptionLabel={(v) => (v ? v : t("editor.companies.allYears"))}
-                triggerClassName="min-w-[120px]"
-              />
-            </div>
-            {sectors.length > 0 && (
+            <div className="flex flex-wrap gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-02 mb-1">
-                  {t("editor.singleCompanyView.sector")}
+                  {t("editor.companies.tag")}
                 </label>
-                <SingleSelectDropdown
-                  options={["", ...sectors]}
-                  value={filterSector}
-                  onChange={setFilterSector}
-                  placeholder={t("editor.singleCompanyView.allSectors")}
-                  getOptionLabel={(v) =>
-                    v ? v : t("editor.singleCompanyView.allSectors")
+                <MultiSelectDropdown
+                  options={tagOptions.map((o) => o.slug)}
+                  selectedIds={filterTags}
+                  onChange={setFilterTags}
+                  triggerLabel={t("editor.companies.tags")}
+                  getOptionLabel={(slug) =>
+                    tagOptions.find((o) => o.slug === slug)?.label ?? slug
                   }
+                  emptyLabel={t("editor.companies.allTags")}
                   triggerClassName="min-w-[140px]"
                 />
               </div>
-            )}
-            <div className="flex flex-wrap items-end gap-4">
-              <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-sm">
-                <input
-                  type="checkbox"
-                  checked={filterHasUnverifiedEmissions}
-                  onChange={(e) => setFilterHasUnverifiedEmissions(e.target.checked)}
-                  className="rounded border-gray-03"
+              <div>
+                <label className="block text-xs font-medium text-gray-02 mb-1">
+                  {t("editor.companies.year")}
+                </label>
+                <MultiSelectDropdown
+                  options={years}
+                  selectedIds={filterYears}
+                  onChange={setFilterYears}
+                  triggerLabel={t("editor.companies.year")}
+                  emptyLabel={t("editor.companies.allYears")}
+                  triggerClassName="min-w-[120px]"
                 />
-                {t("editor.singleCompanyView.filterHasUnverifiedEmissions")}
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-sm">
-                <input
-                  type="checkbox"
-                  checked={filterHasUnverifiedData}
-                  onChange={(e) => setFilterHasUnverifiedData(e.target.checked)}
-                  className="rounded border-gray-03"
-                />
-                {t("editor.singleCompanyView.filterHasUnverifiedData")}
-              </label>
+              </div>
+              {sectors.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-02 mb-1">
+                    {t("editor.singleCompanyView.sector")}
+                  </label>
+                  <SingleSelectDropdown
+                    options={["", ...sectors]}
+                    value={filterSector}
+                    onChange={setFilterSector}
+                    placeholder={t("editor.singleCompanyView.allSectors")}
+                    getOptionLabel={(v) =>
+                      v ? v : t("editor.singleCompanyView.allSectors")
+                    }
+                    triggerClassName="min-w-[140px]"
+                  />
+                </div>
+              )}
+              <div className="flex flex-wrap items-end gap-4">
+                <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={filterHasUnverifiedEmissions}
+                    onChange={(e) => setFilterHasUnverifiedEmissions(e.target.checked)}
+                    className="rounded border-gray-03"
+                  />
+                  {t("editor.singleCompanyView.filterHasUnverifiedEmissions")}
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={filterHasUnverifiedData}
+                    onChange={(e) => setFilterHasUnverifiedData(e.target.checked)}
+                    className="rounded border-gray-03"
+                  />
+                  {t("editor.singleCompanyView.filterHasUnverifiedData")}
+                </label>
+              </div>
             </div>
           </div>
-        </div>
-      </details>
+        </details>
 
-      {error && !loadingList && (
-        <div className="rounded-lg border border-gray-03 bg-gray-04/80 p-4">
-          <p className="text-gray-01 font-medium">
-            {t("editor.singleCompanyView.loadError")}
-          </p>
-          <p className="text-sm text-gray-02 mt-1">{error}</p>
-        </div>
-      )}
+        {error && !loadingList && (
+          <div className="rounded-lg border border-gray-03 bg-gray-05/80 p-4">
+            <p className="text-gray-01 font-medium">
+              {t("editor.singleCompanyView.loadError")}
+            </p>
+            <p className="text-sm text-gray-02 mt-1">{error}</p>
+          </div>
+        )}
 
-      {loadingList ? (
-        <div className="flex justify-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
-          <LoadingSpinner label={t("editor.companies.loading")} />
-        </div>
-      ) : filteredCompanies.length === 0 ? (
-        <div className="rounded-lg border border-gray-03 bg-gray-04/80 p-8 text-center text-gray-02 text-sm">
-          {t("editor.singleCompanyView.noCompaniesMatch")}
-        </div>
-      ) : (
-        <div className="rounded-lg border border-gray-03 bg-gray-04/80 overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-03 bg-gray-04 text-gray-02 text-xs uppercase tracking-wide">
-                <th className="px-4 py-3 font-medium">
+        {loadingList && (
+          <div className="flex justify-center py-12">
+            <LoadingSpinner label={t("editor.companies.loading")} />
+          </div>
+        )}
+
+        {!loadingList && filteredCompanies.length === 0 && (
+          <div className="py-8 text-center text-gray-02 text-sm">
+            {t("editor.singleCompanyView.noCompaniesMatch")}
+          </div>
+        )}
+      </div>
+
+      {!loadingList && filteredCompanies.length > 0 && (
+        <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-gray-03/50">
+              <tr>
+                <th className="px-4 py-3 font-medium w-[22%]">
                   {t("editor.companies.company")}
                 </th>
                 <th className="px-4 py-3 font-medium">
+                  <div className="leading-tight">
+                    <div>Base year</div>
+                    <div className="text-[10px] text-gray-01 normal-case tracking-normal">
+                      All years
+                    </div>
+                  </div>
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  <div className="leading-tight">
+                    <div>Emissions</div>
+                    <div className="text-[10px] text-gray-01 normal-case tracking-normal">
+                      All years
+                    </div>
+                  </div>
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  <div className="leading-tight">
+                    <div>Economy</div>
+                    <div className="text-[10px] text-gray-01 normal-case tracking-normal">
+                      All years
+                    </div>
+                  </div>
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  {t("editor.companies.year")}
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  {t("editor.singleCompanyView.sections.industry")}
+                </th>
+                <th className="px-4 py-3 font-medium w-[18%]">
                   {t("editor.companies.tags")}
                 </th>
-                {sectors.length > 0 && (
-                  <th className="px-4 py-3 font-medium">
-                    {t("editor.singleCompanyView.sections.industry")}
-                  </th>
-                )}
               </tr>
             </thead>
-            <tbody>
-              {filteredCompanies.map((c) => (
-                <tr
-                  key={c.wikidataId}
-                  onClick={() => setSelectedCompanyId(c.wikidataId)}
-                  className="border-b border-gray-03/50 hover:bg-gray-04/50 cursor-pointer text-gray-01"
-                >
-                  <td className="px-4 py-3 font-medium">{c.name}</td>
-                  <td className="px-4 py-3 text-gray-02">
-                    {c.tags?.length ? c.tags.join(", ") : "—"}
-                  </td>
-                  {sectors.length > 0 && (
-                    <td className="px-4 py-3 text-gray-02">
-                      {c.industry?.subIndustryCode ?? "—"}
+            <tbody className="divide-y divide-gray-03/50">
+              {filteredCompanies.map((c) => {
+                const overview = companyOverviewById.get(c.wikidataId);
+                return (
+                  <tr
+                    key={c.wikidataId}
+                    onClick={() => setSelectedCompanyId(c.wikidataId)}
+                    className="hover:bg-gray-04/50 cursor-pointer text-gray-01 align-top"
+                  >
+                    <td className="px-4 py-3 font-medium">
+                      <div className="flex flex-col">
+                        <span>{c.name}</span>
+                        <span className="text-xs text-gray-03">{c.wikidataId}</span>
+                      </div>
                     </td>
-                  )}
-                </tr>
-              ))}
+                    <td className="px-4 py-3 text-gray-02">
+                      <div className="flex items-center gap-2">
+                        <StatusIcon state={overview?.baseYear ?? "none"} />
+                        <span>{(c as any).baseYear?.year ?? "—"}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusIcon state={overview?.emissions ?? "none"} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusIcon state={overview?.economy ?? "none"} />
+                    </td>
+                    <td className="px-4 py-3 text-gray-02">
+                      {overview?.perYear?.length ? (
+                        <div className="flex flex-wrap gap-2">
+                          {overview.perYear.map((p) => (
+                            <span
+                              key={p.year}
+                              className="inline-flex items-center gap-2 rounded-full border border-gray-03 px-2 py-1 text-xs text-gray-01 bg-gray-05"
+                            >
+                              <span className="font-semibold">{p.year}</span>
+                              <span className="inline-flex items-center gap-1">
+                                <span className="text-[10px] text-gray-03">E</span>
+                                <StatusIcon state={p.emissions} />
+                              </span>
+                              <span className="inline-flex items-center gap-1">
+                                <span className="text-[10px] text-gray-03">$</span>
+                                <StatusIcon state={p.economy} />
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-02">
+                      <div className="flex items-center gap-2">
+                        <StatusIcon state={overview?.industry ?? "none"} />
+                        <span>{c.industry?.subIndustryCode ?? "—"}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-02">
+                      {c.tags?.length ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {c.tags.slice(0, 4).map((slug) => (
+                            <span
+                              key={slug}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-03/40 text-gray-01 border border-gray-03"
+                            >
+                              {tagOptions.find((o) => o.slug === slug)?.label ?? slug}
+                            </span>
+                          ))}
+                          {c.tags.length > 4 && (
+                            <span className="text-[11px] text-gray-02">
+                              +{c.tags.length - 4}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+          </div>
           <p className="px-4 py-2 text-xs text-gray-03 border-t border-gray-03/50">
             {t("editor.singleCompanyView.showingCount", {
               count: filteredCompanies.length,

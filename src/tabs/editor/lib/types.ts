@@ -47,18 +47,36 @@ export interface GarboReportingPeriodSummary {
   economy?: GarboEconomySummary;
 }
 
+export interface GarboMinimalMetadata {
+  user?: { name?: string | null } | null;
+  verifiedBy?: { name: string } | null;
+}
+
 export interface GarboEmissionsSummary {
-  scope1?: { total?: number | null } | null;
-  scope2?: { mb?: number | null; lb?: number | null; unknown?: number | null } | null;
-  scope1And2?: { total?: number | null } | null;
-  scope3?: { statedTotalEmissions?: { total?: number | null }; categories?: Array<{ category: number; total?: number | null }> } | null;
+  scope1?: { total?: number | null; metadata?: GarboMinimalMetadata | null } | null;
+  scope2?: {
+    mb?: number | null;
+    lb?: number | null;
+    unknown?: number | null;
+    metadata?: GarboMinimalMetadata | null;
+  } | null;
+  scope1And2?: { total?: number | null; metadata?: GarboMinimalMetadata | null } | null;
+  scope3?: {
+    metadata?: GarboMinimalMetadata | null;
+    statedTotalEmissions?: { total?: number | null; metadata?: GarboMinimalMetadata | null } | null;
+    categories?: Array<{
+      category: number;
+      total?: number | null;
+      metadata?: GarboMinimalMetadata | null;
+    }>;
+  } | null;
   biogenic?: { total?: number | null } | null;
-  statedTotalEmissions?: { total?: number | null } | null;
+  statedTotalEmissions?: { total?: number | null; metadata?: GarboMinimalMetadata | null } | null;
 }
 
 export interface GarboEconomySummary {
-  turnover?: { value?: number | null; currency?: string | null } | null;
-  employees?: { value?: number | null; unit?: string | null } | null;
+  turnover?: { value?: number | null; currency?: string | null; metadata?: GarboMinimalMetadata | null } | null;
+  employees?: { value?: number | null; unit?: string | null; metadata?: GarboMinimalMetadata | null } | null;
 }
 
 /** Full company detail from GET /api/companies/:wikidataId (for single-company edit). */

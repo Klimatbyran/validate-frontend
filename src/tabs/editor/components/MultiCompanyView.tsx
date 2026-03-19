@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pencil, CheckCircle } from "lucide-react";
+import { Pencil, CheckCircle, Check } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { LoadingSpinner } from "@/ui/loading-spinner";
@@ -317,19 +317,32 @@ export function MultiCompanyView() {
               </Button>
             </div>
           )}
-          <div className="rounded-lg border border-gray-03 bg-gray-04/80 overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-03 bg-gray-04 text-gray-02 text-xs uppercase tracking-wide">
+          <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-gray-03/50">
+              <tr>
                 <th className="w-10 px-2 py-3 font-medium">
                   <label className="flex items-center justify-center cursor-pointer">
                     <input
                       type="checkbox"
                       checked={allFilteredSelected}
-                      onChange={() => (allFilteredSelected ? clearSelection() : selectAllFiltered())}
-                      className="rounded border-gray-03"
+                      onChange={() =>
+                        allFilteredSelected ? clearSelection() : selectAllFiltered()
+                      }
+                      className="sr-only"
                       aria-label={t("editor.companies.selectAll")}
                     />
+                    <span
+                      className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
+                        allFilteredSelected
+                          ? "bg-blue-03 border-blue-03"
+                          : "border-gray-03"
+                      }`}
+                      aria-hidden
+                    >
+                      {allFilteredSelected && <Check className="w-3 h-3 text-white" />}
+                    </span>
                   </label>
                 </th>
                 <th className="px-4 py-3 font-medium">{t("editor.companies.company")}</th>
@@ -344,7 +357,7 @@ export function MultiCompanyView() {
                 )}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-03/50">
               {filteredCompanies.map((c) => {
                 const period =
                   selectedYear ? getPeriodForYear(c.reportingPeriods, Number(selectedYear)) : null;
@@ -354,16 +367,28 @@ export function MultiCompanyView() {
                     ? (period.emissions.scope2.mb ?? period.emissions.scope2.lb ?? period.emissions.scope2.unknown) ?? null
                     : null;
                 return (
-                  <tr key={c.wikidataId} className="border-b border-gray-03/50 hover:bg-gray-04/50">
+                  <tr key={c.wikidataId} className="hover:bg-gray-04/50">
                     <td className="w-10 px-2 py-3">
                       <label className="flex items-center justify-center cursor-pointer">
                         <input
                           type="checkbox"
                           checked={selectedWikidataIds.has(c.wikidataId)}
                           onChange={() => toggleCompanySelection(c.wikidataId)}
-                          className="rounded border-gray-03"
+                          className="sr-only"
                           aria-label={t("editor.companies.select")}
                         />
+                        <span
+                          className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
+                            selectedWikidataIds.has(c.wikidataId)
+                              ? "bg-blue-03 border-blue-03"
+                              : "border-gray-03"
+                          }`}
+                          aria-hidden
+                        >
+                          {selectedWikidataIds.has(c.wikidataId) && (
+                            <Check className="w-3 h-3 text-white" />
+                          )}
+                        </span>
                       </label>
                     </td>
                     <td className="px-4 py-3 text-gray-01 font-medium">{c.name}</td>
@@ -496,7 +521,8 @@ export function MultiCompanyView() {
               })}
             </tbody>
           </table>
-        </div>
+          </div>
+          </div>
         </>
       )}
 

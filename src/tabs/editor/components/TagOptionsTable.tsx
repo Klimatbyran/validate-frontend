@@ -18,18 +18,19 @@ export function TagOptionsTable({
   const { t } = useI18n();
 
   return (
-    <div className="rounded-lg border border-gray-03 bg-gray-04/80 overflow-hidden">
-      <table className="w-full text-left">
-        <thead>
-          <tr className="border-b border-gray-03 bg-gray-04 text-gray-02 text-xs uppercase tracking-wide">
-            <th className="px-4 py-3 font-medium">{t("editor.tagOptions.slug")}</th>
-            <th className="px-4 py-3 font-medium">{t("editor.tagOptions.label")}</th>
-            <th className="px-4 py-3 font-medium w-28">{t("editor.tagOptions.actions")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {options.map((opt) => (
-            <tr key={opt.id} className="border-b border-gray-03/50 hover:bg-gray-04/50">
+    <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-sm">
+          <thead className="bg-gray-03/50">
+            <tr>
+              <th className="px-4 py-3 font-medium text-gray-02 text-xs uppercase tracking-wider">{t("editor.tagOptions.slug")}</th>
+              <th className="px-4 py-3 font-medium text-gray-02 text-xs uppercase tracking-wider">{t("editor.tagOptions.label")}</th>
+              <th className="px-4 py-3 font-medium text-gray-02 text-xs uppercase tracking-wider w-28">{t("editor.tagOptions.actions")}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-03/50">
+            {options.map((opt) => (
+              <tr key={opt.id} className="hover:bg-gray-04/50">
               <td className="px-4 py-3 text-gray-01 font-mono text-sm">{opt.slug}</td>
               <td className="px-4 py-3 text-gray-01">{opt.label ?? "—"}</td>
               <td className="px-4 py-3">
@@ -56,8 +57,9 @@ export function TagOptionsTable({
               </td>
             </tr>
           ))}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
