@@ -1,42 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pencil, CheckCircle, Check } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { toast } from "sonner";
-import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
-import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
-import { listCompanies, updateCompany, updateCompanyTags, updateReportingPeriods } from "../lib/companies-api";
+import { listCompanies, updateCompany, updateReportingPeriods } from "../lib/companies-api";
 import { fetchTagOptions } from "../lib/tag-options-api";
 import type {
   GarboCompanyListItem,
-  GarboReportingPeriodSummary,
   TagOption,
   GarboMetadata,
 } from "../lib/types";
 import { FieldEditModal } from "./FieldEditModal";
 import { BulkTagUpdateModal } from "./BulkTagUpdateModal";
-
-function getPeriodForYear(
-  periods: GarboReportingPeriodSummary[] | undefined,
-  year: number
-): GarboReportingPeriodSummary | null {
-  if (!periods?.length) return null;
-  const y = String(year);
-  return (
-    periods.find(
-      (p) =>
-        p.startDate?.startsWith(y) ||
-        p.endDate?.startsWith(y) ||
-        (p.startDate && p.endDate && y >= p.startDate.slice(0, 4) && y <= p.endDate.slice(0, 4))
-    ) ?? null
-  );
-}
-
-function formatNumber(v: number | null | undefined): string {
-  if (v == null) return "—";
-  return v.toLocaleString();
-}
+import { MultiCompanyFilters } from "./MultiCompanyFilters";
+import { MultiCompanySelectionBar } from "./MultiCompanySelectionBar";
+import { MultiCompanyTable } from "./MultiCompanyTable";
+import type { EditState } from "../lib/types";
+import { getPeriodForYear } from "../lib/multi-company-utils";
+import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 
 export function MultiCompanyView() {
   const { t } = useI18n();
@@ -47,15 +28,7 @@ export function MultiCompanyView() {
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
-  const [editState, setEditState] = useState<{
-    wikidataId: string;
-    companyName: string;
-    field: "tags" | "reportURL" | "scope1" | "scope2" | "economy";
-    year?: number;
-    startDate?: string;
-    endDate?: string;
-    currentValue: string | number | null;
-  } | null>(null);
+  const [editState, setEditState] = useState<EditState | null>(null);
   const [selectedWikidataIds, setSelectedWikidataIds] = useState<Set<string>>(new Set());
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
 
@@ -256,29 +229,16 @@ export function MultiCompanyView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-sm text-gray-02">{t("editor.companies.filters")}</span>
-        <SingleSelectDropdown
-          options={["", ...years]}
-          value={selectedYear}
-          onChange={setSelectedYear}
-          placeholder={t("editor.companies.allYears")}
-          getOptionLabel={(v) => (v ? v : t("editor.companies.allYears"))}
-          triggerClassName="min-w-[120px]"
-        />
-        <MultiSelectDropdown
-          options={tagOptions.map((o) => o.slug)}
-          selectedIds={selectedTags}
-          onChange={setSelectedTags}
-          triggerLabel={t("editor.companies.tag")}
-          getOptionLabel={(id) => tagOptions.find((o) => o.slug === id)?.label ?? id}
-          emptyLabel={t("editor.companies.allTags")}
-          triggerClassName="min-w-[140px]"
-        />
-        <Button variant="secondary" size="sm" onClick={loadCompanies} disabled={loading}>
-          {t("common.refresh")}
-        </Button>
-      </div>
+      <MultiCompanyFilters
+        years={years}
+        selectedYear={selectedYear}
+        onYearChange={setSelectedYear}
+        tagOptions={tagOptions}
+        selectedTags={selectedTags}
+        onTagsChange={setSelectedTags}
+        onRefresh={loadCompanies}
+        refreshDisabled={loading}
+      />
 
       {loading ? (
         <div className="flex justify-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
@@ -298,231 +258,25 @@ export function MultiCompanyView() {
         </div>
       ) : (
         <>
-          {selectedWikidataIds.size > 0 && (
-            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-03 bg-gray-04/80 px-4 py-3">
-              <span className="text-sm font-medium text-gray-01">
-                {t("editor.companies.companiesSelected", { count: selectedWikidataIds.size })}
-              </span>
-              <Button type="button" variant="ghost" size="sm" onClick={clearSelection}>
-                {t("editor.companies.clearSelection")}
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={() => setBulkTagModalOpen(true)}
-                disabled={actionLoading}
-              >
-                {t("editor.companies.bulkUpdateTags")}
-              </Button>
-            </div>
-          )}
-          <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-gray-03/50">
-              <tr>
-                <th className="w-10 px-2 py-3 font-medium">
-                  <label className="flex items-center justify-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={allFilteredSelected}
-                      onChange={() =>
-                        allFilteredSelected ? clearSelection() : selectAllFiltered()
-                      }
-                      className="sr-only"
-                      aria-label={t("editor.companies.selectAll")}
-                    />
-                    <span
-                      className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
-                        allFilteredSelected
-                          ? "bg-blue-03 border-blue-03"
-                          : "border-gray-03"
-                      }`}
-                      aria-hidden
-                    >
-                      {allFilteredSelected && <Check className="w-3 h-3 text-white" />}
-                    </span>
-                  </label>
-                </th>
-                <th className="px-4 py-3 font-medium">{t("editor.companies.company")}</th>
-                <th className="px-4 py-3 font-medium">{t("editor.companies.tags")}</th>
-                {selectedYear && (
-                  <>
-                    <th className="px-4 py-3 font-medium">{t("editor.companies.reportUrl")}</th>
-                    <th className="px-4 py-3 font-medium">{t("editor.companies.scope1")}</th>
-                    <th className="px-4 py-3 font-medium">{t("editor.companies.scope2")}</th>
-                    <th className="px-4 py-3 font-medium w-24">{t("editor.companies.edit")}</th>
-                  </>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-03/50">
-              {filteredCompanies.map((c) => {
-                const period =
-                  selectedYear ? getPeriodForYear(c.reportingPeriods, Number(selectedYear)) : null;
-                const scope1 = period?.emissions?.scope1?.total ?? null;
-                const scope2 =
-                  period?.emissions?.scope2 != null
-                    ? (period.emissions.scope2.mb ?? period.emissions.scope2.lb ?? period.emissions.scope2.unknown) ?? null
-                    : null;
-                return (
-                  <tr key={c.wikidataId} className="hover:bg-gray-04/50">
-                    <td className="w-10 px-2 py-3">
-                      <label className="flex items-center justify-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedWikidataIds.has(c.wikidataId)}
-                          onChange={() => toggleCompanySelection(c.wikidataId)}
-                          className="sr-only"
-                          aria-label={t("editor.companies.select")}
-                        />
-                        <span
-                          className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
-                            selectedWikidataIds.has(c.wikidataId)
-                              ? "bg-blue-03 border-blue-03"
-                              : "border-gray-03"
-                          }`}
-                          aria-hidden
-                        >
-                          {selectedWikidataIds.has(c.wikidataId) && (
-                            <Check className="w-3 h-3 text-white" />
-                          )}
-                        </span>
-                      </label>
-                    </td>
-                    <td className="px-4 py-3 text-gray-01 font-medium">{c.name}</td>
-                    <td className="px-4 py-3 text-gray-01">
-                      {c.tags?.length ? c.tags.join(", ") : "—"}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setEditState({
-                            wikidataId: c.wikidataId,
-                            companyName: c.name,
-                            field: "tags",
-                            currentValue: c.tags?.join(", ") ?? "",
-                          })
-                        }
-                        disabled={actionLoading}
-                        className="ml-2 p-1 rounded-full text-gray-02 hover:text-gray-01 hover:bg-gray-03 disabled:opacity-50"
-                        aria-label={t("editor.companies.edit")}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                    </td>
-                    {selectedYear && period && (
-                      <>
-                        <td className="px-4 py-3 text-gray-01">
-                          {period.reportURL ? (
-                            <a
-                              href={period.reportURL}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-03 hover:underline truncate max-w-[180px] block"
-                            >
-                              {period.reportURL}
-                            </a>
-                          ) : (
-                            "—"
-                          )}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditState({
-                                wikidataId: c.wikidataId,
-                                companyName: c.name,
-                                field: "reportURL",
-                                year: Number(selectedYear),
-                                startDate: period.startDate,
-                                endDate: period.endDate,
-                                currentValue: period.reportURL ?? "",
-                              })
-                            }
-                            disabled={actionLoading}
-                            className="ml-2 p-1 rounded-full text-gray-02 hover:text-gray-01 hover:bg-gray-03 disabled:opacity-50 inline-flex align-middle"
-                            aria-label={t("editor.companies.edit")}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                        </td>
-                        <td className="px-4 py-3 text-gray-01">
-                          {formatNumber(scope1)}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditState({
-                                wikidataId: c.wikidataId,
-                                companyName: c.name,
-                                field: "scope1",
-                                year: Number(selectedYear),
-                                startDate: period.startDate,
-                                endDate: period.endDate,
-                                currentValue: scope1,
-                              })
-                            }
-                            disabled={actionLoading}
-                            className="ml-2 p-1 rounded-full text-gray-02 hover:text-gray-01 hover:bg-gray-03 disabled:opacity-50 inline-flex align-middle"
-                            aria-label={t("editor.companies.edit")}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                        </td>
-                        <td className="px-4 py-3 text-gray-01">
-                          {formatNumber(scope2)}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditState({
-                                wikidataId: c.wikidataId,
-                                companyName: c.name,
-                                field: "scope2",
-                                year: Number(selectedYear),
-                                startDate: period.startDate,
-                                endDate: period.endDate,
-                                currentValue: scope2,
-                              })
-                            }
-                            disabled={actionLoading}
-                            className="ml-2 p-1 rounded-full text-gray-02 hover:text-gray-01 hover:bg-gray-03 disabled:opacity-50 inline-flex align-middle"
-                            aria-label={t("editor.companies.edit")}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setEditState({
-                                  wikidataId: c.wikidataId,
-                                  companyName: c.name,
-                                  field: "scope1",
-                                  year: Number(selectedYear),
-                                  startDate: period.startDate,
-                                  endDate: period.endDate,
-                                  currentValue: scope1,
-                                })
-                              }
-                              disabled={actionLoading}
-                              className="p-2 rounded-full text-gray-02 hover:text-green-600 hover:bg-gray-03 disabled:opacity-50"
-                              aria-label={t("editor.companies.verify")}
-                              title={t("editor.companies.verify")}
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          </div>
-          </div>
+          <MultiCompanySelectionBar
+            count={selectedWikidataIds.size}
+            onClear={clearSelection}
+            onBulkUpdateTags={() => setBulkTagModalOpen(true)}
+            bulkDisabled={actionLoading}
+          />
+
+          <MultiCompanyTable
+            companies={filteredCompanies}
+            selectedYear={selectedYear}
+            allFilteredSelected={allFilteredSelected}
+            onToggleSelectAll={() =>
+              allFilteredSelected ? clearSelection() : selectAllFiltered()
+            }
+            selectedWikidataIds={selectedWikidataIds}
+            onToggleCompanySelection={toggleCompanySelection}
+            actionLoading={actionLoading}
+            onEdit={setEditState}
+          />
         </>
       )}
 
@@ -545,7 +299,7 @@ export function MultiCompanyView() {
                       <MultiSelectDropdown
                         options={tagOptions.map((o) => o.slug)}
                         selectedIds={selectedSlugs}
-                        onChange={(ids) => onChange(ids.join(", "))}
+                        onChange={(ids: string[]) => onChange(ids.join(", "))}
                         triggerLabel={t("editor.companies.tags")}
                         getOptionLabel={(slug) => tagOptions.find((o) => o.slug === slug)?.label ?? slug}
                         emptyLabel={t("editor.tagOptions.empty")}
@@ -554,7 +308,7 @@ export function MultiCompanyView() {
                       />
                       {selectedSlugs.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
-                          {selectedSlugs.map((slug) => (
+                          {selectedSlugs.map((slug: string) => (
                             <span
                               key={slug}
                               className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-03/80 text-gray-01 border border-gray-03"

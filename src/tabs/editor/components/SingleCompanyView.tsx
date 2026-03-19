@@ -16,26 +16,18 @@ import { fetchTagOptions } from "../lib/tag-options-api";
 import type {
   GarboCompanyDetail,
   GarboCompanyListItem,
-  GarboMinimalMetadata,
   TagOption,
 } from "../lib/types";
+import type { VerificationState } from "../lib/verification";
+import { getCompanyVerificationOverview } from "../lib/verification";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { CompanyEditDetail } from "./CompanyEditDetail";
+import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
 
 function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
   const y = period.endDate?.slice(0, 4) ?? period.startDate?.slice(0, 4);
   return y || null;
-}
-
-function companyHasPeriodInYear(
-  company: GarboCompanyListItem,
-  year: string
-): boolean {
-  if (!year) return true;
-  return (company.reportingPeriods ?? []).some(
-    (p) => getPeriodYear(p) === year
-  );
 }
 
 function companyHasPeriodsInYears(
@@ -58,164 +50,6 @@ function companyMatchesSearch(
   const name = (company.name ?? "").toLowerCase();
   const id = (company.wikidataId ?? "").toLowerCase();
   return name.includes(q) || id.includes(q);
-}
-
-function isAIGenerated(meta: GarboMinimalMetadata | null | undefined): boolean {
-  if (!meta) return false;
-  const verifiedBy = meta.verifiedBy;
-  const noVerifier =
-    !verifiedBy ||
-    (typeof verifiedBy.name === "string" && verifiedBy.name.trim() === "");
-  const isGarbo = meta.user?.name === "Garbo (Klimatkollen)";
-  return noVerifier || isGarbo;
-}
-
-type VerificationState = "none" | "verified" | "unverified";
-
-function stateFromAIGenerated(
-  hasValue: boolean,
-  aiGenerated: boolean
-): VerificationState {
-  if (!hasValue) return "none";
-  return aiGenerated ? "unverified" : "verified";
-}
-
-function getCompanyVerificationOverview(company: GarboCompanyListItem): {
-  emissions: VerificationState;
-  economy: VerificationState;
-  industry: VerificationState;
-  baseYear: VerificationState;
-  hasUnverifiedEmissions: boolean;
-  hasUnverifiedData: boolean;
-  perYear: Array<{ year: string; emissions: VerificationState; economy: VerificationState }>;
-} {
-  const periods = company.reportingPeriods ?? [];
-
-  const perYearMap = new Map<
-    string,
-    { emissions: VerificationState; economy: VerificationState }
-  >();
-
-  let emissionsAnyHasValue = false;
-  let emissionsAnyUnverified = false;
-
-  let economyAnyHasValue = false;
-  let economyAnyUnverified = false;
-
-  for (const p of periods) {
-    const y = getPeriodYear(p);
-    if (!y) continue;
-
-    // --- emissions ---
-    const e = p.emissions;
-    const emissionsPoints: Array<{
-      hasValue: boolean;
-      meta: GarboMinimalMetadata | null | undefined;
-    }> = [];
-
-    if (e) {
-      emissionsPoints.push({
-        hasValue: e.scope1?.total !== null && e.scope1?.total !== undefined,
-        meta: e.scope1?.metadata,
-      });
-      emissionsPoints.push({
-        hasValue:
-          e.scope1And2?.total !== null && e.scope1And2?.total !== undefined,
-        meta: e.scope1And2?.metadata,
-      });
-      emissionsPoints.push({
-        hasValue:
-          e.scope2?.mb !== null && e.scope2?.mb !== undefined ||
-          e.scope2?.lb !== null && e.scope2?.lb !== undefined ||
-          e.scope2?.unknown !== null && e.scope2?.unknown !== undefined,
-        meta: e.scope2?.metadata,
-      });
-      emissionsPoints.push({
-        hasValue:
-          e.statedTotalEmissions?.total !== null &&
-          e.statedTotalEmissions?.total !== undefined,
-        meta: e.statedTotalEmissions?.metadata,
-      });
-      emissionsPoints.push({
-        hasValue:
-          e.scope3?.statedTotalEmissions?.total !== null &&
-          e.scope3?.statedTotalEmissions?.total !== undefined,
-        meta: e.scope3?.statedTotalEmissions?.metadata,
-      });
-      (e.scope3?.categories ?? []).forEach((c) => {
-        emissionsPoints.push({
-          hasValue: c.total !== null && c.total !== undefined,
-          meta: c.metadata,
-        });
-      });
-    }
-
-    const emissionsHasValue = emissionsPoints.some((p) => p.hasValue);
-    const emissionsIsUnverified = emissionsPoints.some(
-      (p) => p.hasValue && isAIGenerated(p.meta)
-    );
-    const emissionsState = stateFromAIGenerated(emissionsHasValue, emissionsIsUnverified);
-
-    // --- economy ---
-    const econ = p.economy;
-    const turnoverHasValue =
-      econ?.turnover?.value !== null && econ?.turnover?.value !== undefined;
-    const employeesHasValue =
-      econ?.employees?.value !== null && econ?.employees?.value !== undefined;
-    const econHasValue = turnoverHasValue || employeesHasValue;
-    const econIsUnverified =
-      (turnoverHasValue && isAIGenerated(econ?.turnover?.metadata)) ||
-      (employeesHasValue && isAIGenerated(econ?.employees?.metadata));
-    const economyState = stateFromAIGenerated(Boolean(econHasValue), econIsUnverified);
-
-    perYearMap.set(y, { emissions: emissionsState, economy: economyState });
-
-    if (emissionsHasValue) {
-      emissionsAnyHasValue = true;
-      if (emissionsIsUnverified) emissionsAnyUnverified = true;
-    }
-    if (econHasValue) {
-      economyAnyHasValue = true;
-      if (econIsUnverified) economyAnyUnverified = true;
-    }
-  }
-
-  const emissions =
-    !emissionsAnyHasValue ? "none" : emissionsAnyUnverified ? "unverified" : "verified";
-  const economy =
-    !economyAnyHasValue ? "none" : economyAnyUnverified ? "unverified" : "verified";
-
-  const industryHasValue = Boolean(company.industry?.subIndustryCode);
-  const industryMeta = (company as any).industry?.metadata as GarboMinimalMetadata | null | undefined;
-  const industry = stateFromAIGenerated(industryHasValue, isAIGenerated(industryMeta));
-
-  const baseYearObj = (company as any).baseYear as
-    | { year?: number | null; metadata?: GarboMinimalMetadata | null }
-    | null
-    | undefined;
-  const baseYearHasValue = baseYearObj?.year !== null && baseYearObj?.year !== undefined;
-  const baseYear = stateFromAIGenerated(Boolean(baseYearHasValue), isAIGenerated(baseYearObj?.metadata));
-
-  const hasUnverifiedEmissions = emissionsAnyUnverified;
-  const hasUnverifiedData =
-    hasUnverifiedEmissions ||
-    economyAnyUnverified ||
-    (industryHasValue && isAIGenerated(industryMeta)) ||
-    (baseYearHasValue && isAIGenerated(baseYearObj?.metadata));
-
-  const perYear = Array.from(perYearMap.entries())
-    .map(([year, v]) => ({ year, ...v }))
-    .sort((a, b) => b.year.localeCompare(a.year));
-
-  return {
-    emissions,
-    economy,
-    industry,
-    baseYear,
-    hasUnverifiedEmissions,
-    hasUnverifiedData,
-    perYear,
-  };
 }
 
 function StatusIcon({ state }: { state: VerificationState }) {
@@ -519,10 +353,9 @@ export function SingleCompanyView() {
       </div>
 
       {!loadingList && filteredCompanies.length > 0 && (
-        <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-gray-03/50">
+        <DataTableShell>
+          <DataTable>
+            <DataTableHead>
               <tr>
                 <th className="px-4 py-3 font-medium w-[22%]">
                   {t("editor.companies.company")}
@@ -561,8 +394,8 @@ export function SingleCompanyView() {
                   {t("editor.companies.tags")}
                 </th>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-03/50">
+            </DataTableHead>
+            <DataTableBody>
               {filteredCompanies.map((c) => {
                 const overview = companyOverviewById.get(c.wikidataId);
                 return (
@@ -643,16 +476,15 @@ export function SingleCompanyView() {
                   </tr>
                 );
               })}
-            </tbody>
-          </table>
-          </div>
+            </DataTableBody>
+          </DataTable>
           <p className="px-4 py-2 text-xs text-gray-03 border-t border-gray-03/50">
             {t("editor.singleCompanyView.showingCount", {
               count: filteredCompanies.length,
               total: companyList.length,
             })}
           </p>
-        </div>
+        </DataTableShell>
       )}
     </div>
   );

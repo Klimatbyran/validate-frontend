@@ -3,20 +3,13 @@
  * All endpoints require auth; uses shared garboAuthFetch (Bearer + x-auth-token).
  */
 
-import { getGarboApiBaseUrl } from "@/config/api-env";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import type { TagOption, CreateTagOptionBody, UpdateTagOptionBody } from "./types";
-
-const BASE = getGarboApiBaseUrl();
-
-function tagOptionsUrl(path = ""): string {
-  const segment = path.replace(/^\//, "");
-  return segment ? `${BASE}/tag-options/${segment}` : `${BASE}/tag-options`;
-}
+import { apiUrl } from "./api-utils";
 
 /** List all tag options (ordered by slug). Requires auth. */
 export async function fetchTagOptions(): Promise<TagOption[]> {
-  const res = await garboAuthFetch(tagOptionsUrl(), {
+  const res = await garboAuthFetch(apiUrl("/tag-options"), {
     method: "GET",
     headers: { Accept: "application/json" },
   });
@@ -35,7 +28,7 @@ export async function fetchTagOptions(): Promise<TagOption[]> {
 export async function createTagOption(
   body: CreateTagOptionBody
 ): Promise<TagOption> {
-  const res = await garboAuthFetch(tagOptionsUrl(), {
+  const res = await garboAuthFetch(apiUrl("/tag-options"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -59,7 +52,7 @@ export async function updateTagOption(
   id: string,
   body: UpdateTagOptionBody
 ): Promise<TagOption> {
-  const res = await garboAuthFetch(tagOptionsUrl(id), {
+  const res = await garboAuthFetch(apiUrl(`/tag-options/${id}`), {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -80,7 +73,7 @@ export async function updateTagOption(
 
 /** Delete a tag option and remove the tag from all companies (transaction). Requires auth. */
 export async function deleteTagOption(id: string): Promise<void> {
-  const res = await garboAuthFetch(tagOptionsUrl(id), { method: "DELETE" });
+  const res = await garboAuthFetch(apiUrl(`/tag-options/${id}`), { method: "DELETE" });
   if (res.status === 401) {
     throw new Error("Please log in to delete tag options.");
   }

@@ -1,6 +1,7 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import type { TagOption } from "../lib/types";
+import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
 
 interface TagOptionsTableProps {
   options: TagOption[];
@@ -18,17 +19,22 @@ export function TagOptionsTable({
   const { t } = useI18n();
 
   return (
-    <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-gray-03/50">
-            <tr>
-              <th className="px-4 py-3 font-medium text-gray-02 text-xs uppercase tracking-wider">{t("editor.tagOptions.slug")}</th>
-              <th className="px-4 py-3 font-medium text-gray-02 text-xs uppercase tracking-wider">{t("editor.tagOptions.label")}</th>
-              <th className="px-4 py-3 font-medium text-gray-02 text-xs uppercase tracking-wider w-28">{t("editor.tagOptions.actions")}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-03/50">
+    <DataTableShell>
+      <DataTable>
+        <DataTableHead>
+          <tr>
+            <th className="px-4 py-3 font-medium text-gray-02 text-xs uppercase tracking-wider">
+              {t("editor.tagOptions.slug")}
+            </th>
+            <th className="px-4 py-3 font-medium text-gray-02 text-xs uppercase tracking-wider">
+              {t("editor.tagOptions.label")}
+            </th>
+            <th className="px-4 py-3 font-medium text-gray-02 text-xs uppercase tracking-wider w-28">
+              {t("editor.tagOptions.actions")}
+            </th>
+          </tr>
+        </DataTableHead>
+        <DataTableBody>
             {options.map((opt) => (
               <tr key={opt.id} className="hover:bg-gray-04/50">
               <td className="px-4 py-3 text-gray-01 font-mono text-sm">{opt.slug}</td>
@@ -57,9 +63,8 @@ export function TagOptionsTable({
               </td>
             </tr>
           ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+        </DataTableBody>
+      </DataTable>
+    </DataTableShell>
   );
 }

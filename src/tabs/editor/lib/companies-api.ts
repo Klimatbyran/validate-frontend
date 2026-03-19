@@ -1,17 +1,15 @@
 /**
  * Garbo companies API for the editor: list, get by wikidataId, update company,
- * tags, reporting periods. All endpoints require auth (garboAuthFetch).
+ * reporting periods, industry, base year. All endpoints require auth (garboAuthFetch).
  */
 
-import { getGarboApiBaseUrl } from "@/config/api-env";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import type {
   GarboCompanyListItem,
   GarboCompanyDetail,
   GarboMetadata,
 } from "./types";
-
-const BASE = getGarboApiBaseUrl();
+import { apiUrl } from "./api-utils";
 
 function companiesPath(segment = ""): string {
   const path = "/companies";
@@ -19,14 +17,9 @@ function companiesPath(segment = ""): string {
   return seg ? `${path}/${seg}` : path;
 }
 
-function fullUrl(path: string): string {
-  const p = path.startsWith("/") ? path : `/${path}`;
-  return `${BASE}${p}`.replace(/\/+/g, "/");
-}
-
 /** List companies from Garbo (GET /api/companies). Requires auth. */
 export async function listCompanies(signal?: AbortSignal): Promise<GarboCompanyListItem[]> {
-  const res = await garboAuthFetch(fullUrl(companiesPath()), {
+  const res = await garboAuthFetch(apiUrl(companiesPath()), {
     method: "GET",
     headers: { Accept: "application/json" },
     signal,
@@ -48,7 +41,7 @@ export async function getCompany(
   signal?: AbortSignal
 ): Promise<GarboCompanyDetail> {
   const res = await garboAuthFetch(
-    fullUrl(companiesPath(encodeURIComponent(wikidataId))),
+    apiUrl(companiesPath(encodeURIComponent(wikidataId))),
     {
       method: "GET",
       headers: { Accept: "application/json" },
@@ -84,7 +77,7 @@ export async function updateCompany(
   }
 ): Promise<void> {
   const res = await garboAuthFetch(
-    fullUrl(companiesPath(encodeURIComponent(wikidataId))),
+    apiUrl(companiesPath(encodeURIComponent(wikidataId))),
     {
       method: "POST",
       headers: {
@@ -111,39 +104,6 @@ export async function updateCompany(
   }
 }
 
-/** Update company tags only (PATCH /api/companies/:wikidataId/tags). Replaces all tags. */
-export async function updateCompanyTags(
-  wikidataId: string,
-  tags: string[]
-): Promise<void> {
-  const res = await garboAuthFetch(
-    fullUrl(companiesPath(`${encodeURIComponent(wikidataId)}/tags`)),
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({ tags }),
-    }
-  );
-  if (res.status === 401) {
-    throw new Error("Please log in to update tags.");
-  }
-  if (res.status === 400) {
-    const data = await res.json().catch(() => ({}));
-    const details = (data as { details?: { invalidTags?: string[] } }).details;
-    if (details?.invalidTags?.length) {
-      throw new Error(`Invalid tags: ${details.invalidTags.join(", ")}`);
-    }
-    throw new Error("Invalid tags.");
-  }
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to update tags: ${res.status} ${text}`);
-  }
-}
-
 /** Create or update reporting periods and their emissions/economy (POST /api/companies/:wikidataId/reporting-periods). */
 export async function updateReportingPeriods(
   wikidataId: string,
@@ -160,7 +120,7 @@ export async function updateReportingPeriods(
   }
 ): Promise<void> {
   const res = await garboAuthFetch(
-    fullUrl(companiesPath(`${encodeURIComponent(wikidataId)}/reporting-periods`)),
+    apiUrl(companiesPath(`${encodeURIComponent(wikidataId)}/reporting-periods`)),
     {
       method: "POST",
       headers: {
@@ -199,8 +159,7 @@ export interface IndustryGicsOption {
 export async function fetchIndustryGics(
   signal?: AbortSignal
 ): Promise<IndustryGicsOption[]> {
-  const url = `${BASE}/industry-gics`.replace(/\/+/g, "/");
-  const res = await garboAuthFetch(url, {
+  const res = await garboAuthFetch(apiUrl("/industry-gics"), {
     method: "GET",
     headers: { Accept: "application/json" },
     signal,
@@ -222,7 +181,7 @@ export async function updateCompanyIndustry(
   body: { industry: { subIndustryCode: string }; metadata?: GarboMetadata; verified?: boolean }
 ): Promise<void> {
   const res = await garboAuthFetch(
-    fullUrl(companiesPath(`${encodeURIComponent(wikidataId)}/industry`)),
+    apiUrl(companiesPath(`${encodeURIComponent(wikidataId)}/industry`)),
     {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -243,7 +202,7 @@ export async function updateCompanyBaseYear(
   body: { baseYear: number; metadata?: GarboMetadata; verified?: boolean }
 ): Promise<void> {
   const res = await garboAuthFetch(
-    fullUrl(companiesPath(`${encodeURIComponent(wikidataId)}/base-year`)),
+    apiUrl(companiesPath(`${encodeURIComponent(wikidataId)}/base-year`)),
     {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },

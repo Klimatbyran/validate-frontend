@@ -142,7 +142,7 @@ export function MultiSelectDropdown({
         <div
           ref={panelRef}
           className={cn(
-            "absolute left-0 top-full mt-1.5 z-[100] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto",
+            "absolute left-0 top-full mt-1.5 z-[1000] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto",
             panelClassName
           )}
           style={{

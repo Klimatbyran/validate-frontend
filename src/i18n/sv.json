@@ -108,7 +108,14 @@
         "initiatives": "Initiativ",
         "industry": "Bransch",
         "baseYear": "Basår"
-      }
+      },
+      "tabs": {
+        "companyDetail": "Företagsdetaljer",
+        "economyData": "Ekonomidata",
+        "emissionsData": "Utsläppsdata",
+        "goalsInitiatives": "Mål & initiativ"
+      },
+      "noGoalsOrInitiatives": "Inga mål eller initiativ för detta företag."
     },
     "tagOptions": {
       "description": "Taggalternativ definierar tillåtna värden för företagstaggar. Lägg till, uppdatera eller ta bort nedan.",

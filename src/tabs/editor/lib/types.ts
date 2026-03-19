@@ -102,3 +102,15 @@ export interface GarboMetadata {
   source?: string;
   comment?: string;
 }
+
+// --- Editor UI helper types ---
+
+export type EditState = {
+  wikidataId: string;
+  companyName: string;
+  field: "tags" | "reportURL" | "scope1" | "scope2" | "economy";
+  year?: number;
+  startDate?: string;
+  endDate?: string;
+  currentValue: string | number | null;
+};
