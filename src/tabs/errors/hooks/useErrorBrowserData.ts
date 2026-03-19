@@ -25,8 +25,10 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
 
     try {
       const [stageResponse, prodResponse] = await Promise.all([
-        fetch(getStageApiUrl(), { headers: { 'Cache-Control': 'no-cache' } }),
-        fetch(getProdApiUrl(), { headers: { 'Cache-Control': 'no-cache' } }),
+        // Intentionally avoid custom request headers here. Adding non-simple headers
+        // can trigger CORS preflight, which makes stage/prod comparisons flaky.
+        fetch(getStageApiUrl()),
+        fetch(getProdApiUrl()),
       ]);
 
       if (!stageResponse.ok) throw new Error(`Failed to fetch stage data: ${stageResponse.status}`);
