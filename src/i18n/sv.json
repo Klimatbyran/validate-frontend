@@ -14,6 +14,7 @@
   },
   "nav": {
     "upload": "Ladda upp",
+    "registry": "Register",
     "processing": "Bearbetning",
     "jobStatus": "Jobbstatus",
     "workflow": "Processflöde",
@@ -486,6 +487,26 @@
     "wikidataIdLabel": "Wikidata ID",
     "reportIdLabel": "Rapport ID",
     "unknownCompany": "Okänt"
+  },
+  "registry": {
+    "title": "Register",
+    "subtitle": "Sök och granska registerposter innan fulla flöden kopplas in.",
+    "searchPlaceholder": "Sök företagsnamn eller Wikidata-ID (t.ex. Q12345)",
+    "search": "Sök",
+    "clear": "Rensa",
+    "loading": "Söker i registret...",
+    "typeQueryHint": "Ange ett företagsnamn eller Wikidata-ID och kör en sökning.",
+    "noResults": "Inga registerposter matchade din sökning.",
+    "results": "Sökresultat",
+    "selected": "Vald",
+    "wikidataId": "Wikidata ID",
+    "reportYear": "Rapportår",
+    "reportUrl": "Rapport-URL",
+    "openOnWikidata": "Öppna på Wikidata",
+    "unknownId": "Okänd",
+    "totalCompanies": "Totalt antal företag",
+    "selectAll": "Välj allt",
+    "clearAll": "Rensa allt"
   },
   "climate": {
     "loading": "Laddar klimatplaner...",
