@@ -13,7 +13,7 @@ export function parseReturnValueData(job?: QueueJob): any {
   if (typeof rawReturnValue === "string" && isJsonString(rawReturnValue)) {
     try {
       return JSON.parse(rawReturnValue);
-    } catch (e) {
+    } catch {
       return null;
     }
   } else if (typeof rawReturnValue === "object") {

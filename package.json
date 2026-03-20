@@ -1,7 +1,7 @@
 {
   "name": "garbo-validation-tool",
   "private": true,
-  "version": "1.4.2-rc.8",
+  "version": "1.4.2-rc.13",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -50,6 +50,6 @@
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.5.3",
-    "typescript-eslint": "^8.3.0"
+    "typescript-eslint": "^8.57.1"
   }
 }

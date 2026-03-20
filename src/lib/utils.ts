@@ -47,7 +47,7 @@ export function isJsonString(str: string): boolean {
   try {
     JSON.parse(str);
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -63,7 +63,7 @@ export function getWikidataInfo(
   if (typeof job.data === "string" && isJsonString(job.data)) {
     try {
       processedData = JSON.parse(job.data);
-    } catch (e) {
+    } catch {
       return null;
     }
   } else if (typeof job.data === "object") {

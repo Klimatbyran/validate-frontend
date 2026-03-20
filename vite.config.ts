@@ -23,7 +23,11 @@ function normalizeUrl(url: string): string {
   return url.replace(/\/+$/, "") || url;
 }
 
-function targetFromEnv(env: Record<string, string>, key: string, joint: string): "local" | "stage" | "prod" {
+function targetFromEnv(
+  env: Record<string, string>,
+  key: string,
+  joint: string,
+): "local" | "stage" | "prod" {
   const v = env[key] || env.VITE_API_MODE || joint;
   return v === "local" || v === "prod" ? v : "stage";
 }
@@ -37,13 +41,23 @@ function getProxyTargets(env: Record<string, string>) {
   return {
     pipelineTarget,
     garboTarget,
-    pipelineLocal: normalizeUrl(env.VITE_PIPELINE_API_URL ?? URLS_BY_TARGET.pipeline.local),
-    pipelineStage: normalizeUrl(env.VITE_PIPELINE_STAGE_URL ?? URLS_BY_TARGET.pipeline.stage),
-    pipelineProd: normalizeUrl(env.VITE_PIPELINE_PROD_URL ?? URLS_BY_TARGET.pipeline.prod),
-    screenshots: normalizeUrl(env.VITE_SCREENSHOTS_API_URL ?? "http://localhost:3000"),
+    pipelineLocal: normalizeUrl(
+      env.VITE_PIPELINE_API_URL ?? URLS_BY_TARGET.pipeline.local,
+    ),
+    pipelineStage: normalizeUrl(
+      env.VITE_PIPELINE_STAGE_URL ?? URLS_BY_TARGET.pipeline.stage,
+    ),
+    pipelineProd: normalizeUrl(
+      env.VITE_PIPELINE_PROD_URL ?? URLS_BY_TARGET.pipeline.prod,
+    ),
+    screenshots: normalizeUrl(
+      env.VITE_SCREENSHOTS_API_URL ?? "http://localhost:3000",
+    ),
     garboProd: normalizeUrl(env.VITE_GARBO_PROD_URL ?? GARBO_PROD_API),
     garboStage: normalizeUrl(env.VITE_GARBO_STAGE_URL ?? GARBO_STAGE_API),
-    garboBackendLocal: normalizeUrl(env.VITE_GARBO_LOCAL_URL ?? URLS_BY_TARGET.garboBackendLocal),
+    garboBackendLocal: normalizeUrl(
+      env.VITE_GARBO_LOCAL_URL ?? URLS_BY_TARGET.garboBackendLocal,
+    ),
   };
 }
 
@@ -54,7 +68,7 @@ function getProxyTargets(env: Record<string, string>) {
 function climatePlansManifest(): Plugin {
   const climatePlansDir = path.resolve(__dirname, "public/climate-plans");
 
-  function generateManifest() {
+  const generateManifest = () => {
     if (!fs.existsSync(climatePlansDir)) {
       fs.mkdirSync(climatePlansDir, { recursive: true });
       fs.writeFileSync(
@@ -101,7 +115,7 @@ function climatePlansManifest(): Plugin {
       path.join(climatePlansDir, "index.json"),
       JSON.stringify({ municipalities }, null, 2) + "\n",
     );
-  }
+  };
 
   return {
     name: "climate-plans-manifest",
@@ -110,7 +124,7 @@ function climatePlansManifest(): Plugin {
     },
     configureServer(server) {
       // Regenerate when files change in the climate-plans directory
-      server.watcher.on("all", (event, filePath) => {
+      server.watcher.on("all", (_event, filePath) => {
         if (
           filePath.startsWith(climatePlansDir) &&
           !filePath.endsWith("index.json")
@@ -126,6 +140,7 @@ const PROXY_TIMEOUT_MS = 30000;
 
 function pipelineProxyConfigure(targetUrl: string) {
   return (proxy: any, _options: any) => {
+    void _options;
     proxy.on("error", (_err: any, _req: any, res: any) => {
       if (res && typeof res.writeHead === "function" && !res.headersSent) {
         res.writeHead(503, { "Content-Type": "application/json" });
@@ -156,16 +171,30 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const urls = getProxyTargets(env);
   if (mode === "development") {
-    const pipelineUrl = urls.pipelineTarget === "local" ? urls.pipelineLocal : urls.pipelineTarget === "prod" ? urls.pipelineProd : urls.pipelineStage;
-    console.log("[vite] pipeline target:", urls.pipelineTarget, "->", pipelineUrl);
-    console.log("[vite] garbo target:", urls.garboTarget, "->", urls.garboStage, urls.garboProd, urls.garboBackendLocal);
+    const pipelineUrl =
+      urls.pipelineTarget === "local"
+        ? urls.pipelineLocal
+        : urls.pipelineTarget === "prod"
+          ? urls.pipelineProd
+          : urls.pipelineStage;
+    console.log(
+      "[vite] pipeline target:",
+      urls.pipelineTarget,
+      "->",
+      pipelineUrl,
+    );
+    console.log(
+      "[vite] garbo target:",
+      urls.garboTarget,
+      "->",
+      urls.garboStage,
+      urls.garboProd,
+      urls.garboBackendLocal,
+    );
   }
 
   return {
     plugins: [react(), climatePlansManifest()],
-    optimizeDeps: {
-      exclude: ["lucide-react"],
-    },
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
@@ -180,11 +209,12 @@ export default defineConfig(({ mode }) => {
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
           configure: (proxy, _options) => {
-            proxy.on("error", (err, _req, res) => {
+            void _options;
+            proxy.on("error", (_err, _req, res) => {
               console.warn(
                 `Screenshots API not available at ${urls.screenshots}. Screenshots will not work.`,
               );
-              if (res && !res.headersSent) {
+              if (res && "headersSent" in res && !res.headersSent) {
                 res.writeHead(503, { "Content-Type": "application/json" });
                 res.end(
                   JSON.stringify({

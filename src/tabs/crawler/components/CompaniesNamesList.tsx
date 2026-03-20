@@ -4,6 +4,7 @@ import CompaniesNamesResultItem from "./CompaniesNamesResultItem";
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { fetchCompanyNamesList } from "../lib/crawler-api";
 import { useI18n } from "@/contexts/I18nContext";
+import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
 
 interface CompaniesNamesListProps {
   setIsLoading: React.Dispatch<React.SetStateAction<boolean | null>>;
@@ -85,13 +86,13 @@ const CompaniesNamesList = ({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden"
+          className="rounded-lg"
         >
-          <div className="overflow-x-auto z-0">
-            <table className="min-w-full">
-              <thead className="bg-gray-03/50">
+          <DataTableShell>
+            <DataTable className="text-left">
+              <DataTableHead>
                 <tr>
-                  <th className="px-4 py-3 text-left flex flex-col text-xs tracking-wider">
+                  <th className="px-4 py-3 flex flex-col text-xs tracking-wider">
                     <span className="font-semibold text-gray-02 uppercase">
                       {t("crawler.company")}
                     </span>
@@ -104,7 +105,7 @@ const CompaniesNamesList = ({
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
                     {t("crawler.latestReport")}
                   </th>
-                  <th className="pl-4 py-3 text-left flex flex-col text-xs tracking-wider">
+                  <th className="pl-4 py-3 flex flex-col text-xs tracking-wider">
                     <span className="font-semibold flex gap-2 text-gray-02 uppercase">
                       {t("crawler.select")}{" "}
                       <button
@@ -123,9 +124,9 @@ const CompaniesNamesList = ({
                     </span>
                   </th>
                 </tr>
-              </thead>
+              </DataTableHead>
 
-              <tbody className="divide-y divide-gray-03/50">
+              <DataTableBody>
                 {companiesListWithSortedPeriods &&
                   companiesListWithSortedPeriods.map((company, index) => (
                     <CompaniesNamesResultItem
@@ -135,9 +136,9 @@ const CompaniesNamesList = ({
                       onToggle={handleToggleCompany}
                     />
                   ))}
-              </tbody>
-            </table>
-          </div>
+              </DataTableBody>
+            </DataTable>
+          </DataTableShell>
         </motion.div>
       )}
     </>

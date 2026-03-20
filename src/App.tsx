@@ -15,9 +15,7 @@ import { DebugTab } from "@/tabs/debug/DebugTab";
 import { EditorTab } from "@/tabs/editor/EditorTab";
 import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
 import { JobbstatusTab } from "@/tabs/jobbstatus/JobbstatusTab";
-import { ProcessingTab } from "@/tabs/processing/ProcessingTab";
 import { RegistryTab } from "@/tabs/registry/RegistryTab";
-import { ResultsTab } from "@/tabs/results/ResultsTab";
 import { UploadTab } from "@/tabs/upload/UploadTab";
 import { WorkflowTab } from "@/tabs/workflow/WorkflowTab";
 import { useI18n } from "@/contexts/I18nContext";
@@ -59,9 +57,6 @@ function App() {
                       <TabsTrigger value="upload">
                         {t("nav.upload")}
                       </TabsTrigger>
-                      <TabsTrigger value="processing">
-                        {t("nav.processing")}
-                      </TabsTrigger>
                       <TabsTrigger value="jobbstatus">
                         {t("nav.jobStatus")}
                       </TabsTrigger>
@@ -72,10 +67,6 @@ function App() {
                       <TabsTrigger value="errors">
                         {t("nav.errorBrowser")}
                       </TabsTrigger>
-                      <TabsTrigger value="results">
-                        {t("nav.results")}
-                      </TabsTrigger>
-
                       <TabsTrigger value="editor">
                         {t("nav.editor")}
                       </TabsTrigger>
@@ -92,17 +83,6 @@ function App() {
                           exit={{ opacity: 0, x: 20 }}
                         >
                           <UploadTab />
-                        </motion.div>
-                      </TabsContent>
-
-                      <TabsContent key="processing" value="processing" asChild>
-                        <motion.div
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
-                          className="space-y-6"
-                        >
-                          <ProcessingTab />
                         </motion.div>
                       </TabsContent>
 
@@ -132,17 +112,6 @@ function App() {
                       <TabsContent key="errors" value="errors" asChild>
                         <motion.div>
                           <ErrorBrowserTab />
-                        </motion.div>
-                      </TabsContent>
-
-                      <TabsContent key="results" value="results" asChild>
-                        <motion.div
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
-                          className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6"
-                        >
-                          <ResultsTab />
                         </motion.div>
                       </TabsContent>
 

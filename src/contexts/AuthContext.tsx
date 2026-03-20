@@ -51,7 +51,7 @@ function getTimeUntilExpiration(token: string): number {
     const now = Math.floor(Date.now() / 1000);
     const secondsUntilExpiry = decoded.exp - now;
     return Math.max(0, secondsUntilExpiry * 1000); // Convert to milliseconds
-  } catch (error) {
+  } catch {
     return 0;
   }
 }

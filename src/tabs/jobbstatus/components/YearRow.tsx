@@ -8,7 +8,6 @@ import { Calendar, ChevronsDown, ChevronsUp } from "lucide-react";
 import { Button } from "@/ui/button";
 import {
   getAllPipelineSteps,
-  getQueuesForPipelineStep,
 } from "@/lib/workflow-config";
 import {
   calculatePipelineStepStatus,

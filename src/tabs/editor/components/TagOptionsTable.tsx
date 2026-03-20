@@ -1,6 +1,7 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import type { TagOption } from "../lib/types";
+import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
 
 interface TagOptionsTableProps {
   options: TagOption[];
@@ -18,18 +19,24 @@ export function TagOptionsTable({
   const { t } = useI18n();
 
   return (
-    <div className="rounded-lg border border-gray-03 bg-gray-04/80 overflow-hidden">
-      <table className="w-full text-left">
-        <thead>
-          <tr className="border-b border-gray-03 bg-gray-04 text-gray-02 text-xs uppercase tracking-wide">
-            <th className="px-4 py-3 font-medium">{t("editor.tagOptions.slug")}</th>
-            <th className="px-4 py-3 font-medium">{t("editor.tagOptions.label")}</th>
-            <th className="px-4 py-3 font-medium w-28">{t("editor.tagOptions.actions")}</th>
+    <DataTableShell>
+      <DataTable>
+        <DataTableHead>
+          <tr>
+            <th className="px-4 py-3 font-medium text-gray-02 text-xs uppercase tracking-wider">
+              {t("editor.tagOptions.slug")}
+            </th>
+            <th className="px-4 py-3 font-medium text-gray-02 text-xs uppercase tracking-wider">
+              {t("editor.tagOptions.label")}
+            </th>
+            <th className="px-4 py-3 font-medium text-gray-02 text-xs uppercase tracking-wider w-28">
+              {t("editor.tagOptions.actions")}
+            </th>
           </tr>
-        </thead>
-        <tbody>
-          {options.map((opt) => (
-            <tr key={opt.id} className="border-b border-gray-03/50 hover:bg-gray-04/50">
+        </DataTableHead>
+        <DataTableBody>
+            {options.map((opt) => (
+              <tr key={opt.id} className="hover:bg-gray-04/50">
               <td className="px-4 py-3 text-gray-01 font-mono text-sm">{opt.slug}</td>
               <td className="px-4 py-3 text-gray-01">{opt.label ?? "—"}</td>
               <td className="px-4 py-3">
@@ -56,8 +63,8 @@ export function TagOptionsTable({
               </td>
             </tr>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </DataTableBody>
+      </DataTable>
+    </DataTableShell>
   );
 }
