@@ -15,6 +15,7 @@
   },
   "nav": {
     "upload": "Upload",
+    "registry": "Registry",
     "processing": "Processing",
     "jobStatus": "Job status",
     "workflow": "Workflow",
@@ -570,6 +571,26 @@
     "wikidataIdLabel": "Wikidata ID",
     "reportIdLabel": "Report ID",
     "unknownCompany": "Unknown"
+  },
+  "registry": {
+    "title": "Registry",
+    "subtitle": "Search and inspect registry entries before wiring full workflows.",
+    "searchPlaceholder": "Search company name or Wikidata ID (e.g. Q12345)",
+    "search": "Search",
+    "clear": "Clear",
+    "loading": "Searching registry...",
+    "typeQueryHint": "Enter a company name or Wikidata ID and run a search.",
+    "noResults": "No registry entries matched your search.",
+    "results": "Search results",
+    "selected": "Selected",
+    "wikidataId": "Wikidata ID",
+    "reportYear": "Report year",
+    "reportUrl": "Report URL",
+    "openOnWikidata": "View on Wikidata",
+    "unknownId": "Unknown",
+    "totalCompanies": "Total companies",
+    "selectAll": "Select All",
+    "clearAll": "Clear All"
   },
   "climate": {
     "loading": "Loading climate plans...",
