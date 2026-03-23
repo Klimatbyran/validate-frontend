@@ -14,9 +14,9 @@ import SearchResultsList from "./components/SearchResultsList";
 import CompaniesNamesList from "./components/CompaniesNamesList";
 import ManualSearchControls from "./components/ManualSearchControls";
 import DatabaseSearchControls from "./components/DatabaseSearchControls";
-import WaitingRoomList from "./components/WaitingRoomList";
+import RegistryList from "./components/RegistryList";
 import { writeCrawledReportsToCsv } from "./lib/crawler-utils";
-import { saveToWaitingRoom } from "./lib/crawler-api";
+import { saveToRegistry } from "./lib/crawler-api";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +41,7 @@ export function CrawlerTab() {
   const [selectedReports, setSelectedReports] = useState<SelectedReport[]>([]);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean | null>(null);
-  const [waitingRoomResponse, setWaitingRoomResponse] =
+  const [registryResponse, setRegistryResponse] =
     useState<SaveReportsListResponse | null>(null);
 
   const viewModeOptions = [
@@ -97,19 +97,19 @@ export function CrawlerTab() {
     });
   };
 
-  const handleAddToWaitingRoomClick = async () => {
+  const handleAddToRegistryClick = async () => {
     if (!selectedReports || !selectedReports.length) return;
 
     try {
-      const response = await saveToWaitingRoom(selectedReports);
+      const response = await saveToRegistry(selectedReports);
       if (response) {
-        setWaitingRoomResponse(response);
+        setRegistryResponse(response);
         resetSearchSlate({ clearCompanySelection: true });
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      setWaitingRoomResponse({
+      setRegistryResponse({
         message: errorMessage,
         successes: [],
         failed: selectedReports.map((r) => ({
@@ -160,12 +160,12 @@ export function CrawlerTab() {
     }
   };
 
-  const responseType = !waitingRoomResponse
+  const responseType = !registryResponse
     ? null
-    : waitingRoomResponse.failed.length === 0
+    : registryResponse.failed.length === 0
       ? "success"
-      : waitingRoomResponse.failed.length > 0 &&
-          waitingRoomResponse.successes.length > 0
+      : registryResponse.failed.length > 0 &&
+          registryResponse.successes.length > 0
         ? "partial"
         : "failed";
 
@@ -194,44 +194,44 @@ export function CrawlerTab() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6 flex flex-col justify-between"
       >
-        {waitingRoomResponse && (
+        {registryResponse && (
           <Dialog
-            open={waitingRoomResponse !== null}
-            onOpenChange={() => setWaitingRoomResponse(null)}
+            open={registryResponse !== null}
+            onOpenChange={() => setRegistryResponse(null)}
           >
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>{t("crawler.waitingRoomResults")}</DialogTitle>
+                <DialogTitle>{t("crawler.registryResults")}</DialogTitle>
                 <DialogDescription className="text-md">
-                  {t("crawler.waitingRoomStatus")}:{" "}
+                  {t("crawler.registryStatus")}:{" "}
                   <span className={responseStatusClassName}>
                     {responseStatus}
                   </span>
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-4 pt-4">
-                {waitingRoomResponse.successes &&
-                  waitingRoomResponse.successes.length > 0 && (
+                {registryResponse.successes &&
+                  registryResponse.successes.length > 0 && (
                     <div>
                       <p className="text-sm text-gray-01 font-medium mb-2">
                         {t("crawler.successful")}:
                       </p>
-                      <WaitingRoomList
+                      <RegistryList
                         variant="success"
-                        items={waitingRoomResponse.successes}
+                        items={registryResponse.successes}
                       />
                     </div>
                   )}
 
-                {waitingRoomResponse.failed &&
-                  waitingRoomResponse.failed.length > 0 && (
+                {registryResponse.failed &&
+                  registryResponse.failed.length > 0 && (
                     <div>
                       <p className="text-sm text-gray-01 font-medium mb-2">
                         {t("crawler.failed")}:
                       </p>
-                      <WaitingRoomList
+                      <RegistryList
                         variant="failed"
-                        items={waitingRoomResponse.failed}
+                        items={registryResponse.failed}
                       />
                     </div>
                   )}
@@ -261,7 +261,7 @@ export function CrawlerTab() {
                 onExport={handleExportClick}
                 isSearchDisabled={!companyNameInput || !reportYearInput}
                 selectedReports={selectedReports}
-                handleAddToWaitingRoomClick={handleAddToWaitingRoomClick}
+                handleAddToRegistryClick={handleAddToRegistryClick}
               />
               {(!companyNameInput || !reportYearInput) && (
                 <p className="text-sm text-gray-02 mt-4">
@@ -284,7 +284,7 @@ export function CrawlerTab() {
                 filterYear={filterYear}
                 setFilterYear={setFilterYear}
                 searchYear={reportYearInput}
-                handleAddToWaitingRoomClick={handleAddToWaitingRoomClick}
+                handleAddToRegistryClick={handleAddToRegistryClick}
               />
               {(!reportYearInput || !selectedCompanies.length) && (
                 <p className="text-sm text-gray-02 mt-4">

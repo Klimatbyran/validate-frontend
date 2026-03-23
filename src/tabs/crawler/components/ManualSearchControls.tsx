@@ -7,7 +7,7 @@ interface ManualSearchControlsProps {
   onReportYearChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSearch: () => void;
   onExport: () => void;
-  handleAddToWaitingRoomClick?: () => void;
+  handleAddToRegistryClick?: () => void;
   selectedReports: SelectedReport[];
   isSearchDisabled: boolean;
 }
@@ -19,7 +19,7 @@ const ManualSearchControls = ({
   onExport,
   isSearchDisabled,
   selectedReports,
-  handleAddToWaitingRoomClick,
+  handleAddToRegistryClick,
 }: ManualSearchControlsProps) => {
   const { t } = useI18n();
 
@@ -48,7 +48,7 @@ const ManualSearchControls = ({
           onExport={onExport}
           isSearchDisabled={isSearchDisabled}
           selectedReports={selectedReports}
-          handleAddToWaitingRoomClick={handleAddToWaitingRoomClick}
+          handleAddToRegistryClick={handleAddToRegistryClick}
         />
       </div>
     </>

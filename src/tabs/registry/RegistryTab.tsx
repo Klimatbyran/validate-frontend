@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
@@ -6,41 +6,61 @@ import RegistryControls from "./components/RegistryControls";
 import RegistryStats from "./components/RegistryStats";
 import RegistryResultsList from "./components/RegistryResultsList";
 import type { RegistryEntry } from "./lib/registry-types";
-import { searchRegistryEntries } from "./lib/registry-api";
-import { buildRegistryStats } from "./lib/registry-utils";
+import {
+  buildRegistryStats,
+  filterRegistryEntries,
+  writeRegistryEntriesToCsv,
+} from "./lib/registry-utils";
+import { fetchRegistryList } from "./lib/registry-api";
 
 export function RegistryTab() {
   const { t } = useI18n();
   const [query, setQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [hasSearched, setHasSearched] = useState<boolean>(false);
-  const [entries, setEntries] = useState<RegistryEntry[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedReports, setSelectedReports] = useState<RegistryEntry[]>([]);
-  const stats = useMemo(() => buildRegistryStats(entries), [entries]);
+  const [registry, setRegistry] = useState<RegistryEntry[]>([]);
 
-  const handleSearch = async () => {
-    const trimmedQuery = query.trim();
-    if (!trimmedQuery) {
-      return;
-    }
+  const filteredRegistry = useMemo(
+    () => filterRegistryEntries(registry, query),
+    [query, registry],
+  );
+  const stats = useMemo(
+    () => buildRegistryStats(filteredRegistry),
+    [filteredRegistry],
+  );
 
+  const loadRegistry = useCallback(async () => {
     setIsLoading(true);
-    setHasSearched(true);
-    setSelectedReports([]);
-
+    setLoadError(null);
     try {
-      const results = await searchRegistryEntries(trimmedQuery);
-      setEntries(results);
+      const data = await fetchRegistryList();
+      setRegistry(Array.isArray(data) ? data : []);
+      setSelectedReports([]);
+    } catch (error) {
+      console.error("Failed to load registry", error);
+      setRegistry([]);
+      setSelectedReports([]);
+      setLoadError(error instanceof Error ? error.message : "Unknown error");
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    void loadRegistry();
+  }, [loadRegistry]);
+
+  const handleRefresh = () => {
+    void loadRegistry();
   };
 
-  const handleClear = () => {
-    setQuery("");
-    setEntries([]);
-    setHasSearched(false);
-    setSelectedReports([]);
+  const handleExport = () => {
+    if (!selectedReports.length) {
+      return;
+    }
+
+    writeRegistryEntriesToCsv(selectedReports);
   };
 
   const handleToggleSelect = (entry: RegistryEntry) => {
@@ -58,10 +78,10 @@ export function RegistryTab() {
   };
 
   const handleSelectAll = () => {
-    if (selectedReports.length === entries.length) {
+    if (selectedReports.length === filteredRegistry.length) {
       setSelectedReports([]);
     } else {
-      setSelectedReports(entries);
+      setSelectedReports(filteredRegistry);
     }
   };
 
@@ -81,10 +101,14 @@ export function RegistryTab() {
 
         <RegistryControls
           query={query}
-          onQueryChange={setQuery}
-          onSearch={handleSearch}
-          onClear={handleClear}
-          isLoading={isLoading}
+          onQueryChange={(value) => {
+            setQuery(value);
+            setSelectedReports([]);
+          }}
+          onRefresh={handleRefresh}
+          isRefreshing={isLoading}
+          onExport={handleExport}
+          isExportDisabled={!selectedReports.length}
         />
       </motion.div>
 
@@ -97,35 +121,30 @@ export function RegistryTab() {
         </div>
       )}
 
-      {!isLoading && !hasSearched && (
-        <p className="text-sm text-gray-02">{t("registry.typeQueryHint")}</p>
+      {!isLoading && loadError && (
+        <p className="text-sm text-red-01">{t("registry.fetchError")}</p>
       )}
 
-      {!isLoading && hasSearched && entries.length === 0 && (
-        <p className="text-sm text-gray-02">{t("registry.noResults")}</p>
+      {!isLoading && !loadError && registry.length === 0 && (
+        <p className="text-sm text-gray-02">{t("registry.empty")}</p>
       )}
 
-      {!isLoading && entries.length > 0 && (
+      {!isLoading &&
+        !loadError &&
+        registry.length > 0 &&
+        query.trim().length > 0 &&
+        filteredRegistry.length === 0 && (
+          <p className="text-sm text-gray-02">{t("registry.noResults")}</p>
+        )}
+
+      {!isLoading && !loadError && filteredRegistry.length > 0 && (
         <>
           <RegistryStats stats={stats} />
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-02">
-              {t("registry.selected")}: {selectedReports.length} /{" "}
-              {entries.length}
-            </p>
-            <button
-              type="button"
-              onClick={handleSelectAll}
-              className="text-sm px-3 py-1.5 bg-blue-03 text-gray-05 rounded hover:bg-blue-04 transition-colors"
-            >
-              {selectedReports.length === entries.length
-                ? t("registry.clearAll")
-                : t("registry.selectAll")}
-            </button>
-          </div>
           <RegistryResultsList
-            entries={entries}
+            registry={filteredRegistry}
             selectedReports={selectedReports}
+            allSelected={selectedReports.length === filteredRegistry.length}
+            onSelectAll={handleSelectAll}
             onToggleSelect={handleToggleSelect}
           />
         </>

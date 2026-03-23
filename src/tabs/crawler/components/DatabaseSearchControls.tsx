@@ -16,7 +16,7 @@ interface DatabaseSearchControlsProps {
   filterYear: number | null;
   setFilterYear: React.Dispatch<React.SetStateAction<number | null>>;
   searchYear: string;
-  handleAddToWaitingRoomClick?: () => void;
+  handleAddToRegistryClick?: () => void;
 }
 
 const DatabaseSearchControls = ({
@@ -29,7 +29,7 @@ const DatabaseSearchControls = ({
   setFilterEnabled,
   setFilterYear,
   searchYear,
-  handleAddToWaitingRoomClick,
+  handleAddToRegistryClick,
 }: DatabaseSearchControlsProps) => {
   const { t } = useI18n();
 
@@ -89,7 +89,7 @@ const DatabaseSearchControls = ({
           onExport={onExport}
           isSearchDisabled={isSearchDisabled}
           selectedReports={selectedReports}
-          handleAddToWaitingRoomClick={handleAddToWaitingRoomClick}
+          handleAddToRegistryClick={handleAddToRegistryClick}
         />
       </div>
     </>

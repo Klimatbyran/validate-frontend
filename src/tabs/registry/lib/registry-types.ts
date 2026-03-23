@@ -1,7 +1,7 @@
 export interface RegistryEntry {
-  companyName: string;
-  wikidataId: string | null;
-  reportYear: string;
+  companyName?: string | null;
+  wikidataId?: string | null;
+  reportYear?: string | null;
   url: string;
 }
 
