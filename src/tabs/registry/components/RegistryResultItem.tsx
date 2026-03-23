@@ -20,62 +20,58 @@ const RegistryResultItem = ({
   };
 
   return (
-    <div className="w-full px-4 py-3 border-b border-gray-03 flex items-center justify-between gap-4">
-      <div className="min-w-0">
-        <p className="text-gray-01 font-semibold truncate">
-          {entry.companyName}
-        </p>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-gray-02 mt-1">
-          <span>
+    <tr className="transition-colors hover:bg-gray-03/30">
+      <td className="px-4 py-3 text-sm text-gray-01">
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="font-semibold truncate">{entry.companyName}</span>
+          <span className="text-xs text-gray-02">
             {t("registry.wikidataId")}:{" "}
             {entry.wikidataId ?? t("registry.unknownId")}
           </span>
-          <span>
-            {t("registry.reportYear")}: {entry.reportYear}
-          </span>
-          <a
-            href={entry.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 hover:text-blue-04 min-w-0"
-            title={entry.url}
-          >
-            <span className="truncate">
-              {t("registry.reportUrl")}:{" "}
-              {entry.url.length > 40
-                ? entry.url.slice(0, 40) + "..."
-                : entry.url}
-            </span>
-            <ExternalLink className="w-4 h-4 flex-shrink-0" />
-          </a>
           {entry.wikidataId && (
             <a
               href={`https://www.wikidata.org/wiki/${entry.wikidataId}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 hover:text-blue-04"
+              className="inline-flex items-center gap-1 hover:text-blue-04 text-xs text-gray-02"
             >
               {t("registry.openOnWikidata")}
-              <ExternalLink className="w-4 h-4" />
+              <ExternalLink className="w-3.5 h-3.5" />
             </a>
           )}
         </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={handleClick}
-        aria-pressed={selected}
-        aria-label={`${t("registry.selected")}: ${entry.companyName}`}
-        className="text-gray-02 hover:text-green-03 transition-colors"
-      >
-        {selected ? (
-          <CheckCircle2 className="w-6 h-6 text-green-03" />
-        ) : (
-          <Circle className="w-6 h-6" />
-        )}
-      </button>
-    </div>
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-02">{entry.reportYear}</td>
+      <td className="px-4 py-3 text-sm text-gray-02 max-w-[22rem]">
+        <a
+          href={entry.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 hover:text-blue-04 min-w-0"
+          title={entry.url}
+        >
+          <span className="truncate">
+            {entry.url.length > 52 ? `${entry.url.slice(0, 52)}...` : entry.url}
+          </span>
+          <ExternalLink className="w-4 h-4 flex-shrink-0" />
+        </a>
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-02">
+        <button
+          type="button"
+          onClick={handleClick}
+          aria-pressed={selected}
+          aria-label={`${t("registry.selected")}: ${entry.companyName}`}
+          className="text-gray-02 hover:text-green-03 transition-colors"
+        >
+          {selected ? (
+            <CheckCircle2 className="w-6 h-6 text-green-03" />
+          ) : (
+            <Circle className="w-6 h-6" />
+          )}
+        </button>
+      </td>
+    </tr>
   );
 };
 

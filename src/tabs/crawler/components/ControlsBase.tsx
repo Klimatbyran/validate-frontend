@@ -6,7 +6,7 @@ import { SelectedReport } from "../lib/crawler-types";
 interface ControlsBaseProps {
   onSearch: () => void;
   onExport: () => void;
-  handleAddToWaitingRoomClick?: () => void;
+  handleAddToRegistryClick?: () => void;
   isSearchDisabled: boolean;
   selectedReports: SelectedReport[];
 }
@@ -16,7 +16,7 @@ const ControlsBase = ({
   onExport,
   isSearchDisabled,
   selectedReports,
-  handleAddToWaitingRoomClick,
+  handleAddToRegistryClick,
 }: ControlsBaseProps) => {
   const { t } = useI18n();
   return (
@@ -28,10 +28,10 @@ const ControlsBase = ({
       <div className="flex gap-6">
         <Button
           size="sm"
-          onClick={handleAddToWaitingRoomClick}
+          onClick={handleAddToRegistryClick}
           disabled={!selectedReports.length}
         >
-          {t("crawler.waitingRoom")}
+          {t("crawler.addToRegistry")}
           <Heart className="w-4 h-4 ml-2" />
         </Button>
         <Button

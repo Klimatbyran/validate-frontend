@@ -56,7 +56,7 @@ export const fetchCompanyNamesList = async () => {
   }
 };
 
-export const saveToWaitingRoom = async (
+export const saveToRegistry = async (
   reports: SelectedReport[],
 ): Promise<SaveReportsListResponse> => {
   try {
@@ -82,7 +82,7 @@ export const saveToWaitingRoom = async (
       }
       const errorMsg = responseBody?.message
         ? responseBody.message
-        : `Failed to save to waiting room: ${response.status} ${response.statusText}`;
+        : `Failed to save to registry: ${response.status} ${response.statusText}`;
       throw new Error(errorMsg);
     }
 
@@ -90,9 +90,9 @@ export const saveToWaitingRoom = async (
       return responseBody as SaveReportsListResponse;
     }
 
-    throw new Error("Response does not match waiting room schema");
+    throw new Error("Response does not match registry schema");
   } catch (error) {
-    const msg = "Failed to save to waiting room";
+    const msg = "Failed to save to registry";
     console.error(msg, error);
     throw error instanceof Error ? error : new Error(msg);
   }

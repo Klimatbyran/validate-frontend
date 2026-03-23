@@ -8,6 +8,26 @@ function registryUrl(path: string): string {
   return `${base}/${segment}`;
 }
 
+export const fetchRegistryList = async () => {
+  const url = registryUrl("registry");
+  try {
+    const response = await fetch(url);
+    if (response.ok) {
+      const data = await response.json();
+      console.log(data);
+      return data;
+    } else {
+      const msg = `Failed to fetch registry: ${response.status} ${response.statusText} (${url})`;
+      console.error(msg);
+      throw new Error(msg);
+    }
+  } catch (error) {
+    const msg = `Failed to fetch company names (${url})`;
+    console.error(msg, error);
+    throw error instanceof Error ? error : new Error(msg);
+  }
+};
+
 export async function searchRegistryEntries(
   query: string,
 ): Promise<RegistryEntry[]> {
