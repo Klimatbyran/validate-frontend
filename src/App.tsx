@@ -15,6 +15,7 @@ import { DebugTab } from "@/tabs/debug/DebugTab";
 import { EditorTab } from "@/tabs/editor/EditorTab";
 import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
 import { JobbstatusTab } from "@/tabs/jobbstatus/JobbstatusTab";
+import { RegistryTab } from "@/tabs/registry/RegistryTab";
 import { UploadTab } from "@/tabs/upload/UploadTab";
 import { WorkflowTab } from "@/tabs/workflow/WorkflowTab";
 import { useI18n } from "@/contexts/I18nContext";
@@ -39,97 +40,129 @@ function App() {
               <div className="max-w-[1400px] mx-auto">
                 <Header />
                 <CompaniesProvider>
-                <Tabs
-                  value={currentTab}
-                  onValueChange={(value) => {
-                    setCurrentTab(value);
-                  }}
-                  className="space-y-6"
-                >
-                  <TabsList className="bg-gray-04/50 backdrop-blur-sm">
-                    <TabsTrigger value="upload">{t("nav.upload")}</TabsTrigger>
-                    <TabsTrigger value="jobbstatus">{t("nav.jobStatus")}</TabsTrigger>
-                    <TabsTrigger value="workflow">{t("nav.workflow")}</TabsTrigger>
-                    <TabsTrigger value="debug">{t("nav.debug")}</TabsTrigger>
-                    <TabsTrigger value="errors">{t("nav.errorBrowser")}</TabsTrigger>
-                    <TabsTrigger value="crawler">{t("nav.crawler")}</TabsTrigger>
-                    <TabsTrigger value="editor">{t("nav.editor")}</TabsTrigger>
-                    <TabsTrigger value="climate-plans">{t("nav.climatePlans")}</TabsTrigger>
-                  </TabsList>
+                  <Tabs
+                    value={currentTab}
+                    onValueChange={(value) => {
+                      setCurrentTab(value);
+                    }}
+                    className="space-y-6"
+                  >
+                    <TabsList className="bg-gray-04/50 backdrop-blur-sm">
+                      <TabsTrigger value="crawler">
+                        {t("nav.crawler")}
+                      </TabsTrigger>
+                      <TabsTrigger value="registry">
+                        {t("nav.registry")}
+                      </TabsTrigger>
+                      <TabsTrigger value="upload">
+                        {t("nav.upload")}
+                      </TabsTrigger>
+                      <TabsTrigger value="jobbstatus">
+                        {t("nav.jobStatus")}
+                      </TabsTrigger>
+                      <TabsTrigger value="workflow">
+                        {t("nav.workflow")}
+                      </TabsTrigger>
+                      <TabsTrigger value="debug">{t("nav.debug")}</TabsTrigger>
+                      <TabsTrigger value="errors">
+                        {t("nav.errorBrowser")}
+                      </TabsTrigger>
+                      <TabsTrigger value="editor">
+                        {t("nav.editor")}
+                      </TabsTrigger>
+                      <TabsTrigger value="climate-plans">
+                        {t("nav.climatePlans")}
+                      </TabsTrigger>
+                    </TabsList>
 
-                  <AnimatePresence mode="popLayout" initial={false}>
-                    <TabsContent key="upload" value="upload" asChild>
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      <TabsContent key="upload" value="upload" asChild>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                        >
+                          <UploadTab />
+                        </motion.div>
+                      </TabsContent>
+
+                      <TabsContent key="jobbstatus" value="jobbstatus" asChild>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          className="space-y-6"
+                        >
+                          <JobbstatusTab />
+                        </motion.div>
+                      </TabsContent>
+
+                      <TabsContent key="workflow" value="workflow" asChild>
+                        <motion.div>
+                          <WorkflowTab />
+                        </motion.div>
+                      </TabsContent>
+
+                      <TabsContent key="debug" value="debug" asChild>
+                        <motion.div>
+                          <DebugTab />
+                        </motion.div>
+                      </TabsContent>
+
+                      <TabsContent key="errors" value="errors" asChild>
+                        <motion.div>
+                          <ErrorBrowserTab />
+                        </motion.div>
+                      </TabsContent>
+
+                      <TabsContent key="crawler" value="crawler" asChild>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          className="space-y-6"
+                        >
+                          <CrawlerTab />
+                        </motion.div>
+                      </TabsContent>
+
+                      <TabsContent key="registry" value="registry" asChild>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          className="space-y-6"
+                        >
+                          <RegistryTab />
+                        </motion.div>
+                      </TabsContent>
+
+                      <TabsContent key="editor" value="editor" asChild>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          className="space-y-6"
+                        >
+                          <EditorTab />
+                        </motion.div>
+                      </TabsContent>
+
+                      <TabsContent
+                        key="climate-plans"
+                        value="climate-plans"
+                        asChild
                       >
-                        <UploadTab />
-                      </motion.div>
-                    </TabsContent>
-
-                    <TabsContent key="jobbstatus" value="jobbstatus" asChild>
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        className="space-y-6"
-                      >
-                        <JobbstatusTab />
-                      </motion.div>
-                    </TabsContent>
-
-                    <TabsContent key="workflow" value="workflow" asChild>
-                      <motion.div>
-                        <WorkflowTab />
-                      </motion.div>
-                    </TabsContent>
-
-                    <TabsContent key="debug" value="debug" asChild>
-                      <motion.div>
-                        <DebugTab />
-                      </motion.div>
-                    </TabsContent>
-
-                    <TabsContent key="errors" value="errors" asChild>
-                      <motion.div>
-                        <ErrorBrowserTab />
-                      </motion.div>
-                    </TabsContent>
-
-                    <TabsContent key="crawler" value="crawler" asChild>
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        className="space-y-6"
-                      >
-                        <CrawlerTab />
-                      </motion.div>
-                    </TabsContent>
-
-                    <TabsContent key="editor" value="editor" asChild>
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        className="space-y-6"
-                      >
-                        <EditorTab />
-                      </motion.div>
-                    </TabsContent>
-
-                    <TabsContent key="climate-plans" value="climate-plans" asChild>
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                      >
-                        <ClimatePlansExplorer />
-                      </motion.div>
-                    </TabsContent>
-                  </AnimatePresence>
-                </Tabs>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                        >
+                          <ClimatePlansExplorer />
+                        </motion.div>
+                      </TabsContent>
+                    </AnimatePresence>
+                  </Tabs>
                 </CompaniesProvider>
               </div>
             </div>
@@ -137,7 +170,7 @@ function App() {
         />
         <Route path="/slideshow" element={<SlideshowPage />} />
       </Routes>
-      </AuthProvider>
+    </AuthProvider>
   );
 }
 

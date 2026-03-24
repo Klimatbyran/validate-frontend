@@ -1,8 +1,8 @@
 import { useI18n } from "@/contexts/I18nContext";
 
-type WaitingRoomListVariant = "success" | "failed";
+type RegistryListVariant = "success" | "failed";
 
-export interface WaitingRoomListItem {
+export interface RegistryListItem {
   companyName?: string;
   reportYear?: string;
   id?: string;
@@ -12,12 +12,12 @@ export interface WaitingRoomListItem {
   message?: string;
 }
 
-interface WaitingRoomListProps {
-  items: WaitingRoomListItem[];
-  variant: WaitingRoomListVariant;
+interface RegistryListProps {
+  items: RegistryListItem[];
+  variant: RegistryListVariant;
 }
 
-const WaitingRoomList = ({ items, variant }: WaitingRoomListProps) => {
+const RegistryList = ({ items, variant }: RegistryListProps) => {
   const { t } = useI18n();
   const isSuccess = variant === "success";
 
@@ -63,11 +63,11 @@ const WaitingRoomList = ({ items, variant }: WaitingRoomListProps) => {
             </>
           ) : (
             <div>
-              <span>{t("crawler.waitingRoomFailureReason")}: </span>
+              <span>{t("crawler.registryFailureReason")}: </span>
               <span className="text-red-500">
                 {report.message ??
                   (report.error === "duplicate"
-                    ? t("crawler.waitingRoomDuplicateFailure")
+                    ? t("crawler.registryDuplicateFailure")
                     : t("crawler.unknownError"))}
               </span>
             </div>
@@ -78,4 +78,4 @@ const WaitingRoomList = ({ items, variant }: WaitingRoomListProps) => {
   );
 };
 
-export default WaitingRoomList;
+export default RegistryList;
