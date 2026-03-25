@@ -3,7 +3,8 @@
  * and a list of options. Styling aligned with search/input fields (rounded-md, neutral).
  */
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Check } from "lucide-react";
 import { Button } from "@/ui/button";
 import { cn } from "@/lib/utils";
@@ -53,13 +54,22 @@ export function SingleSelectDropdown({
   panelMaxHeight = 280,
 }: SingleSelectDropdownProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [panelPosition, setPanelPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const clickedInWrapper = wrapperRef.current?.contains(target);
+      const clickedInPanel = panelRef.current?.contains(target);
+      if (!clickedInWrapper && !clickedInPanel) {
         setOpen(false);
       }
     };
@@ -70,7 +80,7 @@ export function SingleSelectDropdown({
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!ref.current?.contains(document.activeElement)) return;
+      if (!wrapperRef.current?.contains(document.activeElement)) return;
       const panel = panelRef.current;
       const buttons = panel
         ? Array.from(panel.querySelectorAll<HTMLButtonElement>('button[role="option"]'))
@@ -103,6 +113,32 @@ export function SingleSelectDropdown({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const updatePosition = () => {
+      const triggerEl = triggerRef.current;
+      if (!triggerEl) return;
+
+      const rect = triggerEl.getBoundingClientRect();
+      setPanelPosition({
+        top: rect.bottom + 6, // matches the old mt-1.5 (6px) offset
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    // capture=true so it updates even when scrolling nested containers
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
+
   const select = (optionValue: string) => {
     onChange(optionValue);
     setOpen(false);
@@ -116,11 +152,12 @@ export function SingleSelectDropdown({
   const showEmpty = !showOptions && !loading;
 
   return (
-    <div className="relative shrink-0" ref={ref}>
+    <div className="relative shrink-0" ref={wrapperRef}>
       <Button
         variant="ghost"
         size="sm"
         onClick={() => setOpen(!open)}
+        ref={triggerRef}
         className={cn(
           "!w-auto !min-w-0 h-9 px-4 text-sm rounded-md border border-gray-03 bg-gray-05 text-gray-01 hover:bg-gray-03/40 flex items-center gap-2",
           triggerClassName
@@ -134,20 +171,24 @@ export function SingleSelectDropdown({
         </span>
         <ChevronDown className="w-4 h-4 shrink-0 text-gray-02" />
       </Button>
-      {open && (
-        <div
-          ref={panelRef}
-          className={cn(
-            "absolute left-0 top-full mt-1.5 z-[1000] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto",
-            panelClassName
-          )}
-          style={{
-            minWidth: panelMinWidth,
-            maxHeight: panelMaxHeight,
-          }}
-          role="listbox"
-          aria-label={ariaLabel ?? placeholder ?? "Select"}
-        >
+      {open && panelPosition && typeof document !== "undefined"
+        ? createPortal(
+          <div
+            ref={panelRef}
+            className={cn(
+              "z-[99999] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto",
+              panelClassName,
+            )}
+            style={{
+              position: "fixed",
+              top: panelPosition.top,
+              left: panelPosition.left,
+              width: Math.max(panelMinWidth, panelPosition.width),
+              maxHeight: panelMaxHeight,
+            }}
+            role="listbox"
+            aria-label={ariaLabel ?? placeholder ?? "Select"}
+          >
           {loading && (
             <div
               className="w-full text-left px-3 py-2 rounded text-sm text-gray-02 flex items-center gap-2 cursor-default"
@@ -195,8 +236,10 @@ export function SingleSelectDropdown({
               {emptyLabel ?? "No options"}
             </p>
           )}
-        </div>
-      )}
+          </div>,
+          document.body,
+        )
+        : null}
     </div>
   );
 }
