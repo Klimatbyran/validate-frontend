@@ -4,6 +4,9 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Allow large file uploads (match ingress proxy-body-size)
+    client_max_body_size 450m;
+
     # Gzip compression
     gzip on;
     gzip_vary on;
