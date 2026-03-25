@@ -4,7 +4,8 @@
  * Options are string IDs; display label is the option value unless getOptionLabel is provided.
  */
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Check } from "lucide-react";
 import { Button } from "@/ui/button";
 import { cn } from "@/lib/utils";
@@ -54,13 +55,22 @@ export function MultiSelectDropdown({
   panelMaxHeight = 280,
 }: MultiSelectDropdownProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [panelPosition, setPanelPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const clickedInWrapper = wrapperRef.current?.contains(target);
+      const clickedInPanel = panelRef.current?.contains(target);
+      if (!clickedInWrapper && !clickedInPanel) {
         setOpen(false);
       }
     };
@@ -71,7 +81,7 @@ export function MultiSelectDropdown({
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!ref.current?.contains(document.activeElement)) return;
+      if (!wrapperRef.current?.contains(document.activeElement)) return;
       const panel = panelRef.current;
       const buttons = panel
         ? Array.from(panel.querySelectorAll<HTMLButtonElement>('button[role="option"]'))
@@ -104,6 +114,32 @@ export function MultiSelectDropdown({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const updatePosition = () => {
+      const triggerEl = triggerRef.current;
+      if (!triggerEl) return;
+
+      const rect = triggerEl.getBoundingClientRect();
+      setPanelPosition({
+        top: rect.bottom + 6, // matches the old mt-1.5 (6px) offset
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    // capture=true so it updates even when scrolling nested containers
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
+
   const toggle = (optionId: string) => {
     const next = selectedIds.includes(optionId)
       ? selectedIds.filter((id) => id !== optionId)
@@ -115,12 +151,13 @@ export function MultiSelectDropdown({
   const hasSelection = selectedIds.length > 0;
 
   return (
-    <div className="relative shrink-0" ref={ref}>
+    <div className="relative shrink-0" ref={wrapperRef}>
       <Button
         type="button"
         variant="ghost"
         size="sm"
         onClick={() => setOpen(!open)}
+        ref={triggerRef}
         className={cn(
           "!w-auto !min-w-0 h-9 px-4 text-sm rounded-md border border-gray-03 bg-gray-05 text-gray-01 hover:bg-gray-03/40 flex items-center gap-2",
           hasSelection && "border-blue-03 bg-blue-03/10 text-blue-03",
@@ -138,21 +175,25 @@ export function MultiSelectDropdown({
           </span>
         )}
       </Button>
-      {open && (
-        <div
-          ref={panelRef}
-          className={cn(
-            "absolute left-0 top-full mt-1.5 z-[1000] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto",
-            panelClassName
-          )}
-          style={{
-            minWidth: panelMinWidth,
-            maxHeight: panelMaxHeight,
-          }}
-          role="listbox"
-          aria-multiselectable="true"
-          aria-label={ariaLabel ?? triggerLabel}
-        >
+      {open && panelPosition && typeof document !== "undefined"
+        ? createPortal(
+          <div
+            ref={panelRef}
+            className={cn(
+              "z-[99999] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto",
+              panelClassName,
+            )}
+            style={{
+              position: "fixed",
+              top: panelPosition.top,
+              left: panelPosition.left,
+              width: Math.max(panelMinWidth, panelPosition.width),
+              maxHeight: panelMaxHeight,
+            }}
+            role="listbox"
+            aria-multiselectable="true"
+            aria-label={ariaLabel ?? triggerLabel}
+          >
           <div className="text-xs font-semibold text-gray-02 mb-2 px-2">
             {triggerLabel}
           </div>
@@ -199,8 +240,10 @@ export function MultiSelectDropdown({
               {emptyLabel ?? "No options"}
             </p>
           )}
-        </div>
-      )}
+          </div>,
+          document.body,
+        )
+        : null}
     </div>
   );
 }
