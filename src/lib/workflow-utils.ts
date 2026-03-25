@@ -151,6 +151,64 @@ export function getEffectiveJobs(yearData: SwimlaneYearData): any[] {
 }
 
 /**
+ * Get all attempts for a specific queue within a given run.
+ * Optionally constrain to a specific threadId if the run contains mixed threadIds.
+ */
+export function getQueueAttempts(
+  queueId: string,
+  yearData: SwimlaneYearData,
+  threadId?: string | null,
+): any[] {
+  const jobs = yearData.jobs || [];
+  const filtered = jobs.filter((job: any) => {
+    if (job.queueId !== queueId) return false;
+    if (!threadId) return true;
+    const jobThreadId =
+      (job.data as any)?.threadId ?? (job as any).threadId ?? (yearData as any).threadId;
+    return jobThreadId === threadId;
+  });
+
+  return [...filtered].sort(
+    (a, b) => getJobOrderingTimestamp(b) - getJobOrderingTimestamp(a),
+  );
+}
+
+export function getLatestQueueAttempt(
+  queueId: string,
+  yearData: SwimlaneYearData,
+  threadId?: string | null,
+): any | undefined {
+  const attempts = getQueueAttempts(queueId, yearData, threadId);
+  return attempts[0];
+}
+
+export function getAggregateQueueStatus(
+  queueId: string,
+  yearData: SwimlaneYearData,
+  threadId?: string | null,
+): { status: SwimlaneStatusType; attempts: any[]; hasMixedOutcomes: boolean } {
+  const attempts = getQueueAttempts(queueId, yearData, threadId);
+  const statuses = attempts.map((j) => getJobStatus(j));
+  const unique = new Set(statuses);
+  const hasMixedOutcomes = unique.size > 1;
+
+  // User-facing aggregation: if it ever succeeded, consider it successful for the run.
+  if (statuses.includes("completed")) {
+    return { status: "completed", attempts, hasMixedOutcomes };
+  }
+  if (statuses.includes("needs_approval")) {
+    return { status: "needs_approval", attempts, hasMixedOutcomes };
+  }
+  if (statuses.includes("processing")) {
+    return { status: "processing", attempts, hasMixedOutcomes };
+  }
+  if (statuses.includes("failed")) {
+    return { status: "failed", attempts, hasMixedOutcomes };
+  }
+  return { status: "waiting", attempts, hasMixedOutcomes };
+}
+
+/**
  * Find the latest job (by timestamp) for a specific queue ID in year data.
  * Uses effective jobs (latest per queue+thread) so reruns don't double-count.
  */
@@ -181,48 +239,60 @@ export function calculateStepJobStats(
   needsApproval: number;
   total: number;
 } {
-  const jobs = getJobsForStep(data, stepId);
+  const queueIds = getQueuesForPipelineStep(stepId);
 
-  const result = jobs.reduce(
-    (stats, job) => {
-      const status = getJobStatus(job);
-      stats.total++;
+  const init = {
+    completed: 0,
+    processing: 0,
+    failed: 0,
+    waiting: 0,
+    needsApproval: 0,
+    total: 0,
+  };
 
-      // Map status to the correct property name
-      switch (status) {
+  // Aggregate per queue for a single run
+  const countForYear = (year: SwimlaneYearData) => {
+    const canonicalThreadId =
+      year.jobs?.[0]?.data?.threadId ||
+      (year.jobs?.[0] as any)?.threadId ||
+      (year as any).threadId ||
+      null;
+    for (const queueId of queueIds) {
+      const agg = getAggregateQueueStatus(queueId, year, canonicalThreadId);
+      // Only count queues that have actually been attempted in this run
+      if (agg.attempts.length === 0) continue;
+      init.total++;
+      switch (agg.status) {
         case "completed":
-          stats.completed++;
+          init.completed++;
           break;
         case "processing":
-          stats.processing++;
+          init.processing++;
           break;
         case "failed":
-          stats.failed++;
-          break;
-        case "waiting":
-          stats.waiting++;
+          init.failed++;
           break;
         case "needs_approval":
-          stats.needsApproval++;
+          init.needsApproval++;
           break;
+        case "waiting":
         default:
-          stats.waiting++;
+          init.waiting++;
           break;
       }
-
-      return stats;
-    },
-    {
-      completed: 0,
-      processing: 0,
-      failed: 0,
-      waiting: 0,
-      needsApproval: 0,
-      total: 0,
     }
-  );
+  };
 
-  return result;
+  if (Array.isArray(data)) {
+    data.forEach((company) => {
+      const latestYear = company.years[0];
+      if (latestYear) countForYear(latestYear);
+    });
+    return init;
+  }
+
+  countForYear(data);
+  return init;
 }
 
 /**
@@ -263,23 +333,18 @@ export function calculatePipelineStepStatus(
     return "waiting";
   }
 
-  // Get jobs and their statuses
+  const canonicalThreadId =
+    yearData.jobs?.[0]?.data?.threadId ||
+    (yearData.jobs?.[0] as any)?.threadId ||
+    (yearData as any).threadId ||
+    null;
+
+  // Use aggregate-per-queue outcome so step status matches the overview grid.
+  // Still keep a representative latest job for delayed/active checks.
   const jobsWithStatuses = queueIds.map((queueId) => {
-    // First try to get status from fields if available
-    const fieldData = yearData.fields[queueId];
-    let status: SwimlaneStatusType;
-    let job: any;
-
-    if (fieldData) {
-      status = getFieldStatus(fieldData);
-      // Still need to get the job to check if it's actively processing
-      job = findJobByQueueId(queueId, yearData);
-    } else {
-      job = findJobByQueueId(queueId, yearData);
-      status = getJobStatus(job);
-    }
-
-    return { queueId, job, status };
+    const agg = getAggregateQueueStatus(queueId, yearData, canonicalThreadId);
+    const latestJob = agg.attempts[0];
+    return { queueId, job: latestJob, status: agg.status, attempts: agg.attempts };
   });
 
   // Special case for finalize step: show green if saveToAPI (API Lagring) is completed
@@ -288,7 +353,9 @@ export function calculatePipelineStepStatus(
   if (stepId === "finalize") {
     // Check for delayed jobs first (check raw status, not mapped status)
     const hasDelayed = jobsWithStatuses.some(
-      (entry) => entry.job && entry.job.status === "delayed"
+      (entry) =>
+        Array.isArray(entry.attempts) &&
+        entry.attempts.some((j: any) => j && j.status === "delayed")
     );
 
     if (hasDelayed) {
@@ -311,7 +378,8 @@ export function calculatePipelineStepStatus(
   if (stepId === "preprocessing" || stepId === "data-extraction") {
     // Check if any job is actively processing first (highest priority)
     const hasActivelyProcessing = jobsWithStatuses.some((entry) =>
-      isJobActivelyProcessing(entry.job)
+      Array.isArray(entry.attempts) &&
+      entry.attempts.some((j: any) => isJobActivelyProcessing(j))
     );
 
     if (hasActivelyProcessing) {
@@ -320,7 +388,9 @@ export function calculatePipelineStepStatus(
 
     // Check for delayed jobs (check raw status, not mapped status)
     const hasDelayed = jobsWithStatuses.some(
-      (entry) => entry.job && entry.job.status === "delayed"
+      (entry) =>
+        Array.isArray(entry.attempts) &&
+        entry.attempts.some((j: any) => j && j.status === "delayed")
     );
 
     if (hasDelayed) {
@@ -329,7 +399,8 @@ export function calculatePipelineStepStatus(
 
     // Filter to only jobs that have been started (ignore waiting jobs that haven't been run)
     const startedJobs = jobsWithStatuses.filter((entry) =>
-      hasJobBeenStarted(entry.job)
+      Array.isArray(entry.attempts) &&
+      entry.attempts.some((j: any) => hasJobBeenStarted(j))
     );
 
     if (startedJobs.length === 0) {
@@ -370,7 +441,9 @@ export function calculatePipelineStepStatus(
   // For other steps, use the original logic but also check for delayed
   // Check for delayed jobs (check raw status, not mapped status)
   const hasDelayed = jobsWithStatuses.some(
-    (entry) => entry.job && entry.job.status === "delayed"
+    (entry) =>
+      Array.isArray(entry.attempts) &&
+      entry.attempts.some((j: any) => j && j.status === "delayed")
   );
 
   if (hasDelayed) {

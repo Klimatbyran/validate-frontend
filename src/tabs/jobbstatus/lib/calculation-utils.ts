@@ -3,7 +3,8 @@
  * Centralizes repetitive math logic throughout the application
  */
 
-import { getEffectiveJobs } from "@/lib/workflow-utils";
+import { getAggregateQueueStatus } from "@/lib/workflow-utils";
+import { getQueuesForPipelineStep } from "@/lib/workflow-config";
 
 /**
  * Calculate percentage with safe division
@@ -137,8 +138,7 @@ export function calculateOverallStatistics(
 export function calculateSwimlaneOverallStats(
   companies: any[],
   getAllPipelineSteps: () => any[],
-  calculateStepJobStats: (data: any, stepId: string) => any,
-  getJobStatus: (job: any) => string
+  calculateStepJobStats: (data: any, stepId: string) => any
 ) {
   let totalJobs = 0;
   let completedFields = 0;
@@ -147,40 +147,48 @@ export function calculateSwimlaneOverallStats(
   let waitingFields = 0;
   let needsApprovalFields = 0;
 
-  // Count jobs from latest year only for each company (effective = latest per queue+thread)
+  const pipelineSteps = getAllPipelineSteps();
+  const allQueueIds = pipelineSteps.flatMap((step: any) =>
+    getQueuesForPipelineStep(step.id)
+  );
+
+  // Count aggregate queue outcomes from latest year only for each company
   companies.forEach((company) => {
     const latestYear = company.years[0];
-    if (latestYear) {
-      totalJobs++;
+    if (!latestYear) return;
+    totalJobs++;
 
-      const effectiveJobs = getEffectiveJobs(latestYear);
-      effectiveJobs.forEach((job: any) => {
-        const status = getJobStatus(job);
+    const canonicalThreadId =
+      latestYear.jobs?.[0]?.data?.threadId ||
+      (latestYear.jobs?.[0] as any)?.threadId ||
+      (latestYear as any).threadId ||
+      null;
 
-        switch (status) {
-          case "completed":
-            completedFields++;
-            break;
-          case "processing":
-            processingFields++;
-            break;
-          case "failed":
-            failedFields++;
-            break;
-          case "needs_approval":
-            needsApprovalFields++;
-            break;
-          case "waiting":
-          default:
-            waitingFields++;
-            break;
-        }
-      });
-    }
+    allQueueIds.forEach((queueId: string) => {
+      const agg = getAggregateQueueStatus(queueId, latestYear, canonicalThreadId);
+      if (agg.attempts.length === 0) return;
+      switch (agg.status) {
+        case "completed":
+          completedFields++;
+          break;
+        case "processing":
+          processingFields++;
+          break;
+        case "failed":
+          failedFields++;
+          break;
+        case "needs_approval":
+          needsApprovalFields++;
+          break;
+        case "waiting":
+        default:
+          waitingFields++;
+          break;
+      }
+    });
   });
 
   // Calculate step statistics using the unified function
-  const pipelineSteps = getAllPipelineSteps();
   const stepStats = pipelineSteps.map((step: any) => {
     const stats = calculateStepJobStats(companies, step.id);
     return {
@@ -200,29 +208,46 @@ export function calculateSwimlaneOverallStats(
 
   const activeJobs = companies.reduce((acc, company) => {
     const latestYear = company.years[0];
-    const effective = latestYear ? getEffectiveJobs(latestYear) : [];
-    if (
-      effective.some(
-        (job: any) =>
-          (job.processedOn && !job.finishedOn) ||
-          (!job.data?.approved && !job.data?.autoApprove)
-      )
-    ) {
-      return acc + 1;
-    }
-    return acc;
+    if (!latestYear) return acc;
+    const canonicalThreadId =
+      latestYear.jobs?.[0]?.data?.threadId ||
+      (latestYear.jobs?.[0] as any)?.threadId ||
+      (latestYear as any).threadId ||
+      null;
+    const hasActive = allQueueIds.some((queueId: string) => {
+      const agg = getAggregateQueueStatus(queueId, latestYear, canonicalThreadId);
+      if (agg.attempts.length === 0) return false;
+      return agg.status === "processing" || agg.status === "needs_approval";
+    });
+    return hasActive ? acc + 1 : acc;
   }, 0);
 
   // Company counts that match filter semantics (for overview cards that align with filter badges)
   const companiesWithFailed = companies.filter((company) => {
     const latestYear = company.years[0];
-    const effective = latestYear ? getEffectiveJobs(latestYear) : [];
-    return effective.some((job: any) => getJobStatus(job) === "failed");
+    if (!latestYear) return false;
+    const canonicalThreadId =
+      latestYear.jobs?.[0]?.data?.threadId ||
+      (latestYear.jobs?.[0] as any)?.threadId ||
+      (latestYear as any).threadId ||
+      null;
+    return allQueueIds.some((queueId: string) => {
+      const agg = getAggregateQueueStatus(queueId, latestYear, canonicalThreadId);
+      return agg.attempts.length > 0 && agg.status === "failed";
+    });
   }).length;
   const companiesWithNeedsApproval = companies.filter((company) => {
     const latestYear = company.years[0];
-    const effective = latestYear ? getEffectiveJobs(latestYear) : [];
-    return effective.some((job: any) => getJobStatus(job) === "needs_approval");
+    if (!latestYear) return false;
+    const canonicalThreadId =
+      latestYear.jobs?.[0]?.data?.threadId ||
+      (latestYear.jobs?.[0] as any)?.threadId ||
+      (latestYear as any).threadId ||
+      null;
+    return allQueueIds.some((queueId: string) => {
+      const agg = getAggregateQueueStatus(queueId, latestYear, canonicalThreadId);
+      return agg.attempts.length > 0 && agg.status === "needs_approval";
+    });
   }).length;
 
   return {

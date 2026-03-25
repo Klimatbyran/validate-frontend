@@ -11,6 +11,7 @@ import type { SwimlaneCompany, SwimlaneYearData, QueueJob } from "@/lib/types";
 import { YearRow } from "./YearRow";
 import { isFollowUpQueue } from "@/lib/job-rerun-utils";
 import { useI18n } from "@/contexts/I18nContext";
+import { getLatestQueueAttempt, getQueueAttempts } from "@/lib/workflow-utils";
 
 interface CompanyCardProps {
   company: SwimlaneCompany;
@@ -125,15 +126,21 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
                   expandLevel={expandLevel}
                   onFieldClick={(queueId, runData, options) => {
                     const targetRun = runData || latestRun;
-                    const job = targetRun.jobs?.find(
-                      (j: QueueJob) => j.queueId === queueId
-                    );
+                    const canonicalThreadId =
+                      targetRun.jobs?.[0]?.data?.threadId ||
+                      (targetRun.jobs?.[0] as any)?.threadId ||
+                      (targetRun as any).threadId ||
+                      null;
+                    const job = getLatestQueueAttempt(queueId, targetRun, canonicalThreadId) as
+                      | QueueJob
+                      | undefined;
+                    const attempts = getQueueAttempts(queueId, targetRun, canonicalThreadId);
 
                     if (job) {
                       setSelectedJob(job);
                       setMissingQueueId(undefined);
                       setSelectedYearData(targetRun);
-                      setSelectedIsRerun(options?.isRerun ?? false);
+                      setSelectedIsRerun((options?.isRerun ?? false) || attempts.length > 1);
                       setIsDialogOpen(true);
                     } else if (isFollowUpQueue(queueId)) {
                       // Allow opening non-existent follow-up jobs

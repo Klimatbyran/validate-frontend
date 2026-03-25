@@ -340,7 +340,7 @@ export function JobDetailsDialog({
         <div className="space-y-6 my-6">
           {activeTab === "user" && (
             <>
-              <JobStatusSection job={job} isRerun={isRerun} />
+              <JobStatusSection job={job} isRerun={isRerun} yearData={yearData} />
               <JobRelationshipsSection job={job} />
 
               {/* Information Section */}

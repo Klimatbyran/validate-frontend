@@ -37,6 +37,8 @@ export interface MultiSelectDropdownProps {
   panelMinWidth?: number;
   /** Max height of dropdown panel (default 280) */
   panelMaxHeight?: number;
+  /** When true (default), render panel in document.body via portal. Set false inside modals to preserve wheel scrolling. */
+  portalToBody?: boolean;
 }
 
 export function MultiSelectDropdown({
@@ -53,6 +55,7 @@ export function MultiSelectDropdown({
   panelClassName,
   panelMinWidth = 220,
   panelMaxHeight = 280,
+  portalToBody = true,
 }: MultiSelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -175,8 +178,10 @@ export function MultiSelectDropdown({
           </span>
         )}
       </Button>
-      {open && panelPosition && typeof document !== "undefined"
-        ? createPortal(
+      {(() => {
+        if (!open || !panelPosition || typeof document === "undefined") return null;
+
+        const panelEl = (
           <div
             ref={panelRef}
             className={cn(
@@ -184,66 +189,69 @@ export function MultiSelectDropdown({
               panelClassName,
             )}
             style={{
-              position: "fixed",
-              top: panelPosition.top,
-              left: panelPosition.left,
-              width: Math.max(panelMinWidth, panelPosition.width),
+              position: portalToBody ? "fixed" : "absolute",
+              top: portalToBody ? panelPosition.top : "calc(100% + 6px)",
+              left: portalToBody ? panelPosition.left : 0,
+              width: portalToBody
+                ? Math.max(panelMinWidth, panelPosition.width)
+                : Math.max(panelMinWidth, wrapperRef.current?.clientWidth ?? 0),
               maxHeight: panelMaxHeight,
             }}
             role="listbox"
             aria-multiselectable="true"
             aria-label={ariaLabel ?? triggerLabel}
           >
-          <div className="text-xs font-semibold text-gray-02 mb-2 px-2">
-            {triggerLabel}
-          </div>
-          {loading && (
-            <div
-              className="w-full text-left px-3 py-2 rounded text-sm text-gray-02 flex items-center gap-2 cursor-default"
-              role="option"
-              aria-disabled="true"
-              aria-live="polite"
-            >
-              <span
-                className="flex-shrink-0 w-4 h-4 rounded border border-gray-03"
-                aria-hidden
-              />
-              <span className="truncate">{loadingLabel ?? "Loading…"}</span>
+            <div className="text-xs font-semibold text-gray-02 mb-2 px-2">
+              {triggerLabel}
             </div>
-          )}
-          {options.length > 0 &&
-            options.map((optionId) => {
-              const isSelected = selectedIds.includes(optionId);
-              return (
-                <button
-                  key={optionId}
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  onClick={() => toggle(optionId)}
-                  className="w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center gap-2 hover:bg-gray-03/50 text-gray-01"
-                >
-                  <span
-                    className={cn(
-                      "flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center",
-                      isSelected ? "bg-blue-03 border-blue-03" : "border-gray-03"
-                    )}
+            {loading && (
+              <div
+                className="w-full text-left px-3 py-2 rounded text-sm text-gray-02 flex items-center gap-2 cursor-default"
+                role="option"
+                aria-disabled="true"
+                aria-live="polite"
+              >
+                <span
+                  className="flex-shrink-0 w-4 h-4 rounded border border-gray-03"
+                  aria-hidden
+                />
+                <span className="truncate">{loadingLabel ?? "Loading…"}</span>
+              </div>
+            )}
+            {options.length > 0 &&
+              options.map((optionId) => {
+                const isSelected = selectedIds.includes(optionId);
+                return (
+                  <button
+                    key={optionId}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => toggle(optionId)}
+                    className="w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center gap-2 hover:bg-gray-03/50 text-gray-01"
                   >
-                    {isSelected && <Check className="w-3 h-3 text-white" />}
-                  </span>
-                  <span className="truncate">{label(optionId)}</span>
-                </button>
-              );
-            })}
-          {!loading && options.length === 0 && (
-            <p className="px-3 py-2 text-sm text-gray-02">
-              {emptyLabel ?? "No options"}
-            </p>
-          )}
-          </div>,
-          document.body,
-        )
-        : null}
+                    <span
+                      className={cn(
+                        "flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center",
+                        isSelected ? "bg-blue-03 border-blue-03" : "border-gray-03"
+                      )}
+                    >
+                      {isSelected && <Check className="w-3 h-3 text-white" />}
+                    </span>
+                    <span className="truncate">{label(optionId)}</span>
+                  </button>
+                );
+              })}
+            {!loading && options.length === 0 && (
+              <p className="px-3 py-2 text-sm text-gray-02">
+                {emptyLabel ?? "No options"}
+              </p>
+            )}
+          </div>
+        );
+
+        return portalToBody ? createPortal(panelEl, document.body) : panelEl;
+      })()}
     </div>
   );
 }

@@ -74,6 +74,7 @@ export function BulkTagUpdateModal({
                 emptyLabel={t("editor.tagOptions.empty")}
                 panelClassName="max-h-64"
                 panelMinWidth={260}
+                portalToBody={false}
               />
               {selectedSlugs.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">

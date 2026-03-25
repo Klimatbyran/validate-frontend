@@ -9,33 +9,15 @@ import {
 } from "@/lib/workflow-config";
 import {
   findJobByQueueId,
-  getJobStatus as getJobStatusFromUtils,
+  getAggregateQueueStatus,
 } from "@/lib/workflow-utils";
 import {
   getStatusIcon,
   getStatusLabel,
   getCompactStyles,
 } from "@/lib/status-config";
-import type { SwimlaneYearData, QueueJob } from "@/lib/types";
+import type { SwimlaneYearData } from "@/lib/types";
 import { useI18n } from "@/contexts/I18nContext";
-
-function getStatusDisplay(
-  job: QueueJob | undefined,
-  variant: "compact" | "detailed",
-  isActive?: boolean
-) {
-  const status = getJobStatusFromUtils(job);
-  const jobExists = job !== undefined;
-  return {
-    status,
-    icon: getStatusIcon(status, variant, isActive),
-    text: getStatusLabel(status, isActive),
-    styles:
-      variant === "compact"
-        ? getCompactStyles(status, isActive, jobExists)
-        : undefined,
-  };
-}
 
 export interface YearStepGridStep {
   id: string;
@@ -102,18 +84,28 @@ export function YearStepGrid({
                   })
                 )
               : [];
+          const aggregate = getAggregateQueueStatus(queueId, yearData, currentThreadId);
           const isRerun =
-            currentThreadId != null &&
-            Array.isArray(allJobsForQueueAndThread) &&
-            allJobsForQueueAndThread.length > 1;
+            (currentThreadId != null &&
+              Array.isArray(allJobsForQueueAndThread) &&
+              allJobsForQueueAndThread.length > 1) ||
+            aggregate.attempts.length > 1;
           const isActive =
             (job?.processedOn && !job?.finishedOn) ||
             job?.status === "active";
-          const statusDisplay = getStatusDisplay(
-            job,
-            variant === "compact" ? "compact" : "detailed",
-            !!isActive
-          );
+          const statusDisplay = {
+            status: aggregate.status,
+            icon: getStatusIcon(
+              aggregate.status,
+              variant === "compact" ? "compact" : "detailed",
+              !!isActive
+            ),
+            text: getStatusLabel(aggregate.status, !!isActive),
+            styles:
+              variant === "compact"
+                ? getCompactStyles(aggregate.status, !!isActive, job !== undefined)
+                : undefined,
+          };
 
           if (variant === "compact") {
             return (
