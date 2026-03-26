@@ -277,6 +277,8 @@ export function UploadTab() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             uploadedFiles={uploadedFiles}
+            autoApprove={autoApprove}
+            onAutoApproveChange={setAutoApprove}
             onFileSubmit={handleFileSubmit}
           />
         </TabsContent>

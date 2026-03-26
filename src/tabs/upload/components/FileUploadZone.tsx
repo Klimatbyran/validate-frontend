@@ -4,6 +4,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { cn } from "@/lib/utils";
 import { UploadedFile } from "../types";
+import { AutoApproveToggle } from "./AutoApproveToggle";
 
 interface FileUploadZoneProps {
   isDragging: boolean;
@@ -11,6 +12,8 @@ interface FileUploadZoneProps {
   onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
   uploadedFiles: UploadedFile[];
+  autoApprove: boolean;
+  onAutoApproveChange: (value: boolean) => void;
   onFileSubmit: () => void;
 }
 
@@ -20,11 +23,16 @@ export function FileUploadZone({
   onDragLeave,
   onDrop,
   uploadedFiles,
+  autoApprove,
+  onAutoApproveChange,
   onFileSubmit,
 }: FileUploadZoneProps) {
   const { t } = useI18n();
   return (
     <>
+      <div className="flex items-center justify-end mb-2">
+        <AutoApproveToggle value={autoApprove} onChange={onAutoApproveChange} />
+      </div>
       <div
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
