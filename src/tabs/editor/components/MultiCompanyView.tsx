@@ -5,19 +5,20 @@ import { LoadingSpinner } from "@/ui/loading-spinner";
 import { toast } from "sonner";
 import { listCompanies, updateCompany, updateReportingPeriods } from "../lib/companies-api";
 import { fetchTagOptions } from "../lib/tag-options-api";
-import type {
-  GarboCompanyListItem,
-  TagOption,
-  GarboMetadata,
-} from "../lib/types";
+import type { EditState, GarboCompanyListItem, GarboMetadata, TagOption } from "../lib/types";
 import { FieldEditModal } from "./FieldEditModal";
 import { BulkTagUpdateModal } from "./BulkTagUpdateModal";
 import { MultiCompanyFilters } from "./MultiCompanyFilters";
 import { MultiCompanySelectionBar } from "./MultiCompanySelectionBar";
 import { MultiCompanyTable } from "./MultiCompanyTable";
-import type { EditState } from "../lib/types";
 import { getPeriodForYear } from "../lib/multi-company-utils";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
+import {
+  buildReportingPeriodUpdatePayload,
+  buildTagLabelBySlug,
+  companyMatchesTagFilter,
+  parseTagSlugs,
+} from "../lib/editor-tag-and-payload-utils";
 
 export function MultiCompanyView() {
   const { t } = useI18n();
@@ -36,11 +37,14 @@ export function MultiCompanyView() {
     setLoading(true);
     setError(null);
     try {
-      const [list, tags] = await Promise.all([listCompanies(), fetchTagOptions()]);
-      setCompanies(list);
-      setTagOptions(tags);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      const [companyList, availableTagOptions] = await Promise.all([
+        listCompanies(),
+        fetchTagOptions(),
+      ]);
+      setCompanies(companyList);
+      setTagOptions(availableTagOptions);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error));
       setCompanies([]);
     } finally {
       setLoading(false);
@@ -52,30 +56,34 @@ export function MultiCompanyView() {
   }, [loadCompanies]);
 
   const years = useMemo(() => {
-    const set = new Set<string>();
-    companies.forEach((c) => {
-      c.reportingPeriods?.forEach((p) => {
-        const y = p.startDate?.slice(0, 4) ?? p.endDate?.slice(0, 4);
-        if (y) set.add(y);
+    const uniqueYears = new Set<string>();
+    companies.forEach((company) => {
+      company.reportingPeriods?.forEach((reportingPeriod) => {
+        const year =
+          reportingPeriod.startDate?.slice(0, 4) ?? reportingPeriod.endDate?.slice(0, 4);
+        if (year) uniqueYears.add(year);
       });
     });
-    return Array.from(set).sort((a, b) => b.localeCompare(a));
+    return Array.from(uniqueYears).sort((yearA, yearB) => yearB.localeCompare(yearA));
   }, [companies]);
 
+  const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
+
   const filteredCompanies = useMemo(() => {
-    let list = companies;
+    let filteredList = companies;
     if (selectedTags.length) {
       // API returns company.tags as string[] of slugs; filter shows companies that have any selected tag
-      list = list.filter((c) => {
-        const companyTagSlugs = Array.isArray(c.tags) ? c.tags : [];
-        return selectedTags.some((slug) => companyTagSlugs.includes(slug));
-      });
+      filteredList = filteredList.filter((company) =>
+        companyMatchesTagFilter(company.tags, selectedTags)
+      );
     }
     if (selectedYear) {
-      const y = Number(selectedYear);
-      list = list.filter((c) => getPeriodForYear(c.reportingPeriods, y));
+      const selectedYearNumber = Number(selectedYear);
+      filteredList = filteredList.filter((company) =>
+        getPeriodForYear(company.reportingPeriods, selectedYearNumber)
+      );
     }
-    return list;
+    return filteredList;
   }, [companies, selectedYear, selectedTags]);
 
   const toggleCompanySelection = useCallback((wikidataId: string) => {
@@ -88,7 +96,7 @@ export function MultiCompanyView() {
   }, []);
 
   const selectAllFiltered = useCallback(() => {
-    setSelectedWikidataIds(new Set(filteredCompanies.map((c) => c.wikidataId)));
+    setSelectedWikidataIds(new Set(filteredCompanies.map((company) => company.wikidataId)));
   }, [filteredCompanies]);
 
   const clearSelection = useCallback(() => {
@@ -97,17 +105,17 @@ export function MultiCompanyView() {
 
   const allFilteredSelected =
     filteredCompanies.length > 0 &&
-    filteredCompanies.every((c) => selectedWikidataIds.has(c.wikidataId));
+    filteredCompanies.every((company) => selectedWikidataIds.has(company.wikidataId));
 
   const handleBulkTagSubmit = useCallback(
     async (tags: string[]) => {
-      const ids = Array.from(selectedWikidataIds);
+      const selectedIds = Array.from(selectedWikidataIds);
       setActionLoading(true);
       try {
         let success = 0;
         let failed = 0;
-        for (const wikidataId of ids) {
-          const company = companies.find((c) => c.wikidataId === wikidataId);
+        for (const wikidataId of selectedIds) {
+          const company = companies.find((listedCompany) => listedCompany.wikidataId === wikidataId);
           if (!company) {
             failed++;
             continue;
@@ -120,10 +128,10 @@ export function MultiCompanyView() {
           }
         }
         if (failed === 0) {
-          toast.success(t("editor.companies.bulkUpdateTagsSuccess", { count: ids.length }));
+          toast.success(t("editor.companies.bulkUpdateTagsSuccess", { count: selectedIds.length }));
           setCompanies((prev) =>
-            prev.map((c) =>
-              selectedWikidataIds.has(c.wikidataId) ? { ...c, tags } : c
+            prev.map((company) =>
+              selectedWikidataIds.has(company.wikidataId) ? { ...company, tags } : company
             )
           );
         } else {
@@ -135,9 +143,9 @@ export function MultiCompanyView() {
         setBulkTagModalOpen(false);
         setSelectedWikidataIds(new Set());
         await loadCompanies();
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : String(e));
-        throw e;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : String(error));
+        throw error;
       } finally {
         setActionLoading(false);
       }
@@ -154,17 +162,15 @@ export function MultiCompanyView() {
       setActionLoading(true);
       try {
         if (editState.field === "tags") {
-          const tags = value
-            ? value.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean)
-            : [];
+          const tags = parseTagSlugs(value);
           await updateCompany(editState.wikidataId, {
             name: editState.companyName,
             tags,
           });
           toast.success(t("editor.tagOptions.updated"));
           setCompanies((prev) =>
-            prev.map((c) =>
-              c.wikidataId === editState.wikidataId ? { ...c, tags } : c
+            prev.map((company) =>
+              company.wikidataId === editState.wikidataId ? { ...company, tags } : company
             )
           );
         } else if (
@@ -172,43 +178,16 @@ export function MultiCompanyView() {
           editState.startDate &&
           editState.endDate
         ) {
-          const payload: Record<string, unknown> = {
-            startDate: editState.startDate,
-            endDate: editState.endDate,
-          };
-          if (editState.field === "reportURL") {
-            payload.reportURL = value || undefined;
-          }
-          if (editState.field === "scope1") {
-            const num = value === "" ? null : Number(value);
-            payload.emissions = {
-              scope1: {
-                total: num,
-                unit: "tCO2e",
-                verified: meta.verified,
-              },
-            };
-          }
-          if (editState.field === "scope2") {
-            const num = value === "" ? null : Number(value);
-            payload.emissions = {
-              scope2: {
-                mb: num,
-                lb: null,
-                unknown: null,
-                unit: "tCO2e",
-                verified: meta.verified,
-              },
-            };
-          }
-          if (editState.field === "economy") {
-            const num = value === "" ? null : Number(value);
-            payload.economy = {
-              turnover: { value: num, currency: "SEK", verified: meta.verified },
-            };
+          const reportingPeriodPayload = buildReportingPeriodUpdatePayload(
+            editState,
+            value,
+            meta.verified
+          );
+          if (!reportingPeriodPayload) {
+            throw new Error("Could not build reporting period payload.");
           }
           await updateReportingPeriods(editState.wikidataId, {
-            reportingPeriods: [payload as any],
+            reportingPeriods: [reportingPeriodPayload],
             metadata: meta.source || meta.comment ? { source: meta.source, comment: meta.comment } : undefined,
           });
           toast.success(t("editor.tagOptions.updated"));
@@ -217,14 +196,47 @@ export function MultiCompanyView() {
         if (editState.field !== "tags") {
           await loadCompanies();
         }
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : String(e));
-        throw e;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : String(error));
+        throw error;
       } finally {
         setActionLoading(false);
       }
     },
     [editState, t, loadCompanies]
+  );
+
+  const renderTagsInput = useCallback(
+    (value: string, onChange: (v: string) => void) => {
+      const selectedSlugs = parseTagSlugs(value);
+      return (
+        <div className="space-y-2">
+          <MultiSelectDropdown
+            options={tagOptions.map((tagOption) => tagOption.slug)}
+            selectedIds={selectedSlugs}
+            onChange={(selectedOptionIds: string[]) => onChange(selectedOptionIds.join(", "))}
+            triggerLabel={t("editor.companies.tags")}
+            getOptionLabel={(slug) => tagLabelBySlug[slug] ?? slug}
+            emptyLabel={t("editor.tagOptions.empty")}
+            panelClassName="max-h-64"
+            panelMinWidth={260}
+          />
+          {selectedSlugs.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {selectedSlugs.map((slug) => (
+                <span
+                  key={slug}
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-03/80 text-gray-01 border border-gray-03"
+                >
+                  {tagLabelBySlug[slug] ?? slug}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    },
+    [tagOptions, t, tagLabelBySlug]
   );
 
   return (
@@ -292,35 +304,7 @@ export function MultiCompanyView() {
           isSubmitting={actionLoading}
           renderInput={
             editState.field === "tags"
-              ? (value, onChange) => {
-                  const selectedSlugs = value ? value.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean) : [];
-                  return (
-                    <div className="space-y-2">
-                      <MultiSelectDropdown
-                        options={tagOptions.map((o) => o.slug)}
-                        selectedIds={selectedSlugs}
-                        onChange={(ids: string[]) => onChange(ids.join(", "))}
-                        triggerLabel={t("editor.companies.tags")}
-                        getOptionLabel={(slug) => tagOptions.find((o) => o.slug === slug)?.label ?? slug}
-                        emptyLabel={t("editor.tagOptions.empty")}
-                        panelClassName="max-h-64"
-                        panelMinWidth={260}
-                      />
-                      {selectedSlugs.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {selectedSlugs.map((slug: string) => (
-                            <span
-                              key={slug}
-                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-03/80 text-gray-01 border border-gray-03"
-                            >
-                              {tagOptions.find((o) => o.slug === slug)?.label ?? slug}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
+              ? renderTagsInput
               : editState.field === "scope1" || editState.field === "scope2" || editState.field === "economy"
                 ? (value, onChange, disabled) => (
                     <input

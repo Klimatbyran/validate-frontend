@@ -1,6 +1,12 @@
 /** Slug format for tag options: lowercase letters, digits, hyphens only. Enforced by API. */
 export const TAG_OPTION_SLUG_REGEX = /^[a-z0-9-]+$/;
 
+/**
+ * Special option value used in tag filter dropdowns to show companies with no tags.
+ * Guaranteed not to collide with real tag slugs due to TAG_OPTION_SLUG_REGEX.
+ */
+export const NO_TAGS_FILTER_OPTION = "__no_tags__";
+
 /** Tag option from GET /api/tag-options (garbo). */
 export interface TagOption {
   id: string;

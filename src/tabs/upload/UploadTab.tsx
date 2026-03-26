@@ -22,7 +22,7 @@ export function UploadTab() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [urlInput, setUrlInput] = useState("");
   const [processedUrls, setProcessedUrls] = useState<UrlInput[]>([]);
-  const [autoApprove, setAutoApprove] = useState(true);
+  const [autoApprove, setAutoApprove] = useState(false);
   const [runAllWorkers, setRunAllWorkers] = useState(false);
   const [selectedWorkers, setSelectedWorkers] = useState<RunOnlyWorkerId[]>(
     DEFAULT_RUN_ONLY,
@@ -277,6 +277,8 @@ export function UploadTab() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             uploadedFiles={uploadedFiles}
+            autoApprove={autoApprove}
+            onAutoApproveChange={setAutoApprove}
             onFileSubmit={handleFileSubmit}
           />
         </TabsContent>

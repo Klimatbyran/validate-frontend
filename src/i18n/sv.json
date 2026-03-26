@@ -50,6 +50,7 @@
       "tag": "Tagg",
       "allYears": "Alla år",
       "allTags": "Alla taggar",
+      "noTags": "Inga taggar",
       "loading": "Laddar företag...",
       "loadError": "Kunde inte ladda företag",
       "empty": "Inga företag matchar filtren",

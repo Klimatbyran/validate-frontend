@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
@@ -14,6 +14,7 @@ import {
 } from "../lib/companies-api";
 import type { GarboCompanyDetail, TagOption } from "../lib/types";
 import { displayBaseYear, getDescriptionByLang, inputClassName } from "../lib/company-edit-utils";
+import { buildTagLabelBySlug } from "../lib/editor-tag-and-payload-utils";
 
 export function CompanyDetailTab({
   company,
@@ -25,6 +26,7 @@ export function CompanyDetailTab({
   onSaved?: () => void;
 }) {
   const { t } = useI18n();
+  const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
 
   const [name, setName] = useState(company.name ?? "");
   const [descriptionEn, setDescriptionEn] = useState(() =>
@@ -222,7 +224,7 @@ export function CompanyDetailTab({
               onChange={setSelectedTags}
               triggerLabel={t("editor.companies.tags")}
               getOptionLabel={(slug) =>
-                tagOptions.find((o) => o.slug === slug)?.label ?? slug
+                tagLabelBySlug[slug] ?? slug
               }
               emptyLabel={t("editor.tagOptions.empty")}
               panelClassName="max-h-64"
@@ -235,7 +237,7 @@ export function CompanyDetailTab({
                     key={slug}
                     className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-03/80 text-gray-01 border border-gray-03"
                   >
-                    {tagOptions.find((o) => o.slug === slug)?.label ?? slug}
+                    {tagLabelBySlug[slug] ?? slug}
                   </span>
                 ))}
               </div>
