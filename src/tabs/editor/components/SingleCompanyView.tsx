@@ -3,10 +3,7 @@ import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
-  ChevronDown,
-  ChevronRight,
   Minus,
-  Search,
 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
@@ -26,6 +23,7 @@ import { CompanyEditDetail } from "./CompanyEditDetail";
 import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
 import { NO_TAGS_FILTER_OPTION } from "../lib/types";
 import { buildTagLabelBySlug, companyMatchesTagFilter } from "../lib/editor-tag-and-payload-utils";
+import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
 
 function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
   const y = period.endDate?.slice(0, 4) ?? period.startDate?.slice(0, 4);
@@ -234,128 +232,116 @@ export function SingleCompanyView() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg border border-gray-03 p-4 flex flex-col gap-4">
-        <details
-          open={filtersOpen}
-          onToggle={(e) => setFiltersOpen((e.target as HTMLDetailsElement).open)}
-          className="group"
-        >
-          <summary className="flex items-center gap-2 px-0 py-1 cursor-pointer list-none text-gray-01 font-medium hover:text-gray-02 select-none">
-            {filtersOpen ? (
-              <ChevronDown className="w-4 h-4 text-gray-02" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-gray-02" />
+      <SearchAndFiltersCard
+        title={t("editor.singleCompanyView.searchAndFilters")}
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        after={
+          <>
+            {error && !loadingList && (
+              <div className="rounded-lg border border-gray-03 bg-gray-05/80 p-4">
+                <p className="text-gray-01 font-medium">
+                  {t("editor.singleCompanyView.loadError")}
+                </p>
+                <p className="text-sm text-gray-02 mt-1">{error}</p>
+              </div>
             )}
-            <Search className="w-4 h-4 text-gray-02" />
-            {t("editor.singleCompanyView.searchAndFilters")}
-          </summary>
-          <div className="pt-4 space-y-4 border-t border-gray-03/50 mt-2">
+
+            {loadingList && (
+              <div className="flex justify-center py-12">
+                <LoadingSpinner label={t("editor.companies.loading")} />
+              </div>
+            )}
+
+            {!loadingList && filteredCompanies.length === 0 && (
+              <div className="py-8 text-center text-gray-02 text-sm">
+                {t("editor.singleCompanyView.noCompaniesMatch")}
+              </div>
+            )}
+          </>
+        }
+      >
+        <div>
+          <label className="block text-xs font-medium text-gray-02 mb-1">
+            {t("editor.singleCompanyView.searchByNameOrId")}
+          </label>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("editor.singleCompanyView.searchPlaceholder")}
+            className="w-full max-w-md px-3 py-2 rounded-lg border border-gray-03 bg-gray-05 text-gray-01 placeholder:text-gray-03 focus:outline-none focus:ring-2 focus:ring-blue-03"
+          />
+        </div>
+        <div className="flex flex-wrap gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-02 mb-1">
+              {t("editor.companies.tag")}
+            </label>
+            <MultiSelectDropdown
+              options={[NO_TAGS_FILTER_OPTION, ...tagOptions.map((o) => o.slug)]}
+              selectedIds={filterTags}
+              onChange={setFilterTags}
+              triggerLabel={t("editor.companies.tags")}
+              getOptionLabel={(slug) =>
+                slug === NO_TAGS_FILTER_OPTION
+                  ? t("editor.companies.noTags")
+                  : (tagLabelBySlug[slug] ?? slug)
+              }
+              emptyLabel={t("editor.companies.allTags")}
+              triggerClassName="min-w-[140px]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-02 mb-1">
+              {t("editor.companies.year")}
+            </label>
+            <MultiSelectDropdown
+              options={years}
+              selectedIds={filterYears}
+              onChange={setFilterYears}
+              triggerLabel={t("editor.companies.year")}
+              emptyLabel={t("editor.companies.allYears")}
+              triggerClassName="min-w-[120px]"
+            />
+          </div>
+          {sectors.length > 0 && (
             <div>
               <label className="block text-xs font-medium text-gray-02 mb-1">
-                {t("editor.singleCompanyView.searchByNameOrId")}
+                {t("editor.singleCompanyView.sector")}
               </label>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t("editor.singleCompanyView.searchPlaceholder")}
-                className="w-full max-w-md px-3 py-2 rounded-lg border border-gray-03 bg-gray-05 text-gray-01 placeholder:text-gray-03 focus:outline-none focus:ring-2 focus:ring-blue-03"
+              <SingleSelectDropdown
+                options={["", ...sectors]}
+                value={filterSector}
+                onChange={setFilterSector}
+                placeholder={t("editor.singleCompanyView.allSectors")}
+                getOptionLabel={(v) => (v ? v : t("editor.singleCompanyView.allSectors"))}
+                triggerClassName="min-w-[140px]"
               />
             </div>
-            <div className="flex flex-wrap gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-02 mb-1">
-                  {t("editor.companies.tag")}
-                </label>
-                <MultiSelectDropdown
-                  options={[NO_TAGS_FILTER_OPTION, ...tagOptions.map((o) => o.slug)]}
-                  selectedIds={filterTags}
-                  onChange={setFilterTags}
-                  triggerLabel={t("editor.companies.tags")}
-                  getOptionLabel={(slug) =>
-                    slug === NO_TAGS_FILTER_OPTION
-                      ? t("editor.companies.noTags")
-                      : (tagLabelBySlug[slug] ?? slug)
-                  }
-                  emptyLabel={t("editor.companies.allTags")}
-                  triggerClassName="min-w-[140px]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-02 mb-1">
-                  {t("editor.companies.year")}
-                </label>
-                <MultiSelectDropdown
-                  options={years}
-                  selectedIds={filterYears}
-                  onChange={setFilterYears}
-                  triggerLabel={t("editor.companies.year")}
-                  emptyLabel={t("editor.companies.allYears")}
-                  triggerClassName="min-w-[120px]"
-                />
-              </div>
-              {sectors.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-02 mb-1">
-                    {t("editor.singleCompanyView.sector")}
-                  </label>
-                  <SingleSelectDropdown
-                    options={["", ...sectors]}
-                    value={filterSector}
-                    onChange={setFilterSector}
-                    placeholder={t("editor.singleCompanyView.allSectors")}
-                    getOptionLabel={(v) =>
-                      v ? v : t("editor.singleCompanyView.allSectors")
-                    }
-                    triggerClassName="min-w-[140px]"
-                  />
-                </div>
-              )}
-              <div className="flex flex-wrap items-end gap-4">
-                <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={filterHasUnverifiedEmissions}
-                    onChange={(e) => setFilterHasUnverifiedEmissions(e.target.checked)}
-                    className="rounded border-gray-03"
-                  />
-                  {t("editor.singleCompanyView.filterHasUnverifiedEmissions")}
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={filterHasUnverifiedData}
-                    onChange={(e) => setFilterHasUnverifiedData(e.target.checked)}
-                    className="rounded border-gray-03"
-                  />
-                  {t("editor.singleCompanyView.filterHasUnverifiedData")}
-                </label>
-              </div>
-            </div>
+          )}
+          <div className="flex flex-wrap items-end gap-4">
+            <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-sm">
+              <input
+                type="checkbox"
+                checked={filterHasUnverifiedEmissions}
+                onChange={(e) => setFilterHasUnverifiedEmissions(e.target.checked)}
+                className="rounded border-gray-03"
+              />
+              {t("editor.singleCompanyView.filterHasUnverifiedEmissions")}
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-sm">
+              <input
+                type="checkbox"
+                checked={filterHasUnverifiedData}
+                onChange={(e) => setFilterHasUnverifiedData(e.target.checked)}
+                className="rounded border-gray-03"
+              />
+              {t("editor.singleCompanyView.filterHasUnverifiedData")}
+            </label>
           </div>
-        </details>
-
-        {error && !loadingList && (
-          <div className="rounded-lg border border-gray-03 bg-gray-05/80 p-4">
-            <p className="text-gray-01 font-medium">
-              {t("editor.singleCompanyView.loadError")}
-            </p>
-            <p className="text-sm text-gray-02 mt-1">{error}</p>
-          </div>
-        )}
-
-        {loadingList && (
-          <div className="flex justify-center py-12">
-            <LoadingSpinner label={t("editor.companies.loading")} />
-          </div>
-        )}
-
-        {!loadingList && filteredCompanies.length === 0 && (
-          <div className="py-8 text-center text-gray-02 text-sm">
-            {t("editor.singleCompanyView.noCompaniesMatch")}
-          </div>
-        )}
-      </div>
+        </div>
+      </SearchAndFiltersCard>
 
       {!loadingList && filteredCompanies.length > 0 && (
         <DataTableShell>

@@ -20,12 +20,21 @@ import {
   parseTagSlugs,
 } from "../lib/editor-tag-and-payload-utils";
 
+function companyMatchesSearch(company: GarboCompanyListItem, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const name = (company.name ?? "").toLowerCase();
+  const id = (company.wikidataId ?? "").toLowerCase();
+  return name.includes(q) || id.includes(q);
+}
+
 export function MultiCompanyView() {
   const { t } = useI18n();
   const [companies, setCompanies] = useState<GarboCompanyListItem[]>([]);
   const [tagOptions, setTagOptions] = useState<TagOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
@@ -71,6 +80,9 @@ export function MultiCompanyView() {
 
   const filteredCompanies = useMemo(() => {
     let filteredList = companies;
+    if (searchQuery.trim()) {
+      filteredList = filteredList.filter((company) => companyMatchesSearch(company, searchQuery));
+    }
     if (selectedTags.length) {
       // API returns company.tags as string[] of slugs; filter shows companies that have any selected tag
       filteredList = filteredList.filter((company) =>
@@ -84,7 +96,7 @@ export function MultiCompanyView() {
       );
     }
     return filteredList;
-  }, [companies, selectedYear, selectedTags]);
+  }, [companies, searchQuery, selectedYear, selectedTags]);
 
   const toggleCompanySelection = useCallback((wikidataId: string) => {
     setSelectedWikidataIds((prev) => {
@@ -242,6 +254,8 @@ export function MultiCompanyView() {
   return (
     <div className="space-y-4">
       <MultiCompanyFilters
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
         years={years}
         selectedYear={selectedYear}
         onYearChange={setSelectedYear}
