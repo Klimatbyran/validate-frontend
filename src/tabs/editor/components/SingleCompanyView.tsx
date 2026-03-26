@@ -24,6 +24,8 @@ import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { CompanyEditDetail } from "./CompanyEditDetail";
 import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
+import { NO_TAGS_FILTER_OPTION } from "../lib/types";
+import { buildTagLabelBySlug, companyMatchesTagFilter } from "../lib/editor-tag-and-payload-utils";
 
 function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
   const y = period.endDate?.slice(0, 4) ?? period.startDate?.slice(0, 4);
@@ -78,6 +80,8 @@ export function SingleCompanyView() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [detail, setDetail] = useState<GarboCompanyDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
 
   useEffect(() => {
     let cancelled = false;
@@ -163,8 +167,7 @@ export function SingleCompanyView() {
     return companyList.filter((c) => {
       const overview = companyOverviewById.get(c.wikidataId);
       if (!companyMatchesSearch(c, searchQuery)) return false;
-      if (filterTags.length && !filterTags.some((t) => c.tags?.includes(t)))
-        return false;
+      if (!companyMatchesTagFilter(c.tags, filterTags)) return false;
       if (filterYears.length && !companyHasPeriodsInYears(c, filterYears))
         return false;
       if (
@@ -265,12 +268,14 @@ export function SingleCompanyView() {
                   {t("editor.companies.tag")}
                 </label>
                 <MultiSelectDropdown
-                  options={tagOptions.map((o) => o.slug)}
+                  options={[NO_TAGS_FILTER_OPTION, ...tagOptions.map((o) => o.slug)]}
                   selectedIds={filterTags}
                   onChange={setFilterTags}
                   triggerLabel={t("editor.companies.tags")}
                   getOptionLabel={(slug) =>
-                    tagOptions.find((o) => o.slug === slug)?.label ?? slug
+                    slug === NO_TAGS_FILTER_OPTION
+                      ? t("editor.companies.noTags")
+                      : (tagLabelBySlug[slug] ?? slug)
                   }
                   emptyLabel={t("editor.companies.allTags")}
                   triggerClassName="min-w-[140px]"
@@ -460,7 +465,7 @@ export function SingleCompanyView() {
                               key={slug}
                               className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-03/40 text-gray-01 border border-gray-03"
                             >
-                              {tagOptions.find((o) => o.slug === slug)?.label ?? slug}
+                              {tagLabelBySlug[slug] ?? slug}
                             </span>
                           ))}
                           {c.tags.length > 4 && (

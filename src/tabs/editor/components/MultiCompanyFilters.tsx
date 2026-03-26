@@ -1,8 +1,10 @@
+import { useMemo } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
-import type { TagOption } from "../lib/types";
+import { buildTagLabelBySlug } from "../lib/editor-tag-and-payload-utils";
+import { NO_TAGS_FILTER_OPTION, type TagOption } from "../lib/types";
 
 export function MultiCompanyFilters({
   years,
@@ -24,6 +26,7 @@ export function MultiCompanyFilters({
   refreshDisabled?: boolean;
 }) {
   const { t } = useI18n();
+  const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -33,15 +36,18 @@ export function MultiCompanyFilters({
         value={selectedYear}
         onChange={onYearChange}
         placeholder={t("editor.companies.allYears")}
-        getOptionLabel={(v) => (v ? v : t("editor.companies.allYears"))}
+        getOptionLabel={(optionValue) => (optionValue ? optionValue : t("editor.companies.allYears"))}
         triggerClassName="min-w-[120px]"
       />
       <MultiSelectDropdown
-        options={tagOptions.map((o) => o.slug)}
+        options={[NO_TAGS_FILTER_OPTION, ...tagOptions.map((o) => o.slug)]}
         selectedIds={selectedTags}
         onChange={onTagsChange}
         triggerLabel={t("editor.companies.tag")}
-        getOptionLabel={(id) => tagOptions.find((o) => o.slug === id)?.label ?? id}
+        getOptionLabel={(optionValue) => {
+          if (optionValue === NO_TAGS_FILTER_OPTION) return t("editor.companies.noTags");
+          return tagLabelBySlug[optionValue] ?? optionValue;
+        }}
         emptyLabel={t("editor.companies.allTags")}
         triggerClassName="min-w-[140px]"
       />

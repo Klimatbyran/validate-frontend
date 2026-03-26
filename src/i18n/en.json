@@ -50,6 +50,7 @@
       "tag": "Tag",
       "allYears": "All years",
       "allTags": "All tags",
+      "noTags": "No tags",
       "loading": "Loading companies...",
       "loadError": "Failed to load companies",
       "empty": "No companies match the filters",

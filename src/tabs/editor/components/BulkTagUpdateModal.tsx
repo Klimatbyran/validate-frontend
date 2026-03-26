@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
@@ -12,6 +12,7 @@ import {
 } from "@/ui/dialog";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import type { TagOption } from "../lib/types";
+import { buildTagLabelBySlug } from "../lib/editor-tag-and-payload-utils";
 
 export interface BulkTagUpdateModalProps {
   open: boolean;
@@ -32,6 +33,7 @@ export function BulkTagUpdateModal({
 }: BulkTagUpdateModalProps) {
   const { t } = useI18n();
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
+  const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
 
   const handleClose = () => {
     if (!isSubmitting) {
@@ -70,7 +72,7 @@ export function BulkTagUpdateModal({
                 selectedIds={selectedSlugs}
                 onChange={setSelectedSlugs}
                 triggerLabel={t("editor.companies.tags")}
-                getOptionLabel={(slug) => tagOptions.find((o) => o.slug === slug)?.label ?? slug}
+                getOptionLabel={(slug) => tagLabelBySlug[slug] ?? slug}
                 emptyLabel={t("editor.tagOptions.empty")}
                 panelClassName="max-h-64"
                 panelMinWidth={260}
@@ -82,7 +84,7 @@ export function BulkTagUpdateModal({
                       key={slug}
                       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-03/80 text-gray-01 border border-gray-03"
                     >
-                      {tagOptions.find((o) => o.slug === slug)?.label ?? slug}
+                      {tagLabelBySlug[slug] ?? slug}
                     </span>
                   ))}
                 </div>
