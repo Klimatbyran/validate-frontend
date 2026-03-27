@@ -87,8 +87,7 @@ export const generateReportPreview = (reportUrl: string): string => {
   if (!reportUrl) return "";
 
   const url =
-    reportsUrl("reports/preview?pdfUrl=") + encodeURIComponent(reportUrl);
-
-  // Use relative path for FE/BE compatibility
+    reportsUrl("/companies/reports/preview?pdfUrl=") +
+    encodeURIComponent(reportUrl);
   return url;
 };
