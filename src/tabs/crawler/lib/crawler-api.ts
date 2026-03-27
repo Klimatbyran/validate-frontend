@@ -16,7 +16,7 @@ export function reportsUrl(path: string): string {
 
 export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
   try {
-    const response = await fetch(reportsUrl("reports"), {
+    const response = await fetch(reportsUrl("companies/reports/search-reports"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -38,7 +38,7 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
 };
 
 export const fetchCompanyNamesList = async () => {
-  const url = reportsUrl("reports/list");
+  const url = reportsUrl("companies/reports/database-list");
   try {
     const response = await fetch(url);
     if (response.ok) {
@@ -60,7 +60,7 @@ export const saveToRegistry = async (
   reports: SelectedReport[],
 ): Promise<SaveReportsListResponse> => {
   try {
-    const response = await fetch(reportsUrl("reports/save-reports"), {
+    const response = await fetch(reportsUrl("companies/reports/save-reports"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
