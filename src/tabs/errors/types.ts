@@ -42,6 +42,7 @@ export const DATA_POINTS = [
 export interface Company {
   wikidataId: string;
   name: string;
+  tags?: string[];
   reportingPeriods?: ReportingPeriod[];
 }
 
@@ -79,6 +80,7 @@ export interface ReportingPeriod {
 export interface CompanyRow {
   wikidataId: string;
   name: string;
+  tags?: string[];
   stageValue: number | null;
   prodValue: number | null;
   discrepancy: DiscrepancyType;

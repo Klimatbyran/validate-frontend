@@ -65,6 +65,9 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
       const prodCompany = prodMap.get(wikidataId);
 
       const name = stageCompany?.name || prodCompany?.name || wikidataId;
+      const tags = Array.from(
+        new Set([...(stageCompany?.tags ?? []), ...(prodCompany?.tags ?? [])])
+      );
 
       const stageRP = stageCompany ? pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear) : null;
       const prodRP = prodCompany ? pickReportingPeriodForYear(prodCompany.reportingPeriods, selectedYear) : null;
@@ -79,6 +82,7 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
 
       rows.push({
         wikidataId, name, stageValue, prodValue, discrepancy, diff,
+        tags,
         inStage: !!stageCompany, inProd: !!prodCompany, unitErrorFactor, prodVerified,
       });
     }
@@ -95,6 +99,13 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
 
     return rows.sort((a, b) => a.name.localeCompare(b.name));
   }, [stageCompanies, prodCompanies, selectedYear, selectedDataPoint]);
+
+  const availableTags = React.useMemo(() => {
+    const tags = new Set<string>();
+    stageCompanies.forEach((c) => (c.tags ?? []).forEach((t) => tags.add(t)));
+    prodCompanies.forEach((c) => (c.tags ?? []).forEach((t) => tags.add(t)));
+    return Array.from(tags).sort();
+  }, [stageCompanies, prodCompanies]);
 
   // Calculate metrics for ALL data points (for overview)
   const allDataPointMetrics = React.useMemo((): DataPointMetric[] => {
@@ -260,6 +271,7 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
     error,
     fetchData,
     comparisonRows,
+    availableTags,
     allDataPointMetrics,
     worstCompanies,
     difficultCompanyIds,
