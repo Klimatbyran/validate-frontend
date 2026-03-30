@@ -17,6 +17,12 @@ function companiesPath(segment = ""): string {
   return seg ? `${path}/${seg}` : path;
 }
 
+function internalCompaniesPath(segment = ""): string {
+  const path = "/internal-companies";
+  const seg = segment.replace(/^\//, "");
+  return seg ? `${path}/${seg}` : path;
+}
+
 /** List companies from Garbo (GET /api/companies). Requires auth. */
 export async function listCompanies(signal?: AbortSignal): Promise<GarboCompanyListItem[]> {
   const res = await garboAuthFetch(apiUrl(companiesPath()), {
@@ -41,7 +47,7 @@ export async function getCompany(
   signal?: AbortSignal
 ): Promise<GarboCompanyDetail> {
   const res = await garboAuthFetch(
-    apiUrl(companiesPath(encodeURIComponent(wikidataId))),
+    apiUrl(internalCompaniesPath(encodeURIComponent(wikidataId))),
     {
       method: "GET",
       headers: { Accept: "application/json" },

@@ -119,6 +119,21 @@ export function MultiCompanyView() {
     filteredCompanies.length > 0 &&
     filteredCompanies.every((company) => selectedWikidataIds.has(company.wikidataId));
 
+  const bulkTagInitialSelectedSlugs = useMemo(() => {
+    const selectedIds = Array.from(selectedWikidataIds);
+    if (selectedIds.length === 0) return [];
+    const selectedCompanies = selectedIds
+      .map((id) => companies.find((c) => c.wikidataId === id))
+      .filter(Boolean) as GarboCompanyListItem[];
+    if (selectedCompanies.length === 0) return [];
+
+    const firstTags = selectedCompanies[0]?.tags ?? [];
+    if (firstTags.length === 0) return [];
+    return firstTags.filter((slug) =>
+      selectedCompanies.every((c) => (c.tags ?? []).includes(slug))
+    );
+  }, [companies, selectedWikidataIds]);
+
   const handleBulkTagSubmit = useCallback(
     async (tags: string[]) => {
       const selectedIds = Array.from(selectedWikidataIds);
@@ -232,6 +247,7 @@ export function MultiCompanyView() {
             emptyLabel={t("editor.tagOptions.empty")}
             panelClassName="max-h-64"
             panelMinWidth={260}
+            usePortal={false}
           />
           {selectedSlugs.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
@@ -341,6 +357,7 @@ export function MultiCompanyView() {
         onOpenChange={setBulkTagModalOpen}
         companyCount={selectedWikidataIds.size}
         tagOptions={tagOptions}
+        initialSelectedSlugs={bulkTagInitialSelectedSlugs}
         onSubmit={handleBulkTagSubmit}
         isSubmitting={actionLoading}
       />

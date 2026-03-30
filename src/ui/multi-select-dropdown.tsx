@@ -37,6 +37,8 @@ export interface MultiSelectDropdownProps {
   panelMinWidth?: number;
   /** Max height of dropdown panel (default 280) */
   panelMaxHeight?: number;
+  /** Render dropdown panel in a portal (default true). Set false inside dialogs to allow scrolling. */
+  usePortal?: boolean;
 }
 
 export function MultiSelectDropdown({
@@ -53,6 +55,7 @@ export function MultiSelectDropdown({
   panelClassName,
   panelMinWidth = 220,
   panelMaxHeight = 280,
+  usePortal = true,
 }: MultiSelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -62,6 +65,7 @@ export function MultiSelectDropdown({
     top: number;
     left: number;
     width: number;
+    maxHeight: number;
   } | null>(null);
 
   useEffect(() => {
@@ -81,7 +85,10 @@ export function MultiSelectDropdown({
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!wrapperRef.current?.contains(document.activeElement)) return;
+      const active = document.activeElement;
+      const activeInWrapper = !!active && !!wrapperRef.current?.contains(active);
+      const activeInPanel = !!active && !!panelRef.current?.contains(active);
+      if (!activeInWrapper && !activeInPanel) return;
       const panel = panelRef.current;
       const buttons = panel
         ? Array.from(panel.querySelectorAll<HTMLButtonElement>('button[role="option"]'))
@@ -115,17 +122,33 @@ export function MultiSelectDropdown({
   }, [open]);
 
   useLayoutEffect(() => {
-    if (!open) return;
+    if (!open || !usePortal) return;
 
     const updatePosition = () => {
       const triggerEl = triggerRef.current;
       if (!triggerEl) return;
 
       const rect = triggerEl.getBoundingClientRect();
+      const padding = 8;
+      const offset = 6; // matches the old mt-1.5 (6px) offset
+      const spaceBelow = window.innerHeight - rect.bottom - padding - offset;
+      const spaceAbove = rect.top - padding - offset;
+      const openUp = spaceBelow < 160 && spaceAbove > spaceBelow;
+
+      const available = Math.max(120, openUp ? spaceAbove : spaceBelow);
+      const maxHeight = Math.min(panelMaxHeight, available);
+
+      const width = Math.max(panelMinWidth, rect.width);
+      const left = Math.min(Math.max(padding, rect.left), window.innerWidth - padding - width);
+      const top = openUp
+        ? Math.max(padding, rect.top - offset - maxHeight)
+        : rect.bottom + offset;
+
       setPanelPosition({
-        top: rect.bottom + 6, // matches the old mt-1.5 (6px) offset
-        left: rect.left,
-        width: rect.width,
+        top,
+        left,
+        width,
+        maxHeight,
       });
     };
 
@@ -138,7 +161,7 @@ export function MultiSelectDropdown({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [open]);
+  }, [open, usePortal, panelMaxHeight, panelMinWidth]);
 
   const toggle = (optionId: string) => {
     const next = selectedIds.includes(optionId)
@@ -149,6 +172,84 @@ export function MultiSelectDropdown({
 
   const label = (id: string) => (getOptionLabel ? getOptionLabel(id) : id);
   const hasSelection = selectedIds.length > 0;
+
+  const panelEl = (
+    <div
+      ref={panelRef}
+      className={cn(
+        "z-[99999] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto overscroll-contain touch-pan-y",
+        !usePortal && "absolute left-0 mt-1.5",
+        panelClassName,
+      )}
+      style={
+        usePortal
+          ? {
+              position: "fixed",
+              top: panelPosition?.top ?? 0,
+              left: panelPosition?.left ?? 0,
+              width: panelPosition?.width ?? panelMinWidth,
+              maxHeight: panelPosition?.maxHeight ?? panelMaxHeight,
+            }
+          : {
+              top: "100%",
+              minWidth: panelMinWidth,
+              maxHeight: panelMaxHeight,
+            }
+      }
+      onWheelCapture={(e) => e.stopPropagation()}
+      onTouchMoveCapture={(e) => e.stopPropagation()}
+      role="listbox"
+      aria-multiselectable="true"
+      aria-label={ariaLabel ?? triggerLabel}
+    >
+      <div className="text-xs font-semibold text-gray-02 mb-2 px-2">
+        {triggerLabel}
+      </div>
+      {loading && (
+        <div
+          className="w-full text-left px-3 py-2 rounded text-sm text-gray-02 flex items-center gap-2 cursor-default"
+          role="option"
+          aria-disabled="true"
+          aria-live="polite"
+        >
+          <span
+            className="flex-shrink-0 w-4 h-4 rounded border border-gray-03"
+            aria-hidden
+          />
+          <span className="truncate">{loadingLabel ?? "Loading…"}</span>
+        </div>
+      )}
+      {options.length > 0 &&
+        options.map((optionId) => {
+          const isSelected = selectedIds.includes(optionId);
+          return (
+            <button
+              key={optionId}
+              type="button"
+              role="option"
+              aria-selected={isSelected}
+              onClick={() => toggle(optionId)}
+              className="w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center gap-2 hover:bg-gray-03/50 text-gray-01"
+            >
+              <span
+                className={cn(
+                  "flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center",
+                  isSelected ? "bg-blue-03 border-blue-03" : "border-gray-03"
+                )}
+              >
+                {isSelected && <Check className="w-3 h-3 text-white" />}
+              </span>
+              <span className="truncate">{label(optionId)}</span>
+            </button>
+          );
+        })}
+      {!loading && options.length === 0 && (
+        <p className="px-3 py-2 text-sm text-gray-02">
+          {emptyLabel ?? "No options"}
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <div className="relative shrink-0" ref={wrapperRef}>
@@ -175,74 +276,12 @@ export function MultiSelectDropdown({
           </span>
         )}
       </Button>
-      {open && panelPosition && typeof document !== "undefined"
-        ? createPortal(
-          <div
-            ref={panelRef}
-            className={cn(
-              "z-[99999] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto",
-              panelClassName,
-            )}
-            style={{
-              position: "fixed",
-              top: panelPosition.top,
-              left: panelPosition.left,
-              width: Math.max(panelMinWidth, panelPosition.width),
-              maxHeight: panelMaxHeight,
-            }}
-            role="listbox"
-            aria-multiselectable="true"
-            aria-label={ariaLabel ?? triggerLabel}
-          >
-          <div className="text-xs font-semibold text-gray-02 mb-2 px-2">
-            {triggerLabel}
-          </div>
-          {loading && (
-            <div
-              className="w-full text-left px-3 py-2 rounded text-sm text-gray-02 flex items-center gap-2 cursor-default"
-              role="option"
-              aria-disabled="true"
-              aria-live="polite"
-            >
-              <span
-                className="flex-shrink-0 w-4 h-4 rounded border border-gray-03"
-                aria-hidden
-              />
-              <span className="truncate">{loadingLabel ?? "Loading…"}</span>
-            </div>
-          )}
-          {options.length > 0 &&
-            options.map((optionId) => {
-              const isSelected = selectedIds.includes(optionId);
-              return (
-                <button
-                  key={optionId}
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  onClick={() => toggle(optionId)}
-                  className="w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center gap-2 hover:bg-gray-03/50 text-gray-01"
-                >
-                  <span
-                    className={cn(
-                      "flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center",
-                      isSelected ? "bg-blue-03 border-blue-03" : "border-gray-03"
-                    )}
-                  >
-                    {isSelected && <Check className="w-3 h-3 text-white" />}
-                  </span>
-                  <span className="truncate">{label(optionId)}</span>
-                </button>
-              );
-            })}
-          {!loading && options.length === 0 && (
-            <p className="px-3 py-2 text-sm text-gray-02">
-              {emptyLabel ?? "No options"}
-            </p>
-          )}
-          </div>,
-          document.body,
-        )
+      {open
+        ? usePortal && panelPosition && typeof document !== "undefined"
+          ? createPortal(panelEl, document.body)
+          : !usePortal
+            ? panelEl
+            : null
         : null}
     </div>
   );

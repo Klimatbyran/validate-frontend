@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
@@ -19,6 +19,7 @@ export interface BulkTagUpdateModalProps {
   onOpenChange: (open: boolean) => void;
   companyCount: number;
   tagOptions: TagOption[];
+  initialSelectedSlugs?: string[];
   onSubmit: (tags: string[]) => Promise<void>;
   isSubmitting: boolean;
 }
@@ -28,12 +29,19 @@ export function BulkTagUpdateModal({
   onOpenChange,
   companyCount,
   tagOptions,
+  initialSelectedSlugs,
   onSubmit,
   isSubmitting,
 }: BulkTagUpdateModalProps) {
   const { t } = useI18n();
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
+
+  useEffect(() => {
+    if (open) {
+      setSelectedSlugs(initialSelectedSlugs ?? []);
+    }
+  }, [open, initialSelectedSlugs]);
 
   const handleClose = () => {
     if (!isSubmitting) {
@@ -76,6 +84,7 @@ export function BulkTagUpdateModal({
                 emptyLabel={t("editor.tagOptions.empty")}
                 panelClassName="max-h-64"
                 panelMinWidth={260}
+                usePortal={false}
               />
               {selectedSlugs.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
