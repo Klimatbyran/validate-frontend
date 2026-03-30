@@ -156,16 +156,21 @@ export function BrowserView({
         )}
 
         {!isLoading && comparisonRows.length > 0 && (
-          <DiscrepancyFilterPills
-            counts={counts}
-            visibleTypes={visibleTypes}
-            showMissingCompany={showMissingCompany}
-            onToggleType={toggleType}
-            onShowOnlyType={showOnlyType}
-            onShowDefaultTypes={showDefaultTypes}
-            onShowAllTypes={showAllTypes}
-            onShowMissingCompanyChange={setShowMissingCompany}
-          />
+          <div className="space-y-1">
+            <DiscrepancyFilterPills
+              counts={counts}
+              visibleTypes={visibleTypes}
+              showMissingCompany={showMissingCompany}
+              onToggleType={toggleType}
+              onShowOnlyType={showOnlyType}
+              onShowDefaultTypes={showDefaultTypes}
+              onShowAllTypes={showAllTypes}
+              onShowMissingCompanyChange={setShowMissingCompany}
+            />
+            <div className="text-[11px] text-gray-02">
+              {t("errors.filterAppliesToTableOnly")}
+            </div>
+          </div>
         )}
       </div>
 
@@ -219,7 +224,7 @@ export function BrowserView({
 
         {!isLoading && !error && (
           <div className="px-4 py-3 bg-gray-03/30 text-sm text-gray-02 border-t border-gray-03/50">
-            {t("errors.showingForDataPoint", { filtered: filteredRows.length, total: comparisonRows.length, dataPoint: selectedDataPointLabel, year: selectedYear })}
+            {t("errors.showingForDataPoint", { filtered: filteredRows.length, total: tagFilteredRows.length, dataPoint: selectedDataPointLabel, year: selectedYear })}
           </div>
         )}
       </div>

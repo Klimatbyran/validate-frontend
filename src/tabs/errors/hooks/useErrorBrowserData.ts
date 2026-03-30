@@ -13,7 +13,11 @@ import {
   applyCategoryErrorToRows,
 } from '../lib';
 
-export function useErrorBrowserData(selectedYear: number, selectedDataPoint: string) {
+export function useErrorBrowserData(
+  selectedYear: number,
+  selectedDataPoint: string,
+  selectedTags: string[]
+) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [stageCompanies, setStageCompanies] = React.useState<Company[]>([]);
@@ -52,10 +56,32 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
     fetchData();
   }, []);
 
+  const tagFilteredCompanies = React.useMemo(() => {
+    if (!selectedTags.length) {
+      return { stage: stageCompanies, prod: prodCompanies };
+    }
+
+    const idsWithSelectedTag = new Set<string>();
+    const matches = (tags?: string[]) =>
+      (tags ?? []).some((t) => selectedTags.includes(t));
+
+    stageCompanies.forEach((c) => {
+      if (matches(c.tags)) idsWithSelectedTag.add(c.wikidataId);
+    });
+    prodCompanies.forEach((c) => {
+      if (matches(c.tags)) idsWithSelectedTag.add(c.wikidataId);
+    });
+
+    return {
+      stage: stageCompanies.filter((c) => idsWithSelectedTag.has(c.wikidataId)),
+      prod: prodCompanies.filter((c) => idsWithSelectedTag.has(c.wikidataId)),
+    };
+  }, [stageCompanies, prodCompanies, selectedTags]);
+
   // Build comparison rows for selected data point
   const comparisonRows = React.useMemo((): CompanyRow[] => {
-    const stageMap = companiesToMapById(stageCompanies);
-    const prodMap = companiesToMapById(prodCompanies);
+    const stageMap = companiesToMapById(tagFilteredCompanies.stage);
+    const prodMap = companiesToMapById(tagFilteredCompanies.prod);
 
     const allIds = new Set([...stageMap.keys(), ...prodMap.keys()]);
     const rows: CompanyRow[] = [];
@@ -98,7 +124,7 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
     }
 
     return rows.sort((a, b) => a.name.localeCompare(b.name));
-  }, [stageCompanies, prodCompanies, selectedYear, selectedDataPoint]);
+  }, [tagFilteredCompanies, selectedYear, selectedDataPoint]);
 
   const availableTags = React.useMemo(() => {
     const tags = new Set<string>();
@@ -109,10 +135,11 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
 
   // Calculate metrics for ALL data points (for overview)
   const allDataPointMetrics = React.useMemo((): DataPointMetric[] => {
-    if (stageCompanies.length === 0 || prodCompanies.length === 0) return [];
+    if (tagFilteredCompanies.stage.length === 0 || tagFilteredCompanies.prod.length === 0)
+      return [];
 
-    const stageMap = companiesToMapById(stageCompanies);
-    const prodMap = companiesToMapById(prodCompanies);
+    const stageMap = companiesToMapById(tagFilteredCompanies.stage);
+    const prodMap = companiesToMapById(tagFilteredCompanies.prod);
 
     const allIds = Array.from(new Set([...stageMap.keys(), ...prodMap.keys()]));
 
@@ -174,14 +201,15 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
         breakdown: { identical, rounding, hallucination, missing, unitError, smallError, error: errorCount, categoryError, bothNull },
       };
     });
-  }, [stageCompanies, prodCompanies, selectedYear]);
+  }, [tagFilteredCompanies, selectedYear]);
 
   // Worst companies: count errors across ALL data points
   const worstCompanies = React.useMemo((): WorstCompany[] => {
-    if (stageCompanies.length === 0 || prodCompanies.length === 0) return [];
+    if (tagFilteredCompanies.stage.length === 0 || tagFilteredCompanies.prod.length === 0)
+      return [];
 
-    const stageMap = companiesToMapById(stageCompanies);
-    const prodMap = companiesToMapById(prodCompanies);
+    const stageMap = companiesToMapById(tagFilteredCompanies.stage);
+    const prodMap = companiesToMapById(tagFilteredCompanies.prod);
 
     const allIds = Array.from(new Set([...stageMap.keys(), ...prodMap.keys()]));
     const companyErrors: WorstCompany[] = [];
@@ -237,7 +265,7 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
     }
 
     return companyErrors.sort((a, b) => b.errorCount - a.errorCount);
-  }, [stageCompanies, prodCompanies, selectedYear]);
+  }, [tagFilteredCompanies, selectedYear]);
 
   // Set of difficult company IDs (>=5 errors)
   const difficultCompanyIds = React.useMemo(() => {
@@ -250,8 +278,8 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
 
   // Total companies with reporting periods in both APIs (for histogram)
   const totalWithBothRPs = React.useMemo(() => {
-    const stageMap = companiesToMapById(stageCompanies);
-    const prodMap = companiesToMapById(prodCompanies);
+    const stageMap = companiesToMapById(tagFilteredCompanies.stage);
+    const prodMap = companiesToMapById(tagFilteredCompanies.prod);
 
     let count = 0;
     for (const id of new Set([...stageMap.keys(), ...prodMap.keys()])) {
@@ -264,7 +292,7 @@ export function useErrorBrowserData(selectedYear: number, selectedDataPoint: str
       }
     }
     return count;
-  }, [stageCompanies, prodCompanies, selectedYear]);
+  }, [tagFilteredCompanies, selectedYear]);
 
   return {
     isLoading,

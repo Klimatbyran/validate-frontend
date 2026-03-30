@@ -490,6 +490,7 @@
     "showAllFilters": "Show all",
     "includeMissingCompanies": "Include companies missing from one API ({{count}})",
     "filterPillTitle": "Click to toggle, right-click to show only {{label}}",
+    "filterAppliesToTableOnly": "Note: These filters only affect the table below.",
     "filterType": {
       "identical": "Identical",
       "both-null": "Both Empty",

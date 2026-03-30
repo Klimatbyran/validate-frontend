@@ -85,7 +85,10 @@ export function MultiSelectDropdown({
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!wrapperRef.current?.contains(document.activeElement)) return;
+      const active = document.activeElement;
+      const activeInWrapper = !!active && !!wrapperRef.current?.contains(active);
+      const activeInPanel = !!active && !!panelRef.current?.contains(active);
+      if (!activeInWrapper && !activeInPanel) return;
       const panel = panelRef.current;
       const buttons = panel
         ? Array.from(panel.querySelectorAll<HTMLButtonElement>('button[role="option"]'))
@@ -144,7 +147,7 @@ export function MultiSelectDropdown({
       setPanelPosition({
         top,
         left,
-        width: rect.width,
+        width,
         maxHeight,
       });
     };
@@ -184,7 +187,7 @@ export function MultiSelectDropdown({
               position: "fixed",
               top: panelPosition?.top ?? 0,
               left: panelPosition?.left ?? 0,
-              width: Math.max(panelMinWidth, panelPosition?.width ?? 0),
+              width: panelPosition?.width ?? panelMinWidth,
               maxHeight: panelPosition?.maxHeight ?? panelMaxHeight,
             }
           : {

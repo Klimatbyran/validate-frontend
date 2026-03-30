@@ -42,7 +42,7 @@ export function ErrorBrowserTab() {
     worstCompanies,
     difficultCompanyIds,
     totalWithBothRPs,
-  } = useErrorBrowserData(selectedYear, selectedDataPoint);
+  } = useErrorBrowserData(selectedYear, selectedDataPoint, selectedTags);
 
   const handleOverviewSelectDataPoint = (dataPointId: string) => {
     setSelectedDataPoint(dataPointId);

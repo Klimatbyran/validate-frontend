@@ -490,6 +490,7 @@
     "showAllFilters": "Visa alla",
     "includeMissingCompanies": "Inkludera företag som saknas i ett API ({{count}})",
     "filterPillTitle": "Klicka för att växla, högerklicka för att endast visa {{label}}",
+    "filterAppliesToTableOnly": "Obs: Dessa filter påverkar bara tabellen nedan.",
     "filterType": {
       "identical": "Identisk",
       "both-null": "Båda tomma",
