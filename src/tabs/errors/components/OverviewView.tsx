@@ -16,9 +16,8 @@ interface OverviewViewProps {
 
 export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPoint, stats }: OverviewViewProps) {
   const { t } = useI18n();
-  if (allDataPointMetrics.length === 0) return null;
-
   const [view, setView] = React.useState<'graphic' | 'table'>('graphic');
+  if (allDataPointMetrics.length === 0) return null;
 
   if (view === 'table') {
     return (
