@@ -508,6 +508,7 @@
       "emissionsCoverageForYear": "Utsläppstäckning ({{year}})",
       "withReportingPeriod": "Har rapportperiod",
       "withAnyEmissions": "Med utsläpp",
+      "withNoEmissions": "Utan utsläpp",
       "noReportingPeriods": "Inga rapportperioder",
       "verified": "Fullt verifierad (Prod)",
       "verifiedNote": "Räknar företag där varje förekommande utsläppsdatapunkt är markerad som verifierad i Prod-metadata.",

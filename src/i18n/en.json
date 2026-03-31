@@ -508,6 +508,7 @@
       "emissionsCoverageForYear": "Emissions coverage ({{year}})",
       "withReportingPeriod": "Has reporting period",
       "withAnyEmissions": "With any emissions",
+      "withNoEmissions": "With no emissions",
       "noReportingPeriods": "No reporting periods",
       "verified": "Fully verified (Prod)",
       "verifiedNote": "Counts companies where every present emissions data point is marked verified in Prod metadata.",

@@ -2,7 +2,7 @@ import { Info } from 'lucide-react';
 
 export function HelpTip({ text, widthClassName = 'w-64' }: { text: string; widthClassName?: string }) {
   return (
-    <span className="relative inline-flex items-center">
+    <span className="relative inline-flex items-center group">
       <Info className="w-3.5 h-3.5 text-blue-03 cursor-help" />
       <span
         className={`pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 ${widthClassName} opacity-0 group-hover:opacity-100 transition-opacity z-50`}

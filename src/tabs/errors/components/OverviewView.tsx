@@ -14,6 +14,44 @@ interface OverviewViewProps {
   stats: ErrorBrowserSummaryStats;
 }
 
+function OverviewViewToggle({
+  view,
+  onChange,
+  align = "left",
+}: {
+  view: "graphic" | "table";
+  onChange: (next: "graphic" | "table") => void;
+  align?: "left" | "right";
+}) {
+  const { t } = useI18n();
+  return (
+    <div className={align === "right" ? "flex justify-end" : "flex justify-start"}>
+      <div className="inline-flex rounded-full bg-gray-03/60 p-1 border border-gray-02/15">
+        <button
+          onClick={() => onChange("graphic")}
+          className={
+            view === "graphic"
+              ? "px-3 py-1.5 rounded-full text-xs font-medium bg-gray-02/40 text-gray-01"
+              : "px-3 py-1.5 rounded-full text-xs font-medium text-gray-02 hover:text-gray-01 hover:bg-gray-03 transition-colors"
+          }
+        >
+          {t("errors.overview.viewGraphic")}
+        </button>
+        <button
+          onClick={() => onChange("table")}
+          className={
+            view === "table"
+              ? "px-3 py-1.5 rounded-full text-xs font-medium bg-gray-02/40 text-gray-01"
+              : "px-3 py-1.5 rounded-full text-xs font-medium text-gray-02 hover:text-gray-01 hover:bg-gray-03 transition-colors"
+          }
+        >
+          {t("errors.overview.viewTable")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPoint, stats }: OverviewViewProps) {
   const { t } = useI18n();
   const [view, setView] = React.useState<'graphic' | 'table'>('graphic');
@@ -22,22 +60,7 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
   if (view === 'table') {
     return (
       <div className="space-y-3">
-        <div className="flex justify-end">
-          <div className="inline-flex rounded-full bg-gray-03/60 p-1 border border-gray-02/15">
-            <button
-              onClick={() => setView('graphic')}
-              className="px-3 py-1.5 rounded-full text-xs font-medium text-gray-02 hover:text-gray-01 hover:bg-gray-03 transition-colors"
-            >
-              {t("errors.overview.viewGraphic")}
-            </button>
-            <button
-              onClick={() => setView('table')}
-              className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-02/40 text-gray-01"
-            >
-              {t("errors.overview.viewTable")}
-            </button>
-          </div>
-        </div>
+        <OverviewViewToggle view={view} onChange={setView} align="right" />
         <SummaryView selectedYear={selectedYear} allDataPointMetrics={allDataPointMetrics} stats={stats} />
       </div>
     );
@@ -68,20 +91,7 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
   return (
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6">
       <div className="flex items-center justify-between mb-6 gap-3">
-        <div className="inline-flex rounded-full bg-gray-03/60 p-1 border border-gray-02/15">
-          <button
-            onClick={() => setView('graphic')}
-            className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-02/40 text-gray-01"
-          >
-            {t("errors.overview.viewGraphic")}
-          </button>
-          <button
-            onClick={() => setView('table')}
-            className="px-3 py-1.5 rounded-full text-xs font-medium text-gray-02 hover:text-gray-01 hover:bg-gray-03 transition-colors"
-          >
-            {t("errors.overview.viewTable")}
-          </button>
-        </div>
+        <OverviewViewToggle view={view} onChange={setView} />
 
         <button
           onClick={() => exportOverviewCsv(allDataPointMetrics, selectedYear)}
