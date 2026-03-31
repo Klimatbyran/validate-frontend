@@ -89,6 +89,8 @@ export interface CompanyRow {
   inProd: boolean;
   /** When true, prod API metadata marks this data point as verified. */
   prodVerified?: boolean;
+  /** When true, the prod reporting period for the selected year is fully verified (all present emissions points verified; calculated-total ignored). */
+  prodCompanyVerifiedForYear?: boolean;
   matchedDataPoint?: string;
   categoryErrorKind?: CategoryErrorKind;
   unitErrorFactor?: number;

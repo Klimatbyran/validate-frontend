@@ -26,6 +26,7 @@ export function ErrorBrowserTab() {
   const [selectedDataPoint, setSelectedDataPoint] = React.useState('cat-1');
   const [viewMode, setViewMode] = React.useState<ErrorBrowserViewMode>('browser');
   const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
+  const [verifiedOnly, setVerifiedOnly] = React.useState(false);
 
   const viewModeOptions = React.useMemo(
     () => VIEW_MODES.map((value) => ({ value, label: t(VIEW_MODE_LABEL_KEYS[value]) })),
@@ -42,7 +43,8 @@ export function ErrorBrowserTab() {
     worstCompanies,
     difficultCompanyIds,
     totalWithBothRPs,
-  } = useErrorBrowserData(selectedYear, selectedDataPoint, selectedTags);
+    summaryStats,
+  } = useErrorBrowserData(selectedYear, selectedDataPoint, selectedTags, verifiedOnly);
 
   const handleOverviewSelectDataPoint = (dataPointId: string) => {
     setSelectedDataPoint(dataPointId);
@@ -111,6 +113,22 @@ export function ErrorBrowserTab() {
               panelMaxHeight={320}
             />
           </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-02 uppercase tracking-wide">
+              {t("errors.verifiedOnly")}
+            </label>
+            <label className="inline-flex items-center gap-2 bg-gray-03/50 border border-gray-02/15 rounded-lg px-3 py-2 text-sm text-gray-01">
+              <input
+                type="checkbox"
+                checked={verifiedOnly}
+                onChange={(e) => setVerifiedOnly(e.target.checked)}
+                className="accent-blue-04"
+              />
+              <span>{t("errors.verifiedOnlyLabel")}</span>
+              <span className="text-xs text-gray-02 ml-1">{t("errors.verifiedOnlyHelp")}</span>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -125,6 +143,7 @@ export function ErrorBrowserTab() {
           onDataPointChange={setSelectedDataPoint}
           selectedYear={selectedYear}
           selectedTags={selectedTags}
+          verifiedOnly={verifiedOnly}
         />
       )}
 
@@ -138,6 +157,7 @@ export function ErrorBrowserTab() {
             allDataPointMetrics={allDataPointMetrics}
             selectedYear={selectedYear}
             onSelectDataPoint={handleOverviewSelectDataPoint}
+            stats={summaryStats}
           />
         )
       )}
