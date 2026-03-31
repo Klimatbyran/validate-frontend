@@ -79,7 +79,7 @@ export function UploadTab() {
       const errorMessage = error instanceof Error ? error.message : t("upload.unknownError");
       toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
-  }, [uploadedFiles, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, selectedTags, t]);
+  }, [uploadedFiles, autoApprove, runAllWorkers, selectedWorkers, forceReindex, batchId, runOnly, tags, t]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -183,7 +183,7 @@ export function UploadTab() {
       const errorMessage = error instanceof Error ? error.message : t("upload.unknownError");
       toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
-  }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex, effectiveBatchId, selectedTags, t]);
+  }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex, batchId, runOnly, tags, t]);
 
   const handleWorkerToggle = useCallback((workerId: RunOnlyWorkerId, checked: boolean) => {
     setSelectedWorkers((prev) =>

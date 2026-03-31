@@ -18,6 +18,7 @@ interface BrowserViewProps {
   onDataPointChange: (dataPoint: string) => void;
   selectedYear: number;
   selectedTags: string[];
+  verifiedOnly: boolean;
 }
 
 export function BrowserView({
@@ -29,6 +30,7 @@ export function BrowserView({
   onDataPointChange,
   selectedYear,
   selectedTags,
+  verifiedOnly,
 }: BrowserViewProps) {
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -41,6 +43,15 @@ export function BrowserView({
     if (!selectedTags.length) return comparisonRows;
     return comparisonRows.filter((r) => (r.tags ?? []).some((t) => selectedTags.includes(t)));
   }, [comparisonRows, selectedTags]);
+
+  const verifiedFilteredRows = React.useMemo(() => {
+    if (!verifiedOnly) return tagFilteredRows;
+    return tagFilteredRows.filter(
+      (r) =>
+        Boolean(r.prodVerified) ||
+        (r.discrepancy === 'both-null' && Boolean(r.prodCompanyVerifiedForYear)),
+    );
+  }, [tagFilteredRows, verifiedOnly]);
 
   const toggleType = (type: DiscrepancyType) => {
     setVisibleTypes(prev => {
@@ -68,18 +79,18 @@ export function BrowserView({
       rounding: 0, 'unit-error': 0, 'small-error': 0, error: 0,
       'category-error': 0, missingCompany: 0,
     };
-    for (const row of tagFilteredRows) {
+    for (const row of verifiedFilteredRows) {
       if (!row.inStage || !row.inProd) result.missingCompany++;
       if (showMissingCompany || (row.inStage && row.inProd)) {
         result[row.discrepancy]++;
       }
     }
     return result;
-  }, [tagFilteredRows, showMissingCompany]);
+  }, [verifiedFilteredRows, showMissingCompany]);
 
   // Filter rows
   const filteredRows = React.useMemo(() => {
-    let rows = tagFilteredRows;
+    let rows = verifiedFilteredRows;
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       rows = rows.filter(r =>
@@ -92,11 +103,11 @@ export function BrowserView({
       rows = rows.filter(r => r.inStage && r.inProd);
     }
     return rows;
-  }, [tagFilteredRows, searchQuery, visibleTypes, showMissingCompany]);
+  }, [verifiedFilteredRows, searchQuery, visibleTypes, showMissingCompany]);
 
   const metrics = React.useMemo(
-    () => computePerformanceMetrics(tagFilteredRows),
-    [tagFilteredRows]
+    () => computePerformanceMetrics(verifiedFilteredRows, { verifiedOnly }),
+    [verifiedFilteredRows, verifiedOnly]
   );
 
   const handleExportCsv = () => {
@@ -224,7 +235,7 @@ export function BrowserView({
 
         {!isLoading && !error && (
           <div className="px-4 py-3 bg-gray-03/30 text-sm text-gray-02 border-t border-gray-03/50">
-            {t("errors.showingForDataPoint", { filtered: filteredRows.length, total: tagFilteredRows.length, dataPoint: selectedDataPointLabel, year: selectedYear })}
+            {t("errors.showingForDataPoint", { filtered: filteredRows.length, total: verifiedFilteredRows.length, dataPoint: selectedDataPointLabel, year: selectedYear })}
           </div>
         )}
       </div>
