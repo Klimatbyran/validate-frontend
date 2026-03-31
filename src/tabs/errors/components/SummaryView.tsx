@@ -2,6 +2,8 @@ import React from 'react';
 import { useI18n } from '@/contexts/I18nContext';
 import { cn } from '@/lib/utils';
 import { HelpTip } from '@/ui/help-tip';
+import { DataTable, DataTableBody, DataTableHead } from '@/ui/data-table';
+import { SectionCard, SectionCardBody, SectionCardHeader } from '@/ui/section-card';
 import type { DataPointMetric } from '../types';
 import { calculateOverviewAggregates } from '../lib';
 
@@ -53,6 +55,59 @@ function calcRates(dp: DataPointMetric) {
   return { exactRate, precisionTolerantRate, zeroInclusiveRate };
 }
 
+function SummaryStatCard({
+  title,
+  footer,
+  children,
+}: {
+  title: React.ReactNode;
+  footer?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg bg-gray-03/50 border border-gray-02/15 p-4">
+      <div className="text-xs text-gray-02">{title}</div>
+      {children}
+      {footer ? <div className="text-[11px] text-gray-02 mt-2">{footer}</div> : null}
+    </div>
+  );
+}
+
+function SummaryStatRow({
+  label,
+  value,
+}: {
+  label: React.ReactNode;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="text-gray-02">{label}</span>
+      <span className="font-medium">{value}</span>
+    </div>
+  );
+}
+
+function SummaryStatRowWithHelp({
+  label,
+  helpText,
+  value,
+}: {
+  label: React.ReactNode;
+  helpText: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="text-gray-02 inline-flex items-center gap-1 group">
+        {label}
+        <HelpTip text={helpText} />
+      </span>
+      <span className="font-medium">{value}</span>
+    </div>
+  );
+}
+
 interface SummaryViewProps {
   selectedYear: number;
   allDataPointMetrics: DataPointMetric[];
@@ -96,119 +151,118 @@ export function SummaryView({ selectedYear, allDataPointMetrics, stats }: Summar
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6">
-        <div className="flex items-baseline justify-between gap-4">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-01">{t("errors.summary.title", { year: selectedYear })}</h3>
-            <p className="text-xs text-gray-02 mt-1">{t("errors.summary.subtitle")}</p>
+      <SectionCard>
+        <SectionCardBody className="space-y-0">
+          <div className="flex items-baseline justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-01">
+                {t("errors.summary.title", { year: selectedYear })}
+              </h3>
+              <p className="text-xs text-gray-02 mt-1">{t("errors.summary.subtitle")}</p>
+            </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-5">
-          <div className="rounded-lg bg-gray-03/50 border border-gray-02/15 p-4">
-            <div className="text-xs text-gray-02">{t("errors.summary.totalCompanies")}</div>
-            <div className="text-2xl font-semibold text-gray-01 mt-1">{formatInt(stats.totalCompanies)}</div>
-            <div className="text-[11px] text-gray-02 mt-1">{t("errors.summary.notYearFiltered")}</div>
-            <div className="mt-3 text-sm text-gray-01">
-              <div className="flex justify-between gap-3">
-                <span className="text-gray-02">{t("errors.summary.noReportingPeriods")}</span>
-                <span className="font-medium">{formatInt(stats.companiesWithNoReportingPeriods)}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-5">
+            <SummaryStatCard title={t("errors.summary.totalCompanies")}>
+              <div className="text-2xl font-semibold text-gray-01 mt-1">
+                {formatInt(stats.totalCompanies)}
               </div>
-            </div>
-          </div>
-          <div className="rounded-lg bg-gray-03/50 border border-gray-02/15 p-4">
-            <div className="text-xs text-gray-02">{t("errors.summary.stageVsProdForYear", { year: selectedYear })}</div>
-            <div className="text-sm text-gray-01 mt-2 space-y-1">
-              <div className="flex justify-between gap-3">
-                <span className="text-gray-02 inline-flex items-center gap-1 group">
-                  {t("errors.summary.inBoth")}
-                  <HelpTip text={t("errors.summary.stageProdHelp.inBoth", { year: selectedYear })} />
-                </span>
-                <span className="font-medium">{formatInt(stats.companiesInBothForYear)}</span>
+              <div className="text-[11px] text-gray-02 mt-1">{t("errors.summary.notYearFiltered")}</div>
+              <div className="mt-3 text-sm text-gray-01">
+                <SummaryStatRow
+                  label={t("errors.summary.noReportingPeriods")}
+                  value={formatInt(stats.companiesWithNoReportingPeriods)}
+                />
               </div>
-              <div className="flex justify-between gap-3">
-                <span className="text-gray-02 inline-flex items-center gap-1 group">
-                  {t("errors.summary.stageOnly")}
-                  <HelpTip text={t("errors.summary.stageProdHelp.stageOnly", { year: selectedYear })} />
-                </span>
-                <span className="font-medium">{formatInt(stats.companiesStageOnlyForYear)}</span>
-              </div>
-              <div className="flex justify-between gap-3">
-                <span className="text-gray-02 inline-flex items-center gap-1 group">
-                  {t("errors.summary.prodOnly")}
-                  <HelpTip text={t("errors.summary.stageProdHelp.prodOnly", { year: selectedYear })} />
-                </span>
-                <span className="font-medium">{formatInt(stats.companiesProdOnlyForYear)}</span>
-              </div>
-              <div className="flex justify-between gap-3">
-                <span className="text-gray-02 inline-flex items-center gap-1 group">
-                  {t("errors.summary.neither")}
-                  <HelpTip text={t("errors.summary.stageProdHelp.neither", { year: selectedYear })} />
-                </span>
-                <span className="font-medium">{formatInt(stats.companiesNeitherForYear)}</span>
-              </div>
-            </div>
-            <div className="text-[11px] text-gray-02 mt-2">{t("errors.summary.yearFiltered")}</div>
-          </div>
-          <div className="rounded-lg bg-gray-03/50 border border-gray-02/15 p-4">
-            <div className="text-xs text-gray-02">{t("errors.summary.emissionsCoverageForYear", { year: selectedYear })}</div>
-            <div className="text-sm text-gray-01 mt-2 space-y-1">
-              <div className="flex justify-between gap-3">
-                <span className="text-gray-02">{t("errors.summary.withAnyEmissions")}</span>
-                <span className="font-medium">{formatInt(stats.companiesWithAnyEmissions)}</span>
-              </div>
-              <div className="flex justify-between gap-3">
-                <span className="text-gray-02">{t("errors.summary.withReportingPeriod")}</span>
-                <span className="font-medium">{formatInt(stats.companiesWithReportingPeriodForYear)}</span>
-              </div>
-            </div>
-          </div>
-          <div className="rounded-lg bg-gray-03/50 border border-gray-02/15 p-4">
-            <div className="text-xs text-gray-02">{t("errors.summary.verified")}</div>
-            <div className="text-2xl font-semibold text-gray-01 mt-1">{formatInt(stats.companiesFullyVerifiedInProd)}</div>
-            <div className="text-[11px] text-gray-02 mt-1">
-              {t("errors.summary.verifiedNote")}
-            </div>
-          </div>
-          <div className="rounded-lg bg-gray-03/50 border border-gray-02/15 p-4">
-            <div className="text-xs text-gray-02">{t("errors.summary.avgAccuracy")}</div>
-            {avg ? (
+            </SummaryStatCard>
+
+            <SummaryStatCard
+              title={t("errors.summary.stageVsProdForYear", { year: selectedYear })}
+              footer={t("errors.summary.yearFiltered")}
+            >
               <div className="text-sm text-gray-01 mt-2 space-y-1">
-                <div className="flex justify-between gap-3">
-                  <span className="text-gray-02">{t("errors.metrics.zeroInclusive")}</span>
-                  <span className={cn("font-medium tabular-nums", rateTextClass(avg.zeroInclusive))}>
-                    {formatPct(avg.zeroInclusive)}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <span className="text-gray-02">{t("errors.metrics.precisionTolerant")}</span>
-                  <span className={cn("font-medium tabular-nums", rateTextClass(avg.tolerant))}>
-                    {formatPct(avg.tolerant)}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <span className="text-gray-02">{t("errors.metrics.exactMatch")}</span>
-                  <span className={cn("font-medium tabular-nums", rateTextClass(avg.exactMatch))}>
-                    {formatPct(avg.exactMatch)}
-                  </span>
-                </div>
+                <SummaryStatRowWithHelp
+                  label={t("errors.summary.inBoth")}
+                  helpText={t("errors.summary.stageProdHelp.inBoth", { year: selectedYear })}
+                  value={formatInt(stats.companiesInBothForYear)}
+                />
+                <SummaryStatRowWithHelp
+                  label={t("errors.summary.stageOnly")}
+                  helpText={t("errors.summary.stageProdHelp.stageOnly", { year: selectedYear })}
+                  value={formatInt(stats.companiesStageOnlyForYear)}
+                />
+                <SummaryStatRowWithHelp
+                  label={t("errors.summary.prodOnly")}
+                  helpText={t("errors.summary.stageProdHelp.prodOnly", { year: selectedYear })}
+                  value={formatInt(stats.companiesProdOnlyForYear)}
+                />
+                <SummaryStatRowWithHelp
+                  label={t("errors.summary.neither")}
+                  helpText={t("errors.summary.stageProdHelp.neither", { year: selectedYear })}
+                  value={formatInt(stats.companiesNeitherForYear)}
+                />
               </div>
-            ) : (
-              <div className="text-sm text-gray-02 mt-2">{t("errors.summary.noAvgAccuracy")}</div>
-            )}
-          </div>
-        </div>
-      </div>
+            </SummaryStatCard>
 
-      <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-03/50">
-          <div className="text-sm font-semibold text-gray-01">{t("errors.summary.dataPointTableTitle")}</div>
-          <div className="text-xs text-gray-02 mt-1">{t("errors.summary.dataPointTableSubtitle")}</div>
+            <SummaryStatCard title={t("errors.summary.emissionsCoverageForYear", { year: selectedYear })}>
+              <div className="text-sm text-gray-01 mt-2 space-y-1">
+                <SummaryStatRow
+                  label={t("errors.summary.withAnyEmissions")}
+                  value={formatInt(stats.companiesWithAnyEmissions)}
+                />
+                <SummaryStatRow
+                  label={t("errors.summary.withReportingPeriod")}
+                  value={formatInt(stats.companiesWithReportingPeriodForYear)}
+                />
+              </div>
+            </SummaryStatCard>
+
+            <SummaryStatCard title={t("errors.summary.verified")}>
+              <div className="text-2xl font-semibold text-gray-01 mt-1">
+                {formatInt(stats.companiesFullyVerifiedInProd)}
+              </div>
+              <div className="text-[11px] text-gray-02 mt-1">{t("errors.summary.verifiedNote")}</div>
+            </SummaryStatCard>
+
+            <SummaryStatCard title={t("errors.summary.avgAccuracy")}>
+              {avg ? (
+                <div className="text-sm text-gray-01 mt-2 space-y-1">
+                  <div className="flex justify-between gap-3">
+                    <span className="text-gray-02">{t("errors.metrics.zeroInclusive")}</span>
+                    <span className={cn("font-medium tabular-nums", rateTextClass(avg.zeroInclusive))}>
+                      {formatPct(avg.zeroInclusive)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-gray-02">{t("errors.metrics.precisionTolerant")}</span>
+                    <span className={cn("font-medium tabular-nums", rateTextClass(avg.tolerant))}>
+                      {formatPct(avg.tolerant)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-gray-02">{t("errors.metrics.exactMatch")}</span>
+                    <span className={cn("font-medium tabular-nums", rateTextClass(avg.exactMatch))}>
+                      {formatPct(avg.exactMatch)}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-02 mt-2">{t("errors.summary.noAvgAccuracy")}</div>
+              )}
+            </SummaryStatCard>
         </div>
+        </SectionCardBody>
+      </SectionCard>
+
+      <SectionCard overflowHidden>
+        <SectionCardHeader
+          title={t("errors.summary.dataPointTableTitle")}
+          subtitle={t("errors.summary.dataPointTableSubtitle")}
+        />
 
         <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-gray-03/50">
+          <DataTable className="min-w-full">
+            <DataTableHead>
               <tr>
                 <th className={tableHeaderCellLeft}>{t("errors.summary.table.dataPoint")}</th>
                 <th className={tableHeaderCellRight}>{t("errors.summary.table.zeroInclusive")}</th>
@@ -223,8 +277,8 @@ export function SummaryView({ selectedYear, allDataPointMetrics, stats }: Summar
                 <th className={tableHeaderCellRight}>{t("errors.summary.table.categoryError")}</th>
                 <th className={tableHeaderCellRight}>{t("errors.summary.table.error")}</th>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-03/50">
+            </DataTableHead>
+            <DataTableBody>
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="px-4 py-8 text-center text-gray-02">
@@ -255,10 +309,10 @@ export function SummaryView({ selectedYear, allDataPointMetrics, stats }: Summar
                   </tr>
                 ))
               )}
-            </tbody>
-          </table>
+            </DataTableBody>
+          </DataTable>
         </div>
-      </div>
+      </SectionCard>
     </div>
   );
 }

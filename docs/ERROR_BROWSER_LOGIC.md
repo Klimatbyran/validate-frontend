@@ -58,7 +58,7 @@ Non-eligible slots are excluded from both numerators and denominators.
 
 Notes:
 
-- **Zero-inclusive special case (Option 2)**: in verified-only mode, `both-null` slots can still be included *for the zero-inclusive calculation* when the company’s Prod reporting period for the selected year is otherwise “fully verified” (all present emissions data points verified; `calculated-total` ignored). This keeps zero-inclusive meaningful while still using verified truth.
+- **Zero-inclusive special case**: in verified-only mode, `both-null` slots can still be included *for the zero-inclusive calculation* when the company’s Prod reporting period for the selected year is otherwise “fully verified” (all present emissions data points verified; `calculated-total` ignored). This keeps zero-inclusive meaningful while still using verified truth.
 
 ### Where the toggle is applied in code
 
