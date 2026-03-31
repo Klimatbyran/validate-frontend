@@ -83,12 +83,14 @@ export function getGarboApiBaseUrl(): string {
 export function getStageGarboUrl(path: string): string {
   const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
   if (import.meta.env.DEV) return `/garbo-stage${p}`;
-  return `${GARBO_STAGE_API}${p}`;
+  // Production: go via same-origin nginx proxy to avoid CORS.
+  return `/garbo-stage-api${p}`;
 }
 
 /** Garbo prod API URL. Use for comparison (errors tab) or prod-only (e.g. company reference). Path e.g. /api/companies. No trailing slash. */
 export function getProdGarboUrl(path: string): string {
   const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
   if (import.meta.env.DEV) return `/garbo${p}`;
-  return `${GARBO_PROD_API}${p}`;
+  // Production: go via same-origin nginx proxy to avoid CORS.
+  return `/garbo-prod-api${p}`;
 }
