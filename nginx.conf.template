@@ -59,7 +59,8 @@ server {
         return 308 /garbo-stage-api/;
     }
     location /garbo-stage-api/ {
-        proxy_pass https://stage-api.klimatkollen.se/api/;
+        # Keep the incoming /api/... path intact (avoid /api/api/...).
+        proxy_pass https://stage-api.klimatkollen.se/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -78,7 +79,8 @@ server {
         return 308 /garbo-prod-api/;
     }
     location /garbo-prod-api/ {
-        proxy_pass https://api.klimatkollen.se/api/;
+        # Keep the incoming /api/... path intact (avoid /api/api/...).
+        proxy_pass https://api.klimatkollen.se/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
