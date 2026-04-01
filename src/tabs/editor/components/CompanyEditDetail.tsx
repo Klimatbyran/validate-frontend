@@ -40,11 +40,11 @@ export function CompanyEditDetail({
         </TabsContent>
 
         <TabsContent value="economy" className="mt-4">
-          <EconomyDataTab company={company} />
+          <EconomyDataTab company={company} onSaved={onSaved} />
         </TabsContent>
 
         <TabsContent value="emissions" className="mt-4">
-          <EmissionsDataTab company={company} />
+          <EmissionsDataTab company={company} onSaved={onSaved} />
         </TabsContent>
 
         <TabsContent value="goals-initiatives" className="mt-4">
