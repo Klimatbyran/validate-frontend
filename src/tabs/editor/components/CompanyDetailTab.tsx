@@ -270,6 +270,7 @@ export function CompanyDetailTab({
                 emptyLabel={t("editor.tagOptions.empty")}
                 panelClassName="max-h-64"
                 panelMinWidth={260}
+                triggerClassName="!h-8 !text-xs px-3 min-w-[200px]"
               />
               {selectedTags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
@@ -316,7 +317,7 @@ export function CompanyDetailTab({
               placeholder={t("editor.singleCompanyView.selectIndustry")}
               getOptionLabel={getIndustryLabel}
               emptyLabel={t("editor.singleCompanyView.noIndustry")}
-              triggerClassName="min-w-[200px]"
+              triggerClassName="min-w-[200px] !h-8 !text-xs px-3"
             />
           </div>
           <div>

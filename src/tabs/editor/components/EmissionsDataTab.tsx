@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ExternalLink, Loader2, BadgeCheck, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
@@ -11,7 +11,6 @@ import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
 import { ReviewerMetadataDialog } from "./ReviewerMetadataDialog";
 
 type EditedPeriodEmissions = {
-  reportURL?: string;
   scope1Total?: string;
   scope1Verified?: boolean;
   scope1And2Total?: string;
@@ -35,17 +34,101 @@ function toNumberOrNull(value: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function formatMonthYear(dateLike: string | undefined | null): string | null {
-  if (!dateLike) return null;
-  const d = new Date(dateLike);
-  if (Number.isNaN(d.getTime())) return null;
-  return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(d);
+function formatDateStamp(isoLike?: string | null) {
+  if (!isoLike) return "—";
+  return isoLike.slice(0, 10);
+}
+
+function formatPeriodDateRange(startDate?: string, endDate?: string): string {
+  return `${formatDateStamp(startDate)} – ${formatDateStamp(endDate)}`;
+}
+
+/** Row label like `1. Purchased goods and services` (GHG Scope 3 category). */
+function scope3CategoryRowLabel(categoryId: number, t: (key: string) => string): string {
+  const key = `editor.companies.scope3Categories.${categoryId}`;
+  const name = t(key);
+  const missing = !name || name === key;
+  const title = missing ? `Category ${categoryId}` : name;
+  return `${categoryId}. ${title}`;
 }
 
 function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
   const y = period.endDate?.slice(0, 4) ?? period.startDate?.slice(0, 4);
   return y || null;
 }
+
+function Scope2TopBracket() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="28"
+      height="28"
+      viewBox="0 0 36 36"
+      className="shrink-0 text-gray-02"
+      aria-hidden
+    >
+      <rect x="18" y="18" width="2" height="18" fill="currentColor" />
+      <rect x="10" y="18" width="10" height="2" fill="currentColor" />
+    </svg>
+  );
+}
+
+function Scope2BottomBracket() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="28"
+      height="28"
+      viewBox="0 0 36 36"
+      className="shrink-0 text-gray-02"
+      aria-hidden
+    >
+      <rect x="18" y="0" width="2" height="18" fill="currentColor" />
+      <rect x="10" y="18" width="10" height="2" fill="currentColor" />
+    </svg>
+  );
+}
+
+function EmissionsEditRow({
+  name,
+  headerName,
+  noHover,
+  children,
+}: {
+  name: ReactNode;
+  headerName?: boolean;
+  noHover?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={`flex ps-4 rounded-s-lg items-stretch min-w-max ${
+        noHover ? "" : "hover:bg-gray-04/50"
+      }`}
+    >
+      <div
+        className={`shrink-0 w-60 py-2 pr-2 flex flex-col justify-center ${
+          headerName
+            ? "text-sm font-semibold text-gray-01"
+            : "text-sm font-medium ps-2 text-gray-01"
+        }`}
+      >
+        {name}
+      </div>
+      <div className="flex shrink-0">{children}</div>
+    </div>
+  );
+}
+
+/** Fixed width per period so vertical borders align across reporting + emissions sections. */
+const emissionsPeriodColBox =
+  "box-border w-80 min-w-80 max-w-80 shrink-0 ms-2 border-r border-gray-03";
+
+const emissionsFieldCellClass = `${emissionsPeriodColBox} flex items-center gap-1 py-2 min-h-[44px] min-w-0`;
+
+const emissionsPeriodHeaderCellClass = `${emissionsPeriodColBox} flex py-2 items-center justify-end gap-2 min-h-9 min-w-0`;
+
+const emissionsPeriodEmptyCellClass = `${emissionsPeriodColBox} py-2 min-h-[36px] min-w-0`;
 
 export function EmissionsDataTab({
   company,
@@ -212,12 +295,9 @@ export function EmissionsDataTab({
 
   const visibleColumns = useMemo(() => {
     return visiblePeriods.map((rp) => {
-      const headerLabel =
-        formatMonthYear(rp.endDate) ??
-        formatMonthYear(rp.startDate) ??
-        `${rp.startDate} – ${rp.endDate}`;
+      const dateRangeLabel = formatPeriodDateRange(rp.startDate, rp.endDate);
       const year = getPeriodYear(rp);
-      return { rp, headerLabel, year: year ?? "" };
+      return { rp, dateRangeLabel, year: year ?? "" };
     });
   }, [visiblePeriods]);
 
@@ -231,8 +311,6 @@ export function EmissionsDataTab({
     return Array.from(set).sort((a, b) => a - b);
   }, [visiblePeriods]);
 
-  const isSingleYearView = visibleColumns.length <= 1;
-
   const VerifyButton = ({
     checked,
     onClick,
@@ -244,12 +322,12 @@ export function EmissionsDataTab({
   }) => (
     <button
       type="button"
-      className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+      className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-03/40"
       onClick={onClick}
       aria-label={ariaLabel}
       title={ariaLabel}
     >
-      <BadgeCheck className={"w-5 h-5 " + (checked ? "text-green-03" : "text-gray-02")} />
+      <BadgeCheck className={"w-4 h-4 " + (checked ? "text-green-03" : "text-gray-02")} />
     </button>
   );
 
@@ -267,13 +345,13 @@ export function EmissionsDataTab({
       disabled={disabled}
       onClick={onClick}
       className={
-        "shrink-0 h-9 w-9 rounded-full flex items-center justify-center " +
+        "shrink-0 h-8 w-8 rounded-full flex items-center justify-center " +
         (disabled ? "opacity-30 cursor-default" : "hover:bg-gray-03/40")
       }
       aria-label={ariaLabel}
       title={ariaLabel}
     >
-      <Undo2 className="w-5 h-5 text-gray-02" />
+      <Undo2 className="w-4 h-4 text-gray-02" />
     </button>
   );
 
@@ -283,7 +361,6 @@ export function EmissionsDataTab({
         const rpEdits = edited[rp.id];
         if (!rpEdits) return null;
 
-        const hasReportUrl = rpEdits.reportURL != null;
         const hasScope1 = rpEdits.scope1Total != null || rpEdits.scope1Verified != null;
         const hasScope1And2 =
           rpEdits.scope1And2Total != null || rpEdits.scope1And2Verified != null;
@@ -303,7 +380,6 @@ export function EmissionsDataTab({
             Object.keys(rpEdits.scope3CategoriesVerified).length > 0);
 
         if (
-          !hasReportUrl &&
           !hasScope1 &&
           !hasScope1And2 &&
           !hasScope2 &&
@@ -407,14 +483,12 @@ export function EmissionsDataTab({
         return {
           startDate: rp.startDate,
           endDate: rp.endDate,
-          reportURL: hasReportUrl ? (rpEdits.reportURL || undefined) : undefined,
           emissions: Object.keys(emissions).length ? emissions : undefined,
         };
       })
       .filter(Boolean) as Array<{
       startDate: string;
       endDate: string;
-      reportURL?: string;
       emissions?: Record<string, unknown>;
     }>;
 
@@ -442,745 +516,619 @@ export function EmissionsDataTab({
     }
   };
 
+  const numInputClass =
+    inputClassName +
+    " w-[150px] shrink-0 !max-w-none text-right tabular-nums bg-gray-04";
+
   return (
-    <section className="rounded-lg bg-gray-05 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-01">
-            {t("editor.singleCompanyView.tabs.emissionsData")}
-          </h3>
-          <p className="text-xs text-gray-02 mt-1">
-            {t("editor.singleCompanyView.reportingPeriodsHint")}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => setSortOrder((o) => (o === "desc" ? "asc" : "desc"))}
-            className="min-w-0 px-3"
-          >
-            {sortOrder === "desc" ? "Newest → Oldest" : "Oldest → Newest"}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={resetAll}
-            disabled={Object.keys(edited).length === 0}
-            className="min-w-0 px-3"
-            title="Reset all changes"
-          >
-            <Undo2 className="w-4 h-4 mr-2" />
-            Reset all
-          </Button>
-          <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-01">
-            <input
-              type="checkbox"
-              checked={showAllYears}
-              onChange={(e) => setShowAllYears(e.target.checked)}
-              className="rounded border-gray-03"
-            />
-            Show all years
-          </label>
-          {years.length > 0 && (
-            <MultiSelectDropdown
-              options={years}
-              selectedIds={showAllYears ? [] : selectedYears}
-              onChange={(ids) => {
-                setSelectedYears(ids);
-                if (ids.length > 0) setShowAllYears(false);
-              }}
-              triggerLabel="Years"
-              emptyLabel="All years"
-              triggerClassName="min-w-[130px]"
-            />
-          )}
+    <section className="rounded-lg bg-gray-05 p-4 w-full min-w-0 max-w-full">
+      <div className="border-b border-gray-03/60 pb-6 mb-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+          <div className="min-w-0 max-w-2xl">
+            <h2 className="text-lg font-semibold text-gray-01 tracking-tight">
+              {t("editor.singleCompanyView.tabs.emissionsData")}
+            </h2>
+            <p className="text-xs text-gray-02 mt-2 leading-relaxed">
+              {t("editor.singleCompanyView.emissionsDataHint")}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3 shrink-0 lg:pt-0.5">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setSortOrder((o) => (o === "desc" ? "asc" : "desc"))}
+              className="min-w-0 max-w-none px-3 text-xs h-8"
+            >
+              {sortOrder === "desc" ? "Newest → Oldest" : "Oldest → Newest"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={resetAll}
+              disabled={Object.keys(edited).length === 0}
+              className="min-w-0 max-w-none px-3 text-xs h-8"
+              title="Reset all changes"
+            >
+              <Undo2 className="w-3.5 h-3.5 mr-1.5" />
+              Reset all
+            </Button>
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-01">
+              <input
+                type="checkbox"
+                checked={showAllYears}
+                onChange={(e) => setShowAllYears(e.target.checked)}
+                className="rounded border-gray-03"
+              />
+              Show all years
+            </label>
+            {years.length > 0 && (
+              <MultiSelectDropdown
+                options={years}
+                selectedIds={showAllYears ? [] : selectedYears}
+                onChange={(ids) => {
+                  setSelectedYears(ids);
+                  if (ids.length > 0) setShowAllYears(false);
+                }}
+                triggerLabel="Years"
+                emptyLabel="All years"
+                triggerClassName="min-w-[130px] !h-8 !text-xs px-3"
+              />
+            )}
+          </div>
         </div>
       </div>
 
       {visiblePeriods.length ? (
-        <div className="mt-4 w-full overflow-x-auto overflow-y-visible">
-          <div className={isSingleYearView ? "w-full" : "min-w-max"}>
-            <div className="text-xs font-medium text-gray-03 uppercase tracking-wide px-2 mb-2">
+        <div className="w-full min-w-0 overflow-x-auto overflow-y-visible">
+          <div className="min-w-max pb-2">
+            <p className="text-[11px] font-semibold text-gray-02 mb-3 px-2 uppercase tracking-wider">
               {t("editor.singleCompanyView.sections.reportingPeriods")}
+            </p>
+
+            <div className="mb-8">
+              <EmissionsEditRow name="Reporting period" headerName noHover>
+                {visibleColumns.map(({ rp, dateRangeLabel, year }) => (
+                  <div key={rp.id} className={emissionsPeriodHeaderCellClass}>
+                    <div className="text-right min-w-0 flex-1">
+                      {year ? (
+                        <>
+                          <div className="text-sm font-semibold text-gray-01">{year}</div>
+                          <div className="text-[11px] text-gray-02 mt-0.5 leading-tight break-words">
+                            {dateRangeLabel}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-sm font-semibold text-gray-01">{dateRangeLabel}</div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => resetPeriod(rp.id)}
+                      disabled={!edited[rp.id]}
+                      className={
+                        "shrink-0 h-8 w-8 rounded-full inline-flex items-center justify-center " +
+                        (!edited[rp.id] ? "opacity-30 cursor-default" : "hover:bg-gray-03/40")
+                      }
+                      title="Reset this year"
+                      aria-label="Reset this year"
+                    >
+                      <Undo2 className="w-4 h-4 text-gray-02" />
+                    </button>
+                  </div>
+                ))}
+              </EmissionsEditRow>
+
+              <EmissionsEditRow name={t("editor.companies.reportUrl")}>
+                {visibleColumns.map(({ rp }) => {
+                  const url = (rp.reportURL ?? "").trim();
+                  return (
+                    <div
+                      key={rp.id}
+                      className={
+                        emissionsFieldCellClass + " justify-center sm:justify-start"
+                      }
+                    >
+                      {url ? (
+                        <Button
+                          asChild
+                          variant="secondary"
+                          size="sm"
+                          className="min-w-0 max-w-none shrink-0 px-3 text-xs h-8"
+                        >
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                            Open
+                          </a>
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-gray-02">—</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </EmissionsEditRow>
             </div>
 
-            <div className="rounded-lg bg-gray-04 overflow-hidden">
-              <table
-                className={
-                  (isSingleYearView ? "w-full" : "min-w-max") +
-                  " border-separate border-spacing-0 [&_td]:py-2 [&_th]:py-2"
+            <p className="text-[11px] font-semibold text-gray-02 mb-3 px-2 uppercase tracking-wider">
+              {t("editor.singleCompanyView.sections.emissions")}
+            </p>
+
+            <div className="mb-8">
+              <EmissionsEditRow name="Overall stated total" headerName>
+                {visibleColumns.map(({ rp, year }) => {
+                  const rpEdits = edited[rp.id] ?? {};
+                  const original = rp.emissions?.statedTotalEmissions?.total ?? null;
+                  const originalVerified =
+                    !!rp.emissions?.statedTotalEmissions?.metadata?.verifiedBy;
+                  const value =
+                    rpEdits.statedTotalEmissions ?? (original != null ? String(original) : "");
+                  const dirty = rpEdits.statedTotalEmissions != null;
+                  const dirtyVerified = rpEdits.statedTotalVerified != null;
+                  const verified = rpEdits.statedTotalVerified ?? originalVerified;
+                  const undoDisabled = !(dirty || dirtyVerified);
+                  return (
+                    <div key={rp.id} className={emissionsFieldCellClass}>
+                      <input
+                        type="number"
+                        value={value}
+                        onChange={(e) =>
+                          setNullableStringEdit(
+                            rp.id,
+                            "statedTotalEmissions",
+                            e.target.value,
+                            original != null
+                          )
+                        }
+                        className={
+                          numInputClass +
+                          " placeholder:text-gray-02/70" +
+                          (dirty ? " border-orange-03" : "")
+                        }
+                        step="any"
+                      />
+                      <MetadataDetailsDialog
+                        fieldLabel={`Overall stated total (${year || ""})`}
+                        metadata={rp.emissions?.statedTotalEmissions?.metadata as any}
+                      />
+                      <VerifyButton
+                        checked={verified}
+                        onClick={() =>
+                          setEditedField(rp.id, { statedTotalVerified: !verified })
+                        }
+                        ariaLabel={t("editor.fieldEdit.markVerified")}
+                      />
+                      <UndoFieldButton
+                        disabled={undoDisabled}
+                        onClick={() =>
+                          clearEditedKeys(rp.id, ["statedTotalEmissions", "statedTotalVerified"])
+                        }
+                        ariaLabel="Undo overall stated total"
+                      />
+                    </div>
+                  );
+                })}
+              </EmissionsEditRow>
+
+              <EmissionsEditRow name={t("editor.companies.scope1") ?? "Scope 1"} headerName>
+                {visibleColumns.map(({ rp, year }) => {
+                  const rpEdits = edited[rp.id] ?? {};
+                  const original = rp.emissions?.scope1?.total ?? null;
+                  const originalVerified = !!rp.emissions?.scope1?.metadata?.verifiedBy;
+                  const value = rpEdits.scope1Total ?? (original != null ? String(original) : "");
+                  const dirty = rpEdits.scope1Total != null;
+                  const dirtyVerified = rpEdits.scope1Verified != null;
+                  const verified = rpEdits.scope1Verified ?? originalVerified;
+                  const undoDisabled = !(dirty || dirtyVerified);
+                  return (
+                    <div key={rp.id} className={emissionsFieldCellClass}>
+                      <input
+                        type="number"
+                        value={value}
+                        onChange={(e) =>
+                          setNullableStringEdit(
+                            rp.id,
+                            "scope1Total",
+                            e.target.value,
+                            original != null
+                          )
+                        }
+                        className={
+                          numInputClass +
+                          " placeholder:text-gray-02/70" +
+                          (dirty ? " border-orange-03" : "")
+                        }
+                        step="any"
+                      />
+                      <MetadataDetailsDialog
+                        fieldLabel={`${t("editor.companies.scope1") ?? "Scope 1"} (${year || ""})`}
+                        metadata={rp.emissions?.scope1?.metadata as any}
+                      />
+                      <VerifyButton
+                        checked={verified}
+                        onClick={() => setEditedField(rp.id, { scope1Verified: !verified })}
+                        ariaLabel={t("editor.fieldEdit.markVerified")}
+                      />
+                      <UndoFieldButton
+                        disabled={undoDisabled}
+                        onClick={() => clearEditedKeys(rp.id, ["scope1Total", "scope1Verified"])}
+                        ariaLabel="Undo Scope 1"
+                      />
+                    </div>
+                  );
+                })}
+              </EmissionsEditRow>
+
+              <EmissionsEditRow name={scope1And2Display} headerName>
+                {visibleColumns.map(({ rp, year }) => {
+                  const rpEdits = edited[rp.id] ?? {};
+                  const original = rp.emissions?.scope1And2?.total ?? null;
+                  const originalVerified = !!rp.emissions?.scope1And2?.metadata?.verifiedBy;
+                  const value =
+                    rpEdits.scope1And2Total ?? (original != null ? String(original) : "");
+                  const dirty = rpEdits.scope1And2Total != null;
+                  const dirtyVerified = rpEdits.scope1And2Verified != null;
+                  const verified = rpEdits.scope1And2Verified ?? originalVerified;
+                  const undoDisabled = !(dirty || dirtyVerified);
+                  return (
+                    <div key={rp.id} className={emissionsFieldCellClass}>
+                      <input
+                        type="number"
+                        value={value}
+                        onChange={(e) =>
+                          setNullableStringEdit(
+                            rp.id,
+                            "scope1And2Total",
+                            e.target.value,
+                            original != null
+                          )
+                        }
+                        className={
+                          numInputClass +
+                          " placeholder:text-gray-02/70" +
+                          (dirty ? " border-orange-03" : "")
+                        }
+                        step="any"
+                      />
+                      <MetadataDetailsDialog
+                        fieldLabel={`${scope1And2Display} (${year || ""})`}
+                        metadata={rp.emissions?.scope1And2?.metadata as any}
+                      />
+                      <VerifyButton
+                        checked={verified}
+                        onClick={() =>
+                          setEditedField(rp.id, { scope1And2Verified: !verified })
+                        }
+                        ariaLabel={t("editor.fieldEdit.markVerified")}
+                      />
+                      <UndoFieldButton
+                        disabled={undoDisabled}
+                        onClick={() =>
+                          clearEditedKeys(rp.id, ["scope1And2Total", "scope1And2Verified"])
+                        }
+                        ariaLabel="Undo Scope 1+2"
+                      />
+                    </div>
+                  );
+                })}
+              </EmissionsEditRow>
+
+              <EmissionsEditRow
+                name={
+                  <span>
+                    <span className="block">{t("editor.companies.scope2") ?? "Scope 2"}</span>
+                    <span className="block text-xs font-normal text-gray-02 mt-1 font-sans">
+                      Verified as a unit (MB/LB/Unknown).
+                    </span>
+                  </span>
                 }
+                headerName
+                noHover
               >
-                <thead>
-                  <tr className="bg-gray-04/70">
-                    <th className="sticky left-0 z-30 bg-gray-04/70 text-left px-3 py-2 border-b border-r border-gray-03 w-[300px]">
-                      <div className="text-xs font-semibold text-gray-02">Data point</div>
-                    </th>
-                    {visibleColumns.map(({ rp, headerLabel, year }) => (
-                      <th
-                        key={rp.id}
-                        className="relative bg-gray-04/70 px-4 py-2 border-b border-gray-03 min-w-[380px] align-bottom"
-                      >
-                        <div className="flex items-start gap-2 pr-10">
-                          <div>
-                            <div className="text-sm font-semibold text-gray-01">
-                              {year || headerLabel}
-                            </div>
-                            {!!year && (
-                              <div className="text-[11px] text-gray-02 mt-0.5">
-                                {headerLabel}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => resetPeriod(rp.id)}
-                          disabled={!edited[rp.id]}
-                          className={
-                            "absolute top-1.5 right-2 h-9 w-9 rounded-full inline-flex items-center justify-center " +
-                            (!edited[rp.id] ? "opacity-30 cursor-default" : "hover:bg-gray-03/40")
+                {visibleColumns.map(({ rp, year }) => {
+                  const rpEdits = edited[rp.id] ?? {};
+                  const originalVerified = !!rp.emissions?.scope2?.metadata?.verifiedBy;
+                  const verified = rpEdits.scope2Verified ?? originalVerified;
+                  const dirty =
+                    rpEdits.scope2Mb != null ||
+                    rpEdits.scope2Lb != null ||
+                    rpEdits.scope2Unknown != null;
+                  const dirtyVerified = rpEdits.scope2Verified != null;
+                  const undoDisabled = !(dirty || dirtyVerified);
+                  return (
+                    <div key={rp.id} className={emissionsFieldCellClass}>
+                      <MetadataDetailsDialog
+                        fieldLabel={`${t("editor.companies.scope2") ?? "Scope 2"} (${year || ""})`}
+                        metadata={rp.emissions?.scope2?.metadata as any}
+                      />
+                      <VerifyButton
+                        checked={verified}
+                        onClick={() => setEditedField(rp.id, { scope2Verified: !verified })}
+                        ariaLabel={t("editor.fieldEdit.markVerified")}
+                      />
+                      <UndoFieldButton
+                        disabled={undoDisabled}
+                        onClick={() =>
+                          clearEditedKeys(rp.id, [
+                            "scope2Mb",
+                            "scope2Lb",
+                            "scope2Unknown",
+                            "scope2Verified",
+                          ])
+                        }
+                        ariaLabel="Undo Scope 2"
+                      />
+                    </div>
+                  );
+                })}
+              </EmissionsEditRow>
+
+              <EmissionsEditRow name={<span className="ps-2 font-medium">MB</span>}>
+                {visibleColumns.map(({ rp }) => {
+                  const rpEdits = edited[rp.id] ?? {};
+                  const original = rp.emissions?.scope2?.mb ?? null;
+                  const value = rpEdits.scope2Mb ?? (original != null ? String(original) : "");
+                  const dirty =
+                    rpEdits.scope2Mb != null ||
+                    rpEdits.scope2Lb != null ||
+                    rpEdits.scope2Unknown != null;
+                  return (
+                    <div key={rp.id} className={emissionsFieldCellClass}>
+                      <input
+                        type="number"
+                        value={value}
+                        onChange={(e) =>
+                          setNullableStringEdit(rp.id, "scope2Mb", e.target.value, original != null)
+                        }
+                        className={
+                          numInputClass +
+                          " placeholder:text-gray-02/70" +
+                          (dirty ? " border-orange-03" : "")
+                        }
+                        step="any"
+                      />
+                      <Scope2TopBracket />
+                    </div>
+                  );
+                })}
+              </EmissionsEditRow>
+
+              <EmissionsEditRow name={<span className="ps-2 font-medium">LB</span>}>
+                {visibleColumns.map(({ rp }) => {
+                  const rpEdits = edited[rp.id] ?? {};
+                  const original = rp.emissions?.scope2?.lb ?? null;
+                  const value = rpEdits.scope2Lb ?? (original != null ? String(original) : "");
+                  const dirty =
+                    rpEdits.scope2Mb != null ||
+                    rpEdits.scope2Lb != null ||
+                    rpEdits.scope2Unknown != null;
+                  return (
+                    <div key={rp.id} className={emissionsFieldCellClass}>
+                      <input
+                        type="number"
+                        value={value}
+                        onChange={(e) =>
+                          setNullableStringEdit(rp.id, "scope2Lb", e.target.value, original != null)
+                        }
+                        className={
+                          numInputClass +
+                          " placeholder:text-gray-02/70" +
+                          (dirty ? " border-orange-03" : "")
+                        }
+                        step="any"
+                      />
+                    </div>
+                  );
+                })}
+              </EmissionsEditRow>
+
+              <EmissionsEditRow name={<span className="ps-2 font-medium">Unknown</span>}>
+                {visibleColumns.map(({ rp }) => {
+                  const rpEdits = edited[rp.id] ?? {};
+                  const original = rp.emissions?.scope2?.unknown ?? null;
+                  const value =
+                    rpEdits.scope2Unknown ?? (original != null ? String(original) : "");
+                  const dirty =
+                    rpEdits.scope2Mb != null ||
+                    rpEdits.scope2Lb != null ||
+                    rpEdits.scope2Unknown != null;
+                  return (
+                    <div key={rp.id} className={emissionsFieldCellClass}>
+                      <input
+                        type="number"
+                        value={value}
+                        onChange={(e) =>
+                          setNullableStringEdit(
+                            rp.id,
+                            "scope2Unknown",
+                            e.target.value,
+                            original != null
+                          )
+                        }
+                        className={
+                          numInputClass +
+                          " placeholder:text-gray-02/70" +
+                          (dirty ? " border-orange-03" : "")
+                        }
+                        step="any"
+                      />
+                      <Scope2BottomBracket />
+                    </div>
+                  );
+                })}
+              </EmissionsEditRow>
+
+              <EmissionsEditRow name="Scope 3" headerName noHover>
+                {visibleColumns.map(({ rp }) => (
+                  <div key={rp.id} className={emissionsPeriodEmptyCellClass} />
+                ))}
+              </EmissionsEditRow>
+
+              <EmissionsEditRow name={<span className="ps-2">Stated total</span>}>
+                {visibleColumns.map(({ rp, year }) => {
+                  const rpEdits = edited[rp.id] ?? {};
+                  const original = rp.emissions?.scope3?.statedTotalEmissions?.total ?? null;
+                  const originalVerified =
+                    !!rp.emissions?.scope3?.statedTotalEmissions?.metadata?.verifiedBy;
+                  const value =
+                    rpEdits.scope3StatedTotalEmissions ??
+                    (original != null ? String(original) : "");
+                  const dirty = rpEdits.scope3StatedTotalEmissions != null;
+                  const dirtyVerified = rpEdits.scope3StatedTotalVerified != null;
+                  const verified = rpEdits.scope3StatedTotalVerified ?? originalVerified;
+                  const undoDisabled = !(dirty || dirtyVerified);
+                  return (
+                    <div key={rp.id} className={emissionsFieldCellClass}>
+                      <input
+                        type="number"
+                        value={value}
+                        onChange={(e) =>
+                          setNullableStringEdit(
+                            rp.id,
+                            "scope3StatedTotalEmissions",
+                            e.target.value,
+                            original != null
+                          )
+                        }
+                        className={
+                          numInputClass +
+                          " placeholder:text-gray-02/70" +
+                          (dirty ? " border-orange-03" : "")
+                        }
+                        step="any"
+                      />
+                      <MetadataDetailsDialog
+                        fieldLabel={`Scope 3 stated total (${year || ""})`}
+                        metadata={rp.emissions?.scope3?.statedTotalEmissions?.metadata as any}
+                      />
+                      <VerifyButton
+                        checked={verified}
+                        onClick={() =>
+                          setEditedField(rp.id, {
+                            scope3StatedTotalVerified: !verified,
+                          })
+                        }
+                        ariaLabel={t("editor.fieldEdit.markVerified")}
+                      />
+                      <UndoFieldButton
+                        disabled={undoDisabled}
+                        onClick={() =>
+                          clearEditedKeys(rp.id, [
+                            "scope3StatedTotalEmissions",
+                            "scope3StatedTotalVerified",
+                          ])
+                        }
+                        ariaLabel="Undo Scope 3 stated total"
+                      />
+                    </div>
+                  );
+                })}
+              </EmissionsEditRow>
+
+              {scope3CategoryIds.map((category) => (
+                <EmissionsEditRow
+                  key={category}
+                  name={
+                    <span className="ps-2 leading-snug">
+                      {scope3CategoryRowLabel(category, t)}
+                    </span>
+                  }
+                >
+                  {visibleColumns.map(({ rp, year }) => {
+                    const rpEdits = edited[rp.id] ?? {};
+                    const originalCat = rp.emissions?.scope3?.categories?.find(
+                      (c) => c.category === category
+                    );
+                    const originalVal = originalCat?.total ?? null;
+                    const originalVerified = !!originalCat?.metadata?.verifiedBy;
+
+                    const editedVal = rpEdits.scope3Categories?.[String(category)];
+                    const value = editedVal ?? (originalVal != null ? String(originalVal) : "");
+                    const dirty = editedVal != null;
+
+                    const hasEditedVerified =
+                      rpEdits.scope3CategoriesVerified != null &&
+                      Object.prototype.hasOwnProperty.call(
+                        rpEdits.scope3CategoriesVerified,
+                        String(category)
+                      );
+                    const editedVerified = rpEdits.scope3CategoriesVerified?.[String(category)];
+                    const verified = hasEditedVerified ? !!editedVerified : originalVerified;
+
+                    const undoDisabled = !(dirty || hasEditedVerified);
+
+                    return (
+                      <div key={rp.id} className={emissionsFieldCellClass}>
+                        <input
+                          type="number"
+                          value={value}
+                          onChange={(e) =>
+                            setScope3CategoryValue(
+                              rp.id,
+                              category,
+                              e.target.value,
+                              originalVal != null
+                            )
                           }
-                          title="Reset this year"
-                          aria-label="Reset this year"
-                        >
-                          <Undo2 className="w-5 h-5 text-gray-02" />
-                        </button>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* Group: Report */}
-                  <tr className="bg-black">
-                    <td className="sticky left-0 z-30 bg-black px-3 py-2 border-b border-r border-gray-03">
-                      <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide">
-                        Report
+                          className={
+                            numInputClass +
+                            " placeholder:text-gray-02/70" +
+                            (dirty ? " border-orange-03" : "")
+                          }
+                          step="any"
+                        />
+                        <MetadataDetailsDialog
+                          fieldLabel={`${scope3CategoryRowLabel(category, t)} (${year || ""})`}
+                          metadata={originalCat?.metadata as any}
+                        />
+                        <VerifyButton
+                          checked={verified}
+                          onClick={() =>
+                            setScope3CategoryVerified(rp.id, category, !verified)
+                          }
+                          ariaLabel={t("editor.fieldEdit.markVerified")}
+                        />
+                        <UndoFieldButton
+                          disabled={undoDisabled}
+                          onClick={() => {
+                            setEdited((prev) => {
+                              const current = prev[rp.id];
+                              if (!current) return prev;
+                              const nextForRp: EditedPeriodEmissions = { ...current };
+                              if (nextForRp.scope3Categories) {
+                                const nextCats = { ...nextForRp.scope3Categories };
+                                delete nextCats[String(category)];
+                                nextForRp.scope3Categories =
+                                  Object.keys(nextCats).length ? nextCats : undefined;
+                              }
+                              if (nextForRp.scope3CategoriesVerified) {
+                                const nextV = { ...nextForRp.scope3CategoriesVerified };
+                                delete nextV[String(category)];
+                                nextForRp.scope3CategoriesVerified =
+                                  Object.keys(nextV).length ? nextV : undefined;
+                              }
+                              const hasAny = Object.keys(nextForRp).length > 0;
+                              if (!hasAny) {
+                                const next = { ...prev };
+                                delete next[rp.id];
+                                return next;
+                              }
+                              return { ...prev, [rp.id]: nextForRp };
+                            });
+                          }}
+                          ariaLabel={`Undo ${scope3CategoryRowLabel(category, t)}`}
+                        />
                       </div>
-                    </td>
-                    <td className="bg-black px-4 py-2 border-b border-gray-03" colSpan={visibleColumns.length} />
-                  </tr>
-
-                  {/* Report URL */}
-                  <tr className="odd:bg-gray-04 even:bg-gray-04/60">
-                    <td className="sticky left-0 z-30 bg-inherit px-3 py-3 border-b border-r border-gray-03">
-                      <div className="text-sm font-medium text-gray-01">
-                        {t("editor.companies.reportUrl")}
-                      </div>
-                    </td>
-                    {visibleColumns.map(({ rp }) => {
-                      const rpEdits = edited[rp.id] ?? {};
-                      const reportUrlDirty = rpEdits.reportURL != null;
-                      return (
-                        <td key={rp.id} className="px-3 py-3 border-b border-gray-03">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="url"
-                              value={rpEdits.reportURL ?? (rp.reportURL ?? "")}
-                              onChange={(e) =>
-                                setNullableStringEdit(
-                                  rp.id,
-                                  "reportURL",
-                                  e.target.value,
-                                  Boolean((rp.reportURL ?? "").trim())
-                                )
-                              }
-                              className={
-                                inputClassName +
-                                " w-[280px] max-w-none " +
-                                " bg-gray-04 " +
-                                " placeholder:text-gray-02/70" +
-                                (reportUrlDirty ? " border-orange-03" : "")
-                              }
-                              placeholder={t("editor.fieldEdit.sourcePlaceholder")}
-                            />
-                            {rp.reportURL && !reportUrlDirty && (
-                              <Button asChild variant="ghost" size="sm" className="min-w-0 px-3">
-                                <a
-                                  href={rp.reportURL}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs"
-                                >
-                                  <ExternalLink className="w-4 h-4 mr-2" />
-                                  Open
-                                </a>
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-
-                  {/* Group: Scope 1 */}
-                  <tr className="bg-black">
-                    <td className="sticky left-0 z-30 bg-black px-3 py-2 border-b border-r border-gray-03">
-                      <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide">
-                        Scope 1
-                      </div>
-                    </td>
-                    <td className="bg-black px-4 py-2 border-b border-gray-03" colSpan={visibleColumns.length} />
-                  </tr>
-
-                  {/* Scope 1 */}
-                  <tr className="odd:bg-gray-04 even:bg-gray-04/60">
-                    <td className="sticky left-0 z-30 bg-inherit px-3 py-3 border-b border-r border-gray-03">
-                      <div className="text-sm font-medium text-gray-01">
-                        {t("editor.companies.scope1") ?? "Scope 1"}
-                      </div>
-                    </td>
-                    {visibleColumns.map(({ rp, year }) => {
-                      const rpEdits = edited[rp.id] ?? {};
-                      const original = rp.emissions?.scope1?.total ?? null;
-                      const originalVerified = !!rp.emissions?.scope1?.metadata?.verifiedBy;
-                      const value = rpEdits.scope1Total ?? (original != null ? String(original) : "");
-                      const dirty = rpEdits.scope1Total != null;
-                      const dirtyVerified = rpEdits.scope1Verified != null;
-                      const verified = rpEdits.scope1Verified ?? originalVerified;
-                      const undoDisabled = !(dirty || dirtyVerified);
-                      return (
-                        <td key={rp.id} className="px-3 py-3 border-b border-gray-03">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={value}
-                              onChange={(e) =>
-                                setNullableStringEdit(
-                                  rp.id,
-                                  "scope1Total",
-                                  e.target.value,
-                                  original != null
-                                )
-                              }
-                              className={
-                                inputClassName +
-                                " w-[180px] max-w-none " +
-                                " bg-gray-04 " +
-                                " placeholder:text-gray-02/70" +
-                                (dirty ? " border-orange-03" : "")
-                              }
-                              step="any"
-                            />
-                            <MetadataDetailsDialog
-                              fieldLabel={`${t("editor.companies.scope1") ?? "Scope 1"} (${year || ""})`}
-                              metadata={rp.emissions?.scope1?.metadata as any}
-                            />
-                            <VerifyButton
-                              checked={verified}
-                              onClick={() => setEditedField(rp.id, { scope1Verified: !verified })}
-                              ariaLabel={t("editor.fieldEdit.markVerified")}
-                            />
-                            <UndoFieldButton
-                              disabled={undoDisabled}
-                              onClick={() => clearEditedKeys(rp.id, ["scope1Total", "scope1Verified"])}
-                              ariaLabel="Undo Scope 1"
-                            />
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-
-                  {/* Group: Scope 1+2 */}
-                  <tr className="bg-black">
-                    <td className="sticky left-0 z-30 bg-black px-3 py-2 border-b border-r border-gray-03">
-                      <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide">
-                        Scope 1+2
-                      </div>
-                    </td>
-                    <td className="bg-black px-4 py-2 border-b border-gray-03" colSpan={visibleColumns.length} />
-                  </tr>
-
-                  {/* Scope 1+2 */}
-                  <tr className="odd:bg-gray-04 even:bg-gray-04/60">
-                    <td className="sticky left-0 z-30 bg-inherit px-3 py-3 border-b border-r border-gray-03">
-                      <div className="text-sm font-medium text-gray-01">
-                        {scope1And2Display}
-                      </div>
-                    </td>
-                    {visibleColumns.map(({ rp, year }) => {
-                      const rpEdits = edited[rp.id] ?? {};
-                      const original = rp.emissions?.scope1And2?.total ?? null;
-                      const originalVerified = !!rp.emissions?.scope1And2?.metadata?.verifiedBy;
-                      const value =
-                        rpEdits.scope1And2Total ?? (original != null ? String(original) : "");
-                      const dirty = rpEdits.scope1And2Total != null;
-                      const dirtyVerified = rpEdits.scope1And2Verified != null;
-                      const verified = rpEdits.scope1And2Verified ?? originalVerified;
-                      const undoDisabled = !(dirty || dirtyVerified);
-                      return (
-                        <td key={rp.id} className="px-3 py-3 border-b border-gray-03">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={value}
-                              onChange={(e) =>
-                                setNullableStringEdit(
-                                  rp.id,
-                                  "scope1And2Total",
-                                  e.target.value,
-                                  original != null
-                                )
-                              }
-                              className={
-                                inputClassName +
-                                " w-[180px] max-w-none " +
-                                " bg-gray-04 " +
-                                " placeholder:text-gray-02/70" +
-                                (dirty ? " border-orange-03" : "")
-                              }
-                              step="any"
-                            />
-                            <MetadataDetailsDialog
-                              fieldLabel={`${scope1And2Display} (${year || ""})`}
-                              metadata={rp.emissions?.scope1And2?.metadata as any}
-                            />
-                            <VerifyButton
-                              checked={verified}
-                              onClick={() =>
-                                setEditedField(rp.id, { scope1And2Verified: !verified })
-                              }
-                              ariaLabel={t("editor.fieldEdit.markVerified")}
-                            />
-                            <UndoFieldButton
-                              disabled={undoDisabled}
-                              onClick={() =>
-                                clearEditedKeys(rp.id, ["scope1And2Total", "scope1And2Verified"])
-                              }
-                              ariaLabel="Undo Scope 1+2"
-                            />
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-
-                  {/* Group: Scope 2 */}
-                  <tr className="bg-black">
-                    <td className="sticky left-0 z-30 bg-black px-3 py-2 border-b border-r border-gray-03">
-                      <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide">
-                        Scope 2
-                      </div>
-                      <div className="text-[11px] text-gray-02 mt-0.5">
-                        Verified as a unit (MB/LB/Unknown).
-                      </div>
-                    </td>
-                    {visibleColumns.map(({ rp, year }) => {
-                      const rpEdits = edited[rp.id] ?? {};
-                      const originalVerified = !!rp.emissions?.scope2?.metadata?.verifiedBy;
-                      const verified = rpEdits.scope2Verified ?? originalVerified;
-                      const dirty =
-                        rpEdits.scope2Mb != null ||
-                        rpEdits.scope2Lb != null ||
-                        rpEdits.scope2Unknown != null;
-                      const dirtyVerified = rpEdits.scope2Verified != null;
-                      const undoDisabled = !(dirty || dirtyVerified);
-                      return (
-                        <td key={rp.id} className="bg-black px-4 py-2 border-b border-gray-03">
-                          <div className="flex w-full items-center justify-end gap-2">
-                            <MetadataDetailsDialog
-                              fieldLabel={`${t("editor.companies.scope2") ?? "Scope 2"} (${year || ""})`}
-                              metadata={rp.emissions?.scope2?.metadata as any}
-                            />
-                            <VerifyButton
-                              checked={verified}
-                              onClick={() => setEditedField(rp.id, { scope2Verified: !verified })}
-                              ariaLabel={t("editor.fieldEdit.markVerified")}
-                            />
-                            <UndoFieldButton
-                              disabled={undoDisabled}
-                              onClick={() =>
-                                clearEditedKeys(rp.id, ["scope2Mb", "scope2Lb", "scope2Unknown", "scope2Verified"])
-                              }
-                              ariaLabel="Undo Scope 2"
-                            />
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-
-                  {/* Scope 2 (MB) */}
-                  <tr className="odd:bg-gray-04 even:bg-gray-04/60">
-                    <td className="sticky left-0 z-30 bg-inherit px-3 py-3 border-b border-r border-gray-03">
-                      <div className="text-sm font-medium text-gray-01">MB</div>
-                    </td>
-                    {visibleColumns.map(({ rp }) => {
-                      const rpEdits = edited[rp.id] ?? {};
-                      const original = rp.emissions?.scope2?.mb ?? null;
-                      const value = rpEdits.scope2Mb ?? (original != null ? String(original) : "");
-                      const dirty =
-                        rpEdits.scope2Mb != null ||
-                        rpEdits.scope2Lb != null ||
-                        rpEdits.scope2Unknown != null;
-                      return (
-                        <td key={rp.id} className="px-3 py-3 border-b border-gray-03">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={value}
-                              onChange={(e) =>
-                                setNullableStringEdit(
-                                  rp.id,
-                                  "scope2Mb",
-                                  e.target.value,
-                                  original != null
-                                )
-                              }
-                              className={
-                                inputClassName +
-                                " w-[180px] max-w-none " +
-                                " bg-gray-04 " +
-                                " placeholder:text-gray-02/70" +
-                                (dirty ? " border-orange-03" : "")
-                              }
-                              step="any"
-                            />
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-
-                  {/* Scope 2 (LB) */}
-                  <tr className="odd:bg-gray-04 even:bg-gray-04/60">
-                    <td className="sticky left-0 z-30 bg-inherit px-3 py-3 border-b border-r border-gray-03">
-                      <div className="text-sm font-medium text-gray-01">LB</div>
-                    </td>
-                    {visibleColumns.map(({ rp }) => {
-                      const rpEdits = edited[rp.id] ?? {};
-                      const original = rp.emissions?.scope2?.lb ?? null;
-                      const value = rpEdits.scope2Lb ?? (original != null ? String(original) : "");
-                      const dirty =
-                        rpEdits.scope2Mb != null ||
-                        rpEdits.scope2Lb != null ||
-                        rpEdits.scope2Unknown != null;
-                      return (
-                        <td key={rp.id} className="px-3 py-3 border-b border-gray-03">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={value}
-                              onChange={(e) =>
-                                setNullableStringEdit(
-                                  rp.id,
-                                  "scope2Lb",
-                                  e.target.value,
-                                  original != null
-                                )
-                              }
-                              className={
-                                inputClassName +
-                                " w-[180px] max-w-none " +
-                                " bg-gray-04 " +
-                                " placeholder:text-gray-02/70" +
-                                (dirty ? " border-orange-03" : "")
-                              }
-                              step="any"
-                            />
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-
-                  {/* Scope 2 (Unknown) */}
-                  <tr className="odd:bg-gray-04 even:bg-gray-04/60">
-                    <td className="sticky left-0 z-30 bg-inherit px-3 py-3 border-b border-r border-gray-03">
-                      <div className="text-sm font-medium text-gray-01">Unknown</div>
-                    </td>
-                    {visibleColumns.map(({ rp }) => {
-                      const rpEdits = edited[rp.id] ?? {};
-                      const original = rp.emissions?.scope2?.unknown ?? null;
-                      const value =
-                        rpEdits.scope2Unknown ?? (original != null ? String(original) : "");
-                      const dirty =
-                        rpEdits.scope2Mb != null ||
-                        rpEdits.scope2Lb != null ||
-                        rpEdits.scope2Unknown != null;
-                      return (
-                        <td key={rp.id} className="px-3 py-3 border-b border-gray-03">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={value}
-                              onChange={(e) =>
-                                setNullableStringEdit(
-                                  rp.id,
-                                  "scope2Unknown",
-                                  e.target.value,
-                                  original != null
-                                )
-                              }
-                              className={
-                                inputClassName +
-                                " w-[180px] max-w-none " +
-                                " bg-gray-04 " +
-                                " placeholder:text-gray-02/70" +
-                                (dirty ? " border-orange-03" : "")
-                              }
-                              step="any"
-                            />
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-
-                  {/* Group: Scope 3 */}
-                  <tr className="bg-black">
-                    <td className="sticky left-0 z-30 bg-black px-3 py-2 border-b border-r border-gray-03">
-                      <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide">
-                        Scope 3
-                      </div>
-                    </td>
-                    <td className="bg-black px-4 py-2 border-b border-gray-03" colSpan={visibleColumns.length} />
-                  </tr>
-
-                  {/* Scope 3 stated total */}
-                  <tr className="odd:bg-gray-04 even:bg-gray-04/60">
-                    <td className="sticky left-0 z-10 bg-inherit px-3 py-3 border-b border-gray-03">
-                      <div className="text-sm font-medium text-gray-01">Stated total</div>
-                    </td>
-                    {visibleColumns.map(({ rp, year }) => {
-                      const rpEdits = edited[rp.id] ?? {};
-                      const original = rp.emissions?.scope3?.statedTotalEmissions?.total ?? null;
-                      const originalVerified =
-                        !!rp.emissions?.scope3?.statedTotalEmissions?.metadata?.verifiedBy;
-                      const value =
-                        rpEdits.scope3StatedTotalEmissions ??
-                        (original != null ? String(original) : "");
-                      const dirty = rpEdits.scope3StatedTotalEmissions != null;
-                      const dirtyVerified = rpEdits.scope3StatedTotalVerified != null;
-                      const verified = rpEdits.scope3StatedTotalVerified ?? originalVerified;
-                      const undoDisabled = !(dirty || dirtyVerified);
-                      return (
-                        <td key={rp.id} className="px-3 py-3 border-b border-gray-03">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={value}
-                              onChange={(e) =>
-                                setNullableStringEdit(
-                                  rp.id,
-                                  "scope3StatedTotalEmissions",
-                                  e.target.value,
-                                  original != null
-                                )
-                              }
-                              className={
-                                inputClassName +
-                                " w-[180px] max-w-none " +
-                                " bg-gray-04 " +
-                                " placeholder:text-gray-02/70" +
-                                (dirty ? " border-orange-03" : "")
-                              }
-                              step="any"
-                            />
-                            <MetadataDetailsDialog
-                              fieldLabel={`Scope 3 stated total (${year || ""})`}
-                              metadata={rp.emissions?.scope3?.statedTotalEmissions?.metadata as any}
-                            />
-                            <VerifyButton
-                              checked={verified}
-                              onClick={() =>
-                                setEditedField(rp.id, {
-                                  scope3StatedTotalVerified: !verified,
-                                })
-                              }
-                              ariaLabel={t("editor.fieldEdit.markVerified")}
-                            />
-                            <UndoFieldButton
-                              disabled={undoDisabled}
-                              onClick={() =>
-                                clearEditedKeys(rp.id, ["scope3StatedTotalEmissions", "scope3StatedTotalVerified"])
-                              }
-                              ariaLabel="Undo Scope 3 stated total"
-                            />
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-
-                  {/* Scope 3 categories */}
-                  {scope3CategoryIds.map((category) => (
-                    <tr key={category} className="odd:bg-gray-04 even:bg-gray-04/60">
-                      <td className="sticky left-0 z-30 bg-inherit px-3 py-3 border-b border-r border-gray-03">
-                        <div className="text-sm text-gray-01 pl-3">Category {category}</div>
-                      </td>
-                      {visibleColumns.map(({ rp, year }) => {
-                        const rpEdits = edited[rp.id] ?? {};
-                        const originalCat = rp.emissions?.scope3?.categories?.find(
-                          (c) => c.category === category
-                        );
-                        const originalVal = originalCat?.total ?? null;
-                        const originalVerified = !!originalCat?.metadata?.verifiedBy;
-
-                        const editedVal = rpEdits.scope3Categories?.[String(category)];
-                        const value = editedVal ?? (originalVal != null ? String(originalVal) : "");
-                        const dirty = editedVal != null;
-
-                        const hasEditedVerified =
-                          rpEdits.scope3CategoriesVerified != null &&
-                          Object.prototype.hasOwnProperty.call(
-                            rpEdits.scope3CategoriesVerified,
-                            String(category)
-                          );
-                        const editedVerified = rpEdits.scope3CategoriesVerified?.[String(category)];
-                        const verified = hasEditedVerified ? !!editedVerified : originalVerified;
-
-                        const undoDisabled = !(dirty || hasEditedVerified);
-
-                        return (
-                          <td key={rp.id} className="px-3 py-3 border-b border-gray-03">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="number"
-                                value={value}
-                                onChange={(e) =>
-                                setScope3CategoryValue(
-                                  rp.id,
-                                  category,
-                                  e.target.value,
-                                  originalVal != null
-                                )
-                                }
-                                className={
-                                  inputClassName +
-                                  " w-[180px] max-w-none " +
-                                  " bg-gray-04 " +
-                                  " placeholder:text-gray-02/70" +
-                                  (dirty ? " border-orange-03" : "")
-                                }
-                                step="any"
-                              />
-                              <MetadataDetailsDialog
-                                fieldLabel={`Scope 3 category ${category} (${year || ""})`}
-                                metadata={originalCat?.metadata as any}
-                              />
-                              <VerifyButton
-                                checked={verified}
-                                onClick={() =>
-                                  setScope3CategoryVerified(rp.id, category, !verified)
-                                }
-                                ariaLabel={t("editor.fieldEdit.markVerified")}
-                              />
-                              <UndoFieldButton
-                                disabled={undoDisabled}
-                                onClick={() => {
-                                  setEdited((prev) => {
-                                    const current = prev[rp.id];
-                                    if (!current) return prev;
-                                    const nextForRp: EditedPeriodEmissions = { ...current };
-                                    if (nextForRp.scope3Categories) {
-                                      const nextCats = { ...nextForRp.scope3Categories };
-                                      delete nextCats[String(category)];
-                                      nextForRp.scope3Categories =
-                                        Object.keys(nextCats).length ? nextCats : undefined;
-                                    }
-                                    if (nextForRp.scope3CategoriesVerified) {
-                                      const nextV = { ...nextForRp.scope3CategoriesVerified };
-                                      delete nextV[String(category)];
-                                      nextForRp.scope3CategoriesVerified =
-                                        Object.keys(nextV).length ? nextV : undefined;
-                                    }
-                                    const hasAny = Object.keys(nextForRp).length > 0;
-                                    if (!hasAny) {
-                                      const next = { ...prev };
-                                      delete next[rp.id];
-                                      return next;
-                                    }
-                                    return { ...prev, [rp.id]: nextForRp };
-                                  });
-                                }}
-                                ariaLabel={`Undo Scope 3 category ${category}`}
-                              />
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-
-                  {/* Group: Totals */}
-                  <tr className="bg-black">
-                    <td className="sticky left-0 z-30 bg-black px-3 py-2 border-b border-r border-gray-03">
-                      <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide">
-                        Totals
-                      </div>
-                    </td>
-                    <td className="bg-black px-4 py-2 border-b border-gray-03" colSpan={visibleColumns.length} />
-                  </tr>
-
-                  {/* Overall stated total emissions (outside Scope 3) */}
-                  <tr className="odd:bg-gray-04 even:bg-gray-04/60">
-                    <td className="sticky left-0 z-30 bg-inherit px-3 py-3 border-b border-r border-gray-03">
-                      <div className="text-sm font-medium text-gray-01">Overall stated total</div>
-                    </td>
-                    {visibleColumns.map(({ rp, year }) => {
-                      const rpEdits = edited[rp.id] ?? {};
-                      const original = rp.emissions?.statedTotalEmissions?.total ?? null;
-                      const originalVerified =
-                        !!rp.emissions?.statedTotalEmissions?.metadata?.verifiedBy;
-                      const value =
-                        rpEdits.statedTotalEmissions ?? (original != null ? String(original) : "");
-                      const dirty = rpEdits.statedTotalEmissions != null;
-                      const dirtyVerified = rpEdits.statedTotalVerified != null;
-                      const verified = rpEdits.statedTotalVerified ?? originalVerified;
-                      const undoDisabled = !(dirty || dirtyVerified);
-                      return (
-                        <td key={rp.id} className="px-3 py-3 border-b border-gray-03">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={value}
-                              onChange={(e) =>
-                                setNullableStringEdit(
-                                  rp.id,
-                                  "statedTotalEmissions",
-                                  e.target.value,
-                                  original != null
-                                )
-                              }
-                              className={
-                                inputClassName +
-                                " w-[180px] max-w-none " +
-                                " bg-gray-04 " +
-                                " placeholder:text-gray-02/70" +
-                                (dirty ? " border-orange-03" : "")
-                              }
-                              step="any"
-                            />
-                            <MetadataDetailsDialog
-                              fieldLabel={`Overall stated total (${year || ""})`}
-                              metadata={rp.emissions?.statedTotalEmissions?.metadata as any}
-                            />
-                            <VerifyButton
-                              checked={verified}
-                              onClick={() =>
-                                setEditedField(rp.id, { statedTotalVerified: !verified })
-                              }
-                              ariaLabel={t("editor.fieldEdit.markVerified")}
-                            />
-                            <UndoFieldButton
-                              disabled={undoDisabled}
-                              onClick={() =>
-                                clearEditedKeys(rp.id, ["statedTotalEmissions", "statedTotalVerified"])
-                              }
-                              ariaLabel="Undo overall stated total"
-                            />
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                </tbody>
-              </table>
+                    );
+                  })}
+                </EmissionsEditRow>
+              ))}
             </div>
           </div>
         </div>

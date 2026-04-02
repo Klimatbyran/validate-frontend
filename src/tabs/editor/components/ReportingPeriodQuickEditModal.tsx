@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BadgeCheck, ExternalLink, Undo2 } from "lucide-react";
 import { toast } from "sonner";
+import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { inputClassName } from "../lib/company-edit-utils";
@@ -10,8 +11,7 @@ import type {
   GarboCompanyListItem,
   GarboReportingPeriodSummary,
 } from "../lib/types";
-import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
-import { SCOPE3_CATEGORY_NAMES } from "@/tabs/jobbstatus/lib/scope3-data";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/dialog";
+import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
+import { SCOPE3_CATEGORY_NAMES } from "@/tabs/jobbstatus/lib/scope3-data";
+
+const ALL_SCOPE3_CATEGORY_IDS = Object.keys(SCOPE3_CATEGORY_NAMES)
+  .map((k) => Number(k))
+  .filter((n) => Number.isFinite(n))
+  .sort((a, b) => a - b);
 
 type Edited = {
   reportURL?: string; // "" means clear (null) if original existed
@@ -69,19 +76,27 @@ function hasAnyEdits(ed: Edited) {
   return Object.keys(ed).length > 0;
 }
 
+function normDateKey(iso: string) {
+  return iso.slice(0, 10);
+}
+
 export function ReportingPeriodQuickEditModal({
   open,
   onOpenChange,
   company,
   year,
+  periodMatch,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   company: GarboCompanyListItem;
   year: string;
+  /** When set (e.g. after creating a period), find this exact period instead of the first with the same calendar year. */
+  periodMatch?: { startDate: string; endDate: string };
   onSaved?: () => void;
 }) {
+  const { t } = useI18n();
   const [detailCompany, setDetailCompany] = useState<GarboCompanyDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -98,14 +113,23 @@ export function ReportingPeriodQuickEditModal({
 
   const period: GarboReportingPeriodSummary | null = useMemo(() => {
     const periods = detailCompany?.reportingPeriods ?? company.reportingPeriods ?? [];
+    if (periodMatch) {
+      const a = normDateKey(periodMatch.startDate);
+      const b = normDateKey(periodMatch.endDate);
+      const byDates = periods.find(
+        (p) => normDateKey(p.startDate) === a && normDateKey(p.endDate) === b
+      );
+      if (byDates) return byDates;
+    }
     const match = periods.find((p) => getPeriodYear(p) === year);
     return match ?? null;
-  }, [company.reportingPeriods, detailCompany?.reportingPeriods, year]);
+  }, [company.reportingPeriods, detailCompany?.reportingPeriods, year, periodMatch]);
 
   const [edited, setEdited] = useState<Edited>({});
   const [comment, setComment] = useState("");
   const [source, setSource] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showAllScope3Categories, setShowAllScope3Categories] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -115,7 +139,8 @@ export function ReportingPeriodQuickEditModal({
     setComment("");
     setSource("");
     setSaving(false);
-  }, [open, company.wikidataId, year]);
+    setShowAllScope3Categories(false);
+  }, [open, company.wikidataId, year, periodMatch?.startDate, periodMatch?.endDate]);
 
   const employeeUnitOptions = useMemo(() => ["FTE", "EOY", "AVG"], []);
 
@@ -217,6 +242,22 @@ export function ReportingPeriodQuickEditModal({
   const categoryIds = Array.from(new Set(scope3Categories.map((c) => c.category))).sort(
     (a, b) => a - b
   );
+
+  const editedScope3CategoryNums = new Set<number>();
+  for (const k of Object.keys(edited.scope3Categories ?? {})) {
+    const n = Number(k);
+    if (Number.isFinite(n)) editedScope3CategoryNums.add(n);
+  }
+  for (const k of Object.keys(edited.scope3CategoriesVerified ?? {})) {
+    const n = Number(k);
+    if (Number.isFinite(n)) editedScope3CategoryNums.add(n);
+  }
+  const populatedScope3CategoryIds = Array.from(
+    new Set<number>([...categoryIds, ...editedScope3CategoryNums])
+  ).sort((a, b) => a - b);
+  const displayScope3CategoryIds = showAllScope3Categories
+    ? ALL_SCOPE3_CATEGORY_IDS
+    : populatedScope3CategoryIds;
 
   const turnoverValue = edited.turnoverValue ?? (originalTurnover != null ? String(originalTurnover) : "");
   const reportURL = edited.reportURL ?? (originalReportURL != null ? String(originalReportURL) : "");
@@ -429,7 +470,7 @@ export function ReportingPeriodQuickEditModal({
             </div>
           </div>
 
-          <div className="mt-4 flex-1 overflow-y-auto px-1 space-y-6">
+          <div className="mt-4 flex-1 min-h-0 overflow-y-auto px-1 space-y-6">
             <div>
               <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide mb-2">
                 Economy
@@ -742,7 +783,7 @@ export function ReportingPeriodQuickEditModal({
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div>
-                      <div className="text-xs text-gray-03 mb-1">MB</div>
+                      <div className="text-xs text-gray-02 mb-1">MB</div>
                       <input
                         type="number"
                         value={scope2MbValue}
@@ -757,7 +798,7 @@ export function ReportingPeriodQuickEditModal({
                       />
                     </div>
                     <div>
-                      <div className="text-xs text-gray-03 mb-1">LB</div>
+                      <div className="text-xs text-gray-02 mb-1">LB</div>
                       <input
                         type="number"
                         value={scope2LbValue}
@@ -772,7 +813,7 @@ export function ReportingPeriodQuickEditModal({
                       />
                     </div>
                     <div>
-                      <div className="text-xs text-gray-03 mb-1">Unknown</div>
+                      <div className="text-xs text-gray-02 mb-1">Unknown</div>
                       <input
                         type="number"
                         value={scope2UnknownValue}
@@ -851,11 +892,21 @@ export function ReportingPeriodQuickEditModal({
                   </div>
                 </div>
 
-                {categoryIds.length > 0 && (
-                  <div className="rounded-lg bg-gray-04 p-3">
-                    <div className="text-sm font-medium text-gray-01 mb-2">Scope 3 categories</div>
-                    <div className="space-y-2">
-                      {categoryIds.map((cat) => {
+                <div className="rounded-lg bg-gray-04 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div className="text-sm font-medium text-gray-01">Scope 3 categories</div>
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-01 shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={showAllScope3Categories}
+                        onChange={(e) => setShowAllScope3Categories(e.target.checked)}
+                        className="rounded border-gray-03"
+                      />
+                      {t("editor.reportingPeriodQuickEdit.showAllScope3Categories")}
+                    </label>
+                  </div>
+                  <div className="space-y-2">
+                    {displayScope3CategoryIds.map((cat) => {
                         const original = scope3Categories.find((c) => c.category === cat);
                         const originalVal = original?.total ?? null;
                         const originalVerified = !!original?.metadata?.verifiedBy;
@@ -872,7 +923,7 @@ export function ReportingPeriodQuickEditModal({
                           : originalVerified;
                         return (
                           <div key={cat}>
-                            <div className="text-sm font-medium text-gray-01 mb-1">
+                            <div className="text-xs text-gray-02 mb-1">
                               Cat {cat}: {SCOPE3_CATEGORY_NAMES[cat] ?? `Category ${cat}`}
                             </div>
                             <div className="flex items-center gap-2">
@@ -916,9 +967,8 @@ export function ReportingPeriodQuickEditModal({
                           </div>
                         );
                       })}
-                    </div>
                   </div>
-                )}
+                </div>
 
                 <div>
                   <div className="text-sm font-medium text-gray-01 mb-1">Overall total</div>
@@ -979,43 +1029,47 @@ export function ReportingPeriodQuickEditModal({
                 </div>
               </div>
             </div>
-
-            <div className="pt-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-01 mb-1">
-                    Comment <span className="text-gray-03 font-normal">(optional)</span>
-                  </label>
-                  <textarea
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    className={
-                      inputClassName +
-                      " bg-gray-04 min-h-[90px] resize-y placeholder:text-gray-02/70"
-                    }
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-01 mb-1">
-                    Source <span className="text-gray-03 font-normal">(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={source}
-                    onChange={(e) => setSource(e.target.value)}
-                    className={inputClassName + " bg-gray-04 placeholder:text-gray-02/70"}
-                    placeholder="URL or reference"
-                  />
-                </div>
-              </div>
-            </div>
           </div>
 
-          <div className="shrink-0 pt-4 flex justify-end">
-            <Button type="button" variant="primary" size="sm" onClick={handleSave} disabled={saving}>
-              {saving ? "Saving…" : "Save"}
-            </Button>
+          <div
+            className={cn(
+              "shrink-0 z-10 -mx-4 sm:-mx-6 mt-3 border-t border-gray-03/60 bg-gray-04/95 px-4 sm:px-6 pt-4 pb-4 backdrop-blur-sm",
+              "shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.55)]"
+            )}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-01 mb-1">
+                  Comment <span className="text-sm font-normal text-gray-02">(optional)</span>
+                </label>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className={cn(
+                    inputClassName,
+                    "bg-gray-04 min-h-[72px] resize-y !placeholder:text-gray-02"
+                  )}
+                  rows={2}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-01 mb-1">
+                  Source <span className="text-sm font-normal text-gray-02">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={source}
+                  onChange={(e) => setSource(e.target.value)}
+                  className={cn(inputClassName, "bg-gray-04 !placeholder:text-gray-02")}
+                  placeholder="URL or reference"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end pt-4">
+              <Button type="button" variant="primary" size="sm" onClick={handleSave} disabled={saving}>
+                {saving ? "Saving…" : "Save"}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

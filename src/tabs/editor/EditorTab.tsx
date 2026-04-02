@@ -10,14 +10,14 @@ import { SingleCompanyView } from "./components/SingleCompanyView";
 export type EditorViewMode = "tag-options" | "multi-company" | "single-company";
 
 const VIEW_MODES: { value: EditorViewMode; labelKey: string }[] = [
-  { value: "multi-company", labelKey: "editor.multiCompany" },
   { value: "single-company", labelKey: "editor.singleCompany" },
+  { value: "multi-company", labelKey: "editor.multiCompany" },
   { value: "tag-options", labelKey: "editor.manageTagOptions" },
 ];
 
 export function EditorTab() {
   const { t } = useI18n();
-  const [viewMode, setViewMode] = useState<EditorViewMode>("multi-company");
+  const [viewMode, setViewMode] = useState<EditorViewMode>("single-company");
   const pillOptions = useMemo(
     () => VIEW_MODES.map((m) => ({ value: m.value, label: t(m.labelKey) })),
     [t]
@@ -45,7 +45,7 @@ export function EditorTab() {
         </div>
         <div className="flex items-center justify-between rounded-lg border border-gray-03 bg-gray-05 px-4 py-2.5">
           <div className="text-sm text-gray-01 font-medium">
-            Data source:{" "}
+            {t("editor.dataSourceLabel")}{" "}
             <span className="ml-1 inline-flex items-center rounded-full border border-gray-03 bg-gray-04 px-2 py-0.5 text-xs font-semibold text-gray-01">
               {getGarboTarget().toUpperCase()}
             </span>

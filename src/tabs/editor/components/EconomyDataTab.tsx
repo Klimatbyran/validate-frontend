@@ -12,7 +12,6 @@ import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
 import { ReviewerMetadataDialog } from "./ReviewerMetadataDialog";
 
 type EditedPeriodEconomy = {
-  reportURL?: string;
   turnoverValue?: string;
   turnoverVerified?: boolean;
   turnoverCurrency?: string;
@@ -129,7 +128,6 @@ export function EconomyDataTab({
             ? toNumberOrNull(rpEdits.employeesValue)
             : null;
 
-        const hasReportUrl = rpEdits.reportURL != null;
         const hasTurnover =
           rpEdits.turnoverValue != null ||
           rpEdits.turnoverVerified != null ||
@@ -139,7 +137,7 @@ export function EconomyDataTab({
           rpEdits.employeesVerified != null ||
           rpEdits.employeesUnit != null;
 
-        if (!hasReportUrl && !hasTurnover && !hasEmployees) return null;
+        if (!hasTurnover && !hasEmployees) return null;
 
         const economy: Record<string, unknown> = {};
         if (hasTurnover) {
@@ -161,14 +159,12 @@ export function EconomyDataTab({
         return {
           startDate: rp.startDate,
           endDate: rp.endDate,
-          reportURL: hasReportUrl ? (rpEdits.reportURL || undefined) : undefined,
           economy: Object.keys(economy).length ? economy : undefined,
         };
       })
       .filter(Boolean) as Array<{
       startDate: string;
       endDate: string;
-      reportURL?: string;
       economy?: Record<string, unknown>;
     }>;
 
@@ -198,55 +194,57 @@ export function EconomyDataTab({
 
   return (
     <section className="rounded-lg bg-gray-05 p-4 w-full min-w-0 max-w-full">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-01">
-            {t("editor.singleCompanyView.tabs.economyData")}
-          </h3>
-          <p className="text-xs text-gray-02 mt-1">
-            {t("editor.singleCompanyView.economyDataHint")}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => setSortOrder((o) => (o === "desc" ? "asc" : "desc"))}
-            className="min-w-0 px-3"
-          >
-            {sortOrder === "desc" ? "Newest → Oldest" : "Oldest → Newest"}
-          </Button>
-          <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-01">
-            <input
-              type="checkbox"
-              checked={showAllYears}
-              onChange={(e) => setShowAllYears(e.target.checked)}
-              className="rounded border-gray-03"
-            />
-            Show all years
-          </label>
-          {years.length > 0 && (
-            <MultiSelectDropdown
-              options={years}
-              selectedIds={showAllYears ? [] : selectedYears}
-              onChange={(ids) => {
-                setSelectedYears(ids);
-                if (ids.length > 0) setShowAllYears(false);
-              }}
-              triggerLabel="Years"
-              emptyLabel="All years"
-              triggerClassName="min-w-[130px]"
-            />
-          )}
+      <div className="border-b border-gray-03/60 pb-6 mb-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+          <div className="min-w-0 max-w-2xl">
+            <h2 className="text-lg font-semibold text-gray-01 tracking-tight">
+              {t("editor.singleCompanyView.tabs.economyData")}
+            </h2>
+            <p className="text-xs text-gray-02 mt-2 leading-relaxed">
+              {t("editor.singleCompanyView.economyDataHint")}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3 shrink-0 lg:pt-0.5">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setSortOrder((o) => (o === "desc" ? "asc" : "desc"))}
+              className="min-w-0 max-w-none px-3 text-xs h-8"
+            >
+              {sortOrder === "desc" ? "Newest → Oldest" : "Oldest → Newest"}
+            </Button>
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-01">
+              <input
+                type="checkbox"
+                checked={showAllYears}
+                onChange={(e) => setShowAllYears(e.target.checked)}
+                className="rounded border-gray-03"
+              />
+              Show all years
+            </label>
+            {years.length > 0 && (
+              <MultiSelectDropdown
+                options={years}
+                selectedIds={showAllYears ? [] : selectedYears}
+                onChange={(ids) => {
+                  setSelectedYears(ids);
+                  if (ids.length > 0) setShowAllYears(false);
+                }}
+                triggerLabel="Years"
+                emptyLabel="All years"
+                triggerClassName="min-w-[130px] !h-8 !text-xs px-3"
+              />
+            )}
+          </div>
         </div>
       </div>
 
       {visiblePeriods.length ? (
-        <div className="mt-4 w-full min-w-0">
-            <div className="text-xs font-semibold text-gray-01/90 uppercase tracking-wide px-2 mb-2">
+        <div className="w-full min-w-0">
+            <p className="text-[11px] font-semibold text-gray-02 uppercase tracking-wider px-2 mb-3">
               {t("editor.singleCompanyView.sections.reportingPeriods")}
-            </div>
+            </p>
 
             <div className="space-y-3 w-full min-w-0">
               {visiblePeriods.map((rp) => {
@@ -278,11 +276,9 @@ export function EconomyDataTab({
                 const employeesDirty = rpEdits.employeesValue != null;
                 const turnoverCurrencyDirty = rpEdits.turnoverCurrency != null;
                 const employeesUnitDirty = rpEdits.employeesUnit != null;
-                const reportUrlDirty = rpEdits.reportURL != null;
-
                 const periodYear = getPeriodYear(rp) ?? "—";
                 const periodDateRange = `${formatDateStamp(rp.startDate)} – ${formatDateStamp(rp.endDate)}`;
-                const reportUrlForOpen = (rpEdits.reportURL ?? rp.reportURL ?? "").trim();
+                const reportUrlForOpen = (rp.reportURL ?? "").trim();
 
                 const turnoverVerified =
                   rpEdits.turnoverVerified ?? originalTurnoverVerified;
@@ -306,51 +302,43 @@ export function EconomyDataTab({
                           size="sm"
                           onClick={() => resetPeriod(rp.id)}
                           disabled={!edited[rp.id]}
+                          className="min-w-0 max-w-none px-3 text-xs h-8"
                         >
-                          <Undo2 className="w-4 h-4 mr-2" />
+                          <Undo2 className="w-3.5 h-3.5 mr-1.5" />
                           Reset
                         </Button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3 w-full min-w-0">
-                      <div className="lg:col-span-2 w-full min-w-0">
-                        <label className="block text-xs font-medium text-gray-01 mb-1">
+                    <div className="mt-3 w-full min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-medium text-gray-01">
                           {t("editor.companies.reportUrl")}
-                        </label>
-                        <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:items-center">
-                          <input
-                            type="url"
-                            value={rpEdits.reportURL ?? (rp.reportURL ?? "")}
-                            onChange={(e) => setEditedField(rp.id, { reportURL: e.target.value })}
-                            className={
-                              inputClassName +
-                              " bg-gray-04 w-full min-w-0 !max-w-none sm:flex-1 " +
-                              (reportUrlDirty ? " border-orange-03" : "")
-                            }
-                            placeholder={t("editor.fieldEdit.sourcePlaceholder")}
-                          />
-                          {reportUrlForOpen ? (
-                            <Button
-                              asChild
-                              variant="secondary"
-                              size="sm"
-                              className="w-full shrink-0 px-3 sm:w-auto"
+                        </span>
+                        {reportUrlForOpen ? (
+                          <Button
+                            asChild
+                            variant="secondary"
+                            size="sm"
+                            className="min-w-0 max-w-none shrink-0 px-3 text-xs h-8"
+                          >
+                            <a
+                              href={reportUrlForOpen}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center"
                             >
-                              <a
-                                href={reportUrlForOpen}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center"
-                              >
-                                <ExternalLink className="w-4 h-4 mr-2" />
-                                Open
-                              </a>
-                            </Button>
-                          ) : null}
-                        </div>
+                              <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                              Open
+                            </a>
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-gray-02">—</span>
+                        )}
                       </div>
+                    </div>
 
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4 w-full min-w-0">
                       <div className="w-full min-w-0 lg:min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <label className="block text-xs font-medium text-gray-01">

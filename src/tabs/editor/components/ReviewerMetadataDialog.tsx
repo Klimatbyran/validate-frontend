@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/dialog";
+import { cn } from "@/lib/utils";
 import { inputClassName } from "../lib/company-edit-utils";
 
 export function ReviewerMetadataDialog({
@@ -50,24 +51,27 @@ export function ReviewerMetadataDialog({
         <div className="grid gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-01 mb-1">
-              Comment <span className="text-gray-03 font-normal">(optional)</span>
+              Comment <span className="text-sm font-normal text-gray-02">(optional)</span>
             </label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className={inputClassName + " bg-gray-04 min-h-[90px] resize-y placeholder:text-gray-02/70"}
+              className={cn(
+                inputClassName,
+                "bg-gray-04 min-h-[90px] resize-y !placeholder:text-gray-02"
+              )}
               rows={3}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-01 mb-1">
-              Source <span className="text-gray-03 font-normal">(optional)</span>
+              Source <span className="text-sm font-normal text-gray-02">(optional)</span>
             </label>
             <input
               type="text"
               value={source}
               onChange={(e) => setSource(e.target.value)}
-              className={inputClassName + " bg-gray-04 placeholder:text-gray-02/70"}
+              className={cn(inputClassName, "bg-gray-04 !placeholder:text-gray-02")}
               placeholder="URL or reference"
             />
           </div>

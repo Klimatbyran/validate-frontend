@@ -27,11 +27,12 @@
   },
   "editor": {
     "title": "Redigerare",
-    "subtitle": "Redigera databasdata: taggalternativ och senare företagsdata (taggar, utsläpp m.m.).",
+    "subtitle": "Redigera företagsdata i Garbo: Enskilt Företag för detaljer per bolag, Massredigering främst för taggar över flera företag (tabeller per år är sekundära), och Hantera Taggalternativ för tillåtna taggar.",
     "viewMode": "Visningsläge",
-    "manageTagOptions": "Hantera taggalternativ",
-    "multiCompany": "Flera företag",
-    "singleCompany": "Ett företag",
+    "dataSourceLabel": "Datakälla:",
+    "manageTagOptions": "Hantera Taggalternativ",
+    "multiCompany": "Massredigering",
+    "singleCompany": "Enskilt Företag",
     "fieldEdit": {
       "value": "Värde",
       "source": "Källa",
@@ -43,6 +44,9 @@
       "verifyOnly": "Endast verifiera",
       "cancel": "Avbryt",
       "save": "Spara"
+    },
+    "reportingPeriodQuickEdit": {
+      "showAllScope3Categories": "Visa alla scope 3-kategorier"
     },
     "companies": {
       "filters": "Filter",
@@ -59,6 +63,24 @@
       "reportUrl": "Rapport-URL",
       "scope1": "Scope 1",
       "scope2": "Scope 2",
+      "scope3Categories": {
+        "1": "Inköpta varor och tjänster",
+        "2": "Kapitalvaror",
+        "3": "Bränsle- och energirelaterade aktiviteter",
+        "4": "Uppströms transport och distribution",
+        "5": "Avfall genererat i verksamheten",
+        "6": "Tjänsteresor",
+        "7": "Pendlingsresor",
+        "8": "Uppströms leasade tillgångar",
+        "9": "Nedströms transport och distribution",
+        "10": "Bearbetning av sålda produkter",
+        "11": "Användning av sålda produkter",
+        "12": "Slutbehandling av sålda produkter",
+        "13": "Nedströms leasade tillgångar",
+        "14": "Franchiser",
+        "15": "Investeringar",
+        "16": "Övrigt"
+      },
       "economy": "Ekonomi",
       "edit": "Redigera",
       "verify": "Verifiera",
@@ -92,8 +114,28 @@
       "invalidBaseYear": "Basår måste vara mellan 1990 och 2100.",
       "undo": "Återställ till sparad",
       "noReportingPeriods": "Inga rapporteringsperioder.",
-      "reportingPeriodsHint": "Redigera rapporteringsperioder (utsläpp, ekonomi) från vyn Flera företag per år, eller lägg till inline-redigering här senare.",
-      "economyDataHint": "Per rapporteringsperiod: redigera rapportlänk, omsättning och valuta samt antal anställda och enhet. Markera som verifierat vid granskning och spara. Filtrera på år eller visa alla perioder.",
+      "reportingPeriodsHint": "Ange datum och rapport-URL för rapporteringsperioder här. För utsläpp och ekonomi, använd flikarna Ekonomidata och Utsläppsdata eller snabbredigering i listan. Massredigering handlar främst om taggar; årsbaserade tabeller där är valfria.",
+      "economyDataHint": "Per rapporteringsperiod: redigera omsättning, valuta, antal anställda och enhet. Öppna rapportlänken när en URL finns (datum och URL redigeras under fliken Rapporteringsperioder). Markera som verifierat vid granskning och spara. Filtrera på år eller visa alla perioder.",
+      "emissionsDataHint": "Per rapporteringskolumn: redigera redovisade totaler och scope 1–3 (inkl. scope 3-kategorier). Öppna rapportlänken när en URL finns (datum och URL redigeras under fliken Rapporteringsperioder). Använd metadata, markera som verifierat, ångra ändringar, filtrera eller sortera år, scrolla vid behov, spara med valfri granskningskommentar och källa.",
+      "reportingPeriodsDataHint": "Ange start- och slutdatum samt rapport-URL för varje period. Sortera eller filtrera år, återställ osparade ändringar, spara med valfri granskningskommentar och källa.",
+      "reportingPeriodStart": "Startdatum",
+      "reportingPeriodEnd": "Slutdatum",
+      "addReportingPeriod": {
+        "button": "Lägg till rapporteringsperiod",
+        "step1Title": "Ny rapporteringsperiod (steg 1 av 2)",
+        "step1Description": "Ange periodens gränser och rapportlänk. Därefter kan du fylla i ekonomi och utsläpp för perioden.",
+        "continueToEconomyEmissions": "Fortsätt till ekonomi och utsläpp",
+        "validationDates": "Ange både start- och slutdatum.",
+        "validationOrder": "Startdatum måste vara på eller före slutdatum.",
+        "validationYear": "Kunde inte avgöra rapporteringsår från datumen.",
+        "created": "Rapporteringsperiod skapad."
+      },
+      "deleteReportingPeriod": {
+        "title": "Ta bort rapporteringsperiod",
+        "comingSoon": "Funktionen för att ta bort kommer snart.",
+        "trashAriaLabel": "Ta bort rapporteringsperiod",
+        "ok": "OK"
+      },
       "noIndustry": "Ingen bransch",
       "selectIndustry": "Välj bransch (GICS)",
       "fields": {
@@ -107,6 +149,7 @@
         "core": "Grundinfo",
         "tags": "Taggar",
         "reportingPeriods": "Rapporteringsperioder",
+        "emissions": "Utsläpp",
         "goals": "Mål",
         "initiatives": "Initiativ",
         "industry": "Bransch",
@@ -114,6 +157,7 @@
       },
       "tabs": {
         "companyDetail": "Företagsdetaljer",
+        "reportingPeriods": "Rapporteringsperioder",
         "economyData": "Ekonomidata",
         "emissionsData": "Utsläppsdata",
         "goalsInitiatives": "Mål & initiativ"

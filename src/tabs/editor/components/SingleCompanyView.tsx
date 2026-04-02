@@ -291,7 +291,7 @@ export function SingleCompanyView() {
                   : (tagLabelBySlug[slug] ?? slug)
               }
               emptyLabel={t("editor.companies.allTags")}
-              triggerClassName="min-w-[140px]"
+              triggerClassName="min-w-[140px] !h-8 !text-xs px-3"
             />
           </div>
           <div>
@@ -304,7 +304,7 @@ export function SingleCompanyView() {
               onChange={setFilterYears}
               triggerLabel={t("editor.companies.year")}
               emptyLabel={t("editor.companies.allYears")}
-              triggerClassName="min-w-[120px]"
+              triggerClassName="min-w-[120px] !h-8 !text-xs px-3"
             />
           </div>
           {sectors.length > 0 && (
@@ -318,12 +318,12 @@ export function SingleCompanyView() {
                 onChange={setFilterSector}
                 placeholder={t("editor.singleCompanyView.allSectors")}
                 getOptionLabel={(v) => (v ? v : t("editor.singleCompanyView.allSectors"))}
-                triggerClassName="min-w-[140px]"
+                triggerClassName="min-w-[140px] !h-8 !text-xs px-3"
               />
             </div>
           )}
           <div className="flex flex-wrap items-end gap-4">
-            <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-sm">
+            <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-xs">
               <input
                 type="checkbox"
                 checked={filterHasUnverifiedEmissions}
@@ -332,7 +332,7 @@ export function SingleCompanyView() {
               />
               {t("editor.singleCompanyView.filterHasUnverifiedEmissions")}
             </label>
-            <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-sm">
+            <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-xs">
               <input
                 type="checkbox"
                 checked={filterHasUnverifiedData}
@@ -413,7 +413,7 @@ export function SingleCompanyView() {
                     <td className="px-4 py-3 font-medium">
                       <div className="flex flex-col">
                         <span>{c.name}</span>
-                        <span className="text-xs text-gray-03">{c.wikidataId}</span>
+                        <span className="text-xs text-gray-02">{c.wikidataId}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-gray-02">
