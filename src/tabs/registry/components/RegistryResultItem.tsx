@@ -19,6 +19,8 @@ const RegistryResultItem = ({
     onToggleSelect(entry);
   };
 
+  console.log(entry);
+
   return (
     <tr className="transition-colors hover:bg-gray-03/30">
       <td className="px-4 py-3 text-sm text-gray-01">

@@ -44,7 +44,14 @@ const SearchResultsList = ({
           onSelect={(companyName, url) =>
             handleSelectReport(
               companyName,
-              url ? { companyName, reportYear, url } : null,
+              url
+                ? {
+                    companyName,
+                    reportYear,
+                    url,
+                    wikidataId: report.wikidataId,
+                  }
+                : null,
             )
           }
         />
