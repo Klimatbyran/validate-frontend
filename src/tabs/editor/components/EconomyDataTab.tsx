@@ -3,11 +3,20 @@ import { ExternalLink, Loader2, BadgeCheck, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
+import { IconActionButton } from "@/ui/icon-action-button";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
-import type { GarboCompanyDetail } from "../lib/types";
+import type { GarboCompanyDetail, GarboFieldMetadata } from "../lib/types";
 import { updateReportingPeriods } from "../lib/companies-api";
 import { inputClassName } from "../lib/company-edit-utils";
+import {
+  editorDenseMultiSelectTriggerClass,
+  editorDenseToolbarClass,
+  formatPeriodDateRange,
+  getPeriodYear,
+  toNumberOrNull,
+} from "../lib/reporting-period-ui";
+import { useReportingPeriodColumnFilters } from "../hooks/useReportingPeriodColumnFilters";
 import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
 import { ReviewerMetadataDialog } from "./ReviewerMetadataDialog";
 
@@ -19,23 +28,6 @@ type EditedPeriodEconomy = {
   employeesVerified?: boolean;
   employeesUnit?: string;
 };
-
-function toNumberOrNull(value: string): number | null {
-  const v = value.trim();
-  if (!v) return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
-function formatDateStamp(isoLike?: string | null) {
-  if (!isoLike) return "—";
-  return isoLike.slice(0, 10);
-}
-
-function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
-  const y = period.endDate?.slice(0, 4) ?? period.startDate?.slice(0, 4);
-  return y || null;
-}
 
 export function EconomyDataTab({
   company,
@@ -56,9 +48,17 @@ export function EconomyDataTab({
   const [source, setSource] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [showAllYears, setShowAllYears] = useState(true);
-  const [selectedYears, setSelectedYears] = useState<string[]>([]);
-  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+
+  const {
+    showAllYears,
+    setShowAllYears,
+    selectedYears,
+    setSelectedYears,
+    sortOrder,
+    setSortOrder,
+    years,
+    visiblePeriods,
+  } = useReportingPeriodColumnFilters(periods, company.wikidataId);
 
   useEffect(() => {
     setEdited({});
@@ -66,37 +66,7 @@ export function EconomyDataTab({
     setSource("");
     setSaving(false);
     setSaveDialogOpen(false);
-    setShowAllYears(true);
-    setSelectedYears([]);
-    setSortOrder("desc");
   }, [company.wikidataId]);
-
-  const sortedPeriods = useMemo(() => {
-    const key = (p: { endDate?: string; startDate?: string }) =>
-      p.endDate ?? p.startDate ?? "";
-    const sorted = [...periods].sort((a, b) => key(b).localeCompare(key(a)));
-    return sortOrder === "desc" ? sorted : sorted.slice().reverse();
-  }, [periods, sortOrder]);
-
-  const years = useMemo(() => {
-    const set = new Set<string>();
-    sortedPeriods.forEach((p) => {
-      const y = getPeriodYear(p);
-      if (y) set.add(y);
-    });
-    const arr = Array.from(set).sort((a, b) => b.localeCompare(a));
-    return sortOrder === "desc" ? arr : arr.slice().reverse();
-  }, [sortedPeriods, sortOrder]);
-
-  const visiblePeriods = useMemo(() => {
-    const base = sortedPeriods;
-    if (showAllYears) return base;
-    if (!selectedYears.length) return base;
-    return base.filter((p) => {
-      const y = getPeriodYear(p);
-      return y ? selectedYears.includes(y) : false;
-    });
-  }, [sortedPeriods, selectedYears, showAllYears]);
 
   const setEditedField = (rpId: string, patch: Partial<EditedPeriodEconomy>) => {
     setEdited((prev) => ({
@@ -169,7 +139,7 @@ export function EconomyDataTab({
     }>;
 
     if (!payloadPeriods.length) {
-      toast.message("Nothing to save.");
+      toast.message(t("editor.periodEditor.nothingToSave"));
       return;
     }
 
@@ -182,7 +152,7 @@ export function EconomyDataTab({
             ? { source: meta.source?.trim() || undefined, comment: meta.comment?.trim() || undefined }
             : undefined,
       });
-      toast.success(t("editor.tagOptions.updated"));
+      toast.success(t("editor.periodEditor.reportingDataSaved"));
       setEdited({});
       onSaved?.();
     } catch (e) {
@@ -210,9 +180,11 @@ export function EconomyDataTab({
               variant="secondary"
               size="sm"
               onClick={() => setSortOrder((o) => (o === "desc" ? "asc" : "desc"))}
-              className="min-w-0 max-w-none px-3 text-xs h-8"
+              className={editorDenseToolbarClass}
             >
-              {sortOrder === "desc" ? "Newest → Oldest" : "Oldest → Newest"}
+              {sortOrder === "desc"
+                ? t("editor.periodEditor.sortNewestFirst")
+                : t("editor.periodEditor.sortOldestFirst")}
             </Button>
             <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-01">
               <input
@@ -221,7 +193,7 @@ export function EconomyDataTab({
                 onChange={(e) => setShowAllYears(e.target.checked)}
                 className="rounded border-gray-03"
               />
-              Show all years
+              {t("editor.periodEditor.showAllYears")}
             </label>
             {years.length > 0 && (
               <MultiSelectDropdown
@@ -231,9 +203,9 @@ export function EconomyDataTab({
                   setSelectedYears(ids);
                   if (ids.length > 0) setShowAllYears(false);
                 }}
-                triggerLabel="Years"
-                emptyLabel="All years"
-                triggerClassName="min-w-[130px] !h-8 !text-xs px-3"
+                triggerLabel={t("editor.periodEditor.yearsTrigger")}
+                emptyLabel={t("editor.companies.allYears")}
+                triggerClassName={editorDenseMultiSelectTriggerClass}
               />
             )}
           </div>
@@ -277,7 +249,7 @@ export function EconomyDataTab({
                 const turnoverCurrencyDirty = rpEdits.turnoverCurrency != null;
                 const employeesUnitDirty = rpEdits.employeesUnit != null;
                 const periodYear = getPeriodYear(rp) ?? "—";
-                const periodDateRange = `${formatDateStamp(rp.startDate)} – ${formatDateStamp(rp.endDate)}`;
+                const periodDateRange = formatPeriodDateRange(rp.startDate, rp.endDate);
                 const reportUrlForOpen = (rp.reportURL ?? "").trim();
 
                 const turnoverVerified =
@@ -302,10 +274,10 @@ export function EconomyDataTab({
                           size="sm"
                           onClick={() => resetPeriod(rp.id)}
                           disabled={!edited[rp.id]}
-                          className="min-w-0 max-w-none px-3 text-xs h-8"
+                          className={editorDenseToolbarClass}
                         >
                           <Undo2 className="w-3.5 h-3.5 mr-1.5" />
-                          Reset
+                          {t("editor.periodEditor.reset")}
                         </Button>
                       </div>
                     </div>
@@ -320,7 +292,7 @@ export function EconomyDataTab({
                             asChild
                             variant="secondary"
                             size="sm"
-                            className="min-w-0 max-w-none shrink-0 px-3 text-xs h-8"
+                            className={editorDenseToolbarClass + " shrink-0"}
                           >
                             <a
                               href={reportUrlForOpen}
@@ -329,7 +301,7 @@ export function EconomyDataTab({
                               className="inline-flex items-center"
                             >
                               <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                              Open
+                              {t("editor.periodEditor.openReport")}
                             </a>
                           </Button>
                         ) : (
@@ -342,11 +314,11 @@ export function EconomyDataTab({
                       <div className="w-full min-w-0 lg:min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <label className="block text-xs font-medium text-gray-01">
-                            Turnover
+                            {t("editor.periodEditor.turnover")}
                           </label>
                           <MetadataDetailsDialog
-                            fieldLabel="Turnover"
-                            metadata={rp.economy?.turnover?.metadata as any}
+                            fieldLabel={t("editor.periodEditor.turnover")}
+                            metadata={rp.economy?.turnover?.metadata as GarboFieldMetadata | null}
                           />
                         </div>
                         <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-center">
@@ -375,13 +347,12 @@ export function EconomyDataTab({
                                 " placeholder:text-gray-02/70" +
                                 (turnoverCurrencyDirty ? " border-orange-03" : "")
                               }
-                              placeholder="SEK"
-                              aria-label="Turnover currency"
-                              title="Currency"
+                              placeholder={t("editor.periodEditor.currencyPlaceholder")}
+                              aria-label={t("editor.periodEditor.currencyAria")}
+                              title={t("editor.periodEditor.currencyTitle")}
                             />
-                            <button
-                              type="button"
-                              className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                            <IconActionButton
+                              variant="md"
                               onClick={() =>
                                 setEditedField(rp.id, { turnoverVerified: !turnoverVerified })
                               }
@@ -390,10 +361,10 @@ export function EconomyDataTab({
                             >
                               <BadgeCheck
                                 className={
-                                  "w-5 h-5 " + (turnoverVerified ? "text-green-03" : "text-gray-02")
+                                  turnoverVerified ? "text-green-03" : "text-gray-02"
                                 }
                               />
-                            </button>
+                            </IconActionButton>
                           </div>
                         </div>
                       </div>
@@ -401,11 +372,11 @@ export function EconomyDataTab({
                       <div className="w-full min-w-0 lg:min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <label className="block text-xs font-medium text-gray-01">
-                            Employees
+                            {t("editor.periodEditor.employees")}
                           </label>
                           <MetadataDetailsDialog
-                            fieldLabel="Employees"
-                            metadata={rp.economy?.employees?.metadata as any}
+                            fieldLabel={t("editor.periodEditor.employees")}
+                            metadata={rp.economy?.employees?.metadata as GarboFieldMetadata | null}
                           />
                         </div>
                         <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-center">
@@ -426,12 +397,12 @@ export function EconomyDataTab({
                               options={employeesUnitOptions}
                               value={employeesUnit}
                               onChange={(v) => setEditedField(rp.id, { employeesUnit: v })}
-                              placeholder="Unit"
-                              ariaLabel="Employees unit"
+                              placeholder={t("editor.periodEditor.employeesUnitPlaceholder")}
+                              ariaLabel={t("editor.periodEditor.employeesUnitAria")}
                               getOptionLabel={(v) => {
-                                if (v === "FTE") return "FTE (full-time equivalent)";
-                                if (v === "EOY") return "EOY (end of year)";
-                                if (v === "AVG") return "AVG (average)";
+                                if (v === "FTE") return t("editor.periodEditor.unitFteLong");
+                                if (v === "EOY") return t("editor.periodEditor.unitEoyLong");
+                                if (v === "AVG") return t("editor.periodEditor.unitAvgLong");
                                 return v;
                               }}
                               triggerClassName={
@@ -440,9 +411,8 @@ export function EconomyDataTab({
                               }
                               panelMinWidth={200}
                             />
-                            <button
-                              type="button"
-                              className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                            <IconActionButton
+                              variant="md"
                               onClick={() =>
                                 setEditedField(rp.id, { employeesVerified: !employeesVerified })
                               }
@@ -451,10 +421,10 @@ export function EconomyDataTab({
                             >
                               <BadgeCheck
                                 className={
-                                  "w-5 h-5 " + (employeesVerified ? "text-green-03" : "text-gray-02")
+                                  employeesVerified ? "text-green-03" : "text-gray-02"
                                 }
                               />
-                            </button>
+                            </IconActionButton>
                           </div>
                         </div>
                       </div>
@@ -487,7 +457,6 @@ export function EconomyDataTab({
         open={saveDialogOpen}
         onOpenChange={setSaveDialogOpen}
         saving={saving}
-        title="Reviewer details"
         confirmLabel={t("editor.fieldEdit.save")}
         initialComment={comment}
         initialSource={source}

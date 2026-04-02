@@ -34,8 +34,16 @@ export interface GarboCompanyListItem {
   wikidataId: string;
   name: string;
   tags?: string[];
+  /** Present when list API includes base year (number or wrapped shape with metadata). */
+  baseYear?:
+    | number
+    | { year?: number | null; metadata?: GarboMinimalMetadata | null }
+    | null;
   /** If list API returns industry (e.g. for sector filter). */
-  industry?: { subIndustryCode?: string } | null;
+  industry?: {
+    subIndustryCode?: string;
+    metadata?: GarboMinimalMetadata | null;
+  } | null;
   reportingPeriods?: GarboReportingPeriodSummary[];
   /** True if any emissions field has no verifiedBy (computed by Garbo). */
   hasUnverifiedEmissions?: boolean;
@@ -56,6 +64,16 @@ export interface GarboReportingPeriodSummary {
 export interface GarboMinimalMetadata {
   user?: { name?: string | null } | null;
   verifiedBy?: { name: string } | null;
+}
+
+/** Field-level metadata returned by Garbo (audit / verification). */
+export interface GarboFieldMetadata extends GarboMinimalMetadata {
+  source?: string | null;
+  comment?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  verifiedAt?: string | null;
+  parsedAt?: string | null;
 }
 
 export interface GarboEmissionsSummary {

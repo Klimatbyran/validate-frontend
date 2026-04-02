@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import {
   Dialog,
@@ -13,9 +14,9 @@ import { inputClassName } from "../lib/company-edit-utils";
 export function ReviewerMetadataDialog({
   open,
   onOpenChange,
-  title = "Reviewer details",
-  description = "Add an optional reviewer comment and source reference for this save.",
-  confirmLabel = "Save",
+  title,
+  description,
+  confirmLabel,
   saving,
   initialComment = "",
   initialSource = "",
@@ -31,8 +32,13 @@ export function ReviewerMetadataDialog({
   initialSource?: string;
   onConfirm: (meta: { comment: string; source: string }) => void | Promise<void>;
 }) {
+  const { t } = useI18n();
   const [comment, setComment] = useState(initialComment);
   const [source, setSource] = useState(initialSource);
+
+  const resolvedTitle = title ?? t("editor.reviewerDialog.title");
+  const resolvedDescription = description ?? t("editor.reviewerDialog.description");
+  const resolvedConfirm = confirmLabel ?? t("editor.fieldEdit.save");
 
   useEffect(() => {
     if (!open) return;
@@ -44,14 +50,17 @@ export function ReviewerMetadataDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle className="text-gray-01">{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogTitle className="text-gray-01">{resolvedTitle}</DialogTitle>
+          <DialogDescription>{resolvedDescription}</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-01 mb-1">
-              Comment <span className="text-sm font-normal text-gray-02">(optional)</span>
+              {t("editor.reviewerDialog.comment")}{" "}
+              <span className="text-sm font-normal text-gray-02">
+                {t("editor.reviewerDialog.optional")}
+              </span>
             </label>
             <textarea
               value={comment}
@@ -65,21 +74,30 @@ export function ReviewerMetadataDialog({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-01 mb-1">
-              Source <span className="text-sm font-normal text-gray-02">(optional)</span>
+              {t("editor.reviewerDialog.source")}{" "}
+              <span className="text-sm font-normal text-gray-02">
+                {t("editor.reviewerDialog.optional")}
+              </span>
             </label>
             <input
               type="text"
               value={source}
               onChange={(e) => setSource(e.target.value)}
               className={cn(inputClassName, "bg-gray-04 !placeholder:text-gray-02")}
-              placeholder="URL or reference"
+              placeholder={t("editor.reviewerDialog.sourcePlaceholder")}
             />
           </div>
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="secondary" size="sm" onClick={() => onOpenChange(false)} disabled={!!saving}>
-            Cancel
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={!!saving}
+          >
+            {t("editor.reviewerDialog.cancel")}
           </Button>
           <Button
             type="button"
@@ -88,11 +106,10 @@ export function ReviewerMetadataDialog({
             onClick={() => onConfirm({ comment: comment.trim(), source: source.trim() })}
             disabled={!!saving}
           >
-            {confirmLabel}
+            {resolvedConfirm}
           </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-

@@ -15,6 +15,13 @@ import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import type { GarboCompanyDetail } from "../lib/types";
 import { updateReportingPeriods } from "../lib/companies-api";
 import { inputClassName } from "../lib/company-edit-utils";
+import {
+  editorDenseMultiSelectTriggerClass,
+  editorDenseToolbarClass,
+  formatDateStamp,
+  getPeriodYear,
+} from "../lib/reporting-period-ui";
+import { useReportingPeriodColumnFilters } from "../hooks/useReportingPeriodColumnFilters";
 import { ReviewerMetadataDialog } from "./ReviewerMetadataDialog";
 import { AddReportingPeriodFlow } from "./AddReportingPeriodFlow";
 
@@ -23,16 +30,6 @@ type EditedPeriod = {
   endDate?: string;
   reportURL?: string;
 };
-
-function formatDateStamp(isoLike?: string | null) {
-  if (!isoLike) return "—";
-  return isoLike.slice(0, 10);
-}
-
-function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
-  const y = period.endDate?.slice(0, 4) ?? period.startDate?.slice(0, 4);
-  return y || null;
-}
 
 /** Preserve time / timezone suffix when replacing the calendar day part. */
 function mergeYmdIntoOriginal(ymd: string, originalIso: string): string {
@@ -64,10 +61,18 @@ export function ReportingPeriodsDataTab({
   const [source, setSource] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [showAllYears, setShowAllYears] = useState(true);
-  const [selectedYears, setSelectedYears] = useState<string[]>([]);
-  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
+  const {
+    showAllYears,
+    setShowAllYears,
+    selectedYears,
+    setSelectedYears,
+    sortOrder,
+    setSortOrder,
+    years,
+    visiblePeriods,
+  } = useReportingPeriodColumnFilters(periods, company.wikidataId);
 
   useEffect(() => {
     setEdited({});
@@ -75,38 +80,8 @@ export function ReportingPeriodsDataTab({
     setSource("");
     setSaving(false);
     setSaveDialogOpen(false);
-    setShowAllYears(true);
-    setSelectedYears([]);
-    setSortOrder("desc");
     setDeleteModalOpen(false);
   }, [company.wikidataId]);
-
-  const sortedPeriods = useMemo(() => {
-    const key = (p: { endDate?: string; startDate?: string }) =>
-      p.endDate ?? p.startDate ?? "";
-    const sorted = [...periods].sort((a, b) => key(b).localeCompare(key(a)));
-    return sortOrder === "desc" ? sorted : sorted.slice().reverse();
-  }, [periods, sortOrder]);
-
-  const years = useMemo(() => {
-    const set = new Set<string>();
-    sortedPeriods.forEach((p) => {
-      const y = getPeriodYear(p);
-      if (y) set.add(y);
-    });
-    const arr = Array.from(set).sort((a, b) => b.localeCompare(a));
-    return sortOrder === "desc" ? arr : arr.slice().reverse();
-  }, [sortedPeriods, sortOrder]);
-
-  const visiblePeriods = useMemo(() => {
-    const base = sortedPeriods;
-    if (showAllYears) return base;
-    if (!selectedYears.length) return base;
-    return base.filter((p) => {
-      const y = getPeriodYear(p);
-      return y ? selectedYears.includes(y) : false;
-    });
-  }, [sortedPeriods, selectedYears, showAllYears]);
 
   const setPatch = (rpId: string, patch: Partial<EditedPeriod>) => {
     setEdited((prev) => ({
@@ -179,7 +154,7 @@ export function ReportingPeriodsDataTab({
     }>;
 
     if (!payloadPeriods.length) {
-      toast.message("Nothing to save.");
+      toast.message(t("editor.periodEditor.nothingToSave"));
       return;
     }
 
@@ -192,7 +167,7 @@ export function ReportingPeriodsDataTab({
             ? { source: meta.source?.trim() || undefined, comment: meta.comment?.trim() || undefined }
             : undefined,
       });
-      toast.success(t("editor.tagOptions.updated"));
+      toast.success(t("editor.periodEditor.reportingDataSaved"));
       setEdited({});
       onSaved?.();
     } catch (err) {
@@ -221,9 +196,11 @@ export function ReportingPeriodsDataTab({
               variant="secondary"
               size="sm"
               onClick={() => setSortOrder((o) => (o === "desc" ? "asc" : "desc"))}
-              className="min-w-0 max-w-none px-3 text-xs h-8"
+              className={editorDenseToolbarClass}
             >
-              {sortOrder === "desc" ? "Newest → Oldest" : "Oldest → Newest"}
+              {sortOrder === "desc"
+                ? t("editor.periodEditor.sortNewestFirst")
+                : t("editor.periodEditor.sortOldestFirst")}
             </Button>
             <Button
               type="button"
@@ -231,11 +208,11 @@ export function ReportingPeriodsDataTab({
               size="sm"
               onClick={resetAll}
               disabled={Object.keys(edited).length === 0}
-              className="min-w-0 max-w-none px-3 text-xs h-8"
-              title="Reset all changes"
+              className={editorDenseToolbarClass}
+              title={t("editor.periodEditor.resetAllChangesTitle")}
             >
               <Undo2 className="w-3.5 h-3.5 mr-1.5" />
-              Reset all
+              {t("editor.periodEditor.resetAll")}
             </Button>
             <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-01">
               <input
@@ -244,7 +221,7 @@ export function ReportingPeriodsDataTab({
                 onChange={(e) => setShowAllYears(e.target.checked)}
                 className="rounded border-gray-03"
               />
-              Show all years
+              {t("editor.periodEditor.showAllYears")}
             </label>
             {years.length > 0 && (
               <MultiSelectDropdown
@@ -254,9 +231,9 @@ export function ReportingPeriodsDataTab({
                   setSelectedYears(ids);
                   if (ids.length > 0) setShowAllYears(false);
                 }}
-                triggerLabel="Years"
-                emptyLabel="All years"
-                triggerClassName="min-w-[130px] !h-8 !text-xs px-3"
+                triggerLabel={t("editor.periodEditor.yearsTrigger")}
+                emptyLabel={t("editor.companies.allYears")}
+                triggerClassName={editorDenseMultiSelectTriggerClass}
               />
             )}
           </div>
@@ -295,10 +272,10 @@ export function ReportingPeriodsDataTab({
                       size="sm"
                       onClick={() => resetPeriod(rp.id)}
                       disabled={!anyDirty}
-                      className="min-w-0 max-w-none px-3 text-xs h-8"
+                      className={editorDenseToolbarClass}
                     >
                       <Undo2 className="w-3.5 h-3.5 mr-1.5" />
-                      Reset
+                      {t("editor.periodEditor.reset")}
                     </Button>
                     <Button
                       type="button"
@@ -408,7 +385,6 @@ export function ReportingPeriodsDataTab({
         open={saveDialogOpen}
         onOpenChange={setSaveDialogOpen}
         saving={saving}
-        title="Reviewer details"
         confirmLabel={t("editor.fieldEdit.save")}
         initialComment={comment}
         initialSource={source}

@@ -3,14 +3,22 @@ import { BadgeCheck, ExternalLink, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
+import { IconActionButton } from "@/ui/icon-action-button";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { inputClassName } from "../lib/company-edit-utils";
 import { getCompany, updateReportingPeriods } from "../lib/companies-api";
 import type {
   GarboCompanyDetail,
   GarboCompanyListItem,
+  GarboFieldMetadata,
   GarboReportingPeriodSummary,
 } from "../lib/types";
+import {
+  assignNullableStringKey,
+  formatDateStamp,
+  getPeriodYear,
+  toNumberOrNull,
+} from "../lib/reporting-period-ui";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -20,12 +28,18 @@ import {
   DialogTitle,
 } from "@/ui/dialog";
 import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
-import { SCOPE3_CATEGORY_NAMES } from "@/tabs/jobbstatus/lib/scope3-data";
 
-const ALL_SCOPE3_CATEGORY_IDS = Object.keys(SCOPE3_CATEGORY_NAMES)
-  .map((k) => Number(k))
-  .filter((n) => Number.isFinite(n))
-  .sort((a, b) => a - b);
+const ALL_SCOPE3_CATEGORY_IDS = Array.from({ length: 16 }, (_, i) => i + 1);
+
+function quickEditScope3CategoryName(
+  cat: number,
+  t: (key: string, params?: Record<string, string | number>) => string
+): string {
+  const key = `editor.companies.scope3Categories.${cat}`;
+  const label = t(key);
+  if (!label || label === key) return t("editor.periodEditor.categoryUnknown", { n: cat });
+  return label;
+}
 
 type Edited = {
   reportURL?: string; // "" means clear (null) if original existed
@@ -54,23 +68,6 @@ type Edited = {
   statedTotalEmissions?: string;
   statedTotalVerified?: boolean;
 };
-
-function toNumberOrNull(value: string): number | null {
-  const v = value.trim();
-  if (!v) return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
-function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
-  const y = period.endDate?.slice(0, 4) ?? period.startDate?.slice(0, 4);
-  return y || null;
-}
-
-function formatDateStamp(isoLike?: string) {
-  if (!isoLike) return "—";
-  return isoLike.slice(0, 10);
-}
 
 function hasAnyEdits(ed: Edited) {
   return Object.keys(ed).length > 0;
@@ -149,16 +146,9 @@ export function ReportingPeriodQuickEditModal({
     value: string,
     hadOriginalValue: boolean
   ) => {
-    setEdited((prev) => {
-      const next = { ...prev };
-      const trimmedEmpty = value.trim() === "";
-      if (trimmedEmpty && !hadOriginalValue) {
-        delete (next as any)[key];
-      } else {
-        (next as any)[key] = trimmedEmpty ? "" : value;
-      }
-      return next;
-    });
+    setEdited((prev) =>
+      assignNullableStringKey({ ...prev }, String(key), value, hadOriginalValue) as Edited
+    );
   };
 
   const setScope3CatVal = (category: number, value: string, hadOriginalValue: boolean) => {
@@ -206,9 +196,11 @@ export function ReportingPeriodQuickEditModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>Year {year}</DialogTitle>
+            <DialogTitle>{t("editor.reportingPeriodQuickEdit.notFoundTitle", { year })}</DialogTitle>
             <DialogDescription>
-              {loadingDetail ? "Loading…" : "No reporting period found for this year."}
+              {loadingDetail
+                ? t("editor.periodEditor.loadingEllipsis")
+                : t("editor.reportingPeriodQuickEdit.notFoundDescription")}
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
@@ -285,14 +277,16 @@ export function ReportingPeriodQuickEditModal({
     edited.statedTotalEmissions ?? (originalStatedTotal != null ? String(originalStatedTotal) : "");
   const statedTotalVerified = edited.statedTotalVerified ?? originalStatedTotalVerified;
 
+  const scope12Label = t("editor.companies.scope1And2");
+
   const handleSave = async () => {
     if (!hasAnyEdits(edited) && !comment.trim() && !source.trim()) {
       onOpenChange(false);
       return;
     }
 
-    const emissions: any = {};
-    const economy: any = {};
+    const emissions: Record<string, unknown> = {};
+    const economy: Record<string, unknown> = {};
 
     // Economy
     if (edited.turnoverValue != null || edited.turnoverCurrency != null || edited.turnoverVerified != null) {
@@ -377,8 +371,10 @@ export function ReportingPeriodQuickEditModal({
             startDate: period.startDate,
             endDate: period.endDate,
             reportURL:
-              edited.reportURL != null
-                ? ((edited.reportURL.trim() ? edited.reportURL.trim() : null) as any)
+              edited.reportURL !== undefined
+                ? edited.reportURL.trim()
+                  ? edited.reportURL.trim()
+                  : null
                 : undefined,
             economy: Object.keys(economy).length ? economy : undefined,
             emissions: Object.keys(emissions).length ? emissions : undefined,
@@ -389,7 +385,7 @@ export function ReportingPeriodQuickEditModal({
             ? { source: source.trim() || undefined, comment: comment.trim() || undefined }
             : undefined,
       });
-      toast.success("Updated reporting period.");
+      toast.success(t("editor.reportingPeriodQuickEdit.updatedToast"));
       onSaved?.();
       onOpenChange(false);
     } catch (e) {
@@ -408,13 +404,16 @@ export function ReportingPeriodQuickEditModal({
               {company.name} · {year}
             </DialogTitle>
             <DialogDescription>
-              Quick edit economy and emissions for this reporting year.
+              {t("editor.reportingPeriodQuickEdit.description")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="shrink-0 mt-3 flex items-center justify-between gap-3">
             <div className="text-xs text-gray-02">
-              Period: {formatDateStamp(period.startDate)} → {formatDateStamp(period.endDate)}
+              {t("editor.reportingPeriodQuickEdit.periodLabel")}{" "}
+              {formatDateStamp(period.startDate)}{" "}
+              {t("editor.reportingPeriodQuickEdit.periodRangeSeparator")}{" "}
+              {formatDateStamp(period.endDate)}
             </div>
             <Button
               type="button"
@@ -425,20 +424,20 @@ export function ReportingPeriodQuickEditModal({
               className="min-w-0 px-3"
             >
               <Undo2 className="w-4 h-4 mr-2" />
-              Reset
+              {t("editor.periodEditor.reset")}
             </Button>
           </div>
 
           <div className="shrink-0 mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-gray-05/40 px-3 py-2">
             <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide">
-              Report URL
+              {t("editor.reportingPeriodQuickEdit.reportUrlSection")}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {originalReportURL && (
                 <Button asChild size="sm" variant="secondary" className="min-w-0">
                   <a href={originalReportURL} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="w-4 h-4 mr-2" />
-                    Open
+                    {t("editor.periodEditor.openReport")}
                   </a>
                 </Button>
               )}
@@ -451,11 +450,10 @@ export function ReportingPeriodQuickEditModal({
                   " bg-gray-04 !w-[420px] !max-w-full placeholder:text-gray-02/70 " +
                   (edited.reportURL != null ? " border-orange-03" : "")
                 }
-                placeholder="https://…"
+                placeholder={t("editor.reportingPeriodQuickEdit.urlPlaceholder")}
               />
-              <button
-                type="button"
-                className="h-9 w-9 rounded-full inline-flex items-center justify-center hover:bg-gray-03/40"
+              <IconActionButton
+                variant="md"
                 onClick={() =>
                   setEdited((p) => {
                     const n = { ...p };
@@ -463,22 +461,25 @@ export function ReportingPeriodQuickEditModal({
                     return n;
                   })
                 }
-                title="Reset report URL"
+                title={t("editor.reportingPeriodQuickEdit.resetReportUrlTitle")}
+                aria-label={t("editor.reportingPeriodQuickEdit.resetReportUrlTitle")}
               >
-                <Undo2 className="w-5 h-5 text-gray-02" />
-              </button>
+                <Undo2 className="text-gray-02" />
+              </IconActionButton>
             </div>
           </div>
 
           <div className="mt-4 flex-1 min-h-0 overflow-y-auto px-1 space-y-6">
             <div>
               <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide mb-2">
-                Economy
+                {t("editor.reportingPeriodQuickEdit.economySection")}
               </div>
               <div className="space-y-4">
                 <div>
                   <div className="mb-1">
-                    <label className="text-sm font-medium text-gray-01">Turnover</label>
+                    <label className="text-sm font-medium text-gray-01">
+                      {t("editor.periodEditor.turnover")}
+                    </label>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
@@ -508,15 +509,14 @@ export function ReportingPeriodQuickEditModal({
                         " bg-gray-04 !w-20 !max-w-none text-center " +
                         (edited.turnoverCurrency != null ? " border-orange-03" : "")
                       }
-                      placeholder="SEK"
+                      placeholder={t("editor.periodEditor.currencyPlaceholder")}
                     />
                     <MetadataDetailsDialog
-                      fieldLabel="Turnover"
-                      metadata={period.economy?.turnover?.metadata ?? null}
+                      fieldLabel={t("editor.periodEditor.turnover")}
+                      metadata={period.economy?.turnover?.metadata as GarboFieldMetadata | null}
                     />
-                    <button
-                      type="button"
-                      className="h-9 w-9 rounded-full inline-flex items-center justify-center hover:bg-gray-03/40"
+                    <IconActionButton
+                      variant="md"
                       onClick={() =>
                         setEdited((p) => {
                           const n = { ...p };
@@ -526,33 +526,34 @@ export function ReportingPeriodQuickEditModal({
                           return n;
                         })
                       }
-                      title="Reset turnover"
+                      title={t("editor.reportingPeriodQuickEdit.resetTurnoverTitle")}
+                      aria-label={t("editor.reportingPeriodQuickEdit.resetTurnoverTitle")}
                     >
-                      <Undo2 className="w-5 h-5 text-gray-02" />
-                    </button>
-                    <button
-                      type="button"
-                      className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                      <Undo2 className="text-gray-02" />
+                    </IconActionButton>
+                    <IconActionButton
+                      variant="md"
                       onClick={() =>
                         setEdited((p) => ({
                           ...p,
                           turnoverVerified: !turnoverVerified,
                         }))
                       }
-                      title="Toggle verified"
+                      title={t("editor.periodEditor.toggleVerifiedTitle")}
+                      aria-label={t("editor.periodEditor.toggleVerifiedTitle")}
                     >
                       <BadgeCheck
-                        className={
-                          "w-5 h-5 " + (turnoverVerified ? "text-green-03" : "text-gray-02")
-                        }
+                        className={turnoverVerified ? "text-green-03" : "text-gray-02"}
                       />
-                    </button>
+                    </IconActionButton>
                   </div>
                 </div>
 
                 <div>
                   <div className="mb-1">
-                    <label className="text-sm font-medium text-gray-01">Employees</label>
+                    <label className="text-sm font-medium text-gray-01">
+                      {t("editor.periodEditor.employees")}
+                    </label>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <input
@@ -572,26 +573,25 @@ export function ReportingPeriodQuickEditModal({
                       options={employeeUnitOptions}
                       value={employeesUnit}
                       onChange={(v) => setEdited((p) => ({ ...p, employeesUnit: v }))}
-                      placeholder="Unit"
+                      placeholder={t("editor.periodEditor.employeesUnitPlaceholder")}
                       triggerClassName={
                         "w-28 justify-between " +
                         (edited.employeesUnit != null ? "border-orange-03" : "")
                       }
                       panelMinWidth={180}
                       getOptionLabel={(v) => {
-                        if (v === "FTE") return "FTE (full-time equivalent)";
-                        if (v === "EOY") return "EOY (end of year)";
-                        if (v === "AVG") return "AVG (average)";
+                        if (v === "FTE") return t("editor.periodEditor.unitFteLong");
+                        if (v === "EOY") return t("editor.periodEditor.unitEoyLong");
+                        if (v === "AVG") return t("editor.periodEditor.unitAvgLong");
                         return v;
                       }}
                     />
                     <MetadataDetailsDialog
-                      fieldLabel="Employees"
-                      metadata={period.economy?.employees?.metadata ?? null}
+                      fieldLabel={t("editor.periodEditor.employees")}
+                      metadata={period.economy?.employees?.metadata as GarboFieldMetadata | null}
                     />
-                    <button
-                      type="button"
-                      className="h-9 w-9 rounded-full inline-flex items-center justify-center hover:bg-gray-03/40"
+                    <IconActionButton
+                      variant="md"
                       onClick={() =>
                         setEdited((p) => {
                           const n = { ...p };
@@ -601,27 +601,26 @@ export function ReportingPeriodQuickEditModal({
                           return n;
                         })
                       }
-                      title="Reset employees"
+                      title={t("editor.reportingPeriodQuickEdit.resetEmployeesTitle")}
+                      aria-label={t("editor.reportingPeriodQuickEdit.resetEmployeesTitle")}
                     >
-                      <Undo2 className="w-5 h-5 text-gray-02" />
-                    </button>
-                    <button
-                      type="button"
-                      className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                      <Undo2 className="text-gray-02" />
+                    </IconActionButton>
+                    <IconActionButton
+                      variant="md"
                       onClick={() =>
                         setEdited((p) => ({
                           ...p,
                           employeesVerified: !employeesVerified,
                         }))
                       }
-                      title="Toggle verified"
+                      title={t("editor.periodEditor.toggleVerifiedTitle")}
+                      aria-label={t("editor.periodEditor.toggleVerifiedTitle")}
                     >
                       <BadgeCheck
-                        className={
-                          "w-5 h-5 " + (employeesVerified ? "text-green-03" : "text-gray-02")
-                        }
+                        className={employeesVerified ? "text-green-03" : "text-gray-02"}
                       />
-                    </button>
+                    </IconActionButton>
                   </div>
                 </div>
               </div>
@@ -629,12 +628,14 @@ export function ReportingPeriodQuickEditModal({
 
             <div>
               <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide mb-2">
-                Emissions
+                {t("editor.reportingPeriodQuickEdit.emissionsSection")}
               </div>
 
               <div className="space-y-3">
                 <div>
-                  <div className="text-sm font-medium text-gray-01 mb-1">Scope 1</div>
+                  <div className="text-sm font-medium text-gray-01 mb-1">
+                    {t("editor.companies.scope1")}
+                  </div>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -649,12 +650,11 @@ export function ReportingPeriodQuickEditModal({
                       }
                     />
                     <MetadataDetailsDialog
-                      fieldLabel="Scope 1"
-                      metadata={period.emissions?.scope1?.metadata ?? null}
+                      fieldLabel={t("editor.companies.scope1")}
+                      metadata={period.emissions?.scope1?.metadata as GarboFieldMetadata | null}
                     />
-                    <button
-                      type="button"
-                      className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                    <IconActionButton
+                      variant="md"
                       onClick={() =>
                         setEdited((p) => {
                           const n = { ...p };
@@ -663,29 +663,28 @@ export function ReportingPeriodQuickEditModal({
                           return n;
                         })
                       }
-                      title="Reset Scope 1"
+                      title={t("editor.reportingPeriodQuickEdit.resetScope1Title")}
+                      aria-label={t("editor.reportingPeriodQuickEdit.resetScope1Title")}
                     >
-                      <Undo2 className="w-5 h-5 text-gray-02" />
-                    </button>
-                    <button
-                      type="button"
-                      className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                      <Undo2 className="text-gray-02" />
+                    </IconActionButton>
+                    <IconActionButton
+                      variant="md"
                       onClick={() =>
                         setEdited((p) => ({ ...p, scope1Verified: !scope1Verified }))
                       }
-                      title="Toggle verified"
+                      title={t("editor.periodEditor.toggleVerifiedTitle")}
+                      aria-label={t("editor.periodEditor.toggleVerifiedTitle")}
                     >
                       <BadgeCheck
-                        className={
-                          "w-5 h-5 " + (scope1Verified ? "text-green-03" : "text-gray-02")
-                        }
+                        className={scope1Verified ? "text-green-03" : "text-gray-02"}
                       />
-                    </button>
+                    </IconActionButton>
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-gray-01 mb-1">Scope 1+2</div>
+                  <div className="text-sm font-medium text-gray-01 mb-1">{scope12Label}</div>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -704,12 +703,11 @@ export function ReportingPeriodQuickEditModal({
                       }
                     />
                     <MetadataDetailsDialog
-                      fieldLabel="Scope 1+2"
-                      metadata={period.emissions?.scope1And2?.metadata ?? null}
+                      fieldLabel={scope12Label}
+                      metadata={period.emissions?.scope1And2?.metadata as GarboFieldMetadata | null}
                     />
-                    <button
-                      type="button"
-                      className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                    <IconActionButton
+                      variant="md"
                       onClick={() =>
                         setEdited((p) => {
                           const n = { ...p };
@@ -718,41 +716,41 @@ export function ReportingPeriodQuickEditModal({
                           return n;
                         })
                       }
-                      title="Reset Scope 1+2"
+                      title={t("editor.reportingPeriodQuickEdit.resetScope1And2Title")}
+                      aria-label={t("editor.reportingPeriodQuickEdit.resetScope1And2Title")}
                     >
-                      <Undo2 className="w-5 h-5 text-gray-02" />
-                    </button>
-                    <button
-                      type="button"
-                      className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                      <Undo2 className="text-gray-02" />
+                    </IconActionButton>
+                    <IconActionButton
+                      variant="md"
                       onClick={() =>
                         setEdited((p) => ({
                           ...p,
                           scope1And2Verified: !scope1And2Verified,
                         }))
                       }
-                      title="Toggle verified"
+                      title={t("editor.periodEditor.toggleVerifiedTitle")}
+                      aria-label={t("editor.periodEditor.toggleVerifiedTitle")}
                     >
                       <BadgeCheck
-                        className={
-                          "w-5 h-5 " + (scope1And2Verified ? "text-green-03" : "text-gray-02")
-                        }
+                        className={scope1And2Verified ? "text-green-03" : "text-gray-02"}
                       />
-                    </button>
+                    </IconActionButton>
                   </div>
                 </div>
 
                 <div className="rounded-lg bg-gray-04 p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-medium text-gray-01">Scope 2</div>
+                    <div className="text-sm font-medium text-gray-01">
+                      {t("editor.companies.scope2")}
+                    </div>
                     <div className="flex items-center gap-1">
                       <MetadataDetailsDialog
-                        fieldLabel="Scope 2"
-                        metadata={period.emissions?.scope2?.metadata ?? null}
+                        fieldLabel={t("editor.companies.scope2")}
+                        metadata={period.emissions?.scope2?.metadata as GarboFieldMetadata | null}
                       />
-                      <button
-                        type="button"
-                        className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                      <IconActionButton
+                        variant="md"
                         onClick={() =>
                           setEdited((p) => {
                             const n = { ...p };
@@ -763,27 +761,28 @@ export function ReportingPeriodQuickEditModal({
                             return n;
                           })
                         }
-                        title="Reset Scope 2"
+                        title={t("editor.reportingPeriodQuickEdit.resetScope2Title")}
+                        aria-label={t("editor.reportingPeriodQuickEdit.resetScope2Title")}
                       >
-                        <Undo2 className="w-5 h-5 text-gray-02" />
-                      </button>
-                      <button
-                        type="button"
-                        className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                        <Undo2 className="text-gray-02" />
+                      </IconActionButton>
+                      <IconActionButton
+                        variant="md"
                         onClick={() => setEdited((p) => ({ ...p, scope2Verified: !scope2Verified }))}
-                        title="Toggle verified (Scope 2)"
+                        title={t("editor.periodEditor.toggleVerifiedScope2Title")}
+                        aria-label={t("editor.periodEditor.toggleVerifiedScope2Title")}
                       >
                         <BadgeCheck
-                          className={
-                            "w-5 h-5 " + (scope2Verified ? "text-green-03" : "text-gray-02")
-                          }
+                          className={scope2Verified ? "text-green-03" : "text-gray-02"}
                         />
-                      </button>
+                      </IconActionButton>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div>
-                      <div className="text-xs text-gray-02 mb-1">MB</div>
+                      <div className="text-xs text-gray-02 mb-1">
+                        {t("editor.periodEditor.scope2Mb")}
+                      </div>
                       <input
                         type="number"
                         value={scope2MbValue}
@@ -798,7 +797,9 @@ export function ReportingPeriodQuickEditModal({
                       />
                     </div>
                     <div>
-                      <div className="text-xs text-gray-02 mb-1">LB</div>
+                      <div className="text-xs text-gray-02 mb-1">
+                        {t("editor.periodEditor.scope2Lb")}
+                      </div>
                       <input
                         type="number"
                         value={scope2LbValue}
@@ -813,7 +814,9 @@ export function ReportingPeriodQuickEditModal({
                       />
                     </div>
                     <div>
-                      <div className="text-xs text-gray-02 mb-1">Unknown</div>
+                      <div className="text-xs text-gray-02 mb-1">
+                        {t("editor.periodEditor.scope2Unknown")}
+                      </div>
                       <input
                         type="number"
                         value={scope2UnknownValue}
@@ -835,7 +838,9 @@ export function ReportingPeriodQuickEditModal({
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-gray-01 mb-1">Scope 3 total</div>
+                  <div className="text-sm font-medium text-gray-01 mb-1">
+                    {t("editor.reportingPeriodQuickEdit.scope3StatedTotal")}
+                  </div>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -854,12 +859,14 @@ export function ReportingPeriodQuickEditModal({
                       }
                     />
                     <MetadataDetailsDialog
-                      fieldLabel="Scope 3 stated total"
-                      metadata={period.emissions?.scope3?.statedTotalEmissions?.metadata ?? null}
+                      fieldLabel={t("editor.reportingPeriodQuickEdit.scope3StatedTotal")}
+                      metadata={
+                        period.emissions?.scope3?.statedTotalEmissions
+                          ?.metadata as GarboFieldMetadata | null
+                      }
                     />
-                    <button
-                      type="button"
-                      className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                    <IconActionButton
+                      variant="md"
                       onClick={() =>
                         setEdited((p) => {
                           const n = { ...p };
@@ -868,33 +875,36 @@ export function ReportingPeriodQuickEditModal({
                           return n;
                         })
                       }
-                      title="Reset Scope 3 stated total"
+                      title={t("editor.reportingPeriodQuickEdit.resetScope3StatedTitle")}
+                      aria-label={t("editor.reportingPeriodQuickEdit.resetScope3StatedTitle")}
                     >
-                      <Undo2 className="w-5 h-5 text-gray-02" />
-                    </button>
-                    <button
-                      type="button"
-                      className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                      <Undo2 className="text-gray-02" />
+                    </IconActionButton>
+                    <IconActionButton
+                      variant="md"
                       onClick={() =>
                         setEdited((p) => ({
                           ...p,
                           scope3StatedTotalVerified: !scope3StatedTotalVerified,
                         }))
                       }
-                      title="Toggle verified"
+                      title={t("editor.periodEditor.toggleVerifiedTitle")}
+                      aria-label={t("editor.periodEditor.toggleVerifiedTitle")}
                     >
                       <BadgeCheck
                         className={
-                          "w-5 h-5 " + (scope3StatedTotalVerified ? "text-green-03" : "text-gray-02")
+                          scope3StatedTotalVerified ? "text-green-03" : "text-gray-02"
                         }
                       />
-                    </button>
+                    </IconActionButton>
                   </div>
                 </div>
 
                 <div className="rounded-lg bg-gray-04 p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                    <div className="text-sm font-medium text-gray-01">Scope 3 categories</div>
+                    <div className="text-sm font-medium text-gray-01">
+                      {t("editor.reportingPeriodQuickEdit.scope3CategoriesSection")}
+                    </div>
                     <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-01 shrink-0">
                       <input
                         type="checkbox"
@@ -924,7 +934,10 @@ export function ReportingPeriodQuickEditModal({
                         return (
                           <div key={cat}>
                             <div className="text-xs text-gray-02 mb-1">
-                              Cat {cat}: {SCOPE3_CATEGORY_NAMES[cat] ?? `Category ${cat}`}
+                              {t("editor.periodEditor.categoryLine", {
+                                n: cat,
+                                name: quickEditScope3CategoryName(cat, t),
+                              })}
                             </div>
                             <div className="flex items-center gap-2">
                               <input
@@ -940,29 +953,29 @@ export function ReportingPeriodQuickEditModal({
                                 }
                               />
                               <MetadataDetailsDialog
-                                fieldLabel={`Scope 3 category ${cat}`}
-                                metadata={original?.metadata ?? null}
+                                fieldLabel={t("editor.reportingPeriodQuickEdit.scope3CategoryField", {
+                                  n: cat,
+                                })}
+                                metadata={original?.metadata as GarboFieldMetadata | null}
                               />
-                              <button
-                                type="button"
-                                className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                              <IconActionButton
+                                variant="md"
                                 onClick={() => resetScope3Category(cat)}
-                                title="Reset category"
+                                title={t("editor.periodEditor.resetCategoryTitle")}
+                                aria-label={t("editor.periodEditor.resetCategoryTitle")}
                               >
-                                <Undo2 className="w-5 h-5 text-gray-02" />
-                              </button>
-                              <button
-                                type="button"
-                                className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                                <Undo2 className="text-gray-02" />
+                              </IconActionButton>
+                              <IconActionButton
+                                variant="md"
                                 onClick={() => setScope3CatVerified(cat, !v)}
-                                title="Toggle verified"
+                                title={t("editor.periodEditor.toggleVerifiedTitle")}
+                                aria-label={t("editor.periodEditor.toggleVerifiedTitle")}
                               >
                                 <BadgeCheck
-                                  className={
-                                    "w-5 h-5 " + (v ? "text-green-03" : "text-gray-02")
-                                  }
+                                  className={v ? "text-green-03" : "text-gray-02"}
                                 />
-                              </button>
+                              </IconActionButton>
                             </div>
                           </div>
                         );
@@ -971,7 +984,9 @@ export function ReportingPeriodQuickEditModal({
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-gray-01 mb-1">Overall total</div>
+                  <div className="text-sm font-medium text-gray-01 mb-1">
+                    {t("editor.reportingPeriodQuickEdit.overallTotal")}
+                  </div>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -990,12 +1005,13 @@ export function ReportingPeriodQuickEditModal({
                       }
                     />
                     <MetadataDetailsDialog
-                      fieldLabel="Overall stated total"
-                      metadata={period.emissions?.statedTotalEmissions?.metadata ?? null}
+                      fieldLabel={t("editor.reportingPeriodQuickEdit.overallStatedTotal")}
+                      metadata={
+                        period.emissions?.statedTotalEmissions?.metadata as GarboFieldMetadata | null
+                      }
                     />
-                    <button
-                      type="button"
-                      className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                    <IconActionButton
+                      variant="md"
                       onClick={() =>
                         setEdited((p) => {
                           const n = { ...p };
@@ -1004,27 +1020,26 @@ export function ReportingPeriodQuickEditModal({
                           return n;
                         })
                       }
-                      title="Reset overall stated total"
+                      title={t("editor.reportingPeriodQuickEdit.resetOverallStatedTitle")}
+                      aria-label={t("editor.reportingPeriodQuickEdit.resetOverallStatedTitle")}
                     >
-                      <Undo2 className="w-5 h-5 text-gray-02" />
-                    </button>
-                    <button
-                      type="button"
-                      className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                      <Undo2 className="text-gray-02" />
+                    </IconActionButton>
+                    <IconActionButton
+                      variant="md"
                       onClick={() =>
                         setEdited((p) => ({
                           ...p,
                           statedTotalVerified: !statedTotalVerified,
                         }))
                       }
-                      title="Toggle verified"
+                      title={t("editor.periodEditor.toggleVerifiedTitle")}
+                      aria-label={t("editor.periodEditor.toggleVerifiedTitle")}
                     >
                       <BadgeCheck
-                        className={
-                          "w-5 h-5 " + (statedTotalVerified ? "text-green-03" : "text-gray-02")
-                        }
+                        className={statedTotalVerified ? "text-green-03" : "text-gray-02"}
                       />
-                    </button>
+                    </IconActionButton>
                   </div>
                 </div>
               </div>
@@ -1040,7 +1055,10 @@ export function ReportingPeriodQuickEditModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-01 mb-1">
-                  Comment <span className="text-sm font-normal text-gray-02">(optional)</span>
+                  {t("editor.reviewerDialog.comment")}{" "}
+                  <span className="text-sm font-normal text-gray-02">
+                    {t("editor.reviewerDialog.optional")}
+                  </span>
                 </label>
                 <textarea
                   value={comment}
@@ -1054,20 +1072,23 @@ export function ReportingPeriodQuickEditModal({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-01 mb-1">
-                  Source <span className="text-sm font-normal text-gray-02">(optional)</span>
+                  {t("editor.reviewerDialog.source")}{" "}
+                  <span className="text-sm font-normal text-gray-02">
+                    {t("editor.reviewerDialog.optional")}
+                  </span>
                 </label>
                 <input
                   type="text"
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
                   className={cn(inputClassName, "bg-gray-04 !placeholder:text-gray-02")}
-                  placeholder="URL or reference"
+                  placeholder={t("editor.reviewerDialog.sourcePlaceholder")}
                 />
               </div>
             </div>
             <div className="flex justify-end pt-4">
               <Button type="button" variant="primary" size="sm" onClick={handleSave} disabled={saving}>
-                {saving ? "Saving…" : "Save"}
+                {saving ? t("editor.periodEditor.saving") : t("editor.reportingPeriodQuickEdit.save")}
               </Button>
             </div>
           </div>

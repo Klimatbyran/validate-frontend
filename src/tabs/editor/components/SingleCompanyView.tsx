@@ -25,11 +25,8 @@ import { NO_TAGS_FILTER_OPTION } from "../lib/types";
 import { buildTagLabelBySlug, companyMatchesTagFilter } from "../lib/editor-tag-and-payload-utils";
 import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
 import { ReportingPeriodQuickEditModal } from "./ReportingPeriodQuickEditModal";
-
-function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
-  const y = period.endDate?.slice(0, 4) ?? period.startDate?.slice(0, 4);
-  return y || null;
-}
+import { displayBaseYear } from "../lib/company-edit-utils";
+import { getPeriodYear } from "../lib/reporting-period-ui";
 
 function companyHasPeriodsInYears(
   company: GarboCompanyListItem,
@@ -419,7 +416,7 @@ export function SingleCompanyView() {
                     <td className="px-4 py-3 text-gray-02">
                       <div className="flex items-center gap-2">
                         <StatusIcon state={overview?.baseYear ?? "none"} />
-                        <span>{(c as any).baseYear?.year ?? "—"}</span>
+                        <span>{displayBaseYear(c.baseYear)}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -440,7 +437,7 @@ export function SingleCompanyView() {
                                 setQuickEdit({ companyId: c.wikidataId, year: p.year });
                               }}
                               className="inline-flex items-center gap-2 rounded-full border border-gray-03 px-2 py-1 text-xs text-gray-01 bg-gray-05 hover:bg-gray-03/40"
-                              title={`Quick edit ${p.year}`}
+                              title={t("editor.periodEditor.quickEditYearTitle", { year: p.year })}
                             >
                               <span className="font-semibold">{p.year}</span>
                               <span className="inline-flex items-center gap-1">

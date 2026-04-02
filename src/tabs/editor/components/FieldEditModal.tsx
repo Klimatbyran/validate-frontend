@@ -11,9 +11,7 @@ import {
   DialogDescription,
 } from "@/ui/dialog";
 import type { GarboMetadata } from "../lib/types";
-
-const inputClassName =
-  "w-full px-3 py-2 rounded-lg border border-gray-03 bg-gray-05 text-gray-01 placeholder:text-gray-03 focus:outline-none focus:ring-2 focus:ring-blue-03";
+import { inputClassName } from "../lib/company-edit-utils";
 
 export interface FieldEditModalProps {
   open: boolean;

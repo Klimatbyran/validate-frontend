@@ -15,14 +15,10 @@ import type { GarboCompanyDetail, GarboCompanyListItem } from "../lib/types";
 import { getCompany, updateReportingPeriods } from "../lib/companies-api";
 import { inputClassName } from "../lib/company-edit-utils";
 import { ReportingPeriodQuickEditModal } from "./ReportingPeriodQuickEditModal";
+import { getPeriodYear } from "../lib/reporting-period-ui";
 
 function ymdToIsoStartOfDay(ymd: string) {
   return `${ymd}T00:00:00.000Z`;
-}
-
-function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
-  const y = period.endDate?.slice(0, 4) ?? period.startDate?.slice(0, 4);
-  return y || null;
 }
 
 function detailToListItem(d: GarboCompanyDetail): GarboCompanyListItem {
