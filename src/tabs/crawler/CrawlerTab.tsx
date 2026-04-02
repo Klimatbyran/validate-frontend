@@ -147,7 +147,6 @@ export function CrawlerTab() {
 
   const handleDatabaseSearchClick = async () => {
     if (!selectedCompanies.length || !reportYearInput) return;
-    console.log(selectedCompanies);
 
     const companyNames = selectedCompanies.map((c) => c.name);
     const wikidataIdMap = Object.fromEntries(
