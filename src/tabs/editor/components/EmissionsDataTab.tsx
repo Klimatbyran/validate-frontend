@@ -8,6 +8,7 @@ import type { GarboCompanyDetail } from "../lib/types";
 import { updateReportingPeriods } from "../lib/companies-api";
 import { inputClassName } from "../lib/company-edit-utils";
 import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
+import { ReviewerMetadataDialog } from "./ReviewerMetadataDialog";
 
 type EditedPeriodEmissions = {
   reportURL?: string;
@@ -67,6 +68,7 @@ export function EmissionsDataTab({
   const [comment, setComment] = useState("");
   const [source, setSource] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [showAllYears, setShowAllYears] = useState(true);
   const [selectedYears, setSelectedYears] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
@@ -76,6 +78,7 @@ export function EmissionsDataTab({
     setComment("");
     setSource("");
     setSaving(false);
+    setSaveDialogOpen(false);
     setShowAllYears(true);
     setSelectedYears([]);
     setSortOrder("desc");
@@ -274,7 +277,7 @@ export function EmissionsDataTab({
     </button>
   );
 
-  const handleSave = async () => {
+  const handleSave = async (meta?: { comment?: string; source?: string }) => {
     const payloadPeriods = visiblePeriods
       .map((rp) => {
         const rpEdits = edited[rp.id];
@@ -425,14 +428,12 @@ export function EmissionsDataTab({
       await updateReportingPeriods(company.wikidataId, {
         reportingPeriods: payloadPeriods,
         metadata:
-          source.trim() || comment.trim()
-            ? { source: source.trim() || undefined, comment: comment.trim() || undefined }
+          meta?.source?.trim() || meta?.comment?.trim()
+            ? { source: meta.source?.trim() || undefined, comment: meta.comment?.trim() || undefined }
             : undefined,
       });
       toast.success(t("editor.tagOptions.updated"));
       setEdited({});
-      setComment("");
-      setSource("");
       onSaved?.();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
@@ -442,7 +443,7 @@ export function EmissionsDataTab({
   };
 
   return (
-    <section className="rounded-lg border border-gray-03 bg-gray-05 p-4">
+    <section className="rounded-lg bg-gray-05 p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h3 className="text-sm font-semibold text-gray-01">
@@ -506,7 +507,7 @@ export function EmissionsDataTab({
               {t("editor.singleCompanyView.sections.reportingPeriods")}
             </div>
 
-            <div className="rounded-lg border border-gray-03 bg-gray-04 overflow-hidden">
+            <div className="rounded-lg bg-gray-04 overflow-hidden">
               <table
                 className={
                   (isSingleYearView ? "w-full" : "min-w-max") +
@@ -1189,44 +1190,33 @@ export function EmissionsDataTab({
         </p>
       )}
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-01 mb-1">
-            {t("editor.fieldEdit.comment")}{" "}
-            <span className="text-gray-03 font-normal">({t("common.optional")})</span>
-          </label>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder={t("editor.fieldEdit.commentPlaceholder")}
-            className={
-              inputClassName +
-              " bg-gray-04 min-h-[90px] resize-y placeholder:text-gray-02/70"
-            }
-            rows={3}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-01 mb-1">
-            {t("editor.fieldEdit.source")}{" "}
-            <span className="text-gray-03 font-normal">({t("common.optional")})</span>
-          </label>
-          <input
-            type="text"
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            placeholder={t("editor.fieldEdit.sourcePlaceholder")}
-            className={inputClassName + " bg-gray-04 placeholder:text-gray-02/70"}
-          />
-        </div>
-      </div>
-
       <div className="mt-4 flex justify-end">
-        <Button type="button" variant="primary" size="sm" onClick={handleSave} disabled={saving}>
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
+          onClick={() => setSaveDialogOpen(true)}
+          disabled={saving}
+        >
           {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {t("editor.fieldEdit.save")}
         </Button>
       </div>
+
+      <ReviewerMetadataDialog
+        open={saveDialogOpen}
+        onOpenChange={setSaveDialogOpen}
+        saving={saving}
+        title="Reviewer details"
+        confirmLabel={t("editor.fieldEdit.save")}
+        initialComment={comment}
+        initialSource={source}
+        onConfirm={(m) => {
+          setComment(m.comment);
+          setSource(m.source);
+          return handleSave(m);
+        }}
+      />
     </section>
   );
 }

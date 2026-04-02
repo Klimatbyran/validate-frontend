@@ -9,6 +9,7 @@ import type { GarboCompanyDetail } from "../lib/types";
 import { updateReportingPeriods } from "../lib/companies-api";
 import { inputClassName } from "../lib/company-edit-utils";
 import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
+import { ReviewerMetadataDialog } from "./ReviewerMetadataDialog";
 
 type EditedPeriodEconomy = {
   reportURL?: string;
@@ -27,11 +28,9 @@ function toNumberOrNull(value: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function formatMonthYear(dateLike: string | undefined | null): string | null {
-  if (!dateLike) return null;
-  const d = new Date(dateLike);
-  if (Number.isNaN(d.getTime())) return null;
-  return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(d);
+function formatDateStamp(isoLike?: string | null) {
+  if (!isoLike) return "—";
+  return isoLike.slice(0, 10);
 }
 
 function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
@@ -57,6 +56,7 @@ export function EconomyDataTab({
   const [comment, setComment] = useState("");
   const [source, setSource] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [showAllYears, setShowAllYears] = useState(true);
   const [selectedYears, setSelectedYears] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
@@ -66,6 +66,7 @@ export function EconomyDataTab({
     setComment("");
     setSource("");
     setSaving(false);
+    setSaveDialogOpen(false);
     setShowAllYears(true);
     setSelectedYears([]);
     setSortOrder("desc");
@@ -113,7 +114,7 @@ export function EconomyDataTab({
     });
   };
 
-  const handleSave = async () => {
+  const handleSave = async (meta?: { comment?: string; source?: string }) => {
     const payloadPeriods = visiblePeriods
       .map((rp) => {
         const rpEdits = edited[rp.id];
@@ -180,12 +181,13 @@ export function EconomyDataTab({
     try {
       await updateReportingPeriods(company.wikidataId, {
         reportingPeriods: payloadPeriods,
-        metadata: source.trim() || comment.trim() ? { source: source.trim() || undefined, comment: comment.trim() || undefined } : undefined,
+        metadata:
+          meta?.source?.trim() || meta?.comment?.trim()
+            ? { source: meta.source?.trim() || undefined, comment: meta.comment?.trim() || undefined }
+            : undefined,
       });
       toast.success(t("editor.tagOptions.updated"));
       setEdited({});
-      setComment("");
-      setSource("");
       onSaved?.();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
@@ -195,14 +197,14 @@ export function EconomyDataTab({
   };
 
   return (
-    <section className="rounded-lg border border-gray-03 bg-gray-05 p-4">
+    <section className="rounded-lg bg-gray-05 p-4 w-full min-w-0 max-w-full">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h3 className="text-sm font-semibold text-gray-01">
             {t("editor.singleCompanyView.tabs.economyData")}
           </h3>
           <p className="text-xs text-gray-02 mt-1">
-            {t("editor.singleCompanyView.reportingPeriodsHint")}
+            {t("editor.singleCompanyView.economyDataHint")}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -224,11 +226,14 @@ export function EconomyDataTab({
             />
             Show all years
           </label>
-          {!showAllYears && years.length > 0 && (
+          {years.length > 0 && (
             <MultiSelectDropdown
               options={years}
-              selectedIds={selectedYears}
-              onChange={setSelectedYears}
+              selectedIds={showAllYears ? [] : selectedYears}
+              onChange={(ids) => {
+                setSelectedYears(ids);
+                if (ids.length > 0) setShowAllYears(false);
+              }}
               triggerLabel="Years"
               emptyLabel="All years"
               triggerClassName="min-w-[130px]"
@@ -238,13 +243,12 @@ export function EconomyDataTab({
       </div>
 
       {visiblePeriods.length ? (
-        <div className="mt-4 overflow-x-auto overflow-y-visible">
-          <div className="min-w-[920px]">
-            <div className="text-xs font-medium text-gray-03 uppercase tracking-wide px-2 mb-2">
+        <div className="mt-4 w-full min-w-0">
+            <div className="text-xs font-semibold text-gray-01/90 uppercase tracking-wide px-2 mb-2">
               {t("editor.singleCompanyView.sections.reportingPeriods")}
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 w-full min-w-0">
               {visiblePeriods.map((rp) => {
                 const rpEdits = edited[rp.id] ?? {};
                 const originalTurnover = rp.economy?.turnover?.value ?? null;
@@ -276,10 +280,9 @@ export function EconomyDataTab({
                 const employeesUnitDirty = rpEdits.employeesUnit != null;
                 const reportUrlDirty = rpEdits.reportURL != null;
 
-                const headerLabel =
-                  formatMonthYear(rp.endDate) ??
-                  formatMonthYear(rp.startDate) ??
-                  `${rp.startDate} – ${rp.endDate}`;
+                const periodYear = getPeriodYear(rp) ?? "—";
+                const periodDateRange = `${formatDateStamp(rp.startDate)} – ${formatDateStamp(rp.endDate)}`;
+                const reportUrlForOpen = (rpEdits.reportURL ?? rp.reportURL ?? "").trim();
 
                 const turnoverVerified =
                   rpEdits.turnoverVerified ?? originalTurnoverVerified;
@@ -289,11 +292,12 @@ export function EconomyDataTab({
                 return (
                   <div
                     key={rp.id}
-                    className="rounded-lg border border-gray-03 bg-gray-04 p-3"
+                    className="rounded-lg bg-gray-04 p-3 w-full min-w-0 max-w-full"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="text-sm font-medium text-gray-01">
-                        {headerLabel}
+                    <div className="flex flex-wrap items-center justify-between gap-3 min-w-0">
+                      <div>
+                        <div className="text-sm font-semibold text-gray-01">{periodYear}</div>
+                        <div className="text-xs text-gray-02 mt-0.5">{periodDateRange}</div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -309,151 +313,161 @@ export function EconomyDataTab({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                      <div className="md:col-span-3">
-                        <div className="flex items-center justify-between gap-3 mb-1">
-                          <label className="block text-xs font-medium text-gray-01">
-                            {t("editor.companies.reportUrl")}
-                          </label>
-                          {rp.reportURL && !reportUrlDirty && (
-                            <Button asChild variant="ghost" size="sm" className="min-w-0 px-3">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3 w-full min-w-0">
+                      <div className="lg:col-span-2 w-full min-w-0">
+                        <label className="block text-xs font-medium text-gray-01 mb-1">
+                          {t("editor.companies.reportUrl")}
+                        </label>
+                        <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:items-center">
+                          <input
+                            type="url"
+                            value={rpEdits.reportURL ?? (rp.reportURL ?? "")}
+                            onChange={(e) => setEditedField(rp.id, { reportURL: e.target.value })}
+                            className={
+                              inputClassName +
+                              " bg-gray-04 w-full min-w-0 !max-w-none sm:flex-1 " +
+                              (reportUrlDirty ? " border-orange-03" : "")
+                            }
+                            placeholder={t("editor.fieldEdit.sourcePlaceholder")}
+                          />
+                          {reportUrlForOpen ? (
+                            <Button
+                              asChild
+                              variant="secondary"
+                              size="sm"
+                              className="w-full shrink-0 px-3 sm:w-auto"
+                            >
                               <a
-                                href={rp.reportURL}
+                                href={reportUrlForOpen}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs"
+                                className="inline-flex items-center justify-center"
                               >
                                 <ExternalLink className="w-4 h-4 mr-2" />
                                 Open
                               </a>
                             </Button>
-                          )}
+                          ) : null}
                         </div>
-                        <input
-                          type="url"
-                          value={rpEdits.reportURL ?? (rp.reportURL ?? "")}
-                          onChange={(e) => setEditedField(rp.id, { reportURL: e.target.value })}
-                          className={
-                            inputClassName +
-                            " bg-gray-04 " +
-                            (reportUrlDirty ? " border-orange-03" : "")
-                          }
-                          placeholder={t("editor.fieldEdit.sourcePlaceholder")}
-                        />
                       </div>
 
-                      <div className="md:col-span-1">
+                      <div className="w-full min-w-0 lg:min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <label className="block text-xs font-medium text-gray-01">
-                          Turnover
+                            Turnover
                           </label>
                           <MetadataDetailsDialog
                             fieldLabel="Turnover"
                             metadata={rp.economy?.turnover?.metadata as any}
                           />
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-center">
                           <input
                             type="number"
                             value={turnoverValue}
                             onChange={(e) => setEditedField(rp.id, { turnoverValue: e.target.value })}
                             className={
                               inputClassName +
-                              " bg-gray-04 " +
+                              " bg-gray-04 w-full min-w-0 !max-w-none sm:flex-1 sm:min-w-[10rem] " +
                               " placeholder:text-gray-02/70" +
                               (turnoverDirty ? " border-orange-03" : "")
                             }
                             step="any"
                           />
-                          <input
-                            type="text"
-                            value={turnoverCurrency}
-                            onChange={(e) =>
-                              setEditedField(rp.id, { turnoverCurrency: e.target.value.toUpperCase() })
-                            }
-                            className={
-                              inputClassName +
-                              " bg-gray-04 w-20 text-center " +
-                              " placeholder:text-gray-02/70" +
-                              (turnoverCurrencyDirty ? " border-orange-03" : "")
-                            }
-                            placeholder="SEK"
-                            aria-label="Turnover currency"
-                            title="Currency"
-                          />
-                          <button
-                            type="button"
-                            className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
-                            onClick={() =>
-                              setEditedField(rp.id, { turnoverVerified: !turnoverVerified })
-                            }
-                            aria-label={t("editor.fieldEdit.markVerified")}
-                            title={t("editor.fieldEdit.markVerified")}
-                          >
-                            <BadgeCheck
-                              className={
-                                "w-5 h-5 " + (turnoverVerified ? "text-green-03" : "text-gray-02")
+                          <div className="flex items-center gap-2 w-full min-w-0 sm:w-auto sm:shrink-0">
+                            <input
+                              type="text"
+                              value={turnoverCurrency}
+                              onChange={(e) =>
+                                setEditedField(rp.id, { turnoverCurrency: e.target.value.toUpperCase() })
                               }
+                              className={
+                                inputClassName +
+                                " bg-gray-04 w-full text-center sm:w-20 !max-w-none " +
+                                " placeholder:text-gray-02/70" +
+                                (turnoverCurrencyDirty ? " border-orange-03" : "")
+                              }
+                              placeholder="SEK"
+                              aria-label="Turnover currency"
+                              title="Currency"
                             />
-                          </button>
+                            <button
+                              type="button"
+                              className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                              onClick={() =>
+                                setEditedField(rp.id, { turnoverVerified: !turnoverVerified })
+                              }
+                              aria-label={t("editor.fieldEdit.markVerified")}
+                              title={t("editor.fieldEdit.markVerified")}
+                            >
+                              <BadgeCheck
+                                className={
+                                  "w-5 h-5 " + (turnoverVerified ? "text-green-03" : "text-gray-02")
+                                }
+                              />
+                            </button>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="md:col-span-1">
+                      <div className="w-full min-w-0 lg:min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <label className="block text-xs font-medium text-gray-01">
-                          Employees
+                            Employees
                           </label>
                           <MetadataDetailsDialog
                             fieldLabel="Employees"
                             metadata={rp.economy?.employees?.metadata as any}
                           />
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-center">
                           <input
                             type="number"
                             value={employeesValue}
                             onChange={(e) => setEditedField(rp.id, { employeesValue: e.target.value })}
                             className={
                               inputClassName +
-                              " bg-gray-04 " +
+                              " bg-gray-04 w-full min-w-0 !max-w-none sm:flex-1 sm:min-w-[10rem] " +
                               " placeholder:text-gray-02/70" +
                               (employeesDirty ? " border-orange-03" : "")
                             }
                             step="any"
                           />
-                          <SingleSelectDropdown
-                            options={employeesUnitOptions}
-                            value={employeesUnit}
-                            onChange={(v) => setEditedField(rp.id, { employeesUnit: v })}
-                            placeholder="Unit"
-                            ariaLabel="Employees unit"
-                            getOptionLabel={(v) => {
-                              if (v === "FTE") return "FTE (full-time equivalent)";
-                              if (v === "EOY") return "EOY (end of year)";
-                              if (v === "AVG") return "AVG (average)";
-                              return v;
-                            }}
-                            triggerClassName={
-                              "w-24 justify-between " + (employeesUnitDirty ? "border-orange-03" : "")
-                            }
-                            panelMinWidth={160}
-                          />
-                          <button
-                            type="button"
-                            className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
-                            onClick={() =>
-                              setEditedField(rp.id, { employeesVerified: !employeesVerified })
-                            }
-                            aria-label={t("editor.fieldEdit.markVerified")}
-                            title={t("editor.fieldEdit.markVerified")}
-                          >
-                            <BadgeCheck
-                              className={
-                                "w-5 h-5 " + (employeesVerified ? "text-green-03" : "text-gray-02")
+                          <div className="flex items-center gap-2 w-full min-w-0 sm:w-auto sm:shrink-0 sm:min-w-0">
+                            <SingleSelectDropdown
+                              options={employeesUnitOptions}
+                              value={employeesUnit}
+                              onChange={(v) => setEditedField(rp.id, { employeesUnit: v })}
+                              placeholder="Unit"
+                              ariaLabel="Employees unit"
+                              getOptionLabel={(v) => {
+                                if (v === "FTE") return "FTE (full-time equivalent)";
+                                if (v === "EOY") return "EOY (end of year)";
+                                if (v === "AVG") return "AVG (average)";
+                                return v;
+                              }}
+                              triggerClassName={
+                                "w-full min-w-0 justify-between sm:w-48 " +
+                                (employeesUnitDirty ? "border-orange-03" : "")
                               }
+                              panelMinWidth={200}
                             />
-                          </button>
+                            <button
+                              type="button"
+                              className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center hover:bg-gray-03/40"
+                              onClick={() =>
+                                setEditedField(rp.id, { employeesVerified: !employeesVerified })
+                              }
+                              aria-label={t("editor.fieldEdit.markVerified")}
+                              title={t("editor.fieldEdit.markVerified")}
+                            >
+                              <BadgeCheck
+                                className={
+                                  "w-5 h-5 " + (employeesVerified ? "text-green-03" : "text-gray-02")
+                                }
+                              />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -461,7 +475,6 @@ export function EconomyDataTab({
                 );
               })}
             </div>
-          </div>
         </div>
       ) : (
         <p className="text-sm text-gray-02 mt-3">
@@ -469,44 +482,33 @@ export function EconomyDataTab({
         </p>
       )}
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-01 mb-1">
-            {t("editor.fieldEdit.comment")}{" "}
-            <span className="text-gray-03 font-normal">({t("common.optional")})</span>
-          </label>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder={t("editor.fieldEdit.commentPlaceholder")}
-            className={
-              inputClassName +
-              " bg-gray-04 min-h-[90px] resize-y placeholder:text-gray-02/70"
-            }
-            rows={3}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-01 mb-1">
-            {t("editor.fieldEdit.source")}{" "}
-            <span className="text-gray-03 font-normal">({t("common.optional")})</span>
-          </label>
-          <input
-            type="text"
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            placeholder={t("editor.fieldEdit.sourcePlaceholder")}
-            className={inputClassName + " bg-gray-04 placeholder:text-gray-02/70"}
-          />
-        </div>
-      </div>
-
       <div className="mt-4 flex justify-end">
-        <Button type="button" variant="primary" size="sm" onClick={handleSave} disabled={saving}>
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
+          onClick={() => setSaveDialogOpen(true)}
+          disabled={saving}
+        >
           {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {t("editor.fieldEdit.save")}
         </Button>
       </div>
+
+      <ReviewerMetadataDialog
+        open={saveDialogOpen}
+        onOpenChange={setSaveDialogOpen}
+        saving={saving}
+        title="Reviewer details"
+        confirmLabel={t("editor.fieldEdit.save")}
+        initialComment={comment}
+        initialSource={source}
+        onConfirm={(m) => {
+          setComment(m.comment);
+          setSource(m.source);
+          return handleSave(m);
+        }}
+      />
     </section>
   );
 }

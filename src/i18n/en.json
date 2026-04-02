@@ -93,6 +93,7 @@
       "undo": "Reset to saved",
       "noReportingPeriods": "No reporting periods.",
       "reportingPeriodsHint": "Edit reporting period data (emissions, economy) from the Multi-company view by year, or add inline editing here later.",
+      "economyDataHint": "Per reporting period: edit the report URL, turnover and currency, and employees and unit. Mark items verified when reviewed, then save. Filter by year or show all periods.",
       "noIndustry": "No industry",
       "selectIndustry": "Select industry (GICS)",
       "fields": {

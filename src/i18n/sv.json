@@ -93,6 +93,7 @@
       "undo": "Återställ till sparad",
       "noReportingPeriods": "Inga rapporteringsperioder.",
       "reportingPeriodsHint": "Redigera rapporteringsperioder (utsläpp, ekonomi) från vyn Flera företag per år, eller lägg till inline-redigering här senare.",
+      "economyDataHint": "Per rapporteringsperiod: redigera rapportlänk, omsättning och valuta samt antal anställda och enhet. Markera som verifierat vid granskning och spara. Filtrera på år eller visa alla perioder.",
       "noIndustry": "Ingen bransch",
       "selectIndustry": "Välj bransch (GICS)",
       "fields": {
