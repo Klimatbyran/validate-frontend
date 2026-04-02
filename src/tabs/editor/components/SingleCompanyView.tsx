@@ -24,6 +24,7 @@ import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/da
 import { NO_TAGS_FILTER_OPTION } from "../lib/types";
 import { buildTagLabelBySlug, companyMatchesTagFilter } from "../lib/editor-tag-and-payload-utils";
 import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
+import { ReportingPeriodQuickEditModal } from "./ReportingPeriodQuickEditModal";
 
 function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
   const y = period.endDate?.slice(0, 4) ?? period.startDate?.slice(0, 4);
@@ -78,6 +79,7 @@ export function SingleCompanyView() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [detail, setDetail] = useState<GarboCompanyDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [quickEdit, setQuickEdit] = useState<{ companyId: string; year: string } | null>(null);
 
   const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
 
@@ -345,6 +347,19 @@ export function SingleCompanyView() {
 
       {!loadingList && filteredCompanies.length > 0 && (
         <DataTableShell>
+          {quickEdit && (
+            <ReportingPeriodQuickEditModal
+              open={true}
+              onOpenChange={(open) => {
+                if (!open) setQuickEdit(null);
+              }}
+              company={companyList.find((x) => x.wikidataId === quickEdit.companyId)!}
+              year={quickEdit.year}
+              onSaved={() => {
+                listCompanies().then(setCompanyList);
+              }}
+            />
+          )}
           <DataTable>
             <DataTableHead>
               <tr>
@@ -417,9 +432,15 @@ export function SingleCompanyView() {
                       {overview?.perYear?.length ? (
                         <div className="flex flex-wrap gap-2">
                           {overview.perYear.map((p) => (
-                            <span
+                            <button
                               key={p.year}
-                              className="inline-flex items-center gap-2 rounded-full border border-gray-03 px-2 py-1 text-xs text-gray-01 bg-gray-05"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setQuickEdit({ companyId: c.wikidataId, year: p.year });
+                              }}
+                              className="inline-flex items-center gap-2 rounded-full border border-gray-03 px-2 py-1 text-xs text-gray-01 bg-gray-05 hover:bg-gray-03/40"
+                              title={`Quick edit ${p.year}`}
                             >
                               <span className="font-semibold">{p.year}</span>
                               <span className="inline-flex items-center gap-1">
@@ -430,7 +451,7 @@ export function SingleCompanyView() {
                                 <span className="text-[10px] text-gray-03">$</span>
                                 <StatusIcon state={p.economy} />
                               </span>
-                            </span>
+                            </button>
                           ))}
                         </div>
                       ) : (

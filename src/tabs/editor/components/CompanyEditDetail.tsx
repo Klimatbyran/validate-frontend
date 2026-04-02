@@ -22,16 +22,16 @@ export function CompanyEditDetail({
       <Tabs defaultValue="company-detail" className="w-full">
         <TabsList className="w-full justify-start flex flex-wrap h-auto gap-1 p-1 bg-gray-04/80 border border-gray-03 rounded-lg">
           <TabsTrigger value="company-detail" className="rounded-md px-4 py-2">
-            {t("editor.singleCompanyView.tabs.companyDetail")}
+            {t("editor.singleCompanyView.tabs.companyDetail")} (WIP)
           </TabsTrigger>
           <TabsTrigger value="economy" className="rounded-md px-4 py-2">
-            {t("editor.singleCompanyView.tabs.economyData")}
+            {t("editor.singleCompanyView.tabs.economyData")} (WIP)
           </TabsTrigger>
           <TabsTrigger value="emissions" className="rounded-md px-4 py-2">
-            {t("editor.singleCompanyView.tabs.emissionsData")}
+            {t("editor.singleCompanyView.tabs.emissionsData")} (WIP)
           </TabsTrigger>
           <TabsTrigger value="goals-initiatives" className="rounded-md px-4 py-2">
-            {t("editor.singleCompanyView.tabs.goalsInitiatives")}
+            {t("editor.singleCompanyView.tabs.goalsInitiatives")} (WIP)
           </TabsTrigger>
         </TabsList>
 

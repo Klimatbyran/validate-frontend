@@ -31,18 +31,13 @@ function hasAnyMetadata(metadata: MetadataDetailsLike | null | undefined) {
   return Boolean(
     metadata.source?.trim() ||
       metadata.comment?.trim() ||
-      metadata.user?.name?.trim() ||
-      metadata.user?.email?.trim() ||
       metadata.verifiedBy?.name?.trim() ||
       metadata.verifiedBy ||
-      metadata.createdAt ||
-      metadata.updatedAt ||
-      metadata.verifiedAt ||
-      metadata.parsedAt
+      metadata.updatedAt
   );
 }
 
-function formatDateTime(value: unknown): string | null {
+function formatDate(value: unknown): string | null {
   if (typeof value !== "string" || !value.trim()) return null;
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return null;
@@ -50,8 +45,6 @@ function formatDateTime(value: unknown): string | null {
     year: "numeric",
     month: "short",
     day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
   }).format(d);
 }
 
@@ -68,30 +61,12 @@ export function MetadataDetailsDialog({
   const metaAny = metadata as (MetadataDetailsLike & Record<string, unknown>) | null | undefined;
   const source = metadata?.source?.trim() || null;
   const comment = metadata?.comment?.trim() || null;
-  const updatedBy = metadata?.user?.name?.trim() || metadata?.user?.email?.trim() || null;
   const verifiedBy = metadata?.verifiedBy?.name?.trim() || (metadata?.verifiedBy ? "Yes" : null);
 
-  const createdAt =
-    formatDateTime(metadata?.createdAt) ??
-    formatDateTime(metaAny?.createdAt) ??
-    null;
   const updatedAt =
-    formatDateTime(metadata?.updatedAt) ??
-    formatDateTime(metaAny?.updatedAt) ??
+    formatDate(metadata?.updatedAt) ??
+    formatDate(metaAny?.updatedAt) ??
     null;
-  const verifiedAt =
-    formatDateTime(metadata?.verifiedAt) ??
-    formatDateTime(metaAny?.verifiedAt) ??
-    null;
-  const parsedAt =
-    formatDateTime(metadata?.parsedAt) ??
-    formatDateTime(metaAny?.parsedAt) ??
-    formatDateTime(metaAny?.extractedAt) ??
-    formatDateTime(metaAny?.generatedAt) ??
-    null;
-
-  const hasDates = Boolean(createdAt || updatedAt || verifiedAt || parsedAt);
-
   if (!openable) return null;
 
   return (
@@ -110,11 +85,31 @@ export function MetadataDetailsDialog({
         <DialogHeader>
           <DialogTitle className="text-gray-01">{fieldLabel} details</DialogTitle>
           <DialogDescription>
-            Source and parsing metadata for this field.
+            Source and validation metadata for this field.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 max-h-[70vh] overflow-auto pr-1">
+          {(updatedAt || verifiedBy) && (
+            <section className="rounded-lg border border-gray-03 bg-gray-05 p-3">
+              <div className="text-xs font-medium text-gray-02 mb-2">Details</div>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {updatedAt && (
+                  <div>
+                    <dt className="text-xs text-gray-03">Updated</dt>
+                    <dd className="text-sm text-gray-01 break-words">{updatedAt}</dd>
+                  </div>
+                )}
+                {verifiedBy && (
+                  <div>
+                    <dt className="text-xs text-gray-03">Verified by</dt>
+                    <dd className="text-sm text-gray-01 break-words">{verifiedBy}</dd>
+                  </div>
+                )}
+              </dl>
+            </section>
+          )}
+
           {source && (
             <section className="rounded-lg border border-gray-03 bg-gray-05 p-3">
               <div className="text-xs font-medium text-gray-02 mb-1">Source</div>
@@ -137,64 +132,12 @@ export function MetadataDetailsDialog({
             </section>
           )}
 
-          {hasDates && (
-            <section className="rounded-lg border border-gray-03 bg-gray-05 p-3">
-              <div className="text-xs font-medium text-gray-02 mb-2">Dates</div>
-              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {createdAt && (
-                  <div>
-                    <dt className="text-xs text-gray-03">Created</dt>
-                    <dd className="text-sm text-gray-01 break-words">{createdAt}</dd>
-                  </div>
-                )}
-                {updatedAt && (
-                  <div>
-                    <dt className="text-xs text-gray-03">Updated</dt>
-                    <dd className="text-sm text-gray-01 break-words">{updatedAt}</dd>
-                  </div>
-                )}
-                {parsedAt && (
-                  <div>
-                    <dt className="text-xs text-gray-03">Parsed</dt>
-                    <dd className="text-sm text-gray-01 break-words">{parsedAt}</dd>
-                  </div>
-                )}
-                {verifiedAt && (
-                  <div>
-                    <dt className="text-xs text-gray-03">Verified</dt>
-                    <dd className="text-sm text-gray-01 break-words">{verifiedAt}</dd>
-                  </div>
-                )}
-              </dl>
-            </section>
-          )}
-
           {comment && (
             <section className="rounded-lg border border-gray-03 bg-gray-05 p-3">
               <div className="text-xs font-medium text-gray-02 mb-1">Comment</div>
               <div className="text-sm text-gray-01 whitespace-pre-wrap break-words">
                 {comment}
               </div>
-            </section>
-          )}
-
-          {(updatedBy || verifiedBy) && (
-            <section className="rounded-lg border border-gray-03 bg-gray-05 p-3">
-              <div className="text-xs font-medium text-gray-02 mb-2">Audit</div>
-              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {updatedBy && (
-                  <div>
-                    <dt className="text-xs text-gray-03">Updated by</dt>
-                    <dd className="text-sm text-gray-01 break-words">{updatedBy}</dd>
-                  </div>
-                )}
-                {verifiedBy && (
-                  <div>
-                    <dt className="text-xs text-gray-03">Verified</dt>
-                    <dd className="text-sm text-gray-01 break-words">{verifiedBy}</dd>
-                  </div>
-                )}
-              </dl>
             </section>
           )}
         </div>
