@@ -36,7 +36,6 @@ const SearchResultsList = ({
         <SearchResultItem
           key={index}
           companyReport={report}
-          reportYear={reportYear}
           selectedReport={
             selectedReports.find((r) => r.companyName === report.companyName)
               ?.url

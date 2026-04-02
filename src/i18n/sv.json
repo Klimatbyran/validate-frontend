@@ -618,7 +618,8 @@
     "wikidataIdLabel": "Wikidata ID",
     "reportIdLabel": "Rapport ID",
     "unknownCompany": "Okänt",
-    "unknownId": "Okänt"
+    "unknownId": "Okänt",
+    "manuallyAddReport": "Lägg till rapport URL manuellt"
   },
   "registry": {
     "title": "Register",
