@@ -10,8 +10,8 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/ui/dialog";
-import type { GarboMetadata } from "../lib/types";
-import { inputClassName } from "../lib/company-edit-utils";
+import type { GarboMetadata } from "../../lib/types";
+import { inputClassName } from "../../lib/company-edit-utils";
 
 export interface FieldEditModalProps {
   open: boolean;

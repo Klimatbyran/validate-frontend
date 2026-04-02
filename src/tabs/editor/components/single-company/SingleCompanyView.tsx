@@ -8,25 +8,25 @@ import {
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { LoadingSpinner } from "@/ui/loading-spinner";
-import { listCompanies, getCompany } from "../lib/companies-api";
-import { fetchTagOptions } from "../lib/tag-options-api";
+import { listCompanies, getCompany } from "../../lib/companies-api";
+import { fetchTagOptions } from "../../lib/tag-options-api";
 import type {
   GarboCompanyDetail,
   GarboCompanyListItem,
   TagOption,
-} from "../lib/types";
-import type { VerificationState } from "../lib/verification";
-import { getCompanyVerificationOverview } from "../lib/verification";
+} from "../../lib/types";
+import type { VerificationState } from "../../lib/verification";
+import { getCompanyVerificationOverview } from "../../lib/verification";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { CompanyEditDetail } from "./CompanyEditDetail";
 import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
-import { NO_TAGS_FILTER_OPTION } from "../lib/types";
-import { buildTagLabelBySlug, companyMatchesTagFilter } from "../lib/editor-tag-and-payload-utils";
+import { NO_TAGS_FILTER_OPTION } from "../../lib/types";
+import { buildTagLabelBySlug, companyMatchesTagFilter } from "../../lib/editor-tag-and-payload-utils";
 import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
 import { ReportingPeriodQuickEditModal } from "./ReportingPeriodQuickEditModal";
-import { displayBaseYear } from "../lib/company-edit-utils";
-import { getPeriodYear } from "../lib/reporting-period-ui";
+import { displayBaseYear } from "../../lib/company-edit-utils";
+import { getPeriodYear } from "../../lib/reporting-period-ui";
 
 function companyHasPeriodsInYears(
   company: GarboCompanyListItem,

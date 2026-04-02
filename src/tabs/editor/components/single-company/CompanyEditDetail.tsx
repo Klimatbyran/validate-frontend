@@ -1,6 +1,6 @@
 import { useI18n } from "@/contexts/I18nContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
-import type { GarboCompanyDetail, TagOption } from "../lib/types";
+import type { GarboCompanyDetail, TagOption } from "../../lib/types";
 import { CompanyDetailTab } from "./CompanyDetailTab";
 import { EconomyDataTab } from "./EconomyDataTab";
 import { EmissionsDataTab } from "./EmissionsDataTab";

@@ -1,9 +1,9 @@
 import { Check, CheckCircle, Pencil } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
-import type { GarboCompanyListItem } from "../lib/types";
-import type { EditState } from "../lib/types";
-import { formatNumber, getScope2Total, getPeriodForYear } from "../lib/multi-company-utils";
+import type { GarboCompanyListItem } from "../../lib/types";
+import type { EditState } from "../../lib/types";
+import { formatNumber, getScope2Total, getPeriodForYear } from "../../lib/multi-company-utils";
 
 export function MultiCompanyTable({
   companies,

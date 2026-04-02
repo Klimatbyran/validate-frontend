@@ -12,17 +12,17 @@ import {
   DialogTitle,
 } from "@/ui/dialog";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
-import type { GarboCompanyDetail } from "../lib/types";
-import { updateReportingPeriods } from "../lib/companies-api";
-import { inputClassName } from "../lib/company-edit-utils";
+import type { GarboCompanyDetail } from "../../lib/types";
+import { updateReportingPeriods } from "../../lib/companies-api";
+import { inputClassName } from "../../lib/company-edit-utils";
 import {
   editorDenseMultiSelectTriggerClass,
   editorDenseToolbarClass,
   formatDateStamp,
   getPeriodYear,
-} from "../lib/reporting-period-ui";
-import { useReportingPeriodColumnFilters } from "../hooks/useReportingPeriodColumnFilters";
-import { ReviewerMetadataDialog } from "./ReviewerMetadataDialog";
+} from "../../lib/reporting-period-ui";
+import { useReportingPeriodColumnFilters } from "../../hooks/useReportingPeriodColumnFilters";
+import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 import { AddReportingPeriodFlow } from "./AddReportingPeriodFlow";
 
 type EditedPeriod = {

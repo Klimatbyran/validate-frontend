@@ -3,22 +3,22 @@ import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { toast } from "sonner";
-import { listCompanies, updateCompany, updateReportingPeriods } from "../lib/companies-api";
-import { fetchTagOptions } from "../lib/tag-options-api";
-import type { EditState, GarboCompanyListItem, GarboMetadata, TagOption } from "../lib/types";
+import { listCompanies, updateCompany, updateReportingPeriods } from "../../lib/companies-api";
+import { fetchTagOptions } from "../../lib/tag-options-api";
+import type { EditState, GarboCompanyListItem, GarboMetadata, TagOption } from "../../lib/types";
 import { FieldEditModal } from "./FieldEditModal";
 import { BulkTagUpdateModal } from "./BulkTagUpdateModal";
 import { MultiCompanyFilters } from "./MultiCompanyFilters";
 import { MultiCompanySelectionBar } from "./MultiCompanySelectionBar";
 import { MultiCompanyTable } from "./MultiCompanyTable";
-import { getPeriodForYear } from "../lib/multi-company-utils";
+import { getPeriodForYear } from "../../lib/multi-company-utils";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import {
   buildReportingPeriodUpdatePayload,
   buildTagLabelBySlug,
   companyMatchesTagFilter,
   parseTagSlugs,
-} from "../lib/editor-tag-and-payload-utils";
+} from "../../lib/editor-tag-and-payload-utils";
 
 function companyMatchesSearch(company: GarboCompanyListItem, query: string): boolean {
   const q = query.trim().toLowerCase();

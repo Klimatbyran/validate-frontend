@@ -6,19 +6,19 @@ import { Button } from "@/ui/button";
 import { IconActionButton } from "@/ui/icon-action-button";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
-import type { GarboCompanyDetail, GarboFieldMetadata } from "../lib/types";
-import { updateReportingPeriods } from "../lib/companies-api";
-import { inputClassName } from "../lib/company-edit-utils";
+import type { GarboCompanyDetail, GarboFieldMetadata } from "../../lib/types";
+import { updateReportingPeriods } from "../../lib/companies-api";
+import { inputClassName } from "../../lib/company-edit-utils";
 import {
   editorDenseMultiSelectTriggerClass,
   editorDenseToolbarClass,
   formatPeriodDateRange,
   getPeriodYear,
   toNumberOrNull,
-} from "../lib/reporting-period-ui";
-import { useReportingPeriodColumnFilters } from "../hooks/useReportingPeriodColumnFilters";
-import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
-import { ReviewerMetadataDialog } from "./ReviewerMetadataDialog";
+} from "../../lib/reporting-period-ui";
+import { useReportingPeriodColumnFilters } from "../../hooks/useReportingPeriodColumnFilters";
+import { MetadataDetailsDialog } from "../MetadataDetailsDialog";
+import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 
 type EditedPeriodEconomy = {
   turnoverValue?: string;

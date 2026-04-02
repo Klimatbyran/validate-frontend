@@ -5,13 +5,13 @@ import { Button } from "@/ui/button";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { toast } from "sonner";
-import type { TagOption } from "../lib/types";
+import type { TagOption } from "../../lib/types";
 import {
   fetchTagOptions,
   createTagOption,
   updateTagOption,
   deleteTagOption,
-} from "../lib/tag-options-api";
+} from "../../lib/tag-options-api";
 import { TagOptionFormModal } from "./TagOptionFormModal";
 import { TagOptionsTable } from "./TagOptionsTable";
 

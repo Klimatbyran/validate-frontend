@@ -11,8 +11,8 @@ import {
   DialogDescription,
 } from "@/ui/dialog";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
-import type { TagOption } from "../lib/types";
-import { buildTagLabelBySlug } from "../lib/editor-tag-and-payload-utils";
+import type { TagOption } from "../../lib/types";
+import { buildTagLabelBySlug } from "../../lib/editor-tag-and-payload-utils";
 
 export interface BulkTagUpdateModalProps {
   open: boolean;

@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { useI18n } from "@/contexts/I18nContext";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { getGarboTarget } from "@/config/api-env";
-import { ManageTagOptions } from "./components/ManageTagOptions";
-import { MultiCompanyView } from "./components/MultiCompanyView";
-import { SingleCompanyView } from "./components/SingleCompanyView";
+import { ManageTagOptions } from "./components/tag-options/ManageTagOptions";
+import { MultiCompanyView } from "./components/multi-company/MultiCompanyView";
+import { SingleCompanyView } from "./components/single-company/SingleCompanyView";
 
 export type EditorViewMode = "tag-options" | "multi-company" | "single-company";
 

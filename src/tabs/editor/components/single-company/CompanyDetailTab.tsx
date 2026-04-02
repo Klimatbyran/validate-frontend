@@ -11,11 +11,11 @@ import {
   updateCompanyBaseYear,
   updateCompanyIndustry,
   type IndustryGicsOption,
-} from "../lib/companies-api";
-import type { GarboCompanyDetail, TagOption } from "../lib/types";
-import { displayBaseYear, getDescriptionByLang, inputClassName } from "../lib/company-edit-utils";
-import { buildTagLabelBySlug } from "../lib/editor-tag-and-payload-utils";
-import { ReviewerMetadataDialog } from "./ReviewerMetadataDialog";
+} from "../../lib/companies-api";
+import type { GarboCompanyDetail, TagOption } from "../../lib/types";
+import { displayBaseYear, getDescriptionByLang, inputClassName } from "../../lib/company-edit-utils";
+import { buildTagLabelBySlug } from "../../lib/editor-tag-and-payload-utils";
+import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 
 export function CompanyDetailTab({
   company,

@@ -5,20 +5,20 @@ import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { IconActionButton } from "@/ui/icon-action-button";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
-import { inputClassName } from "../lib/company-edit-utils";
-import { getCompany, updateReportingPeriods } from "../lib/companies-api";
+import { inputClassName } from "../../lib/company-edit-utils";
+import { getCompany, updateReportingPeriods } from "../../lib/companies-api";
 import type {
   GarboCompanyDetail,
   GarboCompanyListItem,
   GarboFieldMetadata,
   GarboReportingPeriodSummary,
-} from "../lib/types";
+} from "../../lib/types";
 import {
   assignNullableStringKey,
   formatDateStamp,
   getPeriodYear,
   toNumberOrNull,
-} from "../lib/reporting-period-ui";
+} from "../../lib/reporting-period-ui";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -27,7 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/dialog";
-import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
+import { MetadataDetailsDialog } from "../MetadataDetailsDialog";
 
 const ALL_SCOPE3_CATEGORY_IDS = Array.from({ length: 16 }, (_, i) => i + 1);
 

@@ -1,6 +1,6 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
-import type { TagOption } from "../lib/types";
+import type { TagOption } from "../../lib/types";
 import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
 
 interface TagOptionsTableProps {

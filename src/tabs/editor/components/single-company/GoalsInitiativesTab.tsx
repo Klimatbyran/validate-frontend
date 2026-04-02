@@ -1,6 +1,6 @@
 import { useI18n } from "@/contexts/I18nContext";
-import type { GarboCompanyDetail } from "../lib/types";
-import { displayText } from "../lib/company-edit-utils";
+import type { GarboCompanyDetail } from "../../lib/types";
+import { displayText } from "../../lib/company-edit-utils";
 
 export function GoalsInitiativesTab({ company }: { company: GarboCompanyDetail }) {
   const { t } = useI18n();

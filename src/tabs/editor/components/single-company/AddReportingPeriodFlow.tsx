@@ -11,11 +11,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/dialog";
-import type { GarboCompanyDetail, GarboCompanyListItem } from "../lib/types";
-import { getCompany, updateReportingPeriods } from "../lib/companies-api";
-import { inputClassName } from "../lib/company-edit-utils";
+import type { GarboCompanyDetail, GarboCompanyListItem } from "../../lib/types";
+import { getCompany, updateReportingPeriods } from "../../lib/companies-api";
+import { inputClassName } from "../../lib/company-edit-utils";
 import { ReportingPeriodQuickEditModal } from "./ReportingPeriodQuickEditModal";
-import { getPeriodYear } from "../lib/reporting-period-ui";
+import { getPeriodYear } from "../../lib/reporting-period-ui";
 
 function ymdToIsoStartOfDay(ymd: string) {
   return `${ymd}T00:00:00.000Z`;
