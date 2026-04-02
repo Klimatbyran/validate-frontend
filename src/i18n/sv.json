@@ -617,7 +617,8 @@
     "reportLink": "Rapport",
     "wikidataIdLabel": "Wikidata ID",
     "reportIdLabel": "Rapport ID",
-    "unknownCompany": "Okänt"
+    "unknownCompany": "Okänt",
+    "unknownId": "Okänt"
   },
   "registry": {
     "title": "Register",

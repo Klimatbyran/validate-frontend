@@ -10,6 +10,8 @@ import type {
   CrawlerViewMode,
   SaveReportsListResponse,
 } from "./lib/crawler-types";
+
+type CompanySelection = { name: string; wikidataId?: string };
 import SearchResultsList from "./components/SearchResultsList";
 import CompaniesNamesList from "./components/CompaniesNamesList";
 import ManualSearchControls from "./components/ManualSearchControls";
@@ -39,7 +41,9 @@ export function CrawlerTab() {
   const [filterEnabled, setFilterEnabled] = useState<boolean>(false);
   const [filterYear, setFilterYear] = useState<number | null>(null);
   const [selectedReports, setSelectedReports] = useState<SelectedReport[]>([]);
-  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const [selectedCompanies, setSelectedCompanies] = useState<
+    CompanySelection[]
+  >([]);
   const [isLoading, setIsLoading] = useState<boolean | null>(null);
   const [registryResponse, setRegistryResponse] =
     useState<SaveReportsListResponse | null>(null);
@@ -144,7 +148,10 @@ export function CrawlerTab() {
   const handleDatabaseSearchClick = async () => {
     if (!selectedCompanies.length || !reportYearInput) return;
 
-    const companyNames = selectedCompanies;
+    const companyNames = selectedCompanies.map((c) => c.name);
+    const wikidataIdMap = Object.fromEntries(
+      selectedCompanies.map((c) => [c.name, c.wikidataId]),
+    );
     resetSearchSlate();
     setIsLoading(true);
 
@@ -154,7 +161,12 @@ export function CrawlerTab() {
         reportYear: reportYearInput,
       });
 
-      setDatabaseReports(transformedData);
+      setDatabaseReports(
+        transformedData.map((r) => ({
+          ...r,
+          wikidataId: wikidataIdMap[r.companyName],
+        })),
+      );
     } finally {
       setIsLoading(false);
     }

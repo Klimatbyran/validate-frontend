@@ -621,7 +621,8 @@
     "reportLink": "Report",
     "wikidataIdLabel": "Wikidata ID",
     "reportIdLabel": "Report ID",
-    "unknownCompany": "Unknown"
+    "unknownCompany": "Unknown",
+    "unknownId": "Unknown"
   },
   "registry": {
     "title": "Registry",

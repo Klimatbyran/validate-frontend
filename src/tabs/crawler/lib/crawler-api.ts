@@ -16,13 +16,16 @@ export function reportsUrl(path: string): string {
 
 export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
   try {
-    const response = await fetch(reportsUrl("companies/reports/search-reports"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      reportsUrl("companies/reports/search-reports"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([searchQuery]),
       },
-      body: JSON.stringify([searchQuery]),
-    });
+    );
 
     if (response.ok) {
       const data = await response.json();
