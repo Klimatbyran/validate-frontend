@@ -388,7 +388,7 @@ export function ReportingPeriodQuickEditModal({
             </Button>
           </div>
 
-          <div className="shrink-0 mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-03 bg-gray-05/40 px-3 py-2">
+          <div className="shrink-0 mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-gray-05/40 px-3 py-2">
             <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide">
               Report URL
             </div>
@@ -701,7 +701,7 @@ export function ReportingPeriodQuickEditModal({
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-gray-03 bg-gray-04 p-3">
+                <div className="rounded-lg bg-gray-04 p-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="text-sm font-medium text-gray-01">Scope 2</div>
                     <div className="flex items-center gap-1">
@@ -852,7 +852,7 @@ export function ReportingPeriodQuickEditModal({
                 </div>
 
                 {categoryIds.length > 0 && (
-                  <div className="rounded-lg border border-gray-03 bg-gray-04 p-3">
+                  <div className="rounded-lg bg-gray-04 p-3">
                     <div className="text-sm font-medium text-gray-01 mb-2">Scope 3 categories</div>
                     <div className="space-y-2">
                       {categoryIds.map((cat) => {
@@ -980,7 +980,7 @@ export function ReportingPeriodQuickEditModal({
               </div>
             </div>
 
-            <div className="pt-2 border-t border-gray-03/60">
+            <div className="pt-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-01 mb-1">

@@ -20,7 +20,7 @@ export function CompanyEditDetail({
   return (
     <div className="space-y-4">
       <Tabs defaultValue="company-detail" className="w-full">
-        <TabsList className="w-full justify-start flex flex-wrap h-auto gap-1 p-1 bg-gray-04/80 border border-gray-03 rounded-lg">
+        <TabsList className="w-full justify-start flex flex-wrap h-auto gap-1 p-1 bg-gray-04/80 rounded-lg">
           <TabsTrigger value="company-detail" className="rounded-md px-4 py-2">
             {t("editor.singleCompanyView.tabs.companyDetail")} (WIP)
           </TabsTrigger>

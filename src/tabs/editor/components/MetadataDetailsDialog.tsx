@@ -91,7 +91,7 @@ export function MetadataDetailsDialog({
 
         <div className="grid gap-4 max-h-[70vh] overflow-auto pr-1">
           {(updatedAt || verifiedBy) && (
-            <section className="rounded-lg border border-gray-03 bg-gray-05 p-3">
+            <section className="rounded-lg bg-gray-05 p-3">
               <div className="text-xs font-medium text-gray-02 mb-2">Details</div>
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {updatedAt && (
@@ -111,7 +111,7 @@ export function MetadataDetailsDialog({
           )}
 
           {source && (
-            <section className="rounded-lg border border-gray-03 bg-gray-05 p-3">
+            <section className="rounded-lg bg-gray-05 p-3">
               <div className="text-xs font-medium text-gray-02 mb-1">Source</div>
               <div className="flex flex-wrap items-center gap-2">
                 <a
@@ -133,7 +133,7 @@ export function MetadataDetailsDialog({
           )}
 
           {comment && (
-            <section className="rounded-lg border border-gray-03 bg-gray-05 p-3">
+            <section className="rounded-lg bg-gray-05 p-3">
               <div className="text-xs font-medium text-gray-02 mb-1">Comment</div>
               <div className="text-sm text-gray-01 whitespace-pre-wrap break-words">
                 {comment}

@@ -15,6 +15,7 @@ import {
 import type { GarboCompanyDetail, TagOption } from "../lib/types";
 import { displayBaseYear, getDescriptionByLang, inputClassName } from "../lib/company-edit-utils";
 import { buildTagLabelBySlug } from "../lib/editor-tag-and-payload-utils";
+import { ReviewerMetadataDialog } from "./ReviewerMetadataDialog";
 
 export function CompanyDetailTab({
   company,
@@ -52,6 +53,7 @@ export function CompanyDetailTab({
   );
   const [savingCore, setSavingCore] = useState(false);
   const [savingIndustry, setSavingIndustry] = useState(false);
+  const [saveDialog, setSaveDialog] = useState<null | "core" | "industry">(null);
 
   useEffect(() => {
     setName(company.name ?? "");
@@ -85,7 +87,7 @@ export function CompanyDetailTab({
     return o?.label ?? o?.subIndustryName ?? code;
   };
 
-  const handleSaveCore = async () => {
+  const handleSaveCore = async (meta?: { comment?: string; source?: string }) => {
     setSavingCore(true);
     try {
       await updateCompany(company.wikidataId, {
@@ -98,6 +100,10 @@ export function CompanyDetailTab({
         url: url || undefined,
         internalComment: internalComment || undefined,
         tags: selectedTags,
+        metadata:
+          meta?.comment?.trim() || meta?.source?.trim()
+            ? { comment: meta.comment?.trim() || undefined, source: meta.source?.trim() || undefined }
+            : undefined,
       });
       toast.success(t("editor.tagOptions.updated"));
       onSaved?.();
@@ -108,7 +114,7 @@ export function CompanyDetailTab({
     }
   };
 
-  const handleSaveIndustry = async () => {
+  const handleSaveIndustry = async (meta?: { comment?: string; source?: string }) => {
     const by = baseYear.trim() ? parseInt(baseYear, 10) : undefined;
     if (by != null && (isNaN(by) || by < 1990 || by > 2100)) {
       toast.error(t("editor.singleCompanyView.invalidBaseYear"));
@@ -119,10 +125,20 @@ export function CompanyDetailTab({
       if (subIndustryCode) {
         await updateCompanyIndustry(company.wikidataId, {
           industry: { subIndustryCode },
+          metadata:
+            meta?.comment?.trim() || meta?.source?.trim()
+              ? { comment: meta.comment?.trim() || undefined, source: meta.source?.trim() || undefined }
+              : undefined,
         });
       }
       if (by != null) {
-        await updateCompanyBaseYear(company.wikidataId, { baseYear: by });
+        await updateCompanyBaseYear(company.wikidataId, {
+          baseYear: by,
+          metadata:
+            meta?.comment?.trim() || meta?.source?.trim()
+              ? { comment: meta.comment?.trim() || undefined, source: meta.source?.trim() || undefined }
+              : undefined,
+        });
       }
       if (subIndustryCode || by != null) {
         toast.success(t("editor.tagOptions.updated"));
@@ -137,111 +153,137 @@ export function CompanyDetailTab({
 
   return (
     <div className="space-y-8">
-      <section className="rounded-lg border border-gray-03 bg-gray-04/80 p-4">
+      <section className="rounded-lg bg-gray-04/80 p-4">
         <h3 className="text-sm font-semibold text-gray-01 mb-4">
           {t("editor.singleCompanyView.sections.core")}
         </h3>
-        <div className="space-y-4 max-w-xl">
-          <div>
-            <label className="block text-sm font-medium text-gray-01 mb-1">
-              {t("editor.singleCompanyView.fields.name")}
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={inputClassName}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-01 mb-1">
+                  {t("editor.singleCompanyView.fields.name")}
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={inputClassName + " !max-w-none"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setName(company.name ?? "")}
+                    className="p-2 rounded-full text-gray-02 hover:text-gray-01 hover:bg-gray-03"
+                    aria-label={t("editor.singleCompanyView.undo")}
+                  >
+                    <Undo2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-01 mb-1">URL</label>
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className={inputClassName + " !max-w-none"}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-01 mb-1">
+                  {t("editor.singleCompanyView.fields.descriptionEn")}
+                </label>
+                <textarea
+                  value={descriptionEn}
+                  onChange={(e) => setDescriptionEn(e.target.value)}
+                  rows={8}
+                  className={inputClassName + " resize-y !max-w-none min-h-[11rem]"}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-01 mb-1">
+                  {t("editor.singleCompanyView.fields.descriptionSv")}
+                </label>
+                <textarea
+                  value={descriptionSv}
+                  onChange={(e) => setDescriptionSv(e.target.value)}
+                  rows={8}
+                  className={inputClassName + " resize-y !max-w-none min-h-[11rem]"}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-01 mb-1">
+                {t("editor.singleCompanyView.fields.internalComment")}
+              </label>
+              <textarea
+                value={internalComment}
+                onChange={(e) => setInternalComment(e.target.value)}
+                rows={2}
+                className={inputClassName + " resize-y !max-w-none"}
               />
-              <button
-                type="button"
-                onClick={() => setName(company.name ?? "")}
-                className="p-2 rounded-full text-gray-02 hover:text-gray-01 hover:bg-gray-03"
-                aria-label={t("editor.singleCompanyView.undo")}
-              >
-                <Undo2 className="w-4 h-4" />
-              </button>
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-01 mb-1">
-              {t("editor.singleCompanyView.fields.descriptionEn")}
-            </label>
-            <textarea
-              value={descriptionEn}
-              onChange={(e) => setDescriptionEn(e.target.value)}
-              rows={3}
-              className={inputClassName + " resize-y"}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-01 mb-1">
-              {t("editor.singleCompanyView.fields.descriptionSv")}
-            </label>
-            <textarea
-              value={descriptionSv}
-              onChange={(e) => setDescriptionSv(e.target.value)}
-              rows={3}
-              className={inputClassName + " resize-y"}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-01 mb-1">LEI</label>
-            <input
-              type="text"
-              value={lei}
-              onChange={(e) => setLei(e.target.value)}
-              className={inputClassName}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-01 mb-1">URL</label>
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className={inputClassName}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-01 mb-1">
-              {t("editor.singleCompanyView.fields.internalComment")}
-            </label>
-            <textarea
-              value={internalComment}
-              onChange={(e) => setInternalComment(e.target.value)}
-              rows={2}
-              className={inputClassName + " resize-y"}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-01 mb-1">
-              {t("editor.singleCompanyView.sections.tags")}
-            </label>
-            <MultiSelectDropdown
-              options={tagOptions.map((o) => o.slug)}
-              selectedIds={selectedTags}
-              onChange={setSelectedTags}
-              triggerLabel={t("editor.companies.tags")}
-              getOptionLabel={(slug) =>
-                tagLabelBySlug[slug] ?? slug
-              }
-              emptyLabel={t("editor.tagOptions.empty")}
-              panelClassName="max-h-64"
-              panelMinWidth={260}
-            />
-            {selectedTags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {selectedTags.map((slug) => (
-                  <span
-                    key={slug}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-03/80 text-gray-01 border border-gray-03"
-                  >
-                    {tagLabelBySlug[slug] ?? slug}
-                  </span>
-                ))}
+
+          <div className="space-y-6">
+            <section className="rounded-lg bg-gray-05/60 p-4">
+              <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide mb-3">
+                Identifiers
               </div>
-            )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-01 mb-1">Wikidata ID</label>
+                  <input
+                    type="text"
+                    value={company.wikidataId}
+                    readOnly
+                    className={inputClassName + " bg-gray-04/60 !max-w-none"}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-01 mb-1">LEI</label>
+                  <input
+                    type="text"
+                    value={lei}
+                    onChange={(e) => setLei(e.target.value)}
+                    className={inputClassName + " !max-w-none"}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-lg bg-gray-05/60 p-4">
+              <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide mb-3">
+                Tags
+              </div>
+              <MultiSelectDropdown
+                options={tagOptions.map((o) => o.slug)}
+                selectedIds={selectedTags}
+                onChange={setSelectedTags}
+                triggerLabel={t("editor.companies.tags")}
+                getOptionLabel={(slug) => tagLabelBySlug[slug] ?? slug}
+                emptyLabel={t("editor.tagOptions.empty")}
+                panelClassName="max-h-64"
+                panelMinWidth={260}
+              />
+              {selectedTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {selectedTags.map((slug) => (
+                    <span
+                      key={slug}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-03/80 text-gray-01"
+                    >
+                      {tagLabelBySlug[slug] ?? slug}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
         </div>
         <Button
@@ -249,7 +291,7 @@ export function CompanyDetailTab({
           variant="primary"
           size="sm"
           className="mt-4"
-          onClick={handleSaveCore}
+          onClick={() => setSaveDialog("core")}
           disabled={savingCore}
         >
           {savingCore && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -257,7 +299,7 @@ export function CompanyDetailTab({
         </Button>
       </section>
 
-      <section className="rounded-lg border border-gray-03 bg-gray-04/80 p-4">
+      <section className="rounded-lg bg-gray-04/80 p-4">
         <h3 className="text-sm font-semibold text-gray-01 mb-4">
           {t("editor.singleCompanyView.sections.industry")} /{" "}
           {t("editor.singleCompanyView.sections.baseYear")}
@@ -294,7 +336,7 @@ export function CompanyDetailTab({
             type="button"
             variant="primary"
             size="sm"
-            onClick={handleSaveIndustry}
+            onClick={() => setSaveDialog("industry")}
             disabled={savingIndustry}
           >
             {savingIndustry && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -302,6 +344,22 @@ export function CompanyDetailTab({
           </Button>
         </div>
       </section>
+
+      <ReviewerMetadataDialog
+        open={saveDialog != null}
+        onOpenChange={(o) => {
+          if (!o) setSaveDialog(null);
+        }}
+        title="Reviewer details"
+        confirmLabel="Save"
+        saving={savingCore || savingIndustry}
+        onConfirm={(meta) => {
+          const which = saveDialog;
+          setSaveDialog(null);
+          if (which === "core") return handleSaveCore(meta);
+          if (which === "industry") return handleSaveIndustry(meta);
+        }}
+      />
     </div>
   );
 }
