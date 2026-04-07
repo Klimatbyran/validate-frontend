@@ -22,6 +22,7 @@ import {
   toNumberOrNull,
 } from "../../lib/reporting-period-ui";
 import { useReportingPeriodColumnFilters } from "../../hooks/useReportingPeriodColumnFilters";
+import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 import { FieldWithMetadata } from "../FieldWithMetadata";
 
@@ -93,10 +94,7 @@ export function EconomyDataTab({
   );
 
   const [edited, setEdited] = useState<Record<string, EditedPeriodEconomy>>({});
-  const [comment, setComment] = useState("");
-  const [source, setSource] = useState("");
   const [saving, setSaving] = useState(false);
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
 
   const {
     showAllYears,
@@ -114,10 +112,7 @@ export function EconomyDataTab({
 
   useEffect(() => {
     setEdited({});
-    setComment("");
-    setSource("");
     setSaving(false);
-    setSaveDialogOpen(false);
   }, [company.wikidataId]);
 
   const setEditedField = (rpId: string, patch: Partial<EditedPeriodEconomy>) => {
@@ -167,6 +162,14 @@ export function EconomyDataTab({
       setSaving(false);
     }
   };
+
+  const reviewerSave = useReviewerMetadataSave({
+    onSave: (m) => handleSave(m),
+    onSaved,
+    reset: () => {
+      setEdited({});
+    },
+  });
 
   return (
     <section className="rounded-lg bg-gray-05 p-4 w-full min-w-0 max-w-full">
@@ -440,7 +443,7 @@ export function EconomyDataTab({
           type="button"
           variant="primary"
           size="sm"
-          onClick={() => setSaveDialogOpen(true)}
+          onClick={reviewerSave.requestSave}
           disabled={saving}
         >
           {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -449,17 +452,13 @@ export function EconomyDataTab({
       </div>
 
       <ReviewerMetadataDialog
-        open={saveDialogOpen}
-        onOpenChange={setSaveDialogOpen}
+        open={reviewerSave.dialogOpen}
+        onOpenChange={reviewerSave.setDialogOpen}
         saving={saving}
         confirmLabel={t("editor.fieldEdit.save")}
-        initialComment={comment}
-        initialSource={source}
-        onConfirm={(m) => {
-          setComment(m.comment);
-          setSource(m.source);
-          return handleSave(m);
-        }}
+        initialComment={reviewerSave.comment}
+        initialSource={reviewerSave.source}
+        onConfirm={(m) => reviewerSave.confirmSave(m)}
       />
     </section>
   );
