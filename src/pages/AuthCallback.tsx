@@ -7,7 +7,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { DEFAULT_TOP_LEVEL_PATH } from "@/lib/top-level-routes";
 import { useI18n } from "@/contexts/I18nContext";
 
 export function AuthCallback() {
@@ -72,7 +71,7 @@ export function AuthCallback() {
         <p className="text-gray-02">{error}</p>
         <div className="flex gap-4">
           <button
-            onClick={() => navigate(DEFAULT_TOP_LEVEL_PATH)}
+            onClick={() => navigate("/")}
             className="px-4 py-2 bg-gray-03 hover:bg-gray-02 text-gray-01 rounded transition-colors"
           >
             {t("auth.back")}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
@@ -88,7 +88,15 @@ export function SingleCompanyView() {
   const [detailError, setDetailError] = useState<string | null>(null);
   const [quickEdit, setQuickEdit] = useState<{ companyId: string; year: string } | null>(null);
 
+  // Guards against stale async operations (e.g. save finishing after navigation).
+  const activeCompanyIdRef = useRef<string | null>(routeCompanyId);
+  const detailRefreshTokenRef = useRef(0);
+
   const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
+
+  useEffect(() => {
+    activeCompanyIdRef.current = routeCompanyId;
+  }, [routeCompanyId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -260,10 +268,24 @@ export function SingleCompanyView() {
           company={detail}
           tagOptions={tagOptions}
           onSaved={() => {
-            if (routeCompanyId) {
-              getCompany(routeCompanyId).then(setDetail);
-            }
+            const companyIdAtSave = routeCompanyId;
+
+            // Refresh the list (safe regardless of which company is currently open).
             listCompanies().then(setCompanyList);
+
+            // Refresh the currently-saved company detail, but ignore stale results.
+            if (!companyIdAtSave) return;
+
+            const token = ++detailRefreshTokenRef.current;
+            getCompany(companyIdAtSave)
+              .then((company) => {
+                if (activeCompanyIdRef.current !== companyIdAtSave) return;
+                if (detailRefreshTokenRef.current !== token) return;
+                setDetail(company);
+              })
+              .catch(() => {
+                // Ignore: detail fetch errors are handled by the route-level effect.
+              });
           }}
         />
       </div>

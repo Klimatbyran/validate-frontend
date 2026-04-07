@@ -14,6 +14,7 @@ import { RegistryTab } from "@/tabs/registry/RegistryTab";
 import { UploadTab } from "@/tabs/upload/UploadTab";
 import { WorkflowTab } from "@/tabs/workflow/WorkflowTab";
 import { DEFAULT_TOP_LEVEL_PATH } from "@/lib/top-level-routes";
+import { LandingGate } from "@/pages/LandingGate";
 
 function App() {
   return (
@@ -21,12 +22,9 @@ function App() {
       <GlobalLoginModal />
       <Routes>
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/" element={<LandingGate />} />
 
         <Route element={<MainLayout />}>
-          <Route
-            path="/"
-            element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />}
-          />
           <Route path="/crawler" element={<CrawlerTab />} />
           <Route path="/registry" element={<RegistryTab />} />
           <Route path="/upload" element={<UploadTab />} />

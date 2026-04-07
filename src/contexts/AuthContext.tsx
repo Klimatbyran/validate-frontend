@@ -65,8 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem(TOKEN_STORAGE_KEY);
     localStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
-    // Navigate to home (will trigger login modal if ProtectedRoute is active)
-    navigate(DEFAULT_TOP_LEVEL_PATH, { replace: true });
+    navigate("/", { replace: true });
   }, [navigate]);
 
   const login = useCallback(() => {
