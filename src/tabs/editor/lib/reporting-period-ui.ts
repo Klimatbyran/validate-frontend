@@ -15,8 +15,8 @@ export function isReportingPeriodWithIdAndDates(
   return Boolean(rp.id && rp.startDate && rp.endDate);
 }
 
-export function formatDateStamp(isoLike?: string | null): string {
-  if (!isoLike) return "—";
+export function formatDateStamp(isoLike: string | null | undefined, placeholder: string): string {
+  if (!isoLike) return placeholder;
   return isoLike.slice(0, 10);
 }
 
@@ -25,8 +25,12 @@ export function getPeriodYear(period: { startDate?: string; endDate?: string }):
   return y || null;
 }
 
-export function formatPeriodDateRange(startDate?: string, endDate?: string): string {
-  return `${formatDateStamp(startDate)} – ${formatDateStamp(endDate)}`;
+export function formatPeriodDateRange(
+  startDate: string | undefined,
+  endDate: string | undefined,
+  placeholder: string
+): string {
+  return `${formatDateStamp(startDate, placeholder)} – ${formatDateStamp(endDate, placeholder)}`;
 }
 
 /** Primary toolbar `Button` / compact control sizing in period editors. */

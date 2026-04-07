@@ -250,7 +250,11 @@ export function EconomyDataTab({
                 const turnoverCurrencyDirty = rpEdits.turnoverCurrency != null;
                 const employeesUnitDirty = rpEdits.employeesUnit != null;
                 const periodYear = getPeriodYear(rp) ?? t("common.placeholderDash");
-                const periodDateRange = formatPeriodDateRange(rp.startDate, rp.endDate);
+                const periodDateRange = formatPeriodDateRange(
+                  rp.startDate,
+                  rp.endDate,
+                  t("common.placeholderDash")
+                );
                 const reportUrlForOpen = (rp.reportURL ?? "").trim();
 
                 const turnoverVerified =

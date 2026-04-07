@@ -57,6 +57,7 @@ export function ReportingPeriodQuickEditModal({
   onSaved?: () => void;
 }) {
   const { t } = useI18n();
+  const dash = t("common.placeholderDash");
   const [detailCompany, setDetailCompany] = useState<GarboCompanyDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -282,9 +283,9 @@ export function ReportingPeriodQuickEditModal({
           <div className="shrink-0 mt-3 flex items-center justify-between gap-3">
             <div className="text-xs text-gray-02">
               {t("editor.reportingPeriodQuickEdit.periodLabel")}{" "}
-              {formatDateStamp(period.startDate)}{" "}
+              {formatDateStamp(period.startDate, dash)}{" "}
               {t("editor.reportingPeriodQuickEdit.periodRangeSeparator")}{" "}
-              {formatDateStamp(period.endDate)}
+              {formatDateStamp(period.endDate, dash)}
             </div>
             <Button
               type="button"

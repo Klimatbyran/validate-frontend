@@ -149,7 +149,7 @@ export function MultiCompanyTable({
                       </button>
                     </td>
                     <td className="px-4 py-3 text-gray-01">
-                      {formatNumber(scope1)}
+                      {formatNumber(scope1, dash)}
                       <button
                         type="button"
                         onClick={() =>
@@ -171,7 +171,7 @@ export function MultiCompanyTable({
                       </button>
                     </td>
                     <td className="px-4 py-3 text-gray-01">
-                      {formatNumber(scope2)}
+                      {formatNumber(scope2, dash)}
                       <button
                         type="button"
                         onClick={() =>

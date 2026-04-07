@@ -417,7 +417,7 @@ export function SingleCompanyView() {
                     <td className="px-4 py-3 text-gray-02">
                       <div className="flex items-center gap-2">
                         <StatusIcon state={overview?.baseYear ?? "none"} />
-                        <span>{displayBaseYear(c.baseYear)}</span>
+                        <span>{displayBaseYear(c.baseYear, dash)}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">

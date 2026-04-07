@@ -129,8 +129,8 @@ export function ReportingPeriodsDataTab({
         if (!e) return null;
 
         const startYmd =
-          e.startDate !== undefined ? e.startDate : formatDateStamp(rp.startDate);
-        const endYmd = e.endDate !== undefined ? e.endDate : formatDateStamp(rp.endDate);
+          e.startDate !== undefined ? e.startDate : formatDateStamp(rp.startDate, dash);
+        const endYmd = e.endDate !== undefined ? e.endDate : formatDateStamp(rp.endDate, dash);
         if (!startYmd || startYmd === dash || !endYmd || endYmd === dash) return null;
 
         const startDate = mergeYmdIntoOriginal(startYmd, rp.startDate);
@@ -248,8 +248,8 @@ export function ReportingPeriodsDataTab({
           {visiblePeriods.map((rp) => {
             const rpEdits = edited[rp.id] ?? {};
             const periodYear = getPeriodYear(rp) ?? dash;
-            const startVal = rpEdits.startDate ?? formatDateStamp(rp.startDate);
-            const endVal = rpEdits.endDate ?? formatDateStamp(rp.endDate);
+            const startVal = rpEdits.startDate ?? formatDateStamp(rp.startDate, dash);
+            const endVal = rpEdits.endDate ?? formatDateStamp(rp.endDate, dash);
             const urlVal = rpEdits.reportURL ?? (rp.reportURL ?? "");
             const startDirty = rpEdits.startDate != null;
             const endDirty = rpEdits.endDate != null;
@@ -265,7 +265,8 @@ export function ReportingPeriodsDataTab({
                   <div>
                     <div className="text-sm font-semibold text-gray-01">{periodYear}</div>
                     <div className="text-xs text-gray-02 mt-0.5">
-                      {formatDateStamp(rp.startDate)} – {formatDateStamp(rp.endDate)}
+                      {formatDateStamp(rp.startDate, dash)} –{" "}
+                      {formatDateStamp(rp.endDate, dash)}
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">

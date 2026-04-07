@@ -27,6 +27,7 @@ export function CompanyDetailTab({
   onSaved?: () => void;
 }) {
   const { t } = useI18n();
+  const dash = t("common.placeholderDash");
   const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
 
   const [name, setName] = useState(company.name ?? "");
@@ -46,7 +47,7 @@ export function CompanyDetailTab({
   const [subIndustryCode, setSubIndustryCode] = useState(
     company.industry?.subIndustryCode ?? ""
   );
-  const [baseYear, setBaseYear] = useState(() => displayBaseYear(company.baseYear));
+  const [baseYear, setBaseYear] = useState(() => displayBaseYear(company.baseYear, dash));
 
   const [industryOptions, setIndustryOptions] = useState<IndustryGicsOption[]>(
     []
@@ -64,7 +65,7 @@ export function CompanyDetailTab({
     setInternalComment(company.internalComment ?? "");
     setSelectedTags(company.tags ?? []);
     setSubIndustryCode(company.industry?.subIndustryCode ?? "");
-    setBaseYear(displayBaseYear(company.baseYear));
+    setBaseYear(displayBaseYear(company.baseYear, dash));
   }, [
     company.wikidataId,
     company.name,
@@ -75,6 +76,7 @@ export function CompanyDetailTab({
     company.industry?.subIndustryCode,
     company.baseYear,
     company.descriptions,
+    dash,
   ]);
 
   useEffect(() => {

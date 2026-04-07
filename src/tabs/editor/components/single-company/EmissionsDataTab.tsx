@@ -46,6 +46,7 @@ export function EmissionsDataTab({
 }) {
   const { t } = useI18n();
   const scope1And2Display = t("editor.companies.scope1And2");
+  const dash = t("common.placeholderDash");
 
   const periods = useMemo(
     () =>
@@ -145,11 +146,11 @@ export function EmissionsDataTab({
 
   const visibleColumns = useMemo(() => {
     return visiblePeriods.map((rp) => {
-      const dateRangeLabel = formatPeriodDateRange(rp.startDate, rp.endDate);
+      const dateRangeLabel = formatPeriodDateRange(rp.startDate, rp.endDate, dash);
       const year = getPeriodYear(rp);
       return { rp, dateRangeLabel, year: year ?? "" };
     });
-  }, [visiblePeriods]);
+  }, [dash, visiblePeriods]);
 
   const scope3CategoryIds = useMemo(() => {
     const set = new Set<number>();
