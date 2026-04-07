@@ -25,6 +25,7 @@ import { useReportingPeriodColumnFilters } from "../../hooks/useReportingPeriodC
 import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 import { FieldWithMetadata } from "../FieldWithMetadata";
+import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
 
 type EditedPeriodEconomy = {
   turnoverValue?: string;
@@ -445,6 +446,7 @@ export function EconomyDataTab({
           size="sm"
           onClick={reviewerSave.requestSave}
           disabled={saving}
+          className={editorPrimaryActionButtonClass}
         >
           {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {t("editor.fieldEdit.save")}

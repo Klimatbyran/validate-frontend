@@ -23,6 +23,7 @@ import { useReportingPeriodColumnFilters } from "../../hooks/useReportingPeriodC
 import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 import { buildEmissionsPeriodPatch, type EditedPeriodEmissions } from "../../lib/emissions-edit";
+import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
 import {
   applyNullableStringEdit,
   applyScope3CategoryValueEdit,
@@ -261,7 +262,7 @@ export function EmissionsDataTab({
   }, [scope1And2Display, t]);
 
   return (
-    <section className="rounded-lg bg-gray-05 p-4 w-full min-w-0 max-w-full">
+    <section className="rounded-lg bg-gray-05 p-4 min-w-0 max-w-full">
       <div className="border-b border-gray-03/60 pb-6 mb-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
           <div className="min-w-0 max-w-2xl">
@@ -485,6 +486,7 @@ export function EmissionsDataTab({
           size="sm"
           onClick={reviewerSave.requestSave}
           disabled={saving}
+          className={editorPrimaryActionButtonClass}
         >
           {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {t("editor.fieldEdit.save")}

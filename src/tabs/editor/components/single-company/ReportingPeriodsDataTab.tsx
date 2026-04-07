@@ -25,6 +25,7 @@ import {
 import { useReportingPeriodColumnFilters } from "../../hooks/useReportingPeriodColumnFilters";
 import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
+import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
 import { AddReportingPeriodFlow } from "./AddReportingPeriodFlow";
 
 type EditedPeriod = {
@@ -362,6 +363,7 @@ export function ReportingPeriodsDataTab({
           size="sm"
           onClick={reviewerSave.requestSave}
           disabled={saving}
+          className={editorPrimaryActionButtonClass}
         >
           {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {t("editor.fieldEdit.save")}

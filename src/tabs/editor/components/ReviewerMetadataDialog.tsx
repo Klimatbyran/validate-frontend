@@ -10,6 +10,7 @@ import {
 } from "@/ui/dialog";
 import { cn } from "@/lib/utils";
 import { inputClassName } from "../lib/company-edit-utils";
+import { editorPrimaryActionButtonClass, editorSecondaryActionButtonClass } from "../lib/editor-button-classes";
 
 export function ReviewerMetadataDialog({
   open,
@@ -96,6 +97,7 @@ export function ReviewerMetadataDialog({
             size="sm"
             onClick={() => onOpenChange(false)}
             disabled={!!saving}
+            className={editorSecondaryActionButtonClass}
           >
             {t("editor.reviewerDialog.cancel")}
           </Button>
@@ -105,6 +107,7 @@ export function ReviewerMetadataDialog({
             size="sm"
             onClick={() => onConfirm({ comment: comment.trim(), source: source.trim() })}
             disabled={!!saving}
+            className={editorPrimaryActionButtonClass}
           >
             {resolvedConfirm}
           </Button>

@@ -178,7 +178,46 @@ export async function fetchIndustryGics(
     throw new Error(`Failed to load industry options: ${res.status} ${text}`);
   }
   const data = await res.json();
-  return Array.isArray(data) ? data : data.options ?? data.items ?? [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray((data as { options?: unknown }).options)) return (data as { options: IndustryGicsOption[] }).options;
+  if (Array.isArray((data as { items?: unknown }).items)) return (data as { items: IndustryGicsOption[] }).items;
+
+  // Some envs return an object keyed by subIndustryCode, e.g. { "10101010": { sectorName, groupName, ... }, ... }.
+  if (data && typeof data === "object") {
+    const entries = Object.entries(data as Record<string, unknown>);
+    const mapped: IndustryGicsOption[] = entries
+      .map(([code, raw]) => {
+        if (!raw || typeof raw !== "object") return null;
+        const r = raw as Record<string, unknown>;
+        const subIndustryName =
+          (typeof r.subIndustryName === "string" && r.subIndustryName) ||
+          (typeof r.subIndustry === "string" && r.subIndustry) ||
+          undefined;
+        const sector =
+          (typeof r.sector === "string" && r.sector) ||
+          (typeof r.sectorName === "string" && r.sectorName) ||
+          undefined;
+        const group =
+          (typeof r.group === "string" && r.group) ||
+          (typeof r.groupName === "string" && r.groupName) ||
+          undefined;
+        const industry =
+          (typeof r.industry === "string" && r.industry) ||
+          (typeof r.industryName === "string" && r.industryName) ||
+          undefined;
+        const label =
+          (typeof r.label === "string" && r.label) ||
+          (typeof r.name === "string" && r.name) ||
+          subIndustryName ||
+          undefined;
+        return { code, label, subIndustryName, sector, group, industry } satisfies IndustryGicsOption;
+      })
+      .filter(Boolean) as IndustryGicsOption[];
+
+    return mapped;
+  }
+
+  return [];
 }
 
 /** Set company industry (POST /api/companies/:wikidataId/industry). */

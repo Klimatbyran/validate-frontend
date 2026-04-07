@@ -12,6 +12,7 @@ import {
 } from "@/ui/dialog";
 import type { GarboMetadata } from "../../lib/types";
 import { inputClassName } from "../../lib/company-edit-utils";
+import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
 
 export interface FieldEditModalProps {
   open: boolean;
@@ -186,7 +187,13 @@ export function FieldEditModal({
             <Button type="button" variant="ghost" onClick={handleClose}>
               {t("editor.fieldEdit.cancel")}
             </Button>
-            <Button type="submit" variant="primary" size="sm" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isSubmitting}
+              className={editorPrimaryActionButtonClass}
+            >
               {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {t("editor.fieldEdit.save")}
             </Button>
