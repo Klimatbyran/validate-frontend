@@ -65,7 +65,7 @@ export function Scope2BottomBracket() {
 
 /** Fixed width per period so vertical borders align across reporting + emissions sections. */
 const emissionsPeriodColBox =
-  "box-border w-80 min-w-80 max-w-80 shrink-0 ms-2 border-r border-gray-03";
+  "box-border w-72 min-w-72 max-w-72 shrink-0 ms-2 border-r border-gray-03";
 
 export const emissionsFieldCellClass = `${emissionsPeriodColBox} flex items-center gap-1 py-2 min-h-[44px] min-w-0`;
 
