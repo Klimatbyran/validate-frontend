@@ -65,8 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem(TOKEN_STORAGE_KEY);
     localStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
-    navigate("/", { replace: true });
-  }, [navigate]);
+    // Stay on the current URL; do not redirect to the default tab.
+  }, []);
 
   const login = useCallback(() => {
     // Save current location for post-login redirect

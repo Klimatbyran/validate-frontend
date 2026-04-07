@@ -1,9 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { FileText, Link2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { useBatches } from "@/hooks/useBatches";
+import { useAuth } from "@/hooks/useAuth";
+import { LoadingSpinner } from "@/ui/loading-spinner";
 import { FileUploadZone } from "./components/FileUploadZone";
 import { UrlUploadForm } from "./components/UrlUploadForm";
 import { UploadList } from "./components/UploadList";
@@ -17,6 +19,26 @@ import { useTagOptions } from "./hooks/useTagOptions";
 
 export function UploadTab() {
   const { t } = useI18n();
+  const { isAuthenticated, isLoading: authLoading, login } = useAuth();
+  const hasTriggeredLoginRef = useRef(false);
+
+  // Upload is the main entrypoint and performs write operations; require auth here.
+  useEffect(() => {
+    if (authLoading) return;
+    if (isAuthenticated) return;
+    if (hasTriggeredLoginRef.current) return;
+    hasTriggeredLoginRef.current = true;
+    login();
+  }, [authLoading, isAuthenticated, login]);
+
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="flex justify-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
+        <LoadingSpinner label={t("auth.loginRequired")} />
+      </div>
+    );
+  }
+
   const [uploadMode, setUploadMode] = useState<"file" | "url">("url");
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
