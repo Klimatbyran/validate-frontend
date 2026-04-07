@@ -6,7 +6,11 @@ import { Button } from "@/ui/button";
 import { IconActionButton } from "@/ui/icon-action-button";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
-import type { GarboCompanyDetail, GarboFieldMetadata } from "../../lib/types";
+import type {
+  GarboCompanyDetail,
+  GarboFieldMetadata,
+  GarboReportingPeriodSummary,
+} from "../../lib/types";
 import { updateReportingPeriods } from "../../lib/companies-api";
 import { inputClassName } from "../../lib/company-edit-utils";
 import {
@@ -14,11 +18,12 @@ import {
   editorDenseToolbarClass,
   formatPeriodDateRange,
   getPeriodYear,
+  isReportingPeriodWithIdAndDates,
   toNumberOrNull,
 } from "../../lib/reporting-period-ui";
 import { useReportingPeriodColumnFilters } from "../../hooks/useReportingPeriodColumnFilters";
-import { MetadataDetailsDialog } from "../MetadataDetailsDialog";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
+import { FieldWithMetadata } from "../FieldWithMetadata";
 
 type EditedPeriodEconomy = {
   turnoverValue?: string;
@@ -28,6 +33,49 @@ type EditedPeriodEconomy = {
   employeesVerified?: boolean;
   employeesUnit?: string;
 };
+
+function employeesUnitOptionsFor(current: string | null | undefined): string[] {
+  const base = ["FTE", "EOY", "AVG"];
+  if (!current || base.includes(current)) return base;
+  return [...base, current];
+}
+
+function buildEconomyPeriodPatch(
+  rp: GarboReportingPeriodSummary,
+  rpEdits: EditedPeriodEconomy
+): { startDate: string; endDate: string; economy?: Record<string, unknown> } | null {
+  const hasTurnover =
+    rpEdits.turnoverValue != null ||
+    rpEdits.turnoverVerified != null ||
+    rpEdits.turnoverCurrency != null;
+  const hasEmployees =
+    rpEdits.employeesValue != null ||
+    rpEdits.employeesVerified != null ||
+    rpEdits.employeesUnit != null;
+  if (!hasTurnover && !hasEmployees) return null;
+
+  const economy: Record<string, unknown> = {};
+  if (hasTurnover) {
+    economy.turnover = {
+      value: rpEdits.turnoverValue != null ? toNumberOrNull(rpEdits.turnoverValue) : undefined,
+      currency: (rpEdits.turnoverCurrency ?? rp.economy?.turnover?.currency ?? "SEK") || undefined,
+      verified: rpEdits.turnoverVerified ?? undefined,
+    };
+  }
+  if (hasEmployees) {
+    economy.employees = {
+      value: rpEdits.employeesValue != null ? toNumberOrNull(rpEdits.employeesValue) : undefined,
+      unit: (rpEdits.employeesUnit ?? rp.economy?.employees?.unit ?? "FTE") || undefined,
+      verified: rpEdits.employeesVerified ?? undefined,
+    };
+  }
+
+  return {
+    startDate: rp.startDate,
+    endDate: rp.endDate,
+    economy: Object.keys(economy).length ? economy : undefined,
+  };
+}
 
 export function EconomyDataTab({
   company,
@@ -39,7 +87,8 @@ export function EconomyDataTab({
   const { t } = useI18n();
 
   const periods = useMemo(
-    () => (company.reportingPeriods ?? []).filter((rp) => rp.startDate && rp.endDate),
+    () =>
+      (company.reportingPeriods ?? []).filter(isReportingPeriodWithIdAndDates),
     [company.reportingPeriods]
   );
 
@@ -58,7 +107,10 @@ export function EconomyDataTab({
     setSortOrder,
     years,
     visiblePeriods,
-  } = useReportingPeriodColumnFilters(periods, company.wikidataId);
+  } = useReportingPeriodColumnFilters<GarboReportingPeriodSummary & { id: string }>(
+    periods,
+    company.wikidataId
+  );
 
   useEffect(() => {
     setEdited({});
@@ -88,55 +140,9 @@ export function EconomyDataTab({
       .map((rp) => {
         const rpEdits = edited[rp.id];
         if (!rpEdits) return null;
-
-        const turnoverValue =
-          rpEdits.turnoverValue != null
-            ? toNumberOrNull(rpEdits.turnoverValue)
-            : null;
-        const employeesValue =
-          rpEdits.employeesValue != null
-            ? toNumberOrNull(rpEdits.employeesValue)
-            : null;
-
-        const hasTurnover =
-          rpEdits.turnoverValue != null ||
-          rpEdits.turnoverVerified != null ||
-          rpEdits.turnoverCurrency != null;
-        const hasEmployees =
-          rpEdits.employeesValue != null ||
-          rpEdits.employeesVerified != null ||
-          rpEdits.employeesUnit != null;
-
-        if (!hasTurnover && !hasEmployees) return null;
-
-        const economy: Record<string, unknown> = {};
-        if (hasTurnover) {
-          economy.turnover = {
-            value: rpEdits.turnoverValue != null ? turnoverValue : undefined,
-            currency:
-              (rpEdits.turnoverCurrency ?? rp.economy?.turnover?.currency ?? "SEK") || undefined,
-            verified: rpEdits.turnoverVerified ?? undefined,
-          };
-        }
-        if (hasEmployees) {
-          economy.employees = {
-            value: rpEdits.employeesValue != null ? employeesValue : undefined,
-            unit: (rpEdits.employeesUnit ?? rp.economy?.employees?.unit ?? "FTE") || undefined,
-            verified: rpEdits.employeesVerified ?? undefined,
-          };
-        }
-
-        return {
-          startDate: rp.startDate,
-          endDate: rp.endDate,
-          economy: Object.keys(economy).length ? economy : undefined,
-        };
+        return buildEconomyPeriodPatch(rp, rpEdits);
       })
-      .filter(Boolean) as Array<{
-      startDate: string;
-      endDate: string;
-      economy?: Record<string, unknown>;
-    }>;
+      .filter(Boolean) as Array<{ startDate: string; endDate: string; economy?: Record<string, unknown> }>;
 
     if (!payloadPeriods.length) {
       toast.message(t("editor.periodEditor.nothingToSave"));
@@ -237,18 +243,13 @@ export function EconomyDataTab({
                 const employeesUnit =
                   rpEdits.employeesUnit ??
                   (originalEmployeesUnit != null ? String(originalEmployeesUnit) : "FTE");
-                const employeesUnitOptions = [
-                  "FTE",
-                  "EOY",
-                  "AVG",
-                  ...(employeesUnit && !["FTE", "EOY", "AVG"].includes(employeesUnit) ? [employeesUnit] : []),
-                ];
+                const employeesUnitOptions = employeesUnitOptionsFor(employeesUnit);
 
                 const turnoverDirty = rpEdits.turnoverValue != null;
                 const employeesDirty = rpEdits.employeesValue != null;
                 const turnoverCurrencyDirty = rpEdits.turnoverCurrency != null;
                 const employeesUnitDirty = rpEdits.employeesUnit != null;
-                const periodYear = getPeriodYear(rp) ?? "—";
+                const periodYear = getPeriodYear(rp) ?? t("common.placeholderDash");
                 const periodDateRange = formatPeriodDateRange(rp.startDate, rp.endDate);
                 const reportUrlForOpen = (rp.reportURL ?? "").trim();
 
@@ -311,16 +312,11 @@ export function EconomyDataTab({
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4 w-full min-w-0">
-                      <div className="w-full min-w-0 lg:min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <label className="block text-xs font-medium text-gray-01">
-                            {t("editor.periodEditor.turnover")}
-                          </label>
-                          <MetadataDetailsDialog
-                            fieldLabel={t("editor.periodEditor.turnover")}
-                            metadata={rp.economy?.turnover?.metadata as GarboFieldMetadata | null}
-                          />
-                        </div>
+                      <FieldWithMetadata
+                        label={t("editor.periodEditor.turnover")}
+                        fieldLabel={t("editor.periodEditor.turnover")}
+                        metadata={rp.economy?.turnover?.metadata as GarboFieldMetadata | null}
+                      >
                         <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-center">
                           <input
                             type="number"
@@ -367,18 +363,13 @@ export function EconomyDataTab({
                             </IconActionButton>
                           </div>
                         </div>
-                      </div>
+                      </FieldWithMetadata>
 
-                      <div className="w-full min-w-0 lg:min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <label className="block text-xs font-medium text-gray-01">
-                            {t("editor.periodEditor.employees")}
-                          </label>
-                          <MetadataDetailsDialog
-                            fieldLabel={t("editor.periodEditor.employees")}
-                            metadata={rp.economy?.employees?.metadata as GarboFieldMetadata | null}
-                          />
-                        </div>
+                      <FieldWithMetadata
+                        label={t("editor.periodEditor.employees")}
+                        fieldLabel={t("editor.periodEditor.employees")}
+                        metadata={rp.economy?.employees?.metadata as GarboFieldMetadata | null}
+                      >
                         <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-center">
                           <input
                             type="number"
@@ -427,7 +418,7 @@ export function EconomyDataTab({
                             </IconActionButton>
                           </div>
                         </div>
-                      </div>
+                      </FieldWithMetadata>
                     </div>
                   </div>
                 );

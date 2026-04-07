@@ -6,8 +6,8 @@ type PeriodLike = { startDate: string; endDate: string };
 /**
  * Sort order, year filter, and derived period lists for spreadsheet-style period tabs.
  */
-export function useReportingPeriodColumnFilters(
-  periods: PeriodLike[],
+export function useReportingPeriodColumnFilters<TPeriod extends PeriodLike>(
+  periods: TPeriod[],
   resetKey: string
 ) {
   const [showAllYears, setShowAllYears] = useState(true);
@@ -21,7 +21,7 @@ export function useReportingPeriodColumnFilters(
   }, [resetKey]);
 
   const sortedPeriods = useMemo(() => {
-    const key = (p: PeriodLike) => p.endDate ?? p.startDate ?? "";
+    const key = (p: TPeriod) => p.endDate ?? p.startDate ?? "";
     const sorted = [...periods].sort((a, b) => key(b).localeCompare(key(a)));
     return sortOrder === "desc" ? sorted : sorted.slice().reverse();
   }, [periods, sortOrder]);

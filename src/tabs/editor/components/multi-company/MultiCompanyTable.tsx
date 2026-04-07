@@ -25,6 +25,7 @@ export function MultiCompanyTable({
   onEdit: (state: EditState) => void;
 }) {
   const { t } = useI18n();
+  const dash = t("common.placeholderDash");
 
   return (
     <DataTableShell>
@@ -94,7 +95,7 @@ export function MultiCompanyTable({
                 </td>
                 <td className="px-4 py-3 text-gray-01 font-medium">{c.name}</td>
                 <td className="px-4 py-3 text-gray-01">
-                  {c.tags?.length ? c.tags.join(", ") : "—"}
+                  {c.tags?.length ? c.tags.join(", ") : dash}
                   <button
                     type="button"
                     onClick={() =>
@@ -125,7 +126,7 @@ export function MultiCompanyTable({
                           {period.reportURL}
                         </a>
                       ) : (
-                        "—"
+                        dash
                       )}
                       <button
                         type="button"

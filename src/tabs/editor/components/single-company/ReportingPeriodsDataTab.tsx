@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/ui/dialog";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
-import type { GarboCompanyDetail } from "../../lib/types";
+import type { GarboCompanyDetail, GarboReportingPeriodSummary } from "../../lib/types";
 import { updateReportingPeriods } from "../../lib/companies-api";
 import { inputClassName } from "../../lib/company-edit-utils";
 import {
@@ -20,6 +20,7 @@ import {
   editorDenseToolbarClass,
   formatDateStamp,
   getPeriodYear,
+  isReportingPeriodWithIdAndDates,
 } from "../../lib/reporting-period-ui";
 import { useReportingPeriodColumnFilters } from "../../hooks/useReportingPeriodColumnFilters";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
@@ -47,12 +48,11 @@ export function ReportingPeriodsDataTab({
   onSaved?: () => void;
 }) {
   const { t } = useI18n();
+  const dash = t("common.placeholderDash");
 
   const periods = useMemo(
     () =>
-      (company.reportingPeriods ?? []).filter(
-        (rp) => rp.startDate && rp.endDate && rp.id
-      ),
+      (company.reportingPeriods ?? []).filter(isReportingPeriodWithIdAndDates),
     [company.reportingPeriods]
   );
 
@@ -72,7 +72,10 @@ export function ReportingPeriodsDataTab({
     setSortOrder,
     years,
     visiblePeriods,
-  } = useReportingPeriodColumnFilters(periods, company.wikidataId);
+  } = useReportingPeriodColumnFilters<GarboReportingPeriodSummary & { id: string }>(
+    periods,
+    company.wikidataId
+  );
 
   useEffect(() => {
     setEdited({});
@@ -128,7 +131,7 @@ export function ReportingPeriodsDataTab({
         const startYmd =
           e.startDate !== undefined ? e.startDate : formatDateStamp(rp.startDate);
         const endYmd = e.endDate !== undefined ? e.endDate : formatDateStamp(rp.endDate);
-        if (!startYmd || startYmd === "—" || !endYmd || endYmd === "—") return null;
+        if (!startYmd || startYmd === dash || !endYmd || endYmd === dash) return null;
 
         const startDate = mergeYmdIntoOriginal(startYmd, rp.startDate);
         const endDate = mergeYmdIntoOriginal(endYmd, rp.endDate);
@@ -244,7 +247,7 @@ export function ReportingPeriodsDataTab({
         <div className="space-y-3 w-full min-w-0">
           {visiblePeriods.map((rp) => {
             const rpEdits = edited[rp.id] ?? {};
-            const periodYear = getPeriodYear(rp) ?? "—";
+            const periodYear = getPeriodYear(rp) ?? dash;
             const startVal = rpEdits.startDate ?? formatDateStamp(rp.startDate);
             const endVal = rpEdits.endDate ?? formatDateStamp(rp.endDate);
             const urlVal = rpEdits.reportURL ?? (rp.reportURL ?? "");
@@ -297,7 +300,7 @@ export function ReportingPeriodsDataTab({
                     </label>
                     <input
                       type="date"
-                      value={startVal === "—" ? "" : startVal}
+                      value={startVal === dash ? "" : startVal}
                       onChange={(e) => setPatch(rp.id, { startDate: e.target.value })}
                       className={
                         inputClassName +
@@ -312,7 +315,7 @@ export function ReportingPeriodsDataTab({
                     </label>
                     <input
                       type="date"
-                      value={endVal === "—" ? "" : endVal}
+                      value={endVal === dash ? "" : endVal}
                       onChange={(e) => setPatch(rp.id, { endDate: e.target.value })}
                       className={
                         inputClassName +

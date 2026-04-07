@@ -19,6 +19,13 @@ import {
   getPeriodYear,
   toNumberOrNull,
 } from "../../lib/reporting-period-ui";
+import {
+  buildReportingPeriodQuickEditPatch,
+  hasAnyQuickEditEdits,
+  quickEditScope3CategoryName,
+  scope3CategoryIdsForDisplay,
+  type ReportingPeriodQuickEditEdited,
+} from "../../lib/reporting-period-quick-edit";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -28,50 +35,6 @@ import {
   DialogTitle,
 } from "@/ui/dialog";
 import { MetadataDetailsDialog } from "../MetadataDetailsDialog";
-
-const ALL_SCOPE3_CATEGORY_IDS = Array.from({ length: 16 }, (_, i) => i + 1);
-
-function quickEditScope3CategoryName(
-  cat: number,
-  t: (key: string, params?: Record<string, string | number>) => string
-): string {
-  const key = `editor.companies.scope3Categories.${cat}`;
-  const label = t(key);
-  if (!label || label === key) return t("editor.periodEditor.categoryUnknown", { n: cat });
-  return label;
-}
-
-type Edited = {
-  reportURL?: string; // "" means clear (null) if original existed
-
-  // Economy
-  turnoverValue?: string; // "" means clear (null) if original existed
-  turnoverCurrency?: string;
-  turnoverVerified?: boolean;
-  employeesValue?: string;
-  employeesUnit?: string;
-  employeesVerified?: boolean;
-
-  // Emissions
-  scope1Total?: string;
-  scope1Verified?: boolean;
-  scope1And2Total?: string;
-  scope1And2Verified?: boolean;
-  scope2Mb?: string;
-  scope2Lb?: string;
-  scope2Unknown?: string;
-  scope2Verified?: boolean; // applies to unit
-  scope3StatedTotal?: string;
-  scope3StatedTotalVerified?: boolean;
-  scope3Categories?: Record<string, string>;
-  scope3CategoriesVerified?: Record<string, boolean>;
-  statedTotalEmissions?: string;
-  statedTotalVerified?: boolean;
-};
-
-function hasAnyEdits(ed: Edited) {
-  return Object.keys(ed).length > 0;
-}
 
 function normDateKey(iso: string) {
   return iso.slice(0, 10);
@@ -122,7 +85,7 @@ export function ReportingPeriodQuickEditModal({
     return match ?? null;
   }, [company.reportingPeriods, detailCompany?.reportingPeriods, year, periodMatch]);
 
-  const [edited, setEdited] = useState<Edited>({});
+  const [edited, setEdited] = useState<ReportingPeriodQuickEditEdited>({});
   const [comment, setComment] = useState("");
   const [source, setSource] = useState("");
   const [saving, setSaving] = useState(false);
@@ -142,12 +105,17 @@ export function ReportingPeriodQuickEditModal({
   const employeeUnitOptions = useMemo(() => ["FTE", "EOY", "AVG"], []);
 
   const setNullableEdit = (
-    key: keyof Edited,
+    key: keyof ReportingPeriodQuickEditEdited,
     value: string,
     hadOriginalValue: boolean
   ) => {
     setEdited((prev) =>
-      assignNullableStringKey({ ...prev }, String(key), value, hadOriginalValue) as Edited
+      assignNullableStringKey(
+        { ...prev },
+        String(key),
+        value,
+        hadOriginalValue
+      ) as ReportingPeriodQuickEditEdited
     );
   };
 
@@ -235,21 +203,11 @@ export function ReportingPeriodQuickEditModal({
     (a, b) => a - b
   );
 
-  const editedScope3CategoryNums = new Set<number>();
-  for (const k of Object.keys(edited.scope3Categories ?? {})) {
-    const n = Number(k);
-    if (Number.isFinite(n)) editedScope3CategoryNums.add(n);
-  }
-  for (const k of Object.keys(edited.scope3CategoriesVerified ?? {})) {
-    const n = Number(k);
-    if (Number.isFinite(n)) editedScope3CategoryNums.add(n);
-  }
-  const populatedScope3CategoryIds = Array.from(
-    new Set<number>([...categoryIds, ...editedScope3CategoryNums])
-  ).sort((a, b) => a - b);
-  const displayScope3CategoryIds = showAllScope3Categories
-    ? ALL_SCOPE3_CATEGORY_IDS
-    : populatedScope3CategoryIds;
+  const displayScope3CategoryIds = scope3CategoryIdsForDisplay({
+    categoryIdsFromData: categoryIds,
+    edited,
+    showAllScope3Categories,
+  });
 
   const turnoverValue = edited.turnoverValue ?? (originalTurnover != null ? String(originalTurnover) : "");
   const reportURL = edited.reportURL ?? (originalReportURL != null ? String(originalReportURL) : "");
@@ -280,111 +238,24 @@ export function ReportingPeriodQuickEditModal({
   const scope12Label = t("editor.companies.scope1And2");
 
   const handleSave = async () => {
-    if (!hasAnyEdits(edited) && !comment.trim() && !source.trim()) {
+    if (!hasAnyQuickEditEdits(edited) && !comment.trim() && !source.trim()) {
       onOpenChange(false);
       return;
     }
 
-    const emissions: Record<string, unknown> = {};
-    const economy: Record<string, unknown> = {};
-
-    // Economy
-    if (edited.turnoverValue != null || edited.turnoverCurrency != null || edited.turnoverVerified != null) {
-      economy.turnover = {
-        value: edited.turnoverValue != null ? toNumberOrNull(edited.turnoverValue) : undefined,
-        currency: edited.turnoverCurrency != null ? edited.turnoverCurrency.trim().toUpperCase() : undefined,
-        verified: edited.turnoverVerified ?? undefined,
-      };
-    }
-    if (edited.employeesValue != null || edited.employeesUnit != null || edited.employeesVerified != null) {
-      economy.employees = {
-        value: edited.employeesValue != null ? toNumberOrNull(edited.employeesValue) : undefined,
-        unit: edited.employeesUnit != null ? edited.employeesUnit : undefined,
-        verified: edited.employeesVerified ?? undefined,
-      };
-    }
-
-    // Emissions
-    if (edited.scope1Total != null || edited.scope1Verified != null) {
-      emissions.scope1 = { total: edited.scope1Total != null ? toNumberOrNull(edited.scope1Total) : undefined, unit: "tCO2e", verified: edited.scope1Verified ?? undefined };
-    }
-    if (edited.scope1And2Total != null || edited.scope1And2Verified != null) {
-      emissions.scope1And2 = { total: edited.scope1And2Total != null ? toNumberOrNull(edited.scope1And2Total) : undefined, unit: "tCO2e", verified: edited.scope1And2Verified ?? undefined };
-    }
-    if (edited.scope2Mb != null || edited.scope2Lb != null || edited.scope2Unknown != null || edited.scope2Verified != null) {
-      emissions.scope2 = {
-        mb: edited.scope2Mb != null ? toNumberOrNull(edited.scope2Mb) : undefined,
-        lb: edited.scope2Lb != null ? toNumberOrNull(edited.scope2Lb) : undefined,
-        unknown: edited.scope2Unknown != null ? toNumberOrNull(edited.scope2Unknown) : undefined,
-        unit: "tCO2e",
-        verified: edited.scope2Verified ?? undefined,
-      };
-    }
-    if (edited.scope3StatedTotal != null || edited.scope3StatedTotalVerified != null) {
-      emissions.scope3 = {
-        ...(emissions.scope3 ?? {}),
-        statedTotalEmissions: {
-          total: edited.scope3StatedTotal != null ? toNumberOrNull(edited.scope3StatedTotal) : undefined,
-          unit: "tCO2e",
-          verified: edited.scope3StatedTotalVerified ?? undefined,
-        },
-      };
-    }
-    if (edited.scope3Categories || edited.scope3CategoriesVerified) {
-      const vals = edited.scope3Categories ?? {};
-      const vers = edited.scope3CategoriesVerified ?? {};
-      const ids = new Set<string>([...Object.keys(vals), ...Object.keys(vers)]);
-      const cats = Array.from(ids)
-        .map((id) => {
-          const category = Number(id);
-          if (!Number.isFinite(category)) return null;
-          const hasVal = Object.prototype.hasOwnProperty.call(vals, id);
-          const hasVer = Object.prototype.hasOwnProperty.call(vers, id);
-          if (!hasVal && !hasVer) return null;
-          const original = scope3Categories.find((c) => c.category === category);
-          if (!hasVal && hasVer && original?.total == null) return null;
-          return {
-            category,
-            total: hasVal ? toNumberOrNull(vals[id] ?? "") : (original?.total ?? null),
-            unit: "tCO2e",
-            verified: hasVer ? vers[id] : undefined,
-          };
-        })
-        .filter(Boolean);
-      if (cats.length) {
-        emissions.scope3 = { ...(emissions.scope3 ?? {}), categories: cats };
-      }
-    }
-    if (edited.statedTotalEmissions != null || edited.statedTotalVerified != null) {
-      emissions.statedTotalEmissions = {
-        total: edited.statedTotalEmissions != null ? toNumberOrNull(edited.statedTotalEmissions) : undefined,
-        unit: "tCO2e",
-        verified: edited.statedTotalVerified ?? undefined,
-      };
-    }
-
     setSaving(true);
     try {
-      await updateReportingPeriods(company.wikidataId, {
-        reportingPeriods: [
-          {
-            startDate: period.startDate,
-            endDate: period.endDate,
-            reportURL:
-              edited.reportURL !== undefined
-                ? edited.reportURL.trim()
-                  ? edited.reportURL.trim()
-                  : null
-                : undefined,
-            economy: Object.keys(economy).length ? economy : undefined,
-            emissions: Object.keys(emissions).length ? emissions : undefined,
-          },
-        ],
-        metadata:
-          source.trim() || comment.trim()
-            ? { source: source.trim() || undefined, comment: comment.trim() || undefined }
-            : undefined,
-      });
+      await updateReportingPeriods(
+        company.wikidataId,
+        buildReportingPeriodQuickEditPatch({
+          period,
+          edited,
+          comment,
+          source,
+          originalScope3Categories: scope3Categories,
+          toNumberOrNull,
+        })
+      );
       toast.success(t("editor.reportingPeriodQuickEdit.updatedToast"));
       onSaved?.();
       onOpenChange(false);
@@ -420,7 +291,7 @@ export function ReportingPeriodQuickEditModal({
               variant="secondary"
               size="sm"
               onClick={resetAll}
-              disabled={!hasAnyEdits(edited)}
+              disabled={!hasAnyQuickEditEdits(edited)}
               className="min-w-0 px-3"
             >
               <Undo2 className="w-4 h-4 mr-2" />

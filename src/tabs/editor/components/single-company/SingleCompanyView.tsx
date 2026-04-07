@@ -60,6 +60,7 @@ function StatusIcon({ state }: { state: VerificationState }) {
 
 export function SingleCompanyView() {
   const { t } = useI18n();
+  const dash = t("common.placeholderDash");
   const [companyList, setCompanyList] = useState<GarboCompanyListItem[]>([]);
   const [tagOptions, setTagOptions] = useState<TagOption[]>([]);
   const [loadingList, setLoadingList] = useState(true);
@@ -452,13 +453,13 @@ export function SingleCompanyView() {
                           ))}
                         </div>
                       ) : (
-                        "—"
+                        dash
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-02">
                       <div className="flex items-center gap-2">
                         <StatusIcon state={overview?.industry ?? "none"} />
-                        <span>{c.industry?.subIndustryCode ?? "—"}</span>
+                        <span>{c.industry?.subIndustryCode ?? dash}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-gray-02">
@@ -479,7 +480,7 @@ export function SingleCompanyView() {
                           )}
                         </div>
                       ) : (
-                        "—"
+                        dash
                       )}
                     </td>
                   </tr>

@@ -4,6 +4,7 @@
     "copy": "Copy",
     "copied": "Copied",
     "copyFailed": "Copy failed",
+    "placeholderDash": "—",
     "filter": "Filter",
     "clearFilters": "Clear filters",
     "refresh": "Refresh",

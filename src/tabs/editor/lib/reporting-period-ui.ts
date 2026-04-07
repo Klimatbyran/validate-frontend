@@ -1,10 +1,18 @@
 /** Shared helpers and layout tokens for economy / emissions / reporting period editors. */
 
+import type { GarboReportingPeriodSummary } from "./types";
+
 export function toNumberOrNull(value: string): number | null {
   const v = value.trim();
   if (!v) return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
+}
+
+export function isReportingPeriodWithIdAndDates(
+  rp: GarboReportingPeriodSummary
+): rp is GarboReportingPeriodSummary & { id: string } {
+  return Boolean(rp.id && rp.startDate && rp.endDate);
 }
 
 export function formatDateStamp(isoLike?: string | null): string {

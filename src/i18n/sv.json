@@ -4,6 +4,7 @@
     "copy": "Kopiera",
     "copied": "Kopierad",
     "copyFailed": "Kopiering misslyckades",
+    "placeholderDash": "—",
     "filter": "Filter",
     "clearFilters": "Rensa filter",
     "refresh": "Uppdatera",
