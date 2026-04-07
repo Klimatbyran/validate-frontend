@@ -117,7 +117,7 @@ export async function updateReportingPeriods(
     reportingPeriods: Array<{
       startDate: string;
       endDate: string;
-      reportURL?: string;
+      reportURL?: string | null;
       emissions?: Record<string, unknown>;
       economy?: Record<string, unknown>;
     }>;

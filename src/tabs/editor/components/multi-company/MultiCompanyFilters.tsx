@@ -3,9 +3,9 @@ import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
-import { inputClassName } from "../lib/company-edit-utils";
-import { buildTagLabelBySlug } from "../lib/editor-tag-and-payload-utils";
-import { NO_TAGS_FILTER_OPTION, type TagOption } from "../lib/types";
+import { inputClassName } from "../../lib/company-edit-utils";
+import { buildTagLabelBySlug } from "../../lib/editor-tag-and-payload-utils";
+import { NO_TAGS_FILTER_OPTION, type TagOption } from "../../lib/types";
 import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
 
 export function MultiCompanyFilters({

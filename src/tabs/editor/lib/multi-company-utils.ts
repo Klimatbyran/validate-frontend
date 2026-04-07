@@ -19,8 +19,8 @@ export function getPeriodForYear(
   );
 }
 
-export function formatNumber(v: number | null | undefined): string {
-  if (v == null) return "—";
+export function formatNumber(v: number | null | undefined, placeholder: string): string {
+  if (v == null) return placeholder;
   return v.toLocaleString();
 }
 

@@ -1,24 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { toast } from "sonner";
-import { listCompanies, updateCompany, updateReportingPeriods } from "../lib/companies-api";
-import { fetchTagOptions } from "../lib/tag-options-api";
-import type { EditState, GarboCompanyListItem, GarboMetadata, TagOption } from "../lib/types";
+import { updateCompany, updateReportingPeriods } from "../../lib/companies-api";
+import type { EditState, GarboCompanyListItem, GarboMetadata } from "../../lib/types";
 import { FieldEditModal } from "./FieldEditModal";
 import { BulkTagUpdateModal } from "./BulkTagUpdateModal";
 import { MultiCompanyFilters } from "./MultiCompanyFilters";
 import { MultiCompanySelectionBar } from "./MultiCompanySelectionBar";
 import { MultiCompanyTable } from "./MultiCompanyTable";
-import { getPeriodForYear } from "../lib/multi-company-utils";
+import { getPeriodForYear } from "../../lib/multi-company-utils";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
+import { useMultiCompanyData } from "../../hooks/useMultiCompanyData";
 import {
   buildReportingPeriodUpdatePayload,
-  buildTagLabelBySlug,
   companyMatchesTagFilter,
   parseTagSlugs,
-} from "../lib/editor-tag-and-payload-utils";
+} from "../../lib/editor-tag-and-payload-utils";
 
 function companyMatchesSearch(company: GarboCompanyListItem, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -30,10 +29,16 @@ function companyMatchesSearch(company: GarboCompanyListItem, query: string): boo
 
 export function MultiCompanyView() {
   const { t } = useI18n();
-  const [companies, setCompanies] = useState<GarboCompanyListItem[]>([]);
-  const [tagOptions, setTagOptions] = useState<TagOption[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    companies,
+    setCompanies,
+    tagOptions,
+    years,
+    tagLabelBySlug,
+    loading,
+    error,
+    reload: loadCompanies,
+  } = useMultiCompanyData();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -41,42 +46,6 @@ export function MultiCompanyView() {
   const [editState, setEditState] = useState<EditState | null>(null);
   const [selectedWikidataIds, setSelectedWikidataIds] = useState<Set<string>>(new Set());
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
-
-  const loadCompanies = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [companyList, availableTagOptions] = await Promise.all([
-        listCompanies(),
-        fetchTagOptions(),
-      ]);
-      setCompanies(companyList);
-      setTagOptions(availableTagOptions);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : String(error));
-      setCompanies([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadCompanies();
-  }, [loadCompanies]);
-
-  const years = useMemo(() => {
-    const uniqueYears = new Set<string>();
-    companies.forEach((company) => {
-      company.reportingPeriods?.forEach((reportingPeriod) => {
-        const year =
-          reportingPeriod.startDate?.slice(0, 4) ?? reportingPeriod.endDate?.slice(0, 4);
-        if (year) uniqueYears.add(year);
-      });
-    });
-    return Array.from(uniqueYears).sort((yearA, yearB) => yearB.localeCompare(yearA));
-  }, [companies]);
-
-  const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
 
   const filteredCompanies = useMemo(() => {
     let filteredList = companies;
@@ -177,7 +146,7 @@ export function MultiCompanyView() {
         setActionLoading(false);
       }
     },
-    [selectedWikidataIds, companies, t, loadCompanies]
+    [selectedWikidataIds, companies, t, loadCompanies, setCompanies]
   );
 
   const handleSaveEdit = useCallback(
@@ -230,7 +199,7 @@ export function MultiCompanyView() {
         setActionLoading(false);
       }
     },
-    [editState, t, loadCompanies]
+    [editState, t, loadCompanies, setCompanies]
   );
 
   const renderTagsInput = useCallback(

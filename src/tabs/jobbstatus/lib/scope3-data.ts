@@ -69,6 +69,7 @@ export const SCOPE3_CATEGORY_NAMES: Record<number, string> = {
   13: "Downstream leased assets",
   14: "Franchises",
   15: "Investments",
+  16: "Unknown/Other",
 };
 
 export type NormalizedCategory = {

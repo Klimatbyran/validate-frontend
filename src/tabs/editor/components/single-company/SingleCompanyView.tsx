@@ -8,27 +8,25 @@ import {
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { LoadingSpinner } from "@/ui/loading-spinner";
-import { listCompanies, getCompany } from "../lib/companies-api";
-import { fetchTagOptions } from "../lib/tag-options-api";
+import { listCompanies, getCompany } from "../../lib/companies-api";
+import { fetchTagOptions } from "../../lib/tag-options-api";
 import type {
   GarboCompanyDetail,
   GarboCompanyListItem,
   TagOption,
-} from "../lib/types";
-import type { VerificationState } from "../lib/verification";
-import { getCompanyVerificationOverview } from "../lib/verification";
+} from "../../lib/types";
+import type { VerificationState } from "../../lib/verification";
+import { getCompanyVerificationOverview } from "../../lib/verification";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { CompanyEditDetail } from "./CompanyEditDetail";
 import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
-import { NO_TAGS_FILTER_OPTION } from "../lib/types";
-import { buildTagLabelBySlug, companyMatchesTagFilter } from "../lib/editor-tag-and-payload-utils";
+import { NO_TAGS_FILTER_OPTION } from "../../lib/types";
+import { buildTagLabelBySlug, companyMatchesTagFilter } from "../../lib/editor-tag-and-payload-utils";
 import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
-
-function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
-  const y = period.endDate?.slice(0, 4) ?? period.startDate?.slice(0, 4);
-  return y || null;
-}
+import { ReportingPeriodQuickEditModal } from "./ReportingPeriodQuickEditModal";
+import { displayBaseYear } from "../../lib/company-edit-utils";
+import { getPeriodYear } from "../../lib/reporting-period-ui";
 
 function companyHasPeriodsInYears(
   company: GarboCompanyListItem,
@@ -62,6 +60,7 @@ function StatusIcon({ state }: { state: VerificationState }) {
 
 export function SingleCompanyView() {
   const { t } = useI18n();
+  const dash = t("common.placeholderDash");
   const [companyList, setCompanyList] = useState<GarboCompanyListItem[]>([]);
   const [tagOptions, setTagOptions] = useState<TagOption[]>([]);
   const [loadingList, setLoadingList] = useState(true);
@@ -78,6 +77,7 @@ export function SingleCompanyView() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [detail, setDetail] = useState<GarboCompanyDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [quickEdit, setQuickEdit] = useState<{ companyId: string; year: string } | null>(null);
 
   const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
 
@@ -289,7 +289,7 @@ export function SingleCompanyView() {
                   : (tagLabelBySlug[slug] ?? slug)
               }
               emptyLabel={t("editor.companies.allTags")}
-              triggerClassName="min-w-[140px]"
+              triggerClassName="min-w-[140px] !h-8 !text-xs px-3"
             />
           </div>
           <div>
@@ -302,7 +302,7 @@ export function SingleCompanyView() {
               onChange={setFilterYears}
               triggerLabel={t("editor.companies.year")}
               emptyLabel={t("editor.companies.allYears")}
-              triggerClassName="min-w-[120px]"
+              triggerClassName="min-w-[120px] !h-8 !text-xs px-3"
             />
           </div>
           {sectors.length > 0 && (
@@ -316,12 +316,12 @@ export function SingleCompanyView() {
                 onChange={setFilterSector}
                 placeholder={t("editor.singleCompanyView.allSectors")}
                 getOptionLabel={(v) => (v ? v : t("editor.singleCompanyView.allSectors"))}
-                triggerClassName="min-w-[140px]"
+                triggerClassName="min-w-[140px] !h-8 !text-xs px-3"
               />
             </div>
           )}
           <div className="flex flex-wrap items-end gap-4">
-            <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-sm">
+            <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-xs">
               <input
                 type="checkbox"
                 checked={filterHasUnverifiedEmissions}
@@ -330,7 +330,7 @@ export function SingleCompanyView() {
               />
               {t("editor.singleCompanyView.filterHasUnverifiedEmissions")}
             </label>
-            <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-sm">
+            <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-xs">
               <input
                 type="checkbox"
                 checked={filterHasUnverifiedData}
@@ -345,6 +345,19 @@ export function SingleCompanyView() {
 
       {!loadingList && filteredCompanies.length > 0 && (
         <DataTableShell>
+          {quickEdit && (
+            <ReportingPeriodQuickEditModal
+              open={true}
+              onOpenChange={(open) => {
+                if (!open) setQuickEdit(null);
+              }}
+              company={companyList.find((x) => x.wikidataId === quickEdit.companyId)!}
+              year={quickEdit.year}
+              onSaved={() => {
+                listCompanies().then(setCompanyList);
+              }}
+            />
+          )}
           <DataTable>
             <DataTableHead>
               <tr>
@@ -353,25 +366,25 @@ export function SingleCompanyView() {
                 </th>
                 <th className="px-4 py-3 font-medium">
                   <div className="leading-tight">
-                    <div>Base year</div>
+                    <div>{t("editor.singleCompanyView.table.baseYear")}</div>
                     <div className="text-[10px] text-gray-01 normal-case tracking-normal">
-                      All years
+                      {t("editor.singleCompanyView.table.allYears")}
                     </div>
                   </div>
                 </th>
                 <th className="px-4 py-3 font-medium">
                   <div className="leading-tight">
-                    <div>Emissions</div>
+                    <div>{t("editor.singleCompanyView.table.emissions")}</div>
                     <div className="text-[10px] text-gray-01 normal-case tracking-normal">
-                      All years
+                      {t("editor.singleCompanyView.table.allYears")}
                     </div>
                   </div>
                 </th>
                 <th className="px-4 py-3 font-medium">
                   <div className="leading-tight">
-                    <div>Economy</div>
+                    <div>{t("editor.singleCompanyView.table.economy")}</div>
                     <div className="text-[10px] text-gray-01 normal-case tracking-normal">
-                      All years
+                      {t("editor.singleCompanyView.table.allYears")}
                     </div>
                   </div>
                 </th>
@@ -398,13 +411,13 @@ export function SingleCompanyView() {
                     <td className="px-4 py-3 font-medium">
                       <div className="flex flex-col">
                         <span>{c.name}</span>
-                        <span className="text-xs text-gray-03">{c.wikidataId}</span>
+                        <span className="text-xs text-gray-02">{c.wikidataId}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-gray-02">
                       <div className="flex items-center gap-2">
                         <StatusIcon state={overview?.baseYear ?? "none"} />
-                        <span>{(c as any).baseYear?.year ?? "—"}</span>
+                        <span>{displayBaseYear(c.baseYear, dash)}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -417,9 +430,15 @@ export function SingleCompanyView() {
                       {overview?.perYear?.length ? (
                         <div className="flex flex-wrap gap-2">
                           {overview.perYear.map((p) => (
-                            <span
+                            <button
                               key={p.year}
-                              className="inline-flex items-center gap-2 rounded-full border border-gray-03 px-2 py-1 text-xs text-gray-01 bg-gray-05"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setQuickEdit({ companyId: c.wikidataId, year: p.year });
+                              }}
+                              className="inline-flex items-center gap-2 rounded-full border border-gray-03 px-2 py-1 text-xs text-gray-01 bg-gray-05 hover:bg-gray-03/40"
+                              title={t("editor.periodEditor.quickEditYearTitle", { year: p.year })}
                             >
                               <span className="font-semibold">{p.year}</span>
                               <span className="inline-flex items-center gap-1">
@@ -430,17 +449,17 @@ export function SingleCompanyView() {
                                 <span className="text-[10px] text-gray-03">$</span>
                                 <StatusIcon state={p.economy} />
                               </span>
-                            </span>
+                            </button>
                           ))}
                         </div>
                       ) : (
-                        "—"
+                        dash
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-02">
                       <div className="flex items-center gap-2">
                         <StatusIcon state={overview?.industry ?? "none"} />
-                        <span>{c.industry?.subIndustryCode ?? "—"}</span>
+                        <span>{c.industry?.subIndustryCode ?? dash}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-gray-02">
@@ -461,7 +480,7 @@ export function SingleCompanyView() {
                           )}
                         </div>
                       ) : (
-                        "—"
+                        dash
                       )}
                     </td>
                   </tr>

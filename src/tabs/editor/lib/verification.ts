@@ -121,22 +121,26 @@ export function getCompanyVerificationOverview(
     !economyAnyHasValue ? "none" : economyAnyUnverified ? "unverified" : "verified";
 
   const industryHasValue = Boolean(company.industry?.subIndustryCode);
-  const industryMeta = (company as any).industry?.metadata as GarboMinimalMetadata | null | undefined;
+  const industryMeta = company.industry?.metadata;
   const industry = stateFromAIGenerated(industryHasValue, isAIGenerated(industryMeta));
 
-  const baseYearObj = (company as any).baseYear as
-    | { year?: number | null; metadata?: GarboMinimalMetadata | null }
-    | null
-    | undefined;
-  const baseYearHasValue = baseYearObj?.year !== null && baseYearObj?.year !== undefined;
-  const baseYear = stateFromAIGenerated(Boolean(baseYearHasValue), isAIGenerated(baseYearObj?.metadata));
+  const by = company.baseYear;
+  const baseYearHasValue =
+    typeof by === "number" ||
+    (typeof by === "object" &&
+      by !== null &&
+      by.year !== undefined &&
+      by.year !== null);
+  const baseYearMeta =
+    typeof by === "object" && by !== null ? by.metadata : undefined;
+  const baseYear = stateFromAIGenerated(baseYearHasValue, isAIGenerated(baseYearMeta));
 
   const hasUnverifiedEmissions = emissionsAnyUnverified;
   const hasUnverifiedData =
     hasUnverifiedEmissions ||
     economyAnyUnverified ||
     (industryHasValue && isAIGenerated(industryMeta)) ||
-    (baseYearHasValue && isAIGenerated(baseYearObj?.metadata));
+    (baseYearHasValue && isAIGenerated(baseYearMeta));
 
   const perYear = Array.from(perYearMap.entries())
     .map(([year, v]) => ({ year, ...v }))

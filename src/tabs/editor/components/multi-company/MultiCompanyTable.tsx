@@ -1,9 +1,9 @@
 import { Check, CheckCircle, Pencil } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
-import type { GarboCompanyListItem } from "../lib/types";
-import type { EditState } from "../lib/types";
-import { formatNumber, getScope2Total, getPeriodForYear } from "../lib/multi-company-utils";
+import type { GarboCompanyListItem } from "../../lib/types";
+import type { EditState } from "../../lib/types";
+import { formatNumber, getScope2Total, getPeriodForYear } from "../../lib/multi-company-utils";
 
 export function MultiCompanyTable({
   companies,
@@ -25,6 +25,7 @@ export function MultiCompanyTable({
   onEdit: (state: EditState) => void;
 }) {
   const { t } = useI18n();
+  const dash = t("common.placeholderDash");
 
   return (
     <DataTableShell>
@@ -94,7 +95,7 @@ export function MultiCompanyTable({
                 </td>
                 <td className="px-4 py-3 text-gray-01 font-medium">{c.name}</td>
                 <td className="px-4 py-3 text-gray-01">
-                  {c.tags?.length ? c.tags.join(", ") : "—"}
+                  {c.tags?.length ? c.tags.join(", ") : dash}
                   <button
                     type="button"
                     onClick={() =>
@@ -125,7 +126,7 @@ export function MultiCompanyTable({
                           {period.reportURL}
                         </a>
                       ) : (
-                        "—"
+                        dash
                       )}
                       <button
                         type="button"
@@ -148,7 +149,7 @@ export function MultiCompanyTable({
                       </button>
                     </td>
                     <td className="px-4 py-3 text-gray-01">
-                      {formatNumber(scope1)}
+                      {formatNumber(scope1, dash)}
                       <button
                         type="button"
                         onClick={() =>
@@ -170,7 +171,7 @@ export function MultiCompanyTable({
                       </button>
                     </td>
                     <td className="px-4 py-3 text-gray-01">
-                      {formatNumber(scope2)}
+                      {formatNumber(scope2, dash)}
                       <button
                         type="button"
                         onClick={() =>

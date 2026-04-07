@@ -1,9 +1,10 @@
 import { useI18n } from "@/contexts/I18nContext";
-import type { GarboCompanyDetail } from "../lib/types";
-import { displayText } from "../lib/company-edit-utils";
+import type { GarboCompanyDetail } from "../../lib/types";
+import { displayText } from "../../lib/company-edit-utils";
 
 export function GoalsInitiativesTab({ company }: { company: GarboCompanyDetail }) {
   const { t } = useI18n();
+  const dash = t("common.placeholderDash");
 
   return (
     <div className="space-y-6">
@@ -14,7 +15,7 @@ export function GoalsInitiativesTab({ company }: { company: GarboCompanyDetail }
           </h3>
           <ul className="list-disc list-inside text-sm text-gray-01 space-y-1">
             {company.goals.map((g) => (
-              <li key={g.id}>{displayText(g.description)}</li>
+              <li key={g.id}>{displayText(g.description, dash)}</li>
             ))}
           </ul>
         </section>
@@ -26,7 +27,7 @@ export function GoalsInitiativesTab({ company }: { company: GarboCompanyDetail }
           </h3>
           <ul className="list-disc list-inside text-sm text-gray-01 space-y-1">
             {company.initiatives.map((i) => (
-              <li key={i.id}>{displayText(i.title)}</li>
+              <li key={i.id}>{displayText(i.title, dash)}</li>
             ))}
           </ul>
         </section>
