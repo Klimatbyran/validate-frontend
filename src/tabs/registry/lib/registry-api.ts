@@ -1,5 +1,6 @@
 import { getGarboApiBaseUrl } from "@/config/api-env";
-import type { RegistryEntry } from "./registry-types";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
+import type { RegistryEntry, RegistryEntryUpdate } from "./registry-types";
 import { filterRegistryEntries } from "./registry-utils";
 
 function registryUrl(path: string): string {
@@ -53,3 +54,57 @@ export async function searchRegistryEntries(
     return [];
   }
 }
+
+export const deleteReportFromRegistry = async (reportIds: string[]) => {
+  if (!reportIds.length) {
+    return true;
+  }
+
+  try {
+    const response = await garboAuthFetch(registryUrl("reports/registry"), {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(reportIds.map((id) => ({ id }))),
+    });
+
+    if (!response.ok) {
+      const errorMsg = `Failed to delete report: ${response.status} ${response.statusText}`;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    } else {
+      return true;
+    }
+  } catch (error) {
+    const msg = `Failed to delete reports with IDs ${reportIds.join(", ")}`;
+    console.error(msg, error);
+    throw error instanceof Error ? error : new Error(msg);
+  }
+};
+
+export const editRegistryEntry = async (entry: RegistryEntryUpdate) => {
+  try {
+    const response = await garboAuthFetch(registryUrl("reports/registry"), {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(entry),
+    });
+
+    if (!response.ok) {
+      const errorMsg = `Failed to edit registry entry: ${response.status} ${response.statusText}`;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    const updatedEntry = (await response.json()) as RegistryEntry;
+    return updatedEntry;
+  } catch (error) {
+    const msg = `Failed to edit registry entry with ID ${entry.id}`;
+    console.error(msg, error);
+    throw error instanceof Error ? error : new Error(msg);
+  }
+};

@@ -4,6 +4,7 @@ import type {
   SaveReportsListResponse,
   SelectedReport,
 } from "./crawler-types";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 
 /** Crawler uses garbo API only. Base follows VITE_GARBO_TARGET / VITE_API_MODE. */
 
@@ -16,7 +17,7 @@ export function reportsUrl(path: string): string {
 
 export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
   try {
-    const response = await fetch(
+    const response = await garboAuthFetch(
       reportsUrl("companies/reports/search-reports"),
       {
         method: "POST",
@@ -63,13 +64,16 @@ export const saveToRegistry = async (
   reports: SelectedReport[],
 ): Promise<SaveReportsListResponse> => {
   try {
-    const response = await fetch(reportsUrl("companies/reports/save-reports"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await garboAuthFetch(
+      reportsUrl("companies/reports/save-reports"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reports),
       },
-      body: JSON.stringify(reports),
-    });
+    );
 
     let responseBody: SaveReportsListResponse | { message?: string } | null =
       null;

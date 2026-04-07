@@ -9,6 +9,10 @@ interface RegistryControlsProps {
   isRefreshing: boolean;
   onExport: () => void;
   isExportDisabled: boolean;
+  onDeleteSelected: () => void;
+  isDeleteDisabled: boolean;
+  selectedCount: number;
+  isDeletingSelected: boolean;
 }
 
 const RegistryControls = ({
@@ -18,6 +22,10 @@ const RegistryControls = ({
   isRefreshing,
   onExport,
   isExportDisabled,
+  onDeleteSelected,
+  isDeleteDisabled,
+  selectedCount,
+  isDeletingSelected,
 }: RegistryControlsProps) => {
   const { t } = useI18n();
 
@@ -44,6 +52,14 @@ const RegistryControls = ({
         <Button size="sm" onClick={onExport} disabled={isExportDisabled}>
           {t("registry.exportCsv")}
           <BookDownIcon className="w-4 h-4 ml-2" />
+        </Button>
+        <Button
+          size="sm"
+          variant="primary"
+          onClick={onDeleteSelected}
+          disabled={isDeleteDisabled || isDeletingSelected}
+        >
+          {`${t("registry.deleteSelected")} (${selectedCount})`}
         </Button>
       </div>
     </div>
