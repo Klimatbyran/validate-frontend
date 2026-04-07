@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
-import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
+import { GicsTreeSelect } from "@/ui/gics-tree-select";
 import {
   fetchIndustryGics,
   updateCompany,
@@ -15,6 +15,7 @@ import {
 import type { GarboCompanyDetail, TagOption } from "../../lib/types";
 import { displayBaseYear, getDescriptionByLang, inputClassName } from "../../lib/company-edit-utils";
 import { buildTagLabelBySlug } from "../../lib/editor-tag-and-payload-utils";
+import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 
 export function CompanyDetailTab({
@@ -52,6 +53,7 @@ export function CompanyDetailTab({
   const [industryOptions, setIndustryOptions] = useState<IndustryGicsOption[]>(
     []
   );
+  const [industryOptionsLoading, setIndustryOptionsLoading] = useState(false);
   const [savingCore, setSavingCore] = useState(false);
   const [savingIndustry, setSavingIndustry] = useState(false);
   const [saveDialog, setSaveDialog] = useState<null | "core" | "industry">(null);
@@ -80,14 +82,15 @@ export function CompanyDetailTab({
   ]);
 
   useEffect(() => {
-    fetchIndustryGics().then(setIndustryOptions).catch(() => setIndustryOptions([]));
+    setIndustryOptionsLoading(true);
+    fetchIndustryGics()
+      .then(setIndustryOptions)
+      .catch((e) => {
+        setIndustryOptions([]);
+        toast.error(e instanceof Error ? e.message : t("editor.singleCompanyView.loadError"));
+      })
+      .finally(() => setIndustryOptionsLoading(false));
   }, []);
-
-  const industrySelectOptions = industryOptions.map((o) => o.code);
-  const getIndustryLabel = (code: string) => {
-    const o = industryOptions.find((x) => x.code === code);
-    return o?.label ?? o?.subIndustryName ?? code;
-  };
 
   const handleSaveCore = async (meta?: { comment?: string; source?: string }) => {
     setSavingCore(true);
@@ -152,6 +155,11 @@ export function CompanyDetailTab({
       setSavingIndustry(false);
     }
   };
+
+  const selectedIndustry = useMemo(
+    () => industryOptions.find((o) => o.code === subIndustryCode) ?? null,
+    [industryOptions, subIndustryCode]
+  );
 
   return (
     <div className="space-y-8">
@@ -299,9 +307,9 @@ export function CompanyDetailTab({
           type="button"
           variant="primary"
           size="sm"
-          className="mt-4"
           onClick={() => setSaveDialog("core")}
           disabled={savingCore}
+          className={`mt-4 ${editorPrimaryActionButtonClass}`}
         >
           {savingCore && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {t("editor.fieldEdit.save")}
@@ -313,44 +321,68 @@ export function CompanyDetailTab({
           {t("editor.singleCompanyView.sections.industry")} /{" "}
           {t("editor.singleCompanyView.sections.baseYear")}
         </h3>
-        <div className="flex flex-wrap gap-4 items-end">
-          <div>
-            <label className="block text-xs font-medium text-gray-02 mb-1">
-              {t("editor.singleCompanyView.fields.gicsSubIndustry")}
-            </label>
-            <SingleSelectDropdown
-              options={industrySelectOptions}
-              value={subIndustryCode}
-              onChange={setSubIndustryCode}
-              placeholder={t("editor.singleCompanyView.selectIndustry")}
-              getOptionLabel={getIndustryLabel}
-              emptyLabel={t("editor.singleCompanyView.noIndustry")}
-              triggerClassName="min-w-[200px] !h-8 !text-xs px-3"
-            />
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-[7rem_minmax(12rem,1fr)_auto] gap-4 items-end">
+            <div>
+              <label className="block text-xs font-medium text-gray-02 mb-1">
+                {t("editor.singleCompanyView.sections.baseYear")}
+              </label>
+              <input
+                type="number"
+                min={1990}
+                max={2100}
+                value={baseYear}
+                onChange={(e) => setBaseYear(e.target.value)}
+                className={inputClassName + " w-full !max-w-none !h-8 !text-xs px-3"}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-02 mb-1">
+                {t("editor.singleCompanyView.fields.gicsSubIndustry")}
+              </label>
+              <GicsTreeSelect
+                options={industryOptions}
+                value={subIndustryCode}
+                onChange={setSubIndustryCode}
+                placeholder={t("editor.singleCompanyView.selectIndustry")}
+                emptyLabel={t("editor.singleCompanyView.noIndustry")}
+                searchPlaceholder={t("common.search")}
+                loading={industryOptionsLoading}
+                loadingLabel={t("common.loading")}
+                triggerClassName="w-full !justify-between !h-8 !text-xs px-3"
+              />
+            </div>
+
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => setSaveDialog("industry")}
+              disabled={savingIndustry}
+              className={editorPrimaryActionButtonClass}
+            >
+              {savingIndustry && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {t("editor.fieldEdit.save")}
+            </Button>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-02 mb-1">
-              {t("editor.singleCompanyView.sections.baseYear")}
-            </label>
-            <input
-              type="number"
-              min={1990}
-              max={2100}
-              value={baseYear}
-              onChange={(e) => setBaseYear(e.target.value)}
-              className={inputClassName + " w-28"}
-            />
-          </div>
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            onClick={() => setSaveDialog("industry")}
-            disabled={savingIndustry}
-          >
-            {savingIndustry && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {t("editor.fieldEdit.save")}
-          </Button>
+
+          {selectedIndustry && (
+            <div className="text-[11px] text-gray-02 max-w-[520px] leading-snug">
+              <span className="font-medium text-gray-02">
+                {selectedIndustry.sector ?? "—"}
+              </span>{" "}
+              &gt; <span className="font-medium text-gray-02">{selectedIndustry.group ?? "—"}</span>{" "}
+              &gt;{" "}
+              <span className="font-medium text-gray-02">
+                {selectedIndustry.industry ?? "—"}
+              </span>{" "}
+              &gt;{" "}
+              <span className="font-medium text-gray-02">
+                {(selectedIndustry.subIndustryName ?? selectedIndustry.label ?? selectedIndustry.code) as string}
+              </span>
+            </div>
+          )}
         </div>
       </section>
 
