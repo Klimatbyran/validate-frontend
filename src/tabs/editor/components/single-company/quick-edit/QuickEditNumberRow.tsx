@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
-import { BadgeCheck, Undo2 } from "lucide-react";
-import { IconActionButton } from "@/ui/icon-action-button";
 import type { GarboFieldMetadata } from "../../../lib/types";
-import { MetadataDetailsDialog } from "../../MetadataDetailsDialog";
+import { MetadataVerifyUndoActions } from "../../MetadataVerifyUndoActions";
 
 export function QuickEditNumberRow({
   label,
@@ -47,23 +45,18 @@ export function QuickEditNumberRow({
           step="any"
         />
         {rightSlot}
-        <MetadataDetailsDialog fieldLabel={fieldLabel} metadata={metadata} />
-        <IconActionButton
+        <MetadataVerifyUndoActions
+          fieldLabel={fieldLabel}
+          metadata={metadata}
+          verified={verified}
+          onToggleVerified={onToggleVerified}
+          verifyTitle={toggleVerifiedTitle}
+          verifyAriaLabel={toggleVerifiedTitle}
+          onUndo={onReset}
+          undoTitle={resetTitle}
+          undoAriaLabel={resetTitle}
           variant="md"
-          onClick={onReset}
-          title={resetTitle}
-          aria-label={resetTitle}
-        >
-          <Undo2 className="text-gray-02" />
-        </IconActionButton>
-        <IconActionButton
-          variant="md"
-          onClick={onToggleVerified}
-          title={toggleVerifiedTitle}
-          aria-label={toggleVerifiedTitle}
-        >
-          <BadgeCheck className={verified ? "text-green-03" : "text-gray-02"} />
-        </IconActionButton>
+        />
       </div>
     </div>
   );

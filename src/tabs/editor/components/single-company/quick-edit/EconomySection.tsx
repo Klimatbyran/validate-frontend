@@ -1,13 +1,11 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useMemo } from "react";
-import { BadgeCheck, Undo2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
-import { IconActionButton } from "@/ui/icon-action-button";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { inputClassName } from "../../../lib/company-edit-utils";
 import type { GarboFieldMetadata, GarboReportingPeriodSummary } from "../../../lib/types";
 import type { ReportingPeriodQuickEditEdited } from "../../../lib/reporting-period-quick-edit";
-import { MetadataDetailsDialog } from "../../MetadataDetailsDialog";
+import { MetadataVerifyUndoActions } from "../../MetadataVerifyUndoActions";
 import { QuickEditSectionTitle } from "./QuickEditSectionTitle";
 import { QuickEditNumberRow } from "./QuickEditNumberRow";
 
@@ -127,13 +125,19 @@ export function EconomySection({
                 return v;
               }}
             />
-            <MetadataDetailsDialog
+            <MetadataVerifyUndoActions
               fieldLabel={t("editor.periodEditor.employees")}
               metadata={period.economy?.employees?.metadata as GarboFieldMetadata | null}
-            />
-            <IconActionButton
-              variant="md"
-              onClick={() =>
+              verified={employeesVerified}
+              onToggleVerified={() =>
+                setEdited((p) => ({
+                  ...p,
+                  employeesVerified: !employeesVerified,
+                }))
+              }
+              verifyTitle={t("editor.periodEditor.toggleVerifiedTitle")}
+              verifyAriaLabel={t("editor.periodEditor.toggleVerifiedTitle")}
+              onUndo={() =>
                 setEdited((p) => {
                   const n = { ...p };
                   delete n.employeesValue;
@@ -142,24 +146,10 @@ export function EconomySection({
                   return n;
                 })
               }
-              title={t("editor.reportingPeriodQuickEdit.resetEmployeesTitle")}
-              aria-label={t("editor.reportingPeriodQuickEdit.resetEmployeesTitle")}
-            >
-              <Undo2 className="text-gray-02" />
-            </IconActionButton>
-            <IconActionButton
+              undoTitle={t("editor.reportingPeriodQuickEdit.resetEmployeesTitle")}
+              undoAriaLabel={t("editor.reportingPeriodQuickEdit.resetEmployeesTitle")}
               variant="md"
-              onClick={() =>
-                setEdited((p) => ({
-                  ...p,
-                  employeesVerified: !employeesVerified,
-                }))
-              }
-              title={t("editor.periodEditor.toggleVerifiedTitle")}
-              aria-label={t("editor.periodEditor.toggleVerifiedTitle")}
-            >
-              <BadgeCheck className={employeesVerified ? "text-green-03" : "text-gray-02"} />
-            </IconActionButton>
+            />
           </div>
         </div>
       </div>

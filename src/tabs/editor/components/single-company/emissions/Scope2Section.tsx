@@ -1,10 +1,8 @@
-import { BadgeCheck, Undo2 } from "lucide-react";
-import { IconActionButton } from "@/ui/icon-action-button";
 import { useI18n } from "@/contexts/I18nContext";
 import type { GarboFieldMetadata, GarboReportingPeriodSummary } from "../../../lib/types";
 import type { EditedPeriodEmissions } from "../../../lib/emissions-edit";
-import { MetadataDetailsDialog } from "../../MetadataDetailsDialog";
 import { EmissionsEditRow, Scope2BottomBracket, Scope2TopBracket, emissionsFieldCellClass } from "./EmissionsGridParts";
+import { MetadataVerifyUndoActions } from "../../MetadataVerifyUndoActions";
 
 type PeriodColumn = { rp: GarboReportingPeriodSummary & { id: string }; year: string };
 
@@ -60,24 +58,20 @@ export function Scope2Section({
 
           return (
             <div key={rp.id} className={emissionsFieldCellClass}>
-              <MetadataDetailsDialog fieldLabel={scope2FieldLabel(year)} metadata={originalMeta} />
-              <IconActionButton
-                onClick={() => setEditedField(rp.id, { scope2Verified: !verified })}
-                aria-label={markVerified}
-                title={markVerified}
-              >
-                <BadgeCheck className={verified ? "text-green-03" : "text-gray-02"} />
-              </IconActionButton>
-              <IconActionButton
-                disabled={undoDisabled}
-                onClick={() =>
+              <MetadataVerifyUndoActions
+                fieldLabel={scope2FieldLabel(year)}
+                metadata={originalMeta}
+                verified={verified}
+                onToggleVerified={() => setEditedField(rp.id, { scope2Verified: !verified })}
+                verifyTitle={markVerified}
+                verifyAriaLabel={markVerified}
+                onUndo={() =>
                   clearEditedKeys(rp.id, ["scope2Mb", "scope2Lb", "scope2Unknown", "scope2Verified"])
                 }
-                aria-label={undoScope2}
-                title={undoScope2}
-              >
-                <Undo2 className="text-gray-02" />
-              </IconActionButton>
+                undoDisabled={undoDisabled}
+                undoTitle={undoScope2}
+                undoAriaLabel={undoScope2}
+              />
             </div>
           );
         })}
