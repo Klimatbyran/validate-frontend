@@ -184,7 +184,9 @@ export function CompanyDetailTab({
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-01 mb-1">URL</label>
+                <label className="block text-sm font-medium text-gray-01 mb-1">
+                  {t("editor.singleCompanyView.fields.url")}
+                </label>
                 <input
                   type="url"
                   value={url}
@@ -235,11 +237,13 @@ export function CompanyDetailTab({
           <div className="space-y-6">
             <section className="rounded-lg bg-gray-05/60 p-4">
               <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide mb-3">
-                Identifiers
+                {t("editor.companyDetail.identifiers")}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-01 mb-1">Wikidata ID</label>
+                  <label className="block text-sm font-medium text-gray-01 mb-1">
+                    {t("editor.companyDetail.wikidataId")}
+                  </label>
                   <input
                     type="text"
                     value={company.wikidataId}
@@ -248,7 +252,9 @@ export function CompanyDetailTab({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-01 mb-1">LEI</label>
+                  <label className="block text-sm font-medium text-gray-01 mb-1">
+                    {t("editor.companyDetail.lei")}
+                  </label>
                   <input
                     type="text"
                     value={lei}
@@ -261,7 +267,7 @@ export function CompanyDetailTab({
 
             <section className="rounded-lg bg-gray-05/60 p-4">
               <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide mb-3">
-                Tags
+                {t("editor.companyDetail.tags")}
               </div>
               <MultiSelectDropdown
                 options={tagOptions.map((o) => o.slug)}
@@ -353,8 +359,8 @@ export function CompanyDetailTab({
         onOpenChange={(o) => {
           if (!o) setSaveDialog(null);
         }}
-        title="Reviewer details"
-        confirmLabel="Save"
+        title={t("editor.reviewerDialog.title")}
+        confirmLabel={t("editor.fieldEdit.save")}
         saving={savingCore || savingIndustry}
         onConfirm={(meta) => {
           const which = saveDialog;

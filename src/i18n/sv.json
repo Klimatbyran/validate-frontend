@@ -27,6 +27,23 @@
     "editor": "Redigerare"
   },
   "editor": {
+    "companyDetail": {
+      "identifiers": "Identifierare",
+      "wikidataId": "Wikidata-ID",
+      "lei": "LEI",
+      "tags": "Taggar"
+    },
+    "singleCompanyView": {
+      "table": {
+        "baseYear": "Basår",
+        "emissions": "Utsläpp",
+        "economy": "Ekonomi",
+        "allYears": "Alla år"
+      },
+      "fields": {
+        "url": "URL"
+      }
+    },
     "title": "Redigerare",
     "subtitle": "Redigera företagsdata i Garbo: enskilt företag för detaljer per bolag, massredigering främst för taggar över flera företag (tabeller per år är sekundära) och hantera taggalternativ för tillåtna taggar.",
     "viewMode": "Visningsläge",

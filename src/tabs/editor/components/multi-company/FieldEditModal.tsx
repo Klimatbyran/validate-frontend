@@ -63,8 +63,7 @@ export function FieldEditModal({
 
   const handleClose = () => onOpenChange(false);
 
-  const handleSubmit = async (e: React.FormEvent, asVerifyOnly: boolean) => {
-    e.preventDefault();
+  const handleSubmit = async (asVerifyOnly: boolean) => {
     try {
       if (asVerifyOnly) {
         await onSubmit(
@@ -94,7 +93,10 @@ export function FieldEditModal({
           )}
         </DialogHeader>
         <form
-          onSubmit={(e) => handleSubmit(e, false)}
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleSubmit(false);
+          }}
           className="space-y-4"
         >
           {renderInput ? (
@@ -175,7 +177,7 @@ export function FieldEditModal({
                 variant="secondary"
                 size="sm"
                 disabled={isSubmitting}
-                onClick={(e) => handleSubmit(e as unknown as React.FormEvent, true)}
+                onClick={() => void handleSubmit(true)}
               >
                 {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t("editor.fieldEdit.verifyOnly")}

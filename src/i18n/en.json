@@ -189,7 +189,22 @@
         "submit": "Update {{count}} companies"
       }
     },
+    "companyDetail": {
+      "identifiers": "Identifiers",
+      "wikidataId": "Wikidata ID",
+      "lei": "LEI",
+      "tags": "Tags"
+    },
     "singleCompanyView": {
+      "table": {
+        "baseYear": "Base year",
+        "emissions": "Emissions",
+        "economy": "Economy",
+        "allYears": "All years"
+      },
+      "fields": {
+        "url": "URL"
+      },
       "searchPlaceholder": "Search by company name or Wikidata ID...",
       "searchAndFilters": "Search & Filters",
       "searchByNameOrId": "Search by Name or Wikidata ID",

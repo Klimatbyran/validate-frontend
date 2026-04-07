@@ -366,25 +366,25 @@ export function SingleCompanyView() {
                 </th>
                 <th className="px-4 py-3 font-medium">
                   <div className="leading-tight">
-                    <div>Base year</div>
+                    <div>{t("editor.singleCompanyView.table.baseYear")}</div>
                     <div className="text-[10px] text-gray-01 normal-case tracking-normal">
-                      All years
+                      {t("editor.singleCompanyView.table.allYears")}
                     </div>
                   </div>
                 </th>
                 <th className="px-4 py-3 font-medium">
                   <div className="leading-tight">
-                    <div>Emissions</div>
+                    <div>{t("editor.singleCompanyView.table.emissions")}</div>
                     <div className="text-[10px] text-gray-01 normal-case tracking-normal">
-                      All years
+                      {t("editor.singleCompanyView.table.allYears")}
                     </div>
                   </div>
                 </th>
                 <th className="px-4 py-3 font-medium">
                   <div className="leading-tight">
-                    <div>Economy</div>
+                    <div>{t("editor.singleCompanyView.table.economy")}</div>
                     <div className="text-[10px] text-gray-01 normal-case tracking-normal">
-                      All years
+                      {t("editor.singleCompanyView.table.allYears")}
                     </div>
                   </div>
                 </th>
