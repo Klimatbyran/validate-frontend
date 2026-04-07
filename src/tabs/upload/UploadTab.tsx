@@ -22,23 +22,6 @@ export function UploadTab() {
   const { isAuthenticated, isLoading: authLoading, login } = useAuth();
   const hasTriggeredLoginRef = useRef(false);
 
-  // Upload is the main entrypoint and performs write operations; require auth here.
-  useEffect(() => {
-    if (authLoading) return;
-    if (isAuthenticated) return;
-    if (hasTriggeredLoginRef.current) return;
-    hasTriggeredLoginRef.current = true;
-    login();
-  }, [authLoading, isAuthenticated, login]);
-
-  if (authLoading || !isAuthenticated) {
-    return (
-      <div className="flex justify-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
-        <LoadingSpinner label={t("auth.loginRequired")} />
-      </div>
-    );
-  }
-
   const [uploadMode, setUploadMode] = useState<"file" | "url">("url");
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -55,6 +38,23 @@ export function UploadTab() {
   const { batches: existingBatches, isLoading: batchesLoading } = useBatches();
   const { tagOptions, loading: tagsLoading, error: tagsError } = useTagOptions();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  // Upload is the main entrypoint and performs write operations; require auth here.
+  useEffect(() => {
+    if (authLoading) return;
+    if (isAuthenticated) return;
+    if (hasTriggeredLoginRef.current) return;
+    hasTriggeredLoginRef.current = true;
+    login();
+  }, [authLoading, isAuthenticated, login]);
+
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="flex justify-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
+        <LoadingSpinner label={t("auth.loginRequired")} />
+      </div>
+    );
+  }
 
   const effectiveBatchId =
     !batchDropdownChoice ? "" : batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE ? customBatchName.trim() : batchDropdownChoice;

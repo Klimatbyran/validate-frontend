@@ -46,7 +46,7 @@ export function MainLayout() {
             </TabsList>
 
             <AnimatePresence mode="popLayout" initial={false}>
-              <TabsContent key={location.pathname} value={tab} asChild>
+              <TabsContent key={tab} value={tab} asChild>
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}

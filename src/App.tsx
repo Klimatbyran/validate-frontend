@@ -21,6 +21,7 @@ function App() {
       <GlobalLoginModal />
       <Routes>
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/slideshow" element={<SlideshowPage />} />
 
         <Route element={<MainLayout />}>
           <Route
@@ -41,13 +42,8 @@ function App() {
           />
           <Route path="/editor" element={<EditorTab />} />
           <Route path="/climate-plans" element={<ClimatePlansExplorer />} />
-          <Route
-            path="*"
-            element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />}
-          />
         </Route>
-
-        <Route path="/slideshow" element={<SlideshowPage />} />
+        <Route path="*" element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />} />
       </Routes>
     </AuthProvider>
   );
