@@ -6,7 +6,7 @@ import {
   DataTableHead,
   DataTableShell,
 } from "@/ui/data-table";
-import type { RegistryEntry } from "../lib/registry-types";
+import type { RegistryEntry, RegistryEntryUpdate } from "../lib/registry-types";
 import RegistryResultItem from "./RegistryResultItem";
 
 interface RegistryResultsListProps {
@@ -15,6 +15,8 @@ interface RegistryResultsListProps {
   allSelected: boolean;
   onSelectAll: () => void;
   onToggleSelect: (entry: RegistryEntry) => void;
+  onEdit: (entry: RegistryEntryUpdate) => Promise<void>;
+  editingReportIds: string[];
 }
 
 const RegistryResultsList = ({
@@ -23,6 +25,8 @@ const RegistryResultsList = ({
   allSelected,
   onSelectAll,
   onToggleSelect,
+  onEdit,
+  editingReportIds,
 }: RegistryResultsListProps) => {
   const { t } = useI18n();
 
@@ -46,6 +50,9 @@ const RegistryResultsList = ({
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
                 {t("registry.reportUrl")}
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                {t("registry.edit")}
               </th>
               <th className="pl-4 py-3 flex flex-col text-xs tracking-wider">
                 <span className="font-semibold flex gap-2 text-gray-02 uppercase">
@@ -79,6 +86,10 @@ const RegistryResultsList = ({
                   entry={entry}
                   selected={isSelected}
                   onToggleSelect={onToggleSelect}
+                  onEdit={onEdit}
+                  isEditing={Boolean(
+                    entry.id && editingReportIds.includes(entry.id),
+                  )}
                 />
               );
             })}
