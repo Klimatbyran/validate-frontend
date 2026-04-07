@@ -48,14 +48,6 @@ export function UploadTab() {
     login();
   }, [authLoading, isAuthenticated, login]);
 
-  if (authLoading || !isAuthenticated) {
-    return (
-      <div className="flex justify-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
-        <LoadingSpinner label={t("auth.loginRequired")} />
-      </div>
-    );
-  }
-
   const effectiveBatchId =
     !batchDropdownChoice ? "" : batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE ? customBatchName.trim() : batchDropdownChoice;
 
@@ -212,6 +204,14 @@ export function UploadTab() {
       checked ? [...prev, workerId] : prev.filter((id) => id !== workerId),
     );
   }, []);
+
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="flex justify-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
+        <LoadingSpinner label={t("auth.loginRequired")} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
