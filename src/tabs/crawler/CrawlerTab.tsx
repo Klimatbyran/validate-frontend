@@ -38,6 +38,7 @@ export function CrawlerTab() {
   >(null);
   const [companyNameInput, setCompanyNameInput] = useState<string>("");
   const [reportYearInput, setReportYearInput] = useState<string>("");
+  const [countryInput, setCountryInput] = useState<string>("");
   const [filterEnabled, setFilterEnabled] = useState<boolean>(false);
   const [filterYear, setFilterYear] = useState<number | null>(null);
   const [selectedReports, setSelectedReports] = useState<SelectedReport[]>([]);
@@ -79,6 +80,7 @@ export function CrawlerTab() {
       const transformedData = await searchCompanyReports({
         companyNames,
         reportYear: reportYearInput,
+        country: countryInput,
       });
 
       setManualReports(transformedData);
@@ -143,6 +145,10 @@ export function CrawlerTab() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     setReportYearInput(e.target.value);
+  };
+
+  const handleCountryInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCountryInput(e.target.value);
   };
 
   const handleDatabaseSearchClick = async () => {
@@ -269,6 +275,7 @@ export function CrawlerTab() {
               <ManualSearchControls
                 onCompanyNamesChange={handleSearchInputChange}
                 onReportYearChange={handleReportYearInputChange}
+                onCountryChange={handleCountryInputChange}
                 onSearch={handleManualSearchClick}
                 onExport={handleExportClick}
                 isSearchDisabled={!companyNameInput || !reportYearInput}

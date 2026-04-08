@@ -773,7 +773,8 @@
     "reportIdLabel": "Rapport ID",
     "unknownCompany": "Okänt",
     "unknownId": "Okänt",
-    "manuallyAddReport": "Lägg till rapport URL manuellt"
+    "manuallyAddReport": "Lägg till rapport URL manuellt",
+    "country": "Ursprungsland"
   },
   "registry": {
     "title": "Register",

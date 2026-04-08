@@ -1,4 +1,8 @@
-import type { CompanyReport, LockedReport } from "./crawler-types";
+import type {
+  CompanyReport,
+  LockedReport,
+  crawlerSearchQuery,
+} from "./crawler-types";
 import { updateCompanyReports } from "./crawler-api";
 import { reportsUrl } from "./crawler-api";
 
@@ -9,6 +13,7 @@ export interface ReportWithPreview extends Report {
 interface SearchCompanyReportsParams {
   companyNames: string[];
   reportYear: string;
+  country?: string;
 }
 
 export const generateReportPreviews = (
@@ -27,16 +32,17 @@ export const generateReportPreviews = (
 export const searchCompanyReports = async ({
   companyNames,
   reportYear,
+  country,
 }: SearchCompanyReportsParams): Promise<CompanyReport[]> => {
   if (!companyNames.length || !reportYear) {
     return [];
   }
 
-  const searchQueries: { name: string; reportYear: string }[] =
-    companyNames.map((name) => ({
-      name,
-      reportYear,
-    }));
+  const searchQueries: crawlerSearchQuery[] = companyNames.map((name) => ({
+    name,
+    reportYear,
+    country: (country ?? "").trim(),
+  }));
 
   const data: CompanyReport[][] = await Promise.all(
     searchQueries.map((query) => updateCompanyReports(query)),

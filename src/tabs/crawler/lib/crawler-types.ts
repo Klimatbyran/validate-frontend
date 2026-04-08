@@ -39,6 +39,7 @@ export type CrawlerViewMode = "manual" | "database";
 export type crawlerSearchQuery = {
   name: string;
   reportYear: string;
+  country?: string;
 };
 
 export type SaveReportSuccess = {
