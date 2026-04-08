@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
   Minus,
 } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { LoadingSpinner } from "@/ui/loading-spinner";
@@ -27,6 +28,10 @@ import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
 import { ReportingPeriodQuickEditModal } from "./ReportingPeriodQuickEditModal";
 import { displayBaseYear } from "../../lib/company-edit-utils";
 import { getPeriodYear } from "../../lib/reporting-period-ui";
+import {
+  EDITOR_INDEX_PATH,
+  editorCompanyPath,
+} from "../../lib/editor-routes";
 
 function companyHasPeriodsInYears(
   company: GarboCompanyListItem,
@@ -60,11 +65,15 @@ function StatusIcon({ state }: { state: VerificationState }) {
 
 export function SingleCompanyView() {
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const { companyId: companyIdParam } = useParams<{ companyId?: string }>();
+  const routeCompanyId = companyIdParam ? decodeURIComponent(companyIdParam) : null;
+
   const dash = t("common.placeholderDash");
   const [companyList, setCompanyList] = useState<GarboCompanyListItem[]>([]);
   const [tagOptions, setTagOptions] = useState<TagOption[]>([]);
   const [loadingList, setLoadingList] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTags, setFilterTags] = useState<string[]>([]);
@@ -74,17 +83,25 @@ export function SingleCompanyView() {
   const [filterHasUnverifiedData, setFilterHasUnverifiedData] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(true);
 
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [detail, setDetail] = useState<GarboCompanyDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [quickEdit, setQuickEdit] = useState<{ companyId: string; year: string } | null>(null);
+
+  // Guards against stale async operations (e.g. save finishing after navigation).
+  const activeCompanyIdRef = useRef<string | null>(routeCompanyId);
+  const detailRefreshTokenRef = useRef(0);
 
   const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
 
   useEffect(() => {
+    activeCompanyIdRef.current = routeCompanyId;
+  }, [routeCompanyId]);
+
+  useEffect(() => {
     let cancelled = false;
     setLoadingList(true);
-    setError(null);
+    setListError(null);
     Promise.all([listCompanies(), fetchTagOptions()])
       .then(([list, tags]) => {
         if (!cancelled) {
@@ -94,7 +111,7 @@ export function SingleCompanyView() {
       })
       .catch((e) => {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : String(e));
+          setListError(e instanceof Error ? e.message : String(e));
           setCompanyList([]);
         }
       })
@@ -107,20 +124,22 @@ export function SingleCompanyView() {
   }, []);
 
   useEffect(() => {
-    if (!selectedCompanyId) {
+    if (!routeCompanyId) {
       setDetail(null);
+      setDetailError(null);
+      setLoadingDetail(false);
       return;
     }
     let cancelled = false;
     setLoadingDetail(true);
-    setError(null);
-    getCompany(selectedCompanyId)
+    setDetailError(null);
+    getCompany(routeCompanyId)
       .then((company) => {
         if (!cancelled) setDetail(company);
       })
       .catch((e) => {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : String(e));
+          setDetailError(e instanceof Error ? e.message : String(e));
           setDetail(null);
         }
       })
@@ -130,7 +149,7 @@ export function SingleCompanyView() {
     return () => {
       cancelled = true;
     };
-  }, [selectedCompanyId]);
+  }, [routeCompanyId]);
 
   /** All unique reporting period years (from end date) in the companies list, newest first. */
   const years = useMemo(() => {
@@ -190,10 +209,47 @@ export function SingleCompanyView() {
   ]);
 
   const goBack = useCallback(() => {
-    setSelectedCompanyId(null);
-  }, []);
+    navigate(EDITOR_INDEX_PATH);
+  }, [navigate]);
 
-  if (selectedCompanyId && detail && !loadingDetail) {
+  const detailPending =
+    Boolean(routeCompanyId) &&
+    (loadingDetail || (!detail && !detailError));
+
+  if (detailPending) {
+    return (
+      <div className="flex justify-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
+        <LoadingSpinner label={t("editor.singleCompanyView.loadingDetail")} />
+      </div>
+    );
+  }
+
+  if (routeCompanyId && detailError && !loadingDetail) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={goBack}
+            className="shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            {t("editor.singleCompanyView.backToResults")}
+          </Button>
+        </div>
+        <div className="rounded-lg border border-gray-03 bg-gray-05/80 p-4">
+          <p className="text-gray-01 font-medium">
+            {t("editor.singleCompanyView.loadError")}
+          </p>
+          <p className="text-sm text-gray-02 mt-1">{detailError}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (routeCompanyId && detail && !loadingDetail) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
@@ -212,20 +268,26 @@ export function SingleCompanyView() {
           company={detail}
           tagOptions={tagOptions}
           onSaved={() => {
-            if (selectedCompanyId) {
-              getCompany(selectedCompanyId).then(setDetail);
-            }
+            const companyIdAtSave = routeCompanyId;
+
+            // Refresh the list (safe regardless of which company is currently open).
             listCompanies().then(setCompanyList);
+
+            // Refresh the currently-saved company detail, but ignore stale results.
+            if (!companyIdAtSave) return;
+
+            const token = ++detailRefreshTokenRef.current;
+            getCompany(companyIdAtSave)
+              .then((company) => {
+                if (activeCompanyIdRef.current !== companyIdAtSave) return;
+                if (detailRefreshTokenRef.current !== token) return;
+                setDetail(company);
+              })
+              .catch(() => {
+                // Ignore: detail fetch errors are handled by the route-level effect.
+              });
           }}
         />
-      </div>
-    );
-  }
-
-  if (loadingDetail) {
-    return (
-      <div className="flex justify-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
-        <LoadingSpinner label={t("editor.singleCompanyView.loadingDetail")} />
       </div>
     );
   }
@@ -238,12 +300,12 @@ export function SingleCompanyView() {
         onOpenChange={setFiltersOpen}
         after={
           <>
-            {error && !loadingList && (
+            {listError && !loadingList && (
               <div className="rounded-lg border border-gray-03 bg-gray-05/80 p-4">
                 <p className="text-gray-01 font-medium">
                   {t("editor.singleCompanyView.loadError")}
                 </p>
-                <p className="text-sm text-gray-02 mt-1">{error}</p>
+                <p className="text-sm text-gray-02 mt-1">{listError}</p>
               </div>
             )}
 
@@ -405,7 +467,7 @@ export function SingleCompanyView() {
                 return (
                   <tr
                     key={c.wikidataId}
-                    onClick={() => setSelectedCompanyId(c.wikidataId)}
+                    onClick={() => navigate(editorCompanyPath(c.wikidataId))}
                     className="hover:bg-gray-04/50 cursor-pointer text-gray-01 align-top"
                   >
                     <td className="px-4 py-3 font-medium">

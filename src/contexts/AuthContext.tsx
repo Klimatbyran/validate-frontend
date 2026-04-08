@@ -2,16 +2,14 @@
  * AuthContext - Manages authentication state and provides auth functions
  */
 
-import { createContext, useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import { TOKEN_STORAGE_KEY } from "@/lib/auth-constants";
+import { DEFAULT_TOP_LEVEL_PATH } from "@/lib/top-level-routes";
 import { AuthContextType, TokenPayload, User } from "@/lib/auth-types";
 import { authenticateWithGithub, getGithubAuthUrl } from "@/lib/auth-api";
-
-export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
-);
+import { AuthContext } from "@/contexts/auth-context";
 
 const POST_LOGIN_REDIRECT_KEY = "postLoginRedirect";
 
@@ -67,9 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem(TOKEN_STORAGE_KEY);
     localStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
-    // Navigate to home (will trigger login modal if ProtectedRoute is active)
-    navigate("/", { replace: true });
-  }, [navigate]);
+    // Stay on the current URL; do not redirect to the default tab.
+  }, []);
 
   const login = useCallback(() => {
     // Save current location for post-login redirect
@@ -120,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const storedRedirect = localStorage.getItem(POST_LOGIN_REDIRECT_KEY);
         const isDev = import.meta.env.DEV;
 
-        let redirectPath = "/";
+        let redirectPath = DEFAULT_TOP_LEVEL_PATH;
 
         // Prefer stored redirect if available (user's original page)
         // In dev mode, always prefer stored redirect to stay on localhost
@@ -132,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Full URL from backend
             // In dev, don't redirect to external URLs (stay on localhost)
             if (isDev) {
-              redirectPath = "/"; // Stay on localhost
+              redirectPath = DEFAULT_TOP_LEVEL_PATH; // Stay on localhost
             } else {
               // In production, use backend's redirect URL
               window.location.href = response.redirect_uri;
