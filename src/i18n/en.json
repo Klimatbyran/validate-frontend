@@ -775,7 +775,8 @@
     "reportIdLabel": "Report ID",
     "unknownCompany": "Unknown",
     "unknownId": "Unknown",
-    "manuallyAddReport": "Manually add report URL"
+    "manuallyAddReport": "Manually add report URL",
+    "country": "Country of origin"
   },
   "registry": {
     "title": "Registry",
