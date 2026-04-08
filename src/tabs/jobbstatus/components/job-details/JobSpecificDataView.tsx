@@ -308,16 +308,29 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         </div>
       )}
       {/* Show Screenshot slideshow if scopeData and PDF URL exist */}
-      {scopeData && job?.data?.url && (
+      {(() => {
+        // TODO(i18n/pipeline): once backend guarantees `job.data.url` is always a stable public URL and
+        // `JobDataSchema` includes `publicUrl?: string`, simplify this to just use `job.data.url`.
+        const pdfUrl =
+          typeof job?.data?.publicUrl === "string"
+            ? job.data.publicUrl
+            : typeof job?.data?.url === "string"
+              ? job.data.url
+              : undefined;
+
+        if (!scopeData || !pdfUrl) return null;
+
+        return (
         <CollapsibleSection
           title={t("jobstatus.jobdetails.screenshots")}
           icon={<Image />}
           accentIconBg="bg-pink-03/20"
           accentTextColor="text-pink-03"
         >
-          <ScreenshotSlideshow pdfUrl={job.data.url} />
+          <ScreenshotSlideshow pdfUrl={pdfUrl} />
         </CollapsibleSection>
-      )}
+        );
+      })()}
 
       {/* Show metadata if available (from returnValueData) - but skip if it's already shown in wikidata approval */}
       {returnValueData &&

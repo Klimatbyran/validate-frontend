@@ -14,6 +14,14 @@ interface DialogTabsProps {
 export function DialogTabs({ activeTab, setActiveTab, job }: DialogTabsProps) {
   const { t } = useI18n();
   const wikidataInfo = getWikidataInfo(job);
+  // TODO(i18n/pipeline): once backend guarantees `job.data.url` is always a stable public URL and
+  // `JobDataSchema` includes `publicUrl?: string`, simplify this to just use `job.data.url`.
+  const reportUrl =
+    typeof job.data.publicUrl === "string"
+      ? job.data.publicUrl
+      : typeof job.data.url === "string"
+        ? job.data.url
+        : undefined;
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -29,10 +37,10 @@ export function DialogTabs({ activeTab, setActiveTab, job }: DialogTabsProps) {
           </TabsTrigger>
         </TabsList>
       </Tabs>
-      {job.data.url && (
+      {reportUrl && (
         <Button variant="ghost" size="sm" asChild className="rounded-full">
           <a
-            href={job.data.url}
+            href={reportUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center"
