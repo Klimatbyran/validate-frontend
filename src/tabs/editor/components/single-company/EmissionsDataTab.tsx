@@ -203,7 +203,7 @@ export function EmissionsDataTab({
 
   const numInputClass =
     inputClassName +
-    " w-[150px] max-w-[150px] shrink-0 text-right tabular-nums bg-gray-04";
+    " w-[140px] max-w-[150px] shrink-0 text-right tabular-nums bg-gray-04";
 
   type NumberRowSpec = {
     /** Left-hand row label. */
