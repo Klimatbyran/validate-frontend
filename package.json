@@ -7,11 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "pr:render-body": "node scripts/gh/pr-body.mjs render > pr-body.md",
-    "pr:refresh-body-file": "node scripts/gh/pr-body.mjs refresh pr-body.md",
-    "pr:create-draft": "npm run -s pr:render-body && gh pr create --draft --body-file pr-body.md",
-    "pr:update-body": "gh pr view --json number -q .number >/dev/null && npm run -s pr:render-body && gh pr edit --body-file pr-body.md"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@mendable/firecrawl-js": "^4.12.1",
