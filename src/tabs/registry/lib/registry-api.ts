@@ -12,7 +12,7 @@ function registryUrl(path: string): string {
 export const fetchRegistryList = async () => {
   const url = registryUrl("reports/registry");
   try {
-    const response = await fetch(url);
+    const response = await garboAuthFetch(url);
     if (response.ok) {
       const data = await response.json();
       return data;
