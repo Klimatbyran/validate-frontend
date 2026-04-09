@@ -11,7 +11,6 @@ import type {
   GarboReportingPeriodSummary,
 } from "../../lib/types";
 import { updateReportingPeriods } from "../../lib/companies-api";
-import { inputClassName } from "../../lib/company-edit-utils";
 import {
   editorDenseMultiSelectTriggerClass,
   editorDenseToolbarClass,
@@ -202,8 +201,9 @@ export function EmissionsDataTab({
   });
 
   const numInputClass =
-    inputClassName +
-    " w-[140px] max-w-[150px] shrink-0 text-right tabular-nums bg-gray-04";
+    "px-3 py-2 rounded-lg border border-gray-03 bg-gray-04 text-gray-01 " +
+    "placeholder:text-gray-03 focus:outline-none focus:ring-2 focus:ring-blue-03 " +
+    "w-[140px] max-w-[150px] shrink-0 text-right tabular-nums";
 
   type NumberRowSpec = {
     /** Left-hand row label. */
