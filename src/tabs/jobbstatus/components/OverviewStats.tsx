@@ -8,10 +8,7 @@ import { ChevronDown, ChevronRight, BarChart3, Activity } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { StatCard, CompactStatCard, PipelineStepCard } from "./StatCards";
 import { getAllPipelineSteps } from "@/lib/workflow-config";
-import {
-  calculateStepJobStats,
-  getJobStatus as getJobStatusFromUtils,
-} from "@/lib/workflow-utils";
+import { calculateStepJobStats } from "@/lib/workflow-utils";
 import { calculateSwimlaneOverallStats } from "../lib/calculation-utils";
 import type { SwimlaneCompany } from "@/lib/types";
 import type { FilterType } from "../lib/swimlane-filters";
@@ -28,8 +25,7 @@ export function OverviewStats({
   const stats = calculateSwimlaneOverallStats(
     companies,
     getAllPipelineSteps,
-    calculateStepJobStats,
-    getJobStatusFromUtils
+    calculateStepJobStats
   );
   const [isExpanded, setIsExpanded] = useState(true);
 
