@@ -1,0 +1,58 @@
+name: 🔁 Change Request
+description: Request an improvement to Validate behavior, UX, or workflow.
+title: "[Change Request]: "
+labels: ["enhancement"]
+assignees: []
+body:
+  - type: textarea
+    id: background
+    attributes:
+      label: Background / why?
+      description: What’s the context? Who is impacted and how?
+      placeholder: |
+        E.g. Reviewing emissions data takes longer because...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the desired behavior. Include any UX notes, acceptance criteria, or links.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Editor UI
+        - Validation rules / calculations
+        - Import / Export
+        - Routing / deep-links (URL state)
+        - Auth / access
+        - Docs
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: Urgency
+      options:
+        - Nice to have
+        - Important, but not urgent
+        - High (blocking release or critical for users)
+    validations:
+      required: true
+
+  - type: textarea
+    id: visuals
+    attributes:
+      label: Screenshots / mockups (optional)
+      placeholder: |
+        Drag & drop images here, or paste links.
+    validations:
+      required: false

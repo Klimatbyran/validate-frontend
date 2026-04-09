@@ -42,6 +42,7 @@ export const DATA_POINTS = [
 export interface Company {
   wikidataId: string;
   name: string;
+  tags?: string[];
   reportingPeriods?: ReportingPeriod[];
 }
 
@@ -79,6 +80,7 @@ export interface ReportingPeriod {
 export interface CompanyRow {
   wikidataId: string;
   name: string;
+  tags?: string[];
   stageValue: number | null;
   prodValue: number | null;
   discrepancy: DiscrepancyType;
@@ -87,6 +89,8 @@ export interface CompanyRow {
   inProd: boolean;
   /** When true, prod API metadata marks this data point as verified. */
   prodVerified?: boolean;
+  /** When true, the prod reporting period for the selected year is fully verified (all present emissions points verified; calculated-total ignored). */
+  prodCompanyVerifiedForYear?: boolean;
   matchedDataPoint?: string;
   categoryErrorKind?: CategoryErrorKind;
   unitErrorFactor?: number;

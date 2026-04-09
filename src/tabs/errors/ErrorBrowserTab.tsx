@@ -5,6 +5,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { ViewModePills } from '@/ui/view-mode-pills';
 import { LoadingSpinner } from '@/ui/loading-spinner';
 import { SingleSelectDropdown } from '@/ui/single-select-dropdown';
+import { MultiSelectDropdown } from '@/ui/multi-select-dropdown';
 import type { ErrorBrowserViewMode } from './types';
 import { useErrorBrowserData } from './hooks/useErrorBrowserData';
 import { BrowserView } from './components/BrowserView';
@@ -24,6 +25,8 @@ export function ErrorBrowserTab() {
   const [selectedYear, setSelectedYear] = React.useState(2024);
   const [selectedDataPoint, setSelectedDataPoint] = React.useState('cat-1');
   const [viewMode, setViewMode] = React.useState<ErrorBrowserViewMode>('browser');
+  const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
+  const [verifiedOnly, setVerifiedOnly] = React.useState(false);
 
   const viewModeOptions = React.useMemo(
     () => VIEW_MODES.map((value) => ({ value, label: t(VIEW_MODE_LABEL_KEYS[value]) })),
@@ -35,11 +38,13 @@ export function ErrorBrowserTab() {
     error,
     fetchData,
     comparisonRows,
+    availableTags,
     allDataPointMetrics,
     worstCompanies,
     difficultCompanyIds,
     totalWithBothRPs,
-  } = useErrorBrowserData(selectedYear, selectedDataPoint);
+    summaryStats,
+  } = useErrorBrowserData(selectedYear, selectedDataPoint, selectedTags, verifiedOnly);
 
   const handleOverviewSelectDataPoint = (dataPointId: string) => {
     setSelectedDataPoint(dataPointId);
@@ -80,17 +85,50 @@ export function ErrorBrowserTab() {
           </div>
         </div>
 
-        {/* Year selector */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-02 uppercase tracking-wide">{t("errors.year")}</label>
-          <SingleSelectDropdown
-            options={['2025', '2024', '2023', '2022', '2021', '2020']}
-            value={String(selectedYear)}
-            onChange={(v) => setSelectedYear(Number(v))}
-            placeholder={t("errors.year")}
-            ariaLabel={t("errors.year")}
-            panelMinWidth={100}
-          />
+        {/* Year + tag selectors */}
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-02 uppercase tracking-wide">{t("errors.year")}</label>
+            <SingleSelectDropdown
+              options={['2025', '2024', '2023', '2022', '2021', '2020']}
+              value={String(selectedYear)}
+              onChange={(v) => setSelectedYear(Number(v))}
+              placeholder={t("errors.year")}
+              ariaLabel={t("errors.year")}
+              panelMinWidth={100}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-02 uppercase tracking-wide">
+              {t("editor.companies.tags")}
+            </label>
+            <MultiSelectDropdown
+              options={availableTags}
+              selectedIds={selectedTags}
+              onChange={setSelectedTags}
+              triggerLabel={t("editor.companies.tags")}
+              emptyLabel={t("editor.companies.allTags")}
+              panelMinWidth={220}
+              panelMaxHeight={320}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-02 uppercase tracking-wide">
+              {t("errors.verifiedOnly")}
+            </label>
+            <label className="inline-flex items-center gap-2 bg-gray-03/50 border border-gray-02/15 rounded-lg px-3 py-2 text-sm text-gray-01">
+              <input
+                type="checkbox"
+                checked={verifiedOnly}
+                onChange={(e) => setVerifiedOnly(e.target.checked)}
+                className="accent-blue-04"
+              />
+              <span>{t("errors.verifiedOnlyLabel")}</span>
+              <span className="text-xs text-gray-02 ml-1">{t("errors.verifiedOnlyHelp")}</span>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -104,6 +142,8 @@ export function ErrorBrowserTab() {
           selectedDataPoint={selectedDataPoint}
           onDataPointChange={setSelectedDataPoint}
           selectedYear={selectedYear}
+          selectedTags={selectedTags}
+          verifiedOnly={verifiedOnly}
         />
       )}
 
@@ -117,6 +157,7 @@ export function ErrorBrowserTab() {
             allDataPointMetrics={allDataPointMetrics}
             selectedYear={selectedYear}
             onSelectDataPoint={handleOverviewSelectDataPoint}
+            stats={summaryStats}
           />
         )
       )}

@@ -36,7 +36,6 @@ const SearchResultsList = ({
         <SearchResultItem
           key={index}
           companyReport={report}
-          reportYear={reportYear}
           selectedReport={
             selectedReports.find((r) => r.companyName === report.companyName)
               ?.url
@@ -44,7 +43,14 @@ const SearchResultsList = ({
           onSelect={(companyName, url) =>
             handleSelectReport(
               companyName,
-              url ? { companyName, reportYear, url } : null,
+              url
+                ? {
+                    companyName,
+                    reportYear,
+                    url,
+                    wikidataId: report.wikidataId,
+                  }
+                : null,
             )
           }
         />

@@ -1,0 +1,66 @@
+name: 🧪 Validation / Data Issue
+description: Report incorrect validations, calculations, derived fields, or data handling.
+title: "[Validation/Data]: "
+labels: ["data", "validation"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when the UI looks fine but the *data or rules* are wrong (or unclear).
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Local
+        - Staging
+        - Production
+    validations:
+      required: true
+
+  - type: input
+    id: company
+    attributes:
+      label: Company / record identifier(s)
+      description: Company name/ID and any record identifiers needed to find the data.
+      placeholder: "e.g. Company 12345, dataset ABC, row id 9"
+    validations:
+      required: false
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behavior
+      description: What is Validate doing today? Include exact values and units if possible.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should happen instead? Include the correct value / rule / formula if known.
+    validations:
+      required: true
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Example inputs (optional)
+      description: Paste a minimal example payload/table snippet (redact sensitive info).
+      placeholder: |
+        Field A: ...
+        Field B: ...
+        Expected: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes / links (optional)
+      description: Link specs, docs, prior PRs, or discussion threads.
+    validations:
+      required: false

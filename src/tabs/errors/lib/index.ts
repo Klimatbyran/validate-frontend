@@ -28,3 +28,7 @@ export type {
   OverviewAggregates,
 } from './metrics';
 export { exportOverviewCsv, exportComparisonToCsv } from './csv';
+export {
+  buildProdCompanyVerifiedForYearMap,
+  isProdCompanyFullyVerifiedForYear,
+} from './verification';

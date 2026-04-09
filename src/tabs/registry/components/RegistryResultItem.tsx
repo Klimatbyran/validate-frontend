@@ -1,19 +1,26 @@
-import { CheckCircle2, Circle, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, Circle, ExternalLink, Pencil } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
-import type { RegistryEntry } from "../lib/registry-types";
+import type { RegistryEntry, RegistryEntryUpdate } from "../lib/registry-types";
+import RegistryEditModal from "./RegistryEditModal";
 
 interface RegistryResultItemProps {
   entry: RegistryEntry;
   selected: boolean;
   onToggleSelect: (entry: RegistryEntry) => void;
+  onEdit: (entry: RegistryEntryUpdate) => Promise<void>;
+  isEditing: boolean;
 }
 
 const RegistryResultItem = ({
   entry,
   selected,
   onToggleSelect,
+  onEdit,
+  isEditing,
 }: RegistryResultItemProps) => {
   const { t } = useI18n();
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const handleClick = () => {
     onToggleSelect(entry);
@@ -55,6 +62,24 @@ const RegistryResultItem = ({
           </span>
           <ExternalLink className="w-4 h-4 flex-shrink-0" />
         </a>
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-02">
+        <button
+          type="button"
+          onClick={() => setIsEditOpen(true)}
+          disabled={!entry.id || isEditing}
+          aria-label={t("registry.editReport")}
+          className="text-gray-02 hover:text-blue-03 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Pencil className="w-5 h-5" />
+        </button>
+        <RegistryEditModal
+          entry={entry}
+          open={isEditOpen}
+          onOpenChange={setIsEditOpen}
+          onEdit={onEdit}
+          isEditing={isEditing}
+        />
       </td>
       <td className="px-4 py-3 text-sm text-gray-02">
         <button

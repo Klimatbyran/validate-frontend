@@ -17,6 +17,8 @@ interface BrowserViewProps {
   selectedDataPoint: string;
   onDataPointChange: (dataPoint: string) => void;
   selectedYear: number;
+  selectedTags: string[];
+  verifiedOnly: boolean;
 }
 
 export function BrowserView({
@@ -27,6 +29,8 @@ export function BrowserView({
   selectedDataPoint,
   onDataPointChange,
   selectedYear,
+  selectedTags,
+  verifiedOnly,
 }: BrowserViewProps) {
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -34,6 +38,20 @@ export function BrowserView({
     new Set(['hallucination', 'missing', 'rounding', 'unit-error', 'small-error', 'error', 'category-error'])
   );
   const [showMissingCompany, setShowMissingCompany] = React.useState(false);
+
+  const tagFilteredRows = React.useMemo(() => {
+    if (!selectedTags.length) return comparisonRows;
+    return comparisonRows.filter((r) => (r.tags ?? []).some((t) => selectedTags.includes(t)));
+  }, [comparisonRows, selectedTags]);
+
+  const verifiedFilteredRows = React.useMemo(() => {
+    if (!verifiedOnly) return tagFilteredRows;
+    return tagFilteredRows.filter(
+      (r) =>
+        Boolean(r.prodVerified) ||
+        (r.discrepancy === 'both-null' && Boolean(r.prodCompanyVerifiedForYear)),
+    );
+  }, [tagFilteredRows, verifiedOnly]);
 
   const toggleType = (type: DiscrepancyType) => {
     setVisibleTypes(prev => {
@@ -61,18 +79,18 @@ export function BrowserView({
       rounding: 0, 'unit-error': 0, 'small-error': 0, error: 0,
       'category-error': 0, missingCompany: 0,
     };
-    for (const row of comparisonRows) {
+    for (const row of verifiedFilteredRows) {
       if (!row.inStage || !row.inProd) result.missingCompany++;
       if (showMissingCompany || (row.inStage && row.inProd)) {
         result[row.discrepancy]++;
       }
     }
     return result;
-  }, [comparisonRows, showMissingCompany]);
+  }, [verifiedFilteredRows, showMissingCompany]);
 
   // Filter rows
   const filteredRows = React.useMemo(() => {
-    let rows = comparisonRows;
+    let rows = verifiedFilteredRows;
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       rows = rows.filter(r =>
@@ -85,9 +103,12 @@ export function BrowserView({
       rows = rows.filter(r => r.inStage && r.inProd);
     }
     return rows;
-  }, [comparisonRows, searchQuery, visibleTypes, showMissingCompany]);
+  }, [verifiedFilteredRows, searchQuery, visibleTypes, showMissingCompany]);
 
-  const metrics = React.useMemo(() => computePerformanceMetrics(comparisonRows), [comparisonRows]);
+  const metrics = React.useMemo(
+    () => computePerformanceMetrics(verifiedFilteredRows, { verifiedOnly }),
+    [verifiedFilteredRows, verifiedOnly]
+  );
 
   const handleExportCsv = () => {
     exportComparisonToCsv(filteredRows, selectedDataPoint, selectedYear);
@@ -146,16 +167,21 @@ export function BrowserView({
         )}
 
         {!isLoading && comparisonRows.length > 0 && (
-          <DiscrepancyFilterPills
-            counts={counts}
-            visibleTypes={visibleTypes}
-            showMissingCompany={showMissingCompany}
-            onToggleType={toggleType}
-            onShowOnlyType={showOnlyType}
-            onShowDefaultTypes={showDefaultTypes}
-            onShowAllTypes={showAllTypes}
-            onShowMissingCompanyChange={setShowMissingCompany}
-          />
+          <div className="space-y-1">
+            <DiscrepancyFilterPills
+              counts={counts}
+              visibleTypes={visibleTypes}
+              showMissingCompany={showMissingCompany}
+              onToggleType={toggleType}
+              onShowOnlyType={showOnlyType}
+              onShowDefaultTypes={showDefaultTypes}
+              onShowAllTypes={showAllTypes}
+              onShowMissingCompanyChange={setShowMissingCompany}
+            />
+            <div className="text-[11px] text-gray-02">
+              {t("errors.filterAppliesToTableOnly")}
+            </div>
+          </div>
         )}
       </div>
 
@@ -209,7 +235,7 @@ export function BrowserView({
 
         {!isLoading && !error && (
           <div className="px-4 py-3 bg-gray-03/30 text-sm text-gray-02 border-t border-gray-03/50">
-            {t("errors.showingForDataPoint", { filtered: filteredRows.length, total: comparisonRows.length, dataPoint: selectedDataPointLabel, year: selectedYear })}
+            {t("errors.showingForDataPoint", { filtered: filteredRows.length, total: verifiedFilteredRows.length, dataPoint: selectedDataPointLabel, year: selectedYear })}
           </div>
         )}
       </div>

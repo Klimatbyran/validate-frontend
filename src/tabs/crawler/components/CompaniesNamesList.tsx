@@ -4,12 +4,22 @@ import CompaniesNamesResultItem from "./CompaniesNamesResultItem";
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { fetchCompanyNamesList } from "../lib/crawler-api";
 import { useI18n } from "@/contexts/I18nContext";
-import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
+import {
+  DataTable,
+  DataTableBody,
+  DataTableHead,
+  DataTableShell,
+} from "@/ui/data-table";
+
+interface CompanySelection {
+  name: string;
+  wikidataId?: string;
+}
 
 interface CompaniesNamesListProps {
   setIsLoading: React.Dispatch<React.SetStateAction<boolean | null>>;
-  onSelectionChange: React.Dispatch<React.SetStateAction<string[]>>;
-  selectedCompanies: string[];
+  onSelectionChange: React.Dispatch<React.SetStateAction<CompanySelection[]>>;
+  selectedCompanies: CompanySelection[];
   filterYear?: number | null;
   filterEnabled?: boolean;
 }
@@ -40,11 +50,11 @@ const CompaniesNamesList = ({
   }, []);
 
   const handleToggleCompany = useCallback(
-    (companyName: string) => {
+    (companyName: string, wikidataId?: string) => {
       onSelectionChange((prev) =>
-        prev.includes(companyName)
-          ? prev.filter((name) => name !== companyName)
-          : [...prev, companyName],
+        prev.some((s) => s.name === companyName)
+          ? prev.filter((s) => s.name !== companyName)
+          : [...prev, { name: companyName, wikidataId }],
       );
     },
     [onSelectionChange],
@@ -54,9 +64,12 @@ const CompaniesNamesList = ({
     if (selectedCompanies.length === companiesList?.length) {
       onSelectionChange([]);
     } else {
-      const allCompanyNames =
-        companiesList?.map((company) => company.name) || [];
-      onSelectionChange(allCompanyNames);
+      const allSelections =
+        companiesList?.map((company) => ({
+          name: company.name,
+          wikidataId: company.wikidataId,
+        })) || [];
+      onSelectionChange(allSelections);
     }
   };
 
@@ -132,7 +145,9 @@ const CompaniesNamesList = ({
                     <CompaniesNamesResultItem
                       key={index}
                       companyDetails={company}
-                      isSelected={selectedCompanies.includes(company.name)}
+                      isSelected={selectedCompanies.some(
+                        (s) => s.name === company.name,
+                      )}
                       onToggle={handleToggleCompany}
                     />
                   ))}

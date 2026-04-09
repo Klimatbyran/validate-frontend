@@ -5,13 +5,17 @@ import { useI18n } from "@/contexts/I18nContext";
 import RegistryControls from "./components/RegistryControls";
 import RegistryStats from "./components/RegistryStats";
 import RegistryResultsList from "./components/RegistryResultsList";
-import type { RegistryEntry } from "./lib/registry-types";
+import type { RegistryEntry, RegistryEntryUpdate } from "./lib/registry-types";
 import {
   buildRegistryStats,
   filterRegistryEntries,
   writeRegistryEntriesToCsv,
 } from "./lib/registry-utils";
-import { fetchRegistryList } from "./lib/registry-api";
+import {
+  deleteReportFromRegistry,
+  editRegistryEntry,
+  fetchRegistryList,
+} from "./lib/registry-api";
 
 export function RegistryTab() {
   const { t } = useI18n();
@@ -20,6 +24,8 @@ export function RegistryTab() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedReports, setSelectedReports] = useState<RegistryEntry[]>([]);
   const [registry, setRegistry] = useState<RegistryEntry[]>([]);
+  const [isDeletingSelected, setIsDeletingSelected] = useState<boolean>(false);
+  const [editingReportIds, setEditingReportIds] = useState<string[]>([]);
 
   const filteredRegistry = useMemo(
     () => filterRegistryEntries(registry, query),
@@ -85,6 +91,62 @@ export function RegistryTab() {
     }
   };
 
+  const selectedReportIds = useMemo(
+    () =>
+      selectedReports
+        .map((entry) => entry.id)
+        .filter((id): id is string => Boolean(id)),
+    [selectedReports],
+  );
+
+  const handleDeleteSelected = async () => {
+    if (!selectedReportIds.length) {
+      return;
+    }
+
+    setIsDeletingSelected(true);
+    try {
+      await deleteReportFromRegistry(selectedReportIds);
+      const deletedIds = new Set(selectedReportIds);
+      setRegistry((current) =>
+        current.filter((item) => !item.id || !deletedIds.has(item.id)),
+      );
+      setSelectedReports((current) =>
+        current.filter((item) => !item.id || !deletedIds.has(item.id)),
+      );
+    } catch (error) {
+      console.error("Failed to delete selected reports", error);
+    } finally {
+      setIsDeletingSelected(false);
+    }
+  };
+
+  const handleEditEntry = async (entry: RegistryEntryUpdate) => {
+    const reportId = entry.id;
+
+    setEditingReportIds((current) =>
+      current.includes(reportId) ? current : [...current, reportId],
+    );
+
+    try {
+      const updatedEntry = await editRegistryEntry(entry);
+      setRegistry((current) =>
+        current.map((item) =>
+          item.id === updatedEntry.id ? updatedEntry : item,
+        ),
+      );
+      setSelectedReports((current) =>
+        current.map((item) =>
+          item.id === updatedEntry.id ? updatedEntry : item,
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to edit registry entry", error);
+    } finally {
+      setEditingReportIds((current) => current.filter((id) => id !== reportId));
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <motion.div
@@ -109,6 +171,12 @@ export function RegistryTab() {
           isRefreshing={isLoading}
           onExport={handleExport}
           isExportDisabled={!selectedReports.length}
+          onDeleteSelected={handleDeleteSelected}
+          isDeleteDisabled={
+            !selectedReports.length || !selectedReportIds.length
+          }
+          selectedCount={selectedReports.length}
+          isDeletingSelected={isDeletingSelected}
         />
       </motion.div>
 
@@ -146,6 +214,8 @@ export function RegistryTab() {
             allSelected={selectedReports.length === filteredRegistry.length}
             onSelectAll={handleSelectAll}
             onToggleSelect={handleToggleSelect}
+            onEdit={handleEditEntry}
+            editingReportIds={editingReportIds}
           />
         </>
       )}

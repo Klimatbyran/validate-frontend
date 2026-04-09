@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import type { TagOption } from "@/tabs/editor/lib/types";
+import { buildTagLabelBySlug } from "@/tabs/editor/lib/editor-tag-and-payload-utils";
 
 export interface UploadTagsOptionsProps {
   tagOptions: TagOption[];
@@ -19,10 +20,7 @@ export function UploadTagsOptions({
   onSelectedTagsChange,
 }: UploadTagsOptionsProps) {
   const { t } = useI18n();
-  const tagLabelBySlug = useMemo(
-    () => new Map(tagOptions.map((o) => [o.slug, o.label])),
-    [tagOptions],
-  );
+  const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
 
   return (
     <>
@@ -36,7 +34,7 @@ export function UploadTagsOptions({
         loading={tagsLoading}
         loadingLabel={t("upload.tagsLoading")}
         emptyLabel={t("upload.tagsEmpty")}
-        getOptionLabel={(slug) => tagLabelBySlug.get(slug) ?? slug}
+        getOptionLabel={(slug) => tagLabelBySlug[slug] ?? slug}
         panelMinWidth={240}
       />
 
