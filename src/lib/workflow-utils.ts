@@ -129,6 +129,36 @@ function getJobOrderingTimestamp(job: any): number {
 }
 
 /**
+ * Resolve a job's thread id in a consistent way.
+ * Returns "" when no thread id exists (so grouping is stable).
+ */
+function getJobThreadId(job: any, yearData?: SwimlaneYearData): string {
+  return (
+    (job?.data as any)?.threadId ??
+    (job as any)?.threadId ??
+    (yearData as any)?.threadId ??
+    ""
+  );
+}
+
+/**
+ * Infer a canonical thread id for a run.
+ * If all jobs share a single non-empty threadId, return it; otherwise fall back to yearData.threadId or null.
+ */
+function inferCanonicalThreadId(yearData: SwimlaneYearData): string | null {
+  const jobs = yearData.jobs || [];
+  const unique = new Set<string>();
+  for (const job of jobs) {
+    const tid = getJobThreadId(job, yearData);
+    if (tid) unique.add(tid);
+    if (unique.size > 1) break;
+  }
+  if (unique.size === 1) return [...unique][0];
+  const yd = (yearData as any)?.threadId;
+  return typeof yd === "string" && yd.length > 0 ? yd : null;
+}
+
+/**
  * When the same thread is run multiple times (reruns), keep only the latest job
  * per (queueId, threadId) so filter counts and stats reflect the latest run only.
  */
@@ -138,8 +168,7 @@ export function getEffectiveJobs(yearData: SwimlaneYearData): any[] {
 
   const byKey = new Map<string, any>();
   for (const job of jobs) {
-    const threadId =
-      (job.data as any)?.threadId ?? (job as any).threadId ?? "";
+    const threadId = getJobThreadId(job, yearData);
     const key = `${job.queueId}\t${threadId}`;
     const existing = byKey.get(key);
     const jobTs = getJobOrderingTimestamp(job);
@@ -159,13 +188,14 @@ export function getQueueAttempts(
   yearData: SwimlaneYearData,
   threadId?: string | null,
 ): any[] {
+  const effectiveThreadId =
+    threadId == null ? inferCanonicalThreadId(yearData) : threadId;
   const jobs = yearData.jobs || [];
   const filtered = jobs.filter((job: any) => {
     if (job.queueId !== queueId) return false;
-    if (!threadId) return true;
-    const jobThreadId =
-      (job.data as any)?.threadId ?? (job as any).threadId ?? (yearData as any).threadId;
-    return jobThreadId === threadId;
+    if (!effectiveThreadId) return true;
+    const jobThreadId = getJobThreadId(job, yearData);
+    return jobThreadId === effectiveThreadId;
   });
 
   return [...filtered].sort(
@@ -182,7 +212,17 @@ export function getLatestQueueAttempt(
   return attempts[0];
 }
 
-export function getAggregateQueueStatus(
+/**
+ * Summarize queue attempts within a run/thread.
+ *
+ * Current semantics:
+ * - `status` is derived from the **latest attempt** (most recent job).
+ * - `anySucceeded` is true if **any** attempt completed in this thread/run.
+ *
+ * Previous semantics:
+ * - `status` was a user-facing "best-of" aggregation (e.g. any completed => completed).
+ */
+export function getQueueAttemptSummary(
   queueId: string,
   yearData: SwimlaneYearData,
   threadId?: string | null,
@@ -257,7 +297,7 @@ export function calculateStepJobStats(
       (year as any).threadId ||
       null;
     for (const queueId of queueIds) {
-      const agg = getAggregateQueueStatus(queueId, year, canonicalThreadId);
+      const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
       // Only count queues that have actually been attempted in this run
       if (agg.attempts.length === 0) continue;
       init.total++;
@@ -341,7 +381,7 @@ export function calculatePipelineStepStatus(
   // Use aggregate-per-queue outcome so step status matches the overview grid.
   // Still keep a representative latest job for delayed/active checks.
   const jobsWithStatuses = queueIds.map((queueId) => {
-    const agg = getAggregateQueueStatus(queueId, yearData, canonicalThreadId);
+    const agg = getQueueAttemptSummary(queueId, yearData, canonicalThreadId);
     const latestJob = agg.attempts[0];
     return { queueId, job: latestJob, status: agg.status, attempts: agg.attempts };
   });

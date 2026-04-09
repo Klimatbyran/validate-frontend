@@ -6,7 +6,7 @@
 import type { SwimlaneCompany, SwimlaneYearData } from "@/lib/types";
 import {
   calculatePipelineStepStatus,
-  getAggregateQueueStatus,
+  getQueueAttemptSummary,
 } from "@/lib/workflow-utils";
 import { getAllPipelineSteps, getQueuesForPipelineStep } from "@/lib/workflow-config";
 
@@ -55,7 +55,7 @@ export function hasPendingApproval(
       (year as any).threadId ||
       null;
     return allQueueIds.some((queueId) => {
-      const agg = getAggregateQueueStatus(queueId, year, canonicalThreadId);
+      const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
       return agg.attempts.length > 0 && agg.status === "needs_approval";
     });
   });
@@ -79,7 +79,7 @@ export function hasFailedJobs(
       (year as any).threadId ||
       null;
     return allQueueIds.some((queueId) => {
-      const agg = getAggregateQueueStatus(queueId, year, canonicalThreadId);
+      const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
       return agg.attempts.length > 0 && agg.status === "failed";
     });
   });
@@ -103,7 +103,7 @@ export function hasProcessingJobs(
       (year as any).threadId ||
       null;
     return allQueueIds.some((queueId) => {
-      const agg = getAggregateQueueStatus(queueId, year, canonicalThreadId);
+      const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
       return agg.attempts.length > 0 && agg.status === "processing";
     });
   });
@@ -127,12 +127,12 @@ export function isFullyCompleted(
       (year as any).threadId ||
       null;
     const attemptedQueueIds = allQueueIds.filter((queueId) => {
-      const agg = getAggregateQueueStatus(queueId, year, canonicalThreadId);
+      const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
       return agg.attempts.length > 0;
     });
     if (attemptedQueueIds.length === 0) return false;
     return attemptedQueueIds.every((queueId) => {
-      const agg = getAggregateQueueStatus(queueId, year, canonicalThreadId);
+      const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
       return agg.status === "completed";
     });
   });
@@ -156,7 +156,7 @@ export function hasIssues(
       (year as any).threadId ||
       null;
     return allQueueIds.some((queueId) => {
-      const agg = getAggregateQueueStatus(queueId, year, canonicalThreadId);
+      const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
       return (
         agg.attempts.length > 0 &&
         (agg.status === "failed" || agg.status === "needs_approval")

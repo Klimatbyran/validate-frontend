@@ -5,7 +5,7 @@ import {
   getStatusBackgroundColor,
 } from "@/lib/status-config";
 import {
-  getAggregateQueueStatus,
+  getQueueAttemptSummary,
   getJobStatus,
   getQueueAttempts,
 } from "@/lib/workflow-utils";
@@ -49,7 +49,7 @@ export function JobStatusSection({
     null;
   const aggregate =
     yearData && job.queueId
-      ? getAggregateQueueStatus(job.queueId, yearData, canonicalThreadId)
+      ? getQueueAttemptSummary(job.queueId, yearData, canonicalThreadId)
       : null;
   const primaryStatus = aggregate?.status ?? jobStatus;
 
@@ -116,7 +116,7 @@ export function JobStatusSection({
         (() => {
           const attempts = getQueueAttempts(job.queueId, yearData, canonicalThreadId);
           if (attempts.length <= 1) return null;
-          const agg = aggregate ?? getAggregateQueueStatus(job.queueId, yearData, canonicalThreadId);
+          const agg = aggregate ?? getQueueAttemptSummary(job.queueId, yearData, canonicalThreadId);
           const hasSuccess = agg.anySucceeded;
 
           return (

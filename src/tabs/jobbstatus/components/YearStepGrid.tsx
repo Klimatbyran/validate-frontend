@@ -9,7 +9,7 @@ import {
 } from "@/lib/workflow-config";
 import {
   findJobByQueueId,
-  getAggregateQueueStatus,
+  getQueueAttemptSummary,
 } from "@/lib/workflow-utils";
 import {
   getStatusIcon,
@@ -84,7 +84,7 @@ export function YearStepGrid({
                   })
                 )
               : [];
-          const aggregate = getAggregateQueueStatus(queueId, yearData, currentThreadId);
+          const aggregate = getQueueAttemptSummary(queueId, yearData, currentThreadId);
           const isRerun =
             (currentThreadId != null &&
               Array.isArray(allJobsForQueueAndThread) &&

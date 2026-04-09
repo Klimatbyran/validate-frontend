@@ -3,7 +3,7 @@
  * Centralizes repetitive math logic throughout the application
  */
 
-import { getAggregateQueueStatus } from "@/lib/workflow-utils";
+import { getQueueAttemptSummary } from "@/lib/workflow-utils";
 import { getQueuesForPipelineStep } from "@/lib/workflow-config";
 
 /**
@@ -165,7 +165,7 @@ export function calculateSwimlaneOverallStats(
       null;
 
     allQueueIds.forEach((queueId: string) => {
-      const agg = getAggregateQueueStatus(queueId, latestYear, canonicalThreadId);
+      const agg = getQueueAttemptSummary(queueId, latestYear, canonicalThreadId);
       if (agg.attempts.length === 0) return;
       switch (agg.status) {
         case "completed":
@@ -215,7 +215,7 @@ export function calculateSwimlaneOverallStats(
       (latestYear as any).threadId ||
       null;
     const hasActive = allQueueIds.some((queueId: string) => {
-      const agg = getAggregateQueueStatus(queueId, latestYear, canonicalThreadId);
+      const agg = getQueueAttemptSummary(queueId, latestYear, canonicalThreadId);
       if (agg.attempts.length === 0) return false;
       return agg.status === "processing" || agg.status === "needs_approval";
     });
@@ -232,7 +232,7 @@ export function calculateSwimlaneOverallStats(
       (latestYear as any).threadId ||
       null;
     return allQueueIds.some((queueId: string) => {
-      const agg = getAggregateQueueStatus(queueId, latestYear, canonicalThreadId);
+      const agg = getQueueAttemptSummary(queueId, latestYear, canonicalThreadId);
       return agg.attempts.length > 0 && agg.status === "failed";
     });
   }).length;
@@ -245,7 +245,7 @@ export function calculateSwimlaneOverallStats(
       (latestYear as any).threadId ||
       null;
     return allQueueIds.some((queueId: string) => {
-      const agg = getAggregateQueueStatus(queueId, latestYear, canonicalThreadId);
+      const agg = getQueueAttemptSummary(queueId, latestYear, canonicalThreadId);
       return agg.attempts.length > 0 && agg.status === "needs_approval";
     });
   }).length;
