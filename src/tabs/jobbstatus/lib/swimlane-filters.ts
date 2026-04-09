@@ -3,7 +3,7 @@
  * Contains all filter types and predicate functions
  */
 
-import type { SwimlaneCompany, SwimlaneYearData, QueueJob } from "@/lib/types";
+import type { SwimlaneCompany, SwimlaneYearData } from "@/lib/types";
 import {
   calculatePipelineStepStatus,
   getAggregateQueueStatus,

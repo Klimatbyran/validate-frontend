@@ -61,6 +61,8 @@ export function JobStatusSection({
   const statusColor = getStatusBackgroundColor(primaryStatus);
   const statusText = t(getStatusLabelKey(primaryStatus, isActivelyProcessing));
 
+  const anySucceededInThread = aggregate?.anySucceeded ?? (primaryStatus === "completed");
+
   return (
     <div className="bg-gray-03/20 rounded-lg p-4">
       <h3 className="text-lg font-medium text-gray-01 mb-4">{t("jobstatus.jobdetails.statusLabel")}</h3>
@@ -74,13 +76,15 @@ export function JobStatusSection({
               {job.queueId && t(`jobstatus.queues.${job.queueId}`) !== `jobstatus.queues.${job.queueId}` ? t(`jobstatus.queues.${job.queueId}`) : (stage?.name || job.queueId)}
             </div>
             <div className="text-sm text-gray-02">{statusText}</div>
-            {aggregate && aggregate.status !== jobStatus && (
+            {yearData && job.queueId && (
               <div className="text-xs text-gray-02 mt-1">
                 <span className="font-medium text-gray-01">
-                  {t("jobstatus.jobdetails.latestAttemptLabel")}
+                  {t("jobstatus.jobdetails.anySucceededInThreadLabel")}
                 </span>{" "}
                 <span className="text-gray-02">
-                  {t(getStatusLabelKey(jobStatus, isActivelyProcessing))}
+                  {anySucceededInThread
+                    ? t("jobstatus.jobdetails.yes")
+                    : t("jobstatus.jobdetails.no")}
                 </span>
               </div>
             )}
@@ -113,7 +117,7 @@ export function JobStatusSection({
           const attempts = getQueueAttempts(job.queueId, yearData, canonicalThreadId);
           if (attempts.length <= 1) return null;
           const agg = aggregate ?? getAggregateQueueStatus(job.queueId, yearData, canonicalThreadId);
-          const hasSuccess = agg.status === "completed";
+          const hasSuccess = agg.anySucceeded;
 
           return (
             <div className="mt-4 pt-4 border-t border-gray-03">

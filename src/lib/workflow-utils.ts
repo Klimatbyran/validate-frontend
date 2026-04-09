@@ -186,26 +186,25 @@ export function getAggregateQueueStatus(
   queueId: string,
   yearData: SwimlaneYearData,
   threadId?: string | null,
-): { status: SwimlaneStatusType; attempts: any[]; hasMixedOutcomes: boolean } {
+): {
+  /** Status of the latest attempt (used for display + stats). */
+  status: SwimlaneStatusType;
+  attempts: any[];
+  hasMixedOutcomes: boolean;
+  /** True if any attempt in this thread/run completed successfully. */
+  anySucceeded: boolean;
+} {
   const attempts = getQueueAttempts(queueId, yearData, threadId);
   const statuses = attempts.map((j) => getJobStatus(j));
   const unique = new Set(statuses);
   const hasMixedOutcomes = unique.size > 1;
 
-  // User-facing aggregation: if it ever succeeded, consider it successful for the run.
-  if (statuses.includes("completed")) {
-    return { status: "completed", attempts, hasMixedOutcomes };
-  }
-  if (statuses.includes("needs_approval")) {
-    return { status: "needs_approval", attempts, hasMixedOutcomes };
-  }
-  if (statuses.includes("processing")) {
-    return { status: "processing", attempts, hasMixedOutcomes };
-  }
-  if (statuses.includes("failed")) {
-    return { status: "failed", attempts, hasMixedOutcomes };
-  }
-  return { status: "waiting", attempts, hasMixedOutcomes };
+  const latestStatus = statuses[0] ?? "waiting";
+  const anySucceeded = statuses.includes("completed");
+
+  // Display + counting semantics: show the latest attempt's status.
+  // Still return `anySucceeded` so the detail view can signal that an earlier attempt succeeded.
+  return { status: latestStatus, attempts, hasMixedOutcomes, anySucceeded };
 }
 
 /**
