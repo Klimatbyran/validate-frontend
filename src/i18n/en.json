@@ -459,6 +459,61 @@
       "starting": "Rerunning {{worker}} for {{count}} companies...",
       "success": "Started rerun of {{worker}} for {{count}} companies",
       "partial": "{{worker}}: {{successes}} succeeded, {{failures}} failed"
+    },
+    "rerunWorkers": {
+      "scope1": "Scope 1",
+      "scope2": "Scope 2",
+      "scope3": "Scope 3",
+      "economy": "Economy",
+      "baseYear": "Base year",
+      "industryGics": "Industry GICS",
+      "biogenic": "Biogenic",
+      "goals": "Goals",
+      "initiatives": "Initiatives",
+      "lei": "LEI",
+      "descriptions": "Descriptions"
+    },
+    "queues": {
+      "nlmParsePDF": "PDF parsing NLM",
+      "nlmExtractTables": "Table extraction",
+      "precheck": "Pre-check",
+      "parsePdf": "PDF parsing",
+      "doclingParsePDF": "PDF parsing docling",
+      "indexMarkdown": "Markdown",
+      "guessWikidata": "Wikidata",
+      "diffReportingPeriods": "Diff reporting periods",
+      "extractEmissions": "Extract emissions",
+      "followUpScope1": "Follow-up Scope 1",
+      "followUpScope2": "Follow-up Scope 2",
+      "followUpScope12": "Follow-up Scope 1&2",
+      "followUpScope3": "Follow-up Scope 3",
+      "followUpBiogenic": "Follow-up Biogenic",
+      "followUpEconomy": "Follow-up Economy",
+      "followUpGoals": "Follow-up Goals",
+      "followUpInitiatives": "Follow-up Initiatives",
+      "followUpFiscalYear": "Follow-up fiscal year",
+      "followUpCompanyTags": "Follow-up Company tags",
+      "followUpBaseYear": "Follow-up Base year",
+      "followUpIndustryGics": "Follow-up Industry GICS",
+      "diffIndustry": "Industry",
+      "diffGoals": "Climate goals",
+      "diffInitiatives": "Initiatives",
+      "diffBaseYear": "Base year",
+      "checkDB": "DB check",
+      "sendCompanyLink": "Send company link",
+      "saveToAPI": "API save",
+      "wikipediaUpload": "Wikipedia",
+      "diffTags": "Tags"
+    },
+    "filters": {
+      "pending_approval": "Pending approval",
+      "has_failed": "Has failed",
+      "has_processing": "Processing",
+      "fully_completed": "Fully completed",
+      "has_issues": "Has issues",
+      "preprocessing_issues": "Preprocessing issues",
+      "data_extraction_issues": "Data extraction issues",
+      "finalize_issues": "Finalization issues"
     }
   },
   "companyOverride": {
@@ -600,7 +655,18 @@
       "error": "error"
     },
     "difficultReportTooltip": "Difficult report — {{count}} errors across all data points",
-    "unitErrorTooltip": "Stage value is {{factor}} the prod value — likely a unit mismatch (e.g. tonnes vs kilotonnes)"
+    "unitErrorTooltip": "Stage value is {{factor}} the prod value — likely a unit mismatch (e.g. tonnes vs kilotonnes)",
+    "filterType": {
+      "identical": "Identical",
+      "both-null": "Both Empty",
+      "hallucination": "Hallucination",
+      "missing": "Missing",
+      "rounding": "Rounding",
+      "unit-error": "Unit Error",
+      "small-error": "Small Error",
+      "category-error": "Category Error",
+      "error": "Error"
+    }
   },
   "crawler": {
     "title": "Crawler",

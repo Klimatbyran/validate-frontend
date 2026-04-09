@@ -24,6 +24,7 @@
 - [ ] **Breaking change**
 - [ ] **Backfill/migration needed**
 - [ ] **Data/validation behavior changed** (rules, units, rounding, derived calcs, defaults)
+- [ ] **Visual or setup change only** (styling, ui, gh templates, etc)
 
 ### 📋 Checklist
 

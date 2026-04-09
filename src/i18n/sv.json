@@ -459,6 +459,61 @@
       "starting": "Kör om {{worker}} för {{count}} företag...",
       "success": "Startade om {{worker}} för {{count}} företag",
       "partial": "{{worker}}: {{successes}} lyckades, {{failures}} misslyckades"
+    },
+    "rerunWorkers": {
+      "scope1": "Scope 1",
+      "scope2": "Scope 2",
+      "scope3": "Scope 3",
+      "economy": "Ekonomi",
+      "baseYear": "Basår",
+      "industryGics": "Bransch GICS",
+      "biogenic": "Biogen",
+      "goals": "Mål",
+      "initiatives": "Initiativ",
+      "lei": "LEI",
+      "descriptions": "Beskrivningar"
+    },
+    "queues": {
+      "nlmParsePDF": "PDF Parsning NLM",
+      "nlmExtractTables": "Tabellextraktion",
+      "precheck": "Förkontroll",
+      "parsePdf": "PDF Parsning",
+      "doclingParsePDF": "PDF Parsning docling",
+      "indexMarkdown": "Markdown",
+      "guessWikidata": "Wikidata",
+      "diffReportingPeriods": "Diff rapportperioder",
+      "extractEmissions": "Extrahera utsläpp",
+      "followUpScope1": "Uppföljning Scope 1",
+      "followUpScope2": "Uppföljning Scope 2",
+      "followUpScope12": "Uppföljning Scope 1&2",
+      "followUpScope3": "Uppföljning Scope 3",
+      "followUpBiogenic": "Uppföljning Biogenisk",
+      "followUpEconomy": "Uppföljning Ekonomi",
+      "followUpGoals": "Uppföljning Mål",
+      "followUpInitiatives": "Uppföljning Initiativ",
+      "followUpFiscalYear": "Uppföljning fiscal year",
+      "followUpCompanyTags": "Uppföljning Företagstaggar",
+      "followUpBaseYear": "Uppföljning Basår",
+      "followUpIndustryGics": "Uppföljning Bransch GICS",
+      "diffIndustry": "Bransch",
+      "diffGoals": "Klimatmål",
+      "diffInitiatives": "Initiativ",
+      "diffBaseYear": "Basår",
+      "checkDB": "DB Kontroll",
+      "sendCompanyLink": "Skicka företagslänk",
+      "saveToAPI": "API Lagring",
+      "wikipediaUpload": "Wikipedia",
+      "diffTags": "Taggar"
+    },
+    "filters": {
+      "pending_approval": "Väntar på godkännande",
+      "has_failed": "Har misslyckade",
+      "has_processing": "Bearbetar",
+      "fully_completed": "Fullständigt klart",
+      "has_issues": "Har problem",
+      "preprocessing_issues": "Preprocessing-problem",
+      "data_extraction_issues": "Dataextraktion-problem",
+      "finalize_issues": "Finalisering-problem"
     }
   },
   "companyOverride": {
@@ -600,7 +655,18 @@
       "error": "fel"
     },
     "difficultReportTooltip": "Svår rapport — {{count}} fel över alla datapunkter",
-    "unitErrorTooltip": "Stage-värdet är {{factor}} prod-värdet — troligen enhetsmismatch (t.ex. ton vs kiloton)"
+    "unitErrorTooltip": "Stage-värdet är {{factor}} prod-värdet — troligen enhetsmismatch (t.ex. ton vs kiloton)",
+    "filterType": {
+      "identical": "Identisk",
+      "both-null": "Båda tomma",
+      "hallucination": "Hallucination",
+      "missing": "Saknas",
+      "rounding": "Avrundning",
+      "unit-error": "Enhetsfel",
+      "small-error": "Litet fel",
+      "category-error": "Kategorifel",
+      "error": "Fel"
+    }
   },
   "crawler": {
     "title": "Crawler",

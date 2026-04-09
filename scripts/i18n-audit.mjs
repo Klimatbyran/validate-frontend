@@ -13,6 +13,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { execSync } from "node:child_process";
 import { parseTree } from "jsonc-parser";
 
 const ROOT = path.resolve(process.cwd());
@@ -21,6 +22,9 @@ const I18N_DIR = path.join(SRC_DIR, "i18n");
 
 const args = new Set(process.argv.slice(2));
 const FIX = args.has("--fix");
+const RESTORE_FROM =
+  [...args].find((a) => a.startsWith("--restore-from="))?.split("=", 2)[1] ??
+  null;
 
 function listFilesRecursive(dir, exts) {
   const out = [];
@@ -61,6 +65,19 @@ function removeKeyPath(obj, keyPath) {
     cur = cur[p];
   }
   if (cur && typeof cur === "object") delete cur[parts[parts.length - 1]];
+}
+
+function setKeyPath(obj, keyPath, value) {
+  const parts = keyPath.split(".");
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const p = parts[i];
+    if (!cur[p] || typeof cur[p] !== "object" || Array.isArray(cur[p])) {
+      cur[p] = {};
+    }
+    cur = cur[p];
+  }
+  cur[parts[parts.length - 1]] = value;
 }
 
 function pruneEmptyObjects(obj) {
@@ -113,9 +130,14 @@ function detectDuplicateKeys(jsonText, filename) {
 function extractUsedKeysFromSource(srcRoot) {
   const files = listFilesRecursive(srcRoot, [".ts", ".tsx", ".js", ".jsx"]);
   const used = new Set();
+  const usedPrefixes = new Set();
 
   // String literal calls: t("a.b.c") / t('a.b.c')
   const re = /\bt\s*\(\s*(['"])([^'"]+)\1\s*(?:,|\))/g;
+  // Template literal calls with at least one interpolation: t(`a.b.${x}.c`)
+  const reTpl = /\bt\s*\(\s*`([^`]*\$\{[^}]+\}[^`]*)`\s*(?:,|\))/g;
+  // Simple concatenation prefix: t("a.b." + something)
+  const reConcatPrefix = /\bt\s*\(\s*(['"])([^'"]+)\1\s*\+\s*[^)]+?\)/g;
 
   for (const file of files) {
     const text = fs.readFileSync(file, "utf8");
@@ -123,12 +145,32 @@ function extractUsedKeysFromSource(srcRoot) {
     while ((m = re.exec(text))) {
       used.add(m[2]);
     }
+
+    // For template literals, we conservatively treat the leading static portion as a "prefix"
+    // and keep all translation keys under that prefix (prevents deleting dynamically-addressed keys).
+    while ((m = reTpl.exec(text))) {
+      const tpl = m[1];
+      const prefix = tpl.split("${", 1)[0];
+      if (prefix && prefix.trim().length > 0) usedPrefixes.add(prefix);
+    }
+
+    while ((m = reConcatPrefix.exec(text))) {
+      const prefix = m[2];
+      if (prefix && prefix.trim().length > 0) usedPrefixes.add(prefix);
+    }
   }
-  return used;
+
+  return { used, usedPrefixes };
 }
 
 function readJsonFile(file) {
   const raw = fs.readFileSync(file, "utf8");
+  return { raw, data: JSON.parse(raw) };
+}
+
+function readJsonFromGit(ref, relPath) {
+  const cmd = `git show ${ref}:${relPath}`;
+  const raw = execSync(cmd, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   return { raw, data: JSON.parse(raw) };
 }
 
@@ -147,7 +189,14 @@ function main() {
     return;
   }
 
-  const usedKeys = extractUsedKeysFromSource(SRC_DIR);
+  const { used: usedKeys, usedPrefixes } = extractUsedKeysFromSource(SRC_DIR);
+  const isUsed = (key) => {
+    if (usedKeys.has(key)) return true;
+    for (const p of usedPrefixes) {
+      if (key.startsWith(p)) return true;
+    }
+    return false;
+  };
 
   /** @type {Record<string, {file:string, raw:string, data:any, flat:Map<string,string>}>} */
   const locales = {};
@@ -165,7 +214,7 @@ function main() {
   const baseFlat = locales[baseLocale].flat;
 
   const missingInBase = new Set([...usedKeys].filter((k) => !baseFlat.has(k)));
-  const unusedInBase = new Set([...baseFlat.keys()].filter((k) => !usedKeys.has(k)));
+  const unusedInBase = new Set([...baseFlat.keys()].filter((k) => !isUsed(k)));
 
   /** @type {Record<string, Set<string>>} */
   const missingByLocale = {};
@@ -200,6 +249,43 @@ function main() {
   if (unusedInBase.size) {
     console.error(`\nUnused keys in base locale (${baseLocale}) (present in translations but not referenced via t("...")):`);
     console.error(formatList(unusedInBase));
+  }
+
+  if (RESTORE_FROM) {
+    // Restore keys from a git ref that appear to be used (including dynamic prefixes),
+    // but are missing from the current translation files.
+    let restoredTotal = 0;
+    for (const [locale, info] of Object.entries(locales)) {
+      const rel = path.relative(ROOT, info.file).replaceAll(path.sep, "/");
+      let fromGit;
+      try {
+        fromGit = readJsonFromGit(RESTORE_FROM, rel);
+      } catch (e) {
+        console.error(`\n--restore-from failed for ${rel}. Is ref valid? (${RESTORE_FROM})`);
+        process.exitCode = 2;
+        return;
+      }
+
+      const currentFlat = info.flat;
+      const oldFlat = flatten(fromGit.data);
+      for (const [k, v] of oldFlat.entries()) {
+        if (!currentFlat.has(k) && isUsed(k)) {
+          setKeyPath(info.data, k, v);
+          restoredTotal++;
+        }
+      }
+      // Refresh flat maps for subsequent reporting
+      info.flat = flatten(info.data);
+    }
+
+    if (restoredTotal > 0) {
+      for (const [, info] of Object.entries(locales)) {
+        fs.writeFileSync(info.file, JSON.stringify(info.data, null, 2) + "\n", "utf8");
+      }
+      console.error(`\n--restore-from applied: restored ${restoredTotal} used keys from ${RESTORE_FROM}.`);
+    } else {
+      console.error(`\n--restore-from: no missing used keys found to restore from ${RESTORE_FROM}.`);
+    }
   }
 
   if (FIX) {
