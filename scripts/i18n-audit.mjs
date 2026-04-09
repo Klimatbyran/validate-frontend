@@ -129,8 +129,10 @@ function detectDuplicateKeys(jsonText, filename) {
 
 function extractUsedKeysFromSource(srcRoot) {
   const files = listFilesRecursive(srcRoot, [".ts", ".tsx", ".js", ".jsx"]);
-  const used = new Set();
+  const usedDirect = new Set();
   const usedPrefixes = new Set();
+  const heuristicCandidates = new Set();
+  const directRoots = new Set();
 
   // String literal calls: t("a.b.c") / t('a.b.c')
   const re = /\bt\s*\(\s*(['"])([^'"]+)\1\s*(?:,|\))/g;
@@ -138,12 +140,17 @@ function extractUsedKeysFromSource(srcRoot) {
   const reTpl = /\bt\s*\(\s*`([^`]*\$\{[^}]+\}[^`]*)`\s*(?:,|\))/g;
   // Simple concatenation prefix: t("a.b." + something)
   const reConcatPrefix = /\bt\s*\(\s*(['"])([^'"]+)\1\s*\+\s*[^)]+?\)/g;
+  // Heuristic: any string literal that "looks like" a translation key (e.g. "jobstatus.overview.title")
+  // This catches keys stored in maps/constants and later passed to `t()` indirectly.
+  const reLooksLikeKey = /(['"])([a-z][a-z0-9_]*(?:\.[A-Za-z0-9_-]+)+)\1/g;
 
   for (const file of files) {
     const text = fs.readFileSync(file, "utf8");
     let m;
     while ((m = re.exec(text))) {
-      used.add(m[2]);
+      const key = m[2];
+      usedDirect.add(key);
+      directRoots.add(key.split(".", 1)[0]);
     }
 
     // For template literals, we conservatively treat the leading static portion as a "prefix"
@@ -151,16 +158,28 @@ function extractUsedKeysFromSource(srcRoot) {
     while ((m = reTpl.exec(text))) {
       const tpl = m[1];
       const prefix = tpl.split("${", 1)[0];
-      if (prefix && prefix.trim().length > 0) usedPrefixes.add(prefix);
+      if (prefix && prefix.trim().length > 0) {
+        usedPrefixes.add(prefix);
+        directRoots.add(prefix.split(".", 1)[0]);
+      }
     }
 
     while ((m = reConcatPrefix.exec(text))) {
       const prefix = m[2];
-      if (prefix && prefix.trim().length > 0) usedPrefixes.add(prefix);
+      if (prefix && prefix.trim().length > 0) {
+        usedPrefixes.add(prefix);
+        directRoots.add(prefix.split(".", 1)[0]);
+      }
+    }
+
+    while ((m = reLooksLikeKey.exec(text))) {
+      // Avoid capturing obvious non-i18n patterns by requiring at least one dot
+      // and a conservative charset (no spaces).
+      heuristicCandidates.add(m[2]);
     }
   }
 
-  return { used, usedPrefixes };
+  return { usedDirect, usedPrefixes, heuristicCandidates, directRoots };
 }
 
 function readJsonFile(file) {
@@ -189,15 +208,6 @@ function main() {
     return;
   }
 
-  const { used: usedKeys, usedPrefixes } = extractUsedKeysFromSource(SRC_DIR);
-  const isUsed = (key) => {
-    if (usedKeys.has(key)) return true;
-    for (const p of usedPrefixes) {
-      if (key.startsWith(p)) return true;
-    }
-    return false;
-  };
-
   /** @type {Record<string, {file:string, raw:string, data:any, flat:Map<string,string>}>} */
   const locales = {};
   /** @type {Array<{file:string,path:string,key:string}>} */
@@ -212,6 +222,29 @@ function main() {
 
   const baseLocale = locales.en ? "en" : Object.keys(locales)[0];
   const baseFlat = locales[baseLocale].flat;
+  const baseRoots = Object.keys(locales[baseLocale].data ?? {});
+
+  const { usedDirect, usedPrefixes, heuristicCandidates, directRoots } =
+    extractUsedKeysFromSource(SRC_DIR);
+
+  // Allowed roots protect the heuristic from matching non-i18n strings.
+  // It is derived from the base locale file plus any roots we see in direct `t(...)` usage
+  // (so new namespaces are still detected without needing to update the script).
+  const allowedRoots = new Set([...baseRoots, ...directRoots]);
+
+  const usedKeys = new Set(usedDirect);
+  for (const key of heuristicCandidates) {
+    const root = key.split(".", 1)[0];
+    if (allowedRoots.has(root)) usedKeys.add(key);
+  }
+
+  const isUsed = (key) => {
+    if (usedKeys.has(key)) return true;
+    for (const p of usedPrefixes) {
+      if (key.startsWith(p)) return true;
+    }
+    return false;
+  };
 
   const missingInBase = new Set([...usedKeys].filter((k) => !baseFlat.has(k)));
   const unusedInBase = new Set([...baseFlat.keys()].filter((k) => !isUsed(k)));

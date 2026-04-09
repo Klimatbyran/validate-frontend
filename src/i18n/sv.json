@@ -265,7 +265,10 @@
       "created": "Taggalternativ skapat",
       "updated": "Taggalternativ uppdaterat",
       "deleted": "Taggalternativ borttaget"
-    }
+    },
+    "manageTagOptions": "Hantera taggalternativ",
+    "multiCompany": "Massredigering",
+    "singleCompany": "Enskilt företag"
   },
   "brand": {
     "title": "Garbo AI",
@@ -371,6 +374,9 @@
       "title": "Processöversikt",
       "companies": "Företag",
       "reports": "Rapporter",
+      "preprocessing": "Förbehandling",
+      "aiDataExtraction": "AI-dataextraktion",
+      "finalize": "Finalisering",
       "activeJobs": "Aktiva jobb",
       "completedFields": "Slutförda fält",
       "totalJobs": "Totalt antal jobb",
@@ -583,7 +589,12 @@
     "metrics": {
       "exactMatch": "Exakt match",
       "precisionTolerant": "Precisionstolerant",
-      "zeroInclusive": "Noll inkluderad"
+      "zeroInclusive": "Noll inkluderad",
+      "notes": {
+        "nothing": "Inget",
+        "rounding": "Avrundning (≤0,5)",
+        "zeroInclusive": "Avrundning + båda tomma räknas som korrekt"
+      }
     },
     "summary": {
       "title": "Sammanfattning ({{year}})",
@@ -672,7 +683,10 @@
       "small-error": "Litet fel",
       "category-error": "Kategorifel",
       "error": "Fel"
-    }
+    },
+    "browser": "Utforskare",
+    "overviewTab": "Översikt",
+    "hardestReports": "Mest komplexa rapporter"
   },
   "crawler": {
     "title": "Crawler",
@@ -847,7 +861,32 @@
       "ghgScopesCovered": "GHG-omfång som täcks",
       "dataSource": "Datakälla",
       "confidence": "tillförlitlighet",
-      "scopeNumber": "Scope {{n}}"
+      "scopeNumber": "Scope {{n}}",
+      "mitigation": "Mitigering",
+      "adaptation": "Anpassning",
+      "aspiration": "Strävan",
+      "targets": "Mål",
+      "timeline": "Tidslinje",
+      "frameworks": "Ramverk",
+      "scope": "Omfattning",
+      "accounting": "Redovisning",
+      "territorialOnly": "Endast territoriell",
+      "consumptionBasedOnly": "Endast konsumtionsbaserad",
+      "territorialAndConsumption": "Territoriell + konsumtionsbaserad",
+      "municipalTerritory": "Kommunalt territorium",
+      "municipalOperations": "Kommunal verksamhet",
+      "wholeMunicipality": "Hela kommunen",
+      "geographicArea": "Geografiskt område",
+      "adoptedGoal": "Antaget mål",
+      "politicalCommitment": "Politiskt åtagande",
+      "swedishNationalTargets": "Svenska nationella mål",
+      "frameworkShortParis": "Paris",
+      "frameworkShort1_5": "1,5°C",
+      "frameworkShortCarbonBudget": "Kolbudget",
+      "frameworkShortSwedishClimateAct": "Svenska klimatlagen",
+      "frameworkShortEu": "EU",
+      "territorialBadge": "Territoriell",
+      "consumptionBasedBadge": "Konsumtionsbaserad"
     }
   },
   "debug": {
@@ -938,7 +977,9 @@
   "status": {
     "completed": "Slutförd",
     "failed": "Misslyckad",
+    "needs_approval": "Behöver godkännande",
     "processing": "Bearbetar",
-    "waiting": "Väntar"
+    "waiting": "Väntar",
+    "processingNow": "Bearbetar nu"
   }
 }

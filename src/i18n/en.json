@@ -265,7 +265,10 @@
       "created": "Tag option created",
       "updated": "Tag option updated",
       "deleted": "Tag option deleted"
-    }
+    },
+    "manageTagOptions": "Manage Tag Options",
+    "multiCompany": "Bulk Edit",
+    "singleCompany": "Single Company"
   },
   "brand": {
     "title": "Garbo AI",
@@ -371,6 +374,9 @@
       "title": "Process Overview",
       "companies": "Companies",
       "reports": "Reports",
+      "preprocessing": "Preprocessing",
+      "aiDataExtraction": "AI Data Extraction",
+      "finalize": "Finalize",
       "activeJobs": "Active Jobs",
       "completedFields": "Completed Fields",
       "totalJobs": "Total Jobs",
@@ -583,7 +589,12 @@
     "metrics": {
       "exactMatch": "Exact Match",
       "precisionTolerant": "Precision-Tolerant",
-      "zeroInclusive": "Zero-Inclusive"
+      "zeroInclusive": "Zero-Inclusive",
+      "notes": {
+        "nothing": "Nothing",
+        "rounding": "Rounding (≤0.5)",
+        "zeroInclusive": "Rounding + both empty is correct"
+      }
     },
     "summary": {
       "title": "Summary ({{year}})",
@@ -672,7 +683,10 @@
       "small-error": "Small Error",
       "category-error": "Category Error",
       "error": "Error"
-    }
+    },
+    "browser": "Browser",
+    "overviewTab": "Overview",
+    "hardestReports": "Hardest Reports"
   },
   "crawler": {
     "title": "Crawler",
@@ -847,7 +861,32 @@
       "ghgScopesCovered": "GHG scopes covered",
       "dataSource": "Data source",
       "confidence": "confidence",
-      "scopeNumber": "Scope {{n}}"
+      "scopeNumber": "Scope {{n}}",
+      "mitigation": "Mitigation",
+      "adaptation": "Adaptation",
+      "aspiration": "Aspiration",
+      "targets": "Targets",
+      "timeline": "Timeline",
+      "frameworks": "Frameworks",
+      "scope": "Scope",
+      "accounting": "Accounting",
+      "territorialOnly": "Territorial only",
+      "consumptionBasedOnly": "Consumption-based only",
+      "territorialAndConsumption": "Territorial + Consumption-based",
+      "municipalTerritory": "Municipal territory",
+      "municipalOperations": "Municipal operations",
+      "wholeMunicipality": "Whole municipality",
+      "geographicArea": "Geographic area",
+      "adoptedGoal": "Adopted goal",
+      "politicalCommitment": "Political commitment",
+      "swedishNationalTargets": "Swedish national targets",
+      "frameworkShortParis": "Paris",
+      "frameworkShort1_5": "1.5°C",
+      "frameworkShortCarbonBudget": "Carbon budget",
+      "frameworkShortSwedishClimateAct": "SE Climate Act",
+      "frameworkShortEu": "EU",
+      "territorialBadge": "Territorial",
+      "consumptionBasedBadge": "Consumption-based"
     }
   },
   "debug": {
@@ -938,7 +977,9 @@
   "status": {
     "completed": "Completed",
     "failed": "Failed",
+    "needs_approval": "Needs approval",
     "processing": "Processing",
-    "waiting": "Waiting"
+    "waiting": "Waiting",
+    "processingNow": "Processing now"
   }
 }
