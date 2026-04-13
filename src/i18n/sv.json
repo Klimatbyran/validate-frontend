@@ -344,7 +344,10 @@
     "forceReindex": "Tvinga omindexering",
     "forceReindexDescription": "Om på: kör docling även om rapporten redan finns i vektordatabasen (använd efter uppgradering av docling/OCR).",
     "companyWithName": "Företag: {{name}}",
-    "fileSizeMb": "{{size}} MB"
+    "fileSizeMb": "{{size}} MB",
+    "storageDeduplicated": "{{count}} befintlig(a) PDF:er återanvändes från lagring (ingen dubbeluppladdning).",
+    "pdfCachedSummary": "{{total}} PDF:er cachades till lagring ({{reused}} fanns redan i objektlagring).",
+    "pdfCachePartialFailure": "{{failed}} av {{total}} länk(ar) kunde inte cachas. {{succeeded}} länk(ar) lades ändå till."
   },
   "jobstatus": {
     "scope": "Omfattning",

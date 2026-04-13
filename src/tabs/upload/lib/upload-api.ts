@@ -14,9 +14,21 @@ export class UploadApiError extends Error {
 function parseErrorMessage(errorText: string): string {
   let message = errorText;
   try {
-    const parsed = JSON.parse(errorText) as { error?: string };
+    const parsed = JSON.parse(errorText) as {
+      error?: string;
+      errors?: Array<{ url?: string; error?: string }>;
+    };
     if (typeof parsed?.error === "string" && parsed.error.trim().length > 0) {
       message = parsed.error;
+    }
+    if (Array.isArray(parsed?.errors) && parsed.errors.length > 0) {
+      const details = parsed.errors
+        .map((e) => (e?.url && e?.error ? `${e.url}: ${e.error}` : (e?.error ?? "")))
+        .filter((s) => s.length > 0)
+        .join("; ");
+      if (details.length > 0 && !message.includes(details)) {
+        message = `${message} — ${details}`;
+      }
     }
   } catch {
     /* keep errorText as message */
@@ -50,6 +62,27 @@ export type UploadPdfsResponse =
       uploads: UploadPdfUploadMeta[];
     };
 
+export function isUploadPdfsEnvelope(
+  r: UploadPdfsResponse,
+): r is { jobs: unknown[]; uploads: UploadPdfUploadMeta[] } {
+  return (
+    r !== null &&
+    typeof r === "object" &&
+    !Array.isArray(r) &&
+    Array.isArray((r as { uploads?: unknown }).uploads)
+  );
+}
+
+export type PdfCacheUrlError = { url: string; error: string };
+
+export type CreateJobsFromUrlsResult =
+  | unknown[]
+  | {
+      jobs: unknown[];
+      cached?: unknown[];
+      errors?: PdfCacheUrlError[];
+    };
+
 export interface CreateJobsFromUrlsOptions {
   urls: string[];
   autoApprove: boolean;
@@ -57,6 +90,8 @@ export interface CreateJobsFromUrlsOptions {
   batchId?: string;
   runOnly?: RunOnlyWorkerId[];
   tags?: string[];
+  /** When true (default), pipeline-api fetches each URL and caches to S3 before enqueueing. Set false for local API without S3. */
+  cachePdf?: boolean;
 }
 
 export async function uploadPdfsToParsePdf({
@@ -98,7 +133,8 @@ export async function createJobsFromUrls({
   batchId,
   runOnly,
   tags,
-}: CreateJobsFromUrlsOptions): Promise<unknown> {
+  cachePdf = true,
+}: CreateJobsFromUrlsOptions): Promise<CreateJobsFromUrlsResult> {
   const body = {
     autoApprove: Boolean(autoApprove),
     ...(batchId ? { batchId } : {}),
@@ -106,6 +142,7 @@ export async function createJobsFromUrls({
     replaceAllEmissions: true,
     ...(runOnly && runOnly.length > 0 ? { runOnly } : {}),
     ...(tags && tags.length > 0 ? { tags } : {}),
+    ...(cachePdf ? { cachePdf: true } : {}),
     urls,
   };
 
@@ -121,6 +158,6 @@ export async function createJobsFromUrls({
     throw new UploadApiError(message, { status: response.status });
   }
 
-  return response.json();
+  return response.json() as Promise<CreateJobsFromUrlsResult>;
 }
 

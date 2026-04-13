@@ -344,7 +344,10 @@
     "forceReindex": "Force reindex",
     "forceReindexDescription": "When on: run docling even if the report already exists in the vector DB (use after docling/OCR upgrade).",
     "companyWithName": "Company: {{name}}",
-    "fileSizeMb": "{{size}} MB"
+    "fileSizeMb": "{{size}} MB",
+    "storageDeduplicated": "Reused {{count}} existing PDF(s) from storage (no duplicate upload).",
+    "pdfCachedSummary": "Cached {{total}} PDF(s) to storage ({{reused}} already in object storage).",
+    "pdfCachePartialFailure": "{{failed}} of {{total}} link(s) could not be cached. {{succeeded}} link(s) were still added."
   },
   "jobstatus": {
     "scope": "Scope",
