@@ -33,6 +33,23 @@ export interface UploadPdfsOptions {
   tags?: string[];
 }
 
+export type UploadPdfUploadMeta = {
+  filename: string;
+  publicUrl: string;
+  bucket: string;
+  key: string;
+  sha256: string;
+  reusedExisting: boolean;
+  uploaded: boolean;
+};
+
+export type UploadPdfsResponse =
+  | unknown[]
+  | {
+      jobs: unknown[];
+      uploads: UploadPdfUploadMeta[];
+    };
+
 export interface CreateJobsFromUrlsOptions {
   urls: string[];
   autoApprove: boolean;
@@ -49,7 +66,7 @@ export async function uploadPdfsToParsePdf({
   batchId,
   runOnly,
   tags,
-}: UploadPdfsOptions): Promise<Response> {
+}: UploadPdfsOptions): Promise<UploadPdfsResponse> {
   const formData = new FormData();
   for (const file of files) formData.append("files", file);
   formData.append("autoApprove", String(Boolean(autoApprove)));
@@ -71,7 +88,7 @@ export async function uploadPdfsToParsePdf({
     throw new UploadApiError(message, { status: response.status });
   }
 
-  return response;
+  return response.json();
 }
 
 export async function createJobsFromUrls({

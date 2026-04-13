@@ -67,7 +67,7 @@ export function UploadTab() {
     }
 
     try {
-      await uploadPdfsToParsePdf({
+      const result = await uploadPdfsToParsePdf({
         files: uploadedFiles.map(({ file }) => file),
         autoApprove,
         forceReindex,
@@ -75,6 +75,14 @@ export function UploadTab() {
         runOnly,
         tags,
       });
+
+      // Optional informational toast: was anything deduped?
+      const uploads = (result as any)?.uploads as
+        | Array<{ reusedExisting?: boolean }>
+        | undefined;
+      const reusedCount = Array.isArray(uploads)
+        ? uploads.filter((u) => u?.reusedExisting).length
+        : 0;
 
       const newUrls: UrlInput[] = uploadedFiles.map(({ file, id, company }) => ({
         url: `uploaded:${file.name}`,
@@ -84,6 +92,11 @@ export function UploadTab() {
       setProcessedUrls((prev) => [...prev, ...newUrls]);
       setUploadedFiles([]);
       toast.success(t("upload.filesSubmitted", { count: uploadedFiles.length }));
+      if (reusedCount > 0) {
+        toast.info(
+          `Reused ${reusedCount} existing PDF${reusedCount === 1 ? "" : "s"} from storage (no duplicate upload).`,
+        );
+      }
     } catch (error) {
       console.error("Failed to upload files:", error);
       if (error instanceof UploadApiError && error.status === 413) {
@@ -173,6 +186,14 @@ export function UploadTab() {
         tags,
       });
       console.log("Jobs created successfully:", result);
+
+      const cached = (result as any)?.cached as Array<any> | undefined;
+      if (Array.isArray(cached) && cached.length > 0) {
+        const reused = cached.filter((c) => c?.reusedExisting).length;
+        toast.info(
+          `Cached ${cached.length} PDF${cached.length === 1 ? "" : "s"} to storage (${reused} reused).`,
+        );
+      }
 
       const newUrls = urls.map((url) => ({
         url,
