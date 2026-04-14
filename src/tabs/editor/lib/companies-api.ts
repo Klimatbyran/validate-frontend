@@ -23,8 +23,16 @@ function internalCompaniesPath(segment = ""): string {
   return seg ? `${path}/${seg}` : path;
 }
 
+function reportingPeriodPath(segment = ""): string {
+  const path = "/reporting-period";
+  const seg = segment.replace(/^\//, "");
+  return seg ? `${path}/${seg}` : path;
+}
+
 /** List companies from Garbo (GET /api/companies). Requires auth. */
-export async function listCompanies(signal?: AbortSignal): Promise<GarboCompanyListItem[]> {
+export async function listCompanies(
+  signal?: AbortSignal,
+): Promise<GarboCompanyListItem[]> {
   const res = await garboAuthFetch(apiUrl(companiesPath()), {
     method: "GET",
     headers: { Accept: "application/json" },
@@ -38,13 +46,13 @@ export async function listCompanies(signal?: AbortSignal): Promise<GarboCompanyL
     throw new Error(`Failed to list companies: ${res.status} ${text}`);
   }
   const data = await res.json();
-  return Array.isArray(data) ? data : data.companies ?? data.items ?? [];
+  return Array.isArray(data) ? data : (data.companies ?? data.items ?? []);
 }
 
 /** Get company detail by wikidataId (GET /api/companies/:wikidataId). Requires auth. */
 export async function getCompany(
   wikidataId: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<GarboCompanyDetail> {
   const res = await garboAuthFetch(
     apiUrl(internalCompaniesPath(encodeURIComponent(wikidataId))),
@@ -52,7 +60,7 @@ export async function getCompany(
       method: "GET",
       headers: { Accept: "application/json" },
       signal,
-    }
+    },
   );
   if (res.status === 401) {
     throw new Error("Please log in to view company.");
@@ -80,7 +88,7 @@ export async function updateCompany(
     lei?: string;
     metadata?: GarboMetadata;
     verified?: boolean;
-  }
+  },
 ): Promise<void> {
   const res = await garboAuthFetch(
     apiUrl(companiesPath(encodeURIComponent(wikidataId))),
@@ -91,7 +99,7 @@ export async function updateCompany(
         Accept: "application/json",
       },
       body: JSON.stringify({ wikidataId, ...body }),
-    }
+    },
   );
   if (res.status === 401) {
     throw new Error("Please log in to update company.");
@@ -123,10 +131,12 @@ export async function updateReportingPeriods(
     }>;
     metadata?: GarboMetadata;
     replaceAllEmissions?: boolean;
-  }
+  },
 ): Promise<void> {
   const res = await garboAuthFetch(
-    apiUrl(companiesPath(`${encodeURIComponent(wikidataId)}/reporting-periods`)),
+    apiUrl(
+      companiesPath(`${encodeURIComponent(wikidataId)}/reporting-periods`),
+    ),
     {
       method: "POST",
       headers: {
@@ -134,7 +144,7 @@ export async function updateReportingPeriods(
         Accept: "application/json",
       },
       body: JSON.stringify(body),
-    }
+    },
   );
   if (res.status === 401) {
     throw new Error("Please log in to update reporting periods.");
@@ -147,7 +157,32 @@ export async function updateReportingPeriods(
   }
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Failed to update reporting periods: ${res.status} ${text}`);
+    throw new Error(
+      `Failed to update reporting periods: ${res.status} ${text}`,
+    );
+  }
+}
+
+/** Delete a reporting period by id (DELETE /api/companies/reporting-period/:id). */
+export async function deleteReportingPeriod(id: string): Promise<void> {
+  const encodedId = encodeURIComponent(id);
+  const res = await garboAuthFetch(
+    apiUrl(companiesPath(reportingPeriodPath(encodedId))),
+    {
+      method: "DELETE",
+      headers: { Accept: "application/json" },
+    },
+  );
+
+  if (res.status === 401) {
+    throw new Error("Please log in to delete reporting period.");
+  }
+  if (res.status === 404) {
+    throw new Error("Reporting period not found.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to delete reporting period: ${res.status} ${text}`);
   }
 }
 
@@ -163,7 +198,7 @@ export interface IndustryGicsOption {
 
 /** List industry GICS codes (GET /api/industry-gics). Requires auth. */
 export async function fetchIndustryGics(
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<IndustryGicsOption[]> {
   const res = await garboAuthFetch(apiUrl("/industry-gics"), {
     method: "GET",
@@ -179,8 +214,10 @@ export async function fetchIndustryGics(
   }
   const data = await res.json();
   if (Array.isArray(data)) return data;
-  if (Array.isArray((data as { options?: unknown }).options)) return (data as { options: IndustryGicsOption[] }).options;
-  if (Array.isArray((data as { items?: unknown }).items)) return (data as { items: IndustryGicsOption[] }).items;
+  if (Array.isArray((data as { options?: unknown }).options))
+    return (data as { options: IndustryGicsOption[] }).options;
+  if (Array.isArray((data as { items?: unknown }).items))
+    return (data as { items: IndustryGicsOption[] }).items;
 
   // Some envs return an object keyed by subIndustryCode, e.g. { "10101010": { sectorName, groupName, ... }, ... }.
   if (data && typeof data === "object") {
@@ -210,7 +247,14 @@ export async function fetchIndustryGics(
           (typeof r.name === "string" && r.name) ||
           subIndustryName ||
           undefined;
-        return { code, label, subIndustryName, sector, group, industry } satisfies IndustryGicsOption;
+        return {
+          code,
+          label,
+          subIndustryName,
+          sector,
+          group,
+          industry,
+        } satisfies IndustryGicsOption;
       })
       .filter(Boolean) as IndustryGicsOption[];
 
@@ -223,15 +267,22 @@ export async function fetchIndustryGics(
 /** Set company industry (POST /api/companies/:wikidataId/industry). */
 export async function updateCompanyIndustry(
   wikidataId: string,
-  body: { industry: { subIndustryCode: string }; metadata?: GarboMetadata; verified?: boolean }
+  body: {
+    industry: { subIndustryCode: string };
+    metadata?: GarboMetadata;
+    verified?: boolean;
+  },
 ): Promise<void> {
   const res = await garboAuthFetch(
     apiUrl(companiesPath(`${encodeURIComponent(wikidataId)}/industry`)),
     {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: JSON.stringify(body),
-    }
+    },
   );
   if (res.status === 401) throw new Error("Please log in to update industry.");
   if (res.status === 404) throw new Error("Company not found.");
@@ -244,15 +295,18 @@ export async function updateCompanyIndustry(
 /** Set company base year (POST /api/companies/:wikidataId/base-year). */
 export async function updateCompanyBaseYear(
   wikidataId: string,
-  body: { baseYear: number; metadata?: GarboMetadata; verified?: boolean }
+  body: { baseYear: number; metadata?: GarboMetadata; verified?: boolean },
 ): Promise<void> {
   const res = await garboAuthFetch(
     apiUrl(companiesPath(`${encodeURIComponent(wikidataId)}/base-year`)),
     {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: JSON.stringify(body),
-    }
+    },
   );
   if (res.status === 401) throw new Error("Please log in to update base year.");
   if (res.status === 404) throw new Error("Company not found.");

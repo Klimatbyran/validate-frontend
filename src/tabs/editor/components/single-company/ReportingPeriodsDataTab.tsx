@@ -12,8 +12,14 @@ import {
   DialogTitle,
 } from "@/ui/dialog";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
-import type { GarboCompanyDetail, GarboReportingPeriodSummary } from "../../lib/types";
-import { updateReportingPeriods } from "../../lib/companies-api";
+import type {
+  GarboCompanyDetail,
+  GarboReportingPeriodSummary,
+} from "../../lib/types";
+import {
+  deleteReportingPeriod,
+  updateReportingPeriods,
+} from "../../lib/companies-api";
 import { inputClassName } from "../../lib/company-edit-utils";
 import {
   editorDenseMultiSelectTriggerClass,
@@ -55,12 +61,14 @@ export function ReportingPeriodsDataTab({
   const periods = useMemo(
     () =>
       (company.reportingPeriods ?? []).filter(isReportingPeriodWithIdAndDates),
-    [company.reportingPeriods]
+    [company.reportingPeriods],
   );
 
   const [edited, setEdited] = useState<Record<string, EditedPeriod>>({});
   const [saving, setSaving] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletePeriodId, setDeletePeriodId] = useState<string | null>(null);
+  const [isDeletingPeriod, setIsDeletingPeriod] = useState(false);
 
   const {
     showAllYears,
@@ -71,16 +79,22 @@ export function ReportingPeriodsDataTab({
     setSortOrder,
     years,
     visiblePeriods,
-  } = useReportingPeriodColumnFilters<GarboReportingPeriodSummary & { id: string }>(
-    periods,
-    company.wikidataId
-  );
+  } = useReportingPeriodColumnFilters<
+    GarboReportingPeriodSummary & { id: string }
+  >(periods, company.wikidataId);
 
   useEffect(() => {
     setEdited({});
     setSaving(false);
     setDeleteModalOpen(false);
+    setDeletePeriodId(null);
+    setIsDeletingPeriod(false);
   }, [company.wikidataId]);
+
+  const periodPendingDelete = useMemo(
+    () => periods.find((p) => p.id === deletePeriodId) ?? null,
+    [periods, deletePeriodId],
+  );
 
   const setPatch = (rpId: string, patch: Partial<EditedPeriod>) => {
     setEdited((prev) => ({
@@ -125,9 +139,15 @@ export function ReportingPeriodsDataTab({
         if (!e) return null;
 
         const startYmd =
-          e.startDate !== undefined ? e.startDate : formatDateStamp(rp.startDate, dash);
-        const endYmd = e.endDate !== undefined ? e.endDate : formatDateStamp(rp.endDate, dash);
-        if (!startYmd || startYmd === dash || !endYmd || endYmd === dash) return null;
+          e.startDate !== undefined
+            ? e.startDate
+            : formatDateStamp(rp.startDate, dash);
+        const endYmd =
+          e.endDate !== undefined
+            ? e.endDate
+            : formatDateStamp(rp.endDate, dash);
+        if (!startYmd || startYmd === dash || !endYmd || endYmd === dash)
+          return null;
 
         const startDate = mergeYmdIntoOriginal(startYmd, rp.startDate);
         const endDate = mergeYmdIntoOriginal(endYmd, rp.endDate);
@@ -163,7 +183,10 @@ export function ReportingPeriodsDataTab({
         reportingPeriods: payloadPeriods,
         metadata:
           meta?.source?.trim() || meta?.comment?.trim()
-            ? { source: meta.source?.trim() || undefined, comment: meta.comment?.trim() || undefined }
+            ? {
+                source: meta.source?.trim() || undefined,
+                comment: meta.comment?.trim() || undefined,
+              }
             : undefined,
       });
       toast.success(t("editor.periodEditor.reportingDataSaved"));
@@ -181,6 +204,35 @@ export function ReportingPeriodsDataTab({
     onSaved,
     reset: () => setEdited({}),
   });
+
+  const handleDeleteReportingPeriod = async () => {
+    if (!deletePeriodId) return;
+
+    setIsDeletingPeriod(true);
+    try {
+      await deleteReportingPeriod(deletePeriodId);
+      toast.success(
+        t("editor.singleCompanyView.deleteReportingPeriod.deleted"),
+      );
+      setEdited((prev) => {
+        const next = { ...prev };
+        delete next[deletePeriodId];
+        return next;
+      });
+      setDeleteModalOpen(false);
+      setDeletePeriodId(null);
+      onSaved?.();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(
+        t("editor.singleCompanyView.deleteReportingPeriod.failed", {
+          message,
+        }),
+      );
+    } finally {
+      setIsDeletingPeriod(false);
+    }
+  };
 
   return (
     <section className="rounded-lg bg-gray-05 p-4 w-full min-w-0 max-w-full">
@@ -200,7 +252,9 @@ export function ReportingPeriodsDataTab({
               type="button"
               variant="secondary"
               size="sm"
-              onClick={() => setSortOrder((o) => (o === "desc" ? "asc" : "desc"))}
+              onClick={() =>
+                setSortOrder((o) => (o === "desc" ? "asc" : "desc"))
+              }
               className={editorDenseToolbarClass}
             >
               {sortOrder === "desc"
@@ -250,9 +304,10 @@ export function ReportingPeriodsDataTab({
           {visiblePeriods.map((rp) => {
             const rpEdits = edited[rp.id] ?? {};
             const periodYear = getPeriodYear(rp) ?? dash;
-            const startVal = rpEdits.startDate ?? formatDateStamp(rp.startDate, dash);
+            const startVal =
+              rpEdits.startDate ?? formatDateStamp(rp.startDate, dash);
             const endVal = rpEdits.endDate ?? formatDateStamp(rp.endDate, dash);
-            const urlVal = rpEdits.reportURL ?? (rp.reportURL ?? "");
+            const urlVal = rpEdits.reportURL ?? rp.reportURL ?? "";
             const startDirty = rpEdits.startDate != null;
             const endDirty = rpEdits.endDate != null;
             const urlDirty = rpEdits.reportURL != null;
@@ -265,7 +320,9 @@ export function ReportingPeriodsDataTab({
               >
                 <div className="flex flex-wrap items-center justify-between gap-3 min-w-0">
                   <div>
-                    <div className="text-sm font-semibold text-gray-01">{periodYear}</div>
+                    <div className="text-sm font-semibold text-gray-01">
+                      {periodYear}
+                    </div>
                     <div className="text-xs text-gray-02 mt-0.5">
                       {formatDateStamp(rp.startDate, dash)} –{" "}
                       {formatDateStamp(rp.endDate, dash)}
@@ -287,9 +344,14 @@ export function ReportingPeriodsDataTab({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      onClick={() => setDeleteModalOpen(true)}
+                      onClick={() => {
+                        setDeletePeriodId(rp.id);
+                        setDeleteModalOpen(true);
+                      }}
                       className="h-8 w-8 shrink-0 text-pink-03 hover:text-pink-02 hover:bg-pink-05/20 rounded-full"
-                      aria-label={t("editor.singleCompanyView.deleteReportingPeriod.trashAriaLabel")}
+                      aria-label={t(
+                        "editor.singleCompanyView.deleteReportingPeriod.trashAriaLabel",
+                      )}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
@@ -304,7 +366,9 @@ export function ReportingPeriodsDataTab({
                     <input
                       type="date"
                       value={startVal === dash ? "" : startVal}
-                      onChange={(e) => setPatch(rp.id, { startDate: e.target.value })}
+                      onChange={(e) =>
+                        setPatch(rp.id, { startDate: e.target.value })
+                      }
                       className={
                         inputClassName +
                         " bg-gray-04 w-full min-w-0 !max-w-none " +
@@ -319,7 +383,9 @@ export function ReportingPeriodsDataTab({
                     <input
                       type="date"
                       value={endVal === dash ? "" : endVal}
-                      onChange={(e) => setPatch(rp.id, { endDate: e.target.value })}
+                      onChange={(e) =>
+                        setPatch(rp.id, { endDate: e.target.value })
+                      }
                       className={
                         inputClassName +
                         " bg-gray-04 w-full min-w-0 !max-w-none " +
@@ -335,7 +401,11 @@ export function ReportingPeriodsDataTab({
                       type="url"
                       value={urlVal}
                       onChange={(e) =>
-                        setUrl(rp.id, e.target.value, Boolean((rp.reportURL ?? "").trim()))
+                        setUrl(
+                          rp.id,
+                          e.target.value,
+                          Boolean((rp.reportURL ?? "").trim()),
+                        )
                       }
                       className={
                         inputClassName +
@@ -377,12 +447,37 @@ export function ReportingPeriodsDataTab({
               {t("editor.singleCompanyView.deleteReportingPeriod.title")}
             </DialogTitle>
             <DialogDescription>
-              {t("editor.singleCompanyView.deleteReportingPeriod.comingSoon")}
+              {t("editor.singleCompanyView.deleteReportingPeriod.description", {
+                year: periodPendingDelete
+                  ? (getPeriodYear(periodPendingDelete) ?? dash)
+                  : dash,
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button type="button" variant="primary" size="sm" onClick={() => setDeleteModalOpen(false)}>
-              {t("editor.singleCompanyView.deleteReportingPeriod.ok")}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setDeleteModalOpen(false);
+                setDeletePeriodId(null);
+              }}
+              disabled={isDeletingPeriod}
+            >
+              {t("editor.singleCompanyView.deleteReportingPeriod.cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="bg-red-500 text-white hover:bg-red-500/90 active:bg-red-500/80"
+              onClick={() => void handleDeleteReportingPeriod()}
+              disabled={isDeletingPeriod || !deletePeriodId}
+            >
+              {isDeletingPeriod
+                ? t("editor.singleCompanyView.deleteReportingPeriod.deleting")
+                : t("editor.singleCompanyView.deleteReportingPeriod.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
