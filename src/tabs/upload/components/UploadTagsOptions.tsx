@@ -10,6 +10,7 @@ export interface UploadTagsOptionsProps {
   tagsError?: string | null;
   selectedTags: string[];
   onSelectedTagsChange: (tags: string[]) => void;
+  usePortal?: boolean;
 }
 
 export function UploadTagsOptions({
@@ -18,6 +19,7 @@ export function UploadTagsOptions({
   tagsError = null,
   selectedTags,
   onSelectedTagsChange,
+  usePortal = true,
 }: UploadTagsOptionsProps) {
   const { t } = useI18n();
   const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
@@ -36,6 +38,7 @@ export function UploadTagsOptions({
         emptyLabel={t("upload.tagsEmpty")}
         getOptionLabel={(slug) => tagLabelBySlug[slug] ?? slug}
         panelMinWidth={240}
+        usePortal={usePortal}
       />
 
       {tagsError && (

@@ -9,6 +9,7 @@ export interface UploadBatchOptionsProps {
   onBatchDropdownChoiceChange: (value: string) => void;
   customBatchName: string;
   onCustomBatchNameChange: (value: string) => void;
+  usePortal?: boolean;
 }
 
 export function UploadBatchOptions({
@@ -18,6 +19,7 @@ export function UploadBatchOptions({
   onBatchDropdownChoiceChange,
   customBatchName,
   onCustomBatchNameChange,
+  usePortal = true,
 }: UploadBatchOptionsProps) {
   const { t } = useI18n();
 
@@ -41,6 +43,7 @@ export function UploadBatchOptions({
               : v
         }
         panelMinWidth={200}
+        usePortal={usePortal}
       />
       {batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE && (
         <input

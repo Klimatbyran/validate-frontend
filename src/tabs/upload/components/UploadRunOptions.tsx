@@ -7,12 +7,14 @@ interface UploadRunOptionsProps {
   batch: UploadBatchOptionsProps;
   tags: UploadTagsOptionsProps;
   workers: UploadWorkerRunOptionsProps;
+  dropdownUsePortal?: boolean;
 }
 
 export function UploadRunOptions({
   batch,
   tags,
   workers,
+  dropdownUsePortal = true,
 }: UploadRunOptionsProps) {
   const { t } = useI18n();
 
@@ -21,8 +23,8 @@ export function UploadRunOptions({
       <p className="text-sm font-medium text-gray-01">{t("upload.runOptionsTitle")}</p>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <UploadBatchOptions {...batch} />
-        <UploadTagsOptions {...tags} />
+        <UploadBatchOptions {...batch} usePortal={dropdownUsePortal} />
+        <UploadTagsOptions {...tags} usePortal={dropdownUsePortal} />
       </div>
 
       <UploadWorkerRunOptions {...workers} />

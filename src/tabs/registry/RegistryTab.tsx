@@ -1,8 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
+import { useBatches } from "@/hooks/useBatches";
+import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
+import { NEW_BATCH_DROPDOWN_VALUE } from "@/tabs/upload/lib/utils";
+import { useTagOptions } from "@/tabs/upload/hooks/useTagOptions";
+import {
+  UploadApiError,
+  createJobsFromUrls,
+} from "@/tabs/upload/lib/upload-api";
 import RegistryControls from "./components/RegistryControls";
+import RegistryRunReportsModal from "./components/RegistryRunReportsModal";
 import RegistryStats from "./components/RegistryStats";
 import RegistryResultsList from "./components/RegistryResultsList";
 import type { RegistryEntry, RegistryEntryUpdate } from "./lib/registry-types";
@@ -26,6 +36,19 @@ export function RegistryTab() {
   const [registry, setRegistry] = useState<RegistryEntry[]>([]);
   const [isDeletingSelected, setIsDeletingSelected] = useState<boolean>(false);
   const [editingReportIds, setEditingReportIds] = useState<string[]>([]);
+  const [isRunReportsOpen, setIsRunReportsOpen] = useState<boolean>(false);
+  const [isRunningReports, setIsRunningReports] = useState<boolean>(false);
+  const [autoApprove, setAutoApprove] = useState<boolean>(true);
+  const [runAllWorkers, setRunAllWorkers] = useState<boolean>(false);
+  const [selectedWorkers, setSelectedWorkers] = useState<RunOnlyWorkerId[]>(
+    DEFAULT_RUN_ONLY,
+  );
+  const [forceReindex, setForceReindex] = useState<boolean>(false);
+  const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
+  const [customBatchName, setCustomBatchName] = useState<string>("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const { batches: existingBatches, isLoading: batchesLoading } = useBatches();
+  const { tagOptions, loading: tagsLoading, error: tagsError } = useTagOptions();
 
   const filteredRegistry = useMemo(
     () => filterRegistryEntries(registry, query),
@@ -99,6 +122,18 @@ export function RegistryTab() {
     [selectedReports],
   );
 
+  const effectiveBatchId =
+    !batchDropdownChoice
+      ? ""
+      : batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE
+        ? customBatchName.trim()
+        : batchDropdownChoice;
+
+  const runOnly =
+    !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
+  const batchId = effectiveBatchId || undefined;
+  const tags = selectedTags.length > 0 ? selectedTags : undefined;
+
   const handleDeleteSelected = async () => {
     if (!selectedReportIds.length) {
       return;
@@ -118,6 +153,75 @@ export function RegistryTab() {
       console.error("Failed to delete selected reports", error);
     } finally {
       setIsDeletingSelected(false);
+    }
+  };
+
+  const handleWorkerToggle = useCallback(
+    (workerId: RunOnlyWorkerId, checked: boolean) => {
+      setSelectedWorkers((current) =>
+        checked
+          ? [...current, workerId]
+          : current.filter((id) => id !== workerId),
+      );
+    },
+    [],
+  );
+
+  const handleRunReports = async () => {
+    const urls = selectedReports
+      .map((entry) => entry.url?.trim())
+      .filter((url): url is string => Boolean(url));
+
+    if (!urls.length) {
+      toast.error(t("registry.noReportUrls"));
+      return;
+    }
+
+    if (!runAllWorkers && selectedWorkers.length === 0) {
+      toast.error(t("upload.selectAtLeastOneWorker"));
+      return;
+    }
+
+    setIsRunningReports(true);
+    try {
+      const result = await createJobsFromUrls({
+        urls,
+        autoApprove,
+        forceReindex,
+        batchId,
+        runOnly,
+        tags,
+      });
+
+      const envelope =
+        !Array.isArray(result) && result && typeof result === "object"
+          ? result
+          : null;
+      const cacheErrors =
+        envelope && Array.isArray(envelope.errors) ? envelope.errors : [];
+
+      if (cacheErrors.length > 0) {
+        toast.warning(
+          t("registry.runReportsPartial", {
+            failed: cacheErrors.length,
+            total: urls.length,
+            succeeded: urls.length - cacheErrors.length,
+          }),
+        );
+      } else {
+        toast.success(t("registry.runReportsSuccess", { count: urls.length }));
+      }
+
+      setIsRunReportsOpen(false);
+    } catch (error) {
+      console.error("Failed to run selected reports", error);
+      const errorMessage =
+        error instanceof UploadApiError || error instanceof Error
+          ? error.message
+          : t("upload.unknownError");
+      toast.error(t("registry.runReportsError", { message: errorMessage }));
+    } finally {
+      setIsRunningReports(false);
     }
   };
 
@@ -169,6 +273,8 @@ export function RegistryTab() {
           }}
           onRefresh={handleRefresh}
           isRefreshing={isLoading}
+          onRunReports={() => setIsRunReportsOpen(true)}
+          isRunReportsDisabled={!selectedReports.length}
           onExport={handleExport}
           isExportDisabled={!selectedReports.length}
           onDeleteSelected={handleDeleteSelected}
@@ -177,6 +283,41 @@ export function RegistryTab() {
           }
           selectedCount={selectedReports.length}
           isDeletingSelected={isDeletingSelected}
+        />
+
+        <RegistryRunReportsModal
+          open={isRunReportsOpen}
+          onOpenChange={setIsRunReportsOpen}
+          selectedReports={selectedReports}
+          autoApprove={autoApprove}
+          onAutoApproveChange={setAutoApprove}
+          runOptions={{
+            batch: {
+              existingBatches,
+              batchesLoading,
+              batchDropdownChoice,
+              onBatchDropdownChoiceChange: setBatchDropdownChoice,
+              customBatchName,
+              onCustomBatchNameChange: setCustomBatchName,
+            },
+            tags: {
+              tagOptions,
+              tagsLoading,
+              tagsError,
+              selectedTags,
+              onSelectedTagsChange: setSelectedTags,
+            },
+            workers: {
+              runAllWorkers,
+              onRunAllWorkersChange: setRunAllWorkers,
+              selectedWorkers,
+              onSelectedWorkersChange: handleWorkerToggle,
+              forceReindex,
+              onForceReindexChange: setForceReindex,
+            },
+          }}
+          onRunReports={handleRunReports}
+          isRunning={isRunningReports}
         />
       </motion.div>
 
