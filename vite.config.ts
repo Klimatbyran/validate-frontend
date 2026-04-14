@@ -167,6 +167,14 @@ function pipelineProxyConfigure(targetUrl: string) {
 
 // Proxy targets: .env.development or .env.development.example.
 
+function setGarboProxyApiKey(proxyReq: { setHeader: (n: string, v: string) => void }, env: Record<string, string>) {
+  const key =
+    env.GARBO_PROXY_CLIENT_API_KEY ?? env.GARBO_PROXY_PUBLIC_API_KEY;
+  if (key) {
+    proxyReq.setHeader("X-API-Key", key);
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const urls = getProxyTargets(env);
@@ -262,6 +270,11 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/garbo-stage/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              setGarboProxyApiKey(proxyReq, env);
+            });
+          },
         },
         "/garbo-local": {
           target: urls.garboBackendLocal,
@@ -270,6 +283,11 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/garbo-local/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              setGarboProxyApiKey(proxyReq, env);
+            });
+          },
         },
         "/garbo": {
           target: urls.garboProd,
@@ -278,6 +296,11 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/garbo/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              setGarboProxyApiKey(proxyReq, env);
+            });
+          },
         },
       },
     },
