@@ -14,7 +14,12 @@ import { UploadedFile, UrlInput } from "./types";
 import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
 import { NEW_BATCH_DROPDOWN_VALUE } from "./lib/utils";
-import { UploadApiError, createJobsFromUrls, uploadPdfsToParsePdf } from "./lib/upload-api";
+import {
+  UploadApiError,
+  createJobsFromUrls,
+  isUploadPdfsEnvelope,
+  uploadPdfsToParsePdf,
+} from "./lib/upload-api";
 import { useTagOptions } from "./hooks/useTagOptions";
 
 export function UploadTab() {
@@ -67,7 +72,7 @@ export function UploadTab() {
     }
 
     try {
-      await uploadPdfsToParsePdf({
+      const result = await uploadPdfsToParsePdf({
         files: uploadedFiles.map(({ file }) => file),
         autoApprove,
         forceReindex,
@@ -75,6 +80,10 @@ export function UploadTab() {
         runOnly,
         tags,
       });
+
+      const reusedCount = isUploadPdfsEnvelope(result)
+        ? result.uploads.filter((u) => u.reusedExisting).length
+        : 0;
 
       const newUrls: UrlInput[] = uploadedFiles.map(({ file, id, company }) => ({
         url: `uploaded:${file.name}`,
@@ -84,6 +93,9 @@ export function UploadTab() {
       setProcessedUrls((prev) => [...prev, ...newUrls]);
       setUploadedFiles([]);
       toast.success(t("upload.filesSubmitted", { count: uploadedFiles.length }));
+      if (reusedCount > 0) {
+        toast.info(t("upload.storageDeduplicated", { count: reusedCount }));
+      }
     } catch (error) {
       console.error("Failed to upload files:", error);
       if (error instanceof UploadApiError && error.status === 413) {
@@ -174,7 +186,33 @@ export function UploadTab() {
       });
       console.log("Jobs created successfully:", result);
 
-      const newUrls = urls.map((url) => ({
+      const envelope = !Array.isArray(result) && result && typeof result === "object" ? result : null;
+      const cached = envelope && Array.isArray(envelope.cached) ? envelope.cached : undefined;
+      const cacheErrors =
+        envelope && Array.isArray(envelope.errors) ? envelope.errors : undefined;
+      const failedUrls = new Set(
+        (cacheErrors ?? []).map((e) => (e && typeof e.url === "string" ? e.url : "")).filter(Boolean),
+      );
+      const succeededUrls = urls.filter((u) => !failedUrls.has(u));
+
+      if (Array.isArray(cached) && cached.length > 0) {
+        const reused = cached.filter((c) => (c as { reusedExisting?: boolean })?.reusedExisting).length;
+        toast.info(
+          t("upload.pdfCachedSummary", { total: cached.length, reused }),
+        );
+      }
+
+      if (cacheErrors && cacheErrors.length > 0 && succeededUrls.length > 0) {
+        toast.warning(
+          t("upload.pdfCachePartialFailure", {
+            failed: cacheErrors.length,
+            succeeded: succeededUrls.length,
+            total: urls.length,
+          }),
+        );
+      }
+
+      const newUrls = succeededUrls.map((url) => ({
         url,
         id: crypto.randomUUID(),
         company: extractCompanyFromUrl(url),
@@ -182,7 +220,7 @@ export function UploadTab() {
 
       setProcessedUrls((prev) => {
         const updatedUrls = [...prev, ...newUrls];
-        toast.success(t("upload.linksAdded", { count: urls.length }));
+        toast.success(t("upload.linksAdded", { count: succeededUrls.length }));
         return updatedUrls;
       });
 
