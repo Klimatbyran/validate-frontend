@@ -37,9 +37,12 @@ function extractTopLevelMunicipalityKey(obj: unknown): string | null {
 function normalizeMeasureType(raw: unknown): MeasureType {
   // New v4 files use "objective" | "intervention" (and may evolve).
   const s = typeof raw === "string" ? raw.trim().toLowerCase() : "";
-  if (s === "objective" || s === "outcome") return "outcome";
+  // Goals/objectives are treated as outcomes (targets/goals to be achieved).
+  if (s === "objective" || s === "outcome" || s === "goal") return "outcome";
   if (s === "activity_shift" || s === "activity shift") return "activity_shift";
   if (s === "intervention") return "intervention";
+  // Enabling environment is closer to interventions than outcomes for our current UI split.
+  if (s === "enabling_environment" || s === "enabling environment") return "intervention";
   return "uncategorized";
 }
 

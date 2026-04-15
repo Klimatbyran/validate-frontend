@@ -1,4 +1,4 @@
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { MunicipalityClimatePlan } from "../lib/types";
 import type { MeasureType } from "../lib/types";
 import type {
@@ -219,7 +219,7 @@ export function useMunicipalityVerificationDraft(municipality: MunicipalityClima
 
   // If persisted changes externally (e.g. other tab), merge in anything not modified locally.
   // We define "modified locally" as draft differing from persisted for that key.
-  useMemo(() => {
+  useEffect(() => {
     setDraft((prev) => {
       const next = { ...prev };
       for (const id of itemIds) {

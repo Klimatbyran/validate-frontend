@@ -23,6 +23,8 @@ type VerifiableItem =
       meta?: string;
       currentPlanPeriodStart?: string;
       currentPlanPeriodEnd?: string;
+      classificationReasoning?: string;
+      classificationNote?: string;
     }
   | {
       id: "primary_target";
@@ -30,6 +32,8 @@ type VerifiableItem =
       title: string;
       quote?: string;
       meta?: string;
+      classificationReasoning?: string;
+      classificationNote?: string;
     }
   | {
       id: `measure:${number}` | `own_commitment:${number}`;
@@ -217,10 +221,16 @@ function StatementCard({
             {t("common.correct")}
           </button>
           <button
-            onClick={() =>
+            onClick={() => {
+              const nextStatus = toggleStatus(record.status, "incorrect");
+              if (nextStatus !== "incorrect") {
+                onChange({ ...record, status: nextStatus });
+                return;
+              }
+
               onChange({
                 ...record,
-                status: toggleStatus(record.status, "incorrect"),
+                status: nextStatus,
                 // Prepopulate corrections from current extraction when entering incorrect state.
                 correctedMeasureType:
                   record.correctedMeasureType ??
@@ -247,8 +257,8 @@ function StatementCard({
                   (item.kind === "plan_period"
                     ? item.currentPlanPeriodEnd
                     : undefined),
-              })
-            }
+              });
+            }}
             className={cn(
               "inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors",
               statusButtonClasses(record.status === "incorrect", "incorrect"),
