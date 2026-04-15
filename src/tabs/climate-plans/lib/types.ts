@@ -61,6 +61,22 @@ export interface OwnCommitment {
   ghg_scopes_implicit: string[];
 }
 
+export type MeasureType = "outcome" | "activity_shift" | "intervention" | "uncategorized";
+
+export interface Measure {
+  measure_text: string;
+  measure_text_english?: string;
+  measure_type_reasoning?: string;
+  measure_type: MeasureType;
+  climate_relevance?: string;
+  sector?: string;
+  instrument_type?: string;
+  has_attached_target?: boolean;
+  activity_shift_type?: string;
+  intervention_type?: string;
+  classification_note?: string;
+}
+
 export interface ExternalReference {
   reference_description: string;
   source_organization: string;
@@ -119,6 +135,11 @@ export interface EmissionTargetsSummary {
 
 export interface EmissionTargetsData {
   own_commitments: OwnCommitment[];
+  /**
+   * Newer extraction format: explicit measures with `measure_type` (outcome/activity_shift/intervention).
+   * Optional to preserve backward compatibility with existing JSON.
+   */
+  measures?: Measure[];
   external_references: ExternalReference[];
   primary_target: PrimaryTarget;
   emissions_accounting: EmissionsAccounting;
@@ -145,4 +166,10 @@ export interface MunicipalityClimatePlan {
   name: string;
   planScope: PlanScopeData | null;
   emissionTargets: EmissionTargetsData | null;
+  /**
+   * New extraction file format (`plan_measures_*`) may exist independently
+   * of `emission_targets_*`. We store it here and let the UI prefer this
+   * when available.
+   */
+  measures?: Measure[];
 }

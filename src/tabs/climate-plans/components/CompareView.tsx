@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 interface CompareViewProps {
   municipalities: MunicipalityClimatePlan[];
   onSelectMunicipality: (id: string) => void;
+  showSummaryCards?: boolean;
 }
 
 type Category = "targets" | "timeline" | "framework" | "scope" | "accounting";
@@ -663,7 +664,11 @@ function GoalCard({ c }: { c: OwnCommitment }) {
 
 // --- Main ---
 
-export function CompareView({ municipalities, onSelectMunicipality }: CompareViewProps) {
+export function CompareView({
+  municipalities,
+  onSelectMunicipality,
+  showSummaryCards = true,
+}: CompareViewProps) {
   const { t } = useI18n();
   const [expandedCategory, setExpandedCategory] = useState<Category | null>(null);
 
@@ -682,15 +687,17 @@ export function CompareView({ municipalities, onSelectMunicipality }: CompareVie
   return (
     <div className="space-y-6">
       {/* Summary cards */}
-      <div className="flex gap-4 flex-wrap">
-        {municipalities.map((m) => (
-          <MunicipalitySummaryCard
-            key={m.id}
-            m={m}
-            onClick={() => onSelectMunicipality(m.id)}
-          />
-        ))}
-      </div>
+      {showSummaryCards && (
+        <div className="flex gap-4 flex-wrap">
+          {municipalities.map((m) => (
+            <MunicipalitySummaryCard
+              key={m.id}
+              m={m}
+              onClick={() => onSelectMunicipality(m.id)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Category drill-down */}
       <div className="space-y-2">

@@ -11,7 +11,17 @@
     "scrollToTop": "Scroll to top",
     "yes": "Yes",
     "no": "No",
-    "optional": "optional"
+    "optional": "optional",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "addNote": "Add note",
+    "addNotePlaceholder": "Add a note…",
+    "showQuote": "Show exact quote",
+    "hideQuote": "Hide exact quote",
+    "hideReviewed": "Hide reviewed",
+    "unsavedChange": "unsaved change",
+    "unsavedChanges": "unsaved changes",
+    "saveChanges": "Save changes"
   },
   "nav": {
     "upload": "Upload",
@@ -762,6 +772,14 @@
     "invalidUrl": "Must be a valid URL (e.g. https://example.com)"
   },
   "climate": {
+    "internalReviewTool": "Internal review tool",
+    "title": "Climate Plans",
+    "subtitle": "AI-extracted data from municipal climate plans. Review accuracy, compare across municipalities, and build ground truth.",
+    "notForPublicUse": "Not for public use",
+    "tabs": {
+      "verify": "Verify",
+      "overview": "Overview"
+    },
     "loading": "Loading climate plans...",
     "loadFailed": "Failed to load climate plans: {{error}}",
     "noneFound": "No climate plans found. Add municipality data to public/climate-plans/.",
@@ -771,6 +789,7 @@
     "addMoreToCompare": " — add more to compare",
     "detail": {
       "backToComparison": "Back to comparison",
+      "notFound": "Municipality not found.",
       "noDataAvailable": "No plan scope or emission targets data available for this municipality.",
       "summary": "Summary",
       "documentTitle": "Document title",
@@ -829,6 +848,67 @@
       "explicitGhgScopes": "Explicit GHG scopes",
       "implicitGhgScopes": "Implicit GHG scopes",
       "ghgScopeNotes": "GHG scope notes"
+    },
+    "verify": {
+      "queueTitle": "Verification Queue",
+      "queueSubtitle": "Review AI-extracted statements against source documents to establish ground truth data.",
+      "queueInstruction": "For each statement: confirm the AI classification is correct, or flag and correct it",
+      "correctTo": "Correct to:",
+      "showClassification": "Show classification details",
+      "hideClassification": "Hide classification details",
+      "measureTypeReasoning": "Measure type reasoning",
+      "classificationNote": "Classification note",
+      "fields": {
+        "measureType": "Measure type",
+        "outcomeType": "Outcome type",
+        "activityShiftType": "Activity shift type",
+        "planPeriodStart": "Plan start year",
+        "planPeriodEnd": "Plan end year",
+        "climateRelevance": "Climate relevance",
+        "sector": "Sector",
+        "instrumentType": "Instrument type"
+      },
+      "outcomeTypes": {
+        "overall": "Overall",
+        "sectorial": "Sectorial"
+      },
+      "measureTypes": {
+        "outcome": "Outcome (Goal)",
+        "activity_shift": "Activity Shift",
+        "intervention": "Intervention"
+      },
+      "totalVerified": "total verified",
+      "verificationProgress": "Verification progress",
+      "startVerification": "Start verification",
+      "remaining": "{{count}} statements remaining",
+      "allVerified": "All verified ✓",
+      "status": {
+        "notStarted": "Not started",
+        "inProgress": "In progress",
+        "complete": "Complete"
+      },
+      "categories": {
+        "outcomes": "Outcomes",
+        "activityShifts": "Activity Shifts",
+        "interventions": "Interventions"
+      }
+    },
+    "overview": {
+      "documentOverview": "Document overview",
+      "sections": {
+        "overview": "Overview",
+        "policy": "Policy Domain",
+        "targetsSummary": "Targets Summary",
+        "targetsAndGoals": "Targets & Goals",
+        "frameworks": "Frameworks",
+        "scopeTimeline": "Scope & Timeline",
+        "accounting": "Accounting"
+      },
+      "stats": {
+        "reductionGoals": "Reduction goals",
+        "implementationGoals": "Implementation goals",
+        "interventions": "Interventions"
+      }
     },
     "compare": {
       "mitigationAndAdaptation": "Mitigation + Adaptation",
