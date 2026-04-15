@@ -206,9 +206,13 @@
       },
       "deleteReportingPeriod": {
         "title": "Delete Reporting Period",
-        "comingSoon": "Delete function coming soon.",
+        "description": "This will permanently delete the reporting period for {{year}} from the database.",
         "trashAriaLabel": "Delete Reporting Period",
-        "ok": "OK"
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "deleting": "Deleting...",
+        "deleted": "Reporting period deleted.",
+        "failed": "Failed to delete reporting period: {{message}}"
       },
       "noIndustry": "No Industry",
       "selectIndustry": "Select Industry (GICS)",

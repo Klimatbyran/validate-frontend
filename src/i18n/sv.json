@@ -206,9 +206,13 @@
       },
       "deleteReportingPeriod": {
         "title": "Ta bort rapporteringsperiod",
-        "comingSoon": "Funktionen för att ta bort kommer snart.",
+        "description": "Detta tar permanent bort rapporteringsperioden för {{year}} från databasen.",
         "trashAriaLabel": "Ta bort rapporteringsperiod",
-        "ok": "OK"
+        "cancel": "Avbryt",
+        "confirm": "Ta bort",
+        "deleting": "Tar bort...",
+        "deleted": "Rapporteringsperiod borttagen.",
+        "failed": "Kunde inte ta bort rapporteringsperiod: {{message}}"
       },
       "noIndustry": "Ingen bransch",
       "selectIndustry": "Välj bransch (GICS)",
