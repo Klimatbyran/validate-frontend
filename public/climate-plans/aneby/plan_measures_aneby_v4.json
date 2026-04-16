@@ -1,0 +1,595 @@
+{
+  "Aneby": {
+    "measures": [
+      {
+        "measure_text": "År 2020 ska koldioxidutsläppen vara högst 1000 kg per person och år.",
+        "measure_type": "objective",
+        "climate_relevance": "mitigation",
+        "sector": "cross_cutting",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with a clear target but no specific action described."
+      },
+      {
+        "measure_text": "År 2025 ska Aneby kommuns verksamheter vara klimatneutrala.",
+        "measure_type": "objective",
+        "climate_relevance": "mitigation",
+        "sector": "cross_cutting",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with a clear target but no specific action described."
+      },
+      {
+        "measure_text": "Byggnader som ägs av Aneby kommun ska senast år 2012 värmas med förnybara energikällor.",
+        "measure_type": "intervention",
+        "climate_relevance": "mitigation",
+        "sector": "buildings_energy",
+        "instrument_type": "consumption_role_model",
+        "has_attached_target": true,
+        "activity_shift_indicated": "replace fossil heating with renewable energy in municipal buildings",
+        "activity_shift_explicit": true,
+        "intervention_type": "direct",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "År 2025 ska andelen invånare som bor på ett attraktivt avstånd till kollektivtrafik (närmare än 400 m fågelvägen) vara minst 50 %.",
+        "measure_type": "objective",
+        "climate_relevance": "mitigation",
+        "sector": "transport",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with a clear target but no specific action described."
+      },
+      {
+        "measure_text": "År 2015 ska det finnas minst 13 km cykelväg i Aneby kommun.",
+        "measure_type": "intervention",
+        "climate_relevance": "mitigation",
+        "sector": "transport",
+        "instrument_type": "supply",
+        "has_attached_target": true,
+        "activity_shift_indicated": "increase cycling infrastructure",
+        "activity_shift_explicit": true,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "År 2020 ska alla fordon vara miljögodkända som kommunen äger (Räddningstjänstens fordon undantagna) samt i möjligaste mån även anlitade entreprenörers fordon.",
+        "measure_type": "intervention",
+        "climate_relevance": "mitigation",
+        "sector": "transport",
+        "instrument_type": "consumption_role_model",
+        "has_attached_target": true,
+        "activity_shift_indicated": "replace municipal fleet with environmentally approved vehicles",
+        "activity_shift_explicit": true,
+        "intervention_type": "direct",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "År 2025 ska Aneby kommun ha en fordonspark som är oberoende av fossila bränslen.",
+        "measure_type": "objective",
+        "climate_relevance": "mitigation",
+        "sector": "transport",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with a clear target but no specific action described."
+      },
+      {
+        "measure_text": "År 2020 ska samtliga förbränningsanordningar för eldning av fastbränsle för uppvärmning och varmvattenproduktion inom område med detaljplan, områdesbestämmelser eller samlad bebyggelse i kommunen vara miljögodkända eller vara försedda med ackumulatortankar.",
+        "measure_type": "intervention",
+        "climate_relevance": "mitigation",
+        "sector": "buildings_energy",
+        "instrument_type": "regulatory_control",
+        "has_attached_target": true,
+        "activity_shift_indicated": "upgrade heating systems to environmentally approved standards",
+        "activity_shift_explicit": true,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Anslutningen till fjärrvärme ska fortsätta att öka.",
+        "measure_type": "intervention",
+        "climate_relevance": "mitigation",
+        "sector": "buildings_energy",
+        "instrument_type": "supply",
+        "has_attached_target": false,
+        "activity_shift_indicated": "increase district heating connections",
+        "activity_shift_explicit": false,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Senast år 2013 ska alla kommunens egna verksamheter vara miljöcertifierade eller miljödiplomerade.",
+        "measure_type": "intervention",
+        "climate_relevance": "mitigation",
+        "sector": "cross_cutting",
+        "instrument_type": "consumption_role_model",
+        "has_attached_target": true,
+        "activity_shift_indicated": "achieve environmental certification for municipal operations",
+        "activity_shift_explicit": true,
+        "intervention_type": "direct",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "År 2020 ska kvicksilverhalten i fisk i kommunens sjöar och vattendrag underskrida gränsvärden för konsumtion.",
+        "measure_type": "objective",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with a clear target but no specific action described."
+      },
+      {
+        "measure_text": "Kommunens egna fastighetsbestånd ska avveckla användningen av CFC och HCFC före år 2013.",
+        "measure_type": "intervention",
+        "climate_relevance": "mitigation",
+        "sector": "buildings_energy",
+        "instrument_type": "consumption_role_model",
+        "has_attached_target": true,
+        "activity_shift_indicated": "eliminate CFC and HCFC use in municipal properties",
+        "activity_shift_explicit": true,
+        "intervention_type": "direct",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "År 2025 ska inga bostäder, skolor eller förskolor finnas inom skyddszon för elektriskt/magnetiskt fält.",
+        "measure_type": "objective",
+        "climate_relevance": "adaptation",
+        "sector": "buildings_energy",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with a clear target but no specific action described."
+      },
+      {
+        "measure_text": "Senast år 2011 ska kommunen, i samverkan med länsstyrelsen, utvecklat vatten- och avloppsplan för hela kommunens geografiska område.",
+        "measure_type": "enabling_environment",
+        "climate_relevance": "adaptation",
+        "sector": "waste_circular_economy",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "År 2025 ska samtliga sjöar och vattendrag i Aneby kommun ha statusklassificeringen God eller högre med avseende på näringsämnen.",
+        "measure_type": "objective",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with a clear target but no specific action described."
+      },
+      {
+        "measure_text": "Senast år 2015 ska det säkerställas att de kommunala reningsverken fungerar tillfredsställande, även vid elavbrott och vid stora nederbördsmängder.",
+        "measure_type": "intervention",
+        "climate_relevance": "adaptation",
+        "sector": "waste_circular_economy",
+        "instrument_type": "supply",
+        "has_attached_target": true,
+        "activity_shift_indicated": "ensure wastewater treatment plant resilience",
+        "activity_shift_explicit": true,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Senast år 2011 ska nytt vattenskyddsområde för Aneby vattentäkt antas.",
+        "measure_type": "intervention",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "regulatory_control",
+        "has_attached_target": true,
+        "activity_shift_indicated": "establish new water protection areas",
+        "activity_shift_explicit": true,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Senast år 2012 ska nya vattenskyddsområden för övriga kommunala vattentäkter antas.",
+        "measure_type": "intervention",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "regulatory_control",
+        "has_attached_target": true,
+        "activity_shift_indicated": "establish new water protection areas",
+        "activity_shift_explicit": true,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Senast 2015 ska övriga vattentäkter som används för uttag av vatten som är avsett att användas som dricksvatten och som ger mer än 10 kbm/dag i genomsnitt eller som försörjer mer än 50 personer ha ett långsiktigt skydd.",
+        "measure_type": "intervention",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "regulatory_control",
+        "has_attached_target": true,
+        "activity_shift_indicated": "ensure long-term protection for water sources",
+        "activity_shift_explicit": true,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Senast år 2011 ska alla vattenförekomster som omfattas av Livsmedelsverkets föreskrifter om dricksvatten uppfylla gällande regler och normer för dricksvatten av god kvalitet.",
+        "measure_type": "intervention",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "regulatory_control",
+        "has_attached_target": true,
+        "activity_shift_indicated": "comply with drinking water quality standards",
+        "activity_shift_explicit": true,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Inventerade våtmarker ska märkas ut i översiktsplan.",
+        "measure_type": "enabling_environment",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "foundational",
+        "has_attached_target": false,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Samråd ska ske med Skogsstyrelsen innan skogsväg anläggs.",
+        "measure_type": "intervention",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "regulatory_control",
+        "has_attached_target": false,
+        "activity_shift_indicated": "consult before constructing forest roads",
+        "activity_shift_explicit": true,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Skyddsvärd skog, såsom riksintressen, ska långsiktigt skyddas.",
+        "measure_type": "objective",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "foundational",
+        "has_attached_target": false,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with no specific action described."
+      },
+      {
+        "measure_text": "Kommunen ska verka för att skogsmarken ska brukas på ett sådant sätt att fornlämningar inte skadas och så att skador på övriga kända värdefulla natur- och kulturlämningar är försumbara.",
+        "measure_type": "intervention",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "regulatory_control",
+        "has_attached_target": false,
+        "activity_shift_indicated": "protect cultural and natural heritage in forestry",
+        "activity_shift_explicit": true,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "För att skydda skogens kulturmiljövärden och sociala värden samt värna om skogsmarken som produktionsyta bör inga nya luftledningar för kraftöverföring tillåtas.",
+        "measure_type": "intervention",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "regulatory_control",
+        "has_attached_target": false,
+        "activity_shift_indicated": "prevent new overhead power lines in forests",
+        "activity_shift_explicit": true,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Areal värdefull ängs- och hagmark ska inte minska.",
+        "measure_type": "objective",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "foundational",
+        "has_attached_target": false,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with no specific action described."
+      },
+      {
+        "measure_text": "Mängden småbiotoper i odlingslandskapet, som ägs av kommunen, ska från och med år 2010 inte minska från 2010 års nivå.",
+        "measure_type": "objective",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with a clear target but no specific action described."
+      },
+      {
+        "measure_text": "Vid utgången av 2015 ska den ekologiskt odlade jordbruksmarken minst uppgå till 30 procent av jordbruksmarken i kommunen.",
+        "measure_type": "objective",
+        "climate_relevance": "adaptation",
+        "sector": "food_agriculture",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with a clear target but no specific action described."
+      },
+      {
+        "measure_text": "Minst 10 % av kommunens inköp av livsmedel ska avse ekologiska livsmedel senast år 2015.",
+        "measure_type": "intervention",
+        "climate_relevance": "mitigation",
+        "sector": "consumption_procurement",
+        "instrument_type": "consumption_role_model",
+        "has_attached_target": true,
+        "activity_shift_indicated": "increase procurement of organic food",
+        "activity_shift_explicit": true,
+        "intervention_type": "direct",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Jordbruksmarken ska brukas på ett sådant sätt att fornlämningar inte skadas och så att skador på övriga kända värdefulla natur- och kulturlämningar är försumbara.",
+        "measure_type": "intervention",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "regulatory_control",
+        "has_attached_target": false,
+        "activity_shift_indicated": "protect cultural and natural heritage in agriculture",
+        "activity_shift_explicit": true,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Bebyggelsens kulturhistoriska värden ska senast år 2015 vara identifierade och ha ett långsiktigt hållbart skydd.",
+        "measure_type": "objective",
+        "climate_relevance": "adaptation",
+        "sector": "buildings_energy",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with a clear target but no specific action described."
+      },
+      {
+        "measure_text": "Senast år 2011 ska ny avfallsplan tas fram.",
+        "measure_type": "enabling_environment",
+        "climate_relevance": "mitigation",
+        "sector": "waste_circular_economy",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "År 2020 ska byggnader och deras egenskaper inte påverka hälsan negativt.",
+        "measure_type": "objective",
+        "climate_relevance": "adaptation",
+        "sector": "buildings_energy",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with a clear target but no specific action described."
+      },
+      {
+        "measure_text": "Aneby kommun ska verka för rökfria arbetsplatser och ett aktivt rökavvänjningsarbete.",
+        "measure_type": "intervention",
+        "climate_relevance": "mitigation",
+        "sector": "cross_cutting",
+        "instrument_type": "information",
+        "has_attached_target": false,
+        "activity_shift_indicated": "promote smoke-free workplaces",
+        "activity_shift_explicit": true,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Senast år 2025 ska minst 10 % av den totala land- och vattenytan i kommunen vara skyddad.",
+        "measure_type": "objective",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "foundational",
+        "has_attached_target": true,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with a clear target but no specific action described."
+      },
+      {
+        "measure_text": "Hyllingen ska restaureras senast år 2012.",
+        "measure_type": "intervention",
+        "climate_relevance": "adaptation",
+        "sector": "land_use_green_infrastructure",
+        "instrument_type": "supply",
+        "has_attached_target": true,
+        "activity_shift_indicated": "restore Hyllingen wetland",
+        "activity_shift_explicit": true,
+        "intervention_type": "indirect",
+        "classification_note": ""
+      },
+      {
+        "measure_text": "Antalet lantraser och kulturväxter på Åsens by bibehålls eller ökar.",
+        "measure_type": "objective",
+        "climate_relevance": "adaptation",
+        "sector": "food_agriculture",
+        "instrument_type": "foundational",
+        "has_attached_target": false,
+        "activity_shift_indicated": "",
+        "activity_shift_explicit": false,
+        "intervention_type": "foundational",
+        "classification_note": "Objective with no specific action described."
+      }
+    ],
+    "measures_inventory": {
+      "total_count_stated": "",
+      "total_count_estimated": "34",
+      "total_count_confidence": "medium",
+      "total_count_confidence_note": "The measures were extracted from the document based on section headings and specific targets or actions mentioned. Some measures are objectives without specific actions, which may lead to ambiguity in counting.",
+      "mitigation_count_estimated": "11",
+      "adaptation_count_estimated": "16",
+      "mixed_count_estimated": "0",
+      "mitigation_adaptation_split_confidence": "medium",
+      "mitigation_adaptation_split_confidence_note": "The split between mitigation and adaptation was inferred from the context and specific targets. Some measures are foundational or objectives, making the split less clear.",
+      "measures_organised": true,
+      "organisation_format": "The measures are presented in sections with specific targets and objectives.",
+      "has_responsible_actors": false,
+      "responsible_actors_note": "The plan does not specify responsible actors for the measures.",
+      "has_timelines": true,
+      "has_indicators": false,
+      "has_cost_estimates": false,
+      "structure_evidence": [
+        {
+          "illustrates": "measure_format",
+          "quote": "The measures are presented in sections with specific targets and objectives."
+        },
+        {
+          "illustrates": "timelines",
+          "quote": "Specific years are mentioned for achieving targets, such as 'År 2020 ska koldioxidutsläppen vara högst 1000 kg per person och år.'"
+        }
+      ]
+    },
+    "policy_instruments": {
+      "regulatory_control": {
+        "present": true,
+        "count_estimated": "6",
+        "target_actors": "external_actors_only",
+        "binding_strength": "binding_requirements"
+      },
+      "fiscal_incentives": {
+        "present": false,
+        "count_estimated": "",
+        "target_actors": "not_applicable",
+        "binding_strength": "not_applicable"
+      },
+      "supply": {
+        "present": true,
+        "count_estimated": "3",
+        "target_actors": "external_actors_only",
+        "binding_strength": "enabling_or_support"
+      },
+      "information": {
+        "present": true,
+        "count_estimated": "1",
+        "target_actors": "external_actors_only",
+        "binding_strength": "aspirational_or_informational"
+      },
+      "consumption_role_model": {
+        "present": true,
+        "count_estimated": "4",
+        "target_actors": "own_operations_only",
+        "binding_strength": "firm_commitments"
+      },
+      "foundational": {
+        "present": true,
+        "count_estimated": "10",
+        "target_actors": "not_applicable",
+        "binding_strength": "aspirational_or_informational"
+      },
+      "dominant_instrument_types": [
+        "foundational",
+        "regulatory_control",
+        "consumption_role_model"
+      ],
+      "instrument_mix_notes": "The plan emphasizes foundational measures and regulatory controls, with a focus on municipal operations as a role model. There is a notable absence of fiscal incentives."
+    },
+    "sectoral_coverage": {
+      "transport": {
+        "covered": true,
+        "measure_count_estimated": "4",
+        "coverage_depth": "moderate",
+        "coverage_confidence": "medium",
+        "has_attached_targets": true,
+        "target_attachment_notes": "Targets include increasing cycling infrastructure and environmentally approved vehicles.",
+        "absence_reason": "not_applicable"
+      },
+      "buildings_energy": {
+        "covered": true,
+        "measure_count_estimated": "5",
+        "coverage_depth": "moderate",
+        "coverage_confidence": "medium",
+        "has_attached_targets": true,
+        "target_attachment_notes": "Targets include renewable energy for municipal buildings and eliminating CFC/HCFC use.",
+        "absence_reason": "not_applicable"
+      },
+      "land_use_green_infrastructure": {
+        "covered": true,
+        "measure_count_estimated": "10",
+        "coverage_depth": "comprehensive",
+        "coverage_confidence": "high",
+        "has_attached_targets": true,
+        "target_attachment_notes": "Includes protection of water sources and ecological status of water bodies.",
+        "absence_reason": "not_applicable"
+      },
+      "waste_circular_economy": {
+        "covered": true,
+        "measure_count_estimated": "3",
+        "coverage_depth": "moderate",
+        "coverage_confidence": "medium",
+        "has_attached_targets": true,
+        "target_attachment_notes": "Includes development of a new waste plan and ensuring wastewater treatment resilience.",
+        "absence_reason": "not_applicable"
+      },
+      "food_agriculture": {
+        "covered": true,
+        "measure_count_estimated": "3",
+        "coverage_depth": "limited",
+        "coverage_confidence": "medium",
+        "has_attached_targets": true,
+        "target_attachment_notes": "Targets include increasing organic farming and procurement of organic food.",
+        "absence_reason": "not_applicable"
+      },
+      "industry_business": {
+        "covered": false,
+        "measure_count_estimated": "",
+        "coverage_depth": "not_applicable",
+        "coverage_confidence": "high",
+        "has_attached_targets": false,
+        "target_attachment_notes": "",
+        "absence_reason": "not_mentioned"
+      },
+      "consumption_procurement": {
+        "covered": true,
+        "measure_count_estimated": "1",
+        "coverage_depth": "limited",
+        "coverage_confidence": "medium",
+        "has_attached_targets": true,
+        "target_attachment_notes": "Target for procurement of organic food.",
+        "absence_reason": "not_applicable"
+      },
+      "other_sectors": [],
+      "sector_coverage_notes": "The plan covers a broad range of sectors with a strong focus on land use and green infrastructure. Industry and business are notably absent."
+    },
+    "summary": {
+      "action_orientation": "medium",
+      "implementation_readiness": "medium",
+      "overall_assessment": "The plan includes a mix of foundational objectives and specific interventions, with a strong focus on municipal operations and regulatory measures. However, it lacks fiscal incentives and detailed implementation plans, such as responsible actors and cost estimates."
+    }
+  },
+  "_version": "v4"
+}

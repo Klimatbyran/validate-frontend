@@ -1,91 +1,179 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
-  ClimatePlanIndex,
   MunicipalityClimatePlan,
   PlanScopeData,
   EmissionTargetsData,
+  Measure,
+  MeasureType,
 } from "../lib/types";
+
+type FileKind = "plan_scope" | "emission_targets" | "plan_measures";
+
+type ParsedPath = {
+  folder: string;
+  kind: FileKind;
+  version: number;
+};
+
+function parseClimatePlanFilePath(path: string): ParsedPath | null {
+  // Expect: /Users/.../public/climate-plans/<folder>/<kind>_<folder>_v<version>.json
+  const normalized = path.replaceAll("\\", "/");
+  const m =
+    normalized.match(/\/public\/climate-plans\/([^/]+)\/(plan_scope|emission_targets|plan_measures)_[^/]+_v(\d+)\.json$/);
+  if (!m) return null;
+  return {
+    folder: m[1],
+    kind: m[2] as FileKind,
+    version: Number(m[3]) || 0,
+  };
+}
+
+function extractTopLevelMunicipalityKey(obj: unknown): string | null {
+  if (!obj || typeof obj !== "object") return null;
+  const keys = Object.keys(obj as Record<string, unknown>);
+  return keys.find((k) => k !== "_version") ?? null;
+}
+
+function normalizeMeasureType(raw: unknown): MeasureType {
+  // New v4 files use "objective" | "intervention" (and may evolve).
+  const s = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+  // Goals/objectives are treated as outcomes (targets/goals to be achieved).
+  if (s === "objective" || s === "outcome" || s === "goal") return "outcome";
+  if (s === "activity_shift" || s === "activity shift") return "activity_shift";
+  if (s === "intervention") return "intervention";
+  // Enabling environment is closer to interventions than outcomes for our current UI split.
+  if (s === "enabling_environment" || s === "enabling environment") return "intervention";
+  return "uncategorized";
+}
+
+function normalizeMeasures(rawMeasures: unknown): Measure[] {
+  if (!Array.isArray(rawMeasures)) return [];
+  return rawMeasures
+    .map((m) => {
+      const r = (m ?? {}) as Record<string, unknown>;
+      const measure_text = typeof r.measure_text === "string" ? r.measure_text : "";
+      if (!measure_text) return null;
+      const normalized: Measure = {
+        measure_text,
+        measure_text_english:
+          typeof r.measure_text_english === "string" ? r.measure_text_english : undefined,
+        measure_type_reasoning:
+          typeof r.measure_type_reasoning === "string" ? r.measure_type_reasoning : undefined,
+        measure_type: normalizeMeasureType(r.measure_type),
+        climate_relevance:
+          typeof r.climate_relevance === "string" ? r.climate_relevance : undefined,
+        sector: typeof r.sector === "string" ? r.sector : undefined,
+        instrument_type:
+          typeof r.instrument_type === "string" ? r.instrument_type : undefined,
+        has_attached_target:
+          typeof r.has_attached_target === "boolean" ? r.has_attached_target : undefined,
+        // v4 uses `activity_shift_indicated`/`activity_shift_explicit`; older uses `activity_shift_type`
+        activity_shift_type:
+          typeof r.activity_shift_type === "string"
+            ? r.activity_shift_type
+            : typeof r.activity_shift_indicated === "string"
+              ? r.activity_shift_indicated
+              : undefined,
+        intervention_type:
+          typeof r.intervention_type === "string" ? r.intervention_type : undefined,
+        classification_note:
+          typeof r.classification_note === "string" ? r.classification_note : undefined,
+      };
+      return normalized;
+    })
+    .filter((x): x is Measure => Boolean(x));
+}
 
 export function useClimatePlans() {
   const [municipalities, setMunicipalities] = useState<MunicipalityClimatePlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const allFiles = useMemo(() => {
+    // Build-time discovery of ALL JSON files under public/climate-plans/**.
+    // This removes the need to keep `index.json` updated manually.
+    return import.meta.glob("../../../../public/climate-plans/**/*.json", {
+      eager: true,
+      query: "?raw",
+      import: "default",
+    }) as Record<string, string>;
+  }, []);
+
   useEffect(() => {
-    let cancelled = false;
+    try {
+      const grouped = new Map<
+        string,
+        Partial<Record<FileKind, { version: number; raw: unknown; key: string | null; obj: Record<string, unknown> | null }>>
+      >();
 
-    async function load() {
-      try {
-        const indexRes = await fetch("/climate-plans/index.json");
-        if (!indexRes.ok) {
-          throw new Error("Climate plans index not found. Add public/climate-plans/ with municipality subfolders and JSON data.");
-        }
-        const text = await indexRes.text();
-        if (!text.trim().startsWith("{")) {
-          throw new Error("Climate plans index not found. Add public/climate-plans/ with municipality subfolders and JSON data.");
-        }
-        const index: ClimatePlanIndex = JSON.parse(text);
+      for (const [path, rawText] of Object.entries(allFiles)) {
+        const info = parseClimatePlanFilePath(path);
+        if (!info) continue;
+        const parsed = JSON.parse(rawText) as unknown;
+        const obj = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+        const key = extractTopLevelMunicipalityKey(obj);
 
-        const plans: MunicipalityClimatePlan[] = [];
-
-        for (const entry of index.municipalities) {
-          const base = `/climate-plans/${entry.folder}`;
-
-          const fetches = await Promise.all([
-            entry.files.plan_scope ? fetch(`${base}/${entry.files.plan_scope}`) : null,
-            entry.files.emission_targets ? fetch(`${base}/${entry.files.emission_targets}`) : null,
-          ]);
-
-          const [planScopeRes, emissionTargetsRes] = fetches;
-
-          if ((!planScopeRes || !planScopeRes.ok) && (!emissionTargetsRes || !emissionTargetsRes.ok)) {
-            console.warn(`Failed to load data for ${entry.id}, skipping`);
-            continue;
-          }
-
-          let planScopeRaw: unknown = null;
-          let emissionTargetsRaw: unknown = null;
-          if (planScopeRes?.ok) {
-            const t = await planScopeRes.text();
-            if (t.trim().startsWith("{")) planScopeRaw = JSON.parse(t);
-          }
-          if (emissionTargetsRes?.ok) {
-            const t = await emissionTargetsRes.text();
-            if (t.trim().startsWith("{")) emissionTargetsRaw = JSON.parse(t);
-          }
-
-          // Extract municipality data from top-level key (first non-_version key)
-          const planScopeObj = planScopeRaw && typeof planScopeRaw === "object" ? (planScopeRaw as Record<string, unknown>) : null;
-          const emissionTargetsObj = emissionTargetsRaw && typeof emissionTargetsRaw === "object" ? (emissionTargetsRaw as Record<string, unknown>) : null;
-          const planScopeKey = planScopeObj ? Object.keys(planScopeObj).find((k) => k !== "_version") ?? null : null;
-          const emissionTargetsKey = emissionTargetsObj ? Object.keys(emissionTargetsObj).find((k) => k !== "_version") ?? null : null;
-
-          // Use the JSON top-level key as display name, fall back to manifest name
-          const displayName = planScopeKey || emissionTargetsKey || entry.name;
-
-          plans.push({
-            id: entry.id,
-            name: displayName,
-            planScope: planScopeKey && planScopeObj ? (planScopeObj[planScopeKey] as PlanScopeData) : null,
-            emissionTargets: emissionTargetsKey && emissionTargetsObj ? (emissionTargetsObj[emissionTargetsKey] as EmissionTargetsData) : null,
-          });
-        }
-
-        if (!cancelled) {
-          setMunicipalities(plans);
-          setIsLoading(false);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Unknown error");
-          setIsLoading(false);
+        const byFolder = grouped.get(info.folder) ?? {};
+        const existing = byFolder[info.kind];
+        if (!existing || info.version > existing.version) {
+          byFolder[info.kind] = { version: info.version, raw: parsed, key, obj };
+          grouped.set(info.folder, byFolder);
         }
       }
-    }
 
-    load();
-    return () => { cancelled = true; };
-  }, []);
+      const plans: MunicipalityClimatePlan[] = [];
+
+      for (const [folder, files] of grouped.entries()) {
+        const planScopeKey = files.plan_scope?.key ?? null;
+        const emissionTargetsKey = files.emission_targets?.key ?? null;
+        const measuresKey = files.plan_measures?.key ?? null;
+
+        const planScope =
+          planScopeKey && files.plan_scope?.obj
+            ? (files.plan_scope.obj[planScopeKey] as PlanScopeData)
+            : null;
+        const emissionTargets =
+          emissionTargetsKey && files.emission_targets?.obj
+            ? (files.emission_targets.obj[emissionTargetsKey] as EmissionTargetsData)
+            : null;
+
+        let measures: Measure[] | undefined;
+        if (measuresKey && files.plan_measures?.obj) {
+          const payload = files.plan_measures.obj[measuresKey] as unknown;
+          const measuresArr =
+            payload && typeof payload === "object"
+              ? (payload as Record<string, unknown>).measures
+              : undefined;
+          const normalized = normalizeMeasures(measuresArr);
+          if (normalized.length > 0) measures = normalized;
+        }
+
+        const displayName = planScopeKey || emissionTargetsKey || measuresKey || folder;
+
+        // Merge measures into emissionTargets when present, while also exposing `municipality.measures`.
+        const mergedEmissionTargets =
+          emissionTargets && measures && (!emissionTargets.measures || emissionTargets.measures.length === 0)
+            ? { ...emissionTargets, measures }
+            : emissionTargets;
+
+        plans.push({
+          id: folder,
+          name: displayName,
+          planScope,
+          emissionTargets: mergedEmissionTargets,
+          measures,
+        });
+      }
+
+      plans.sort((a, b) => a.name.localeCompare(b.name));
+      setMunicipalities(plans);
+      setIsLoading(false);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+      setIsLoading(false);
+    }
+  }, [allFiles]);
 
   return { municipalities, isLoading, error };
 }

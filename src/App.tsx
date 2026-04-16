@@ -4,7 +4,8 @@ import { AuthCallback } from "@/pages/AuthCallback";
 import { GlobalLoginModal } from "@/components/GlobalLoginModal";
 import SlideshowPage from "@/pages/SlideshowPage";
 import { MainLayout } from "@/layouts/MainLayout";
-import { ClimatePlansExplorer } from "@/tabs/climate-plans/ClimatePlansExplorer";
+import { ClimatePlanTab } from "@/tabs/climate-plans/ClimatePlanTab";
+import { ClimatePlanMunicipality } from "@/tabs/climate-plans/ClimatePlanMunicipality";
 import { CrawlerTab } from "@/tabs/crawler/CrawlerTab";
 import { DebugTab } from "@/tabs/debug/DebugTab";
 import { EditorTab } from "@/tabs/editor/EditorTab";
@@ -41,7 +42,11 @@ function App() {
             element={<Navigate to="/editor" replace />}
           />
           <Route path="/editor" element={<EditorTab />} />
-          <Route path="/climate-plans" element={<ClimatePlansExplorer />} />
+          <Route path="/climate-plans" element={<ClimatePlanTab />} />
+          <Route
+            path="/climate-plans/:municipalityId"
+            element={<ClimatePlanMunicipality />}
+          />
         </Route>
         <Route path="*" element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />} />
       </Routes>

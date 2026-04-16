@@ -11,7 +11,17 @@
     "scrollToTop": "Scrolla till toppen",
     "yes": "Ja",
     "no": "Nej",
-    "optional": "valfritt"
+    "optional": "valfritt",
+    "correct": "Korrekt",
+    "incorrect": "Felaktigt",
+    "addNote": "Lägg till anteckning",
+    "addNotePlaceholder": "Lägg till en anteckning…",
+    "showQuote": "Visa exakt citat",
+    "hideQuote": "Dölj exakt citat",
+    "hideReviewed": "Dölj granskade",
+    "unsavedChange": "osparad ändring",
+    "unsavedChanges": "osparade ändringar",
+    "saveChanges": "Spara ändringar"
   },
   "nav": {
     "upload": "Ladda upp",
@@ -774,6 +784,14 @@
     "invalidUrl": "Måste vara en giltig URL (t.ex. https://example.com)"
   },
   "climate": {
+    "internalReviewTool": "Internt granskningsverktyg",
+    "title": "Klimatplaner",
+    "subtitle": "AI-extraherad data från kommunala klimatplaner. Granska noggrannhet, jämför mellan kommuner och bygg ground truth.",
+    "notForPublicUse": "Inte för offentlig användning",
+    "tabs": {
+      "verify": "Verifiera",
+      "overview": "Översikt"
+    },
     "loading": "Laddar klimatplaner...",
     "loadFailed": "Kunde inte ladda klimatplaner: {{error}}",
     "noneFound": "Inga klimatplaner hittades. Lägg till kommundata i public/climate-plans/.",
@@ -783,6 +801,7 @@
     "addMoreToCompare": " — lägg till fler för att jämföra",
     "detail": {
       "backToComparison": "Tillbaka till jämförelse",
+      "notFound": "Kommunen hittades inte.",
       "noDataAvailable": "Ingen planomfattning eller utsläppsmålsdata tillgänglig för denna kommun.",
       "summary": "Sammanfattning",
       "documentTitle": "Dokumenttitel",
@@ -841,6 +860,67 @@
       "explicitGhgScopes": "Explicita GHG-omfång",
       "implicitGhgScopes": "Implicita GHG-omfång",
       "ghgScopeNotes": "GHG-omfångsanteckningar"
+    },
+    "verify": {
+      "queueTitle": "Verifieringskö",
+      "queueSubtitle": "Granska AI-extraherade påståenden mot källdokument för att etablera ground truth-data.",
+      "queueInstruction": "För varje påstående: bekräfta att AI-klassificeringen är korrekt, eller flagga och korrigera den",
+      "correctTo": "Korrigera till:",
+      "showClassification": "Visa klassificeringsdetaljer",
+      "hideClassification": "Dölj klassificeringsdetaljer",
+      "measureTypeReasoning": "Resonemang för åtgärdstyp",
+      "classificationNote": "Klassificeringsanteckning",
+      "fields": {
+        "measureType": "Åtgärdstyp",
+        "outcomeType": "Utfaltyp",
+        "activityShiftType": "Aktivitetsförflyttningstyp",
+        "planPeriodStart": "Planens startår",
+        "planPeriodEnd": "Planens slutår",
+        "climateRelevance": "Klimatrelevans",
+        "sector": "Sektor",
+        "instrumentType": "Instrumenttyp"
+      },
+      "outcomeTypes": {
+        "overall": "Övergripande",
+        "sectorial": "Sektoriell"
+      },
+      "measureTypes": {
+        "outcome": "Utfall (mål)",
+        "activity_shift": "Aktivitetsförflyttning",
+        "intervention": "Intervention"
+      },
+      "totalVerified": "totalt verifierade",
+      "verificationProgress": "Verifieringsprogress",
+      "startVerification": "Starta verifiering",
+      "remaining": "{{count}} påståenden kvar",
+      "allVerified": "Alla verifierade ✓",
+      "status": {
+        "notStarted": "Inte påbörjad",
+        "inProgress": "Pågår",
+        "complete": "Klar"
+      },
+      "categories": {
+        "outcomes": "Utfall",
+        "activityShifts": "Aktivitetsförflyttningar",
+        "interventions": "Interventioner"
+      }
+    },
+    "overview": {
+      "documentOverview": "Dokumentöversikt",
+      "sections": {
+        "overview": "Översikt",
+        "policy": "Policyområde",
+        "targetsSummary": "Målsummering",
+        "targetsAndGoals": "Mål och target",
+        "frameworks": "Ramverk",
+        "scopeTimeline": "Omfattning och tidslinje",
+        "accounting": "Redovisning"
+      },
+      "stats": {
+        "reductionGoals": "Reduktionsmål",
+        "implementationGoals": "Genomförandemål",
+        "interventions": "Interventioner"
+      }
     },
     "compare": {
       "mitigationAndAdaptation": "Mitigering + anpassning",
