@@ -24,6 +24,64 @@ function getStatusLabelKey(status: string, isActive?: boolean): string {
   return keyMap[status] ?? "status.waiting";
 }
 
+function extractGarboChunkFromSaveToApiJob(job: any): string | null {
+  const pieces: string[] = [];
+  if (typeof job?.failedReason === "string") pieces.push(job.failedReason);
+  if (Array.isArray(job?.stacktrace)) pieces.push(job.stacktrace.join("\n"));
+  if (job?.returnvalue) {
+    try {
+      pieces.push(
+        typeof job.returnvalue === "string"
+          ? job.returnvalue
+          : JSON.stringify(job.returnvalue)
+      );
+    } catch {
+      // ignore
+    }
+  }
+
+  const text = pieces.join("\n");
+
+  // Prefer the structured error details we added in Garbo: details.garboChunk
+  const m1 = text.match(/"garboChunk"\s*:\s*"([^"]+)"/);
+  if (m1?.[1]) return m1[1];
+
+  // Fallback: header echoed back by API error handler
+  const m2 = text.match(/x-garbo-chunk["']?\s*[:=]\s*["']?([a-z0-9_-]+)["']?/i);
+  if (m2?.[1]) return m2[1];
+
+  return null;
+}
+
+function summarizeSaveToApiPayload(job: any): {
+  subEndpoint?: string;
+  keys?: string;
+  error?: string;
+} {
+  const subEndpoint =
+    typeof job?.data?.apiSubEndpoint === "string" ? job.data.apiSubEndpoint : undefined;
+
+  let keys: string | undefined;
+  const body = job?.data?.body;
+  if (body && typeof body === "object" && !Array.isArray(body)) {
+    const topKeys = Object.keys(body).slice(0, 10);
+    keys = topKeys.length ? topKeys.join(", ") : undefined;
+  }
+
+  const failedReason =
+    typeof job?.failedReason === "string" && job.failedReason.trim()
+      ? job.failedReason.trim()
+      : undefined;
+
+  // Occasionally the error message is nested in returnvalue when bubbled up.
+  const returnValueString =
+    typeof job?.returnvalue === "string" ? job.returnvalue : undefined;
+
+  const error = failedReason || returnValueString;
+
+  return { subEndpoint: subEndpoint || undefined, keys, error };
+}
+
 interface JobStatusSectionProps {
   job: QueueJob;
   /** When true, show explanation that this job was rerun (matches orange triangle on grid) */
@@ -114,7 +172,10 @@ export function JobStatusSection({
 
       {yearData && job.queueId && (
         (() => {
-          const attempts = getQueueAttempts(job.queueId, yearData, canonicalThreadId);
+          const attempts = getQueueAttempts(job.queueId, yearData, canonicalThreadId)
+            .slice()
+            // Make attempt numbering stable: oldest -> newest.
+            .sort((a: any, b: any) => (a?.timestamp ?? 0) - (b?.timestamp ?? 0));
           if (attempts.length <= 1) return null;
           const agg = aggregate ?? getQueueAttemptSummary(job.queueId, yearData, canonicalThreadId);
           const hasSuccess = agg.anySucceeded;
@@ -135,6 +196,13 @@ export function JobStatusSection({
                 {attempts.map((a: any, idx: number) => {
                   const status = getJobStatus(a);
                   const isSelected = a.id === job.id;
+                  const garboChunk =
+                    job.queueId === "saveToAPI" ? extractGarboChunkFromSaveToApiJob(a) : null;
+
+                  // Show attempts as 1..N in chronological order (oldest first).
+                  const attemptNumber = idx + 1;
+                  const saveToApiSummary =
+                    job.queueId === "saveToAPI" ? summarizeSaveToApiPayload(a) : null;
                   return (
                     <div
                       key={`${a.id}-${idx}`}
@@ -144,11 +212,37 @@ export function JobStatusSection({
                       )}
                     >
                       <div className="min-w-0">
-                        <div className="font-mono text-gray-02 truncate">
-                          {a.id}
+                        <div className="text-gray-01 font-medium">
+                          Attempt {attemptNumber}
                         </div>
                         <div className="text-gray-02">
                           {formatDate(a.timestamp)}
+                        </div>
+                        {garboChunk && (
+                          <div className="text-gray-02">
+                            <span className="font-medium text-gray-01">chunk</span>: {garboChunk}
+                          </div>
+                        )}
+                        {saveToApiSummary?.subEndpoint && (
+                          <div className="text-gray-02">
+                            <span className="font-medium text-gray-01">endpoint</span>:{" "}
+                            {saveToApiSummary.subEndpoint || "company"}
+                          </div>
+                        )}
+                        {saveToApiSummary?.keys && (
+                          <div className="text-gray-02 truncate" title={saveToApiSummary.keys}>
+                            <span className="font-medium text-gray-01">keys</span>:{" "}
+                            {saveToApiSummary.keys}
+                          </div>
+                        )}
+                        {saveToApiSummary?.error && (
+                          <div className="text-gray-02 truncate" title={saveToApiSummary.error}>
+                            <span className="font-medium text-gray-01">error</span>:{" "}
+                            {saveToApiSummary.error}
+                          </div>
+                        )}
+                        <div className="font-mono text-gray-02 truncate" title={String(a.id)}>
+                          id: {a.id}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
