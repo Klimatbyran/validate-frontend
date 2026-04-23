@@ -4,6 +4,8 @@ export interface RegistryEntry {
   wikidataId?: string | null;
   reportYear?: string | null;
   url: string;
+  sourceUrl?: string | null;
+  s3Url?: string | null;
 }
 
 export interface RegistryEntryUpdate {

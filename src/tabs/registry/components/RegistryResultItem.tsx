@@ -22,6 +22,21 @@ const RegistryResultItem = ({
   const { t } = useI18n();
   const [isEditOpen, setIsEditOpen] = useState(false);
 
+  const trimmedUrl = entry.url.trim();
+  const trimmedSourceUrl = entry.sourceUrl?.trim() || null;
+  const trimmedS3Url = entry.s3Url?.trim() || null;
+
+  const showReportUrlButton =
+    Boolean(trimmedUrl) &&
+    trimmedUrl !== trimmedSourceUrl &&
+    trimmedUrl !== trimmedS3Url;
+
+  const linkItems: Array<{ label: string; href: string }> = [
+    ...(trimmedSourceUrl ? [{ label: t("registry.sourceUrl"), href: trimmedSourceUrl }] : []),
+    ...(trimmedS3Url ? [{ label: t("registry.s3Url"), href: trimmedS3Url }] : []),
+    ...(showReportUrlButton ? [{ label: t("registry.reportUrl"), href: trimmedUrl }] : []),
+  ];
+
   const handleClick = () => {
     onToggleSelect(entry);
   };
@@ -50,18 +65,22 @@ const RegistryResultItem = ({
       </td>
       <td className="px-4 py-3 text-sm text-gray-02">{entry.reportYear}</td>
       <td className="px-4 py-3 text-sm text-gray-02 max-w-[22rem]">
-        <a
-          href={entry.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 hover:text-blue-04 min-w-0"
-          title={entry.url}
-        >
-          <span className="truncate">
-            {entry.url.length > 52 ? `${entry.url.slice(0, 52)}...` : entry.url}
-          </span>
-          <ExternalLink className="w-4 h-4 flex-shrink-0" />
-        </a>
+        <div className="flex flex-wrap gap-2">
+          {linkItems.map((link) => (
+            <a
+              key={`${entry.id ?? entry.url}-${link.label}-${link.href}`}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-md border border-gray-03/60 bg-gray-03/10 px-2 py-1 text-xs text-gray-02 hover:text-blue-04 hover:border-blue-04/40 transition-colors"
+              title={link.href}
+              aria-label={`${link.label}: ${link.href}`}
+            >
+              <span className="font-medium whitespace-nowrap">{link.label}</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          ))}
+        </div>
       </td>
       <td className="px-4 py-3 text-sm text-gray-02">
         <button
