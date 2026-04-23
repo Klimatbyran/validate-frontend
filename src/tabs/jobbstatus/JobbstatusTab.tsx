@@ -161,7 +161,9 @@ export function JobbstatusTab() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleRerunByWorker = useRerunByWorker(swimlaneCompanies);
+  // Rerun-by-worker should respect the current UI filters (search, status filters, batch).
+  // Note: still targets the latest run per company (company.years[0]).
+  const handleRerunByWorker = useRerunByWorker(filteredCompanies);
 
   // Show loading whenever initial/preload fetch is in progress (so immediate tab switch still shows loading)
   if (isLoading) {
