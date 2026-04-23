@@ -11,6 +11,43 @@ import type {
 } from "./types";
 import { apiUrl } from "./api-utils";
 
+function normalizeIndustrySubIndustryCode(
+  company: GarboCompanyDetail,
+): GarboCompanyDetail {
+  const industry = company.industry as
+    | null
+    | undefined
+    | {
+        subIndustryCode?: string;
+        industryGics?: { subIndustryCode?: string } | null;
+        industryGICS?: { subIndustryCode?: string } | null;
+      };
+
+  const codeFromTop =
+    industry && typeof industry.subIndustryCode === "string"
+      ? industry.subIndustryCode
+      : undefined;
+  const codeFromIndustryGics =
+    industry && industry.industryGics && typeof industry.industryGics.subIndustryCode === "string"
+      ? industry.industryGics.subIndustryCode
+      : undefined;
+  const codeFromIndustryGICS =
+    industry && industry.industryGICS && typeof industry.industryGICS.subIndustryCode === "string"
+      ? industry.industryGICS.subIndustryCode
+      : undefined;
+
+  const resolved = codeFromTop ?? codeFromIndustryGics ?? codeFromIndustryGICS;
+  if (!resolved) return company;
+
+  return {
+    ...company,
+    industry: {
+      ...(typeof company.industry === "object" && company.industry ? company.industry : {}),
+      subIndustryCode: resolved,
+    },
+  };
+}
+
 function companiesPath(segment = ""): string {
   const path = "/companies";
   const seg = segment.replace(/^\//, "");
@@ -46,7 +83,10 @@ export async function listCompanies(
     throw new Error(`Failed to list companies: ${res.status} ${text}`);
   }
   const data = await res.json();
-  return Array.isArray(data) ? data : (data.companies ?? data.items ?? []);
+  const list = Array.isArray(data) ? data : (data.companies ?? data.items ?? []);
+  return Array.isArray(list)
+    ? (list as GarboCompanyListItem[]).map((c) => normalizeIndustrySubIndustryCode(c as any))
+    : [];
 }
 
 /** Get company detail by wikidataId (GET /api/companies/:wikidataId). Requires auth. */
@@ -72,7 +112,8 @@ export async function getCompany(
     const text = await res.text();
     throw new Error(`Failed to fetch company: ${res.status} ${text}`);
   }
-  return res.json();
+  const data = (await res.json()) as GarboCompanyDetail;
+  return normalizeIndustrySubIndustryCode(data);
 }
 
 /** Create or update company (POST /api/companies/:wikidataId). Body: name, descriptions, tags, internalComment, url, logoUrl, lei, metadata, verified. */
