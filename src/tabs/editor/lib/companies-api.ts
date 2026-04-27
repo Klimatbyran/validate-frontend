@@ -197,6 +197,8 @@ export async function updateReportingPeriods(
       startDate: string;
       endDate: string;
       reportURL?: string | null;
+      reportS3Url?: string | null;
+      reportSha256?: string | null;
       emissions?: Record<string, unknown>;
       economy?: Record<string, unknown>;
     }>;
