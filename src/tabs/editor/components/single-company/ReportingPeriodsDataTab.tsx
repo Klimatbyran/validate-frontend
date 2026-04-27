@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Trash2, Undo2 } from "lucide-react";
+import { ExternalLink, Loader2, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
@@ -312,6 +312,8 @@ export function ReportingPeriodsDataTab({
             const endDirty = rpEdits.endDate != null;
             const urlDirty = rpEdits.reportURL != null;
             const anyDirty = startDirty || endDirty || urlDirty;
+            const reportUrlTrimmed = (rp.reportURL ?? "").trim();
+            const s3UrlTrimmed = (rp.s3Url ?? "").trim();
 
             return (
               <div
@@ -414,6 +416,40 @@ export function ReportingPeriodsDataTab({
                       }
                       placeholder={t("editor.fieldEdit.sourcePlaceholder")}
                     />
+                    {(reportUrlTrimmed || s3UrlTrimmed) && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {reportUrlTrimmed ? (
+                          <a
+                            href={reportUrlTrimmed}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 rounded-md border border-gray-03/60 bg-gray-03/10 px-2 py-1 text-xs text-gray-02 hover:text-blue-04 hover:border-blue-04/40 transition-colors"
+                            title={reportUrlTrimmed}
+                            aria-label={`${t("registry.sourceUrl")}: ${reportUrlTrimmed}`}
+                          >
+                            <span className="font-medium whitespace-nowrap">
+                              {t("registry.sourceUrl")}
+                            </span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        ) : null}
+                        {s3UrlTrimmed ? (
+                          <a
+                            href={s3UrlTrimmed}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 rounded-md border border-gray-03/60 bg-gray-03/10 px-2 py-1 text-xs text-gray-02 hover:text-blue-04 hover:border-blue-04/40 transition-colors"
+                            title={s3UrlTrimmed}
+                            aria-label={`${t("registry.s3Url")}: ${s3UrlTrimmed}`}
+                          >
+                            <span className="font-medium whitespace-nowrap">
+                              {t("registry.s3Url")}
+                            </span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

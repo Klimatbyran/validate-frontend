@@ -11,6 +11,30 @@ import type {
 } from "./types";
 import { apiUrl } from "./api-utils";
 
+function normalizeReportingPeriodUrls(company: GarboCompanyDetail): GarboCompanyDetail {
+  const periods = company.reportingPeriods;
+  if (!Array.isArray(periods) || periods.length === 0) return company;
+
+  const normalized = periods.map((rp) => {
+    const sourceUrl =
+      rp.sourceUrl ?? rp.reportSourceUrl ?? rp.sourceURL ?? null;
+    const s3Url = rp.s3Url ?? rp.reportS3Url ?? rp.s3URL ?? null;
+
+    if (sourceUrl === rp.sourceUrl && s3Url === rp.s3Url) return rp;
+
+    return {
+      ...rp,
+      sourceUrl,
+      s3Url,
+    };
+  });
+
+  return {
+    ...company,
+    reportingPeriods: normalized,
+  };
+}
+
 function normalizeIndustrySubIndustryCode(
   company: GarboCompanyDetail,
 ): GarboCompanyDetail {
@@ -46,6 +70,10 @@ function normalizeIndustrySubIndustryCode(
       subIndustryCode: resolved,
     },
   };
+}
+
+function normalizeCompany(company: GarboCompanyDetail): GarboCompanyDetail {
+  return normalizeReportingPeriodUrls(normalizeIndustrySubIndustryCode(company));
 }
 
 function companiesPath(segment = ""): string {
@@ -85,7 +113,9 @@ export async function listCompanies(
   const data = await res.json();
   const list = Array.isArray(data) ? data : (data.companies ?? data.items ?? []);
   return Array.isArray(list)
-    ? (list as GarboCompanyListItem[]).map((c) => normalizeIndustrySubIndustryCode(c as any))
+    ? (list as GarboCompanyListItem[]).map((c) =>
+        normalizeCompany(c as GarboCompanyDetail),
+      )
     : [];
 }
 
@@ -113,7 +143,7 @@ export async function getCompany(
     throw new Error(`Failed to fetch company: ${res.status} ${text}`);
   }
   const data = (await res.json()) as GarboCompanyDetail;
-  return normalizeIndustrySubIndustryCode(data);
+  return normalizeCompany(data);
 }
 
 /** Create or update company (POST /api/companies/:wikidataId). Body: name, descriptions, tags, internalComment, url, logoUrl, lei, metadata, verified. */

@@ -259,7 +259,15 @@ export function EconomyDataTab({
                   rp.endDate,
                   t("common.placeholderDash")
                 );
-                const reportUrlForOpen = (rp.reportURL ?? "").trim();
+                const reportUrl = (rp.reportURL ?? "").trim();
+                const s3Url = (rp.s3Url ?? "").trim();
+
+                const linkItems: Array<{ label: string; href: string }> = [
+                  ...(reportUrl
+                    ? [{ label: t("registry.sourceUrl"), href: reportUrl }]
+                    : []),
+                  ...(s3Url ? [{ label: t("registry.s3Url"), href: s3Url }] : []),
+                ];
 
                 const turnoverVerified =
                   rpEdits.turnoverVerified ?? originalTurnoverVerified;
@@ -296,23 +304,25 @@ export function EconomyDataTab({
                         <span className="text-xs font-medium text-gray-01">
                           {t("editor.companies.reportUrl")}
                         </span>
-                        {reportUrlForOpen ? (
-                          <Button
-                            asChild
-                            variant="secondary"
-                            size="sm"
-                            className={editorDenseToolbarClass + " shrink-0"}
-                          >
-                            <a
-                              href={reportUrlForOpen}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                              {t("editor.periodEditor.openReport")}
-                            </a>
-                          </Button>
+                        {linkItems.length ? (
+                          <div className="flex flex-wrap gap-2">
+                            {linkItems.map((l) => (
+                              <a
+                                key={`${rp.id}-${l.label}-${l.href}`}
+                                href={l.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 rounded-md border border-gray-03/60 bg-gray-03/10 px-2 py-1 text-xs text-gray-02 hover:text-blue-04 hover:border-blue-04/40 transition-colors"
+                                title={l.href}
+                                aria-label={`${l.label}: ${l.href}`}
+                              >
+                                <span className="font-medium whitespace-nowrap">
+                                  {l.label}
+                                </span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            ))}
+                          </div>
                         ) : (
                           <span className="text-xs text-gray-02">—</span>
                         )}
