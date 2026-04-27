@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Loader2, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
+import { reportHrefLinkPillClassName } from "@/lib/report-url-link-pill";
 import { Button } from "@/ui/button";
 import {
   Dialog,
@@ -423,7 +424,7 @@ export function ReportingPeriodsDataTab({
                             href={reportUrlTrimmed}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 rounded-md border border-gray-03/60 bg-gray-03/10 px-2 py-1 text-xs text-gray-02 hover:text-blue-04 hover:border-blue-04/40 transition-colors"
+                            className={reportHrefLinkPillClassName}
                             title={reportUrlTrimmed}
                             aria-label={`${t("registry.sourceUrl")}: ${reportUrlTrimmed}`}
                           >
@@ -438,7 +439,7 @@ export function ReportingPeriodsDataTab({
                             href={s3UrlTrimmed}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 rounded-md border border-gray-03/60 bg-gray-03/10 px-2 py-1 text-xs text-gray-02 hover:text-blue-04 hover:border-blue-04/40 transition-colors"
+                            className={reportHrefLinkPillClassName}
                             title={s3UrlTrimmed}
                             aria-label={`${t("registry.s3Url")}: ${s3UrlTrimmed}`}
                           >

@@ -26,6 +26,7 @@ import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 import { FieldWithMetadata } from "../FieldWithMetadata";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
+import { reportHrefLinkPillClassName } from "@/lib/report-url-link-pill";
 
 type EditedPeriodEconomy = {
   turnoverValue?: string;
@@ -312,7 +313,7 @@ export function EconomyDataTab({
                                 href={l.href}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 rounded-md border border-gray-03/60 bg-gray-03/10 px-2 py-1 text-xs text-gray-02 hover:text-blue-04 hover:border-blue-04/40 transition-colors"
+                                className={reportHrefLinkPillClassName}
                                 title={l.href}
                                 aria-label={`${l.label}: ${l.href}`}
                               >

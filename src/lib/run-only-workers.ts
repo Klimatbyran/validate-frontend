@@ -37,7 +37,7 @@ export const RUN_ONLY_WORKERS: RunOnlyWorker[] = [
   { id: "goals", label: "Goals" },
   { id: "initiatives", label: "Initiatives" },
   { id: "baseYear", label: "Base year" },
-  { id: "fiscalYear", label: "Fiscal year" },
+  { id: "fiscalYear", label: "Räkenskapsår" },
   { id: "companyTags", label: "Company tags" },
   { id: "lei", label: "LEI" },
   { id: "descriptions", label: "Descriptions" },

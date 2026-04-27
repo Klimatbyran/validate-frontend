@@ -49,7 +49,7 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   followUpEconomy: "Uppföljning Ekonomi",
   followUpGoals: "Uppföljning Mål",
   followUpInitiatives: "Uppföljning Initiativ",
-  followUpFiscalYear: "Uppföljning fiscal year",
+  followUpFiscalYear: "Uppföljning räkenskapsår",
   followUpCompanyTags: "Uppföljning Företagstaggar",
   followUpBaseYear: "Uppföljning Basår",
   followUpIndustryGics: "Uppföljning Bransch GICS",

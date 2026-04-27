@@ -457,7 +457,13 @@
       "wikidataIdLabel": "Wikidata ID",
       "technicalData": "Technical data",
       "returnValue": "Return value",
-      "schema": "Schema"
+      "schema": "Schema",
+      "saveToApiAttemptNumber": "Attempt {{number}}",
+      "saveToApiChunkLabel": "Chunk",
+      "saveToApiEndpointLabel": "Endpoint",
+      "saveToApiKeysLabel": "Keys",
+      "saveToApiErrorLabel": "Error",
+      "saveToApiJobIdLabel": "Job id"
     },
     "activeLabel": "Active",
     "yearsOfData": "{{count}} year of data",

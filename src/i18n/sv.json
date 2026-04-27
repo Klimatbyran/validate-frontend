@@ -457,7 +457,13 @@
       "wikidataIdLabel": "Wikidata ID",
       "technicalData": "Teknisk data",
       "returnValue": "Returvärde",
-      "schema": "Schema"
+      "schema": "Schema",
+      "saveToApiAttemptNumber": "Försök {{number}}",
+      "saveToApiChunkLabel": "Chunk",
+      "saveToApiEndpointLabel": "Slutpunkt",
+      "saveToApiKeysLabel": "Nycklar",
+      "saveToApiErrorLabel": "Fel",
+      "saveToApiJobIdLabel": "Jobb-id"
     },
     "activeLabel": "Aktiv",
     "yearsOfData": "{{count}} år data",
@@ -489,7 +495,7 @@
       "biogenic": "Biogen",
       "goals": "Mål",
       "initiatives": "Initiativ",
-      "fiscalYear": "Fiscal year",
+      "fiscalYear": "Räkenskapsår",
       "companyTags": "Företagstaggar",
       "lei": "LEI",
       "descriptions": "Beskrivningar"
