@@ -57,6 +57,20 @@ export interface GarboReportingPeriodSummary {
   startDate: string;
   endDate: string;
   reportURL?: string | null;
+  /** Original source URL (e.g. crawler page). */
+  sourceUrl?: string | null;
+  /** S3 URL for the stored report file. */
+  s3Url?: string | null;
+  /**
+   * Backwards/alternate API field names we may receive from Garbo.
+   * Normalize to `sourceUrl` / `s3Url` in `companies-api.ts`.
+   */
+  reportSourceUrl?: string | null;
+  reportS3Url?: string | null;
+  /** Legacy/alternate API casing for source URL. */
+  sourceURL?: string | null;
+  /** Legacy/alternate API casing for S3 URL. */
+  s3URL?: string | null;
   emissions?: GarboEmissionsSummary;
   economy?: GarboEconomySummary;
 }

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Trash2, Undo2 } from "lucide-react";
+import { ExternalLink, Loader2, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
+import { reportHrefLinkPillClassName } from "@/lib/report-url-link-pill";
 import { Button } from "@/ui/button";
 import {
   Dialog,
@@ -312,6 +313,8 @@ export function ReportingPeriodsDataTab({
             const endDirty = rpEdits.endDate != null;
             const urlDirty = rpEdits.reportURL != null;
             const anyDirty = startDirty || endDirty || urlDirty;
+            const reportUrlTrimmed = (rp.reportURL ?? "").trim();
+            const s3UrlTrimmed = (rp.s3Url ?? "").trim();
 
             return (
               <div
@@ -414,6 +417,40 @@ export function ReportingPeriodsDataTab({
                       }
                       placeholder={t("editor.fieldEdit.sourcePlaceholder")}
                     />
+                    {(reportUrlTrimmed || s3UrlTrimmed) && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {reportUrlTrimmed ? (
+                          <a
+                            href={reportUrlTrimmed}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={reportHrefLinkPillClassName}
+                            title={reportUrlTrimmed}
+                            aria-label={`${t("registry.sourceUrl")}: ${reportUrlTrimmed}`}
+                          >
+                            <span className="font-medium whitespace-nowrap">
+                              {t("registry.sourceUrl")}
+                            </span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        ) : null}
+                        {s3UrlTrimmed ? (
+                          <a
+                            href={s3UrlTrimmed}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={reportHrefLinkPillClassName}
+                            title={s3UrlTrimmed}
+                            aria-label={`${t("registry.s3Url")}: ${s3UrlTrimmed}`}
+                          >
+                            <span className="font-medium whitespace-nowrap">
+                              {t("registry.s3Url")}
+                            </span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

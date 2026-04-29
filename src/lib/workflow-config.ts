@@ -35,6 +35,7 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   parsePdf: "PDF Parsning",
   doclingParsePDF: "PDF Parsning docling",
   indexMarkdown: "Markdown",
+  extractDescriptions: "Extrahera beskrivningar",
 
   // AI Data Extraction
   guessWikidata: "Wikidata",
@@ -48,7 +49,7 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   followUpEconomy: "Uppföljning Ekonomi",
   followUpGoals: "Uppföljning Mål",
   followUpInitiatives: "Uppföljning Initiativ",
-  followUpFiscalYear: "Uppföljning fiscal year",
+  followUpFiscalYear: "Uppföljning räkenskapsår",
   followUpCompanyTags: "Uppföljning Företagstaggar",
   followUpBaseYear: "Uppföljning Basår",
   followUpIndustryGics: "Uppföljning Bransch GICS",
@@ -56,6 +57,7 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   diffGoals: "Klimatmål",
   diffInitiatives: "Initiativ",
   diffBaseYear: "Basår",
+  diffDescriptions: "Beskrivningar",
   checkDB: "DB Kontroll",
 
   // Finalize
@@ -81,6 +83,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
       "parsePdf",
       "doclingParsePDF",
       "indexMarkdown",
+      "extractDescriptions",
       "guessWikidata",
       "extractEmissions",
       "followUpBaseYear",
@@ -108,6 +111,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
       "diffGoals",
       "diffInitiatives",
       "diffBaseYear",
+      "diffDescriptions",
       "checkDB",
     ],
     order: 2,
