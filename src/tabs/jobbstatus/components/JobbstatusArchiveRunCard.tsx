@@ -13,43 +13,18 @@ import {
   getQueuesForPipelineStep,
   getQueueDisplayName,
 } from "@/lib/workflow-config";
-import { getStatusIcon, getCompactStyles } from "@/lib/status-config";
+import { getCompactStyles } from "@/lib/status-config";
 import type { SwimlaneStatusType } from "@/lib/types";
 import {
   sortedTerminalAttemptsForQueue,
   terminalAttemptCountByQueue,
+  type ArchiveJobLike,
 } from "../lib/archive-run-jobs";
+import type { ArchiveRunJobRow, ArchiveRunSummary } from "../lib/archive-types";
+import { formatArchiveWhen } from "../lib/format-archive-datetime";
+import { ArchiveQueueStepPill } from "./ArchiveQueueStepPill";
 
-export type ArchiveRunJobRow = {
-  jobId: string;
-  queueName: string;
-  status: string;
-  failedReason: string | null;
-  startedAt: string | null;
-  finishedAt: string;
-};
-
-export type ArchiveRunCardModel = {
-  id: string;
-  threadId: string;
-  pdfUrl: string;
-  companyName: string | null;
-  wikidataId: string | null;
-  /** Resolved batch (Garbo); `batchName` matches pipeline `job.data.batchId`. */
-  batch?: { id: string; batchName: string } | null;
-  status: string;
-  startedAt: string;
-  jobs: ArchiveRunJobRow[];
-};
-
-function formatWhen(iso: string | null | undefined, locale: string): string {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleString(locale);
-  } catch {
-    return iso;
-  }
-}
+export type { ArchiveRunJobRow, ArchiveRunCardModel } from "../lib/archive-types";
 
 function jobToSwimlaneStatus(status: string): SwimlaneStatusType | null {
   const s = status.toLowerCase();
@@ -92,7 +67,7 @@ function runStatusChipClass(status: string): string {
 }
 
 interface JobbstatusArchiveRunCardProps {
-  run: ArchiveRunCardModel;
+  run: ArchiveRunSummary;
   positionInList: number;
   onOpenDetails: (threadId: string) => void;
   /**
@@ -102,8 +77,19 @@ interface JobbstatusArchiveRunCardProps {
   onOpenQueueAttempts: (
     queueName: string,
     queueLabel: string,
-    jobs: ArchiveRunJobRow[],
+    jobs: ArchiveJobLike[],
   ) => void;
+}
+
+function buildPillTitleHint(
+  multiAttempt: boolean,
+  failedReason: string | null,
+  multiHint: string,
+): string | undefined {
+  if (multiAttempt) {
+    return failedReason ? `${failedReason}\n${multiHint}` : multiHint;
+  }
+  return failedReason ?? undefined;
 }
 
 export function JobbstatusArchiveRunCard({
@@ -137,6 +123,40 @@ export function JobbstatusArchiveRunCard({
     }
     return ids;
   }, [pipelineSteps]);
+
+  const renderQueuePill = (
+    queueId: string,
+    job: ArchiveRunJobRow,
+    swim: SwimlaneStatusType,
+    fieldName: string,
+    reactKey: string,
+  ) => {
+    const styles = getCompactStyles(swim, false, true);
+    const multiAttempt = (attemptCountByQueue.get(queueId) ?? 0) > 1;
+    const attemptList = sortedTerminalAttemptsForQueue(run.jobs, queueId);
+    const titleHint = buildPillTitleHint(
+      multiAttempt,
+      job.failedReason,
+      t("jobstatus.archiveMultiAttemptPillHint"),
+    );
+    const ariaLabel =
+      attemptList.length > 1
+        ? `${fieldName}, ${t("jobstatus.archiveQueueHistoryAria", { count: attemptList.length })}`
+        : fieldName;
+
+    return (
+      <ArchiveQueueStepPill
+        key={reactKey}
+        swim={swim}
+        fieldName={fieldName}
+        compactStyleClass={styles}
+        multiAttempt={multiAttempt}
+        titleHint={titleHint}
+        ariaLabel={ariaLabel}
+        onOpenAttempts={() => onOpenQueueAttempts(queueId, fieldName, run.jobs)}
+      />
+    );
+  };
 
   return (
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] overflow-hidden hover:shadow-md transition-shadow">
@@ -191,7 +211,7 @@ export function JobbstatusArchiveRunCard({
               <span className="text-gray-02/80 hidden sm:inline">•</span>
               <span className="flex items-center gap-1 shrink-0">
                 <FileText className="w-3 h-3 opacity-70" />
-                {formatWhen(run.startedAt, localeIntl)}
+                {formatArchiveWhen(run.startedAt, localeIntl)}
               </span>
               <span className="text-gray-02/80 hidden sm:inline">•</span>
               <span className="shrink-0">
@@ -230,41 +250,9 @@ export function JobbstatusArchiveRunCard({
                     const queueKey = `jobstatus.queues.${queueId}`;
                     const fieldName =
                       t(queueKey) !== queueKey ? t(queueKey) : getQueueDisplayName(queueId);
-                    const styles = getCompactStyles(swim, false, true);
-                    const multiAttempt = (attemptCountByQueue.get(queueId) ?? 0) > 1;
-                    const attemptList = sortedTerminalAttemptsForQueue(run.jobs, queueId);
-                    const titleHint = multiAttempt
-                      ? `${job.failedReason ? `${job.failedReason}\n` : ""}${t("jobstatus.archiveMultiAttemptPillHint")}`
-                      : job.failedReason ?? undefined;
-                    return (
-                      <button
-                        key={`${queueId}-${job.jobId}`}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOpenQueueAttempts(queueId, fieldName, run.jobs);
-                        }}
-                        className={`
-                        relative px-2 py-1 rounded border text-[10px] font-medium
-                        hover:shadow-sm hover:scale-105 transition-all
-                        ${styles}
-                      `}
-                        title={titleHint}
-                        aria-label={
-                          attemptList.length > 1
-                            ? `${fieldName}, ${t("jobstatus.archiveQueueHistoryAria", { count: attemptList.length })}`
-                            : fieldName
-                        }
-                      >
-                        {multiAttempt && (
-                          <span className="pointer-events-none absolute top-0 right-0 w-0 h-0 border-t-[10px] border-t-orange-03 border-l-[10px] border-l-transparent" />
-                        )}
-                        <span className="flex items-center gap-1">
-                          <span>{getStatusIcon(swim, "compact", false)}</span>
-                          <span>{fieldName}</span>
-                        </span>
-                      </button>
-                    );
+                    return [
+                      renderQueuePill(queueId, job, swim, fieldName, `${queueId}-${job.jobId}`),
+                    ];
                   });
                   if (cells.length === 0) return null;
                   const stepLabel = stepNameKeyMap[step.id]
@@ -283,41 +271,15 @@ export function JobbstatusArchiveRunCard({
                 const job = jobByQueue.get(queueId)!;
                 const swim = jobToSwimlaneStatus(job.status);
                 if (!swim) continue;
-                const styles = getCompactStyles(swim, false, true);
-                const multiAttempt = (attemptCountByQueue.get(queueId) ?? 0) > 1;
-                const attemptList = sortedTerminalAttemptsForQueue(run.jobs, queueId);
                 const orphanName = getQueueDisplayName(queueId);
-                const titleHint = multiAttempt
-                  ? `${job.failedReason ? `${job.failedReason}\n` : ""}${t("jobstatus.archiveMultiAttemptPillHint")}`
-                  : job.failedReason ?? undefined;
                 orphanCells.push(
-                  <button
-                    key={`orphan-${queueId}-${job.jobId}`}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenQueueAttempts(queueId, orphanName, run.jobs);
-                    }}
-                    className={`
-                        relative px-2 py-1 rounded border text-[10px] font-medium
-                        hover:shadow-sm hover:scale-105 transition-all
-                        ${styles}
-                      `}
-                    title={titleHint}
-                    aria-label={
-                      attemptList.length > 1
-                        ? `${orphanName}, ${t("jobstatus.archiveQueueHistoryAria", { count: attemptList.length })}`
-                        : orphanName
-                    }
-                  >
-                    {multiAttempt && (
-                      <span className="pointer-events-none absolute top-0 right-0 w-0 h-0 border-t-[10px] border-t-orange-03 border-l-[10px] border-l-transparent" />
-                    )}
-                    <span className="flex items-center gap-1">
-                      <span>{getStatusIcon(swim, "compact", false)}</span>
-                      <span>{orphanName}</span>
-                    </span>
-                  </button>,
+                  renderQueuePill(
+                    queueId,
+                    job,
+                    swim,
+                    orphanName,
+                    `orphan-${queueId}-${job.jobId}`,
+                  ),
                 );
               }
               if (orphanCells.length > 0) {

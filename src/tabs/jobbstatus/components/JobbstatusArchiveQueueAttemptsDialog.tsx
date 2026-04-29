@@ -8,9 +8,9 @@ import {
   sortedTerminalAttemptsForQueue,
   type ArchiveJobLike,
 } from "../lib/archive-run-jobs";
+import { formatArchiveWhen } from "../lib/format-archive-datetime";
 
-function getStatusLabelKey(status: string, isActive?: boolean): string {
-  if (status === "processing" && isActive) return "status.processingNow";
+function swimlaneStatusLabelKey(status: string): string {
   const keyMap: Record<string, string> = {
     completed: "status.completed",
     failed: "status.failed",
@@ -53,15 +53,6 @@ export function JobbstatusArchiveQueueAttemptsDialog({
     [attempts],
   );
 
-  const formatWhen = (iso: string | null | undefined) => {
-    if (!iso) return "—";
-    try {
-      return new Date(iso).toLocaleString(localeIntl);
-    } catch {
-      return iso;
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
@@ -79,7 +70,7 @@ export function JobbstatusArchiveQueueAttemptsDialog({
         <div className="mt-3 space-y-2">
           {attempts.map((row, idx) => {
             const swim = archiveStatusToSwimlane(row.status);
-            const statusKey = getStatusLabelKey(swim, false);
+            const statusKey = swimlaneStatusLabelKey(swim);
             return (
               <div
                 key={row.id ?? `${row.jobId}-${row.finishedAt}-${idx}`}
@@ -92,14 +83,14 @@ export function JobbstatusArchiveQueueAttemptsDialog({
                     })}
                   </div>
                   <div className="text-gray-02 mt-0.5">
-                    {formatWhen(row.finishedAt)}
+                    {formatArchiveWhen(row.finishedAt, localeIntl)}
                   </div>
                   {row.startedAt ? (
                     <div className="text-gray-02 mt-0.5">
                       <span className="font-medium text-gray-01">
                         {t("jobstatus.archiveColStarted")}
                       </span>
-                      : {formatWhen(row.startedAt)}
+                      : {formatArchiveWhen(row.startedAt, localeIntl)}
                     </div>
                   ) : null}
                   <div

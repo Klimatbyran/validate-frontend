@@ -141,6 +141,6 @@ In **production**, the app uses relative paths for both backends: `/api` (pipeli
 ## Reference
 
 - **Config and helpers**: `src/config/api-env.ts` – `getPipelineTarget()`, `getGarboTarget()`, `getPipelineApiBaseUrl()`, `getPipelineUrl()`, `getGarboApiBaseUrl()`, `getGarboQueueArchiveUrl()`, `getStageGarboUrl()`, `getProdGarboUrl()`.
-- **Jobbstatus Archive UI**: `src/tabs/jobbstatus/components/JobbstatusArchivePanel.tsx`, `JobbstatusArchiveRunCard.tsx`.
+- **Jobbstatus Archive UI**: `src/tabs/jobbstatus/components/JobbstatusArchivePanel.tsx`, `JobbstatusArchiveDetailDialog.tsx`, `JobbstatusArchiveRunCard.tsx`, `JobbstatusArchiveQueueAttemptsDialog.tsx`, `ArchiveQueueStepPill.tsx`; hook `useArchiveRunsList.ts`; lib `archive-types.ts`, `format-archive-datetime.ts`, `archive-run-jobs.ts`.
 - **Proxy definition**: `vite.config.ts` – proxy targets and path rewrites.
 - **Example env**: `.env.development.example` – all supported variables and short comments.

@@ -393,6 +393,7 @@
     "archiveNext": "Next",
     "archivePage": "Page {{page}} of {{totalPages}}",
     "archiveDetailTitle": "Archived run",
+    "archiveDetailError": "Could not load run details: {{message}}",
     "archiveCompany": "Company",
     "archivePdfUrl": "Report URL",
     "archiveJobsHeading": "Jobs in this run",

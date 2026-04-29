@@ -393,6 +393,7 @@
     "archiveNext": "Nästa",
     "archivePage": "Sida {{page}} av {{totalPages}}",
     "archiveDetailTitle": "Arkiverad körning",
+    "archiveDetailError": "Kunde inte ladda körningsdetaljer: {{message}}",
     "archiveCompany": "Företag",
     "archivePdfUrl": "Rapport-URL",
     "archiveJobsHeading": "Jobb i denna körning",
