@@ -14,7 +14,9 @@ export function filterRegistryEntries(
       entry.companyName?.toLowerCase().includes(normalizedQuery) ||
       (entry.wikidataId?.toLowerCase().includes(normalizedQuery) ?? false) ||
       entry.reportYear?.includes(normalizedQuery) ||
-      entry.url.toLowerCase().includes(normalizedQuery)
+      entry.url.toLowerCase().includes(normalizedQuery) ||
+      (entry.sourceUrl?.toLowerCase().includes(normalizedQuery) ?? false) ||
+      (entry.s3Url?.toLowerCase().includes(normalizedQuery) ?? false)
     );
   });
 }
@@ -35,7 +37,7 @@ export function writeRegistryEntriesToCsv(entries: RegistryEntry[]): void {
     return `"${escaped}"`;
   };
 
-  const header = ["companyName", "wikidataId", "reportYear", "url"]
+  const header = ["companyName", "wikidataId", "reportYear", "url", "sourceUrl", "s3Url"]
     .map(escapeCsvValue)
     .join(";");
 
@@ -45,6 +47,8 @@ export function writeRegistryEntriesToCsv(entries: RegistryEntry[]): void {
       escapeCsvValue(entry.wikidataId ?? ""),
       escapeCsvValue(entry.reportYear ?? ""),
       escapeCsvValue(entry.url),
+      escapeCsvValue(entry.sourceUrl ?? ""),
+      escapeCsvValue(entry.s3Url ?? ""),
     ].join(";"),
   );
 

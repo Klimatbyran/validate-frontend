@@ -355,6 +355,8 @@
     "pdfCachePartialFailure": "{{failed}} av {{total}} länk(ar) kunde inte cachas. {{succeeded}} länk(ar) lades ändå till."
   },
   "jobstatus": {
+    "title": "Jobbstatus",
+    "subtitle": "Övervaka eller granska data och/eller detaljer för rapportkörningar",
     "scope": "Omfattning",
     "latestRun": "Senaste körning",
     "allRuns": "Alla körningar",
@@ -507,7 +509,13 @@
       "wikidataIdLabel": "Wikidata ID",
       "technicalData": "Teknisk data",
       "returnValue": "Returvärde",
-      "schema": "Schema"
+      "schema": "Schema",
+      "saveToApiAttemptNumber": "Försök {{number}}",
+      "saveToApiChunkLabel": "Chunk",
+      "saveToApiEndpointLabel": "Slutpunkt",
+      "saveToApiKeysLabel": "Nycklar",
+      "saveToApiErrorLabel": "Fel",
+      "saveToApiJobIdLabel": "Jobb-id"
     },
     "activeLabel": "Aktiv",
     "yearsOfData": "{{count}} år data",
@@ -539,6 +547,8 @@
       "biogenic": "Biogen",
       "goals": "Mål",
       "initiatives": "Initiativ",
+      "fiscalYear": "Räkenskapsår",
+      "companyTags": "Företagstaggar",
       "lei": "LEI",
       "descriptions": "Beskrivningar"
     },
@@ -549,6 +559,7 @@
       "parsePdf": "PDF Parsning",
       "doclingParsePDF": "PDF Parsning docling",
       "indexMarkdown": "Markdown",
+      "extractDescriptions": "Extrahera beskrivningar",
       "guessWikidata": "Wikidata",
       "diffReportingPeriods": "Diff rapportperioder",
       "extractEmissions": "Extrahera utsläpp",
@@ -568,6 +579,7 @@
       "diffGoals": "Klimatmål",
       "diffInitiatives": "Initiativ",
       "diffBaseYear": "Basår",
+      "diffDescriptions": "Beskrivningar",
       "checkDB": "DB Kontroll",
       "sendCompanyLink": "Skicka företagslänk",
       "saveToAPI": "API Lagring",
@@ -811,6 +823,8 @@
     "wikidataId": "Wikidata ID",
     "reportYear": "Rapportår",
     "reportUrl": "Rapport-URL",
+    "sourceUrl": "Käll-URL",
+    "s3Url": "S3-URL",
     "companyName": "Företagsnamn",
     "edit": "Redigera",
     "editReport": "Redigera rapport",

@@ -355,6 +355,8 @@
     "pdfCachePartialFailure": "{{failed}} of {{total}} link(s) could not be cached. {{succeeded}} link(s) were still added."
   },
   "jobstatus": {
+    "title": "Jobstatus",
+    "subtitle": "Monitor or review data and/or report run details",
     "scope": "Scope",
     "latestRun": "Latest run",
     "allRuns": "All runs",
@@ -507,7 +509,13 @@
       "wikidataIdLabel": "Wikidata ID",
       "technicalData": "Technical data",
       "returnValue": "Return value",
-      "schema": "Schema"
+      "schema": "Schema",
+      "saveToApiAttemptNumber": "Attempt {{number}}",
+      "saveToApiChunkLabel": "Chunk",
+      "saveToApiEndpointLabel": "Endpoint",
+      "saveToApiKeysLabel": "Keys",
+      "saveToApiErrorLabel": "Error",
+      "saveToApiJobIdLabel": "Job id"
     },
     "activeLabel": "Active",
     "yearsOfData": "{{count}} year of data",
@@ -539,6 +547,8 @@
       "biogenic": "Biogenic",
       "goals": "Goals",
       "initiatives": "Initiatives",
+      "fiscalYear": "Fiscal year",
+      "companyTags": "Company tags",
       "lei": "LEI",
       "descriptions": "Descriptions"
     },
@@ -549,6 +559,7 @@
       "parsePdf": "PDF parsing",
       "doclingParsePDF": "PDF parsing docling",
       "indexMarkdown": "Markdown",
+      "extractDescriptions": "Extract descriptions",
       "guessWikidata": "Wikidata",
       "diffReportingPeriods": "Diff reporting periods",
       "extractEmissions": "Extract emissions",
@@ -568,6 +579,7 @@
       "diffGoals": "Climate goals",
       "diffInitiatives": "Initiatives",
       "diffBaseYear": "Base year",
+      "diffDescriptions": "Descriptions",
       "checkDB": "DB check",
       "sendCompanyLink": "Send company link",
       "saveToAPI": "API save",
@@ -811,6 +823,8 @@
     "wikidataId": "Wikidata ID",
     "reportYear": "Report year",
     "reportUrl": "Report URL",
+    "sourceUrl": "Source URL",
+    "s3Url": "S3 URL",
     "companyName": "Company name",
     "edit": "Edit",
     "editReport": "Edit report",

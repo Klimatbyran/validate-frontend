@@ -26,6 +26,7 @@ import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 import { FieldWithMetadata } from "../FieldWithMetadata";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
+import { reportHrefLinkPillClassName } from "@/lib/report-url-link-pill";
 
 type EditedPeriodEconomy = {
   turnoverValue?: string;
@@ -259,7 +260,15 @@ export function EconomyDataTab({
                   rp.endDate,
                   t("common.placeholderDash")
                 );
-                const reportUrlForOpen = (rp.reportURL ?? "").trim();
+                const reportUrl = (rp.reportURL ?? "").trim();
+                const s3Url = (rp.s3Url ?? "").trim();
+
+                const linkItems: Array<{ label: string; href: string }> = [
+                  ...(reportUrl
+                    ? [{ label: t("registry.sourceUrl"), href: reportUrl }]
+                    : []),
+                  ...(s3Url ? [{ label: t("registry.s3Url"), href: s3Url }] : []),
+                ];
 
                 const turnoverVerified =
                   rpEdits.turnoverVerified ?? originalTurnoverVerified;
@@ -296,23 +305,25 @@ export function EconomyDataTab({
                         <span className="text-xs font-medium text-gray-01">
                           {t("editor.companies.reportUrl")}
                         </span>
-                        {reportUrlForOpen ? (
-                          <Button
-                            asChild
-                            variant="secondary"
-                            size="sm"
-                            className={editorDenseToolbarClass + " shrink-0"}
-                          >
-                            <a
-                              href={reportUrlForOpen}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                              {t("editor.periodEditor.openReport")}
-                            </a>
-                          </Button>
+                        {linkItems.length ? (
+                          <div className="flex flex-wrap gap-2">
+                            {linkItems.map((l) => (
+                              <a
+                                key={`${rp.id}-${l.label}-${l.href}`}
+                                href={l.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={reportHrefLinkPillClassName}
+                                title={l.href}
+                                aria-label={`${l.label}: ${l.href}`}
+                              >
+                                <span className="font-medium whitespace-nowrap">
+                                  {l.label}
+                                </span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            ))}
+                          </div>
                         ) : (
                           <span className="text-xs text-gray-02">—</span>
                         )}
