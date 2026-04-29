@@ -1,4 +1,4 @@
-import { QueueJob, SwimlaneYearData } from "@/lib/types";
+import type { QueueJob, SwimlaneYearData } from "@/lib/types";
 import { getWorkflowStages } from "@/lib/workflow-config";
 import {
   getStatusIcon as getCentralizedStatusIcon,
@@ -9,6 +9,10 @@ import {
   getJobStatus,
   getQueueAttempts,
 } from "@/lib/workflow-utils";
+import {
+  extractGarboChunkFromSaveToApiJob,
+  summarizeSaveToApiPayload,
+} from "../../lib/save-to-api-job-utils";
 import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
 
@@ -114,7 +118,14 @@ export function JobStatusSection({
 
       {yearData && job.queueId && (
         (() => {
-          const attempts = getQueueAttempts(job.queueId, yearData, canonicalThreadId);
+          const attempts = (getQueueAttempts(
+            job.queueId,
+            yearData,
+            canonicalThreadId,
+          ) as QueueJob[])
+            .slice()
+            // Make attempt numbering stable: oldest -> newest.
+            .sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
           if (attempts.length <= 1) return null;
           const agg = aggregate ?? getQueueAttemptSummary(job.queueId, yearData, canonicalThreadId);
           const hasSuccess = agg.anySucceeded;
@@ -132,9 +143,16 @@ export function JobStatusSection({
                 )}
               </div>
               <div className="mt-3 space-y-2">
-                {attempts.map((a: any, idx: number) => {
+                {attempts.map((a, idx) => {
                   const status = getJobStatus(a);
                   const isSelected = a.id === job.id;
+                  const garboChunk =
+                    job.queueId === "saveToAPI" ? extractGarboChunkFromSaveToApiJob(a) : null;
+
+                  // Show attempts as 1..N in chronological order (oldest first).
+                  const attemptNumber = idx + 1;
+                  const saveToApiSummary =
+                    job.queueId === "saveToAPI" ? summarizeSaveToApiPayload(a) : null;
                   return (
                     <div
                       key={`${a.id}-${idx}`}
@@ -144,11 +162,48 @@ export function JobStatusSection({
                       )}
                     >
                       <div className="min-w-0">
-                        <div className="font-mono text-gray-02 truncate">
-                          {a.id}
+                        <div className="text-gray-01 font-medium">
+                          {t("jobstatus.jobdetails.saveToApiAttemptNumber", {
+                            number: attemptNumber,
+                          })}
                         </div>
                         <div className="text-gray-02">
                           {formatDate(a.timestamp)}
+                        </div>
+                        {garboChunk && (
+                          <div className="text-gray-02">
+                            <span className="font-medium text-gray-01">
+                              {t("jobstatus.jobdetails.saveToApiChunkLabel")}
+                            </span>
+                            : {garboChunk}
+                          </div>
+                        )}
+                        {saveToApiSummary?.subEndpoint ? (
+                          <div className="text-gray-02">
+                            <span className="font-medium text-gray-01">
+                              {t("jobstatus.jobdetails.saveToApiEndpointLabel")}
+                            </span>
+                            : {saveToApiSummary.subEndpoint}
+                          </div>
+                        ) : null}
+                        {saveToApiSummary?.keys && (
+                          <div className="text-gray-02 truncate" title={saveToApiSummary.keys}>
+                            <span className="font-medium text-gray-01">
+                              {t("jobstatus.jobdetails.saveToApiKeysLabel")}
+                            </span>
+                            : {saveToApiSummary.keys}
+                          </div>
+                        )}
+                        {saveToApiSummary?.error && (
+                          <div className="text-gray-02 truncate" title={saveToApiSummary.error}>
+                            <span className="font-medium text-gray-01">
+                              {t("jobstatus.jobdetails.saveToApiErrorLabel")}
+                            </span>
+                            : {saveToApiSummary.error}
+                          </div>
+                        )}
+                        <div className="font-mono text-gray-02 truncate" title={String(a.id)}>
+                          {t("jobstatus.jobdetails.saveToApiJobIdLabel")}: {a.id}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">

@@ -23,6 +23,7 @@ import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 import { buildEmissionsPeriodPatch, type EditedPeriodEmissions } from "../../lib/emissions-edit";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
+import { reportHrefLinkPillClassName } from "@/lib/report-url-link-pill";
 import {
   applyNullableStringEdit,
   applyScope3CategoryValueEdit,
@@ -360,7 +361,18 @@ export function EmissionsDataTab({
 
               <EmissionsEditRow name={t("editor.companies.reportUrl")}>
                 {visibleColumns.map(({ rp }) => {
-                  const url = (rp.reportURL ?? "").trim();
+                  const reportUrl = (rp.reportURL ?? "").trim();
+                  const s3Url = (rp.s3Url ?? "").trim();
+
+                  // Editor context: only two URLs matter.
+                  // - Source URL: `reportURL` (public/original)
+                  // - S3 URL: `reportS3Url` (normalized to `s3Url`)
+                  const links: Array<{ label: string; href: string }> = [
+                    ...(reportUrl
+                      ? [{ label: t("registry.sourceUrl"), href: reportUrl }]
+                      : []),
+                    ...(s3Url ? [{ label: t("registry.s3Url"), href: s3Url }] : []),
+                  ];
                   return (
                     <div
                       key={rp.id}
@@ -368,23 +380,23 @@ export function EmissionsDataTab({
                         emissionsFieldCellClass + " justify-center sm:justify-start"
                       }
                     >
-                      {url ? (
-                        <Button
-                          asChild
-                          variant="secondary"
-                          size="sm"
-                          className={editorDenseToolbarClass + " shrink-0"}
-                        >
-                          <a
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                            {t("editor.periodEditor.openReport")}
-                          </a>
-                        </Button>
+                      {links.length ? (
+                        <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                          {links.map((l) => (
+                            <a
+                              key={`${rp.id}-${l.label}-${l.href}`}
+                              href={l.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={reportHrefLinkPillClassName}
+                              title={l.href}
+                              aria-label={`${l.label}: ${l.href}`}
+                            >
+                              <span className="font-medium whitespace-nowrap">{l.label}</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          ))}
+                        </div>
                       ) : (
                         <span className="text-xs text-gray-02">—</span>
                       )}

@@ -197,7 +197,9 @@ export function JobbstatusTab() {
     setViewMode(mode);
   };
 
-  const handleRerunByWorker = useRerunByWorker(swimlaneCompanies);
+  // Rerun-by-worker should respect the current UI filters (search, status filters, batch).
+  // Note: still targets the latest run per company (company.years[0]).
+  const handleRerunByWorker = useRerunByWorker(filteredCompanies);
 
   return (
     <div className="flex flex-col gap-6">

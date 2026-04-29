@@ -1,7 +1,8 @@
 /**
  * Hook for bulk rerun-by-worker in Jobbstatus tab.
- * Collects extractEmissions job targets from swimlane companies and calls rerun-and-save per company.
- * Workers match the runOnly keys (industryGics, scope1, scope2, scope3, biogenic, economy, goals, initiatives, baseYear, lei, descriptions).
+ * Collects extractEmissions job targets from the given companies and calls rerun-and-save per company.
+ * Scopes match Garbo extractEmissions follow-up runOnly keys (industryGics, scope1–3, biogenic, economy,
+ * goals, initiatives, baseYear, fiscalYear, companyTags, lei, descriptions).
  */
 
 import { useCallback } from "react";
@@ -15,13 +16,13 @@ import type { RerunWorker } from "../lib/filter-config";
 import { RUN_ONLY_TO_SCOPE_KEY } from "@/lib/run-only-workers";
 import { useI18n } from "@/contexts/I18nContext";
 
-export function useRerunByWorker(swimlaneCompanies: SwimlaneCompany[]) {
+export function useRerunByWorker(companies: SwimlaneCompany[]) {
   const { t } = useI18n();
   const handleRerunByWorker = useCallback(
     async (workerName: RerunWorker, limit: number | "all" = 5) => {
       const workerLabel = t(`jobstatus.rerunWorkers.${workerName}`);
-      const followUpKey = RUN_ONLY_TO_SCOPE_KEY[workerName];
-      if (!followUpKey) return;
+      const scopeKey = RUN_ONLY_TO_SCOPE_KEY[workerName];
+      if (!scopeKey) return;
 
       const targets: Array<{
         companyName: string;
@@ -29,10 +30,11 @@ export function useRerunByWorker(swimlaneCompanies: SwimlaneCompany[]) {
         wikidataNode: string | undefined;
       }> = [];
 
-      for (const company of swimlaneCompanies) {
+      for (const company of companies) {
         if (limit !== "all" && targets.length >= limit) break;
         const latestYear = company.years?.[0];
         if (!latestYear) continue;
+
         const extractEmissionsJob = findJobByQueueId("extractEmissions", latestYear);
         if (!extractEmissionsJob?.id) continue;
         targets.push({
@@ -55,11 +57,13 @@ export function useRerunByWorker(swimlaneCompanies: SwimlaneCompany[]) {
       for (const target of targets) {
         try {
           const response = await authenticatedFetch(
-            getPipelineUrl(`/queues/extractEmissions/${encodeURIComponent(target.extractEmissionsJobId)}/rerun-and-save`),
+            getPipelineUrl(
+              `/queues/extractEmissions/${encodeURIComponent(target.extractEmissionsJobId)}/rerun-and-save`
+            ),
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(buildRerunAndSaveBody([followUpKey], target.wikidataNode)),
+              body: JSON.stringify(buildRerunAndSaveBody([scopeKey], target.wikidataNode)),
             }
           );
           if (response.ok) {
@@ -82,7 +86,7 @@ export function useRerunByWorker(swimlaneCompanies: SwimlaneCompany[]) {
         toast.warning(t("jobstatus.rerunByWorker.partial", { worker: workerLabel, successes, failures }));
       }
     },
-    [swimlaneCompanies, t]
+    [companies, t]
   );
 
   return handleRerunByWorker;
