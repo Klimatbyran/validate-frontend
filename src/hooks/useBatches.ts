@@ -25,7 +25,6 @@ export function useBatches(): {
 
   useEffect(() => {
     let cancelled = false;
-    setBatches([]);
     setIsLoading(true);
     (async () => {
       try {
@@ -39,7 +38,9 @@ export function useBatches(): {
         const list = Array.isArray(data.batches) ? data.batches : [];
         if (!cancelled) setBatches(list);
       } catch {
-        if (!cancelled) setBatches([]);
+        if (!cancelled) {
+          setBatches((prev) => (prev.length === 0 ? [] : prev));
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }

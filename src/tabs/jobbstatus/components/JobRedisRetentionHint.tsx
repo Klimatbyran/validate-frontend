@@ -3,10 +3,10 @@ import type { QueueJob } from "@/lib/types";
 import { Callout } from "@/ui/callout";
 import { useI18n } from "@/contexts/I18nContext";
 import {
-  formatApproximateDuration,
   getEstimatedRedisPurgeRemainingMs,
   isPipelineJobLikelyInRedisLiveState,
 } from "@/lib/pipeline-job-redis-ttl";
+import { formatRedisRetentionApproxDuration } from "../lib/format-redis-retention-approx-duration";
 
 interface JobRedisRetentionHintProps {
   job: QueueJob;
@@ -49,7 +49,7 @@ export function JobRedisRetentionHint({ job }: JobRedisRetentionHintProps) {
       variant="info"
       title={t("jobstatus.jobdetails.redisRetentionRemainingTitle")}
       description={t("jobstatus.jobdetails.redisRetentionRemainingBody", {
-        duration: formatApproximateDuration(remaining),
+        duration: formatRedisRetentionApproxDuration(remaining, t),
       })}
       icon={<Clock className="w-5 h-5" />}
     />

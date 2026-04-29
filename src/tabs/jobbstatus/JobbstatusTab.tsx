@@ -3,10 +3,12 @@
  * Orchestrates data fetching, filtering, and component rendering
  */
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Loader2, ArrowUp } from "lucide-react";
 import { Button } from "@/ui/button";
-// Removed Tabs imports, switching to viewMode pills pattern
+import { motion } from "framer-motion";
+import { ViewModePills } from "@/ui/view-mode-pills";
 import { useCompaniesContext } from "@/contexts/CompaniesContext";
 import { useBatches } from "@/hooks/useBatches";
 import { convertCompaniesToSwimlaneFormat } from "./lib/swimlane-transform";
@@ -26,8 +28,6 @@ import { OverviewStats } from "./components/OverviewStats";
 import { FilterBar } from "./components/FilterBar";
 import { CompanyCard } from "./components/CompanyCard";
 import { JobbstatusArchivePanel } from "./components/JobbstatusArchivePanel";
-import { motion } from "framer-motion";
-import { ViewModePills } from "@/ui/view-mode-pills";
 
 export type JobbstatusViewMode = "live" | "archive";
 
@@ -36,8 +36,38 @@ const VIEW_MODES: { value: JobbstatusViewMode; labelKey: string }[] = [
   { value: "archive", labelKey: "jobstatus.sourceArchive" },
 ];
 
+const JOBSTATUS_SOURCE_QUERY = "source";
+
+function jobbstatusSubtabFromSearchParams(
+  searchParams: URLSearchParams,
+): JobbstatusViewMode {
+  return searchParams.get(JOBSTATUS_SOURCE_QUERY) === "archive"
+    ? "archive"
+    : "live";
+}
+
 export function JobbstatusTab() {
   const { t } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const jobbstatusSubtab = jobbstatusSubtabFromSearchParams(searchParams);
+
+  const setJobbstatusSubtab = useCallback(
+    (value: JobbstatusViewMode) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (value === "live") {
+            next.delete(JOBSTATUS_SOURCE_QUERY);
+          } else {
+            next.set(JOBSTATUS_SOURCE_QUERY, "archive");
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
   const {
     companies,
     isLoading,
@@ -55,16 +85,13 @@ export function JobbstatusTab() {
   const [companySearchQuery, setCompanySearchQuery] = useState("");
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
-  const [viewMode, setViewMode] = useState<JobbstatusViewMode>("live");
   const { batches: existingBatches, isLoading: batchesLoading } = useBatches();
 
-  // Convert CustomAPICompany to SwimlaneCompany format
   const swimlaneCompanies = useMemo(
     () => convertCompaniesToSwimlaneFormat(companies),
     [companies],
   );
 
-  // Calculate filter counts
   const filterCounts = useMemo(() => {
     return {
       pending_approval: swimlaneCompanies.filter((c) =>
@@ -92,7 +119,6 @@ export function JobbstatusTab() {
     };
   }, [swimlaneCompanies, runScope]);
 
-  // Filter companies based on active filters (AND logic), batch filter, and company name search
   const filteredCompanies = useMemo(() => {
     const searchTrimmed = companySearchQuery.trim().toLowerCase();
     const statusFiltered =
@@ -156,7 +182,6 @@ export function JobbstatusTab() {
     existingBatches,
   ]);
 
-  // Toggle filter
   const toggleFilter = (filter: FilterType) => {
     setActiveFilters((prev) => {
       const next = new Set(prev);
@@ -169,7 +194,6 @@ export function JobbstatusTab() {
     });
   };
 
-  // Clear all filters, batch filter, and company search
   const clearFilters = () => {
     setActiveFilters(new Set());
     setCompanySearchQuery("");
@@ -193,12 +217,6 @@ export function JobbstatusTab() {
     [t],
   );
 
-  const handleViewModeChange = (mode: JobbstatusViewMode) => {
-    setViewMode(mode);
-  };
-
-  // Rerun-by-worker should respect the current UI filters (search, status filters, batch).
-  // Note: still targets the latest run per company (company.years[0]).
   const handleRerunByWorker = useRerunByWorker(filteredCompanies);
 
   return (
@@ -208,7 +226,7 @@ export function JobbstatusTab() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6 flex flex-col gap-4"
       >
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-2 gap-4 flex-wrap">
           <div>
             <h2 className="text-xl font-semibold text-gray-01">
               {t("jobstatus.title")}
@@ -219,14 +237,14 @@ export function JobbstatusTab() {
           </div>
           <ViewModePills
             options={pillOptions}
-            value={viewMode}
-            onValueChange={handleViewModeChange}
+            value={jobbstatusSubtab}
+            onValueChange={setJobbstatusSubtab}
             ariaLabel={t("jobstatus.viewMode")}
             className="shrink-0"
           />
         </div>
 
-        {viewMode === "live" ? (
+        {jobbstatusSubtab === "live" ? (
           <>
             {isLoading ? (
               <div className="flex items-center justify-center p-8">
@@ -328,7 +346,7 @@ export function JobbstatusTab() {
           </>
         ) : null}
 
-        {viewMode === "archive" && (
+        {jobbstatusSubtab === "archive" && (
           <div className="mt-4">
             <JobbstatusArchivePanel
               batchesFromGarbo={existingBatches}

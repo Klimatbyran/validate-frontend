@@ -6,11 +6,30 @@ export function isTerminalArchiveStatus(status: string): boolean {
   return s === "completed" || s === "failed";
 }
 
-export function archiveStatusToSwimlane(status: string): SwimlaneStatusType {
+/**
+ * Maps any persisted archive job `status` to a swimlane UI token for badges, icons, and mixed-outcome checks.
+ * Non-terminal strings map to `"waiting"` so status-config still renders predictably.
+ */
+export function archiveJobStatusToSwimlaneBadge(
+  status: string,
+): SwimlaneStatusType {
   const s = status.toLowerCase();
   if (s === "completed") return "completed";
   if (s === "failed") return "failed";
   return "waiting";
+}
+
+/**
+ * Maps status only for **terminal** archive rows (completed / failed), as used on run-card pills.
+ * Other statuses return `null` (those rows are not shown in the compact strip).
+ */
+export function terminalArchiveJobStatusToSwimlane(
+  status: string,
+): Extract<SwimlaneStatusType, "completed" | "failed"> | null {
+  const s = status.toLowerCase();
+  if (s === "completed") return "completed";
+  if (s === "failed") return "failed";
+  return null;
 }
 
 export type ArchiveJobLike = {

@@ -65,6 +65,8 @@ The app builds these URLs with **`getGarboQueueArchiveUrl()`** in `src/config/ap
 
 **Operational note:** Reruns and any mutating pipeline actions stay on **Live**; Archive does not drive the pipeline.
 
+**Jobbstatus URL:** the Live vs Archive subtab is reflected as `?source=live` (default, often omitted) or `?source=archive`. See [routing / URL state](./ROUTING_URL_STATE.md#jobbstatus-live-vs-archive).
+
 ---
 
 ## Environment variables
@@ -141,6 +143,6 @@ In **production**, the app uses relative paths for both backends: `/api` (pipeli
 ## Reference
 
 - **Config and helpers**: `src/config/api-env.ts` – `getPipelineTarget()`, `getGarboTarget()`, `getPipelineApiBaseUrl()`, `getPipelineUrl()`, `getGarboApiBaseUrl()`, `getGarboQueueArchiveUrl()`, `getStageGarboUrl()`, `getProdGarboUrl()`.
-- **Jobbstatus Archive UI**: `src/tabs/jobbstatus/components/JobbstatusArchivePanel.tsx`, `JobbstatusArchiveDetailDialog.tsx`, `JobbstatusArchiveRunCard.tsx`, `JobbstatusArchiveQueueAttemptsDialog.tsx`, `ArchiveQueueStepPill.tsx`; hook `useArchiveRunsList.ts`; lib `archive-types.ts`, `format-archive-datetime.ts`, `archive-run-jobs.ts`.
+- **Jobbstatus Archive UI**: `src/tabs/jobbstatus/components/JobbstatusArchivePanel.tsx`, `JobbstatusArchiveDetailDialog.tsx`, `JobbstatusArchiveRunCard.tsx`, `JobbstatusArchiveQueueAttemptsDialog.tsx`, `ArchiveQueueStepPill.tsx`; hook `useArchiveRunsList.ts`; lib `archive-types.ts`, `archive-filter-styles.ts`, `format-archive-datetime.ts`, `format-redis-retention-approx-duration.ts`, `archive-run-jobs.ts`.
 - **Proxy definition**: `vite.config.ts` – proxy targets and path rewrites.
 - **Example env**: `.env.development.example` – all supported variables and short comments.

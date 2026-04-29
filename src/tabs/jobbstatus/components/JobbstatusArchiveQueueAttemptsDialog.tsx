@@ -4,7 +4,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { getStatusBackgroundColor, getStatusIcon } from "@/lib/status-config";
 import { cn } from "@/lib/utils";
 import {
-  archiveStatusToSwimlane,
+  archiveJobStatusToSwimlaneBadge,
   sortedTerminalAttemptsForQueue,
   type ArchiveJobLike,
 } from "../lib/archive-run-jobs";
@@ -44,7 +44,9 @@ export function JobbstatusArchiveQueueAttemptsDialog({
   );
 
   const hasMixedOutcomes = useMemo(() => {
-    const set = new Set(attempts.map((a) => archiveStatusToSwimlane(a.status)));
+    const set = new Set(
+      attempts.map((a) => archiveJobStatusToSwimlaneBadge(a.status)),
+    );
     return set.size > 1;
   }, [attempts]);
 
@@ -69,7 +71,7 @@ export function JobbstatusArchiveQueueAttemptsDialog({
         )}
         <div className="mt-3 space-y-2">
           {attempts.map((row, idx) => {
-            const swim = archiveStatusToSwimlane(row.status);
+            const swim = archiveJobStatusToSwimlaneBadge(row.status);
             const statusKey = swimlaneStatusLabelKey(swim);
             return (
               <div

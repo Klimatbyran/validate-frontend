@@ -85,7 +85,12 @@ These examples are meant to be copied by humans and AI tools.
 
 ### Jobbstatus (Live vs Archive)
 
-The route is **`/jobbstatus`** only. **Live** and **Archive** are in-page tabs (not separate path segments). Today they use default tab state in the UI and are **not** synced to the URL; a future improvement could add e.g. `?source=live|archive` per the query-param rules above if we want refresh/share to preserve the subtabs.
+The route is **`/jobbstatus`** only. **Live** and **Archive** are in-page tabs (not separate path segments). The active subtab is synced to the URL so refresh and shared links preserve it:
+
+- **Live (default):** `/jobbstatus` — omit `source` or use `?source=live`.
+- **Archive:** `/jobbstatus?source=archive`.
+
+Invalid `source` values fall back to Live. Switching to Live **removes** the `source` query param (cleaner default URL).
 - `/climate-plans`
 
 ### Upload (query params)

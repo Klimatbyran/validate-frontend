@@ -1,16 +1,23 @@
-import { useCallback, useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import type { GarboBatchOption } from "@/lib/garbo-batch-types";
 import { getGarboQueueArchiveUrl } from "@/config/api-env";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
+import { Callout } from "@/ui/callout";
 import { JobbstatusArchiveRunCard } from "./JobbstatusArchiveRunCard";
 import { JobbstatusArchiveQueueAttemptsDialog } from "./JobbstatusArchiveQueueAttemptsDialog";
 import { JobbstatusArchiveDetailDialog } from "./JobbstatusArchiveDetailDialog";
 import { useArchiveRunsList } from "../hooks/useArchiveRunsList";
 import type { ArchiveRunDetail } from "../lib/archive-types";
 import type { ArchiveJobLike } from "../lib/archive-run-jobs";
+import {
+  ARCHIVE_FILTER_CARD_CLASS,
+  ARCHIVE_SELECT_CLASS,
+  ARCHIVE_TEXT_INPUT_CLASS,
+  ARCHIVE_TEXT_INPUT_COMPACT_CLASS,
+} from "../lib/archive-filter-styles";
 
 export function JobbstatusArchivePanel({
   batchesFromGarbo,
@@ -48,6 +55,9 @@ export function JobbstatusArchivePanel({
     jobs: ArchiveJobLike[];
   } | null>(null);
 
+  const detailFetchSeq = useRef(0);
+  const detailAbortRef = useRef<AbortController | null>(null);
+
   const openQueueHistory = useCallback(
     (queueName: string, queueLabel: string, jobs: ArchiveJobLike[]) => {
       setQueueHistory({ queueName, queueLabel, jobs: [...jobs] });
@@ -71,6 +81,11 @@ export function JobbstatusArchivePanel({
   }, [batchesFromGarbo, manualBatches]);
 
   const openDetail = async (threadId: string) => {
+    detailAbortRef.current?.abort();
+    const ac = new AbortController();
+    detailAbortRef.current = ac;
+    const seq = ++detailFetchSeq.current;
+
     setDetailOpen(true);
     setDetailLoading(true);
     setDetailRun(null);
@@ -78,7 +93,9 @@ export function JobbstatusArchivePanel({
     try {
       const res = await garboAuthFetch(
         getGarboQueueArchiveUrl(`/runs/${encodeURIComponent(threadId)}`),
+        { signal: ac.signal },
       );
+      if (seq !== detailFetchSeq.current) return;
       if (!res.ok) {
         const text = await res.text();
         setDetailRun(null);
@@ -89,10 +106,14 @@ export function JobbstatusArchivePanel({
       setDetailRun(json);
       setDetailError(null);
     } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      if (seq !== detailFetchSeq.current) return;
       setDetailRun(null);
       setDetailError(e instanceof Error ? e.message : String(e));
     } finally {
-      setDetailLoading(false);
+      if (seq === detailFetchSeq.current) {
+        setDetailLoading(false);
+      }
     }
   };
 
@@ -114,7 +135,7 @@ export function JobbstatusArchivePanel({
     <div className="space-y-4">
       <p className="text-sm text-gray-02 max-w-3xl">{t("jobstatus.archiveIntro")}</p>
 
-      <div className="flex flex-col lg:flex-row gap-3 lg:items-end lg:flex-wrap">
+      <div className={`${ARCHIVE_FILTER_CARD_CLASS} gap-3`}>
         <div className="flex-1 min-w-0">
           <label className="text-xs font-medium text-gray-02 block mb-1">
             {t("jobstatus.archiveSearchLabel")}
@@ -127,7 +148,7 @@ export function JobbstatusArchivePanel({
               if (e.key === "Enter") applySearch();
             }}
             placeholder={t("jobstatus.archiveSearchPlaceholder")}
-            className="w-full max-w-md py-2 px-3 rounded-md border border-gray-03 bg-gray-05 text-gray-01 text-sm placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-blue-03/50 focus:border-blue-03"
+            className={`max-w-md ${ARCHIVE_TEXT_INPUT_CLASS}`}
           />
         </div>
         <div className="w-full max-w-xs shrink-0 space-y-2">
@@ -142,7 +163,7 @@ export function JobbstatusArchivePanel({
             value={batchFilterValue}
             disabled={batchesLoading}
             onChange={(e) => setBatchFilterValue(e.target.value)}
-            className="w-full py-2 px-3 rounded-md border border-gray-03 bg-gray-05 text-gray-01 text-sm focus:outline-none focus:ring-2 focus:ring-blue-03/50 focus:border-blue-03 disabled:opacity-60"
+            className={`w-full ${ARCHIVE_SELECT_CLASS}`}
           >
             <option value="">{t("jobstatus.archiveBatchFilterAll")}</option>
             {mergedBatchSelectOptions.map((o) => (
@@ -168,7 +189,7 @@ export function JobbstatusArchivePanel({
                   if (e.key === "Enter") addCustomBatchFilter();
                 }}
                 placeholder={t("jobstatus.archiveBatchCustomPlaceholder")}
-                className="flex-1 min-w-0 py-1.5 px-2 rounded-md border border-gray-03 bg-gray-05 text-gray-01 text-xs placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-blue-03/50 focus:border-blue-03"
+                className={ARCHIVE_TEXT_INPUT_COMPACT_CLASS}
               />
               <Button
                 type="button"
@@ -201,9 +222,12 @@ export function JobbstatusArchivePanel({
       )}
 
       {!loading && error && (
-        <div className="text-sm text-pink-03 border border-pink-03/30 rounded-lg p-4">
-          {t("jobstatus.archiveError", { message: error })}
-        </div>
+        <Callout
+          variant="error"
+          title={t("jobstatus.archiveErrorTitle")}
+          description={t("jobstatus.archiveError", { message: error })}
+          icon={<AlertCircle className="w-5 h-5" />}
+        />
       )}
 
       {!loading && !error && data && (
@@ -267,6 +291,7 @@ export function JobbstatusArchivePanel({
         onOpenChange={(open) => {
           setDetailOpen(open);
           if (!open) {
+            detailAbortRef.current?.abort();
             setDetailError(null);
             setDetailRun(null);
           }

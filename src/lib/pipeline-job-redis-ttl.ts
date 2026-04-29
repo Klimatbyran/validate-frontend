@@ -43,14 +43,3 @@ export function getEstimatedRedisPurgeRemainingMs(job: {
   const remaining = purgeAt - Date.now();
   return Math.max(0, remaining);
 }
-
-export function formatApproximateDuration(ms: number): string {
-  const days = ms / (24 * 60 * 60 * 1000);
-  if (days >= 2) return `${Math.round(days)} days`;
-  if (days >= 1) return "about 1 day";
-  const hours = ms / (60 * 60 * 1000);
-  if (hours >= 2) return `${Math.round(hours)} hours`;
-  if (hours >= 1) return "about 1 hour";
-  const mins = Math.max(1, Math.round(ms / (60 * 1000)));
-  return `${mins} min`;
-}

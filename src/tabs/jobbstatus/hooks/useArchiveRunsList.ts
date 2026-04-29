@@ -14,41 +14,55 @@ export function useArchiveRunsList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    const ac = new AbortController();
+    let cancelled = false;
+
     setLoading(true);
     setError(null);
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        pageSize: String(ARCHIVE_RUNS_PAGE_SIZE),
-      });
-      if (qApplied.trim()) params.set("q", qApplied.trim());
-      if (batchFilterValue.startsWith("ext:")) {
-        const key = batchFilterValue.slice(4).trim();
-        if (key) params.set("batchName", key);
-      } else if (batchFilterValue.trim()) {
-        params.set("batchDbId", batchFilterValue.trim());
-      }
-      const res = await garboAuthFetch(
-        getGarboQueueArchiveUrl(`/runs?${params.toString()}`),
-      );
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || res.statusText);
-      }
-      const json = (await res.json()) as ArchiveRunsListResponse;
-      setData(json);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, qApplied, batchFilterValue]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+    (async () => {
+      try {
+        const params = new URLSearchParams({
+          page: String(page),
+          pageSize: String(ARCHIVE_RUNS_PAGE_SIZE),
+        });
+        if (qApplied.trim()) params.set("q", qApplied.trim());
+        if (batchFilterValue.startsWith("ext:")) {
+          const key = batchFilterValue.slice(4).trim();
+          if (key) params.set("batchName", key);
+        } else if (batchFilterValue.trim()) {
+          params.set("batchDbId", batchFilterValue.trim());
+        }
+        const res = await garboAuthFetch(
+          getGarboQueueArchiveUrl(`/runs?${params.toString()}`),
+          { signal: ac.signal },
+        );
+        if (cancelled) return;
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || res.statusText);
+        }
+        const json = (await res.json()) as ArchiveRunsListResponse;
+        if (!cancelled) setData(json);
+      } catch (e) {
+        if (cancelled || (e instanceof DOMException && e.name === "AbortError")) {
+          return;
+        }
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : String(e));
+          setData(null);
+        }
+      } finally {
+        if (!cancelled && !ac.signal.aborted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      ac.abort();
+    };
+  }, [page, qApplied, batchFilterValue]);
 
   const applySearch = useCallback(() => {
     setPage(1);

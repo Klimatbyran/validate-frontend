@@ -10,6 +10,7 @@ import { Button } from "@/ui/button";
 import { useI18n } from "@/contexts/I18nContext";
 import {
   getAllPipelineSteps,
+  getPipelineStepSectionTitleI18nKey,
   getQueuesForPipelineStep,
   getQueueDisplayName,
 } from "@/lib/workflow-config";
@@ -17,6 +18,7 @@ import { getCompactStyles } from "@/lib/status-config";
 import type { SwimlaneStatusType } from "@/lib/types";
 import {
   sortedTerminalAttemptsForQueue,
+  terminalArchiveJobStatusToSwimlane,
   terminalAttemptCountByQueue,
   type ArchiveJobLike,
 } from "../lib/archive-run-jobs";
@@ -26,18 +28,11 @@ import { ArchiveQueueStepPill } from "./ArchiveQueueStepPill";
 
 export type { ArchiveRunJobRow, ArchiveRunCardModel } from "../lib/archive-types";
 
-function jobToSwimlaneStatus(status: string): SwimlaneStatusType | null {
-  const s = status.toLowerCase();
-  if (s === "completed") return "completed";
-  if (s === "failed") return "failed";
-  return null;
-}
-
 /** Latest job per queue; failed beats completed when timestamps tie. */
 function latestTerminalJobByQueue(jobs: ArchiveRunJobRow[]): Map<string, ArchiveRunJobRow> {
   const map = new Map<string, ArchiveRunJobRow>();
   for (const j of jobs) {
-    if (!jobToSwimlaneStatus(j.status)) continue;
+    if (!terminalArchiveJobStatusToSwimlane(j.status)) continue;
     const prev = map.get(j.queueName);
     if (!prev) {
       map.set(j.queueName, j);
@@ -107,12 +102,6 @@ export function JobbstatusArchiveRunCard({
     () => terminalAttemptCountByQueue(run.jobs),
     [run.jobs],
   );
-
-  const stepNameKeyMap: Record<string, string> = {
-    preprocessing: "jobstatus.overview.preprocessing",
-    "data-extraction": "jobstatus.overview.aiDataExtraction",
-    finalize: "jobstatus.overview.finalize",
-  };
 
   const pipelineSteps = useMemo(() => getAllPipelineSteps(), []);
 
@@ -245,7 +234,7 @@ export function JobbstatusArchiveRunCard({
                   const cells = queueIds.flatMap((queueId) => {
                     const job = jobByQueue.get(queueId);
                     if (!job) return [];
-                    const swim = jobToSwimlaneStatus(job.status);
+                    const swim = terminalArchiveJobStatusToSwimlane(job.status);
                     if (!swim) return [];
                     const queueKey = `jobstatus.queues.${queueId}`;
                     const fieldName =
@@ -255,9 +244,8 @@ export function JobbstatusArchiveRunCard({
                     ];
                   });
                   if (cells.length === 0) return null;
-                  const stepLabel = stepNameKeyMap[step.id]
-                    ? t(stepNameKeyMap[step.id])
-                    : step.name;
+                  const stepTitleKey = getPipelineStepSectionTitleI18nKey(step.id);
+                  const stepLabel = stepTitleKey ? t(stepTitleKey) : step.name;
                   return { id: step.id, stepLabel, cells };
                 })
                 .filter(
@@ -269,7 +257,7 @@ export function JobbstatusArchiveRunCard({
               for (const queueId of jobByQueue.keys()) {
                 if (configuredQueueIds.has(queueId)) continue;
                 const job = jobByQueue.get(queueId)!;
-                const swim = jobToSwimlaneStatus(job.status);
+                const swim = terminalArchiveJobStatusToSwimlane(job.status);
                 if (!swim) continue;
                 const orphanName = getQueueDisplayName(queueId);
                 orphanCells.push(
