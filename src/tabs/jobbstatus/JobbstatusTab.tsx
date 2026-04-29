@@ -6,6 +6,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Loader2, ArrowUp } from "lucide-react";
 import { Button } from "@/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
 import { useCompaniesContext } from "@/contexts/CompaniesContext";
 import { useBatches } from "@/hooks/useBatches";
 import { convertCompaniesToSwimlaneFormat } from "./lib/swimlane-transform";
@@ -24,6 +25,7 @@ import { useRerunByWorker } from "./hooks/useRerunByWorker";
 import { OverviewStats } from "./components/OverviewStats";
 import { FilterBar } from "./components/FilterBar";
 import { CompanyCard } from "./components/CompanyCard";
+import { JobbstatusArchivePanel } from "./components/JobbstatusArchivePanel";
 
 export function JobbstatusTab() {
   const { t } = useI18n();
@@ -119,14 +121,25 @@ export function JobbstatusTab() {
         ? statusFiltered
         : statusFiltered.filter((company) => {
             const companyBatchIds = company.batchIds ?? [];
-            return selectedBatchIds.some((id) => companyBatchIds.includes(id));
+            return selectedBatchIds.some((sel) => {
+              if (companyBatchIds.includes(sel)) return true;
+              const name = existingBatches.find((b) => b.id === sel)?.batchName;
+              return Boolean(name && companyBatchIds.includes(name));
+            });
           });
 
     if (!searchTrimmed) return batchFiltered;
     return batchFiltered.filter((company) =>
       company.name.toLowerCase().includes(searchTrimmed)
     );
-  }, [swimlaneCompanies, activeFilters, runScope, companySearchQuery, selectedBatchIds]);
+  }, [
+    swimlaneCompanies,
+    activeFilters,
+    runScope,
+    companySearchQuery,
+    selectedBatchIds,
+    existingBatches,
+  ]);
 
   // Toggle filter
   const toggleFilter = (filter: FilterType) => {
@@ -163,110 +176,123 @@ export function JobbstatusTab() {
 
   const handleRerunByWorker = useRerunByWorker(swimlaneCompanies);
 
-  // Show loading whenever initial/preload fetch is in progress (so immediate tab switch still shows loading)
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-8 h-8 text-blue-03 animate-spin mx-auto" />
-          <div>
-            <p className="text-lg text-gray-01 font-medium">
-              {t("jobstatus.loadingCompanies")}
-            </p>
-            <p className="text-sm text-gray-02 mt-2">
-              {t("jobstatus.fetchingCompanies")}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-red-03">{t("jobstatus.errorLoadingCompanies", { error: String(error) })}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!companies || companies.length === 0) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-gray-02">{t("jobstatus.noCompaniesFound")}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      <OverviewStats
-        companies={filteredCompanies}
-        onFilterToggle={toggleFilter}
-      />
+      <Tabs defaultValue="live" className="space-y-4">
+        <TabsList className="w-full max-w-md">
+          <TabsTrigger value="live" className="flex-1">
+            {t("jobstatus.sourceLive")}
+          </TabsTrigger>
+          <TabsTrigger value="archive" className="flex-1">
+            {t("jobstatus.sourceArchive")}
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="sticky top-0 z-40 bg-gray-05 pb-4 -mb-4">
-        <FilterBar
-          activeFilters={activeFilters}
-          runScope={runScope}
-          filterCounts={filterCounts}
-          onToggleFilter={toggleFilter}
-          onClearFilters={clearFilters}
-          onRunScopeChange={setRunScope}
-          filteredCount={filteredCompanies.length}
-          totalCount={swimlaneCompanies.length}
-          onRerunByWorker={handleRerunByWorker}
-          companySearchQuery={companySearchQuery}
-          onCompanySearchChange={setCompanySearchQuery}
-          existingBatches={existingBatches}
-          batchesLoading={batchesLoading}
-          selectedBatchIds={selectedBatchIds}
-          onBatchFilterChange={setSelectedBatchIds}
-          onRefresh={refresh}
-          isRefreshing={isRefreshing}
-        />
-      </div>
-
-      <div className="space-y-4">
-        {filteredCompanies.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-02">
-              {activeFilters.size > 0 || selectedBatchIds.length > 0
-                ? t("jobstatus.noCompaniesMatch")
-                : t("jobstatus.noCompaniesFound")}
-            </p>
-          </div>
-        ) : (
-          <>
-            {filteredCompanies.map((company, companyIndex) => (
-              <CompanyCard
-                key={company.id}
-                company={company}
-                positionInList={companyIndex + 1}
-              />
-            ))}
-            {hasMorePages && (
-              <div className="flex justify-center pt-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={loadMoreCompanies}
-                  disabled={isLoadingMore}
-                  className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
-                >
-                  {isLoadingMore
-                    ? t("jobstatus.loadingMore")
-                    : t("jobstatus.loadMore")}
-                </Button>
+        <TabsContent value="live" className="space-y-6 mt-4 focus-visible:outline-none">
+          {isLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-center space-y-4">
+                <Loader2 className="w-8 h-8 text-blue-03 animate-spin mx-auto" />
+                <div>
+                  <p className="text-lg text-gray-01 font-medium">
+                    {t("jobstatus.loadingCompanies")}
+                  </p>
+                  <p className="text-sm text-gray-02 mt-2">
+                    {t("jobstatus.fetchingCompanies")}
+                  </p>
+                </div>
               </div>
-            )}
-          </>
-        )}
-      </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center p-4">
+              <div className="text-center">
+                <p className="text-red-03">
+                  {t("jobstatus.errorLoadingCompanies", { error: String(error) })}
+                </p>
+              </div>
+            </div>
+          ) : !companies || companies.length === 0 ? (
+            <div className="flex items-center justify-center p-4">
+              <div className="text-center">
+                <p className="text-gray-02">{t("jobstatus.noCompaniesFound")}</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <OverviewStats
+                companies={filteredCompanies}
+                onFilterToggle={toggleFilter}
+              />
+
+              <div className="sticky top-0 z-40 bg-gray-05 pb-4 -mb-4">
+                <FilterBar
+                  activeFilters={activeFilters}
+                  runScope={runScope}
+                  filterCounts={filterCounts}
+                  onToggleFilter={toggleFilter}
+                  onClearFilters={clearFilters}
+                  onRunScopeChange={setRunScope}
+                  filteredCount={filteredCompanies.length}
+                  totalCount={swimlaneCompanies.length}
+                  onRerunByWorker={handleRerunByWorker}
+                  companySearchQuery={companySearchQuery}
+                  onCompanySearchChange={setCompanySearchQuery}
+                  existingBatches={existingBatches}
+                  batchesLoading={batchesLoading}
+                  selectedBatchIds={selectedBatchIds}
+                  onBatchFilterChange={setSelectedBatchIds}
+                  onRefresh={refresh}
+                  isRefreshing={isRefreshing}
+                />
+              </div>
+
+              <div className="space-y-4">
+                {filteredCompanies.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-02">
+                      {activeFilters.size > 0 || selectedBatchIds.length > 0
+                        ? t("jobstatus.noCompaniesMatch")
+                        : t("jobstatus.noCompaniesFound")}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {filteredCompanies.map((company, companyIndex) => (
+                      <CompanyCard
+                        key={company.id}
+                        company={company}
+                        positionInList={companyIndex + 1}
+                      />
+                    ))}
+                    {hasMorePages && (
+                      <div className="flex justify-center pt-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={loadMoreCompanies}
+                          disabled={isLoadingMore}
+                          className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
+                        >
+                          {isLoadingMore
+                            ? t("jobstatus.loadingMore")
+                            : t("jobstatus.loadMore")}
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="archive" className="mt-4 focus-visible:outline-none">
+          <JobbstatusArchivePanel
+            batchesFromGarbo={existingBatches}
+            batchesLoading={batchesLoading}
+          />
+        </TabsContent>
+      </Tabs>
 
       {showScrollToTop && (
         <button

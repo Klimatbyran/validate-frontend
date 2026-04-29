@@ -16,7 +16,7 @@ Use path segments for:
   - Example: `/upload`, `/editor`, `/errors`
 - **Resource identity** (something you’d fetch by ID)
   - Example: `/editor/company/:companyId`
-- **Major mode changes** that fundamentally change what the screen *is*
+- **Major mode changes** that fundamentally change what the screen _is_
   - Example: `/editor/multi-company` (if we choose to model this as a route)
 - **States that must behave like pages in browser history**
   - If users expect back/forward to traverse it like page navigation, it should usually be a route.
@@ -82,6 +82,10 @@ These examples are meant to be copied by humans and AI tools.
 - `/jobbstatus`
 - `/workflow`
 - `/debug`
+
+### Jobbstatus (Live vs Archive)
+
+The route is **`/jobbstatus`** only. **Live** and **Archive** are in-page tabs (not separate path segments). Today they use default tab state in the UI and are **not** synced to the URL; a future improvement could add e.g. `?source=live|archive` per the query-param rules above if we want refresh/share to preserve the subtabs.
 - `/climate-plans`
 
 ### Upload (query params)
@@ -134,4 +138,3 @@ Before adding any new URL state, answer:
 - Prefer `useParams()` for route params like `:companyId`.
 - When updating query params, use a helper so we don’t accidentally wipe unrelated params.
 - Do not rely on `defaultValue` for tabs that should persist across refresh; bind `value` to URL-derived state.
-

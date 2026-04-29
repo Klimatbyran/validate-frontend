@@ -53,6 +53,16 @@ export function getPipelineUrl(path: string): string {
   return getPipelineApiBaseUrl() + p;
 }
 
+/**
+ * Garbo internal queue archive API (Postgres `ReportRun` / jobs) for Validate Jobbstatus.
+ * Example: `/queue-archive/runs` appended after {@link getGarboApiBaseUrl} (auth required).
+ */
+export function getGarboQueueArchiveUrl(path: string): string {
+  const base = getGarboApiBaseUrl().replace(/\/+$/, "");
+  const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
+  return `${base}/queue-archive${p}`;
+}
+
 /** Garbo target. Used for all garbo URLs (auth, crawler, etc.). */
 export function getGarboTarget(): ApiTarget {
   const v = import.meta.env.VITE_GARBO_TARGET as string | undefined;

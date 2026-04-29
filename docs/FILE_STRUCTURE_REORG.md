@@ -208,7 +208,7 @@ src/
 | **hooks/** | `useAuth`, `useCompanies` |
 | **lib/** | Shared API, auth, workflow, queue-store, utils, types, etc. (no tab-only code) |
 | **ui/** | All shared primitives: button, dialog, tabs, loading-spinner, collapsible-section, etc. |
-| **tabs/jobbstatus/** | Tab + components (OverviewStats, FilterBar, CompanyCard, YearRow, JobDetailsDialog, job-details/*, scope/*, etc.) + lib (swimlane-*, calculation-utils, company-reference-api) |
+| **tabs/jobbstatus/** | Tab + components (OverviewStats, FilterBar, CompanyCard, YearRow, JobDetailsDialog, **JobbstatusArchivePanel** / RunCard / queue-attempts dialog for Garbo Postgres archive, job-details/*, scope/*, etc.) + lib (swimlane-*, calculation-utils, company-reference-api) |
 | **tabs/crawler/** | CrawlerTab + components (ResultsList, ResultItem) + lib (crawler-api, crawler-types) + hooks (useAllCompanyNames) |
 | **tabs/upload/** | UploadTab + components/ + lib/utils.ts + types.ts |
 | **tabs/errors/** | ErrorBrowserTab + components/, overview/, hooks/, lib/, config/ |

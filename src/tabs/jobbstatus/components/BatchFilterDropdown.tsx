@@ -1,12 +1,13 @@
 /**
- * Batch filter for Job status: multi-select of batch IDs using the shared UI component.
+ * Batch filter for Job status: multi-select of Garbo `Batch.id` (labels show `batchName`).
  */
 
+import type { GarboBatchOption } from "@/lib/garbo-batch-types";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { useI18n } from "@/contexts/I18nContext";
 
 export interface BatchFilterDropdownProps {
-  existingBatches: string[];
+  existingBatches: GarboBatchOption[];
   batchesLoading: boolean;
   selectedBatchIds: string[];
   onBatchFilterChange: (ids: string[]) => void;
@@ -22,7 +23,7 @@ export function BatchFilterDropdown({
 
   return (
     <MultiSelectDropdown
-      options={existingBatches}
+      options={existingBatches.map((b) => b.id)}
       selectedIds={selectedBatchIds}
       onChange={onBatchFilterChange}
       triggerLabel={t("jobstatus.batch")}
@@ -30,6 +31,9 @@ export function BatchFilterDropdown({
       loading={batchesLoading}
       loadingLabel={t("jobstatus.batchLoading")}
       emptyLabel={t("jobstatus.batchEmpty")}
+      getOptionLabel={(id) =>
+        existingBatches.find((b) => b.id === id)?.batchName ?? id
+      }
     />
   );
 }

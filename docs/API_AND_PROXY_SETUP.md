@@ -4,8 +4,8 @@ This doc describes how the app talks to the **pipeline** and **garbo** backends 
 
 ## Overview
 
-- **Pipeline** – job status, upload, batches, queues (validate/pipeline API).
-- **Garbo** – auth, crawler reports, companies (Klimatkollen garbo API).
+- **Pipeline** – live job status (Redis), upload, pipeline batch listing, queues (validate/pipeline API).
+- **Garbo** – auth, crawler reports, companies, and **queue archive** (Postgres `ReportRun` / `ReportRunJob` history for Jobbstatus).
 - **Error browser** – always calls both garbo stage and garbo prod for comparison; no “target” setting.
 
 In **development**, the Vite dev server proxies request paths to the right backend. The path you see in the **network tab** is the backend you’re hitting (e.g. `/pipeline-stage`, `/garbo-local`).
@@ -41,7 +41,29 @@ Auth, crawler (reports/list, etc.) and any other “single” garbo usage hit **
 
 ### 3. Pipeline single target – job status, upload, etc.
 
-Job status, upload, batches, queues all hit **one** pipeline backend. Default is **stage**. Overridable by env. Path in network tab: `/pipeline-local`, `/pipeline-stage`, or `/pipeline`.
+Live swimlane data (companies, active jobs, reruns, approvals) uses **one** pipeline backend. Default is **stage**. Overridable by env. Path in network tab: `/pipeline-local`, `/pipeline-stage`, or `/pipeline`.
+
+### Jobbstatus: Live vs Archive (Garbo Postgres)
+
+The **Jobbstatus** top-level tab has two in-app subtabs:
+
+| Subtab | Data source | Role |
+|--------|----------------|------|
+| **Live (Redis)** | Pipeline API | Real-time queues: swimlane, filters, rerun-by-worker, job details from Redis, approvals. Same target as section 3. |
+| **Archive** | Garbo API (`/queue-archive/…`) | Read-only history persisted when workers archive runs to Postgres. Uses the **same Garbo target** as auth/crawler (section 2). Requires a logged-in JWT (`garboAuthFetch`). |
+
+**Archive HTTP paths** (under the chosen garbo proxy prefix, e.g. `/garbo-stage/queue-archive/…` in dev):
+
+- `GET /queue-archive/batches` – batch dropdown (Garbo `Batch.id` + `batchName`).
+- `POST /queue-archive/batches` – body `{ "batchName": string }`; upserts by name and returns `{ batch: { id, batchName } }` so Validate can send **`id`** as pipeline `batchId`.
+- `GET /queue-archive/runs` – paginated list; optional query params: `q`, `page`, `pageSize`, **`batchDbId`** (exact Garbo `Batch.id`), **`batchName`** (exact legacy pipeline string still stored on some jobs).
+- `GET /queue-archive/runs/:threadId` – one run with jobs.
+
+The app builds these URLs with **`getGarboQueueArchiveUrl()`** in `src/config/api-env.ts` (Garbo API base + `/queue-archive` + path).
+
+**Batches:** New work from Validate uses **`Batch.id`** (cuid) as pipeline `job.data.batchId`. Garbo still accepts a legacy **`batchName`** string on that field for older Redis jobs. Upload / Registry / Jobbstatus batch pickers load rows from **`GET /queue-archive/batches`** (same Garbo target as auth).
+
+**Operational note:** Reruns and any mutating pipeline actions stay on **Live**; Archive does not drive the pipeline.
 
 ---
 
@@ -118,6 +140,7 @@ In **production**, the app uses relative paths for both backends: `/api` (pipeli
 
 ## Reference
 
-- **Config and helpers**: `src/config/api-env.ts` – `getPipelineTarget()`, `getGarboTarget()`, `getPipelineApiBaseUrl()`, `getPipelineUrl()`, `getGarboApiBaseUrl()`, `getStageGarboUrl()`, `getProdGarboUrl()`.
+- **Config and helpers**: `src/config/api-env.ts` – `getPipelineTarget()`, `getGarboTarget()`, `getPipelineApiBaseUrl()`, `getPipelineUrl()`, `getGarboApiBaseUrl()`, `getGarboQueueArchiveUrl()`, `getStageGarboUrl()`, `getProdGarboUrl()`.
+- **Jobbstatus Archive UI**: `src/tabs/jobbstatus/components/JobbstatusArchivePanel.tsx`, `JobbstatusArchiveRunCard.tsx`.
 - **Proxy definition**: `vite.config.ts` – proxy targets and path rewrites.
 - **Example env**: `.env.development.example` – all supported variables and short comments.

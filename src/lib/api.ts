@@ -1,5 +1,5 @@
 import axios, { AxiosError } from "axios";
-import { getPipelineApiBaseUrl, getPipelineUrl } from "@/config/api-env";
+import { getPipelineApiBaseUrl } from "@/config/api-env";
 import { TOKEN_STORAGE_KEY } from "@/lib/auth-constants";
 import {
   QueueJobsResponse,
@@ -26,9 +26,6 @@ import {
   share,
   finalize,
 } from "rxjs/operators";
-
-/** API path for listing batch IDs (used by Upload and Job status). */
-export const BATCHES_API_ENDPOINT = getPipelineUrl("/processes/batches");
 
 // RxJS-based rate limiter for API requests
 class RxRateLimiter {

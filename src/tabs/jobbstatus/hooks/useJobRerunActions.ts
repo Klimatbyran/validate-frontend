@@ -3,18 +3,19 @@
  * refresh, approve, override wikidata/company name, general rerun, and rerun-and-save.
  */
 
-import { useCallback } from "react";
+import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
 import { authenticatedFetch } from "@/lib/api-helpers";
 import { getPipelineUrl } from "@/config/api-env";
 import { buildRerunRequestData } from "@/lib/job-rerun-utils";
 import { useI18n } from "@/contexts/I18nContext";
+import type { DetailedJobResponse, QueueJob } from "@/lib/types";
 
 interface UseJobRerunActionsArgs {
-  job: { queueId?: string; id?: string } | undefined;
-  effectiveJob: { queueId?: string; id?: string; [key: string]: any } | undefined;
-  detailed: any;
-  setDetailed: React.Dispatch<React.SetStateAction<any | null>>;
+  job: QueueJob | undefined;
+  effectiveJob: QueueJob | undefined;
+  detailed: DetailedJobResponse | null;
+  setDetailed: Dispatch<SetStateAction<DetailedJobResponse | null>>;
 }
 
 export function useJobRerunActions({
@@ -28,7 +29,9 @@ export function useJobRerunActions({
     if (!job?.queueId || !job?.id) return;
     try {
       const res = await fetch(
-        getPipelineUrl(`/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`)
+        getPipelineUrl(
+          `/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`,
+        ),
       );
       if (res.ok) {
         const json = await res.json();

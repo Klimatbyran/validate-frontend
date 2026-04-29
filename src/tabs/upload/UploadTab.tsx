@@ -13,7 +13,8 @@ import { UploadRunOptions } from "./components/UploadRunOptions";
 import { UploadedFile, UrlInput } from "./types";
 import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
-import { NEW_BATCH_DROPDOWN_VALUE } from "./lib/utils";
+import { NEW_BATCH_DROPDOWN_VALUE } from "@/lib/garbo-batch-types";
+import { resolvePipelineBatchId } from "@/lib/resolve-pipeline-batch-id";
 import {
   UploadApiError,
   createJobsFromUrls,
@@ -40,7 +41,11 @@ export function UploadTab() {
   const [forceReindex, setForceReindex] = useState(false);
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState("");
-  const { batches: existingBatches, isLoading: batchesLoading } = useBatches();
+  const {
+    batches: existingBatches,
+    isLoading: batchesLoading,
+    refetch: refetchBatches,
+  } = useBatches();
   const { tagOptions, loading: tagsLoading, error: tagsError } = useTagOptions();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
@@ -53,11 +58,7 @@ export function UploadTab() {
     login();
   }, [authLoading, isAuthenticated, login]);
 
-  const effectiveBatchId =
-    !batchDropdownChoice ? "" : batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE ? customBatchName.trim() : batchDropdownChoice;
-
   const runOnly = !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
-  const batchId = effectiveBatchId || undefined;
   const tags = selectedTags.length > 0 ? selectedTags : undefined;
 
   const handleFileSubmit = useCallback(async () => {
@@ -71,12 +72,35 @@ export function UploadTab() {
       return;
     }
 
+    if (
+      batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE &&
+      !customBatchName.trim()
+    ) {
+      toast.error(t("upload.batchNameRequired"));
+      return;
+    }
+
+    let pipelineBatchId: string | undefined;
+    try {
+      pipelineBatchId = await resolvePipelineBatchId({
+        batchDropdownChoice,
+        customBatchName,
+      });
+    } catch (e) {
+      toast.error(
+        t("upload.couldNotAddJobs", {
+          message: e instanceof Error ? e.message : t("upload.unknownError"),
+        }),
+      );
+      return;
+    }
+
     try {
       const result = await uploadPdfsToParsePdf({
         files: uploadedFiles.map(({ file }) => file),
         autoApprove,
         forceReindex,
-        batchId,
+        batchId: pipelineBatchId,
         runOnly,
         tags,
       });
@@ -96,6 +120,9 @@ export function UploadTab() {
       if (reusedCount > 0) {
         toast.info(t("upload.storageDeduplicated", { count: reusedCount }));
       }
+      if (batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE) {
+        refetchBatches();
+      }
     } catch (error) {
       console.error("Failed to upload files:", error);
       if (error instanceof UploadApiError && error.status === 413) {
@@ -105,7 +132,19 @@ export function UploadTab() {
       const errorMessage = error instanceof Error ? error.message : t("upload.unknownError");
       toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
-  }, [uploadedFiles, autoApprove, runAllWorkers, selectedWorkers, forceReindex, batchId, runOnly, tags, t]);
+  }, [
+    uploadedFiles,
+    autoApprove,
+    runAllWorkers,
+    selectedWorkers,
+    forceReindex,
+    batchDropdownChoice,
+    customBatchName,
+    runOnly,
+    tags,
+    t,
+    refetchBatches,
+  ]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -173,6 +212,29 @@ export function UploadTab() {
       return;
     }
 
+    if (
+      batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE &&
+      !customBatchName.trim()
+    ) {
+      toast.error(t("upload.batchNameRequired"));
+      return;
+    }
+
+    let pipelineBatchId: string | undefined;
+    try {
+      pipelineBatchId = await resolvePipelineBatchId({
+        batchDropdownChoice,
+        customBatchName,
+      });
+    } catch (e) {
+      toast.error(
+        t("upload.couldNotAddJobs", {
+          message: e instanceof Error ? e.message : t("upload.unknownError"),
+        }),
+      );
+      return;
+    }
+
     // Send batch job creation request to the custom API
     // When "Alla" is chosen, omit runOnly so pipeline-api runs all steps.
     try {
@@ -180,7 +242,7 @@ export function UploadTab() {
         urls,
         autoApprove,
         forceReindex,
-        batchId,
+        batchId: pipelineBatchId,
         runOnly,
         tags,
       });
@@ -226,6 +288,9 @@ export function UploadTab() {
 
       // Clear the input field
       setUrlInput("");
+      if (batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE) {
+        refetchBatches();
+      }
     } catch (error) {
       console.error("Failed to add jobs:", error);
       if (error instanceof UploadApiError && error.status === 413) {
@@ -235,7 +300,19 @@ export function UploadTab() {
       const errorMessage = error instanceof Error ? error.message : t("upload.unknownError");
       toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
-  }, [urlInput, autoApprove, runAllWorkers, selectedWorkers, forceReindex, batchId, runOnly, tags, t]);
+  }, [
+    urlInput,
+    autoApprove,
+    runAllWorkers,
+    selectedWorkers,
+    forceReindex,
+    batchDropdownChoice,
+    customBatchName,
+    runOnly,
+    tags,
+    t,
+    refetchBatches,
+  ]);
 
   const handleWorkerToggle = useCallback((workerId: RunOnlyWorkerId, checked: boolean) => {
     setSelectedWorkers((prev) =>
