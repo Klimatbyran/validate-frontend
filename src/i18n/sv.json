@@ -355,6 +355,8 @@
     "pdfCachePartialFailure": "{{failed}} av {{total}} länk(ar) kunde inte cachas. {{succeeded}} länk(ar) lades ändå till."
   },
   "jobstatus": {
+    "title": "Jobbstatus",
+    "subtitle": "Övervaka eller granska data och/eller detaljer för rapportkörningar",
     "scope": "Omfattning",
     "latestRun": "Senaste körning",
     "allRuns": "Alla körningar",

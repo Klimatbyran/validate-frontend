@@ -355,6 +355,8 @@
     "pdfCachePartialFailure": "{{failed}} of {{total}} link(s) could not be cached. {{succeeded}} link(s) were still added."
   },
   "jobstatus": {
+    "title": "Jobstatus",
+    "subtitle": "Monitor or review data and/or report run details",
     "scope": "Scope",
     "latestRun": "Latest run",
     "allRuns": "All runs",
