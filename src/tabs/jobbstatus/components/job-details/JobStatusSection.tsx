@@ -9,6 +9,10 @@ import {
   getJobStatus,
   getQueueAttempts,
 } from "@/lib/workflow-utils";
+import {
+  extractGarboChunkFromSaveToApiJob,
+  summarizeSaveToApiPayload,
+} from "../../lib/save-to-api-job-utils";
 import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
 
@@ -22,65 +26,6 @@ function getStatusLabelKey(status: string, isActive?: boolean): string {
     waiting: "status.waiting",
   };
   return keyMap[status] ?? "status.waiting";
-}
-
-function extractGarboChunkFromSaveToApiJob(job: QueueJob): string | null {
-  const pieces: string[] = [];
-  if (typeof job.failedReason === "string") pieces.push(job.failedReason);
-  if (Array.isArray(job.stacktrace)) pieces.push(job.stacktrace.join("\n"));
-  if (job.returnvalue != null) {
-    try {
-      pieces.push(
-        typeof job.returnvalue === "string"
-          ? job.returnvalue
-          : JSON.stringify(job.returnvalue)
-      );
-    } catch {
-      // ignore
-    }
-  }
-
-  const text = pieces.join("\n");
-
-  // Prefer the structured error details we added in Garbo: details.garboChunk
-  const m1 = text.match(/"garboChunk"\s*:\s*"([^"]+)"/);
-  if (m1?.[1]) return m1[1];
-
-  // Fallback: header echoed back by API error handler
-  const m2 = text.match(/x-garbo-chunk["']?\s*[:=]\s*["']?([a-z0-9_-]+)["']?/i);
-  if (m2?.[1]) return m2[1];
-
-  return null;
-}
-
-function summarizeSaveToApiPayload(job: QueueJob): {
-  subEndpoint?: string;
-  keys?: string;
-  error?: string;
-} {
-  const data = job.data as Record<string, unknown> | undefined;
-  const subEndpoint =
-    typeof data?.apiSubEndpoint === "string" ? data.apiSubEndpoint : undefined;
-
-  let keys: string | undefined;
-  const body = data?.body;
-  if (body && typeof body === "object" && !Array.isArray(body)) {
-    const topKeys = Object.keys(body as object).slice(0, 10);
-    keys = topKeys.length ? topKeys.join(", ") : undefined;
-  }
-
-  const failedReason =
-    typeof job.failedReason === "string" && job.failedReason.trim()
-      ? job.failedReason.trim()
-      : undefined;
-
-  // Occasionally the error message is nested in returnvalue when bubbled up.
-  const returnValueString =
-    typeof job.returnvalue === "string" ? job.returnvalue : undefined;
-
-  const error = failedReason || returnValueString;
-
-  return { subEndpoint: subEndpoint || undefined, keys, error };
 }
 
 interface JobStatusSectionProps {
