@@ -9,5 +9,3 @@ export const ARCHIVE_FILTER_CARD_CLASS =
 
 export const ARCHIVE_TEXT_INPUT_CLASS =
   "w-full py-2 px-3 rounded-md border border-gray-03 bg-gray-05 text-gray-01 text-sm placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-blue-03/50 focus:border-blue-03";
-
-export const ARCHIVE_SELECT_CLASS = `${ARCHIVE_TEXT_INPUT_CLASS} disabled:opacity-60`;

@@ -9,7 +9,7 @@ export function useArchiveRunsList() {
   const [page, setPage] = useState(1);
   const [qInput, setQInput] = useState("");
   const [qApplied, setQApplied] = useState("");
-  const [batchFilterValue, setBatchFilterValue] = useState("");
+  const [batchFilterIds, setBatchFilterIds] = useState<string[]>([]);
   const [data, setData] = useState<ArchiveRunsListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,8 +28,8 @@ export function useArchiveRunsList() {
           pageSize: String(ARCHIVE_RUNS_PAGE_SIZE),
         });
         if (qApplied.trim()) params.set("q", qApplied.trim());
-        if (batchFilterValue.trim()) {
-          params.set("batchDbId", batchFilterValue.trim());
+        if (batchFilterIds.length > 0) {
+          params.set("batchDbIds", batchFilterIds.join(","));
         }
         const res = await garboAuthFetch(
           getGarboQueueArchiveUrl(`/runs?${params.toString()}`),
@@ -59,15 +59,15 @@ export function useArchiveRunsList() {
       cancelled = true;
       ac.abort();
     };
-  }, [page, qApplied, batchFilterValue]);
+  }, [page, qApplied, batchFilterIds]);
 
   const applySearch = useCallback(() => {
     setPage(1);
     setQApplied(qInput);
   }, [qInput]);
 
-  const setBatchFilterValueAndResetPage = useCallback((value: string) => {
-    setBatchFilterValue(value);
+  const setBatchFilterIdsAndResetPage = useCallback((ids: string[]) => {
+    setBatchFilterIds(ids);
     setPage(1);
   }, []);
 
@@ -76,8 +76,8 @@ export function useArchiveRunsList() {
     setPage,
     qInput,
     setQInput,
-    batchFilterValue,
-    setBatchFilterValue: setBatchFilterValueAndResetPage,
+    batchFilterIds,
+    setBatchFilterIds: setBatchFilterIdsAndResetPage,
     data,
     loading,
     error,

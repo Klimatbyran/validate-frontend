@@ -378,7 +378,6 @@
     "archiveIntro": "Skrivskyddad historik från Garbo (Postgres). Omkörning och godkännanden görs fortfarande under Live-fliken och pipeline-API:t medan jobb finns i Redis.",
     "archiveSearchLabel": "Sök",
     "archiveBatchFilterLabel": "Batch",
-    "archiveBatchFilterAll": "Alla batchar",
     "archiveSearchPlaceholder": "Företag, Wikidata-id, tråd-id eller URL…",
     "archiveSearchButton": "Sök",
     "archiveLoading": "Laddar arkiv…",

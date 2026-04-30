@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import type { GarboBatchOption } from "@/lib/garbo-batch-types";
 import { getGarboQueueArchiveUrl } from "@/config/api-env";
@@ -9,12 +9,12 @@ import { Callout } from "@/ui/callout";
 import { JobbstatusArchiveRunCard } from "./JobbstatusArchiveRunCard";
 import { JobbstatusArchiveQueueAttemptsDialog } from "./JobbstatusArchiveQueueAttemptsDialog";
 import { JobbstatusArchiveDetailDialog } from "./JobbstatusArchiveDetailDialog";
+import { BatchFilterDropdown } from "./BatchFilterDropdown";
 import { useArchiveRunsList } from "../hooks/useArchiveRunsList";
 import type { ArchiveRunDetail } from "../lib/archive-types";
 import type { ArchiveJobLike } from "../lib/archive-run-jobs";
 import {
   ARCHIVE_FILTER_CARD_CLASS,
-  ARCHIVE_SELECT_CLASS,
   ARCHIVE_TEXT_INPUT_CLASS,
 } from "../lib/archive-filter-styles";
 
@@ -31,8 +31,8 @@ export function JobbstatusArchivePanel({
     setPage,
     qInput,
     setQInput,
-    batchFilterValue,
-    setBatchFilterValue,
+    batchFilterIds,
+    setBatchFilterIds,
     data,
     loading,
     error,
@@ -59,15 +59,6 @@ export function JobbstatusArchivePanel({
       setQueueHistory({ queueName, queueLabel, jobs: [...jobs] });
     },
     [],
-  );
-
-  const batchSelectOptions = useMemo(
-    () =>
-      batchesFromGarbo.map((b) => ({
-        value: b.id,
-        label: b.batchName,
-      })),
-    [batchesFromGarbo],
   );
 
   const openDetail = async (threadId: string) => {
@@ -138,27 +129,18 @@ export function JobbstatusArchivePanel({
         >
           {t("jobstatus.archiveSearchButton")}
         </Button>
-        <div className="w-full max-w-xs shrink-0 min-w-[10rem]">
-          <label
-            className="text-xs font-medium text-gray-02 block mb-1"
-            htmlFor="archive-batch-filter"
-          >
+        <div className="w-full max-w-xs shrink-0 min-w-[10rem] flex flex-col justify-end">
+          <span className="text-xs font-medium text-gray-02 block mb-1">
             {t("jobstatus.archiveBatchFilterLabel")}
-          </label>
-          <select
-            id="archive-batch-filter"
-            value={batchFilterValue}
-            disabled={batchesLoading}
-            onChange={(e) => setBatchFilterValue(e.target.value)}
-            className={`w-full ${ARCHIVE_SELECT_CLASS}`}
-          >
-            <option value="">{t("jobstatus.archiveBatchFilterAll")}</option>
-            {batchSelectOptions.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          </span>
+          <BatchFilterDropdown
+            existingBatches={batchesFromGarbo}
+            batchesLoading={batchesLoading}
+            selectedBatchIds={batchFilterIds}
+            onBatchFilterChange={setBatchFilterIds}
+            triggerLabel={t("jobstatus.archiveBatchFilterLabel")}
+            ariaLabel={t("jobstatus.archiveBatchFilterLabel")}
+          />
         </div>
       </div>
 

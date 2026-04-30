@@ -378,7 +378,6 @@
     "archiveIntro": "Read-only history from Garbo (Postgres). Rerun and approvals still use the Live tab and the pipeline API while jobs exist in Redis.",
     "archiveSearchLabel": "Search",
     "archiveBatchFilterLabel": "Batch",
-    "archiveBatchFilterAll": "All batches",
     "archiveSearchPlaceholder": "Company, Wikidata id, thread id, or URL…",
     "archiveSearchButton": "Search",
     "archiveLoading": "Loading archive…",
