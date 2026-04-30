@@ -22,7 +22,9 @@ export function firstPathSegment(pathname: string): string {
   return pathname.replace(/^\//, "").split("/")[0] ?? "";
 }
 
-export function topLevelTabFromPathname(pathname: string): TopLevelTabSegment | null {
+export function topLevelTabFromPathname(
+  pathname: string,
+): TopLevelTabSegment | null {
   const seg = firstPathSegment(pathname);
   return (TOP_LEVEL_TAB_SEGMENTS as readonly string[]).includes(seg)
     ? (seg as TopLevelTabSegment)

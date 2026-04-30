@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { useBatches } from "@/hooks/useBatches";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
-import { NEW_BATCH_DROPDOWN_VALUE } from "@/tabs/upload/lib/utils";
+import { NEW_BATCH_DROPDOWN_VALUE } from "@/lib/garbo-batch-types";
+import { resolvePipelineBatchId } from "@/lib/resolve-pipeline-batch-id";
 import { useTagOptions } from "@/tabs/upload/hooks/useTagOptions";
 import {
   UploadApiError,
@@ -47,7 +48,11 @@ export function RegistryTab() {
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState<string>("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const { batches: existingBatches, isLoading: batchesLoading } = useBatches();
+  const {
+    batches: existingBatches,
+    isLoading: batchesLoading,
+    refetch: refetchBatches,
+  } = useBatches();
   const { tagOptions, loading: tagsLoading, error: tagsError } = useTagOptions();
 
   const filteredRegistry = useMemo(
@@ -122,16 +127,8 @@ export function RegistryTab() {
     [selectedReports],
   );
 
-  const effectiveBatchId =
-    !batchDropdownChoice
-      ? ""
-      : batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE
-        ? customBatchName.trim()
-        : batchDropdownChoice;
-
   const runOnly =
     !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
-  const batchId = effectiveBatchId || undefined;
   const tags = selectedTags.length > 0 ? selectedTags : undefined;
 
   const handleDeleteSelected = async () => {
@@ -182,13 +179,36 @@ export function RegistryTab() {
       return;
     }
 
+    if (
+      batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE &&
+      !customBatchName.trim()
+    ) {
+      toast.error(t("upload.batchNameRequired"));
+      return;
+    }
+
+    let pipelineBatchId: string | undefined;
+    try {
+      pipelineBatchId = await resolvePipelineBatchId({
+        batchDropdownChoice,
+        customBatchName,
+      });
+    } catch (e) {
+      toast.error(
+        t("upload.couldNotAddJobs", {
+          message: e instanceof Error ? e.message : t("upload.unknownError"),
+        }),
+      );
+      return;
+    }
+
     setIsRunningReports(true);
     try {
       const result = await createJobsFromUrls({
         urls,
         autoApprove,
         forceReindex,
-        batchId,
+        batchId: pipelineBatchId,
         runOnly,
         tags,
       });
@@ -210,6 +230,10 @@ export function RegistryTab() {
         );
       } else {
         toast.success(t("registry.runReportsSuccess", { count: urls.length }));
+      }
+
+      if (batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE) {
+        refetchBatches();
       }
 
       setIsRunReportsOpen(false);

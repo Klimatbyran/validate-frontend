@@ -194,3 +194,20 @@ export function getPipelineStep(stepId: string): PipelineStep | undefined {
 export function getAllPipelineSteps(): PipelineStep[] {
   return [...PIPELINE_STEPS].sort((a, b) => a.order - b.order);
 }
+
+/**
+ * i18n keys for pipeline step column titles (Jobbstatus Overview + Archive run-card sections).
+ * When adding a {@link PIPELINE_STEPS} entry, add a matching `jobstatus.overview.*` key here and in en/sv.
+ */
+const PIPELINE_STEP_SECTION_TITLE_I18N_KEY: Partial<Record<string, string>> = {
+  preprocessing: "jobstatus.overview.preprocessing",
+  "data-extraction": "jobstatus.overview.aiDataExtraction",
+  finalize: "jobstatus.overview.finalize",
+};
+
+/** Returns `jobstatus.overview.*` key for known steps; otherwise `undefined` (caller falls back to `step.name`). */
+export function getPipelineStepSectionTitleI18nKey(
+  stepId: string,
+): string | undefined {
+  return PIPELINE_STEP_SECTION_TITLE_I18N_KEY[stepId];
+}

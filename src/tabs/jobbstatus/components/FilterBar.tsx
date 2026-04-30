@@ -29,6 +29,7 @@ import {
 } from "@/tabs/jobbstatus/lib/filter-config";
 import { FilterBarRerunSection } from "./FilterBarRerunSection";
 import { BatchFilterDropdown } from "./BatchFilterDropdown";
+import type { GarboBatchOption } from "@/lib/garbo-batch-types";
 
 interface FilterBarProps {
   activeFilters: Set<FilterType>;
@@ -42,7 +43,7 @@ interface FilterBarProps {
   onRerunByWorker: (worker: RerunWorker, limit: number | "all") => void;
   companySearchQuery?: string;
   onCompanySearchChange?: (query: string) => void;
-  existingBatches?: string[];
+  existingBatches?: GarboBatchOption[];
   batchesLoading?: boolean;
   selectedBatchIds?: string[];
   onBatchFilterChange?: (ids: string[]) => void;

@@ -43,7 +43,10 @@ function App() {
           <Route path="/editor" element={<EditorTab />} />
           <Route path="/climate-plans" element={<ClimatePlansExplorer />} />
         </Route>
-        <Route path="*" element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />} />
+        <Route
+          path="*"
+          element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />}
+        />
       </Routes>
     </AuthProvider>
   );

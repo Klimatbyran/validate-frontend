@@ -41,7 +41,11 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       if (!job.queueId || !job.id) return;
       try {
         setIsLoading(true);
-        const res = await fetch(getPipelineUrl(`/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`));
+        const res = await fetch(
+          getPipelineUrl(
+            `/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`,
+          ),
+        );
         if (!res.ok) return;
         const json = await res.json();
         if (!aborted) setDetailed(json);
