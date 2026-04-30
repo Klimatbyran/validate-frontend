@@ -28,10 +28,7 @@ export function useArchiveRunsList() {
           pageSize: String(ARCHIVE_RUNS_PAGE_SIZE),
         });
         if (qApplied.trim()) params.set("q", qApplied.trim());
-        if (batchFilterValue.startsWith("ext:")) {
-          const key = batchFilterValue.slice(4).trim();
-          if (key) params.set("batchName", key);
-        } else if (batchFilterValue.trim()) {
+        if (batchFilterValue.trim()) {
           params.set("batchDbId", batchFilterValue.trim());
         }
         const res = await garboAuthFetch(

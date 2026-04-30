@@ -16,7 +16,6 @@ import {
   ARCHIVE_FILTER_CARD_CLASS,
   ARCHIVE_SELECT_CLASS,
   ARCHIVE_TEXT_INPUT_CLASS,
-  ARCHIVE_TEXT_INPUT_COMPACT_CLASS,
 } from "../lib/archive-filter-styles";
 
 export function JobbstatusArchivePanel({
@@ -46,9 +45,6 @@ export function JobbstatusArchivePanel({
   const [detailError, setDetailError] = useState<string | null>(null);
   const [detailRun, setDetailRun] = useState<ArchiveRunDetail | null>(null);
 
-  const [manualBatches, setManualBatches] = useState<string[]>([]);
-  const [customBatchInput, setCustomBatchInput] = useState("");
-
   const [queueHistory, setQueueHistory] = useState<{
     queueName: string;
     queueLabel: string;
@@ -65,20 +61,14 @@ export function JobbstatusArchivePanel({
     [],
   );
 
-  const mergedBatchSelectOptions = useMemo(() => {
-    const fromDb = batchesFromGarbo.map((b) => ({
-      value: b.id,
-      label: b.batchName,
-    }));
-    const manualOnly = manualBatches.filter(
-      (k) => !batchesFromGarbo.some((b) => b.batchName === k),
-    );
-    const fromManual = manualOnly.map((k) => ({
-      value: `ext:${k}`,
-      label: k,
-    }));
-    return [...fromDb, ...fromManual];
-  }, [batchesFromGarbo, manualBatches]);
+  const batchSelectOptions = useMemo(
+    () =>
+      batchesFromGarbo.map((b) => ({
+        value: b.id,
+        label: b.batchName,
+      })),
+    [batchesFromGarbo],
+  );
 
   const openDetail = async (threadId: string) => {
     detailAbortRef.current?.abort();
@@ -117,18 +107,6 @@ export function JobbstatusArchivePanel({
     }
   };
 
-  const addCustomBatchFilter = () => {
-    const key = customBatchInput.trim();
-    if (!key) return;
-    const inDb = batchesFromGarbo.some((b) => b.batchName === key);
-    if (!inDb && !manualBatches.includes(key)) {
-      setManualBatches((m) => [...m, key]);
-    }
-    const dbHit = batchesFromGarbo.find((b) => b.batchName === key);
-    setBatchFilterValue(dbHit ? dbHit.id : `ext:${key}`);
-    setCustomBatchInput("");
-  };
-
   const totalPages = data ? Math.max(1, Math.ceil(data.total / pageSize)) : 1;
 
   return (
@@ -136,7 +114,7 @@ export function JobbstatusArchivePanel({
       <p className="text-sm text-gray-02 max-w-3xl">{t("jobstatus.archiveIntro")}</p>
 
       <div className={`${ARCHIVE_FILTER_CARD_CLASS} gap-3`}>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-[12rem] max-w-md">
           <label className="text-xs font-medium text-gray-02 block mb-1">
             {t("jobstatus.archiveSearchLabel")}
           </label>
@@ -148,10 +126,19 @@ export function JobbstatusArchivePanel({
               if (e.key === "Enter") applySearch();
             }}
             placeholder={t("jobstatus.archiveSearchPlaceholder")}
-            className={`max-w-md ${ARCHIVE_TEXT_INPUT_CLASS}`}
+            className={`w-full ${ARCHIVE_TEXT_INPUT_CLASS}`}
           />
         </div>
-        <div className="w-full max-w-xs shrink-0 space-y-2">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="shrink-0"
+          onClick={applySearch}
+        >
+          {t("jobstatus.archiveSearchButton")}
+        </Button>
+        <div className="w-full max-w-xs shrink-0 min-w-[10rem]">
           <label
             className="text-xs font-medium text-gray-02 block mb-1"
             htmlFor="archive-batch-filter"
@@ -166,52 +153,13 @@ export function JobbstatusArchivePanel({
             className={`w-full ${ARCHIVE_SELECT_CLASS}`}
           >
             <option value="">{t("jobstatus.archiveBatchFilterAll")}</option>
-            {mergedBatchSelectOptions.map((o) => (
+            {batchSelectOptions.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
             ))}
           </select>
-          <div className="flex flex-col gap-1.5">
-            <label
-              className="text-[11px] font-medium text-gray-02"
-              htmlFor="archive-batch-custom"
-            >
-              {t("jobstatus.archiveBatchCustomLabel")}
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="archive-batch-custom"
-                type="text"
-                value={customBatchInput}
-                onChange={(e) => setCustomBatchInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") addCustomBatchFilter();
-                }}
-                placeholder={t("jobstatus.archiveBatchCustomPlaceholder")}
-                className={ARCHIVE_TEXT_INPUT_COMPACT_CLASS}
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="shrink-0 text-xs"
-                onClick={addCustomBatchFilter}
-              >
-                {t("jobstatus.archiveBatchAdd")}
-              </Button>
-            </div>
-          </div>
         </div>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className="shrink-0"
-          onClick={applySearch}
-        >
-          {t("jobstatus.archiveSearchButton")}
-        </Button>
       </div>
 
       {loading && (
