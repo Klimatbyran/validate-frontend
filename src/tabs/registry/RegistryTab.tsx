@@ -17,21 +17,14 @@ import RegistryRunReportsModal from "./components/RegistryRunReportsModal";
 import RegistryStats from "./components/RegistryStats";
 import RegistryResultsList from "./components/RegistryResultsList";
 import type { RegistryEntry, RegistryEntryUpdate } from "./lib/registry-types";
-import { listCompanies } from "@/tabs/editor/lib/companies-api";
+import { writeRegistryEntriesToCsv } from "./lib/registry-utils";
 import {
-  buildRegistryStats,
-  filterRegistryEntries,
-  writeRegistryEntriesToCsv,
-} from "./lib/registry-utils";
-import {
-  applyRegistryTableFilters,
-  collectDistinctReportYears,
-  type RegistrySortKey,
-  type RegistryTagFilterMode,
-  type ReportYearFilterValue,
-  sortRegistryEntries,
-  type WikidataPresenceFilter,
+  defaultRegistryViewFilters,
+  mergeRegistryViewFilters,
+  type RegistryViewFilters,
 } from "./lib/registry-table-utils";
+import { useGarboCompanyTagsMap } from "./hooks/useGarboCompanyTagsMap";
+import { useRegistryDisplayedView } from "./hooks/useRegistryDisplayedView";
 import {
   deleteReportFromRegistry,
   editRegistryEntry,
@@ -59,21 +52,15 @@ export function RegistryTab() {
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState<string>("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [yearFilter, setYearFilter] = useState<ReportYearFilterValue>("all");
-  const [wikidataFilter, setWikidataFilter] =
-    useState<WikidataPresenceFilter>("all");
-  const [tagFilterMode, setTagFilterMode] =
-    useState<RegistryTagFilterMode>("ignore");
-  const [selectedTagSlugsForFilter, setSelectedTagSlugsForFilter] = useState<
-    string[]
-  >([]);
-  const [sortKey, setSortKey] = useState<RegistrySortKey>("companyNameAsc");
-  const [wikidataToTags, setWikidataToTags] = useState<Record<
-    string,
-    string[]
-  > | null>(null);
-  const [companyTagsLoading, setCompanyTagsLoading] = useState(false);
-  const [companyTagsError, setCompanyTagsError] = useState<string | null>(null);
+  const [filters, setFilters] = useState(defaultRegistryViewFilters);
+  const patchFilters = useCallback((patch: Partial<RegistryViewFilters>) => {
+    setFilters((f) => mergeRegistryViewFilters(f, patch));
+  }, []);
+  const {
+    wikidataToTags,
+    loading: companyTagsLoading,
+    error: companyTagsError,
+  } = useGarboCompanyTagsMap();
   const {
     batches: existingBatches,
     isLoading: batchesLoading,
@@ -81,78 +68,12 @@ export function RegistryTab() {
   } = useBatches();
   const { tagOptions, loading: tagsLoading, error: tagsError } = useTagOptions();
 
-  useEffect(() => {
-    let cancelled = false;
-    setCompanyTagsLoading(true);
-    setCompanyTagsError(null);
-    void listCompanies()
-      .then((list) => {
-        if (cancelled) return;
-        const m: Record<string, string[]> = {};
-        for (const c of list) {
-          if (c.wikidataId) m[c.wikidataId] = c.tags ?? [];
-        }
-        setWikidataToTags(m);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) {
-          setWikidataToTags(null);
-          setCompanyTagsError(
-            e instanceof Error ? e.message : "Unknown error",
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setCompanyTagsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const textFilteredRegistry = useMemo(
-    () => filterRegistryEntries(registry, query),
-    [query, registry],
-  );
-
-  const distinctReportYears = useMemo(
-    () => collectDistinctReportYears(registry),
-    [registry],
-  );
-
-  const tableFilteredRegistry = useMemo(
-    () =>
-      applyRegistryTableFilters(textFilteredRegistry, {
-        reportYear: yearFilter,
-        wikidata: wikidataFilter,
-        tagMode: tagFilterMode,
-        tagSlugs: selectedTagSlugsForFilter,
-        wikidataToTags,
-      }),
-    [
-      textFilteredRegistry,
-      yearFilter,
-      wikidataFilter,
-      tagFilterMode,
-      selectedTagSlugsForFilter,
-      wikidataToTags,
-    ],
-  );
-
-  const displayedRegistry = useMemo(
-    () => sortRegistryEntries(tableFilteredRegistry, sortKey),
-    [tableFilteredRegistry, sortKey],
-  );
-
-  const hasStructuredFilters =
-    yearFilter !== "all" ||
-    wikidataFilter !== "all" ||
-    tagFilterMode !== "ignore";
-
-  const stats = useMemo(
-    () => buildRegistryStats(displayedRegistry),
-    [displayedRegistry],
-  );
+  const {
+    displayedRegistry,
+    distinctReportYears,
+    hasStructuredFilters,
+    stats,
+  } = useRegistryDisplayedView(registry, query, filters, wikidataToTags);
 
   const loadRegistry = useCallback(async () => {
     setIsLoading(true);
@@ -401,24 +322,13 @@ export function RegistryTab() {
 
         <RegistryFiltersAndSort
           disabled={isLoading || registry.length === 0}
-          yearFilter={yearFilter}
-          onYearFilterChange={setYearFilter}
+          filters={filters}
+          onFiltersChange={patchFilters}
           distinctYears={distinctReportYears}
-          wikidataFilter={wikidataFilter}
-          onWikidataFilterChange={setWikidataFilter}
-          tagFilterMode={tagFilterMode}
-          onTagFilterModeChange={(mode) => {
-            setTagFilterMode(mode);
-            if (mode !== "has_any_of") setSelectedTagSlugsForFilter([]);
-          }}
-          selectedTagSlugs={selectedTagSlugsForFilter}
-          onSelectedTagSlugsChange={setSelectedTagSlugsForFilter}
           tagOptions={tagOptions}
           tagsOptionsLoading={tagsLoading}
           companyTagsLoading={companyTagsLoading}
           companyTagsError={companyTagsError}
-          sortKey={sortKey}
-          onSortKeyChange={setSortKey}
         />
 
         <RegistryRunReportsModal

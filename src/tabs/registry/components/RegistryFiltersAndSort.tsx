@@ -10,6 +10,7 @@ import type { TagOption } from "@/tabs/editor/lib/types";
 import type {
   RegistrySortKey,
   RegistryTagFilterMode,
+  RegistryViewFilters,
   ReportYearFilterValue,
   WikidataPresenceFilter,
 } from "../lib/registry-table-utils";
@@ -33,21 +34,13 @@ const SORT_KEYS: RegistrySortKey[] = [
 
 interface RegistryFiltersAndSortProps {
   disabled: boolean;
-  yearFilter: ReportYearFilterValue;
-  onYearFilterChange: (value: ReportYearFilterValue) => void;
+  filters: RegistryViewFilters;
+  onFiltersChange: (patch: Partial<RegistryViewFilters>) => void;
   distinctYears: string[];
-  wikidataFilter: WikidataPresenceFilter;
-  onWikidataFilterChange: (value: WikidataPresenceFilter) => void;
-  tagFilterMode: RegistryTagFilterMode;
-  onTagFilterModeChange: (value: RegistryTagFilterMode) => void;
-  selectedTagSlugs: string[];
-  onSelectedTagSlugsChange: (value: string[]) => void;
   tagOptions: TagOption[];
   tagsOptionsLoading: boolean;
   companyTagsLoading: boolean;
   companyTagsError: string | null;
-  sortKey: RegistrySortKey;
-  onSortKeyChange: (value: RegistrySortKey) => void;
 }
 
 function DisableWrap({
@@ -66,21 +59,13 @@ function DisableWrap({
 
 const RegistryFiltersAndSort = ({
   disabled,
-  yearFilter,
-  onYearFilterChange,
+  filters,
+  onFiltersChange,
   distinctYears,
-  wikidataFilter,
-  onWikidataFilterChange,
-  tagFilterMode,
-  onTagFilterModeChange,
-  selectedTagSlugs,
-  onSelectedTagSlugsChange,
   tagOptions,
   tagsOptionsLoading,
   companyTagsLoading,
   companyTagsError,
-  sortKey,
-  onSortKeyChange,
 }: RegistryFiltersAndSortProps) => {
   const { t } = useI18n();
   const [filtersOpen, setFiltersOpen] = useState(true);
@@ -154,8 +139,10 @@ const RegistryFiltersAndSort = ({
             <DisableWrap disabled={disabled}>
               <SingleSelectDropdown
                 options={yearOptionList}
-                value={yearFilter}
-                onChange={(v) => onYearFilterChange(v as ReportYearFilterValue)}
+                value={filters.year}
+                onChange={(v) =>
+                  onFiltersChange({ year: v as ReportYearFilterValue })
+                }
                 placeholder={t("registry.filterYearAll")}
                 getOptionLabel={labelYear}
                 ariaLabel={t("registry.filterReportYear")}
@@ -171,9 +158,9 @@ const RegistryFiltersAndSort = ({
             <DisableWrap disabled={disabled}>
               <SingleSelectDropdown
                 options={[...WIKIDATA_OPTIONS]}
-                value={wikidataFilter}
+                value={filters.wikidata}
                 onChange={(v) =>
-                  onWikidataFilterChange(v as WikidataPresenceFilter)
+                  onFiltersChange({ wikidata: v as WikidataPresenceFilter })
                 }
                 placeholder={t("registry.filterWikidataAll")}
                 getOptionLabel={labelWikidata}
@@ -190,9 +177,9 @@ const RegistryFiltersAndSort = ({
             <DisableWrap disabled={tagControlsDisabled}>
               <SingleSelectDropdown
                 options={[...TAG_MODE_OPTIONS]}
-                value={tagFilterMode}
+                value={filters.tagMode}
                 onChange={(v) =>
-                  onTagFilterModeChange(v as RegistryTagFilterMode)
+                  onFiltersChange({ tagMode: v as RegistryTagFilterMode })
                 }
                 placeholder={t("registry.filterTagsIgnore")}
                 getOptionLabel={labelTagMode}
@@ -212,7 +199,7 @@ const RegistryFiltersAndSort = ({
             )}
           </div>
 
-          {tagFilterMode === "has_any_of" && (
+          {filters.tagMode === "has_any_of" && (
             <div>
               <label className="block text-xs font-medium text-gray-02 mb-1">
                 {t("registry.filterTagsPickSlugs")}
@@ -224,8 +211,8 @@ const RegistryFiltersAndSort = ({
               >
                 <MultiSelectDropdown
                   options={tagSlugOptions}
-                  selectedIds={selectedTagSlugs}
-                  onChange={onSelectedTagSlugsChange}
+                  selectedIds={filters.tagSlugs}
+                  onChange={(ids) => onFiltersChange({ tagSlugs: ids })}
                   triggerLabel={t("registry.filterTagsPickSlugs")}
                   getOptionLabel={(slug) => tagLabelBySlug[slug] ?? slug}
                   loading={tagsOptionsLoading}
@@ -247,8 +234,8 @@ const RegistryFiltersAndSort = ({
             <DisableWrap disabled={disabled}>
               <SingleSelectDropdown
                 options={[...SORT_KEYS]}
-                value={sortKey}
-                onChange={(v) => onSortKeyChange(v as RegistrySortKey)}
+                value={filters.sort}
+                onChange={(v) => onFiltersChange({ sort: v as RegistrySortKey })}
                 placeholder={t("registry.sortBy")}
                 getOptionLabel={labelSort}
                 ariaLabel={t("registry.sortBy")}
