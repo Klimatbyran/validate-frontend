@@ -17,16 +17,27 @@ import RegistryRunReportsModal from "./components/RegistryRunReportsModal";
 import RegistryStats from "./components/RegistryStats";
 import RegistryResultsList from "./components/RegistryResultsList";
 import type { RegistryEntry, RegistryEntryUpdate } from "./lib/registry-types";
+import { listCompanies } from "@/tabs/editor/lib/companies-api";
 import {
   buildRegistryStats,
   filterRegistryEntries,
   writeRegistryEntriesToCsv,
 } from "./lib/registry-utils";
 import {
+  applyRegistryTableFilters,
+  collectDistinctReportYears,
+  type RegistrySortKey,
+  type RegistryTagFilterMode,
+  type ReportYearFilterValue,
+  sortRegistryEntries,
+  type WikidataPresenceFilter,
+} from "./lib/registry-table-utils";
+import {
   deleteReportFromRegistry,
   editRegistryEntry,
   fetchRegistryList,
 } from "./lib/registry-api";
+import RegistryFiltersAndSort from "./components/RegistryFiltersAndSort";
 
 export function RegistryTab() {
   const { t } = useI18n();
@@ -48,6 +59,21 @@ export function RegistryTab() {
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState<string>("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [yearFilter, setYearFilter] = useState<ReportYearFilterValue>("all");
+  const [wikidataFilter, setWikidataFilter] =
+    useState<WikidataPresenceFilter>("all");
+  const [tagFilterMode, setTagFilterMode] =
+    useState<RegistryTagFilterMode>("ignore");
+  const [selectedTagSlugsForFilter, setSelectedTagSlugsForFilter] = useState<
+    string[]
+  >([]);
+  const [sortKey, setSortKey] = useState<RegistrySortKey>("companyNameAsc");
+  const [wikidataToTags, setWikidataToTags] = useState<Record<
+    string,
+    string[]
+  > | null>(null);
+  const [companyTagsLoading, setCompanyTagsLoading] = useState(false);
+  const [companyTagsError, setCompanyTagsError] = useState<string | null>(null);
   const {
     batches: existingBatches,
     isLoading: batchesLoading,
@@ -55,13 +81,77 @@ export function RegistryTab() {
   } = useBatches();
   const { tagOptions, loading: tagsLoading, error: tagsError } = useTagOptions();
 
-  const filteredRegistry = useMemo(
+  useEffect(() => {
+    let cancelled = false;
+    setCompanyTagsLoading(true);
+    setCompanyTagsError(null);
+    void listCompanies()
+      .then((list) => {
+        if (cancelled) return;
+        const m: Record<string, string[]> = {};
+        for (const c of list) {
+          if (c.wikidataId) m[c.wikidataId] = c.tags ?? [];
+        }
+        setWikidataToTags(m);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) {
+          setWikidataToTags(null);
+          setCompanyTagsError(
+            e instanceof Error ? e.message : "Unknown error",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setCompanyTagsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const textFilteredRegistry = useMemo(
     () => filterRegistryEntries(registry, query),
     [query, registry],
   );
+
+  const distinctReportYears = useMemo(
+    () => collectDistinctReportYears(registry),
+    [registry],
+  );
+
+  const tableFilteredRegistry = useMemo(
+    () =>
+      applyRegistryTableFilters(textFilteredRegistry, {
+        reportYear: yearFilter,
+        wikidata: wikidataFilter,
+        tagMode: tagFilterMode,
+        tagSlugs: selectedTagSlugsForFilter,
+        wikidataToTags,
+      }),
+    [
+      textFilteredRegistry,
+      yearFilter,
+      wikidataFilter,
+      tagFilterMode,
+      selectedTagSlugsForFilter,
+      wikidataToTags,
+    ],
+  );
+
+  const displayedRegistry = useMemo(
+    () => sortRegistryEntries(tableFilteredRegistry, sortKey),
+    [tableFilteredRegistry, sortKey],
+  );
+
+  const hasStructuredFilters =
+    yearFilter !== "all" ||
+    wikidataFilter !== "all" ||
+    tagFilterMode !== "ignore";
+
   const stats = useMemo(
-    () => buildRegistryStats(filteredRegistry),
-    [filteredRegistry],
+    () => buildRegistryStats(displayedRegistry),
+    [displayedRegistry],
   );
 
   const loadRegistry = useCallback(async () => {
@@ -112,10 +202,10 @@ export function RegistryTab() {
   };
 
   const handleSelectAll = () => {
-    if (selectedReports.length === filteredRegistry.length) {
+    if (selectedReports.length === displayedRegistry.length) {
       setSelectedReports([]);
     } else {
-      setSelectedReports(filteredRegistry);
+      setSelectedReports(displayedRegistry);
     }
   };
 
@@ -309,6 +399,28 @@ export function RegistryTab() {
           isDeletingSelected={isDeletingSelected}
         />
 
+        <RegistryFiltersAndSort
+          disabled={isLoading || registry.length === 0}
+          yearFilter={yearFilter}
+          onYearFilterChange={setYearFilter}
+          distinctYears={distinctReportYears}
+          wikidataFilter={wikidataFilter}
+          onWikidataFilterChange={setWikidataFilter}
+          tagFilterMode={tagFilterMode}
+          onTagFilterModeChange={(mode) => {
+            setTagFilterMode(mode);
+            if (mode !== "has_any_of") setSelectedTagSlugsForFilter([]);
+          }}
+          selectedTagSlugs={selectedTagSlugsForFilter}
+          onSelectedTagSlugsChange={setSelectedTagSlugsForFilter}
+          tagOptions={tagOptions}
+          tagsOptionsLoading={tagsLoading}
+          companyTagsLoading={companyTagsLoading}
+          companyTagsError={companyTagsError}
+          sortKey={sortKey}
+          onSortKeyChange={setSortKey}
+        />
+
         <RegistryRunReportsModal
           open={isRunReportsOpen}
           onOpenChange={setIsRunReportsOpen}
@@ -365,18 +477,18 @@ export function RegistryTab() {
       {!isLoading &&
         !loadError &&
         registry.length > 0 &&
-        query.trim().length > 0 &&
-        filteredRegistry.length === 0 && (
+        displayedRegistry.length === 0 &&
+        (query.trim().length > 0 || hasStructuredFilters) && (
           <p className="text-sm text-gray-02">{t("registry.noResults")}</p>
         )}
 
-      {!isLoading && !loadError && filteredRegistry.length > 0 && (
+      {!isLoading && !loadError && displayedRegistry.length > 0 && (
         <>
           <RegistryStats stats={stats} />
           <RegistryResultsList
-            registry={filteredRegistry}
+            registry={displayedRegistry}
             selectedReports={selectedReports}
-            allSelected={selectedReports.length === filteredRegistry.length}
+            allSelected={selectedReports.length === displayedRegistry.length}
             onSelectAll={handleSelectAll}
             onToggleSelect={handleToggleSelect}
             onEdit={handleEditEntry}

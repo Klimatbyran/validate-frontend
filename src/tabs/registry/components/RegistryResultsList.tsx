@@ -77,12 +77,13 @@ const RegistryResultsList = ({
           <DataTableBody>
             {registry.map((entry) => {
               const entryId = entry.wikidataId ?? entry.url;
+              const rowKey = entry.id ?? entryId;
               const isSelected = selectedReports.some(
                 (r) => (r.wikidataId ?? r.url) === entryId,
               );
               return (
                 <RegistryResultItem
-                  key={entryId}
+                  key={rowKey}
                   entry={entry}
                   selected={isSelected}
                   onToggleSelect={onToggleSelect}

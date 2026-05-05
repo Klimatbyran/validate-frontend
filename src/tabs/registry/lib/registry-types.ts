@@ -6,6 +6,9 @@ export interface RegistryEntry {
   url: string;
   sourceUrl?: string | null;
   s3Url?: string | null;
+  s3Key?: string | null;
+  s3Bucket?: string | null;
+  sha256?: string | null;
 }
 
 export interface RegistryEntryUpdate {
