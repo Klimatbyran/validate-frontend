@@ -868,8 +868,8 @@
     "sortCompanyNameDesc": "Företagsnamn Ö–A",
     "sortReportYearDesc": "Rapportår (nyast först)",
     "sortReportYearAsc": "Rapportår (äldst först)",
-    "sortRegistryIdDesc": "Registerrad (nyast först, ungefär)",
-    "sortRegistryIdAsc": "Registerrad (äldst först, ungefär)",
+    "sortRegistryIdDesc": "Registrerad (nyast först, ungefär)",
+    "sortRegistryIdAsc": "Registrerad (äldst först, ungefär)",
     "sortIdHint": "Ordningen använder internt id som approximation tills rapporter får ett skapat-datum-fält."
   },
   "climate": {
