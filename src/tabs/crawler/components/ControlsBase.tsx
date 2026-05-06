@@ -32,19 +32,20 @@ const ControlsBase = ({
           size="sm"
           onClick={handleAddToRegistryClick}
           disabled={!selectedReports.length}
+          className="!text-xs !leading-snug max-w-none"
         >
           {t("crawler.addToRegistry")}
-          <Heart className="w-4 h-4 ml-2" />
+          <Heart className="w-4 h-4 ml-2 shrink-0" />
         </Button>
         <Button
           size="sm"
           variant="secondary"
-          className="bg-blue-04 text-white hover:bg-blue-4 active:bg-blue-04/80"
+          className="bg-blue-04 text-white hover:bg-blue-4 active:bg-blue-04/80 !text-xs !leading-snug max-w-none"
           onClick={onRunSelectedReports}
           disabled={!selectedReports.length}
         >
           {t("crawler.runSelectedReports")}
-          <PlayCircle className="w-4 h-4 ml-2" />
+          <PlayCircle className="w-4 h-4 ml-2 shrink-0" />
         </Button>
         <Button
           size={"sm"}
