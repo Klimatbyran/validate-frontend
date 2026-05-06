@@ -1,8 +1,7 @@
 import { useI18n } from "@/contexts/I18nContext";
 import { UploadRunOptions } from "@/tabs/upload/components/UploadRunOptions";
-import type { UploadBatchOptionsProps } from "@/tabs/upload/components/UploadBatchOptions";
-import type { UploadTagsOptionsProps } from "@/tabs/upload/components/UploadTagsOptions";
-import type { UploadWorkerRunOptionsProps } from "@/tabs/upload/components/UploadWorkerRunOptions";
+import type { RunReportsPipelineRunOptions } from "@/hooks/useRunReportsPipeline";
+import type { RunReportListItem } from "@/lib/run-reports-types";
 import { Button } from "@/ui/button";
 import {
   Dialog,
@@ -12,33 +11,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/dialog";
-import type { RegistryEntry } from "../lib/registry-types";
 
-interface RegistryRunReportsModalProps {
+export interface RunReportsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedReports: RegistryEntry[];
+  items: RunReportListItem[];
   autoApprove: boolean;
   onAutoApproveChange: (value: boolean) => void;
-  runOptions: {
-    batch: UploadBatchOptionsProps;
-    tags: UploadTagsOptionsProps;
-    workers: UploadWorkerRunOptionsProps;
-  };
-  onRunReports: () => Promise<void>;
+  runOptions: RunReportsPipelineRunOptions;
+  onRunReports: () => void;
   isRunning: boolean;
 }
 
-const RegistryRunReportsModal = ({
+export function RunReportsModal({
   open,
   onOpenChange,
-  selectedReports,
+  items,
   autoApprove,
   onAutoApproveChange,
   runOptions,
   onRunReports,
   isRunning,
-}: RegistryRunReportsModalProps) => {
+}: RunReportsModalProps) {
   const { t } = useI18n();
 
   return (
@@ -48,7 +42,7 @@ const RegistryRunReportsModal = ({
           <DialogTitle>{t("registry.runReports")}</DialogTitle>
           <DialogDescription>
             {t("registry.runReportsDescription", {
-              count: selectedReports.length,
+              count: items.length,
             })}
           </DialogDescription>
         </DialogHeader>
@@ -56,10 +50,10 @@ const RegistryRunReportsModal = ({
         <div className="space-y-4">
           <div className="rounded-lg border border-gray-03 bg-gray-03/20 p-4">
             <p className="text-sm font-medium text-gray-01 mb-2">
-              {t("registry.selectedReportsList", { count: selectedReports.length })}
+              {t("registry.selectedReportsList", { count: items.length })}
             </p>
             <ul className="space-y-1 max-h-40 overflow-y-auto pr-2">
-              {selectedReports.map((entry) => {
+              {items.map((entry) => {
                 const key = entry.id ?? `${entry.wikidataId ?? ""}-${entry.url}`;
                 return (
                   <li key={key} className="text-sm text-gray-02 truncate" title={entry.url}>
@@ -94,7 +88,7 @@ const RegistryRunReportsModal = ({
           <Button
             size="sm"
             onClick={() => void onRunReports()}
-            disabled={isRunning || selectedReports.length === 0}
+            disabled={isRunning || items.length === 0}
           >
             {isRunning ? t("registry.runningReports") : t("registry.runReports")}
           </Button>
@@ -102,6 +96,4 @@ const RegistryRunReportsModal = ({
       </DialogContent>
     </Dialog>
   );
-};
-
-export default RegistryRunReportsModal;
+}

@@ -1,19 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
-import { useBatches } from "@/hooks/useBatches";
-import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
-import { NEW_BATCH_DROPDOWN_VALUE } from "@/lib/garbo-batch-types";
-import { resolvePipelineBatchId } from "@/lib/resolve-pipeline-batch-id";
-import { useTagOptions } from "@/tabs/upload/hooks/useTagOptions";
-import {
-  UploadApiError,
-  createJobsFromUrls,
-} from "@/tabs/upload/lib/upload-api";
+import { RunReportsModal } from "@/components/RunReportsModal";
+import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
 import RegistryControls from "./components/RegistryControls";
-import RegistryRunReportsModal from "./components/RegistryRunReportsModal";
 import RegistryStats from "./components/RegistryStats";
 import RegistryResultsList from "./components/RegistryResultsList";
 import type { RegistryEntry, RegistryEntryUpdate } from "./lib/registry-types";
@@ -42,16 +33,6 @@ export function RegistryTab() {
   const [isDeletingSelected, setIsDeletingSelected] = useState<boolean>(false);
   const [editingReportIds, setEditingReportIds] = useState<string[]>([]);
   const [isRunReportsOpen, setIsRunReportsOpen] = useState<boolean>(false);
-  const [isRunningReports, setIsRunningReports] = useState<boolean>(false);
-  const [autoApprove, setAutoApprove] = useState<boolean>(true);
-  const [runAllWorkers, setRunAllWorkers] = useState<boolean>(false);
-  const [selectedWorkers, setSelectedWorkers] = useState<RunOnlyWorkerId[]>(
-    DEFAULT_RUN_ONLY,
-  );
-  const [forceReindex, setForceReindex] = useState<boolean>(false);
-  const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
-  const [customBatchName, setCustomBatchName] = useState<string>("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [filters, setFilters] = useState(defaultRegistryViewFilters);
   const patchFilters = useCallback((patch: Partial<RegistryViewFilters>) => {
     setFilters((f) => mergeRegistryViewFilters(f, patch));
@@ -62,11 +43,14 @@ export function RegistryTab() {
     error: companyTagsError,
   } = useGarboCompanyTagsMap();
   const {
-    batches: existingBatches,
-    isLoading: batchesLoading,
-    refetch: refetchBatches,
-  } = useBatches();
-  const { tagOptions, loading: tagsLoading, error: tagsError } = useTagOptions();
+    runForUrls,
+    isRunningReports,
+    autoApprove,
+    setAutoApprove,
+    runOptions,
+    tagOptions,
+    tagsLoading,
+  } = useRunReportsPipeline();
 
   const {
     displayedRegistry,
@@ -138,10 +122,6 @@ export function RegistryTab() {
     [selectedReports],
   );
 
-  const runOnly =
-    !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
-  const tags = selectedTags.length > 0 ? selectedTags : undefined;
-
   const handleDeleteSelected = async () => {
     if (!selectedReportIds.length) {
       return;
@@ -164,101 +144,12 @@ export function RegistryTab() {
     }
   };
 
-  const handleWorkerToggle = useCallback(
-    (workerId: RunOnlyWorkerId, checked: boolean) => {
-      setSelectedWorkers((current) =>
-        checked
-          ? [...current, workerId]
-          : current.filter((id) => id !== workerId),
-      );
-    },
-    [],
-  );
-
-  const handleRunReports = async () => {
+  const handleModalRun = useCallback(() => {
     const urls = selectedReports
       .map((entry) => entry.url?.trim())
       .filter((url): url is string => Boolean(url));
-
-    if (!urls.length) {
-      toast.error(t("registry.noReportUrls"));
-      return;
-    }
-
-    if (!runAllWorkers && selectedWorkers.length === 0) {
-      toast.error(t("upload.selectAtLeastOneWorker"));
-      return;
-    }
-
-    if (
-      batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE &&
-      !customBatchName.trim()
-    ) {
-      toast.error(t("upload.batchNameRequired"));
-      return;
-    }
-
-    let pipelineBatchId: string | undefined;
-    try {
-      pipelineBatchId = await resolvePipelineBatchId({
-        batchDropdownChoice,
-        customBatchName,
-      });
-    } catch (e) {
-      toast.error(
-        t("upload.couldNotAddJobs", {
-          message: e instanceof Error ? e.message : t("upload.unknownError"),
-        }),
-      );
-      return;
-    }
-
-    setIsRunningReports(true);
-    try {
-      const result = await createJobsFromUrls({
-        urls,
-        autoApprove,
-        forceReindex,
-        batchId: pipelineBatchId,
-        runOnly,
-        tags,
-      });
-
-      const envelope =
-        !Array.isArray(result) && result && typeof result === "object"
-          ? result
-          : null;
-      const cacheErrors =
-        envelope && Array.isArray(envelope.errors) ? envelope.errors : [];
-
-      if (cacheErrors.length > 0) {
-        toast.warning(
-          t("registry.runReportsPartial", {
-            failed: cacheErrors.length,
-            total: urls.length,
-            succeeded: urls.length - cacheErrors.length,
-          }),
-        );
-      } else {
-        toast.success(t("registry.runReportsSuccess", { count: urls.length }));
-      }
-
-      if (batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE) {
-        refetchBatches();
-      }
-
-      setIsRunReportsOpen(false);
-    } catch (error) {
-      console.error("Failed to run selected reports", error);
-      const errorMessage =
-        error instanceof UploadApiError || error instanceof Error
-          ? error.message
-          : t("upload.unknownError");
-      toast.error(t("registry.runReportsError", { message: errorMessage }));
-    } finally {
-      setIsRunningReports(false);
-    }
-  };
+    void runForUrls(urls, { onSuccess: () => setIsRunReportsOpen(false) });
+  }, [runForUrls, selectedReports]);
 
   const handleEditEntry = async (entry: RegistryEntryUpdate) => {
     const reportId = entry.id;
@@ -331,38 +222,14 @@ export function RegistryTab() {
           companyTagsError={companyTagsError}
         />
 
-        <RegistryRunReportsModal
+        <RunReportsModal
           open={isRunReportsOpen}
           onOpenChange={setIsRunReportsOpen}
-          selectedReports={selectedReports}
+          items={selectedReports}
           autoApprove={autoApprove}
           onAutoApproveChange={setAutoApprove}
-          runOptions={{
-            batch: {
-              existingBatches,
-              batchesLoading,
-              batchDropdownChoice,
-              onBatchDropdownChoiceChange: setBatchDropdownChoice,
-              customBatchName,
-              onCustomBatchNameChange: setCustomBatchName,
-            },
-            tags: {
-              tagOptions,
-              tagsLoading,
-              tagsError,
-              selectedTags,
-              onSelectedTagsChange: setSelectedTags,
-            },
-            workers: {
-              runAllWorkers,
-              onRunAllWorkersChange: setRunAllWorkers,
-              selectedWorkers,
-              onSelectedWorkersChange: handleWorkerToggle,
-              forceReindex,
-              onForceReindexChange: setForceReindex,
-            },
-          }}
-          onRunReports={handleRunReports}
+          runOptions={runOptions}
+          onRunReports={handleModalRun}
           isRunning={isRunningReports}
         />
       </motion.div>
