@@ -63,6 +63,8 @@ function StatusIcon({ state }: { state: VerificationState }) {
   return <Minus className="w-4 h-4 text-gray-03" />;
 }
 
+type CompanySortId = "name-asc" | "name-desc" | "id-asc" | "id-desc";
+
 export function SingleCompanyView() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -82,6 +84,7 @@ export function SingleCompanyView() {
   const [filterHasUnverifiedEmissions, setFilterHasUnverifiedEmissions] = useState(false);
   const [filterHasUnverifiedData, setFilterHasUnverifiedData] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const [companySort, setCompanySort] = useState<CompanySortId>("name-asc");
 
   const [detail, setDetail] = useState<GarboCompanyDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -207,6 +210,43 @@ export function SingleCompanyView() {
     filterHasUnverifiedEmissions,
     filterHasUnverifiedData,
   ]);
+
+  const sortedCompanies = useMemo(() => {
+    const rows = [...filteredCompanies];
+    const byName = (a: GarboCompanyListItem, b: GarboCompanyListItem) =>
+      (a.name ?? "").localeCompare(b.name ?? "", undefined, {
+        sensitivity: "base",
+      });
+    const byId = (a: GarboCompanyListItem, b: GarboCompanyListItem) =>
+      (a.wikidataId ?? "").localeCompare(b.wikidataId ?? "");
+    switch (companySort) {
+      case "name-desc":
+        rows.sort((a, b) => -byName(a, b));
+        break;
+      case "id-asc":
+        rows.sort(byId);
+        break;
+      case "id-desc":
+        rows.sort((a, b) => -byId(a, b));
+        break;
+      default:
+        rows.sort(byName);
+    }
+    return rows;
+  }, [filteredCompanies, companySort]);
+
+  const filterPeriodStats = useMemo(() => {
+    let totalPeriods = 0;
+    let verifiedEmissionsPeriods = 0;
+    for (const c of filteredCompanies) {
+      const overview = companyOverviewById.get(c.wikidataId);
+      for (const p of overview?.perYear ?? []) {
+        totalPeriods += 1;
+        if (p.emissions === "verified") verifiedEmissionsPeriods += 1;
+      }
+    }
+    return { totalPeriods, verifiedEmissionsPeriods };
+  }, [filteredCompanies, companyOverviewById]);
 
   const goBack = useCallback(() => {
     navigate(EDITOR_INDEX_PATH);
@@ -403,7 +443,59 @@ export function SingleCompanyView() {
             </label>
           </div>
         </div>
+        {!loadingList && filteredCompanies.length > 0 && (
+          <p className="text-xs text-gray-02 mt-3 pt-3 border-t border-gray-03/50">
+            {t("editor.singleCompanyView.filterPeriodValidationSummary", {
+              verified: filterPeriodStats.verifiedEmissionsPeriods,
+              total: filterPeriodStats.totalPeriods,
+            })}
+          </p>
+        )}
       </SearchAndFiltersCard>
+
+      {!loadingList && filteredCompanies.length > 0 && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between rounded-lg border border-gray-03 bg-gray-05/60 px-4 py-3">
+          <p className="text-sm text-gray-01">
+            {t("editor.singleCompanyView.tableStatsLine", {
+              shown: filteredCompanies.length,
+              total: companyList.length,
+              verifiedPeriods: filterPeriodStats.verifiedEmissionsPeriods,
+              periodTotal: filterPeriodStats.totalPeriods,
+            })}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-gray-02">
+              {t("editor.singleCompanyView.sortLabel")}
+            </span>
+            <SingleSelectDropdown
+              options={
+                [
+                  "name-asc",
+                  "name-desc",
+                  "id-asc",
+                  "id-desc",
+                ] satisfies CompanySortId[]
+              }
+              value={companySort}
+              onChange={(v) => setCompanySort(v as CompanySortId)}
+              getOptionLabel={(id) => {
+                switch (id) {
+                  case "name-desc":
+                    return t("editor.singleCompanyView.sortNameDesc");
+                  case "id-asc":
+                    return t("editor.singleCompanyView.sortIdAsc");
+                  case "id-desc":
+                    return t("editor.singleCompanyView.sortIdDesc");
+                  default:
+                    return t("editor.singleCompanyView.sortNameAsc");
+                }
+              }}
+              placeholder={t("editor.singleCompanyView.sortNameAsc")}
+              triggerClassName="min-w-[200px] !h-8 !text-xs px-3"
+            />
+          </div>
+        </div>
+      )}
 
       {!loadingList && filteredCompanies.length > 0 && (
         <DataTableShell>
@@ -462,7 +554,7 @@ export function SingleCompanyView() {
               </tr>
             </DataTableHead>
             <DataTableBody>
-              {filteredCompanies.map((c) => {
+              {sortedCompanies.map((c) => {
                 const overview = companyOverviewById.get(c.wikidataId);
                 return (
                   <tr
@@ -550,7 +642,7 @@ export function SingleCompanyView() {
               })}
             </DataTableBody>
           </DataTable>
-          <p className="px-4 py-2 text-xs text-gray-03 border-t border-gray-03/50">
+          <p className="px-4 py-2 text-xs text-gray-01/90 border-t border-gray-03/50">
             {t("editor.singleCompanyView.showingCount", {
               count: filteredCompanies.length,
               total: companyList.length,

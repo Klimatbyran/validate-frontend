@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/contexts/I18nContext";
+import { RunReportsModal } from "@/components/RunReportsModal";
+import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
+import type { RunReportListItem } from "@/lib/run-reports-types";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { searchCompanyReports } from "./lib/crawler-utils";
 import { Loader2 } from "lucide-react";
@@ -48,6 +51,32 @@ export function CrawlerTab() {
   const [isLoading, setIsLoading] = useState<boolean | null>(null);
   const [registryResponse, setRegistryResponse] =
     useState<SaveReportsListResponse | null>(null);
+
+  const [isRunReportsOpen, setIsRunReportsOpen] = useState(false);
+
+  const {
+    runForUrls,
+    isRunningReports,
+    autoApprove,
+    setAutoApprove,
+    runOptions,
+  } = useRunReportsPipeline();
+
+  const runModalItems = useMemo((): RunReportListItem[] => {
+    return selectedReports.map((r) => ({
+      url: r.url,
+      companyName: r.companyName,
+      reportYear: r.reportYear,
+      wikidataId: r.wikidataId ?? null,
+    }));
+  }, [selectedReports]);
+
+  const handleModalRun = useCallback(() => {
+    const urls = selectedReports
+      .map((r) => r.url?.trim())
+      .filter((url): url is string => Boolean(url));
+    void runForUrls(urls, { onSuccess: () => setIsRunReportsOpen(false) });
+  }, [runForUrls, selectedReports]);
 
   const viewModeOptions = [
     { value: "manual" as const, label: t("crawler.crawlerMode") },
@@ -281,6 +310,7 @@ export function CrawlerTab() {
                 isSearchDisabled={!companyNameInput || !reportYearInput}
                 selectedReports={selectedReports}
                 handleAddToRegistryClick={handleAddToRegistryClick}
+                onRunSelectedReports={() => setIsRunReportsOpen(true)}
               />
               {(!companyNameInput || !reportYearInput) && (
                 <p className="text-sm text-gray-02 mt-4">
@@ -304,6 +334,7 @@ export function CrawlerTab() {
                 setFilterYear={setFilterYear}
                 searchYear={reportYearInput}
                 handleAddToRegistryClick={handleAddToRegistryClick}
+                onRunSelectedReports={() => setIsRunReportsOpen(true)}
               />
               {(!reportYearInput || !selectedCompanies.length) && (
                 <p className="text-sm text-gray-02 mt-4">
@@ -313,6 +344,17 @@ export function CrawlerTab() {
             </>
           )}
         </div>
+
+        <RunReportsModal
+          open={isRunReportsOpen}
+          onOpenChange={setIsRunReportsOpen}
+          items={runModalItems}
+          autoApprove={autoApprove}
+          onAutoApproveChange={setAutoApprove}
+          runOptions={runOptions}
+          onRunReports={handleModalRun}
+          isRunning={isRunningReports}
+        />
       </motion.div>
 
       {isLoading && (

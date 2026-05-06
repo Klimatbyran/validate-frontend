@@ -17,6 +17,7 @@ interface DatabaseSearchControlsProps {
   setFilterYear: React.Dispatch<React.SetStateAction<number | null>>;
   searchYear: string;
   handleAddToRegistryClick?: () => void;
+  onRunSelectedReports?: () => void;
 }
 
 const DatabaseSearchControls = ({
@@ -30,6 +31,7 @@ const DatabaseSearchControls = ({
   setFilterYear,
   searchYear,
   handleAddToRegistryClick,
+  onRunSelectedReports,
 }: DatabaseSearchControlsProps) => {
   const { t } = useI18n();
 
@@ -90,6 +92,7 @@ const DatabaseSearchControls = ({
           isSearchDisabled={isSearchDisabled}
           selectedReports={selectedReports}
           handleAddToRegistryClick={handleAddToRegistryClick}
+          onRunSelectedReports={onRunSelectedReports}
         />
       </div>
     </>
