@@ -23,7 +23,11 @@ import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { CompanyEditDetail } from "./CompanyEditDetail";
 import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
 import { NO_TAGS_FILTER_OPTION } from "../../lib/types";
-import { buildTagLabelBySlug, companyMatchesTagFilter } from "../../lib/editor-tag-and-payload-utils";
+import {
+  buildTagLabelBySlug,
+  companyMatchesTagFilter,
+  companyPassesExcludeTagFilter,
+} from "../../lib/editor-tag-and-payload-utils";
 import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
 import { ReportingPeriodQuickEditModal } from "./ReportingPeriodQuickEditModal";
 import { displayBaseYear } from "../../lib/company-edit-utils";
@@ -79,6 +83,7 @@ export function SingleCompanyView() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [excludeFilterTags, setExcludeFilterTags] = useState<string[]>([]);
   const [filterYears, setFilterYears] = useState<string[]>([]);
   const [filterSector, setFilterSector] = useState<string>("");
   const [filterHasUnverifiedEmissions, setFilterHasUnverifiedEmissions] = useState(false);
@@ -188,6 +193,7 @@ export function SingleCompanyView() {
       const overview = companyOverviewById.get(c.wikidataId);
       if (!companyMatchesSearch(c, searchQuery)) return false;
       if (!companyMatchesTagFilter(c.tags, filterTags)) return false;
+      if (!companyPassesExcludeTagFilter(c.tags, excludeFilterTags)) return false;
       if (filterYears.length && !companyHasPeriodsInYears(c, filterYears))
         return false;
       if (
@@ -205,6 +211,7 @@ export function SingleCompanyView() {
     companyOverviewById,
     searchQuery,
     filterTags,
+    excludeFilterTags,
     filterYears,
     filterSector,
     filterHasUnverifiedEmissions,
@@ -391,6 +398,20 @@ export function SingleCompanyView() {
                   : (tagLabelBySlug[slug] ?? slug)
               }
               emptyLabel={t("editor.companies.allTags")}
+              triggerClassName="min-w-[140px] !h-8 !text-xs px-3"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-02 mb-1">
+              {t("editor.singleCompanyView.excludeTagsLabel")}
+            </label>
+            <MultiSelectDropdown
+              options={tagOptions.map((o) => o.slug)}
+              selectedIds={excludeFilterTags}
+              onChange={setExcludeFilterTags}
+              triggerLabel={t("editor.singleCompanyView.excludeTagsTrigger")}
+              getOptionLabel={(slug) => tagLabelBySlug[slug] ?? slug}
+              emptyLabel={t("editor.singleCompanyView.excludeTagsEmpty")}
               triggerClassName="min-w-[140px] !h-8 !text-xs px-3"
             />
           </div>
