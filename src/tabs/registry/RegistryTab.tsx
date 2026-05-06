@@ -17,16 +17,20 @@ import RegistryRunReportsModal from "./components/RegistryRunReportsModal";
 import RegistryStats from "./components/RegistryStats";
 import RegistryResultsList from "./components/RegistryResultsList";
 import type { RegistryEntry, RegistryEntryUpdate } from "./lib/registry-types";
+import { writeRegistryEntriesToCsv } from "./lib/registry-utils";
 import {
-  buildRegistryStats,
-  filterRegistryEntries,
-  writeRegistryEntriesToCsv,
-} from "./lib/registry-utils";
+  defaultRegistryViewFilters,
+  mergeRegistryViewFilters,
+  type RegistryViewFilters,
+} from "./lib/registry-table-utils";
+import { useGarboCompanyTagsMap } from "./hooks/useGarboCompanyTagsMap";
+import { useRegistryDisplayedView } from "./hooks/useRegistryDisplayedView";
 import {
   deleteReportFromRegistry,
   editRegistryEntry,
   fetchRegistryList,
 } from "./lib/registry-api";
+import RegistryFiltersAndSort from "./components/RegistryFiltersAndSort";
 
 export function RegistryTab() {
   const { t } = useI18n();
@@ -48,6 +52,15 @@ export function RegistryTab() {
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState<string>("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [filters, setFilters] = useState(defaultRegistryViewFilters);
+  const patchFilters = useCallback((patch: Partial<RegistryViewFilters>) => {
+    setFilters((f) => mergeRegistryViewFilters(f, patch));
+  }, []);
+  const {
+    wikidataToTags,
+    loading: companyTagsLoading,
+    error: companyTagsError,
+  } = useGarboCompanyTagsMap();
   const {
     batches: existingBatches,
     isLoading: batchesLoading,
@@ -55,14 +68,12 @@ export function RegistryTab() {
   } = useBatches();
   const { tagOptions, loading: tagsLoading, error: tagsError } = useTagOptions();
 
-  const filteredRegistry = useMemo(
-    () => filterRegistryEntries(registry, query),
-    [query, registry],
-  );
-  const stats = useMemo(
-    () => buildRegistryStats(filteredRegistry),
-    [filteredRegistry],
-  );
+  const {
+    displayedRegistry,
+    distinctReportYears,
+    hasStructuredFilters,
+    stats,
+  } = useRegistryDisplayedView(registry, query, filters, wikidataToTags);
 
   const loadRegistry = useCallback(async () => {
     setIsLoading(true);
@@ -112,10 +123,10 @@ export function RegistryTab() {
   };
 
   const handleSelectAll = () => {
-    if (selectedReports.length === filteredRegistry.length) {
+    if (selectedReports.length === displayedRegistry.length) {
       setSelectedReports([]);
     } else {
-      setSelectedReports(filteredRegistry);
+      setSelectedReports(displayedRegistry);
     }
   };
 
@@ -309,6 +320,17 @@ export function RegistryTab() {
           isDeletingSelected={isDeletingSelected}
         />
 
+        <RegistryFiltersAndSort
+          disabled={isLoading || registry.length === 0}
+          filters={filters}
+          onFiltersChange={patchFilters}
+          distinctYears={distinctReportYears}
+          tagOptions={tagOptions}
+          tagsOptionsLoading={tagsLoading}
+          companyTagsLoading={companyTagsLoading}
+          companyTagsError={companyTagsError}
+        />
+
         <RegistryRunReportsModal
           open={isRunReportsOpen}
           onOpenChange={setIsRunReportsOpen}
@@ -365,18 +387,18 @@ export function RegistryTab() {
       {!isLoading &&
         !loadError &&
         registry.length > 0 &&
-        query.trim().length > 0 &&
-        filteredRegistry.length === 0 && (
+        displayedRegistry.length === 0 &&
+        (query.trim().length > 0 || hasStructuredFilters) && (
           <p className="text-sm text-gray-02">{t("registry.noResults")}</p>
         )}
 
-      {!isLoading && !loadError && filteredRegistry.length > 0 && (
+      {!isLoading && !loadError && displayedRegistry.length > 0 && (
         <>
           <RegistryStats stats={stats} />
           <RegistryResultsList
-            registry={filteredRegistry}
+            registry={displayedRegistry}
             selectedReports={selectedReports}
-            allSelected={selectedReports.length === filteredRegistry.length}
+            allSelected={selectedReports.length === displayedRegistry.length}
             onSelectAll={handleSelectAll}
             onToggleSelect={handleToggleSelect}
             onEdit={handleEditEntry}
