@@ -11,9 +11,21 @@ interface DialogTabsProps {
   job: QueueJob;
 }
 
+function primaryReportHref(job: QueueJob): string | undefined {
+  const url = job.data?.url?.trim();
+  const sourceRaw = job.data?.sourceUrl;
+  const source =
+    typeof sourceRaw === "string" ? sourceRaw.trim() : sourceRaw != null ? String(sourceRaw).trim() : "";
+  if (source && /^https?:\/\//i.test(source)) return source;
+  if (url) return url;
+  if (source) return source;
+  return undefined;
+}
+
 export function DialogTabs({ activeTab, setActiveTab, job }: DialogTabsProps) {
   const { t } = useI18n();
   const wikidataInfo = getWikidataInfo(job);
+  const reportHref = primaryReportHref(job);
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -29,10 +41,10 @@ export function DialogTabs({ activeTab, setActiveTab, job }: DialogTabsProps) {
           </TabsTrigger>
         </TabsList>
       </Tabs>
-      {job.data.url && (
+      {reportHref && /^https?:\/\//i.test(reportHref) && (
         <Button variant="ghost" size="sm" asChild className="rounded-full">
           <a
-            href={job.data.url}
+            href={reportHref}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center"

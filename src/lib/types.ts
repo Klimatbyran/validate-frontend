@@ -69,6 +69,8 @@ export const JobDataSchema = z
     status: z.string().optional(),
     needsApproval: z.boolean().optional(),
     comment: z.string().optional(),
+    /** Original report URL when `data.url` points at a cached copy (e.g. S3). Set by pipeline-api when cachePdf is used. */
+    sourceUrl: z.string().optional(),
   })
   .passthrough();
 

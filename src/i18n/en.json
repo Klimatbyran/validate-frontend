@@ -515,6 +515,7 @@
       "tabTechnical": "Technical details",
       "reportLink": "Report",
       "reportLabel": "Report",
+      "cachedPdfUrl": "Stored PDF URL",
       "wikidataLink": "Wikidata",
       "tryAgain": "Try again",
       "reject": "Reject",
