@@ -29,6 +29,35 @@ interface JobSpecificDataViewProps {
   job?: QueueJob;
 }
 
+function isHttpReportUrl(s: string) {
+  return /^https?:\/\//i.test(s.trim());
+}
+
+function JobReportUrlRow({ title, url }: { title: string; url: string }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <h4 className="text-base font-medium text-gray-01">{title}</h4>
+        <p className="text-sm text-gray-02 break-all">{url}</p>
+      </div>
+      {isHttpReportUrl(url) ? (
+        <Button variant="ghost" size="sm" asChild className="shrink-0 self-start sm:self-center">
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center text-blue-03 hover:text-blue-04"
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            {t("editor.periodEditor.openReport")}
+          </a>
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const { t } = useI18n();
   const [detailed, setDetailed] = React.useState<any | null>(null);
@@ -167,8 +196,6 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     return trimmed.length > 0 ? trimmed : undefined;
   }, [effectiveJob, processedData, wikidataApprovalData]);
 
-  const isHttpUrl = (s: string) => /^https?:\/\//i.test(s.trim());
-
   // Pipeline job URL (often S3 public URL when PDF caching was used)
   const storedPdfUrl: string | undefined = React.useMemo(() => {
     const url =
@@ -264,77 +291,22 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
                 <FileText className="w-5 h-5 text-blue-03" />
               </div>
               <div className="min-w-0 flex-1 space-y-4">
-                {showBothUrls && sourceReportUrl && (
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <h4 className="text-base font-medium text-gray-01">
-                        {t("registry.sourceUrl")}
-                      </h4>
-                      <p className="text-sm text-gray-02 break-all">{sourceReportUrl}</p>
-                    </div>
-                    {isHttpUrl(sourceReportUrl) ? (
-                      <Button variant="ghost" size="sm" asChild className="shrink-0 self-start sm:self-center">
-                        <a
-                          href={sourceReportUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-blue-03 hover:text-blue-04"
-                        >
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          {t("editor.periodEditor.openReport")}
-                        </a>
-                      </Button>
-                    ) : null}
-                  </div>
-                )}
-                {storedPdfUrl && (
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <h4 className="text-base font-medium text-gray-01">
-                        {showBothUrls
-                          ? t("jobstatus.jobdetails.cachedPdfUrl")
-                          : t("jobstatus.jobdetails.reportLabel")}
-                      </h4>
-                      <p className="text-sm text-gray-02 break-all">{storedPdfUrl}</p>
-                    </div>
-                    {isHttpUrl(storedPdfUrl) ? (
-                      <Button variant="ghost" size="sm" asChild className="shrink-0 self-start sm:self-center">
-                        <a
-                          href={storedPdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-blue-03 hover:text-blue-04"
-                        >
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          {t("editor.periodEditor.openReport")}
-                        </a>
-                      </Button>
-                    ) : null}
-                  </div>
-                )}
-                {!storedPdfUrl && sourceReportUrl && (
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <h4 className="text-base font-medium text-gray-01">
-                        {t("jobstatus.jobdetails.reportLabel")}
-                      </h4>
-                      <p className="text-sm text-gray-02 break-all">{sourceReportUrl}</p>
-                    </div>
-                    {isHttpUrl(sourceReportUrl) ? (
-                      <Button variant="ghost" size="sm" asChild className="shrink-0 self-start sm:self-center">
-                        <a
-                          href={sourceReportUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-blue-03 hover:text-blue-04"
-                        >
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          {t("editor.periodEditor.openReport")}
-                        </a>
-                      </Button>
-                    ) : null}
-                  </div>
-                )}
+                {showBothUrls && sourceReportUrl ? (
+                  <JobReportUrlRow title={t("registry.sourceUrl")} url={sourceReportUrl} />
+                ) : null}
+                {storedPdfUrl ? (
+                  <JobReportUrlRow
+                    title={
+                      showBothUrls
+                        ? t("jobstatus.jobdetails.cachedPdfUrl")
+                        : t("jobstatus.jobdetails.reportLabel")
+                    }
+                    url={storedPdfUrl}
+                  />
+                ) : null}
+                {!storedPdfUrl && sourceReportUrl ? (
+                  <JobReportUrlRow title={t("jobstatus.jobdetails.reportLabel")} url={sourceReportUrl} />
+                ) : null}
               </div>
             </div>
           </div>
