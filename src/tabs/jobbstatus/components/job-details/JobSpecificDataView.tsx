@@ -209,7 +209,6 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     return urlString.trim() || undefined;
   }, [effectiveJob, job, processedData]);
 
-  /** Original publisher URL when the job was enqueued with PDF caching (`data.url` is the cached copy). */
   const sourceReportUrl: string | undefined = React.useMemo(() => {
     const raw =
       effectiveJob?.data?.sourceUrl ??
