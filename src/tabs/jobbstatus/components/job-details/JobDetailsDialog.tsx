@@ -331,7 +331,7 @@ export function JobDetailsDialog({
           <DialogTabs
             activeTab={activeTab}
             setActiveTab={setActiveTab}
-            job={job}
+            job={effectiveJob ?? job}
           />
 
           <div className="space-y-6 my-6">
@@ -382,7 +382,7 @@ export function JobDetailsDialog({
         <DialogTabs
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          job={job}
+          job={effectiveJob ?? job}
         />
 
         <div className="space-y-6 my-6">

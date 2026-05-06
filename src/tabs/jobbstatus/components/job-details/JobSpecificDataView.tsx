@@ -29,6 +29,35 @@ interface JobSpecificDataViewProps {
   job?: QueueJob;
 }
 
+function isHttpReportUrl(s: string) {
+  return /^https?:\/\//i.test(s.trim());
+}
+
+function JobReportUrlRow({ title, url }: { title: string; url: string }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <h4 className="text-base font-medium text-gray-01">{title}</h4>
+        <p className="text-sm text-gray-02 break-all">{url}</p>
+      </div>
+      {isHttpReportUrl(url) ? (
+        <Button variant="ghost" size="sm" asChild className="shrink-0 self-start sm:self-center">
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center text-blue-03 hover:text-blue-04"
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            {t("editor.periodEditor.openReport")}
+          </a>
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const { t } = useI18n();
   const [detailed, setDetailed] = React.useState<any | null>(null);
@@ -96,7 +125,14 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const returnValueData = parseReturnValueData(effectiveJob);
 
   // List of technical fields to hide from the user-friendly view
-  const technicalFields = ["autoApprove", "threadId", "messageId", "url"];
+  const technicalFields = [
+    "autoApprove",
+    "threadId",
+    "messageId",
+    "url",
+    "sourceUrl",
+    "pdfCache",
+  ];
 
   function ValueList({ items }: { items: any[] }) {
     return (
@@ -160,18 +196,33 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     return trimmed.length > 0 ? trimmed : undefined;
   }, [effectiveJob, processedData, wikidataApprovalData]);
 
-  // Get URL from multiple possible sources
-  const jobUrl: string | undefined = React.useMemo(() => {
-    const url = 
-      effectiveJob?.data?.url || 
-      job?.data?.url || 
+  // Pipeline job URL (often S3 public URL when PDF caching was used)
+  const storedPdfUrl: string | undefined = React.useMemo(() => {
+    const url =
+      effectiveJob?.data?.url ||
+      job?.data?.url ||
       processedData?.url ||
       (effectiveJob as any)?.url ||
       (job as any)?.url;
     if (!url) return undefined;
-    const urlString = typeof url === 'string' ? url : String(url);
+    const urlString = typeof url === "string" ? url : String(url);
     return urlString.trim() || undefined;
   }, [effectiveJob, job, processedData]);
+
+  const sourceReportUrl: string | undefined = React.useMemo(() => {
+    const raw =
+      effectiveJob?.data?.sourceUrl ??
+      job?.data?.sourceUrl ??
+      (processedData as { sourceUrl?: unknown })?.sourceUrl;
+    if (raw == null) return undefined;
+    const s = typeof raw === "string" ? raw : String(raw);
+    const t = s.trim();
+    return t.length ? t : undefined;
+  }, [effectiveJob, job, processedData]);
+
+  const showBothUrls =
+    Boolean(storedPdfUrl && sourceReportUrl) &&
+    storedPdfUrl !== sourceReportUrl;
 
   // Get company name from multiple possible sources
   const companyName: string | undefined = React.useMemo(() => {
@@ -230,36 +281,32 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
 
   return (
     <div className="space-y-3 text-sm">
-      {/* Show URL if available */}
-      {jobUrl && (
+      {/* Report / PDF URLs (source vs cached S3 when both exist) */}
+      {(storedPdfUrl || sourceReportUrl) && (
         <div className="mb-4">
           <div className="bg-gray-03/20 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-full bg-blue-03/20">
-                  <FileText className="w-5 h-5 text-blue-03" />
-                </div>
-                <div>
-                  <h4 className="text-base font-medium text-gray-01">{t("jobstatus.jobdetails.reportLabel")}</h4>
-                  <p className="text-sm text-gray-02 truncate max-w-md">{jobUrl}</p>
-                </div>
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-full bg-blue-03/20 shrink-0">
+                <FileText className="w-5 h-5 text-blue-03" />
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="flex-shrink-0"
-              >
-                <a
-                  href={jobUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center text-blue-03 hover:text-blue-04"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Öppna
-                </a>
-              </Button>
+              <div className="min-w-0 flex-1 space-y-4">
+                {showBothUrls && sourceReportUrl ? (
+                  <JobReportUrlRow title={t("registry.sourceUrl")} url={sourceReportUrl} />
+                ) : null}
+                {storedPdfUrl ? (
+                  <JobReportUrlRow
+                    title={
+                      showBothUrls
+                        ? t("jobstatus.jobdetails.cachedPdfUrl")
+                        : t("jobstatus.jobdetails.reportLabel")
+                    }
+                    url={storedPdfUrl}
+                  />
+                ) : null}
+                {!storedPdfUrl && sourceReportUrl ? (
+                  <JobReportUrlRow title={t("jobstatus.jobdetails.reportLabel")} url={sourceReportUrl} />
+                ) : null}
+              </div>
             </div>
           </div>
         </div>

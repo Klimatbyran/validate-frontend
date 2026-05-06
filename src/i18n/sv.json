@@ -515,6 +515,7 @@
       "tabTechnical": "Tekniska detaljer",
       "reportLink": "Rapport",
       "reportLabel": "Rapport",
+      "cachedPdfUrl": "Lagrad PDF-URL",
       "wikidataLink": "Wikidata",
       "tryAgain": "Försök igen",
       "reject": "Avvisa",
