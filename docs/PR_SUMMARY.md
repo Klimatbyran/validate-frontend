@@ -2,6 +2,7 @@
 
 ## Editor — single company list
 
+- **Structure:** List filtering/sorting/stats live in `tabs/editor/hooks/useSingleCompanyOverviewList.ts` and `tabs/editor/lib/single-company-overview-list.ts`; the overview UI is split into `SingleCompanyOverviewFilters.tsx` and `SingleCompanyOverviewTable.tsx` so `SingleCompanyView.tsx` stays route + detail focused (tab-local, not `src/components/` — editor-only).
 - **Footer count:** “Showing X of Y companies” uses higher-contrast text so it’s easier to read.
 - **Stats & sort:** Bar above the table shows company counts plus how many reporting periods in the filtered set have **verified emissions**; the filter card includes a short line with the same period verification summary. **Sort** dropdown: name A–Z / Z–A, Wikidata ID A–Z / Z–A.
 - **Exclude tags:** New multi-select **Exclude tags** (real tags only). Companies matching the include-tag rules are removed if they have **any** selected excluded tag (e.g. include A/B/C, exclude D → `[A,B,D]` out, `[A,E,F]` in). Helper: `companyPassesExcludeTagFilter` in `editor-tag-and-payload-utils.ts`.
