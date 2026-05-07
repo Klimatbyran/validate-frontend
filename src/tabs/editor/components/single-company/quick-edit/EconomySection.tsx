@@ -114,6 +114,7 @@ export function EconomySection({
               value={employeesUnit}
               onChange={(v) => setEdited((p) => ({ ...p, employeesUnit: v }))}
               placeholder={t("editor.periodEditor.employeesUnitPlaceholder")}
+              usePortal={false}
               triggerClassName={
                 "w-28 justify-between " + (edited.employeesUnit != null ? "border-orange-03" : "")
               }
