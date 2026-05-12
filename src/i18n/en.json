@@ -17,12 +17,30 @@
     "upload": "Upload",
     "registry": "Registry",
     "jobStatus": "Job status",
+    "apiAccess": "API Access",
     "workflow": "Workflow",
     "debug": "Debug",
     "errorBrowser": "Error Browser",
     "crawler": "Crawler",
     "climatePlans": "Explore climate plans",
     "editor": "Editor"
+  },
+  "apiAccess": {
+    "title": "API Access",
+    "subtitle": "Configure API access role and generate an API key.",
+    "roleLabel": "Role",
+    "generateButton": "Generate API-Key",
+    "permissions": "Permissions: ",
+    "generatedKeyLabel": "Generated API-Key",
+    "generatedKeyPlaceholder": "No API key generated yet.",
+    "roleLoadError": "Could not load API access role.",
+    "description": "Role description: ",
+    "roles": {
+      "partner": "Partner",
+      "firstParty": "First-party",
+      "partnerDescription": "Read-only access: company listings, company details, and search",
+      "firstPartyDescription": "Full access to the client-facing HTTP API"
+    }
   },
   "editor": {
     "title": "Editor",

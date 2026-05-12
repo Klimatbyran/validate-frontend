@@ -17,12 +17,30 @@
     "upload": "Ladda upp",
     "registry": "Register",
     "jobStatus": "Jobbstatus",
+    "apiAccess": "API Access",
     "workflow": "Processflöde",
     "debug": "Debug",
     "errorBrowser": "Felutforskare",
     "crawler": "Crawler",
     "climatePlans": "Utforska klimatplaner",
     "editor": "Redigerare"
+  },
+  "apiAccess": {
+    "title": "API Access",
+    "subtitle": "Konfigurera API-roll och generera en API-nyckel.",
+    "roleLabel": "Roll",
+    "description": "Rollbeskrivning: ",
+    "permissions": "Behörigheter: ",
+    "generateButton": "Generate API-Key",
+    "generatedKeyLabel": "Generated API-Key",
+    "generatedKeyPlaceholder": "Ingen API-nyckel genererad ännu.",
+    "roleLoadError": "Kunde inte ladda API-roll.",
+    "roles": {
+      "partner": "Partner",
+      "firstParty": "First-party",
+      "partnerDescription": "Läsbehörighet: företagslista, företagsdetaljer och sökning",
+      "firstPartyDescription": "Full åtkomst till det klientvända HTTP API:et"
+    }
   },
   "editor": {
     "companyDetail": {

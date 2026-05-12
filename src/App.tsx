@@ -4,6 +4,7 @@ import { AuthCallback } from "@/pages/AuthCallback";
 import { GlobalLoginModal } from "@/components/GlobalLoginModal";
 import SlideshowPage from "@/pages/SlideshowPage";
 import { MainLayout } from "@/layouts/MainLayout";
+import { ApiAccessTab } from "@/tabs/api-access/ApiAccessTab";
 import { ClimatePlansExplorer } from "@/tabs/climate-plans/ClimatePlansExplorer";
 import { CrawlerTab } from "@/tabs/crawler/CrawlerTab";
 import { DebugTab } from "@/tabs/debug/DebugTab";
@@ -31,6 +32,7 @@ function App() {
           <Route path="/crawler" element={<CrawlerTab />} />
           <Route path="/registry" element={<RegistryTab />} />
           <Route path="/upload" element={<UploadTab />} />
+          <Route path="/api-access" element={<ApiAccessTab />} />
           <Route path="/jobbstatus" element={<JobbstatusTab />} />
           <Route path="/workflow" element={<WorkflowTab />} />
           <Route path="/debug" element={<DebugTab />} />
@@ -43,7 +45,10 @@ function App() {
           <Route path="/editor" element={<EditorTab />} />
           <Route path="/climate-plans" element={<ClimatePlansExplorer />} />
         </Route>
-        <Route path="*" element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />} />
+        <Route
+          path="*"
+          element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />}
+        />
       </Routes>
     </AuthProvider>
   );
