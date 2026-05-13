@@ -38,6 +38,7 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   extractDescriptions: "Extrahera beskrivningar",
 
   // AI Data Extraction
+  extractLEI: "LEI Extraktion",
   guessWikidata: "Wikidata",
   diffReportingPeriods: "Diff rapportperioder",
   extractEmissions: "Extrahera utsläpp",
@@ -107,6 +108,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
       "followUpFiscalYear",
       "followUpCompanyTags",
       "followUpIndustryGics",
+      "extractLEI",
       "diffIndustry",
       "diffGoals",
       "diffInitiatives",
