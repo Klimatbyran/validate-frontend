@@ -1,4 +1,9 @@
 import type { CustomAPICompany } from "@/lib/types";
+import {
+  getAllPipelineSteps,
+  getQueuesForPipelineStep,
+} from "@/lib/workflow-config";
+import { getJobStatus } from "@/lib/workflow-utils";
 
 export type AttentionItem = {
   key: string;
@@ -16,6 +21,7 @@ export type ProcessingItem = {
   key: string;
   companyName: string;
   year?: number;
+  processId: string;
   threadId: string;
   timestamp: number;
 };
@@ -31,9 +37,11 @@ type ProcessLike = {
     timestamp?: number;
     status?: string;
     queue?: string;
+    queueId?: string;
     url?: string;
     sourceUrl?: string;
     data?: unknown;
+    approval?: unknown;
     threadId?: unknown;
   }>;
 };
@@ -83,32 +91,6 @@ function resolveLatestThreadId(process: ProcessLike): string {
   )[0];
   if (!latestJob) return fallback;
   return resolveJobThreadId(latestJob, fallback);
-}
-
-function isGuessWikidataPendingApproval(
-  job:
-    | {
-        queue?: string;
-        data?: unknown;
-      }
-    | undefined,
-): boolean {
-  if (!job || job.queue !== "guessWikidata") return false;
-
-  const data = job.data as
-    | {
-        approval?: { approved?: unknown; status?: unknown };
-        needsApproval?: unknown;
-      }
-    | undefined;
-
-  const approval = data?.approval;
-  if (approval && typeof approval === "object") {
-    if (approval.approved === false) return true;
-    if (approval.status === "pending_approval") return true;
-  }
-
-  return data?.needsApproval === true;
 }
 
 function resolveCanonicalReportUrl(process: ProcessLike): string | null {
@@ -178,17 +160,51 @@ function resolveCanonicalYear(process: ProcessLike): number | undefined {
 }
 
 function resolveProcessTimestamp(process: ProcessLike): number {
-  return (
-    process.startedAt ||
-    process.finishedAt ||
-    Math.max(0, ...(process.jobs || []).map((job) => job.timestamp || 0))
+  const startedAt = process.startedAt || 0;
+  const finishedAt = process.finishedAt || 0;
+  const latestJobTimestamp = Math.max(
+    0,
+    ...(process.jobs || []).map((job) => job.timestamp || 0),
   );
+
+  return Math.max(startedAt, finishedAt, latestJobTimestamp);
+}
+
+function getLatestJobsByQueue(
+  jobs: NonNullable<ProcessLike["jobs"]>,
+  pipelineQueueIds: Set<string>,
+): NonNullable<ProcessLike["jobs"]> {
+  const latestByQueue = new Map<
+    string,
+    NonNullable<ProcessLike["jobs"]>[number]
+  >();
+
+  for (const [index, job] of jobs.entries()) {
+    const resolvedQueueId =
+      typeof job.queueId === "string" && pipelineQueueIds.has(job.queueId)
+        ? job.queueId
+        : typeof job.queue === "string" && pipelineQueueIds.has(job.queue)
+          ? job.queue
+          : undefined;
+    const queueKey =
+      resolvedQueueId || job.id || `unknown-queue-${String(index)}`;
+    const existing = latestByQueue.get(queueKey);
+    if (!existing || (existing.timestamp || 0) < (job.timestamp || 0)) {
+      latestByQueue.set(queueKey, job);
+    }
+  }
+
+  return Array.from(latestByQueue.values());
 }
 
 export function buildJobStatusOverlaySummary(
   companies: CustomAPICompany[],
   fallbackCompanyName: string,
 ): JobStatusOverlaySummary {
+  const pipelineQueueIds = new Set(
+    getAllPipelineSteps().flatMap((step) => getQueuesForPipelineStep(step.id)),
+  );
+
   const attentionItems: AttentionItem[] = [];
   const activeProcessingByThread = new Map<string, ProcessingItem>();
   const latestProcessByReportKey = new Map<
@@ -231,6 +247,7 @@ export function buildJobStatusOverlaySummary(
             key: `${process.id}:${latestThreadId}`,
             companyName,
             year: canonicalYear,
+            processId: process.id,
             threadId: latestThreadId,
             timestamp,
           });
@@ -251,25 +268,28 @@ export function buildJobStatusOverlaySummary(
     }
   }
 
-  const processingItems = Array.from(activeProcessingByThread.values()).sort(
-    (a, b) => b.timestamp - a.timestamp,
-  );
-
   for (const process of latestProcessByReportKey.values()) {
     const threadJobs = process.jobs.filter(
       (job) => resolveJobThreadId(job, process.threadId) === process.threadId,
     );
     const scopedJobs = threadJobs.length > 0 ? threadJobs : process.jobs;
+    const latestScopedJobs = getLatestJobsByQueue(scopedJobs, pipelineQueueIds);
+    const latestPipelineJobs = latestScopedJobs.filter((job) => {
+      if (
+        typeof job.queueId === "string" &&
+        pipelineQueueIds.has(job.queueId)
+      ) {
+        return true;
+      }
+      return typeof job.queue === "string" && pipelineQueueIds.has(job.queue);
+    });
 
     const failedCount = scopedJobs.filter(
       (job) => job.status === "failed",
     ).length;
-    const latestWikidataJob = [...scopedJobs]
-      .filter((job) => job.queue === "guessWikidata")
-      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
-
-    const hasPendingApproval =
-      isGuessWikidataPendingApproval(latestWikidataJob);
+    const hasPendingApproval = latestPipelineJobs.some(
+      (job) => getJobStatus(job) === "needs_approval",
+    );
     const hasFailed = failedCount > 0;
     const isPendingApprovalOnly = hasPendingApproval && !hasFailed;
 
@@ -289,11 +309,19 @@ export function buildJobStatusOverlaySummary(
   }
 
   attentionItems.sort((a, b) => {
+    if (a.timestamp !== b.timestamp) return b.timestamp - a.timestamp;
     const aSeverity = a.hasFailed ? 2 : a.hasPendingApproval ? 1 : 0;
     const bSeverity = b.hasFailed ? 2 : b.hasPendingApproval ? 1 : 0;
     if (aSeverity !== bSeverity) return bSeverity - aSeverity;
-    return b.timestamp - a.timestamp;
+    return a.companyName.localeCompare(b.companyName);
   });
+
+  const attentionProcessIds = new Set(
+    attentionItems.map((item) => item.processId),
+  );
+  const processingItems = Array.from(activeProcessingByThread.values())
+    .filter((item) => !attentionProcessIds.has(item.processId))
+    .sort((a, b) => b.timestamp - a.timestamp);
 
   return {
     attentionItems,

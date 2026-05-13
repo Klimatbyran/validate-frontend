@@ -441,6 +441,7 @@
     "overlayApprovalNow": "Väntar på godkännande: {{count}}",
     "overlayProcessingList": "Rapporter som bearbetas just nu",
     "overlayProcessingBadge": "bearbetar",
+    "overlayShowingOutOf": "Visar {{shown}} av {{total}}",
     "overlayMoreAttention": "+{{count}} till",
     "overlayAttentionIdle": "Inga rapporter kräver åtgärd just nu.",
     "loadMore": "Ladda fler företag",

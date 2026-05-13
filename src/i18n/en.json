@@ -441,6 +441,7 @@
     "overlayApprovalNow": "Pending approval: {{count}}",
     "overlayProcessingList": "Currently processing reports",
     "overlayProcessingBadge": "processing",
+    "overlayShowingOutOf": "Showing {{shown}} out of {{total}}",
     "overlayMoreAttention": "+{{count}} more",
     "overlayAttentionIdle": "No reports require attention right now.",
     "loadMore": "Load more companies",

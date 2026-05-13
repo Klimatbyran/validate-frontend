@@ -15,7 +15,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { buildJobStatusOverlaySummary } from "@/lib/job-status-overlay-utils";
 import { cn } from "@/lib/utils";
 
-const LIST_MAX_HEIGHT_CLASS = "max-h-[17.5rem] overflow-y-auto pr-1";
+const MAX_VISIBLE_ITEMS = 5;
 
 export function JobStatusOverlay() {
   const { t } = useI18n();
@@ -28,6 +28,14 @@ export function JobStatusOverlay() {
   const summary = useMemo(
     () => buildJobStatusOverlaySummary(companies, t("jobstatus.na")),
     [companies, t],
+  );
+  const visibleProcessingItems = useMemo(
+    () => summary.processingItems.slice(0, MAX_VISIBLE_ITEMS),
+    [summary.processingItems],
+  );
+  const visibleAttentionItems = useMemo(
+    () => summary.attentionItems.slice(0, MAX_VISIBLE_ITEMS),
+    [summary.attentionItems],
   );
 
   const updatedAtLabel = useMemo(() => {
@@ -173,8 +181,16 @@ export function JobStatusOverlay() {
                 <p className="text-xs font-medium text-gray-02">
                   {t("jobstatus.overlayProcessingList")}
                 </p>
-                <ul className={cn("space-y-1", LIST_MAX_HEIGHT_CLASS)}>
-                  {summary.processingItems.map((item) => (
+                {summary.processingItems.length > MAX_VISIBLE_ITEMS ? (
+                  <p className="text-[11px] text-gray-02">
+                    {t("jobstatus.overlayShowingOutOf", {
+                      shown: visibleProcessingItems.length,
+                      total: summary.processingItems.length,
+                    })}
+                  </p>
+                ) : null}
+                <ul className="space-y-1">
+                  {visibleProcessingItems.map((item) => (
                     <li key={item.key}>
                       <button
                         type="button"
@@ -216,8 +232,16 @@ export function JobStatusOverlay() {
                 <p className="text-xs font-medium text-gray-02">
                   {t("jobstatus.overlayAttentionList")}
                 </p>
-                <ul className={cn("space-y-1", LIST_MAX_HEIGHT_CLASS)}>
-                  {summary.attentionItems.map((item) => (
+                {summary.attentionItems.length > MAX_VISIBLE_ITEMS ? (
+                  <p className="text-[11px] text-gray-02">
+                    {t("jobstatus.overlayShowingOutOf", {
+                      shown: visibleAttentionItems.length,
+                      total: summary.attentionItems.length,
+                    })}
+                  </p>
+                ) : null}
+                <ul className="space-y-1">
+                  {visibleAttentionItems.map((item) => (
                     <li key={item.key}>
                       {(() => {
                         const attention = item.hasFailed
