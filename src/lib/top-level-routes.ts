@@ -17,7 +17,7 @@ export const TOP_LEVEL_TAB_SEGMENTS = [
 
 export type TopLevelTabSegment = (typeof TOP_LEVEL_TAB_SEGMENTS)[number];
 
-export const DEFAULT_TOP_LEVEL_PATH = "/upload";
+export const DEFAULT_TOP_LEVEL_PATH = "/crawler";
 
 export function firstPathSegment(pathname: string): string {
   return pathname.replace(/^\//, "").split("/")[0] ?? "";

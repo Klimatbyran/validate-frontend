@@ -9,6 +9,7 @@ interface ManualSearchControlsProps {
   onSearch: () => void;
   onExport: () => void;
   handleAddToRegistryClick?: () => void;
+  onRunSelectedReports?: () => void;
   selectedReports: SelectedReport[];
   isSearchDisabled: boolean;
 }
@@ -22,6 +23,7 @@ const ManualSearchControls = ({
   isSearchDisabled,
   selectedReports,
   handleAddToRegistryClick,
+  onRunSelectedReports,
 }: ManualSearchControlsProps) => {
   const { t } = useI18n();
 
@@ -57,6 +59,7 @@ const ManualSearchControls = ({
           isSearchDisabled={isSearchDisabled}
           selectedReports={selectedReports}
           handleAddToRegistryClick={handleAddToRegistryClick}
+          onRunSelectedReports={onRunSelectedReports}
         />
       </div>
     </>

@@ -1,31 +1,46 @@
 /**
- * Fetches available batch IDs from the API. Shared by Upload tab (batch choice)
- * and Job status tab (batch filter).
+ * Garbo Postgres `Batch` rows for upload / jobstatus / archive (same source of truth).
+ * Requires auth; returns empty list if unauthenticated or request fails.
  */
 
-import { useState, useEffect } from "react";
-import { authenticatedFetch } from "@/lib/api-helpers";
-import { BATCHES_API_ENDPOINT } from "@/lib/api";
+import { useState, useEffect, useCallback } from "react";
+import { getGarboQueueArchiveUrl } from "@/config/api-env";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
+import type { GarboBatchOption } from "@/lib/garbo-batch-types";
 
-export function useBatches(): { batches: string[]; isLoading: boolean } {
-  const [batches, setBatches] = useState<string[]>([]);
+const BATCHES_LIMIT = 500;
+
+export function useBatches(): {
+  batches: GarboBatchOption[];
+  isLoading: boolean;
+  refetch: () => void;
+} {
+  const [batches, setBatches] = useState<GarboBatchOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [version, setVersion] = useState(0);
+
+  const refetch = useCallback(() => {
+    setVersion((v) => v + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    setBatches([]);
     setIsLoading(true);
     (async () => {
       try {
-        const res = await authenticatedFetch(BATCHES_API_ENDPOINT);
+        const res = await garboAuthFetch(
+          getGarboQueueArchiveUrl(`/batches?limit=${BATCHES_LIMIT}`),
+        );
         if (!res.ok || cancelled) return;
-        const data = await res.json();
-        const ids = Array.isArray(data)
-          ? data
-          : data?.batchIds ?? data?.batches ?? [];
-        if (Array.isArray(ids) && !cancelled) setBatches(ids);
+        const data = (await res.json()) as {
+          batches?: GarboBatchOption[];
+        };
+        const list = Array.isArray(data.batches) ? data.batches : [];
+        if (!cancelled) setBatches(list);
       } catch {
-        // Non-fatal: dropdown will be empty
+        if (!cancelled) {
+          setBatches((prev) => (prev.length === 0 ? [] : prev));
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -33,7 +48,7 @@ export function useBatches(): { batches: string[]; isLoading: boolean } {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [version]);
 
-  return { batches, isLoading };
+  return { batches, isLoading, refetch };
 }

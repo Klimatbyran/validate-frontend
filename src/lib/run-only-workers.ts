@@ -14,6 +14,8 @@ export const RUN_ONLY_WORKER_IDS = [
   "goals",
   "initiatives",
   "baseYear",
+  "fiscalYear",
+  "companyTags",
   "lei",
   "descriptions",
 ] as const;
@@ -35,6 +37,8 @@ export const RUN_ONLY_WORKERS: RunOnlyWorker[] = [
   { id: "goals", label: "Goals" },
   { id: "initiatives", label: "Initiatives" },
   { id: "baseYear", label: "Base year" },
+  { id: "fiscalYear", label: "Räkenskapsår" },
+  { id: "companyTags", label: "Company tags" },
   { id: "lei", label: "LEI" },
   { id: "descriptions", label: "Descriptions" },
 ];

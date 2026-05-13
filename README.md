@@ -8,6 +8,7 @@ A modern React-based tool for validating and managing workflow queues with real-
 
 - **Authentication**: GitHub OAuth authentication for secure access (internal tool)
 - **Real-time Queue Monitoring**: Track active, waiting, completed, and failed jobs across multiple workflow stages
+- **Jobbstatus Archive**: Read-only Postgres-backed run history from Garbo (separate from live Redis); optional batch filters by Garbo `Batch` id or pipeline batch string. See [API and proxy setup](./docs/API_AND_PROXY_SETUP.md#jobbstatus-live-vs-archive-garbo-postgres).
 - **Company-Centric View**: Group jobs by company and view their progress through the workflow
 - **Interactive Workflow Diagram**: Visualize the entire workflow process with job counts
 - **Detailed Job Inspection**: Examine job details, data, and logs in a user-friendly interface

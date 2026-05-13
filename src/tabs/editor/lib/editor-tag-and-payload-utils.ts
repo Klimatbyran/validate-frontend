@@ -37,6 +37,16 @@ export function companyMatchesTagFilter(
   return wantedTagSlugs.some((tagSlug) => companyTagSlugs.includes(tagSlug));
 }
 
+/** When `excludeTagSlugs` is non-empty, reject companies that have any of those tags. */
+export function companyPassesExcludeTagFilter(
+  companyTags: string[] | undefined,
+  excludeTagSlugs: string[]
+): boolean {
+  if (!excludeTagSlugs.length) return true;
+  const companyTagSlugs = Array.isArray(companyTags) ? companyTags : [];
+  return !excludeTagSlugs.some((slug) => companyTagSlugs.includes(slug));
+}
+
 export function buildReportingPeriodUpdatePayload(
   editState: EditState,
   value: string,

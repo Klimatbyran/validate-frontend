@@ -21,7 +21,14 @@ export function FilterBarRerunSection({ onRerunByWorker }: FilterBarRerunSection
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-4 border-t border-gray-03/50">
       <div className="flex items-center gap-2 shrink-0">
         <Activity className="w-4 h-4 text-gray-02" />
-        <span className="text-sm font-medium text-gray-01">{t("jobstatus.runSpecificJobs")}:</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-gray-01">
+            {t("jobstatus.runSpecificJobs")}
+          </span>
+          <span className="text-[11px] text-gray-02">
+            {t("jobstatus.runSpecificJobsHelper")}
+          </span>
+        </div>
       </div>
       <div className="flex items-center gap-3 flex-wrap">
         {RERUN_WORKERS.map((worker) => (

@@ -18,7 +18,7 @@ export function reportsUrl(path: string): string {
 export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
   try {
     const response = await garboAuthFetch(
-      reportsUrl("companies/reports/search-reports"),
+      reportsUrl("internal-companies/reports/search-reports"),
       {
         method: "POST",
         headers: {
@@ -42,7 +42,7 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
 };
 
 export const fetchCompanyNamesList = async () => {
-  const url = reportsUrl("companies/reports/database-list");
+  const url = reportsUrl("internal-companies/reports/database-list");
   try {
     const response = await fetch(url);
     if (response.ok) {
@@ -65,7 +65,7 @@ export const saveToRegistry = async (
 ): Promise<SaveReportsListResponse> => {
   try {
     const response = await garboAuthFetch(
-      reportsUrl("companies/reports/save-reports"),
+      reportsUrl("internal-companies/reports/save-reports"),
       {
         method: "POST",
         headers: {

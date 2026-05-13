@@ -7,6 +7,8 @@ interface RegistryControlsProps {
   onQueryChange: (value: string) => void;
   onRefresh: () => void;
   isRefreshing: boolean;
+  onRunReports: () => void;
+  isRunReportsDisabled: boolean;
   onExport: () => void;
   isExportDisabled: boolean;
   onDeleteSelected: () => void;
@@ -20,6 +22,8 @@ const RegistryControls = ({
   onQueryChange,
   onRefresh,
   isRefreshing,
+  onRunReports,
+  isRunReportsDisabled,
   onExport,
   isExportDisabled,
   onDeleteSelected,
@@ -49,13 +53,23 @@ const RegistryControls = ({
           {t("common.refresh")}
           <RefreshCw className="w-4 h-4 ml-2" />
         </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="bg-blue-04 text-white hover:bg-blue-4 active:bg-blue-04/80"
+          onClick={onRunReports}
+          disabled={isRunReportsDisabled}
+        >
+          {`${t("registry.runReports")} (${selectedCount})`}
+        </Button>
         <Button size="sm" onClick={onExport} disabled={isExportDisabled}>
           {t("registry.exportCsv")}
           <BookDownIcon className="w-4 h-4 ml-2" />
         </Button>
         <Button
           size="sm"
-          variant="primary"
+          variant="secondary"
+          className="bg-red-400 text-white hover:bg-red-500/90 active:bg-red-500/80"
           onClick={onDeleteSelected}
           disabled={isDeleteDisabled || isDeletingSelected}
         >

@@ -2,20 +2,26 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
+import { RunReportsModal } from "@/components/RunReportsModal";
+import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
 import RegistryControls from "./components/RegistryControls";
 import RegistryStats from "./components/RegistryStats";
 import RegistryResultsList from "./components/RegistryResultsList";
 import type { RegistryEntry, RegistryEntryUpdate } from "./lib/registry-types";
+import { writeRegistryEntriesToCsv } from "./lib/registry-utils";
 import {
-  buildRegistryStats,
-  filterRegistryEntries,
-  writeRegistryEntriesToCsv,
-} from "./lib/registry-utils";
+  defaultRegistryViewFilters,
+  mergeRegistryViewFilters,
+  type RegistryViewFilters,
+} from "./lib/registry-table-utils";
+import { useGarboCompanyTagsMap } from "./hooks/useGarboCompanyTagsMap";
+import { useRegistryDisplayedView } from "./hooks/useRegistryDisplayedView";
 import {
   deleteReportFromRegistry,
   editRegistryEntry,
   fetchRegistryList,
 } from "./lib/registry-api";
+import RegistryFiltersAndSort from "./components/RegistryFiltersAndSort";
 
 export function RegistryTab() {
   const { t } = useI18n();
@@ -26,15 +32,32 @@ export function RegistryTab() {
   const [registry, setRegistry] = useState<RegistryEntry[]>([]);
   const [isDeletingSelected, setIsDeletingSelected] = useState<boolean>(false);
   const [editingReportIds, setEditingReportIds] = useState<string[]>([]);
+  const [isRunReportsOpen, setIsRunReportsOpen] = useState<boolean>(false);
+  const [filters, setFilters] = useState(defaultRegistryViewFilters);
+  const patchFilters = useCallback((patch: Partial<RegistryViewFilters>) => {
+    setFilters((f) => mergeRegistryViewFilters(f, patch));
+  }, []);
+  const {
+    wikidataToTags,
+    loading: companyTagsLoading,
+    error: companyTagsError,
+  } = useGarboCompanyTagsMap();
+  const {
+    runForUrls,
+    isRunningReports,
+    autoApprove,
+    setAutoApprove,
+    runOptions,
+    tagOptions,
+    tagsLoading,
+  } = useRunReportsPipeline();
 
-  const filteredRegistry = useMemo(
-    () => filterRegistryEntries(registry, query),
-    [query, registry],
-  );
-  const stats = useMemo(
-    () => buildRegistryStats(filteredRegistry),
-    [filteredRegistry],
-  );
+  const {
+    displayedRegistry,
+    distinctReportYears,
+    hasStructuredFilters,
+    stats,
+  } = useRegistryDisplayedView(registry, query, filters, wikidataToTags);
 
   const loadRegistry = useCallback(async () => {
     setIsLoading(true);
@@ -84,10 +107,10 @@ export function RegistryTab() {
   };
 
   const handleSelectAll = () => {
-    if (selectedReports.length === filteredRegistry.length) {
+    if (selectedReports.length === displayedRegistry.length) {
       setSelectedReports([]);
     } else {
-      setSelectedReports(filteredRegistry);
+      setSelectedReports(displayedRegistry);
     }
   };
 
@@ -120,6 +143,13 @@ export function RegistryTab() {
       setIsDeletingSelected(false);
     }
   };
+
+  const handleModalRun = useCallback(() => {
+    const urls = selectedReports
+      .map((entry) => entry.url?.trim())
+      .filter((url): url is string => Boolean(url));
+    void runForUrls(urls, { onSuccess: () => setIsRunReportsOpen(false) });
+  }, [runForUrls, selectedReports]);
 
   const handleEditEntry = async (entry: RegistryEntryUpdate) => {
     const reportId = entry.id;
@@ -169,6 +199,8 @@ export function RegistryTab() {
           }}
           onRefresh={handleRefresh}
           isRefreshing={isLoading}
+          onRunReports={() => setIsRunReportsOpen(true)}
+          isRunReportsDisabled={!selectedReports.length}
           onExport={handleExport}
           isExportDisabled={!selectedReports.length}
           onDeleteSelected={handleDeleteSelected}
@@ -177,6 +209,28 @@ export function RegistryTab() {
           }
           selectedCount={selectedReports.length}
           isDeletingSelected={isDeletingSelected}
+        />
+
+        <RegistryFiltersAndSort
+          disabled={isLoading || registry.length === 0}
+          filters={filters}
+          onFiltersChange={patchFilters}
+          distinctYears={distinctReportYears}
+          tagOptions={tagOptions}
+          tagsOptionsLoading={tagsLoading}
+          companyTagsLoading={companyTagsLoading}
+          companyTagsError={companyTagsError}
+        />
+
+        <RunReportsModal
+          open={isRunReportsOpen}
+          onOpenChange={setIsRunReportsOpen}
+          items={selectedReports}
+          autoApprove={autoApprove}
+          onAutoApproveChange={setAutoApprove}
+          runOptions={runOptions}
+          onRunReports={handleModalRun}
+          isRunning={isRunningReports}
         />
       </motion.div>
 
@@ -200,18 +254,18 @@ export function RegistryTab() {
       {!isLoading &&
         !loadError &&
         registry.length > 0 &&
-        query.trim().length > 0 &&
-        filteredRegistry.length === 0 && (
+        displayedRegistry.length === 0 &&
+        (query.trim().length > 0 || hasStructuredFilters) && (
           <p className="text-sm text-gray-02">{t("registry.noResults")}</p>
         )}
 
-      {!isLoading && !loadError && filteredRegistry.length > 0 && (
+      {!isLoading && !loadError && displayedRegistry.length > 0 && (
         <>
           <RegistryStats stats={stats} />
           <RegistryResultsList
-            registry={filteredRegistry}
+            registry={displayedRegistry}
             selectedReports={selectedReports}
-            allSelected={selectedReports.length === filteredRegistry.length}
+            allSelected={selectedReports.length === displayedRegistry.length}
             onSelectAll={handleSelectAll}
             onToggleSelect={handleToggleSelect}
             onEdit={handleEditEntry}

@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// Base schemas
 export const CountsSchema = z.object({
   active: z.number(),
   completed: z.number(),
@@ -69,6 +68,7 @@ export const JobDataSchema = z
     status: z.string().optional(),
     needsApproval: z.boolean().optional(),
     comment: z.string().optional(),
+    sourceUrl: z.string().optional(),
   })
   .passthrough();
 

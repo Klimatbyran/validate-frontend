@@ -35,13 +35,16 @@ src/
 │   ├── screenshot-slideshow.tsx   # shared: job details + SlideshowPage
 │   ├── ProtectedRoute.tsx
 │   ├── LoginModal.tsx
-│   └── GlobalLoginModal.tsx
+│   ├── GlobalLoginModal.tsx
+│   └── RunReportsModal.tsx        # shared: pipeline “run reports” dialog (Registry + Crawler)
 │
 ├── hooks/
 │   ├── useAuth.ts
-│   └── useCompanies.ts
+│   ├── useCompanies.ts
+│   └── useRunReportsPipeline.ts   # shared: batch/worker/tag state + createJobsFromUrls (Registry + Crawler)
 │
 ├── lib/
+│   ├── run-reports-types.ts       # RunReportListItem (URLs for pipeline run UI)
 │   ├── api.ts
 │   ├── api-helpers.ts
 │   ├── auth-api.ts
@@ -195,7 +198,7 @@ src/
 **Notes:**
 - **Job-details flow** (dialog, sections, scope, stat-cards, wikidata-approval) lives under **tabs/jobbstatus** because only CompanyCard (jobbstatus) uses it.
 - **Crawler** has its own **components**, **lib**, and **hooks** under **tabs/crawler**.
-- **Shared lib** keeps `workflow-utils`, `workflow-config`, etc. **tabs/jobbstatus/lib** holds swimlane + company-reference only.
+- **Shared lib** keeps `workflow-utils`, `workflow-config`, etc. **tabs/jobbstatus/lib** holds swimlane, company-reference, and Jobbstatus Archive helpers (`archive-types`, `format-archive-datetime`, `archive-run-jobs`).
 - **tabs/errors** uses `lib/` (not `utils/`). Folder name `errors` matches the tab value in App.
 
 ---
@@ -204,11 +207,11 @@ src/
 
 | Location | Contents |
 |----------|----------|
-| **components/** | `screenshot-slideshow.tsx`, `ProtectedRoute.tsx`, `LoginModal.tsx`, `GlobalLoginModal.tsx` only |
-| **hooks/** | `useAuth`, `useCompanies` |
-| **lib/** | Shared API, auth, workflow, queue-store, utils, types, etc. (no tab-only code) |
+| **components/** | `screenshot-slideshow.tsx`, `ProtectedRoute.tsx`, `LoginModal.tsx`, `GlobalLoginModal.tsx`, `RunReportsModal.tsx` |
+| **hooks/** | `useAuth`, `useCompanies`, `useRunReportsPipeline` |
+| **lib/** | Shared API, auth, workflow, queue-store, utils, types, `run-reports-types.ts`, etc. (no tab-only code) |
 | **ui/** | All shared primitives: button, dialog, tabs, loading-spinner, collapsible-section, etc. |
-| **tabs/jobbstatus/** | Tab + components (OverviewStats, FilterBar, CompanyCard, YearRow, JobDetailsDialog, job-details/*, scope/*, etc.) + lib (swimlane-*, calculation-utils, company-reference-api) |
+| **tabs/jobbstatus/** | Tab + components (OverviewStats, FilterBar, CompanyCard, YearRow, JobDetailsDialog, archive: **JobbstatusArchivePanel**, **JobbstatusArchiveDetailDialog**, **JobbstatusArchiveRunCard**, **JobbstatusArchiveQueueAttemptsDialog**, **ArchiveQueueStepPill**, job-details/*, scope/*, etc.) + hooks (**useArchiveRunsList**) + lib (swimlane-*, **archive-types**, **archive-filter-styles**, **format-archive-datetime**, **format-redis-retention-approx-duration**, **archive-run-jobs**, calculation-utils, company-reference-api) |
 | **tabs/crawler/** | CrawlerTab + components (ResultsList, ResultItem) + lib (crawler-api, crawler-types) + hooks (useAllCompanyNames) |
 | **tabs/upload/** | UploadTab + components/ + lib/utils.ts + types.ts |
 | **tabs/errors/** | ErrorBrowserTab + components/, overview/, hooks/, lib/, config/ |

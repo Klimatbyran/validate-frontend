@@ -40,6 +40,8 @@ export interface SingleSelectDropdownProps {
   panelMinWidth?: number;
   /** Max height of dropdown panel (default 280) */
   panelMaxHeight?: number;
+  /** Render dropdown panel in a portal (default true). Set false inside dialogs to keep interactions inside the modal layer. */
+  usePortal?: boolean;
 }
 
 export function SingleSelectDropdown({
@@ -58,6 +60,7 @@ export function SingleSelectDropdown({
   panelClassName,
   panelMinWidth = 220,
   panelMaxHeight = 280,
+  usePortal = true,
 }: SingleSelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -125,7 +128,7 @@ export function SingleSelectDropdown({
   }, [open]);
 
   useLayoutEffect(() => {
-    if (!open) return;
+    if (!open || !usePortal) return;
 
     const updatePosition = () => {
       const triggerEl = triggerRef.current;
@@ -148,7 +151,7 @@ export function SingleSelectDropdown({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [open]);
+  }, [open, usePortal]);
 
   const select = (optionValue: string) => {
     onChange(optionValue);

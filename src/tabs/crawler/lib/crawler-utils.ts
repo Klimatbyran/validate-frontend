@@ -93,7 +93,7 @@ export const generateReportPreview = (reportUrl: string): string => {
   if (!reportUrl) return "";
 
   const url =
-    reportsUrl("/companies/reports/preview?pdfUrl=") +
+    reportsUrl("/internal-companies/reports/preview?pdfUrl=") +
     encodeURIComponent(reportUrl);
   return url;
 };
