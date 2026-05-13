@@ -191,7 +191,7 @@ function resolveProcessTimestamp(process: ProcessLike): number {
   );
 }
 
-const MAX_VISIBLE_ATTENTION_ITEMS = 6;
+const LIST_MAX_HEIGHT_CLASS = "max-h-[17.5rem] overflow-y-auto pr-1";
 
 export function JobStatusOverlay() {
   const { t } = useI18n();
@@ -306,14 +306,6 @@ export function JobStatusOverlay() {
     return {
       attentionItems,
       processingItems,
-      visibleProcessingItems: processingItems.slice(
-        0,
-        MAX_VISIBLE_ATTENTION_ITEMS,
-      ),
-      visibleAttentionItems: attentionItems.slice(
-        0,
-        MAX_VISIBLE_ATTENTION_ITEMS,
-      ),
       processingCount,
       failedCount: attentionItems.filter((item) => item.hasFailed).length,
       approvalCount: attentionItems.filter((item) => item.hasPendingApproval)
@@ -459,13 +451,13 @@ export function JobStatusOverlay() {
               </div>
             </div>
 
-            {summary.visibleProcessingItems.length > 0 ? (
+            {summary.processingItems.length > 0 ? (
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-gray-02">
                   {t("jobstatus.overlayProcessingList")}
                 </p>
-                <ul className="space-y-1">
-                  {summary.visibleProcessingItems.map((item) => (
+                <ul className={cn("space-y-1", LIST_MAX_HEIGHT_CLASS)}>
+                  {summary.processingItems.map((item) => (
                     <li key={item.key}>
                       <button
                         type="button"
@@ -499,26 +491,16 @@ export function JobStatusOverlay() {
                     </li>
                   ))}
                 </ul>
-                {summary.processingItems.length >
-                summary.visibleProcessingItems.length ? (
-                  <p className="text-[11px] text-gray-02">
-                    {t("jobstatus.overlayMoreAttention", {
-                      count:
-                        summary.processingItems.length -
-                        summary.visibleProcessingItems.length,
-                    })}
-                  </p>
-                ) : null}
               </div>
             ) : null}
 
-            {summary.visibleAttentionItems.length > 0 ? (
+            {summary.attentionItems.length > 0 ? (
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-gray-02">
                   {t("jobstatus.overlayAttentionList")}
                 </p>
-                <ul className="space-y-1">
-                  {summary.visibleAttentionItems.map((item) => (
+                <ul className={cn("space-y-1", LIST_MAX_HEIGHT_CLASS)}>
+                  {summary.attentionItems.map((item) => (
                     <li key={item.key}>
                       {(() => {
                         const attention = item.hasFailed
@@ -583,16 +565,6 @@ export function JobStatusOverlay() {
                     </li>
                   ))}
                 </ul>
-                {summary.attentionItems.length >
-                summary.visibleAttentionItems.length ? (
-                  <p className="text-[11px] text-gray-02">
-                    {t("jobstatus.overlayMoreAttention", {
-                      count:
-                        summary.attentionItems.length -
-                        summary.visibleAttentionItems.length,
-                    })}
-                  </p>
-                ) : null}
               </div>
             ) : (
               <p className="text-xs text-gray-02">
