@@ -203,7 +203,7 @@ export function JobStatusOverlay() {
 
   const summary = useMemo(() => {
     const attentionItems: AttentionItem[] = [];
-    const processingItems: ProcessingItem[] = [];
+    const activeProcessingByThread = new Map<string, ProcessingItem>();
     const latestProcessByReportKey = new Map<
       string,
       {
@@ -234,6 +234,23 @@ export function JobStatusOverlay() {
             : `${companyKey}::thread:${canonicalThreadId}`;
         const timestamp = resolveProcessTimestamp(process);
         const latestThreadId = resolveLatestThreadId(process);
+
+        const isInFlightProcess =
+          process.status === "active" || process.status === "waiting";
+        if (isInFlightProcess) {
+          const processingKey = `${companyKey}::thread:${latestThreadId}`;
+          const existingActive = activeProcessingByThread.get(processingKey);
+          if (!existingActive || existingActive.timestamp < timestamp) {
+            activeProcessingByThread.set(processingKey, {
+              key: `${process.id}:${latestThreadId}`,
+              companyName,
+              year: canonicalYear,
+              threadId: latestThreadId,
+              timestamp,
+            });
+          }
+        }
+
         const existing = latestProcessByReportKey.get(reportKey);
         if (!existing || existing.timestamp < timestamp) {
           latestProcessByReportKey.set(reportKey, {
@@ -249,19 +266,11 @@ export function JobStatusOverlay() {
       }
     }
 
-    let processingCount = 0;
-    for (const process of latestProcessByReportKey.values()) {
-      if (process.status === "active") {
-        processingCount += 1;
-        processingItems.push({
-          key: `${process.processId}:${process.threadId}`,
-          companyName: process.companyName,
-          year: process.year,
-          threadId: process.threadId,
-          timestamp: process.timestamp,
-        });
-      }
+    const processingItems = Array.from(activeProcessingByThread.values()).sort(
+      (a, b) => b.timestamp - a.timestamp,
+    );
 
+    for (const process of latestProcessByReportKey.values()) {
       const threadJobs = process.jobs.filter(
         (job) => resolveJobThreadId(job, process.threadId) === process.threadId,
       );
@@ -301,12 +310,10 @@ export function JobStatusOverlay() {
       return b.timestamp - a.timestamp;
     });
 
-    processingItems.sort((a, b) => b.timestamp - a.timestamp);
-
     return {
       attentionItems,
       processingItems,
-      processingCount,
+      processingCount: processingItems.length,
       failedCount: attentionItems.filter((item) => item.hasFailed).length,
       approvalCount: attentionItems.filter((item) => item.hasPendingApproval)
         .length,
