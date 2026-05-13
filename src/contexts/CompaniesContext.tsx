@@ -3,26 +3,9 @@
  * Provider stays mounted so data is preloaded and persists when switching tabs.
  */
 
-import { createContext, useContext, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useCompanies } from "@/hooks/useCompanies";
-import type { CustomAPICompany, CustomAPIQueueStats } from "@/lib/types";
-
-export interface CompaniesContextValue {
-  companies: CustomAPICompany[];
-  queueStats: CustomAPIQueueStats[];
-  isQueueStatsLoading: boolean;
-  isLoading: boolean;
-  error: string | null;
-  loadMoreCompanies: () => Promise<void>;
-  isLoadingMore: boolean;
-  hasMorePages: boolean;
-  refresh: () => void;
-  isRefreshing: boolean;
-}
-
-const CompaniesContext = createContext<CompaniesContextValue | undefined>(
-  undefined,
-);
+import { CompaniesContext } from "@/contexts/companies-context";
 
 export function CompaniesProvider({ children }: { children: ReactNode }) {
   const value = useCompanies();
@@ -31,14 +14,4 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
       {children}
     </CompaniesContext.Provider>
   );
-}
-
-export function useCompaniesContext(): CompaniesContextValue {
-  const ctx = useContext(CompaniesContext);
-  if (ctx === undefined) {
-    throw new Error(
-      "useCompaniesContext must be used within CompaniesProvider",
-    );
-  }
-  return ctx;
 }

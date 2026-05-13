@@ -9,7 +9,7 @@ import { Loader2, ArrowUp } from "lucide-react";
 import { Button } from "@/ui/button";
 import { motion } from "framer-motion";
 import { ViewModePills } from "@/ui/view-mode-pills";
-import { useCompaniesContext } from "@/contexts/CompaniesContext";
+import { useCompaniesContext } from "@/contexts/companies-context";
 import { useBatches } from "@/hooks/useBatches";
 import { convertCompaniesToSwimlaneFormat } from "./lib/swimlane-transform";
 import {

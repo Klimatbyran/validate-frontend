@@ -34,6 +34,7 @@ export function useCompanies() {
   useEffect(() => {
     const SLOW_REFRESH_MS = 60000;
     let intervalId: number | undefined;
+    const pollers = processPollersRef.current;
 
     const fetchAndEnhance = async () => {
       if (isFetchingRef.current) {
@@ -69,7 +70,6 @@ export function useCompanies() {
     fetchAndEnhanceRef.current = fetchAndEnhance;
 
     function startProcessPollers(currentCompanies: CustomAPICompany[]) {
-      const pollers = processPollersRef.current;
       for (const company of currentCompanies) {
         for (const process of company.processes) {
           if (!process.id) continue;
@@ -89,7 +89,6 @@ export function useCompanies() {
     }
 
     async function pollProcess(processId: string) {
-      const pollers = processPollersRef.current;
       const state = pollers.get(processId);
       if (!state || state.stopped || state.isPolling) return;
 
@@ -147,7 +146,7 @@ export function useCompanies() {
       if (intervalId) window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("companies:refresh", onKick);
-      processPollersRef.current.forEach((state) => {
+      pollers.forEach((state) => {
         state.stopped = true;
       });
     };
