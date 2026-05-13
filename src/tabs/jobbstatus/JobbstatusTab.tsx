@@ -37,6 +37,8 @@ const VIEW_MODES: { value: JobbstatusViewMode; labelKey: string }[] = [
 ];
 
 const JOBSTATUS_SOURCE_QUERY = "source";
+const JOBSTATUS_SEARCH_QUERY = "q";
+const JOBSTATUS_ATTENTION_QUERY = "attention";
 
 function jobbstatusSubtabFromSearchParams(
   searchParams: URLSearchParams,
@@ -50,6 +52,10 @@ export function JobbstatusTab() {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const jobbstatusSubtab = jobbstatusSubtabFromSearchParams(searchParams);
+  const overlaySearchTerm = (
+    searchParams.get(JOBSTATUS_SEARCH_QUERY) || ""
+  ).trim();
+  const overlayAttention = searchParams.get(JOBSTATUS_ATTENTION_QUERY);
 
   const setJobbstatusSubtab = useCallback(
     (value: JobbstatusViewMode) => {
@@ -82,7 +88,9 @@ export function JobbstatusTab() {
     new Set(),
   );
   const [runScope, setRunScope] = useState<RunScope>("latest");
-  const [companySearchQuery, setCompanySearchQuery] = useState("");
+  const [companySearchQuery, setCompanySearchQuery] =
+    useState(overlaySearchTerm);
+  const [overlayDrivenView, setOverlayDrivenView] = useState(false);
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const { batches: existingBatches, isLoading: batchesLoading } = useBatches();
@@ -118,6 +126,43 @@ export function JobbstatusTab() {
       ).length,
     };
   }, [swimlaneCompanies, runScope]);
+
+  useEffect(() => {
+    const hasOverlayParams = Boolean(overlayAttention || overlaySearchTerm);
+
+    if (!hasOverlayParams) {
+      if (overlayDrivenView) {
+        setActiveFilters(new Set());
+        setRunScope("latest");
+        setCompanySearchQuery("");
+        setOverlayDrivenView(false);
+      }
+      return;
+    }
+
+    const nextFilters = new Set<FilterType>();
+    if (overlayAttention === "failed") {
+      nextFilters.add("has_failed");
+    } else if (overlayAttention === "approval") {
+      nextFilters.add("pending_approval");
+    }
+
+    if (nextFilters.size > 0) {
+      setActiveFilters(nextFilters);
+      setRunScope("all");
+    } else {
+      setActiveFilters(new Set());
+      if (overlaySearchTerm) {
+        setRunScope("all");
+      }
+    }
+
+    if (overlaySearchTerm) {
+      setCompanySearchQuery(overlaySearchTerm);
+    }
+
+    setOverlayDrivenView(true);
+  }, [overlayAttention, overlaySearchTerm, overlayDrivenView]);
 
   const filteredCompanies = useMemo(() => {
     const searchTrimmed = companySearchQuery.trim().toLowerCase();
@@ -170,9 +215,38 @@ export function JobbstatusTab() {
           });
 
     if (!searchTrimmed) return batchFiltered;
-    return batchFiltered.filter((company) =>
-      company.name.toLowerCase().includes(searchTrimmed),
-    );
+    return batchFiltered.filter((company) => {
+      if (company.name.toLowerCase().includes(searchTrimmed)) return true;
+      if (company.wikidataId?.toLowerCase().includes(searchTrimmed))
+        return true;
+      if (
+        (company.batchIds || []).some((id) =>
+          id.toLowerCase().includes(searchTrimmed),
+        )
+      ) {
+        return true;
+      }
+
+      return (company.years || []).some((year) => {
+        if ((year as any).threadId?.toLowerCase?.().includes(searchTrimmed)) {
+          return true;
+        }
+        if (String(year.year).includes(searchTrimmed)) return true;
+        return (year.jobs || []).some((job) => {
+          const threadId =
+            (job.data as any)?.threadId || (job as any)?.threadId || "";
+          const sourceUrl =
+            (job.data as any)?.url || (job.data as any)?.sourceUrl || "";
+          return (
+            String(job.id || "")
+              .toLowerCase()
+              .includes(searchTrimmed) ||
+            String(threadId).toLowerCase().includes(searchTrimmed) ||
+            String(sourceUrl).toLowerCase().includes(searchTrimmed)
+          );
+        });
+      });
+    });
   }, [
     swimlaneCompanies,
     activeFilters,

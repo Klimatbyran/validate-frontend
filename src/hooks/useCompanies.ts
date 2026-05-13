@@ -4,13 +4,15 @@ import {
   fetchProcessById,
   fetchQueueStats,
 } from "@/lib/api";
-import type { CustomAPICompany } from "@/lib/types";
+import type { CustomAPICompany, CustomAPIQueueStats } from "@/lib/types";
 
 /** API allows pageSize 1–500. Use 200 to avoid long load times and timeouts. */
 const PAGE_SIZE = 200;
 
 export function useCompanies() {
   const [companies, setCompanies] = useState<CustomAPICompany[]>([]);
+  const [queueStats, setQueueStats] = useState<CustomAPIQueueStats[]>([]);
+  const [isQueueStatsLoading, setIsQueueStatsLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -19,7 +21,9 @@ export function useCompanies() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isFetchingRef = useRef(false);
   const userRefreshRequestedRef = useRef(false);
-  const fetchAndEnhanceRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const fetchAndEnhanceRef = useRef<() => Promise<void>>(() =>
+    Promise.resolve(),
+  );
   const processPollersRef = useRef<
     Map<
       string,
@@ -54,7 +58,7 @@ export function useCompanies() {
       } catch (err) {
         console.error("useCompanies - fetch error:", err);
         setError(
-          err instanceof Error ? err.message : "Failed to fetch companies"
+          err instanceof Error ? err.message : "Failed to fetch companies",
         );
       } finally {
         setIsLoading(false);
@@ -97,7 +101,7 @@ export function useCompanies() {
             const newCompanies = prev.map((c) => ({
               ...c,
               processes: c.processes.map((p) =>
-                p.id === updated.id ? { ...p, ...updated } : p
+                p.id === updated.id ? { ...p, ...updated } : p,
               ),
             }));
             return newCompanies;
@@ -158,6 +162,7 @@ export function useCompanies() {
       busy = true;
       try {
         const stats = await fetchQueueStats();
+        setQueueStats(Array.isArray(stats) ? stats : []);
         let changed = false;
         for (const s of stats) {
           const cur = JSON.stringify(s.status);
@@ -171,10 +176,12 @@ export function useCompanies() {
       } catch {
         // ignore errors; next tick will retry
       } finally {
+        setIsQueueStatsLoading(false);
         busy = false;
       }
     };
 
+    tick();
     const timer = window.setInterval(tick, 2000);
     return () => window.clearInterval(timer);
   }, []);
@@ -195,7 +202,7 @@ export function useCompanies() {
       if (nextPageCompanies.length < PAGE_SIZE) setHasMorePages(false);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load more companies"
+        err instanceof Error ? err.message : "Failed to load more companies",
       );
     } finally {
       setIsLoadingMore(false);
@@ -209,6 +216,8 @@ export function useCompanies() {
 
   return {
     companies,
+    queueStats,
+    isQueueStatsLoading,
     isLoading,
     error,
     loadMoreCompanies,

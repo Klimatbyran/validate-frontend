@@ -5,10 +5,12 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 import { useCompanies } from "@/hooks/useCompanies";
-import type { CustomAPICompany } from "@/lib/types";
+import type { CustomAPICompany, CustomAPIQueueStats } from "@/lib/types";
 
 export interface CompaniesContextValue {
   companies: CustomAPICompany[];
+  queueStats: CustomAPIQueueStats[];
+  isQueueStatsLoading: boolean;
   isLoading: boolean;
   error: string | null;
   loadMoreCompanies: () => Promise<void>;
@@ -19,7 +21,7 @@ export interface CompaniesContextValue {
 }
 
 const CompaniesContext = createContext<CompaniesContextValue | undefined>(
-  undefined
+  undefined,
 );
 
 export function CompaniesProvider({ children }: { children: ReactNode }) {
@@ -34,7 +36,9 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
 export function useCompaniesContext(): CompaniesContextValue {
   const ctx = useContext(CompaniesContext);
   if (ctx === undefined) {
-    throw new Error("useCompaniesContext must be used within CompaniesProvider");
+    throw new Error(
+      "useCompaniesContext must be used within CompaniesProvider",
+    );
   }
   return ctx;
 }
