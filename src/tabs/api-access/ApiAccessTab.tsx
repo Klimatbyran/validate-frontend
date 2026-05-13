@@ -52,8 +52,6 @@ export function ApiAccessTab() {
     };
   }, [t]);
 
-  console.log(roles);
-
   return (
     <div className="space-y-6">
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6">
