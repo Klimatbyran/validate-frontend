@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "i18n:audit": "node scripts/i18n-audit.mjs",
     "i18n:fix": "node scripts/i18n-audit.mjs --fix",
+    "format": "prettier --write .",
     "preview": "vite preview"
   },
   "dependencies": {
