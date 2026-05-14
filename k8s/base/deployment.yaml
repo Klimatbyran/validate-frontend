@@ -28,8 +28,8 @@ spec:
             - name: GARBO_ALL_ACCESS_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: garbo-all-access-api-key
-                  key: key
+                  name: env
+                  key: GARBO_ALL_ACCESS_API_KEY
           resources:
             requests:
               memory: "512Mi"
