@@ -1,23 +1,30 @@
 import { useEffect } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
+import { Callout } from "@/ui/callout";
 import { useApiUsageData } from "../hooks/useApiUsageData";
 
-function formatDate(value: string | null): string {
-  if (!value) return "";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString();
-}
-
 export function ApiUsageView() {
-  const { t } = useI18n();
-  const { usage, usageError, usageLoading, since, setSince, loadUsage } =
+  const { t, formatDate } = useI18n();
+  const { usage, usageError, usageLoading, isAuthError, since, setSince, loadUsage } =
     useApiUsageData();
 
   useEffect(() => {
     void loadUsage();
   }, [loadUsage]);
+
+  const handleRefresh = () => {
+    const sinceIso = since ? new Date(since).toISOString() : undefined;
+    void loadUsage(sinceIso);
+  };
+
+  if (isAuthError) {
+    return (
+      <Callout variant="info">
+        <p className="text-sm text-blue-03/90">{t("auth.loginRequiredTab")}</p>
+      </Callout>
+    );
+  }
 
   return (
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6 space-y-4">
@@ -37,10 +44,7 @@ export function ApiUsageView() {
             className="h-10 rounded-md border border-gray-03 bg-gray-05 px-3 text-sm text-gray-01 focus:outline-none focus:ring-1 focus:ring-blue-300"
           />
         </div>
-        <Button
-          onClick={() => void loadUsage(since || undefined)}
-          disabled={usageLoading}
-        >
+        <Button onClick={handleRefresh} disabled={usageLoading}>
           {t("apiAccess.usage.refreshButton")}
         </Button>
       </div>
@@ -80,7 +84,7 @@ export function ApiUsageView() {
               {item.lastRequestAt ? (
                 <p className="mt-1 text-xs text-gray-02">
                   {t("apiAccess.usage.lastRequest")}:{" "}
-                  {formatDate(item.lastRequestAt)}
+                  {formatDate(new Date(item.lastRequestAt))}
                 </p>
               ) : null}
 

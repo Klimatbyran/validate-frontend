@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
-import { fetchApiKeyUsage } from "../lib/api-access-api";
+import { fetchApiKeyUsage, ApiAuthError } from "../lib/api-access-api";
 import type { ApiKeyUsageList } from "../lib/api-access-types";
 
 export function useApiUsageData() {
@@ -8,21 +8,27 @@ export function useApiUsageData() {
   const [usage, setUsage] = useState<ApiKeyUsageList>([]);
   const [usageError, setUsageError] = useState<string | null>(null);
   const [usageLoading, setUsageLoading] = useState(false);
+  const [isAuthError, setIsAuthError] = useState(false);
   const [since, setSince] = useState<string>("");
 
   const loadUsage = useCallback(
     async (sinceValue?: string) => {
       setUsageError(null);
+      setIsAuthError(false);
       setUsageLoading(true);
       try {
         const data = await fetchApiKeyUsage(sinceValue || undefined);
         setUsage(data);
       } catch (error) {
-        setUsageError(
-          error instanceof Error
-            ? error.message
-            : t("apiAccess.usage.loadError"),
-        );
+        if (error instanceof ApiAuthError) {
+          setIsAuthError(true);
+        } else {
+          setUsageError(
+            error instanceof Error
+              ? error.message
+              : t("apiAccess.usage.loadError"),
+          );
+        }
       } finally {
         setUsageLoading(false);
       }
@@ -34,6 +40,7 @@ export function useApiUsageData() {
     usage,
     usageError,
     usageLoading,
+    isAuthError,
     since,
     setSince,
     loadUsage,

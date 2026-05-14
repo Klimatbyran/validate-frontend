@@ -22,9 +22,13 @@ export function useApiAccessData() {
       const fetchedKeys = await fetchAPIKeys();
       setKeys(fetchedKeys);
     } catch (error) {
-      setKeysError(
-        error instanceof Error ? error.message : t("apiAccess.keysLoadError"),
-      );
+      if (error instanceof ApiAuthError) {
+        setIsAuthError(true);
+      } else {
+        setKeysError(
+          error instanceof Error ? error.message : t("apiAccess.keysLoadError"),
+        );
+      }
     } finally {
       setKeysLoading(false);
     }

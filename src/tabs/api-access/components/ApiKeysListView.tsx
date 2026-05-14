@@ -12,20 +12,13 @@ type ApiKeysListViewProps = {
   onRevoked: () => void;
 };
 
-function formatDate(value: string | null): string {
-  if (!value) return "";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString();
-}
-
 export function ApiKeysListView({
   keys,
   keysLoading,
   keysError,
   onRevoked,
 }: ApiKeysListViewProps) {
-  const { t } = useI18n();
+  const { t, formatDate } = useI18n();
   const [revoking, setRevoking] = useState<string | null>(null);
   const [revokeError, setRevokeError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -136,16 +129,16 @@ export function ApiKeysListView({
                     </span>
                     <span>
                       {t("apiAccess.keysCreated")}:{" "}
-                      {formatDate(keyItem.createdAt) || t("common.placeholderDash")}
+                      {formatDate(new Date(keyItem.createdAt))}
                     </span>
                     <span>
                       {t("apiAccess.keysLastUsed")}:{" "}
-                      {formatDate(keyItem.lastUsedAt) || t("common.placeholderDash")}
+                      {formatDate(keyItem.lastUsedAt ? new Date(keyItem.lastUsedAt) : null)}
                     </span>
                     {isRevoked ? (
                       <span className="text-pink-03/80">
                         {t("apiAccess.keysRevoked")}:{" "}
-                        {formatDate(keyItem.revokedAt) || t("common.placeholderDash")}
+                        {formatDate(keyItem.revokedAt ? new Date(keyItem.revokedAt) : null)}
                       </span>
                     ) : null}
                   </div>

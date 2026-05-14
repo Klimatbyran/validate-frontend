@@ -15,7 +15,7 @@ import {
 
 export { ApiAuthError } from "@/lib/garbo-auth-fetch";
 
-export function reportsUrl(path: string): string {
+function apiAccessUrl(path: string): string {
   const base = getGarboApiBaseUrl();
   const segment = path.replace(/^\//, "").replace(/\/+$/, "");
   const url = segment ? `${base}/${segment}` : base;
@@ -23,12 +23,11 @@ export function reportsUrl(path: string): string {
 }
 
 export const fetchAPIAccessRoles = async (): Promise<ClientApiRoleList> => {
-  const url = reportsUrl("/internal/client-api-keys/roles");
+  const url = apiAccessUrl("/internal/client-api-keys/roles");
   try {
     const response = await garboAuthFetch(url);
     if (response.ok) {
       const data = await response.json();
-      console.log(data);
       return clientApiRoleListSchema.parse(data);
     } else {
       throwIfAuthError(response.status);
@@ -44,12 +43,11 @@ export const fetchAPIAccessRoles = async (): Promise<ClientApiRoleList> => {
 };
 
 export const fetchAPIKeys = async (): Promise<ClientApiKeyList> => {
-  const url = reportsUrl("/internal/client-api-keys/");
+  const url = apiAccessUrl("/internal/client-api-keys/");
   try {
     const response = await garboAuthFetch(url);
     if (response.ok) {
       const data = await response.json();
-      console.log(data);
       return clientApiKeyListSchema.parse(data);
     } else {
       throwIfAuthError(response.status);
@@ -65,7 +63,7 @@ export const fetchAPIKeys = async (): Promise<ClientApiKeyList> => {
 };
 
 export const revokeAPIKey = async (id: string): Promise<void> => {
-  const url = reportsUrl(`/internal/client-api-keys/${encodeURIComponent(id)}/revoke`);
+  const url = apiAccessUrl(`/internal/client-api-keys/${encodeURIComponent(id)}/revoke`);
   try {
     const response = await garboAuthFetch(url, { method: "POST" });
     if (!response.ok) {
@@ -84,16 +82,17 @@ export const fetchApiKeyUsage = async (
   since?: string,
 ): Promise<ApiKeyUsageList> => {
   const url = since
-    ? reportsUrl(
+    ? apiAccessUrl(
         `/internal/client-api-keys/usage?since=${encodeURIComponent(since)}`,
       )
-    : reportsUrl("/internal/client-api-keys/usage");
+    : apiAccessUrl("/internal/client-api-keys/usage");
   try {
     const response = await garboAuthFetch(url);
     if (response.ok) {
       const data = await response.json();
       return apiKeyUsageListSchema.parse(data);
     } else {
+      throwIfAuthError(response.status);
       const msg = `Failed to fetch API key usage: ${response.status} ${response.statusText} (${url})`;
       console.error(msg);
       throw new Error(msg);
@@ -108,7 +107,7 @@ export const fetchApiKeyUsage = async (
 export const createAPIkey = async (
   body: CreateClientApiKeyBody,
 ): Promise<CreateClientApiKeyResponse> => {
-  const url = reportsUrl("/internal/client-api-keys/");
+  const url = apiAccessUrl("/internal/client-api-keys/");
   try {
     const parsedBody = createClientApiKeyBodySchema.parse(body);
     const response = await garboAuthFetch(url, {
@@ -120,7 +119,6 @@ export const createAPIkey = async (
     });
     if (response.ok) {
       const data = await response.json();
-      console.log(data);
       return createClientApiKeyResponseSchema.parse(data);
     } else {
       const msg = `Failed to create API key: ${response.status} ${response.statusText} (${url})`;
