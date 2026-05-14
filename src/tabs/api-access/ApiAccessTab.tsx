@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
+import { Callout } from "@/ui/callout";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { ApiKeysListView } from "./components/ApiKeysListView";
@@ -11,7 +12,7 @@ import { useApiAccessData } from "./hooks/useApiAccessData";
 
 export function ApiAccessTab() {
   const { t } = useI18n();
-  const { roles, keys, rolesError, keysError, keysLoading, refreshKeys } =
+  const { roles, keys, rolesError, keysError, keysLoading, isAuthError, refreshKeys } =
     useApiAccessData();
   const [role, setRole] = useState<string>("");
   const [createError, setCreateError] = useState<string | null>(null);
@@ -79,6 +80,14 @@ export function ApiAccessTab() {
       setIsCreating(false);
     }
   };
+
+  if (isAuthError) {
+    return (
+      <Callout variant="info">
+        <p className="text-sm text-blue-03/90">{t("auth.loginRequiredTab")}</p>
+      </Callout>
+    );
+  }
 
   return (
     <>

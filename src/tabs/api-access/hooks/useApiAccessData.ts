@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
-import { fetchAPIAccessRoles, fetchAPIKeys } from "../lib/api-access-api";
+import { fetchAPIAccessRoles, fetchAPIKeys, ApiAuthError } from "../lib/api-access-api";
 import type {
   ClientApiKeyList,
   ClientApiRoleListItem,
@@ -13,6 +13,7 @@ export function useApiAccessData() {
   const [rolesError, setRolesError] = useState<string | null>(null);
   const [keysError, setKeysError] = useState<string | null>(null);
   const [keysLoading, setKeysLoading] = useState(true);
+  const [isAuthError, setIsAuthError] = useState(false);
 
   const refreshKeys = useCallback(async () => {
     setKeysError(null);
@@ -32,6 +33,7 @@ export function useApiAccessData() {
   const loadInitialData = useCallback(async () => {
     setRolesError(null);
     setKeysError(null);
+    setIsAuthError(false);
     setKeysLoading(true);
 
     try {
@@ -42,12 +44,16 @@ export function useApiAccessData() {
       setRoles(fetchedRoles);
       setKeys(fetchedKeys);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t("apiAccess.roleLoadError");
-      setRolesError(message);
-      setKeysError(
-        error instanceof Error ? error.message : t("apiAccess.keysLoadError"),
-      );
+      if (error instanceof ApiAuthError) {
+        setIsAuthError(true);
+      } else {
+        const message =
+          error instanceof Error ? error.message : t("apiAccess.roleLoadError");
+        setRolesError(message);
+        setKeysError(
+          error instanceof Error ? error.message : t("apiAccess.keysLoadError"),
+        );
+      }
     } finally {
       setKeysLoading(false);
     }
@@ -63,6 +69,7 @@ export function useApiAccessData() {
     rolesError,
     keysError,
     keysLoading,
+    isAuthError,
     refreshKeys,
   };
 }

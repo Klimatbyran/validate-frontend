@@ -369,6 +369,7 @@
     "hi": "Hi",
     "loginRequired": "Login required",
     "loginRequiredMessage": "You must log in to perform this action.",
+    "loginRequiredTab": "You must log in to use this tab.",
     "loginRequiredApp": "You must log in to use this application.",
     "loginWithGitHub": "Log in with GitHub",
     "redirectToGitHub": "You will be redirected to GitHub for authentication.",

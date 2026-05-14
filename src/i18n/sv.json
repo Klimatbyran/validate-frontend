@@ -368,6 +368,7 @@
     "logout": "Logga ut",
     "hi": "Hej",
     "loginRequired": "Inloggning krävs",
+    "loginRequiredTab": "Du måste logga in för att använda den här fliken.",
     "loginRequiredMessage": "Du måste logga in för att utföra denna åtgärd.",
     "loginRequiredApp": "Du måste logga in för att använda denna applikation.",
     "loginWithGitHub": "Logga in med GitHub",

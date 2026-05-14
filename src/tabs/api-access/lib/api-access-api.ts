@@ -1,5 +1,5 @@
 import { getGarboApiBaseUrl } from "@/config/api-env";
-import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
+import { garboAuthFetch, throwIfAuthError } from "@/lib/garbo-auth-fetch";
 import {
   clientApiKeyListSchema,
   clientApiRoleListSchema,
@@ -12,6 +12,8 @@ import {
   type CreateClientApiKeyResponse,
   type ApiKeyUsageList,
 } from "./api-access-types";
+
+export { ApiAuthError } from "@/lib/garbo-auth-fetch";
 
 export function reportsUrl(path: string): string {
   const base = getGarboApiBaseUrl();
@@ -29,6 +31,7 @@ export const fetchAPIAccessRoles = async (): Promise<ClientApiRoleList> => {
       console.log(data);
       return clientApiRoleListSchema.parse(data);
     } else {
+      throwIfAuthError(response.status);
       const msg = `Failed to fetch API access roles: ${response.status} ${response.statusText} (${url})`;
       console.error(msg);
       throw new Error(msg);
@@ -49,6 +52,7 @@ export const fetchAPIKeys = async (): Promise<ClientApiKeyList> => {
       console.log(data);
       return clientApiKeyListSchema.parse(data);
     } else {
+      throwIfAuthError(response.status);
       const msg = `Failed to fetch API keys: ${response.status} ${response.statusText} (${url})`;
       console.error(msg);
       throw new Error(msg);
