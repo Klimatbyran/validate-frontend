@@ -136,9 +136,6 @@ export function ApiAccessTab() {
                         );
                         return parseRoleLabel(item?.label ?? null).name ?? value;
                       }}
-                      wrapperClassName="w-64 shrink-0"
-                      triggerClassName="!w-full justify-between"
-                      triggerTextClassName="max-w-none"
                       panelMinWidth={256}
                     />
                   ) : (

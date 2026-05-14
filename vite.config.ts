@@ -168,8 +168,7 @@ function pipelineProxyConfigure(targetUrl: string) {
 // Proxy targets: .env.development or .env.development.example.
 
 function setGarboProxyApiKey(proxyReq: { setHeader: (n: string, v: string) => void }, env: Record<string, string>) {
-  const key =
-    env.GARBO_PROXY_CLIENT_API_KEY ?? env.GARBO_PROXY_PUBLIC_API_KEY;
+  const key = env.GARBO_PROXY_CLIENT_API_KEY;
   if (key) {
     proxyReq.setHeader("X-API-Key", key);
   }
