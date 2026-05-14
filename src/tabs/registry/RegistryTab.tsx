@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
+import { Callout } from "@/ui/callout";
+import { ApiAuthError } from "@/lib/garbo-auth-fetch";
 import { RunReportsModal } from "@/components/RunReportsModal";
 import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
 import RegistryControls from "./components/RegistryControls";
@@ -28,6 +30,7 @@ export function RegistryTab() {
   const [query, setQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isAuthError, setIsAuthError] = useState(false);
   const [selectedReports, setSelectedReports] = useState<RegistryEntry[]>([]);
   const [registry, setRegistry] = useState<RegistryEntry[]>([]);
   const [isDeletingSelected, setIsDeletingSelected] = useState<boolean>(false);
@@ -62,6 +65,7 @@ export function RegistryTab() {
   const loadRegistry = useCallback(async () => {
     setIsLoading(true);
     setLoadError(null);
+    setIsAuthError(false);
     try {
       const data = await fetchRegistryList();
       setRegistry(Array.isArray(data) ? data : []);
@@ -70,7 +74,11 @@ export function RegistryTab() {
       console.error("Failed to load registry", error);
       setRegistry([]);
       setSelectedReports([]);
-      setLoadError(error instanceof Error ? error.message : "Unknown error");
+      if (error instanceof ApiAuthError) {
+        setIsAuthError(true);
+      } else {
+        setLoadError(error instanceof Error ? error.message : "Unknown error");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -243,15 +251,22 @@ export function RegistryTab() {
         </div>
       )}
 
-      {!isLoading && loadError && (
+      {!isLoading && isAuthError && (
+        <Callout variant="info">
+          <p className="text-sm text-blue-03/90">{t("auth.loginRequiredTab")}</p>
+        </Callout>
+      )}
+
+      {!isLoading && !isAuthError && loadError && (
         <p className="text-sm text-red-01">{t("registry.fetchError")}</p>
       )}
 
-      {!isLoading && !loadError && registry.length === 0 && (
+      {!isLoading && !isAuthError && !loadError && registry.length === 0 && (
         <p className="text-sm text-gray-02">{t("registry.empty")}</p>
       )}
 
       {!isLoading &&
+        !isAuthError &&
         !loadError &&
         registry.length > 0 &&
         displayedRegistry.length === 0 &&
@@ -259,7 +274,7 @@ export function RegistryTab() {
           <p className="text-sm text-gray-02">{t("registry.noResults")}</p>
         )}
 
-      {!isLoading && !loadError && displayedRegistry.length > 0 && (
+      {!isLoading && !isAuthError && !loadError && displayedRegistry.length > 0 && (
         <>
           <RegistryStats stats={stats} />
           <RegistryResultsList

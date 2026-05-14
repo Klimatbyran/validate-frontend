@@ -1,5 +1,5 @@
 import { getGarboApiBaseUrl } from "@/config/api-env";
-import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
+import { garboAuthFetch, throwIfAuthError } from "@/lib/garbo-auth-fetch";
 import type { RegistryEntry, RegistryEntryUpdate } from "./registry-types";
 import { filterRegistryEntries } from "./registry-utils";
 
@@ -17,6 +17,7 @@ export const fetchRegistryList = async () => {
       const data = await response.json();
       return data;
     } else {
+      throwIfAuthError(response.status);
       const msg = `Failed to fetch registry: ${response.status} ${response.statusText} (${url})`;
       console.error(msg);
       throw new Error(msg);

@@ -17,8 +17,8 @@ export interface ConfirmDialogProps {
   description: React.ReactNode;
   cancelLabel: string;
   confirmLabel: string;
-  /** "danger" for destructive actions (red outline), "primary" default. */
-  confirmVariant?: "primary" | "danger";
+  /** "danger" for destructive (red), "revoke" for pink design-system destructive, "primary" default. */
+  confirmVariant?: "primary" | "danger" | "revoke";
   onConfirm: () => void | Promise<void>;
   isLoading?: boolean;
 }

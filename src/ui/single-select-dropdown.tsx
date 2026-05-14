@@ -30,6 +30,10 @@ export interface SingleSelectDropdownProps {
   getOptionLabel?: (value: string) => string;
   /** Optional class for the trigger button */
   triggerClassName?: string;
+  /** Optional class for the trigger label text span */
+  triggerTextClassName?: string;
+  /** Optional class for the wrapper element */
+  wrapperClassName?: string;
   /** Optional class for the dropdown panel */
   panelClassName?: string;
   /** Min width of dropdown panel (default 220) */
@@ -51,6 +55,8 @@ export function SingleSelectDropdown({
   emptyLabel,
   getOptionLabel,
   triggerClassName,
+  triggerTextClassName,
+  wrapperClassName,
   panelClassName,
   panelMinWidth = 220,
   panelMaxHeight = 280,
@@ -154,8 +160,60 @@ export function SingleSelectDropdown({
   const showOptions = options.length > 0;
   const showEmpty = !showOptions && !loading;
 
+  const panelContent = (
+    <>
+      {loading && (
+        <div
+          className="w-full text-left px-3 py-2 rounded text-sm text-gray-02 flex items-center gap-2 cursor-default"
+          role="option"
+          aria-disabled="true"
+          aria-live="polite"
+        >
+          <span
+            className="flex-shrink-0 w-4 h-4 rounded border border-gray-03"
+            aria-hidden
+          />
+          <span className="truncate">{loadingLabel ?? "Loading…"}</span>
+        </div>
+      )}
+      {showOptions &&
+        options.map((optionValue) => {
+          const isSelected = value === optionValue;
+          return (
+            <button
+              key={optionValue}
+              type="button"
+              role="option"
+              aria-selected={isSelected}
+              onClick={() => select(optionValue)}
+              className="w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center gap-2 hover:bg-gray-03/50 text-gray-01"
+            >
+              <span
+                className={cn(
+                  "flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center",
+                  isSelected
+                    ? "bg-gray-01 border-gray-01"
+                    : "border-gray-03"
+                )}
+              >
+                {isSelected && (
+                  <Check className="w-3 h-3 text-gray-05" />
+                )}
+              </span>
+              <span className="truncate">{label(optionValue)}</span>
+            </button>
+          );
+        })}
+      {showEmpty && (
+        <p className="px-3 py-2 text-sm text-gray-02">
+          {emptyLabel ?? "No options"}
+        </p>
+      )}
+    </>
+  );
+
   return (
-    <div className="relative shrink-0" ref={wrapperRef}>
+    <div className={cn("relative shrink-0", wrapperClassName)} ref={wrapperRef}>
       <Button
         variant="ghost"
         size="sm"
@@ -169,7 +227,7 @@ export function SingleSelectDropdown({
         aria-haspopup="listbox"
         aria-label={ariaLabel ?? placeholder ?? "Select"}
       >
-        <span className="whitespace-nowrap truncate max-w-[200px]">
+        <span className={cn("whitespace-nowrap truncate max-w-[200px]", triggerTextClassName)}>
           {triggerDisplay}
         </span>
         <ChevronDown className="w-4 h-4 shrink-0 text-gray-02" />
@@ -177,72 +235,26 @@ export function SingleSelectDropdown({
       {open
         ? usePortal && panelPosition && typeof document !== "undefined"
           ? createPortal(
-            <div
-              ref={panelRef}
-              className={cn(
-                "z-[99999] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto",
-                panelClassName,
-              )}
-              style={{
-                position: "fixed",
-                top: panelPosition.top,
-                left: panelPosition.left,
-                width: Math.max(panelMinWidth, panelPosition.width),
-                maxHeight: panelMaxHeight,
-              }}
-              role="listbox"
-              aria-label={ariaLabel ?? placeholder ?? "Select"}
-            >
-            {loading && (
               <div
-                className="w-full text-left px-3 py-2 rounded text-sm text-gray-02 flex items-center gap-2 cursor-default"
-                role="option"
-                aria-disabled="true"
-                aria-live="polite"
+                ref={panelRef}
+                className={cn(
+                  "z-[99999] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto",
+                  panelClassName,
+                )}
+                style={{
+                  position: "fixed",
+                  top: panelPosition.top,
+                  left: panelPosition.left,
+                  width: Math.max(panelMinWidth, panelPosition.width),
+                  maxHeight: panelMaxHeight,
+                }}
+                role="listbox"
+                aria-label={ariaLabel ?? placeholder ?? "Select"}
               >
-                <span
-                  className="flex-shrink-0 w-4 h-4 rounded border border-gray-03"
-                  aria-hidden
-                />
-                <span className="truncate">{loadingLabel ?? "Loading…"}</span>
-              </div>
-            )}
-            {showOptions &&
-              options.map((optionValue) => {
-                const isSelected = value === optionValue;
-                return (
-                  <button
-                    key={optionValue}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    onClick={() => select(optionValue)}
-                    className="w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center gap-2 hover:bg-gray-03/50 text-gray-01"
-                  >
-                    <span
-                      className={cn(
-                        "flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center",
-                        isSelected
-                          ? "bg-gray-01 border-gray-01"
-                          : "border-gray-03"
-                      )}
-                    >
-                      {isSelected && (
-                        <Check className="w-3 h-3 text-gray-05" />
-                      )}
-                    </span>
-                    <span className="truncate">{label(optionValue)}</span>
-                  </button>
-                );
-              })}
-            {showEmpty && (
-              <p className="px-3 py-2 text-sm text-gray-02">
-                {emptyLabel ?? "No options"}
-              </p>
-            )}
-            </div>,
-            document.body,
-          )
+                {panelContent}
+              </div>,
+              document.body,
+            )
           : !usePortal
             ? (
               <div
@@ -258,53 +270,7 @@ export function SingleSelectDropdown({
                 role="listbox"
                 aria-label={ariaLabel ?? placeholder ?? "Select"}
               >
-              {loading && (
-                <div
-                  className="w-full text-left px-3 py-2 rounded text-sm text-gray-02 flex items-center gap-2 cursor-default"
-                  role="option"
-                  aria-disabled="true"
-                  aria-live="polite"
-                >
-                  <span
-                    className="flex-shrink-0 w-4 h-4 rounded border border-gray-03"
-                    aria-hidden
-                  />
-                  <span className="truncate">{loadingLabel ?? "Loading…"}</span>
-                </div>
-              )}
-              {showOptions &&
-                options.map((optionValue) => {
-                  const isSelected = value === optionValue;
-                  return (
-                    <button
-                      key={optionValue}
-                      type="button"
-                      role="option"
-                      aria-selected={isSelected}
-                      onClick={() => select(optionValue)}
-                      className="w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center gap-2 hover:bg-gray-03/50 text-gray-01"
-                    >
-                      <span
-                        className={cn(
-                          "flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center",
-                          isSelected
-                            ? "bg-gray-01 border-gray-01"
-                            : "border-gray-03"
-                        )}
-                      >
-                        {isSelected && (
-                          <Check className="w-3 h-3 text-gray-05" />
-                        )}
-                      </span>
-                      <span className="truncate">{label(optionValue)}</span>
-                    </button>
-                  );
-                })}
-              {showEmpty && (
-                <p className="px-3 py-2 text-sm text-gray-02">
-                  {emptyLabel ?? "No options"}
-                </p>
-              )}
+                {panelContent}
               </div>
             )
             : null
