@@ -62,3 +62,24 @@ export type CreateClientApiKeyBody = z.infer<
 export type CreateClientApiKeyResponse = z.infer<
   typeof createClientApiKeyResponseSchema
 >;
+
+export const usageEndpointSchema = z.object({
+  method: z.string(),
+  path: z.string(),
+  count: z.number(),
+});
+
+export const keyUsageSchema = z.object({
+  keyId: z.string(),
+  keyLookup: z.string(),
+  roleSlug: z.string(),
+  totalRequests: z.number(),
+  lastRequestAt: z.string().nullable(),
+  endpoints: z.array(usageEndpointSchema),
+});
+
+export const apiKeyUsageListSchema = z.array(keyUsageSchema);
+
+export type UsageEndpoint = z.infer<typeof usageEndpointSchema>;
+export type KeyUsage = z.infer<typeof keyUsageSchema>;
+export type ApiKeyUsageList = z.infer<typeof apiKeyUsageListSchema>;

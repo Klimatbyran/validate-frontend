@@ -5,10 +5,12 @@ import {
   clientApiRoleListSchema,
   createClientApiKeyBodySchema,
   createClientApiKeyResponseSchema,
+  apiKeyUsageListSchema,
   type ClientApiKeyList,
   type ClientApiRoleList,
   type CreateClientApiKeyBody,
   type CreateClientApiKeyResponse,
+  type ApiKeyUsageList,
 } from "./api-access-types";
 
 export function reportsUrl(path: string): string {
@@ -53,6 +55,47 @@ export const fetchAPIKeys = async (): Promise<ClientApiKeyList> => {
     }
   } catch (error) {
     const msg = `Failed to fetch API keys (${url})`;
+    console.error(msg, error);
+    throw error instanceof Error ? error : new Error(msg);
+  }
+};
+
+export const revokeAPIKey = async (id: string): Promise<void> => {
+  const url = reportsUrl(`/internal/client-api-keys/${encodeURIComponent(id)}/revoke`);
+  try {
+    const response = await garboAuthFetch(url, { method: "POST" });
+    if (!response.ok) {
+      const msg = `Failed to revoke API key: ${response.status} ${response.statusText} (${url})`;
+      console.error(msg);
+      throw new Error(msg);
+    }
+  } catch (error) {
+    const msg = `Failed to revoke API key (${url})`;
+    console.error(msg, error);
+    throw error instanceof Error ? error : new Error(msg);
+  }
+};
+
+export const fetchApiKeyUsage = async (
+  since?: string,
+): Promise<ApiKeyUsageList> => {
+  const url = since
+    ? reportsUrl(
+        `/internal/client-api-keys/usage?since=${encodeURIComponent(since)}`,
+      )
+    : reportsUrl("/internal/client-api-keys/usage");
+  try {
+    const response = await garboAuthFetch(url);
+    if (response.ok) {
+      const data = await response.json();
+      return apiKeyUsageListSchema.parse(data);
+    } else {
+      const msg = `Failed to fetch API key usage: ${response.status} ${response.statusText} (${url})`;
+      console.error(msg);
+      throw new Error(msg);
+    }
+  } catch (error) {
+    const msg = `Failed to fetch API key usage (${url})`;
     console.error(msg, error);
     throw error instanceof Error ? error : new Error(msg);
   }

@@ -31,6 +31,7 @@
     "roleLabel": "Roll",
     "description": "Rollbeskrivning: ",
     "permissions": "Behörigheter: ",
+    "permissionsCount": "behörigheter",
     "keyNameLabel": "Nyckelnamn",
     "keyNamePlaceholder": "t.ex. Partnerintegrationsnyckel",
     "keyLookupLabel": "Lookup (valfritt)",
@@ -46,6 +47,14 @@
     "keysEmpty": "Inga API-nycklar hittades.",
     "keysStatusActive": "Aktiv",
     "keysStatusRevoked": "Återkallad",
+    "revokeAria": "Återkalla nyckel {{name}}",
+    "revokeError": "Kunde inte återkalla API-nyckeln.",
+    "revokeDialog": {
+      "title": "Återkalla API-nyckel",
+      "description": "Återkalla \"{{name}}\"? Det går inte att ångra — nyckeln slutar fungera omedelbart.",
+      "cancel": "Avbryt",
+      "confirm": "Återkalla"
+    },
     "keysRole": "Roll",
     "keysCreated": "Skapad",
     "keysLastUsed": "Senast använd",
@@ -55,6 +64,25 @@
     "revealKeyDescription": "Detta värde visas bara när det är tillgängligt. Spara det säkert.",
     "revealKeyUnavailable": "Den fullständiga API-nyckeln är inte tillgänglig för denna post.",
     "copyKey": "Kopiera nyckel",
+    "createdDialog": {
+      "title": "Spara din API-nyckel",
+      "forKey": "Nyckel: {{name}}",
+      "warning": "Den här nyckeln visas bara en gång. Kopiera den nu och spara den säkert — du kan inte hämta den igen.",
+      "keyLabel": "API-nyckel",
+      "done": "Klar"
+    },
+    "tabKeys": "Nycklar",
+    "tabUsage": "Användning",
+    "usage": {
+      "sinceLabel": "Från och med (valfritt)",
+      "refreshButton": "Uppdatera",
+      "loadError": "Kunde inte ladda användningsdata.",
+      "empty": "Ingen användningsdata hittades.",
+      "role": "Roll",
+      "requests": "anrop",
+      "lastRequest": "Senaste anrop",
+      "endpoints": "Endpoints"
+    },
     "roles": {
       "partner": "Partner",
       "firstParty": "First-party",

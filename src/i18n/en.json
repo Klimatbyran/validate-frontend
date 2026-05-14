@@ -35,6 +35,7 @@
     "keyLookupLabel": "Lookup (optional)",
     "keyLookupPlaceholder": "e.g. partner_prod",
     "permissions": "Permissions: ",
+    "permissionsCount": "permissions",
     "generatedKeyLabel": "Generated API-Key",
     "generatedKeyPlaceholder": "No API key generated yet.",
     "roleLoadError": "Could not load API access role.",
@@ -45,6 +46,14 @@
     "keysEmpty": "No API keys found.",
     "keysStatusActive": "Active",
     "keysStatusRevoked": "Revoked",
+    "revokeAria": "Revoke key {{name}}",
+    "revokeError": "Could not revoke API key.",
+    "revokeDialog": {
+      "title": "Revoke API key",
+      "description": "Revoke \"{{name}}\"? This cannot be undone — the key will stop working immediately.",
+      "cancel": "Cancel",
+      "confirm": "Revoke"
+    },
     "keysRole": "Role",
     "keysCreated": "Created",
     "keysLastUsed": "Last used",
@@ -54,6 +63,25 @@
     "revealKeyDescription": "This value is shown only when available. Store it securely.",
     "revealKeyUnavailable": "The full API key is not available for this entry.",
     "copyKey": "Copy key",
+    "createdDialog": {
+      "title": "Save your API key",
+      "forKey": "Key: {{name}}",
+      "warning": "This key will only be shown once. Copy it now and store it somewhere secure — you won't be able to retrieve it again.",
+      "keyLabel": "API key",
+      "done": "Done"
+    },
+    "tabKeys": "Keys",
+    "tabUsage": "Usage",
+    "usage": {
+      "sinceLabel": "Since (optional)",
+      "refreshButton": "Refresh",
+      "loadError": "Could not load usage data.",
+      "empty": "No usage data found.",
+      "role": "Role",
+      "requests": "requests",
+      "lastRequest": "Last request",
+      "endpoints": "Endpoints"
+    },
     "description": "Role description: ",
     "roles": {
       "partner": "Partner",
