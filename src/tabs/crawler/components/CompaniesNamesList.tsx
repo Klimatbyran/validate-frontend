@@ -89,12 +89,15 @@ const CompaniesNamesList = ({
         ) ?? null;
     }
 
-    return filtered?.map((company) => ({
-      ...company,
-      reportingPeriods: [...company.reportingPeriods].sort((a, b) =>
-        b.endDate.localeCompare(a.endDate),
-      ),
-    }));
+    return filtered
+      ?.slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((company) => ({
+        ...company,
+        reportingPeriods: [...company.reportingPeriods].sort((a, b) =>
+          b.endDate.localeCompare(a.endDate),
+        ),
+      }));
   }, [companiesList, filterYear, filterEnabled, selectedTags]);
 
   const handleSelectAllCompanies = () => {

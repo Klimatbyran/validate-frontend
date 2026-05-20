@@ -4,14 +4,7 @@ import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { reportHrefLinkPillClassName } from "@/lib/report-url-link-pill";
 import { Button } from "@/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/ui/dialog";
+import { Modal } from "@/ui/modal";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import type {
   GarboCompanyDetail,
@@ -477,21 +470,16 @@ export function ReportingPeriodsDataTab({
         </Button>
       </div>
 
-      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-gray-01">
-              {t("editor.singleCompanyView.deleteReportingPeriod.title")}
-            </DialogTitle>
-            <DialogDescription>
-              {t("editor.singleCompanyView.deleteReportingPeriod.description", {
-                year: periodPendingDelete
-                  ? (getPeriodYear(periodPendingDelete) ?? dash)
-                  : dash,
-              })}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+      <Modal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        size="md"
+        title={t("editor.singleCompanyView.deleteReportingPeriod.title")}
+        description={t("editor.singleCompanyView.deleteReportingPeriod.description", {
+          year: periodPendingDelete ? (getPeriodYear(periodPendingDelete) ?? dash) : dash,
+        })}
+        footer={
+          <>
             <Button
               type="button"
               variant="secondary"
@@ -516,9 +504,9 @@ export function ReportingPeriodsDataTab({
                 ? t("editor.singleCompanyView.deleteReportingPeriod.deleting")
                 : t("editor.singleCompanyView.deleteReportingPeriod.confirm")}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      />
 
       <ReviewerMetadataDialog
         open={reviewerSave.dialogOpen}

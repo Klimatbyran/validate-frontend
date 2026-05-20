@@ -2,14 +2,7 @@ import { Info, ExternalLink } from "lucide-react";
 import { useMemo } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/ui/dialog";
+import { Modal } from "@/ui/modal";
 import type { GarboFieldMetadata } from "../lib/types";
 
 function hasAnyMetadata(metadata: GarboFieldMetadata | null | undefined) {
@@ -59,8 +52,8 @@ export function MetadataDetailsDialog({
   if (!openable) return null;
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
+    <Modal
+      trigger={
         <button
           type="button"
           className="inline-flex items-center justify-center rounded-full text-blue-03 hover:bg-gray-03/40 h-6 w-6"
@@ -71,16 +64,12 @@ export function MetadataDetailsDialog({
         >
           <Info className="w-3.5 h-3.5" />
         </button>
-      </DialogTrigger>
-      <DialogContent className="max-w-xl">
-        <DialogHeader>
-          <DialogTitle className="text-gray-01">
-            {t("editor.metadataDetails.titleWithField", { field: fieldLabel })}
-          </DialogTitle>
-          <DialogDescription>{t("editor.metadataDetails.description")}</DialogDescription>
-        </DialogHeader>
-
-        <div className="grid gap-4 max-h-[70vh] overflow-auto pr-1">
+      }
+      size="xl"
+      title={t("editor.metadataDetails.titleWithField", { field: fieldLabel })}
+      description={t("editor.metadataDetails.description")}
+    >
+      <div className="grid gap-4 max-h-[70vh] overflow-auto pr-1">
           {(updatedAt || verifiedBy) && (
             <section className="rounded-lg bg-gray-05 p-3">
               <div className="text-xs font-medium text-gray-02 mb-2">
@@ -136,7 +125,6 @@ export function MetadataDetailsDialog({
             </section>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+    </Modal>
   );
 }

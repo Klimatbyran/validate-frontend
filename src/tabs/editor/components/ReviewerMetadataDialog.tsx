@@ -1,13 +1,7 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/ui/dialog";
+import { Modal } from "@/ui/modal";
 import { cn } from "@/lib/utils";
 import { inputClassName } from "../lib/company-edit-utils";
 import { editorPrimaryActionButtonClass, editorSecondaryActionButtonClass } from "../lib/editor-button-classes";
@@ -48,14 +42,38 @@ export function ReviewerMetadataDialog({
   }, [open, initialComment, initialSource]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
-        <DialogHeader>
-          <DialogTitle className="text-gray-01">{resolvedTitle}</DialogTitle>
-          <DialogDescription>{resolvedDescription}</DialogDescription>
-        </DialogHeader>
-
-        <div className="grid gap-4">
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      size="xl"
+      title={resolvedTitle}
+      description={resolvedDescription}
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={!!saving}
+            className={editorSecondaryActionButtonClass}
+          >
+            {t("editor.reviewerDialog.cancel")}
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={() => onConfirm({ comment: comment.trim(), source: source.trim() })}
+            disabled={!!saving}
+            className={editorPrimaryActionButtonClass}
+          >
+            {resolvedConfirm}
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-01 mb-1">
               {t("editor.reviewerDialog.comment")}{" "}
@@ -89,30 +107,6 @@ export function ReviewerMetadataDialog({
             />
           </div>
         </div>
-
-        <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            disabled={!!saving}
-            className={editorSecondaryActionButtonClass}
-          >
-            {t("editor.reviewerDialog.cancel")}
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            onClick={() => onConfirm({ comment: comment.trim(), source: source.trim() })}
-            disabled={!!saving}
-            className={editorPrimaryActionButtonClass}
-          >
-            {resolvedConfirm}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    </Modal>
   );
 }

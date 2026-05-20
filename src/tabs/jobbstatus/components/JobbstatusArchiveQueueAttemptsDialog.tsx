@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/ui/dialog";
+import { Modal } from "@/ui/modal";
 import { useI18n } from "@/contexts/I18nContext";
 import { getStatusBackgroundColor, getStatusIcon } from "@/lib/status-config";
 import { cn } from "@/lib/utils";
@@ -56,11 +56,7 @@ export function JobbstatusArchiveQueueAttemptsDialog({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{queueLabel}</DialogTitle>
-        </DialogHeader>
+    <Modal open={open} onOpenChange={onOpenChange} title={queueLabel} size="lg" scrollable>
         <p className="text-xs text-gray-02 -mt-1">
           {t("jobstatus.archiveQueueHistoryIntro", { count: attempts.length })}
         </p>
@@ -130,7 +126,6 @@ export function JobbstatusArchiveQueueAttemptsDialog({
             );
           })}
         </div>
-      </DialogContent>
-    </Dialog>
+    </Modal>
   );
 }
