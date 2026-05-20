@@ -880,7 +880,12 @@
     "unknownCompany": "Unknown",
     "unknownId": "Unknown",
     "manuallyAddReport": "Manually add report URL",
-    "country": "Country of origin"
+    "country": "Country of origin",
+    "filterByTags": "Filter by tags",
+    "allTags": "All tags",
+    "tagsSelected": "{{count}} tag(s) selected",
+    "noTags": "No tags available",
+    "clearTagFilter": "Clear filter"
   },
   "registry": {
     "title": "Registry",
@@ -949,7 +954,16 @@
     "sortReportYearAsc": "Report year (oldest first)",
     "sortRegistryIdDesc": "Registry row (newest first, approximate)",
     "sortRegistryIdAsc": "Registry row (oldest first, approximate)",
-    "sortIdHint": "Row order uses the internal id as a stand-in until a created-at field exists on reports."
+    "sortIdHint": "Row order uses the internal id as a stand-in until a created-at field exists on reports.",
+    "addEntry": "Add Entry",
+    "addEntryAdding": "Adding...",
+    "addEntryUploading": "Uploading to S3…",
+    "addEntryTitle": "Add Registry Entry",
+    "addEntryDescription": "Manually register a report URL. Source URL is pre-filled from the report URL and can be adjusted.",
+    "addEntrySuccess": "Registry entry added.",
+    "addEntryError": "Could not add registry entry: {{message}}",
+    "companyNameRequired": "Company name is required",
+    "reportYearRequired": "Report year is required"
   },
   "climate": {
     "loading": "Loading climate plans...",

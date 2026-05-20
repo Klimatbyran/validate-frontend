@@ -32,7 +32,7 @@ function App() {
           <Route path="/crawler" element={<CrawlerTab />} />
           <Route path="/registry" element={<RegistryTab />} />
           <Route path="/upload" element={<UploadTab />} />
-          <Route path="/api-access" element={<ApiAccessTab />} />
+          <Route path="/access" element={<ApiAccessTab />} />
           <Route path="/jobbstatus" element={<JobbstatusTab />} />
           <Route path="/workflow" element={<WorkflowTab />} />
           <Route path="/debug" element={<DebugTab />} />
