@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Callout } from "@/ui/callout";
 import { ApiAuthError } from "@/lib/garbo-auth-fetch";
@@ -169,8 +170,11 @@ export function RegistryTab() {
     try {
       const newEntry = await addRegistryEntry(entry);
       setRegistry((current) => [newEntry, ...current]);
+      toast.success(t("registry.addEntrySuccess"));
     } catch (error) {
-      console.error("Failed to add registry entry", error);
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(t("registry.addEntryError", { message }));
+      throw error;
     } finally {
       setIsAddingEntry(false);
     }

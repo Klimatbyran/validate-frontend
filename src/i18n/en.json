@@ -957,7 +957,6 @@
     "sortIdHint": "Row order uses the internal id as a stand-in until a created-at field exists on reports.",
     "addEntry": "Add Entry",
     "addEntryAdding": "Adding...",
-    "addEntryUploading": "Uploading to S3…",
     "addEntryTitle": "Add Registry Entry",
     "addEntryDescription": "Manually register a report URL. Source URL is pre-filled from the report URL and can be adjusted.",
     "addEntrySuccess": "Registry entry added.",

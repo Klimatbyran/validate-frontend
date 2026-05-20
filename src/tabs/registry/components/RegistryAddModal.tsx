@@ -10,29 +10,16 @@ import {
   DialogTitle,
 } from "@/ui/dialog";
 import type { RegistryNewEntry } from "../lib/registry-types";
+import {
+  isValidHttpUrl,
+  isValidOptionalHttpUrl,
+} from "../lib/registry-utils";
 
 interface RegistryAddModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAdd: (entry: RegistryNewEntry) => Promise<void>;
   isAdding: boolean;
-}
-
-function isValidHttpUrl(raw: string): boolean {
-  const t = raw.trim();
-  if (!t) return false;
-  try {
-    const u = new URL(t);
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-function isValidOptionalHttpUrl(raw: string): boolean {
-  const t = raw.trim();
-  if (!t) return true;
-  return isValidHttpUrl(raw);
 }
 
 const RegistryAddModal = ({
@@ -139,6 +126,7 @@ const RegistryAddModal = ({
   };
 
   const handleOpenChange = (open: boolean) => {
+    if (isAdding) return;
     if (!open) resetForm();
     onOpenChange(open);
   };
@@ -255,7 +243,7 @@ const RegistryAddModal = ({
               !!sourceUrlError
             }
           >
-            {isAdding ? t("registry.addEntryUploading") : t("registry.addEntry")}
+            {isAdding ? t("registry.addEntryAdding") : t("registry.addEntry")}
           </Button>
         </DialogFooter>
       </DialogContent>
