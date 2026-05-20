@@ -30,6 +30,17 @@ spec:
                 secretKeyRef:
                   name: env
                   key: GARBO_ALL_ACCESS_API_KEY
+            # Keys for the fixed-host errors tab proxies (always stage + prod regardless of deployment)
+            - name: GARBO_STAGE_ALL_ACCESS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: env
+                  key: GARBO_STAGE_ALL_ACCESS_API_KEY
+            - name: GARBO_PROD_ALL_ACCESS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: env
+                  key: GARBO_PROD_ALL_ACCESS_API_KEY
           resources:
             requests:
               memory: "512Mi"
