@@ -37,5 +37,6 @@ export interface RegistryNewEntry {
 }
 
 export interface RegistryStats {
-  total: number;
+  uniqueCompanies: number;
+  totalReports: number;
 }

@@ -38,8 +38,14 @@ export function filterRegistryEntries(
 }
 
 export function buildRegistryStats(entries: RegistryEntry[]): RegistryStats {
+  const companyKeys = new Set(
+    entries
+      .map((e) => (e.wikidataId ?? e.companyName ?? "").trim())
+      .filter(Boolean),
+  );
   return {
-    total: entries.length,
+    uniqueCompanies: companyKeys.size,
+    totalReports: entries.length,
   };
 }
 
