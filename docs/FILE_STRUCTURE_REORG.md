@@ -63,6 +63,7 @@ src/
 ├── ui/
 │   ├── button.tsx
 │   ├── dialog.tsx
+│   ├── modal.tsx
 │   ├── tabs.tsx
 │   ├── loading-spinner.tsx
 │   ├── sonner.tsx

@@ -5,12 +5,7 @@ import { formatArchiveWhen } from "../lib/format-archive-datetime";
 import { getQueueDisplayName } from "@/lib/workflow-config";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/ui/dialog";
+import { Modal } from "@/ui/modal";
 
 type JobbstatusArchiveDetailDialogProps = {
   open: boolean;
@@ -36,11 +31,7 @@ export function JobbstatusArchiveDetailDialog({
   const { t, localeIntl } = useI18n();
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{t("jobstatus.archiveDetailTitle")}</DialogTitle>
-        </DialogHeader>
+    <Modal open={open} onOpenChange={onOpenChange} title={t("jobstatus.archiveDetailTitle")} scrollable>
         {detailLoading && (
           <div className="flex items-center gap-2 text-gray-02 py-6">
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -178,7 +169,6 @@ export function JobbstatusArchiveDetailDialog({
             </div>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+    </Modal>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Dialog, DialogContent, DialogFooter } from "@/ui/dialog";
+import { Modal } from "@/ui/modal";
 import { Callout } from "@/ui/callout";
 import { toast } from "sonner";
 import { QueueJob, DetailedJobResponse, SwimlaneYearData } from "@/lib/types";
@@ -163,8 +163,7 @@ export function JobDetailsDialog({
     };
 
     return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
+      <Modal open={isOpen} onOpenChange={onOpenChange} size="2xl" scrollable>
           <div className="space-y-6 py-4">
             <div className="text-center space-y-3">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-03/30">
@@ -199,8 +198,7 @@ export function JobDetailsDialog({
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </Modal>
     );
   }
 
@@ -319,23 +317,38 @@ export function JobDetailsDialog({
     return rest;
   };
 
-  // Simplified view for jobs that need approval
-  if (needsApproval) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-6xl">
-          <JobDialogHeader job={job} />
+  const footer = needsApproval ? (
+    <JobDialogFooter
+      needsApproval={needsApproval}
+      canRetry={false}
+      approvalOnly={true}
+      onApprove={handleApprove}
+    />
+  ) : (
+    <JobDialogFooter
+      needsApproval={needsApproval}
+      canRetry={canRetry}
+      onApprove={handleApprove}
+      onRetry={handleRetry}
+    />
+  );
 
-          <JobRedisRetentionHint job={effectiveJob ?? job} />
+  return (
+    <Modal open={isOpen} onOpenChange={onOpenChange} size="6xl" scrollable footer={footer}>
+      <JobDialogHeader job={job} />
 
-          <DialogTabs
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            job={effectiveJob ?? job}
-          />
+      <JobRedisRetentionHint job={effectiveJob ?? job} />
 
-          <div className="space-y-6 my-6">
-            {activeTab === "user" && (
+      <DialogTabs
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        job={effectiveJob ?? job}
+      />
+
+      <div className="space-y-6 my-6">
+        {activeTab === "user" && (
+          <>
+            {needsApproval ? (
               <>
                 <Callout
                   variant="info"
@@ -354,88 +367,48 @@ export function JobDetailsDialog({
                   />
                 </div>
               </>
-            )}
-            {activeTab === "technical" && <TechnicalDataSection job={job} />}
-          </div>
-
-          <DialogFooter>
-            <JobDialogFooter
-              needsApproval={needsApproval}
-              canRetry={false}
-              approvalOnly={true}
-              onApprove={handleApprove}
-            />
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  // Technical view or non-approval jobs
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto max-w-6xl">
-        <JobDialogHeader job={job} />
-
-        <JobRedisRetentionHint job={effectiveJob ?? job} />
-
-        <DialogTabs
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          job={effectiveJob ?? job}
-        />
-
-        <div className="space-y-6 my-6">
-          {activeTab === "user" && (
-            <>
-              <JobStatusSection
-                job={job}
-                isRerun={isRerun}
-                yearData={yearData}
-              />
-              <JobRelationshipsSection job={job} />
-
-              {/* Information Section */}
-              <div className="bg-gray-03/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-01 mb-4">
-                  {t("jobstatus.jobdetails.information")}
-                </h3>
-                <JobSpecificDataView
-                  data={getFilteredJobDataWithoutSchema()}
+            ) : (
+              <>
+                <JobStatusSection
                   job={job}
+                  isRerun={isRerun}
+                  yearData={yearData}
                 />
-              </div>
+                <JobRelationshipsSection job={job} />
 
-              <ErrorSection
-                job={effectiveJob ?? job}
-                setActiveTab={setActiveTab}
-              />
-            </>
-          )}
-          {activeTab === "technical" && (
-            <>
-              <SchemaSection job={job} />
-              <ReturnValueSection job={effectiveJob ?? job} />
-              <TechnicalDataSection job={job} />
-              <ErrorSection
-                job={effectiveJob ?? job}
-                setActiveTab={setActiveTab}
-                isFullError={true}
-              />
-              <JobMetadataSection job={job} />
-            </>
-          )}
-        </div>
+                {/* Information Section */}
+                <div className="bg-gray-03/20 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-gray-01 mb-4">
+                    {t("jobstatus.jobdetails.information")}
+                  </h3>
+                  <JobSpecificDataView
+                    data={getFilteredJobDataWithoutSchema()}
+                    job={job}
+                  />
+                </div>
 
-        <DialogFooter>
-          <JobDialogFooter
-            needsApproval={needsApproval}
-            canRetry={canRetry}
-            onApprove={handleApprove}
-            onRetry={handleRetry}
-          />
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+                <ErrorSection
+                  job={effectiveJob ?? job}
+                  setActiveTab={setActiveTab}
+                />
+              </>
+            )}
+          </>
+        )}
+        {activeTab === "technical" && (
+          <>
+            <SchemaSection job={job} />
+            <ReturnValueSection job={effectiveJob ?? job} />
+            <TechnicalDataSection job={job} />
+            <ErrorSection
+              job={effectiveJob ?? job}
+              setActiveTab={setActiveTab}
+              isFullError={true}
+            />
+            <JobMetadataSection job={job} />
+          </>
+        )}
+      </div>
+    </Modal>
   );
 }
