@@ -880,7 +880,12 @@
     "unknownCompany": "Okänt",
     "unknownId": "Okänt",
     "manuallyAddReport": "Lägg till rapport URL manuellt",
-    "country": "Ursprungsland"
+    "country": "Ursprungsland",
+    "filterByTags": "Filtrera på taggar",
+    "allTags": "Alla taggar",
+    "tagsSelected": "{{count}} tagg(ar) valda",
+    "noTags": "Inga taggar tillgängliga",
+    "clearTagFilter": "Rensa filter"
   },
   "registry": {
     "title": "Register",
@@ -949,7 +954,15 @@
     "sortReportYearAsc": "Rapportår (äldst först)",
     "sortRegistryIdDesc": "Registrerad (nyast först, ungefär)",
     "sortRegistryIdAsc": "Registrerad (äldst först, ungefär)",
-    "sortIdHint": "Ordningen använder internt id som approximation tills rapporter får ett skapat-datum-fält."
+    "sortIdHint": "Ordningen använder internt id som approximation tills rapporter får ett skapat-datum-fält.",
+    "addEntry": "Lägg till post",
+    "addEntryAdding": "Lägger till...",
+    "addEntryTitle": "Lägg till registerpost",
+    "addEntryDescription": "Registrera en rapport-URL manuellt. Käll-URL fylls i från rapport-URL och kan justeras.",
+    "addEntrySuccess": "Registerpost tillagd.",
+    "addEntryError": "Kunde inte lägga till registerpost: {{message}}",
+    "companyNameRequired": "Företagsnamn krävs",
+    "reportYearRequired": "Rapportår krävs"
   },
   "climate": {
     "loading": "Laddar klimatplaner...",

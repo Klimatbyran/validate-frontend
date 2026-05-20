@@ -1,4 +1,4 @@
-import { BookDownIcon, RefreshCw } from "lucide-react";
+import { BookDownIcon, PlusCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/ui/button";
 import { useI18n } from "@/contexts/I18nContext";
 
@@ -7,6 +7,7 @@ interface RegistryControlsProps {
   onQueryChange: (value: string) => void;
   onRefresh: () => void;
   isRefreshing: boolean;
+  onAddEntry: () => void;
   onRunReports: () => void;
   isRunReportsDisabled: boolean;
   onExport: () => void;
@@ -22,6 +23,7 @@ const RegistryControls = ({
   onQueryChange,
   onRefresh,
   isRefreshing,
+  onAddEntry,
   onRunReports,
   isRunReportsDisabled,
   onExport,
@@ -52,6 +54,14 @@ const RegistryControls = ({
         >
           {t("common.refresh")}
           <RefreshCw className="w-4 h-4 ml-2" />
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={onAddEntry}
+        >
+          {t("registry.addEntry")}
+          <PlusCircle className="w-4 h-4 ml-2" />
         </Button>
         <Button
           size="sm"

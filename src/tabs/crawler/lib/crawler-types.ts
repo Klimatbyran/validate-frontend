@@ -24,6 +24,7 @@ export interface CompanyReport {
 export interface CompanyDetails {
   name: string;
   wikidataId?: string;
+  tags?: string[];
   reportingPeriods: ReportingPeriod[];
 }
 

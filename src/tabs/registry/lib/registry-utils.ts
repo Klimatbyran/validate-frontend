@@ -1,5 +1,21 @@
 import type { RegistryEntry, RegistryStats } from "./registry-types";
 
+export function isValidHttpUrl(raw: string): boolean {
+  const trimmed = raw.trim();
+  if (!trimmed) return false;
+  try {
+    const u = new URL(trimmed);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export function isValidOptionalHttpUrl(raw: string): boolean {
+  if (!raw.trim()) return true;
+  return isValidHttpUrl(raw);
+}
+
 export function filterRegistryEntries(
   entries: RegistryEntry[],
   query: string,

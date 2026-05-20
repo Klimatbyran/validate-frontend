@@ -82,6 +82,7 @@ These examples are meant to be copied by humans and AI tools.
 - `/jobbstatus`
 - `/workflow`
 - `/debug`
+- `/access` — API key management (auth-gated; tab is hidden in the nav until logged in)
 
 ### Jobbstatus (Live vs Archive)
 

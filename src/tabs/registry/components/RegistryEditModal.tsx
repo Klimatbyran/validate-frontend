@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/ui/dialog";
 import type { RegistryEntry, RegistryEntryUpdate } from "../lib/registry-types";
+import { isValidOptionalHttpUrl } from "../lib/registry-utils";
 
 interface RegistryEditModalProps {
   entry: RegistryEntry;
@@ -17,17 +18,6 @@ interface RegistryEditModalProps {
   onOpenChange: (open: boolean) => void;
   onEdit: (entry: RegistryEntryUpdate) => Promise<void>;
   isEditing: boolean;
-}
-
-function isValidOptionalHttpUrl(raw: string): boolean {
-  const t = raw.trim();
-  if (!t) return true;
-  try {
-    const u = new URL(t);
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch {
-    return false;
-  }
 }
 
 const RegistryEditModal = ({

@@ -44,6 +44,8 @@ export function CrawlerTab() {
   const [countryInput, setCountryInput] = useState<string>("");
   const [filterEnabled, setFilterEnabled] = useState<boolean>(false);
   const [filterYear, setFilterYear] = useState<number | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagOptions, setTagOptions] = useState<string[]>([]);
   const [selectedReports, setSelectedReports] = useState<SelectedReport[]>([]);
   const [selectedCompanies, setSelectedCompanies] = useState<
     CompanySelection[]
@@ -335,6 +337,9 @@ export function CrawlerTab() {
                 searchYear={reportYearInput}
                 handleAddToRegistryClick={handleAddToRegistryClick}
                 onRunSelectedReports={() => setIsRunReportsOpen(true)}
+                tagOptions={tagOptions}
+                selectedTags={selectedTags}
+                onTagsChange={setSelectedTags}
               />
               {(!reportYearInput || !selectedCompanies.length) && (
                 <p className="text-sm text-gray-02 mt-4">
@@ -397,6 +402,8 @@ export function CrawlerTab() {
           onSelectionChange={setSelectedCompanies}
           filterYear={filterYear}
           filterEnabled={filterEnabled}
+          selectedTags={selectedTags}
+          onTagOptionsLoaded={setTagOptions}
         />
       )}
     </div>

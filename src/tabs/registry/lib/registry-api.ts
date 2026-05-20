@@ -1,6 +1,11 @@
-import { getGarboApiBaseUrl } from "@/config/api-env";
+import { getGarboApiBaseUrl, getPipelineUrl } from "@/config/api-env";
+import { authenticatedFetch } from "@/lib/api-helpers";
 import { garboAuthFetch, throwIfAuthError } from "@/lib/garbo-auth-fetch";
-import type { RegistryEntry, RegistryEntryUpdate } from "./registry-types";
+import type {
+  RegistryEntry,
+  RegistryEntryUpdate,
+  RegistryNewEntry,
+} from "./registry-types";
 import { filterRegistryEntries } from "./registry-utils";
 
 function registryUrl(path: string): string {
@@ -80,6 +85,82 @@ export const deleteReportFromRegistry = async (reportIds: string[]) => {
     }
   } catch (error) {
     const msg = `Failed to delete reports with IDs ${reportIds.join(", ")}`;
+    console.error(msg, error);
+    throw error instanceof Error ? error : new Error(msg);
+  }
+};
+
+type PdfCacheResult = {
+  publicUrl: string;
+  key: string;
+  bucket: string;
+  sha256: string;
+};
+
+async function cachePdfToS3(
+  sourceUrl: string,
+): Promise<PdfCacheResult | null> {
+  try {
+    const response = await authenticatedFetch(
+      getPipelineUrl("cache-pdf"),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: sourceUrl }),
+      },
+    );
+    if (!response.ok) return null;
+    return (await response.json()) as PdfCacheResult;
+  } catch {
+    return null;
+  }
+}
+
+export const addRegistryEntry = async (
+  entry: RegistryNewEntry,
+): Promise<RegistryEntry> => {
+  const cache = await cachePdfToS3(entry.url);
+
+  const payload: RegistryNewEntry = {
+    ...entry,
+    ...(cache && {
+      s3Url: cache.publicUrl,
+      s3Key: cache.key,
+      s3Bucket: cache.bucket,
+      sha256: cache.sha256,
+    }),
+  };
+
+  const url = registryUrl("internal-companies/reports/save-reports");
+  try {
+    const response = await garboAuthFetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify([payload]),
+    });
+
+    let body: { successes?: RegistryEntry[]; message?: string } | null = null;
+    try {
+      body = await response.json();
+    } catch {
+      body = null;
+    }
+
+    if (!response.ok) {
+      const errorMsg =
+        body?.message ??
+        `Failed to add registry entry: ${response.status} ${response.statusText}`;
+      throw new Error(errorMsg);
+    }
+
+    const saved = body?.successes?.[0];
+    if (!saved) throw new Error("No entry returned from server");
+    return saved;
+  } catch (error) {
+    const msg = `Failed to add registry entry for URL ${entry.url}`;
     console.error(msg, error);
     throw error instanceof Error ? error : new Error(msg);
   }

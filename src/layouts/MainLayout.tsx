@@ -9,9 +9,11 @@ import {
   type TopLevelTabSegment,
   topLevelTabFromPathname,
 } from "@/lib/top-level-routes";
+import { useAuth } from "@/hooks/useAuth";
 
 export function MainLayout() {
   const { t } = useI18n();
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -35,7 +37,9 @@ export function MainLayout() {
               <TabsTrigger value="crawler">{t("nav.crawler")}</TabsTrigger>
               <TabsTrigger value="registry">{t("nav.registry")}</TabsTrigger>
               <TabsTrigger value="upload">{t("nav.upload")}</TabsTrigger>
-              <TabsTrigger value="api-access">{t("nav.apiAccess")}</TabsTrigger>
+              {isAuthenticated && (
+                <TabsTrigger value="access">{t("nav.apiAccess")}</TabsTrigger>
+              )}
               <TabsTrigger value="jobbstatus">{t("nav.jobStatus")}</TabsTrigger>
               <TabsTrigger value="workflow">{t("nav.workflow")}</TabsTrigger>
               <TabsTrigger value="debug">{t("nav.debug")}</TabsTrigger>
