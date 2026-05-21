@@ -5,6 +5,7 @@ import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { NO_TAGS_FILTER_OPTION } from "../../lib/types";
+import type { FilterUnverifiedOption } from "../../lib/single-company-overview-list";
 import type { SingleCompanyOverviewList } from "../../hooks/useSingleCompanyOverviewList";
 
 type Props = {
@@ -97,30 +98,54 @@ export function SingleCompanyOverviewFilters({ list, afterSlot }: Props) {
             />
           </div>
         )}
-        <div className="flex flex-wrap items-end gap-4">
-          <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-xs">
-            <input
-              type="checkbox"
-              checked={list.filterHasUnverifiedEmissions}
-              onChange={(e) =>
-                list.setFilterHasUnverifiedEmissions(e.target.checked)
-              }
-              className="rounded border-gray-03"
-            />
-            {t("editor.singleCompanyView.filterHasUnverifiedEmissions")}
+        <div>
+          <label className="block text-xs font-medium text-gray-02 mb-1">
+            {t("editor.singleCompanyView.filterUnverifiedLabel")}
           </label>
-          <label className="flex items-center gap-2 cursor-pointer text-gray-01 text-xs">
-            <input
-              type="checkbox"
-              checked={list.filterHasUnverifiedData}
-              onChange={(e) =>
-                list.setFilterHasUnverifiedData(e.target.checked)
-              }
-              className="rounded border-gray-03"
-            />
-            {t("editor.singleCompanyView.filterHasUnverifiedData")}
-          </label>
+          <SingleSelectDropdown
+            options={["", "emissions", "all"] as FilterUnverifiedOption[]}
+            value={list.filterUnverified}
+            onChange={list.setFilterUnverified}
+            placeholder={t("editor.singleCompanyView.filterUnverifiedNoFilter")}
+            getOptionLabel={(v) => {
+              if (v === "emissions")
+                return t("editor.singleCompanyView.filterUnverifiedEmissionsOnly");
+              if (v === "all")
+                return t("editor.singleCompanyView.filterUnverifiedEmissionsAndEconomy");
+              return t("editor.singleCompanyView.filterUnverifiedNoFilter");
+            }}
+            triggerClassName="min-w-[180px] !h-8 !text-xs px-3"
+          />
         </div>
+        {list.filterUnverified && (
+          <div
+            className="self-end"
+            title={
+              list.filterYears.length === 0
+                ? t("editor.singleCompanyView.filterApplyToSelectedYearsHint")
+                : undefined
+            }
+          >
+            <label
+              className={`flex items-center h-8 gap-2 text-xs ${
+                list.filterYears.length > 0
+                  ? "cursor-pointer text-gray-01"
+                  : "cursor-not-allowed text-gray-03"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={list.filterApplyUnverifiedToSelectedYears}
+                onChange={(e) =>
+                  list.setFilterApplyUnverifiedToSelectedYears(e.target.checked)
+                }
+                disabled={list.filterYears.length === 0}
+                className="rounded border-gray-03 disabled:opacity-40"
+              />
+              {t("editor.singleCompanyView.filterApplyToSelectedYears")}
+            </label>
+          </div>
+        )}
       </div>
       {!list.loadingList && list.filteredCompanies.length > 0 && (
         <p className="text-xs text-gray-02 mt-3 pt-3 border-t border-gray-03/50">
