@@ -29,14 +29,16 @@ export function companyMatchesSearch(
   return name.includes(q) || id.includes(q);
 }
 
+export type FilterUnverifiedOption = "" | "emissions" | "all";
+
 export type OverviewListFilterInput = {
   searchQuery: string;
   filterTags: string[];
   excludeFilterTags: string[];
   filterYears: string[];
   filterSector: string;
-  filterHasUnverifiedEmissions: boolean;
-  filterHasUnverifiedData: boolean;
+  filterUnverified: FilterUnverifiedOption;
+  filterApplyUnverifiedToSelectedYears: boolean;
   companyOverviewById: Map<string, CompanyVerificationOverview>;
 };
 
@@ -52,9 +54,31 @@ export function companyPassesOverviewFilters(
     return false;
   if (f.filterSector && (c.industry?.subIndustryCode ?? "") !== f.filterSector)
     return false;
-  if (f.filterHasUnverifiedEmissions && !overview?.hasUnverifiedEmissions)
-    return false;
-  if (f.filterHasUnverifiedData && !overview?.hasUnverifiedData) return false;
+
+  if (f.filterUnverified) {
+    const scopedToYears =
+      f.filterApplyUnverifiedToSelectedYears && f.filterYears.length > 0;
+
+    if (scopedToYears) {
+      const hasUnverifiedInYears = f.filterYears.some((year) => {
+        const yearData = overview?.perYear.find((p) => p.year === year);
+        if (!yearData) return false;
+        if (f.filterUnverified === "emissions")
+          return yearData.emissions === "unverified";
+        return (
+          yearData.emissions === "unverified" ||
+          yearData.economy === "unverified"
+        );
+      });
+      if (!hasUnverifiedInYears) return false;
+    } else {
+      if (f.filterUnverified === "emissions" && !overview?.hasUnverifiedEmissions)
+        return false;
+      if (f.filterUnverified === "all" && !overview?.hasUnverifiedData)
+        return false;
+    }
+  }
+
   return true;
 }
 

@@ -7,6 +7,7 @@ import { buildTagLabelBySlug } from "../lib/editor-tag-and-payload-utils";
 import { getPeriodYear } from "../lib/reporting-period-ui";
 import {
   type CompanySortId,
+  type FilterUnverifiedOption,
   companyPassesOverviewFilters,
   computeOverviewFilterPeriodStats,
   sortGarboCompanyListRows,
@@ -21,11 +22,23 @@ export function useSingleCompanyOverviewList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [excludeFilterTags, setExcludeFilterTags] = useState<string[]>([]);
-  const [filterYears, setFilterYears] = useState<string[]>([]);
+  const [filterYears, setFilterYearsRaw] = useState<string[]>([]);
+  const setFilterYears = useCallback((years: string[]) => {
+    setFilterYearsRaw(years);
+    if (!years.length) setFilterApplyUnverifiedToSelectedYears(false);
+  }, []);
   const [filterSector, setFilterSector] = useState("");
-  const [filterHasUnverifiedEmissions, setFilterHasUnverifiedEmissions] =
+  const [filterUnverified, setFilterUnverifiedRaw] =
+    useState<FilterUnverifiedOption>("");
+  const [filterApplyUnverifiedToSelectedYears, setFilterApplyUnverifiedToSelectedYears] =
     useState(false);
-  const [filterHasUnverifiedData, setFilterHasUnverifiedData] = useState(false);
+  const setFilterUnverified = useCallback(
+    (v: FilterUnverifiedOption) => {
+      setFilterUnverifiedRaw(v);
+      if (!v) setFilterApplyUnverifiedToSelectedYears(false);
+    },
+    [],
+  );
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [companySort, setCompanySort] = useState<CompanySortId>("name-asc");
 
@@ -96,8 +109,8 @@ export function useSingleCompanyOverviewList() {
       excludeFilterTags,
       filterYears,
       filterSector,
-      filterHasUnverifiedEmissions,
-      filterHasUnverifiedData,
+      filterUnverified,
+      filterApplyUnverifiedToSelectedYears,
       companyOverviewById,
     }),
     [
@@ -106,8 +119,8 @@ export function useSingleCompanyOverviewList() {
       excludeFilterTags,
       filterYears,
       filterSector,
-      filterHasUnverifiedEmissions,
-      filterHasUnverifiedData,
+      filterUnverified,
+      filterApplyUnverifiedToSelectedYears,
       companyOverviewById,
     ],
   );
@@ -149,10 +162,10 @@ export function useSingleCompanyOverviewList() {
     setFilterYears,
     filterSector,
     setFilterSector,
-    filterHasUnverifiedEmissions,
-    setFilterHasUnverifiedEmissions,
-    filterHasUnverifiedData,
-    setFilterHasUnverifiedData,
+    filterUnverified,
+    setFilterUnverified,
+    filterApplyUnverifiedToSelectedYears,
+    setFilterApplyUnverifiedToSelectedYears,
     filtersOpen,
     setFiltersOpen,
     companySort,
