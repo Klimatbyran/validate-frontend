@@ -71,7 +71,29 @@ yarn dev
 
 The development server will start on `http://localhost:5173` (or the next available port).
 
+On startup, the terminal logs which backends the Vite proxy targets, for example:
+
+```
+[vite] pipeline target: stage -> https://stage-pipeline-api.klimatkollen.se
+[vite] garbo target: stage -> https://stage-api.unearthdata.ai ...
+```
+
 4. Open your browser and navigate to the URL shown in the terminal (typically `http://localhost:5173`)
+
+### Backend APIs
+
+The app talks to two backends:
+
+| Backend | Used for | Default host (stage) |
+|---------|----------|----------------------|
+| **Garbo** | Auth, crawler, registry, api-access, queue archive, errors tab | `stage-api.unearthdata.ai` |
+| **Pipeline** | Live job status, upload, batches, reruns | `stage-pipeline-api.klimatkollen.se` |
+
+In **local dev**, the browser calls same-origin proxy paths (`/garbo-stage/api/...`, `/pipeline-stage/api/...`); Vite forwards them to the hosts above. Configure targets in `.env.development` (see `.env.development.example`).
+
+In **staging/production**, nginx in the container proxies `/garbo-api` and `/api` using `GARBO_API_URL` and `BACKEND_API_URL` from the k8s manifests. Garbo endpoints point at unearthdata; pipeline stays on klimatkollen.
+
+For path names, env vars, and Jobbstatus live vs archive, see [API and proxy setup](./docs/API_AND_PROXY_SETUP.md).
 
 ## Development
 
