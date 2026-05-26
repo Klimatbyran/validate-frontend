@@ -11,4 +11,4 @@ spec:
             - name: BACKEND_API_URL
               value: "https://pipeline-api.klimatkollen.se"
             - name: GARBO_API_URL
-              value: "https://api.klimatkollen.se/api"
+              value: "https://api.unearthdata.ai/api"

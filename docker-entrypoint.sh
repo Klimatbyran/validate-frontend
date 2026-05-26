@@ -4,7 +4,7 @@ set -e
 # Pipeline backend (default: staging)
 BACKEND_API_URL=${BACKEND_API_URL:-https://stage-pipeline-api.klimatkollen.se}
 # Garbo backend (default: staging API base including /api)
-GARBO_API_URL=${GARBO_API_URL:-https://stage-api.klimatkollen.se/api}
+GARBO_API_URL=${GARBO_API_URL:-https://stage-api.unearthdata.ai/api}
 # API key for non auth endpoints in garbo (e.g. /garbo-api/companies)
 GARBO_ALL_ACCESS_API_KEY=${GARBO_ALL_ACCESS_API_KEY:-}
 # API keys for the fixed-host errors tab proxies (always stage + prod regardless of deployment)

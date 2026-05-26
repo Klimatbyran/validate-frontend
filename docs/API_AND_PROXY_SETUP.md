@@ -97,7 +97,7 @@ VITE_GARBO_TARGET=local
 
 ### URL overrides (optional)
 
-By default, local/stage/prod URLs are fixed (e.g. stage-api.klimatkollen.se for garbo stage). To point at a different host:
+By default, local/stage/prod URLs are fixed. Garbo stage/prod default to unearthdata; pipeline stays on klimatkollen. To point at a different host:
 
 - Pipeline: `VITE_PIPELINE_API_URL`, `VITE_PIPELINE_STAGE_URL`, `VITE_PIPELINE_PROD_URL`
 - Garbo: `VITE_GARBO_LOCAL_URL`, `VITE_GARBO_STAGE_URL`, `VITE_GARBO_PROD_URL`
@@ -128,8 +128,8 @@ When you change `.env`, **restart the dev server** so the proxy and app config p
 Garbo uses two kinds of URLs (per garbo team):
 
 - **API base** (stage-api / api) – used for all backend calls (reports, companies, auth).  
-  Stage: `https://stage-api.klimatkollen.se`  
-  Prod: `https://api.klimatkollen.se`
+  Stage: `https://stage-api.unearthdata.ai`  
+  Prod: `https://api.unearthdata.ai`
 - **Frontend origin** (stage / klimatkollen) – used when the app needs to link to the Klimatkollen **web app** (e.g. “back to site” links, not API calls).  
   Stage: `https://stage.klimatkollen.se`  
   Prod: `https://klimatkollen.se`
