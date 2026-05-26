@@ -13,8 +13,8 @@ export const GARBO_STAGE_ORIGIN = "https://stage.klimatkollen.se";
 export const GARBO_PROD_ORIGIN = "https://klimatkollen.se";
 
 // API base origin (backend the FE calls). Used here for prod URLs; vite.config imports for dev proxy.
-export const GARBO_STAGE_API = "https://stage-api.klimatkollen.se";
-export const GARBO_PROD_API = "https://api.klimatkollen.se";
+export const GARBO_STAGE_API = "https://stage-api.unearthdata.ai";
+export const GARBO_PROD_API = "https://api.unearthdata.ai";
 
 function jointMode(): ApiTarget {
   const v = import.meta.env.VITE_API_MODE as string | undefined;
