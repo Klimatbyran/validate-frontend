@@ -23,8 +23,13 @@ function companyMatchesSearch(company: GarboCompanyListItem, query: string): boo
   const q = query.trim().toLowerCase();
   if (!q) return true;
   const name = (company.name ?? "").toLowerCase();
-  const id = (company.wikidataId ?? "").toLowerCase();
-  return name.includes(q) || id.includes(q);
+  const wikidataId = (company.wikidataId ?? "").toLowerCase();
+  const internalId = (company.id ?? "").toLowerCase();
+  return (
+    name.includes(q) ||
+    wikidataId.includes(q) ||
+    internalId.includes(q)
+  );
 }
 
 export function MultiCompanyView() {

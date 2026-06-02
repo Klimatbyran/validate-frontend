@@ -23,6 +23,7 @@ function ymdToIsoStartOfDay(ymd: string) {
 
 function detailToListItem(d: GarboCompanyDetail): GarboCompanyListItem {
   return {
+    id: d.id,
     wikidataId: d.wikidataId,
     name: d.name,
     tags: d.tags,

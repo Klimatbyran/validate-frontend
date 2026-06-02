@@ -9,6 +9,7 @@ import type {
   GarboCompanyDetail,
   GarboMetadata,
 } from "./types";
+import { parseGarboCompanyDetail } from "./companies-schemas";
 import { apiUrl } from "./api-utils";
 
 function normalizeReportingPeriodUrls(company: GarboCompanyDetail): GarboCompanyDetail {
@@ -113,8 +114,8 @@ export async function listCompanies(
   const data = await res.json();
   const list = Array.isArray(data) ? data : (data.companies ?? data.items ?? []);
   return Array.isArray(list)
-    ? (list as GarboCompanyListItem[]).map((c) =>
-        normalizeCompany(c as GarboCompanyDetail),
+    ? (list as unknown[]).map((raw) =>
+        normalizeCompany(parseGarboCompanyDetail(raw) as GarboCompanyDetail),
       )
     : [];
 }
@@ -142,8 +143,8 @@ export async function getCompany(
     const text = await res.text();
     throw new Error(`Failed to fetch company: ${res.status} ${text}`);
   }
-  const data = (await res.json()) as GarboCompanyDetail;
-  return normalizeCompany(data);
+  const data = parseGarboCompanyDetail(await res.json());
+  return normalizeCompany(data as GarboCompanyDetail);
 }
 
 /** Create or update company (POST /api/companies/:wikidataId). Body: name, descriptions, tags, internalComment, url, logoUrl, lei, metadata, verified. */

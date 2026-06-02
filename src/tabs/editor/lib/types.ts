@@ -31,6 +31,8 @@ export const WIKIDATA_ID_REGEX = /^Q\d+$/;
 
 /** Minimal company from Garbo GET /api/companies (list). */
 export interface GarboCompanyListItem {
+  /** Internal Garbo company id (CUID). */
+  id: string;
   wikidataId: string;
   name: string;
   tags?: string[];
