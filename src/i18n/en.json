@@ -966,6 +966,8 @@
     "addEntryDescription": "Manually register a report URL. Source URL is pre-filled from the report URL and can be adjusted.",
     "addEntrySuccess": "Registry entry added.",
     "addEntryError": "Could not add registry entry: {{message}}",
+    "editReportSuccess": "Registry entry updated.",
+    "editReportError": "Could not update registry entry: {{message}}",
     "companyNameRequired": "Company name is required",
     "reportYearRequired": "Report year is required"
   },

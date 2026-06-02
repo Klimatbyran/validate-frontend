@@ -1,4 +1,4 @@
-import { getGarboApiBaseUrl } from "@/config/api-env";
+import { getUnearthApiBaseUrl } from "@/config/api-env";
 import { garboAuthFetch, throwIfAuthError } from "@/lib/garbo-auth-fetch";
 import {
   clientApiKeyListSchema,
@@ -16,7 +16,7 @@ import {
 export { ApiAuthError } from "@/lib/garbo-auth-fetch";
 
 function apiAccessUrl(path: string): string {
-  const base = getGarboApiBaseUrl();
+  const base = getUnearthApiBaseUrl();
   const segment = path.replace(/^\//, "").replace(/\/+$/, "");
   const url = segment ? `${base}/${segment}` : base;
   return url.replace(/\/+$/, "");
