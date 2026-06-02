@@ -199,8 +199,11 @@ export function RegistryTab() {
           item.id === updatedEntry.id ? updatedEntry : item,
         ),
       );
+      toast.success(t("registry.editReportSuccess"));
     } catch (error) {
       console.error("Failed to edit registry entry", error);
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(t("registry.editReportError", { message }));
     } finally {
       setEditingReportIds((current) => current.filter((id) => id !== reportId));
     }

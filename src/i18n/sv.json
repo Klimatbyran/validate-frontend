@@ -966,6 +966,8 @@
     "addEntryDescription": "Registrera en rapport-URL manuellt. Käll-URL fylls i från rapport-URL och kan justeras.",
     "addEntrySuccess": "Registerpost tillagd.",
     "addEntryError": "Kunde inte lägga till registerpost: {{message}}",
+    "editReportSuccess": "Registerpost uppdaterad.",
+    "editReportError": "Kunde inte uppdatera registerpost: {{message}}",
     "companyNameRequired": "Företagsnamn krävs",
     "reportYearRequired": "Rapportår krävs"
   },

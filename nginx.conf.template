@@ -30,15 +30,13 @@ server {
         proxy_read_timeout 30s;
     }
 
-    # Safety: ensure /garbo-api (no trailing slash) doesn't fall through to the SPA.
-    # Client code should normally call /garbo-api/<endpoint>, which hits location /garbo-api/.
     location = /garbo-api {
         return 308 /garbo-api/;
     }
 
-    # Garbo API proxy - /garbo-api -> Garbo backend (auth, companies, tag-options, etc.)
-    location /garbo-api/ {
-        proxy_pass ${GARBO_API_URL}/;
+    # Garbo monolith: queue-archive only
+    location /garbo-api/queue-archive/ {
+        proxy_pass ${GARBO_API_URL}/queue-archive/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -54,13 +52,33 @@ server {
         proxy_read_timeout 30s;
     }
 
-    # Errors tab: proxy BOTH stage and prod garbo via same-origin paths to avoid CORS.
-    # These are intentionally fixed to the canonical hosts (not env-controlled).
-    location = /garbo-stage-api {
-        return 308 /garbo-stage-api/;
+    location = /unearth-api {
+        return 308 /unearth-api/;
     }
-    location /garbo-stage-api/ {
-        # Keep the incoming /api/... path intact (avoid /api/api/...).
+
+    # Unearth HTTP API: auth, companies, registry, tag-options, etc.
+    location /unearth-api/ {
+        proxy_pass ${UNEARTH_API_URL}/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host ${UNEARTH_HOST};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-API-Key ${UNEARTH_ALL_ACCESS_API_KEY};
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+    }
+
+    # Errors tab: fixed Unearth stage + prod (not env-controlled)
+    location = /unearth-stage-api {
+        return 308 /unearth-stage-api/;
+    }
+    location /unearth-stage-api/ {
         proxy_pass https://stage-api.unearthdata.ai/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -69,7 +87,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-API-Key ${GARBO_STAGE_ALL_ACCESS_API_KEY};
+        proxy_set_header X-API-Key ${UNEARTH_STAGE_ALL_ACCESS_API_KEY};
         proxy_cache_bypass $http_upgrade;
 
         proxy_connect_timeout 30s;
@@ -77,11 +95,10 @@ server {
         proxy_read_timeout 30s;
     }
 
-    location = /garbo-prod-api {
-        return 308 /garbo-prod-api/;
+    location = /unearth-prod-api {
+        return 308 /unearth-prod-api/;
     }
-    location /garbo-prod-api/ {
-        # Keep the incoming /api/... path intact (avoid /api/api/...).
+    location /unearth-prod-api/ {
         proxy_pass https://api.unearthdata.ai/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -90,7 +107,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-API-Key ${GARBO_PROD_ALL_ACCESS_API_KEY};
+        proxy_set_header X-API-Key ${UNEARTH_PROD_ALL_ACCESS_API_KEY};
         proxy_cache_bypass $http_upgrade;
 
         proxy_connect_timeout 30s;
@@ -104,7 +121,6 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
-        # Set Host header to backend hostname (required when using variable in proxy_pass)
         proxy_set_header Host ${BACKEND_HOST};
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -120,14 +136,12 @@ server {
     location / {
         try_files $uri $uri/ /index.html;
         
-        # Cache static assets
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
             expires 1y;
             add_header Cache-Control "public, immutable";
         }
     }
 
-    # Health check endpoint
     location /health {
         access_log off;
         return 200 "healthy\n";

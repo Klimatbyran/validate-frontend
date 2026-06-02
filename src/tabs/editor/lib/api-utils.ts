@@ -1,6 +1,6 @@
-import { getGarboApiBaseUrl } from "@/config/api-env";
+import { getUnearthApiBaseUrl } from "@/config/api-env";
 
-const BASE = getGarboApiBaseUrl();
+const BASE = getUnearthApiBaseUrl();
 
 export function apiUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;

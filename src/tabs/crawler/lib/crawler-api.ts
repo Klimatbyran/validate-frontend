@@ -1,4 +1,4 @@
-import { getGarboApiBaseUrl } from "@/config/api-env";
+import { getUnearthApiBaseUrl } from "@/config/api-env";
 import type {
   crawlerSearchQuery,
   SaveReportsListResponse,
@@ -6,10 +6,10 @@ import type {
 } from "./crawler-types";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 
-/** Crawler uses garbo API only. Base follows VITE_GARBO_TARGET / VITE_API_MODE. */
+/** Crawler uses Unearth API. Base follows VITE_UNEARTH_TARGET / VITE_API_MODE. */
 
 export function reportsUrl(path: string): string {
-  const base = getGarboApiBaseUrl();
+  const base = getUnearthApiBaseUrl();
   const segment = path.replace(/^\//, "").replace(/\/+$/, "");
   const url = segment ? `${base}/${segment}` : base;
   return url.replace(/\/+$/, "");

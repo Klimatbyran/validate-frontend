@@ -1,4 +1,4 @@
-import { getGarboApiBaseUrl, getPipelineUrl } from "@/config/api-env";
+import { getUnearthApiBaseUrl, getPipelineUrl } from "@/config/api-env";
 import { authenticatedFetch } from "@/lib/api-helpers";
 import { garboAuthFetch, throwIfAuthError } from "@/lib/garbo-auth-fetch";
 import type {
@@ -9,7 +9,7 @@ import type {
 import { filterRegistryEntries } from "./registry-utils";
 
 function registryUrl(path: string): string {
-  const base = getGarboApiBaseUrl().replace(/\/+$/, "");
+  const base = getUnearthApiBaseUrl().replace(/\/+$/, "");
   const segment = path.replace(/^\//, "");
   return `${base}/${segment}`;
 }
@@ -178,9 +178,15 @@ export const editRegistryEntry = async (entry: RegistryEntryUpdate) => {
     });
 
     if (!response.ok) {
-      const errorMsg = `Failed to edit registry entry: ${response.status} ${response.statusText}`;
-      console.error(errorMsg);
-      throw new Error(errorMsg);
+      let message = `Failed to edit registry entry: ${response.status} ${response.statusText}`;
+      try {
+        const body = (await response.json()) as { message?: string };
+        if (body.message) message = body.message;
+      } catch {
+        // ignore non-JSON error bodies
+      }
+      console.error(message);
+      throw new Error(message);
     }
     const updatedEntry = (await response.json()) as RegistryEntry;
     return updatedEntry;

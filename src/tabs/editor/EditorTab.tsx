@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useI18n } from "@/contexts/I18nContext";
 import { ViewModePills } from "@/ui/view-mode-pills";
-import { getGarboTarget } from "@/config/api-env";
+import { getUnearthTarget } from "@/config/api-env";
 import { ManageTagOptions } from "./components/tag-options/ManageTagOptions";
 import { MultiCompanyView } from "./components/multi-company/MultiCompanyView";
 import { SingleCompanyView } from "./components/single-company/SingleCompanyView";
@@ -64,7 +64,7 @@ export function EditorTab() {
           <div className="text-sm text-gray-01 font-medium">
             {t("editor.dataSourceLabel")}{" "}
             <span className="ml-1 inline-flex items-center rounded-full border border-gray-03 bg-gray-04 px-2 py-0.5 text-xs font-semibold text-gray-01">
-              {getGarboTarget().toUpperCase()}
+              {getUnearthTarget().toUpperCase()}
             </span>
           </div>
         </div>

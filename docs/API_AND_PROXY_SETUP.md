@@ -1,148 +1,100 @@
 # API and proxy setup
 
-This doc describes how the app talks to the **pipeline** and **garbo** backends in development and production, and how to switch between local, stage, and prod.
+How Validate talks to **pipeline**, **Unearth API**, and **Garbo monolith** in development and production.
 
 ## Overview
 
-- **Pipeline** – live job status (Redis), upload, pipeline batch listing, queues (validate/pipeline API).
-- **Garbo** – auth, crawler reports, companies, and **queue archive** (Postgres `ReportRun` / `ReportRunJob` history for Jobbstatus).
-- **Error browser** – always calls both garbo stage and garbo prod for comparison; no “target” setting.
+| Backend | Host (stage) | Browser path (deployed) |
+|---------|----------------|-------------------------|
+| **Pipeline API** | `stage-pipeline-api.klimatkollen.se` | `/api/…` |
+| **Unearth API** | `stage-api.unearthdata.ai` | `/unearth-api/…` |
+| **Garbo monolith** | `stage-api.klimatkollen.se` | `/garbo-api/queue-archive/…` only |
 
-In **development**, the Vite dev server proxies request paths to the right backend. The path you see in the **network tab** is the backend you’re hitting (e.g. `/pipeline-stage`, `/garbo-local`).
+- **Errors tab** – always compares Unearth stage and prod via `/unearth-stage-api/` and `/unearth-prod-api/` (ignores target).
 
-In **production**, the app uses full API URLs (garbo) or `/api` (pipeline); there is no Vite proxy.
+In **development**, Vite proxies same-origin paths (see network tab table below).
 
 ---
 
-## What you see in the network tab
+## Network tab paths (dev)
 
 | Path | Backend |
 |------|--------|
-| `/pipeline-local` | Pipeline on this machine (e.g. localhost:3001) |
-| `/pipeline-stage` | Stage pipeline API |
-| `/pipeline` | Prod pipeline API |
-| `/garbo-local` | Garbo on this machine (e.g. localhost:3000) |
-| `/garbo-stage` | Stage garbo API |
-| `/garbo` | Prod garbo API |
+| `/pipeline-local` | Pipeline on this machine |
+| `/pipeline-stage` | Stage pipeline |
+| `/pipeline` | Prod pipeline |
+| `/unearth-local` | Local API (Unearth; often localhost:3000) |
+| `/unearth-stage` | Stage Unearth |
+| `/unearth` | Prod Unearth |
+| `/garbo-local/api/queue-archive` | Local Garbo monolith |
+| `/garbo-stage/api/queue-archive` | Stage Garbo monolith |
+| `/garbo/api/queue-archive` | Prod Garbo monolith |
 
-So you can tell at a glance which pipeline and which garbo you’re using without opening `.env`.
+Deployed builds use `/unearth-api` and `/garbo-api/queue-archive` instead.
 
 ---
 
-## The three cases
+## Usage cases
 
-### 1. Error browser – always stage and prod
+### 1. Errors tab
 
-The Errors tab always fetches from **both** garbo stage and garbo prod (for comparison). It does not use the “garbo target” setting. Paths: `/garbo-stage/...` and `/garbo/...` (prod).
+Fetches **both** Unearth stage and prod. Paths: `/unearth-stage/…` (dev) or `/unearth-stage-api/…` (deployed), and `/unearth/…` or `/unearth-prod-api/…`.
 
-### 2. Garbo single target – auth, crawler, etc.
+### 2. Unearth target – auth, crawler, registry
 
-Auth, crawler (reports/list, etc.) and any other “single” garbo usage hit **one** garbo backend, chosen by your target. Default is **stage**. Overridable by env (see below). Path in network tab: `/garbo-local`, `/garbo-stage`, or `/garbo`.
+One Unearth backend from `VITE_UNEARTH_TARGET` (legacy: `VITE_GARBO_TARGET`). Helpers: `getUnearthApiBaseUrl()`, `getUnearthTarget()`.
 
-### 3. Pipeline single target – job status, upload, etc.
+### 3. Garbo monolith – queue archive
 
-Live swimlane data (companies, active jobs, reruns, approvals) uses **one** pipeline backend. Default is **stage**. Overridable by env. Path in network tab: `/pipeline-local`, `/pipeline-stage`, or `/pipeline`.
+Jobbstatus Archive, batch pickers, `POST /queue-archive/batches`. Helper: `getGarboQueueArchiveUrl()` → `/garbo-api/queue-archive/…` (deployed) or `/garbo-stage/api/queue-archive/…` (dev).
 
-### Jobbstatus: Live vs Archive (Garbo Postgres)
+Requires JWT from Unearth login (`garboAuthFetch`); monolith must share `JWT_SECRET` with Unearth.
 
-The **Jobbstatus** top-level tab has two in-app subtabs:
+### 4. Pipeline target – live job status
 
-| Subtab | Data source | Role |
-|--------|----------------|------|
-| **Live (Redis)** | Pipeline API | Real-time queues: swimlane, filters, rerun-by-worker, job details from Redis, approvals. Same target as section 3. |
-| **Archive** | Garbo API (`/queue-archive/…`) | Read-only history persisted when workers archive runs to Postgres. Uses the **same Garbo target** as auth/crawler (section 2). Requires a logged-in JWT (`garboAuthFetch`). |
+`getPipelineApiBaseUrl()` → `/pipeline-stage`, etc.
 
-**Archive HTTP paths** (under the chosen garbo proxy prefix, e.g. `/garbo-stage/queue-archive/…` in dev):
+---
 
-- `GET /queue-archive/batches` – batch dropdown (Garbo `Batch.id` + `batchName`).
-- `POST /queue-archive/batches` – body `{ "batchName": string }`; upserts by name and returns `{ batch: { id, batchName } }` so Validate can send **`id`** as pipeline `batchId`.
-- `GET /queue-archive/runs` – paginated list; optional query params: `q`, `page`, `pageSize`, **`batchDbId`** (exact Garbo `Batch.id`), **`batchName`** (exact legacy pipeline string still stored on some jobs).
-- `GET /queue-archive/runs/:threadId` – one run with jobs.
+## Jobbstatus Archive endpoints
 
-The app builds these URLs with **`getGarboQueueArchiveUrl()`** in `src/config/api-env.ts` (Garbo API base + `/queue-archive` + path).
+- `GET /queue-archive/batches`
+- `POST /queue-archive/batches` – `{ "batchName": string }`
+- `GET /queue-archive/runs`
+- `GET /queue-archive/runs/:threadId`
 
-**Batches:** New work from Validate uses **`Batch.id`** (cuid) as pipeline `job.data.batchId`. Garbo still accepts a legacy **`batchName`** string on that field for older Redis jobs. Upload / Registry / Jobbstatus batch pickers load rows from **`GET /queue-archive/batches`** (same Garbo target as auth).
-
-**Operational note:** Reruns and any mutating pipeline actions stay on **Live**; Archive does not drive the pipeline.
-
-**Jobbstatus URL:** the Live vs Archive subtab is reflected as `?source=live` (default, often omitted) or `?source=archive`. See [routing / URL state](./ROUTING_URL_STATE.md#jobbstatus-live-vs-archive).
+See [routing / URL state](./ROUTING_URL_STATE.md#jobbstatus-live-vs-archive).
 
 ---
 
 ## Environment variables
 
-Copy `.env.development.example` to `.env.development` or `.env.development.local` and uncomment or set what you need.
+See `.env.development.example`.
 
-### Joint override (sets both pipeline and garbo)
+| Variable | Purpose |
+|----------|---------|
+| `VITE_API_MODE` | Joint default for pipeline + Unearth/Garbo |
+| `VITE_UNEARTH_TARGET` | Unearth + Garbo archive target (`local` \| `stage` \| `prod`) |
+| `VITE_PIPELINE_TARGET` | Pipeline only |
+| `VITE_UNEARTH_STAGE_URL` | Override Unearth stage host |
+| `VITE_GARBO_STAGE_URL` | Override Garbo monolith stage host |
+| `UNEARTH_API_URL` | nginx → Unearth (includes `/api` suffix) |
+| `GARBO_API_URL` | nginx → Garbo monolith (includes `/api` suffix) |
+| `UNEARTH_ALL_ACCESS_API_KEY` | `/unearth-api/` |
+| `GARBO_ALL_ACCESS_API_KEY` | `/garbo-api/queue-archive/` |
 
-If you don’t set per-backend overrides, both pipeline and garbo use this:
-
-- `VITE_API_MODE=stage` (default)
-- `VITE_API_MODE=local`
-- `VITE_API_MODE=prod`
-
-### Per-backend overrides
-
-Override pipeline or garbo independently:
-
-- `VITE_PIPELINE_TARGET=local` | `stage` | `prod` – pipeline only
-- `VITE_GARBO_TARGET=local` | `stage` | `prod` – garbo only
-
-Example: pipeline to stage, garbo to local:
-
-```bash
-VITE_PIPELINE_TARGET=stage
-VITE_GARBO_TARGET=local
-```
-
-### URL overrides (optional)
-
-By default, local/stage/prod URLs are fixed. Garbo stage/prod default to unearthdata; pipeline stays on klimatkollen. To point at a different host:
-
-- Pipeline: `VITE_PIPELINE_API_URL`, `VITE_PIPELINE_STAGE_URL`, `VITE_PIPELINE_PROD_URL`
-- Garbo: `VITE_GARBO_LOCAL_URL`, `VITE_GARBO_STAGE_URL`, `VITE_GARBO_PROD_URL`
-- Screenshots: `VITE_SCREENSHOTS_API_URL`
+k8s Secret keys may still be named `GARBO_*` (see `k8s/base/deployment.yaml`).
 
 ---
 
-## How to use
+## Klimatkollen frontend origin
 
-1. **Set your targets** in `.env.development` or `.env.development.local` (e.g. `VITE_API_MODE=stage` or per-backend overrides).
-2. **Start the dev server**: `npm run dev`.
-3. **Check the terminal** – you’ll see which pipeline and garbo targets are active and their URLs.
-4. **Check the browser console** (DevTools) – on load you’ll see e.g. `[validate] garbo target: stage | pipeline target: stage`.
-5. **Check the network tab** – pipeline requests will show `/pipeline-local`, `/pipeline-stage`, or `/pipeline`; garbo requests will show `/garbo-local`, `/garbo-stage`, or `/garbo`.
-
-When you change `.env`, **restart the dev server** so the proxy and app config pick up the new values. Env is read when the dev server starts.
-
-**If garbo still hits stage when you set local:**  
-1. Use the exact variable **`VITE_GARBO_TARGET=local`** (not `GARBO_TARGET`; the `VITE_` prefix is required for the app to see it).  
-2. Put it in **`.env.development`** or **`.env.development.local`** in the project root (copy from `.env.development.example` if needed).  
-3. Restart the dev server (`npm run dev`).  
-4. In the browser console on load you should see `[validate] garbo target: local | pipeline target: ...`. In the network tab, garbo requests should go to `http://localhost:5173/garbo-local/...`.
-
----
-
-## Garbo: API base vs frontend origin
-
-Garbo uses two kinds of URLs (per garbo team):
-
-- **API base** (stage-api / api) – used for all backend calls (reports, companies, auth).  
-  Stage: `https://stage-api.unearthdata.ai`  
-  Prod: `https://api.unearthdata.ai`
-- **Frontend origin** (stage / klimatkollen) – used when the app needs to link to the Klimatkollen **web app** (e.g. “back to site” links, not API calls).  
-  Stage: `https://stage.klimatkollen.se`  
-  Prod: `https://klimatkollen.se`
-
-The app uses the API base for requests and the origin constants (`GARBO_STAGE_ORIGIN`, `GARBO_PROD_ORIGIN`) only where it needs to point users at the frontend app.
-
-In **production**, the app uses relative paths for both backends: `/api` (pipeline) and `/garbo-api` (Garbo). Nginx in the container proxies these to the backends (per `BACKEND_API_URL` and `GARBO_API_URL` in k8s), so the browser only talks to the same origin and CORS is not required. Stage vs prod is determined by the deployment overlay (staging vs production) setting those env vars. If you ever call Garbo from a different origin (e.g. Errors tab comparing stage and prod), CORS may be required and should be handled by the Garbo backend.
+`GARBO_STAGE_ORIGIN` / `GARBO_PROD_ORIGIN` – web app links only, not API hosts.
 
 ---
 
 ## Reference
 
-- **Config and helpers**: `src/config/api-env.ts` – `getPipelineTarget()`, `getGarboTarget()`, `getPipelineApiBaseUrl()`, `getPipelineUrl()`, `getGarboApiBaseUrl()`, `getGarboQueueArchiveUrl()`, `getStageGarboUrl()`, `getProdGarboUrl()`.
-- **Jobbstatus Archive UI**: `src/tabs/jobbstatus/components/JobbstatusArchivePanel.tsx`, `JobbstatusArchiveDetailDialog.tsx`, `JobbstatusArchiveRunCard.tsx`, `JobbstatusArchiveQueueAttemptsDialog.tsx`, `ArchiveQueueStepPill.tsx`; hook `useArchiveRunsList.ts`; lib `archive-types.ts`, `archive-filter-styles.ts`, `format-archive-datetime.ts`, `format-redis-retention-approx-duration.ts`, `archive-run-jobs.ts`.
-- **Proxy definition**: `vite.config.ts` – proxy targets and path rewrites.
-- **Example env**: `.env.development.example` – all supported variables and short comments.
+- `src/config/api-env.ts` – `getUnearthApiBaseUrl()`, `getGarboApiBaseUrl()`, `getGarboQueueArchiveUrl()`, `getStageUnearthUrl()`, `getProdUnearthUrl()`
+- `vite.config.ts` – dev proxies
+- `nginx.conf.template` – deployed proxies
