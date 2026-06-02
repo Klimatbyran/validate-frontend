@@ -14,13 +14,3 @@ spec:
               value: "https://api.unearthdata.ai/api"
             - name: GARBO_API_URL
               value: "https://api.klimatkollen.se/api"
-            - name: UNEARTH_ALL_ACCESS_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: env
-                  key: GARBO_ALL_ACCESS_API_KEY
-            - name: GARBO_ALL_ACCESS_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: env
-                  key: GARBO_PROD_ALL_ACCESS_API_KEY

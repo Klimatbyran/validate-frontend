@@ -27,25 +27,19 @@ spec:
             # Garbo monolith — queue-archive only
             - name: GARBO_API_URL
               value: "https://stage-api.klimatkollen.se/api"
-            # Unearth all-access key for /unearth-api/ (secret key name is legacy)
-            - name: UNEARTH_ALL_ACCESS_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: env
-                  key: GARBO_ALL_ACCESS_API_KEY
-            # Garbo monolith key for /garbo-api/queue-archive/
+            # Garbo all-access API key - for /unearth-api/ (primary target: stage or prod per deployment)
             - name: GARBO_ALL_ACCESS_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: env
-                  key: GARBO_STAGE_ALL_ACCESS_API_KEY
-            # Fixed-host errors tab (Unearth stage + prod)
-            - name: UNEARTH_STAGE_ALL_ACCESS_API_KEY
+                  key: GARBO_ALL_ACCESS_API_KEY
+            # Keys for the fixed-host errors tab proxies (always stage + prod regardless of deployment)
+            - name: GARBO_STAGE_ALL_ACCESS_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: env
                   key: GARBO_STAGE_ALL_ACCESS_API_KEY
-            - name: UNEARTH_PROD_ALL_ACCESS_API_KEY
+            - name: GARBO_PROD_ALL_ACCESS_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: env

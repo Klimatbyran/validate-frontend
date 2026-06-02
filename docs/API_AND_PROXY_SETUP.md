@@ -80,10 +80,9 @@ See `.env.development.example`.
 | `VITE_GARBO_STAGE_URL` | Override Garbo monolith stage host |
 | `UNEARTH_API_URL` | nginx → Unearth (includes `/api` suffix) |
 | `GARBO_API_URL` | nginx → Garbo monolith (includes `/api` suffix) |
-| `UNEARTH_ALL_ACCESS_API_KEY` | `/unearth-api/` |
-| `GARBO_ALL_ACCESS_API_KEY` | `/garbo-api/queue-archive/` |
-
-k8s Secret keys may still be named `GARBO_*` (see `k8s/base/deployment.yaml`).
+| `GARBO_ALL_ACCESS_API_KEY` | `/unearth-api/` (primary deployment target) |
+| `GARBO_STAGE_ALL_ACCESS_API_KEY` | `/unearth-stage-api/`, `/garbo-api/queue-archive/` |
+| `GARBO_PROD_ALL_ACCESS_API_KEY` | `/unearth-prod-api/` |
 
 ---
 

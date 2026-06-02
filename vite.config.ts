@@ -189,13 +189,6 @@ function setProxyApiKey(
   }
 }
 
-function unearthStageApiKey(env: Record<string, string>): string | undefined {
-  return env.UNEARTH_STAGE_ALL_ACCESS_API_KEY || env.GARBO_STAGE_ALL_ACCESS_API_KEY;
-}
-
-function unearthProdApiKey(env: Record<string, string>): string | undefined {
-  return env.UNEARTH_PROD_ALL_ACCESS_API_KEY || env.GARBO_PROD_ALL_ACCESS_API_KEY;
-}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -300,7 +293,7 @@ export default defineConfig(({ mode }) => {
           proxyTimeout: PROXY_TIMEOUT_MS,
           configure: (proxy) => {
             proxy.on("proxyReq", (proxyReq) => {
-              setProxyApiKey(proxyReq, unearthStageApiKey(env));
+              setProxyApiKey(proxyReq, env.GARBO_STAGE_ALL_ACCESS_API_KEY);
             });
           },
         },
@@ -313,7 +306,7 @@ export default defineConfig(({ mode }) => {
           proxyTimeout: PROXY_TIMEOUT_MS,
           configure: (proxy) => {
             proxy.on("proxyReq", (proxyReq) => {
-              setProxyApiKey(proxyReq, unearthProdApiKey(env));
+              setProxyApiKey(proxyReq, env.GARBO_PROD_ALL_ACCESS_API_KEY);
             });
           },
         },
@@ -334,7 +327,7 @@ export default defineConfig(({ mode }) => {
           proxyTimeout: PROXY_TIMEOUT_MS,
           configure: (proxy) => {
             proxy.on("proxyReq", (proxyReq) => {
-              setProxyApiKey(proxyReq, unearthStageApiKey(env));
+              setProxyApiKey(proxyReq, env.GARBO_STAGE_ALL_ACCESS_API_KEY);
             });
           },
         },
@@ -355,7 +348,7 @@ export default defineConfig(({ mode }) => {
           proxyTimeout: PROXY_TIMEOUT_MS,
           configure: (proxy) => {
             proxy.on("proxyReq", (proxyReq) => {
-              setProxyApiKey(proxyReq, unearthProdApiKey(env));
+              setProxyApiKey(proxyReq, env.GARBO_PROD_ALL_ACCESS_API_KEY);
             });
           },
         },
