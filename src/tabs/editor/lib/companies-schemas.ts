@@ -2,7 +2,7 @@ import { z } from "zod";
 import { WIKIDATA_ID_REGEX } from "./types";
 
 /** Garbo internal `Company.id` (CUID). Distinct from `wikidataId`. */
-export const garboCompanyIdSchema = z.string().cuid();
+export const garboCompanyIdSchema = z.string().uuid();
 
 /** Minimal company shape from GET /api/companies (list). */
 export const garboCompanyListItemSchema = z
