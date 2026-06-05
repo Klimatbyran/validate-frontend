@@ -5,6 +5,7 @@ import { Header } from "@/ui/header";
 import { Toaster } from "@/ui/sonner";
 import { CompaniesProvider } from "@/contexts/CompaniesContext";
 import { useI18n } from "@/contexts/I18nContext";
+import { JobStatusOverlay } from "@/components/JobStatusOverlay";
 import {
   type TopLevelTabSegment,
   topLevelTabFromPathname,
@@ -70,6 +71,7 @@ export function MainLayout() {
               </TabsContent>
             </AnimatePresence>
           </Tabs>
+          <JobStatusOverlay />
         </CompaniesProvider>
       </div>
     </div>
