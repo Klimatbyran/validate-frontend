@@ -3,6 +3,7 @@ import { IconActionButton } from "@/ui/icon-action-button";
 import { useI18n } from "@/contexts/I18nContext";
 import type { GarboFieldMetadata, GarboReportingPeriodSummary } from "../../../lib/types";
 import type { EditedPeriodEmissions } from "../../../lib/emissions-edit";
+import { quickEditScope3CategoryName } from "../../../lib/reporting-period-quick-edit";
 import { MetadataDetailsDialog } from "../../MetadataDetailsDialog";
 import { EmissionsNumberCell } from "./EmissionsNumberCell";
 import { EmissionsEditRow, emissionsFieldCellClass, emissionsPeriodEmptyCellClass } from "./EmissionsGridParts";
@@ -47,11 +48,7 @@ export function Scope3Section({
   const undoField = (field: string) => t("editor.periodEditor.undoField", { field });
 
   function scope3CategoryRowLabel(categoryId: number): string {
-    const key = `editor.companies.scope3Categories.${categoryId}`;
-    const name = t(key);
-    const missing = !name || name === key;
-    const title = missing ? t("editor.periodEditor.categoryUnknown", { n: categoryId }) : name;
-    return `${categoryId}. ${title}`;
+    return `${categoryId}. ${quickEditScope3CategoryName(categoryId, t)}`;
   }
 
   return (

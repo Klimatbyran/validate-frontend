@@ -1,3 +1,4 @@
+import { getPeriodReportYear } from '@/tabs/editor/lib/reporting-period-ui';
 import { ReportingPeriod, DATA_POINTS } from '../types';
 
 // Emission values can be either a plain number or an object with { total: number }
@@ -16,7 +17,7 @@ export function extractTotal(
 export function getPeriodReportYearFromApi(
   period: ReportingPeriod,
 ): number | null {
-  const raw = period.companyReport?.reportYear?.trim();
+  const raw = getPeriodReportYear(period);
   if (!raw) return null;
   const year = Number(raw);
   return Number.isFinite(year) ? year : null;

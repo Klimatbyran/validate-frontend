@@ -229,6 +229,24 @@
         "title": "Bulk Update Tags",
         "description": "Apply the same tags to {{count}} companies. Each company will be updated with the selected tags (replacing their current tags).",
         "submit": "Update {{count}} companies"
+      },
+      "scope3Categories": {
+        "1": "Purchased goods and services",
+        "2": "Capital goods",
+        "3": "Fuel- and energy-related activities",
+        "4": "Upstream transportation and distribution",
+        "5": "Waste generated in operations",
+        "6": "Business travel",
+        "7": "Employee commuting",
+        "8": "Upstream leased assets",
+        "9": "Downstream transportation and distribution",
+        "10": "Processing of sold products",
+        "11": "Use of sold products",
+        "12": "End-of-life treatment of sold products",
+        "13": "Downstream leased assets",
+        "14": "Franchises",
+        "15": "Investments",
+        "16": "Other"
       }
     },
     "companyDetail": {
@@ -285,6 +303,7 @@
       "companyReportIdShort": "CR",
       "multiplePeriodsSameDataYear": "Multiple reporting periods share data year(s) {{years}} — each may be a different PDF (CompanyReport).",
       "sameDataYearAsAnotherPeriod": "Another period shares this data year",
+      "noReportYear": "No report year",
       "reportingPeriodStart": "Start Date",
       "reportingPeriodEnd": "End Date",
       "addReportingPeriod": {
@@ -306,6 +325,18 @@
         "deleting": "Deleting...",
         "deleted": "Reporting period deleted.",
         "failed": "Failed to delete reporting period: {{message}}"
+      },
+      "deleteCompany": {
+        "sectionTitle": "Danger zone",
+        "sectionHint": "Permanently delete this company and all associated data.",
+        "button": "Delete company",
+        "title": "Delete company",
+        "description": "This will permanently delete {{name}} ({{wikidataId}}) and all associated data from the database. This cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete company",
+        "deleting": "Deleting...",
+        "deleted": "Company deleted.",
+        "failed": "Failed to delete company: {{message}}"
       },
       "noIndustry": "No Industry",
       "selectIndustry": "Select Industry (GICS)",

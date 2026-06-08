@@ -287,9 +287,12 @@ export function EconomyDataTab({
                         <div className="text-xs text-gray-02 mt-0.5">{periodDateRange}</div>
                         <ReportingPeriodCompanyReportInfo
                           period={rp}
-                          pdfYearLabel={t("editor.singleCompanyView.pdfCatalogYear")}
+                          reportYearLabel={t("editor.companies.reportYear")}
                           companyReportIdLabel={t(
                             "editor.singleCompanyView.companyReportId",
+                          )}
+                          noReportYearLabel={t(
+                            "editor.singleCompanyView.noReportYear",
                           )}
                         />
                       </div>

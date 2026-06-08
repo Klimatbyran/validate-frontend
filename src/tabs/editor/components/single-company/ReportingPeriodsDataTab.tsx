@@ -343,9 +343,12 @@ export function ReportingPeriodsDataTab({
                     </div>
                     <ReportingPeriodCompanyReportInfo
                       period={rp}
-                      pdfYearLabel={t("editor.singleCompanyView.pdfCatalogYear")}
+                      reportYearLabel={t("editor.companies.reportYear")}
                       companyReportIdLabel={t(
                         "editor.singleCompanyView.companyReportId",
+                      )}
+                      noReportYearLabel={t(
+                        "editor.singleCompanyView.noReportYear",
                       )}
                       duplicateDataYearHint={
                         isDuplicateDataYear

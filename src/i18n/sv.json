@@ -235,6 +235,24 @@
         "title": "Uppdatera taggar i bulk",
         "description": "Lägg samma taggar på {{count}} företag. Varje företag får de valda taggarna (ersätter befintliga taggar).",
         "submit": "Uppdatera {{count}} företag"
+      },
+      "scope3Categories": {
+        "1": "Inköpta varor och tjänster",
+        "2": "Kapitalvaror",
+        "3": "Bränsle- och energirelaterade aktiviteter",
+        "4": "Uppströms transport och distribution",
+        "5": "Avfall genererat i verksamheten",
+        "6": "Tjänsteresor",
+        "7": "Pendlingsresor",
+        "8": "Uppströms leasade tillgångar",
+        "9": "Nedströms transport och distribution",
+        "10": "Bearbetning av sålda produkter",
+        "11": "Användning av sålda produkter",
+        "12": "Slutbehandling av sålda produkter",
+        "13": "Nedströms leasade tillgångar",
+        "14": "Franchiser",
+        "15": "Investeringar",
+        "16": "Övrigt"
       }
     },
     "singleCompanyView": {
@@ -285,6 +303,7 @@
       "companyReportIdShort": "CR",
       "multiplePeriodsSameDataYear": "Flera rapporteringsperioder delar dataår {{years}} — varje kan vara en annan PDF (CompanyReport).",
       "sameDataYearAsAnotherPeriod": "En annan period delar detta dataår",
+      "noReportYear": "Inget rapportår",
       "reportingPeriodStart": "Startdatum",
       "reportingPeriodEnd": "Slutdatum",
       "addReportingPeriod": {
@@ -306,6 +325,18 @@
         "deleting": "Tar bort...",
         "deleted": "Rapporteringsperiod borttagen.",
         "failed": "Kunde inte ta bort rapporteringsperiod: {{message}}"
+      },
+      "deleteCompany": {
+        "sectionTitle": "Farozon",
+        "sectionHint": "Ta permanent bort detta företag och all tillhörande data.",
+        "button": "Ta bort företag",
+        "title": "Ta bort företag",
+        "description": "Detta tar permanent bort {{name}} ({{wikidataId}}) och all tillhörande data från databasen. Detta kan inte ångras.",
+        "cancel": "Avbryt",
+        "confirm": "Ta bort företag",
+        "deleting": "Tar bort...",
+        "deleted": "Företag borttaget.",
+        "failed": "Kunde inte ta bort företag: {{message}}"
       },
       "noIndustry": "Ingen bransch",
       "selectIndustry": "Välj bransch (GICS)",

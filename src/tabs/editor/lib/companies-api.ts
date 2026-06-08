@@ -237,6 +237,28 @@ export async function updateReportingPeriods(
   }
 }
 
+/** Delete a company by wikidataId (DELETE /api/companies/:wikidataId). */
+export async function deleteCompany(wikidataId: string): Promise<void> {
+  const res = await garboAuthFetch(
+    apiUrl(companiesPath(encodeURIComponent(wikidataId))),
+    {
+      method: "DELETE",
+      headers: { Accept: "application/json" },
+    },
+  );
+
+  if (res.status === 401) {
+    throw new Error("Please log in to delete company.");
+  }
+  if (res.status === 404) {
+    throw new Error("Company not found.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to delete company: ${res.status} ${text}`);
+  }
+}
+
 /** Delete a reporting period by id (DELETE /api/companies/reporting-period/:id). */
 // PR 5: whole CompanyReport delete + empty-shell cleanup after last period — see garbo k8s/jobs/README.md
 export async function deleteReportingPeriod(id: string): Promise<void> {

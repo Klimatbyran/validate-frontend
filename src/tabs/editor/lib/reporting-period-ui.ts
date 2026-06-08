@@ -25,12 +25,34 @@ export function getPeriodYear(period: { startDate?: string; endDate?: string }):
   return y || null;
 }
 
-/** PDF catalog year from linked CompanyReport (if present). */
+/** Parse a 4-digit catalog year from a report URL (fallback when API omits companyReport). */
+function parseCatalogYearFromUrl(
+  raw: string | null | undefined,
+): string | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  const matches = raw.match(/(?:19|20)\d{2}/g);
+  if (!matches?.length) return null;
+  const years = matches
+    .map((token) => Number(token))
+    .filter((year) => year >= 2000 && year <= 2030);
+  if (!years.length) return null;
+  return String(Math.max(...years));
+}
+
+/** PDF catalog year from linked CompanyReport, else best-effort from report URLs. */
 export function getPeriodReportYear(period: {
   companyReport?: { reportYear?: string | null } | null;
+  reportURL?: string | null;
+  reportS3Url?: string | null;
+  s3Url?: string | null;
 }): string | null {
-  const y = period.companyReport?.reportYear?.trim();
-  return y || null;
+  const fromShell = period.companyReport?.reportYear?.trim();
+  if (fromShell) return fromShell;
+  for (const url of [period.reportURL, period.reportS3Url, period.s3Url]) {
+    const fromUrl = parseCatalogYearFromUrl(url);
+    if (fromUrl) return fromUrl;
+  }
+  return null;
 }
 
 /** Reporting period data year (DB `year` field, else end/start date). */

@@ -140,6 +140,10 @@ export function SingleCompanyView() {
               })
               .catch(() => {});
           }}
+          onDeleted={() => {
+            void overviewList.refreshCompanyList();
+            navigate(EDITOR_INDEX_PATH);
+          }}
         />
       </div>
     );

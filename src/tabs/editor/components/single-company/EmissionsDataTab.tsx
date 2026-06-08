@@ -346,9 +346,14 @@ export function EmissionsDataTab({
                           <ReportingPeriodCompanyReportInfo
                             period={rp}
                             compact
-                            pdfYearLabel={t("editor.singleCompanyView.pdfCatalogYearShort")}
+                            reportYearLabel={t(
+                              "editor.singleCompanyView.pdfCatalogYearShort",
+                            )}
                             companyReportIdLabel={t(
                               "editor.singleCompanyView.companyReportIdShort",
+                            )}
+                            noReportYearLabel={t(
+                              "editor.singleCompanyView.noReportYear",
                             )}
                           />
                         </>
