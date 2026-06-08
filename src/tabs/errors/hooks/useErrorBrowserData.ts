@@ -3,7 +3,8 @@ import { Company, CompanyRow, DataPointMetric, WorstCompany, DiscrepancyType, DA
 import {
   getStageApiUrl,
   getProdApiUrl,
-  pickReportingPeriodForYear,
+  pickReportingPeriodForFilters,
+  getPeriodReportYearFromApi,
   getDataPointValue,
   getDataPointVerified,
   classifyDiscrepancy,
@@ -17,15 +18,21 @@ import {
 import type { ErrorBrowserSummaryStats } from '../components/SummaryView';
 
 export function useErrorBrowserData(
-  selectedYear: number,
+  selectedDataYear: number,
+  selectedReportYear: number | null,
   selectedDataPoint: string,
   selectedTags: string[],
-  verifiedOnly: boolean
+  verifiedOnly: boolean,
 ) {
   const prodCompanyVerifiedForYearMap = React.useCallback(
     (prodMap: Map<string, Company>, ids: Iterable<string>) =>
-      buildProdCompanyVerifiedForYearMap(prodMap, ids, selectedYear),
-    [selectedYear]
+      buildProdCompanyVerifiedForYearMap(
+        prodMap,
+        ids,
+        selectedDataYear,
+        selectedReportYear,
+      ),
+    [selectedDataYear, selectedReportYear],
   );
 
   const [isLoading, setIsLoading] = React.useState(false);
@@ -107,8 +114,8 @@ export function useErrorBrowserData(
         new Set([...(stageCompany?.tags ?? []), ...(prodCompany?.tags ?? [])])
       );
 
-      const stageRP = stageCompany ? pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear) : null;
-      const prodRP = prodCompany ? pickReportingPeriodForYear(prodCompany.reportingPeriods, selectedYear) : null;
+      const stageRP = stageCompany ? pickReportingPeriodForFilters(stageCompany.reportingPeriods, selectedDataYear, selectedReportYear) : null;
+      const prodRP = prodCompany ? pickReportingPeriodForFilters(prodCompany.reportingPeriods, selectedDataYear, selectedReportYear) : null;
 
       const stageValue = getDataPointValue(stageRP?.emissions, selectedDataPoint);
       const prodValue = getDataPointValue(prodRP?.emissions, selectedDataPoint);
@@ -135,12 +142,20 @@ export function useErrorBrowserData(
         dp => dp.scope === currentDP.scope && dp.id !== currentDP.id
       );
       if (sameScopeDataPoints.length > 0) {
-        applyCategoryErrorToRows(rows, stageMap, prodMap, sameScopeDataPoints, selectedDataPoint, selectedYear);
+        applyCategoryErrorToRows(
+          rows,
+          stageMap,
+          prodMap,
+          sameScopeDataPoints,
+          selectedDataPoint,
+          selectedDataYear,
+          selectedReportYear,
+        );
       }
     }
 
     return rows.sort((a, b) => a.name.localeCompare(b.name));
-  }, [tagFilteredCompanies, selectedYear, selectedDataPoint, prodCompanyVerifiedForYearMap]);
+  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear, selectedDataPoint, prodCompanyVerifiedForYearMap]);
 
   const availableTags = React.useMemo(() => {
     const tags = new Set<string>();
@@ -170,18 +185,18 @@ export function useErrorBrowserData(
 
     const hasAnyValueForYear = (company: Company | undefined): boolean => {
       if (!company) return false;
-      const rp = pickReportingPeriodForYear(company.reportingPeriods, selectedYear);
+      const rp = pickReportingPeriodForFilters(company.reportingPeriods, selectedDataYear, selectedReportYear);
       if (!rp?.emissions) return false;
       return DATA_POINTS.some((dp) => getDataPointValue(rp.emissions, dp.id) !== null);
     };
 
     const hasReportingPeriodForYear = (company: Company | undefined): boolean => {
       if (!company) return false;
-      return pickReportingPeriodForYear(company.reportingPeriods, selectedYear) != null;
+      return pickReportingPeriodForFilters(company.reportingPeriods, selectedDataYear, selectedReportYear) != null;
     };
 
     const isFullyVerifiedInProdForYear = (company: Company | undefined): boolean =>
-      isProdCompanyFullyVerifiedForYear(company, selectedYear);
+      isProdCompanyFullyVerifiedForYear(company, selectedDataYear, selectedReportYear);
 
     for (const id of allIds) {
       const s = stageMap.get(id);
@@ -219,7 +234,22 @@ export function useErrorBrowserData(
       companiesWithReportingPeriodForYear,
       companiesFullyVerifiedInProd,
     };
-  }, [tagFilteredCompanies, selectedYear]);
+  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear]);
+
+  const availableReportYears = React.useMemo(() => {
+    const years = new Set<number>();
+    const collect = (companies: Company[]) => {
+      for (const company of companies) {
+        for (const period of company.reportingPeriods ?? []) {
+          const y = getPeriodReportYearFromApi(period);
+          if (y != null) years.add(y);
+        }
+      }
+    };
+    collect(stageCompanies);
+    collect(prodCompanies);
+    return Array.from(years).sort((a, b) => b - a);
+  }, [stageCompanies, prodCompanies]);
 
   // Calculate metrics for ALL data points (for overview)
   const allDataPointMetrics = React.useMemo((): DataPointMetric[] => {
@@ -247,8 +277,8 @@ export function useErrorBrowserData(
 
         if (!stageCompany || !prodCompany) continue;
 
-        const stageRP = pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear);
-        const prodRP = pickReportingPeriodForYear(prodCompany.reportingPeriods, selectedYear);
+        const stageRP = pickReportingPeriodForFilters(stageCompany.reportingPeriods, selectedDataYear, selectedReportYear);
+        const prodRP = pickReportingPeriodForFilters(prodCompany.reportingPeriods, selectedDataYear, selectedReportYear);
 
         if (!stageRP || !prodRP) continue;
 
@@ -299,7 +329,7 @@ export function useErrorBrowserData(
         breakdown: { identical, rounding, hallucination, missing, unitError, smallError, error: errorCount, categoryError, bothNull },
       };
     });
-  }, [tagFilteredCompanies, selectedYear, verifiedOnly, prodCompanyVerifiedForYearMap]);
+  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear, verifiedOnly, prodCompanyVerifiedForYearMap]);
 
   // Worst companies: count errors across ALL data points
   const worstCompanies = React.useMemo((): WorstCompany[] => {
@@ -320,8 +350,8 @@ export function useErrorBrowserData(
 
       if (!stageCompany || !prodCompany) continue;
 
-      const stageRP = pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear);
-      const prodRP = pickReportingPeriodForYear(prodCompany.reportingPeriods, selectedYear);
+      const stageRP = pickReportingPeriodForFilters(stageCompany.reportingPeriods, selectedDataYear, selectedReportYear);
+      const prodRP = pickReportingPeriodForFilters(prodCompany.reportingPeriods, selectedDataYear, selectedReportYear);
 
       if (!stageRP || !prodRP) continue;
 
@@ -372,7 +402,7 @@ export function useErrorBrowserData(
     }
 
     return companyErrors.sort((a, b) => b.errorCount - a.errorCount);
-  }, [tagFilteredCompanies, selectedYear, verifiedOnly, prodCompanyVerifiedForYearMap]);
+  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear, verifiedOnly, prodCompanyVerifiedForYearMap]);
 
   // Set of difficult company IDs (>=5 errors)
   const difficultCompanyIds = React.useMemo(() => {
@@ -393,13 +423,13 @@ export function useErrorBrowserData(
       const s = stageMap.get(id);
       const p = prodMap.get(id);
       if (s && p) {
-        const sRP = pickReportingPeriodForYear(s.reportingPeriods, selectedYear);
-        const pRP = pickReportingPeriodForYear(p.reportingPeriods, selectedYear);
+        const sRP = pickReportingPeriodForFilters(s.reportingPeriods, selectedDataYear, selectedReportYear);
+        const pRP = pickReportingPeriodForFilters(p.reportingPeriods, selectedDataYear, selectedReportYear);
         if (sRP && pRP) count++;
       }
     }
     return count;
-  }, [tagFilteredCompanies, selectedYear]);
+  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear]);
 
   return {
     isLoading,
@@ -407,6 +437,7 @@ export function useErrorBrowserData(
     fetchData,
     comparisonRows,
     availableTags,
+    availableReportYears,
     summaryStats,
     allDataPointMetrics,
     worstCompanies,

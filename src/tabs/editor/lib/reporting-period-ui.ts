@@ -25,6 +25,47 @@ export function getPeriodYear(period: { startDate?: string; endDate?: string }):
   return y || null;
 }
 
+/** PDF catalog year from linked CompanyReport (if present). */
+export function getPeriodReportYear(period: {
+  companyReport?: { reportYear?: string | null } | null;
+}): string | null {
+  const y = period.companyReport?.reportYear?.trim();
+  return y || null;
+}
+
+/** Reporting period data year (DB `year` field, else end/start date). */
+export function getPeriodDataYear(period: {
+  startDate?: string;
+  endDate?: string;
+  year?: string | null;
+}): string | null {
+  const fromField = period.year?.trim();
+  if (fromField) return fromField;
+  return getPeriodYear(period);
+}
+
+export function shortenCompanyReportId(id: string, visibleChars = 8): string {
+  const trimmed = id.trim();
+  if (trimmed.length <= visibleChars) return trimmed;
+  return `${trimmed.slice(0, visibleChars)}…`;
+}
+
+/** Data years that appear on more than one reporting period (multiple PDFs). */
+export function dataYearsWithMultiplePeriods(
+  periods: Array<{ startDate?: string; endDate?: string; year?: string | null }>,
+): string[] {
+  const counts = new Map<string, number>();
+  for (const period of periods) {
+    const dataYear = getPeriodDataYear(period);
+    if (!dataYear) continue;
+    counts.set(dataYear, (counts.get(dataYear) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([year]) => year)
+    .sort((a, b) => Number(b) - Number(a));
+}
+
 export function formatPeriodDateRange(
   startDate: string | undefined,
   endDate: string | undefined,

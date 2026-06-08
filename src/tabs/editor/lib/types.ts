@@ -53,11 +53,22 @@ export interface GarboCompanyListItem {
   hasUnverifiedData?: boolean;
 }
 
+/** Linked processed PDF (CompanyReport) for a reporting period. */
+export interface GarboCompanyReportSummary {
+  id?: string;
+  reportYear?: string | null;
+  reportPublicationDate?: string | null;
+}
+
 /** Summary of a reporting period (for list/grid). */
 export interface GarboReportingPeriodSummary {
   id?: string;
   startDate: string;
   endDate: string;
+  /** Data year key in DB (may differ from PDF catalog year on CompanyReport). */
+  year?: string | null;
+  companyReportId?: string | null;
+  companyReport?: GarboCompanyReportSummary | null;
   reportURL?: string | null;
   /** Original source URL (e.g. crawler page). */
   sourceUrl?: string | null;

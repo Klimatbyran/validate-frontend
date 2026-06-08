@@ -83,8 +83,8 @@ function companiesPath(segment = ""): string {
   return seg ? `${path}/${seg}` : path;
 }
 
-function internalCompaniesPath(segment = ""): string {
-  const path = "/internal-companies";
+function pipelineCompaniesPath(segment = ""): string {
+  const path = "/pipeline/companies";
   const seg = segment.replace(/^\//, "");
   return seg ? `${path}/${seg}` : path;
 }
@@ -95,11 +95,11 @@ function reportingPeriodPath(segment = ""): string {
   return seg ? `${path}/${seg}` : path;
 }
 
-/** List companies from Garbo (GET /api/companies). Requires auth. */
+/** List companies for staff editor (GET /api/pipeline/companies — all reporting periods). */
 export async function listCompanies(
   signal?: AbortSignal,
 ): Promise<GarboCompanyListItem[]> {
-  const res = await garboAuthFetch(apiUrl(companiesPath()), {
+  const res = await garboAuthFetch(apiUrl(pipelineCompaniesPath()), {
     method: "GET",
     headers: { Accept: "application/json" },
     signal,
@@ -120,13 +120,13 @@ export async function listCompanies(
     : [];
 }
 
-/** Get company detail by wikidataId (GET /api/companies/:wikidataId). Requires auth. */
+/** Get company detail by wikidataId (GET /api/pipeline/companies/:wikidataId). Requires auth. */
 export async function getCompany(
   wikidataId: string,
   signal?: AbortSignal,
 ): Promise<GarboCompanyDetail> {
   const res = await garboAuthFetch(
-    apiUrl(internalCompaniesPath(encodeURIComponent(wikidataId))),
+    apiUrl(pipelineCompaniesPath(encodeURIComponent(wikidataId))),
     {
       method: "GET",
       headers: { Accept: "application/json" },
@@ -238,6 +238,7 @@ export async function updateReportingPeriods(
 }
 
 /** Delete a reporting period by id (DELETE /api/companies/reporting-period/:id). */
+// PR 5: whole CompanyReport delete + empty-shell cleanup after last period — see garbo k8s/jobs/README.md
 export async function deleteReportingPeriod(id: string): Promise<void> {
   const encodedId = encodeURIComponent(id);
   const res = await garboAuthFetch(

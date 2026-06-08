@@ -36,8 +36,16 @@ export function extractGarboChunkFromSaveToApiJob(job: QueueJob): string | null 
 export type SaveToApiJobPayloadSummary = {
   subEndpoint?: string;
   keys?: string;
+  documentReportYear?: string;
+  companyReportId?: string;
   error?: string;
 };
+
+function readOptionalString(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const trimmed = String(value).trim();
+  return trimmed.length ? trimmed : undefined;
+}
 
 export function summarizeSaveToApiPayload(job: QueueJob): SaveToApiJobPayloadSummary {
   const data = job.data as Record<string, unknown> | undefined;
@@ -46,9 +54,14 @@ export function summarizeSaveToApiPayload(job: QueueJob): SaveToApiJobPayloadSum
 
   let keys: string | undefined;
   const body = data?.body;
+  let documentReportYear = readOptionalString(data?.documentReportYear);
+  let companyReportId = readOptionalString(data?.companyReportId);
   if (body && typeof body === "object" && !Array.isArray(body)) {
-    const topKeys = Object.keys(body as object).slice(0, 10);
+    const bodyRecord = body as Record<string, unknown>;
+    const topKeys = Object.keys(bodyRecord).slice(0, 10);
     keys = topKeys.length ? topKeys.join(", ") : undefined;
+    documentReportYear ??= readOptionalString(bodyRecord.documentReportYear);
+    companyReportId ??= readOptionalString(bodyRecord.companyReportId);
   }
 
   const failedReason =
@@ -62,5 +75,11 @@ export function summarizeSaveToApiPayload(job: QueueJob): SaveToApiJobPayloadSum
 
   const error = failedReason || returnValueString;
 
-  return { subEndpoint: subEndpoint || undefined, keys, error };
+  return {
+    subEndpoint: subEndpoint || undefined,
+    keys,
+    documentReportYear,
+    companyReportId,
+    error,
+  };
 }

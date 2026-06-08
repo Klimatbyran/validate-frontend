@@ -7,6 +7,8 @@ export { getStageApiUrl, getProdApiUrl } from './api';
 export {
   extractTotal,
   pickReportingPeriodForYear,
+  pickReportingPeriodForFilters,
+  getPeriodReportYearFromApi,
   getCategoryValue,
   getDataPointValue,
   getDataPointVerified,

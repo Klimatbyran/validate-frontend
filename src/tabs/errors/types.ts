@@ -54,6 +54,11 @@ export interface VerifiedBy {
 export interface ReportingPeriod {
   startDate: string;
   endDate: string;
+  companyReportId?: string | null;
+  companyReport?: {
+    id?: string;
+    reportYear?: string | null;
+  } | null;
   emissions?: {
     statedTotalEmissions?: { total?: number | null; metadata?: { verifiedBy?: VerifiedBy | null } } | number | null;
     calculatedTotalEmissions?: number | null;

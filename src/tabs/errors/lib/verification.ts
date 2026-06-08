@@ -1,13 +1,18 @@
 import type { Company } from '../types';
 import { DATA_POINTS } from '../types';
-import { getDataPointValue, getDataPointVerified, pickReportingPeriodForYear } from './emissions';
+import { getDataPointValue, getDataPointVerified, pickReportingPeriodForFilters } from './emissions';
 
 export function isProdCompanyFullyVerifiedForYear(
   prodCompany: Company | undefined,
-  year: number
+  dataYear: number,
+  reportYear?: number | null,
 ): boolean {
   if (!prodCompany) return false;
-  const prodRP = pickReportingPeriodForYear(prodCompany.reportingPeriods, year);
+  const prodRP = pickReportingPeriodForFilters(
+    prodCompany.reportingPeriods,
+    dataYear,
+    reportYear,
+  );
   if (!prodRP?.emissions) return false;
 
   // "calculated-total" has no metadata in the API (number | null), so it can't be "verified" — ignore it here.
@@ -22,11 +27,15 @@ export function isProdCompanyFullyVerifiedForYear(
 export function buildProdCompanyVerifiedForYearMap(
   prodMap: Map<string, Company>,
   ids: Iterable<string>,
-  year: number
+  dataYear: number,
+  reportYear?: number | null,
 ): Map<string, boolean> {
   const result = new Map<string, boolean>();
   for (const wikidataId of ids) {
-    result.set(wikidataId, isProdCompanyFullyVerifiedForYear(prodMap.get(wikidataId), year));
+    result.set(
+      wikidataId,
+      isProdCompanyFullyVerifiedForYear(prodMap.get(wikidataId), dataYear, reportYear),
+    );
   }
   return result;
 }

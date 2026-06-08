@@ -19,9 +19,12 @@ import {
   editorDenseMultiSelectTriggerClass,
   editorDenseToolbarClass,
   formatDateStamp,
+  dataYearsWithMultiplePeriods,
+  getPeriodDataYear,
   getPeriodYear,
   isReportingPeriodWithIdAndDates,
 } from "../../lib/reporting-period-ui";
+import { ReportingPeriodCompanyReportInfo } from "./ReportingPeriodCompanyReportInfo";
 import { useReportingPeriodColumnFilters } from "../../hooks/useReportingPeriodColumnFilters";
 import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
@@ -88,6 +91,11 @@ export function ReportingPeriodsDataTab({
   const periodPendingDelete = useMemo(
     () => periods.find((p) => p.id === deletePeriodId) ?? null,
     [periods, deletePeriodId],
+  );
+
+  const duplicateDataYears = useMemo(
+    () => dataYearsWithMultiplePeriods(periods),
+    [periods],
   );
 
   const setPatch = (rpId: string, patch: Partial<EditedPeriod>) => {
@@ -293,6 +301,14 @@ export function ReportingPeriodsDataTab({
         </div>
       </div>
 
+      {duplicateDataYears.length > 0 ? (
+        <div className="mb-4 rounded-md border border-orange-03/40 bg-orange-05/10 px-3 py-2 text-xs text-gray-01">
+          {t("editor.singleCompanyView.multiplePeriodsSameDataYear", {
+            years: duplicateDataYears.join(", "),
+          })}
+        </div>
+      ) : null}
+
       {visiblePeriods.length ? (
         <div className="space-y-3 w-full min-w-0">
           {visiblePeriods.map((rp) => {
@@ -308,6 +324,8 @@ export function ReportingPeriodsDataTab({
             const anyDirty = startDirty || endDirty || urlDirty;
             const reportUrlTrimmed = (rp.reportURL ?? "").trim();
             const s3UrlTrimmed = (rp.s3Url ?? "").trim();
+            const dataYear = getPeriodDataYear(rp) ?? "";
+            const isDuplicateDataYear = duplicateDataYears.includes(dataYear);
 
             return (
               <div
@@ -323,6 +341,18 @@ export function ReportingPeriodsDataTab({
                       {formatDateStamp(rp.startDate, dash)} –{" "}
                       {formatDateStamp(rp.endDate, dash)}
                     </div>
+                    <ReportingPeriodCompanyReportInfo
+                      period={rp}
+                      pdfYearLabel={t("editor.singleCompanyView.pdfCatalogYear")}
+                      companyReportIdLabel={t(
+                        "editor.singleCompanyView.companyReportId",
+                      )}
+                      duplicateDataYearHint={
+                        isDuplicateDataYear
+                          ? t("editor.singleCompanyView.sameDataYearAsAnotherPeriod")
+                          : undefined
+                      }
+                    />
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Button

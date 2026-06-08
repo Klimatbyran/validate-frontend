@@ -194,6 +194,22 @@ export function JobStatusSection({
                             : {saveToApiSummary.keys}
                           </div>
                         )}
+                        {saveToApiSummary?.documentReportYear ? (
+                          <div className="text-gray-02">
+                            <span className="font-medium text-gray-01">
+                              {t("jobstatus.jobdetails.documentReportYearLabel")}
+                            </span>
+                            : {saveToApiSummary.documentReportYear}
+                          </div>
+                        ) : null}
+                        {saveToApiSummary?.companyReportId ? (
+                          <div className="text-gray-02 font-mono truncate" title={saveToApiSummary.companyReportId}>
+                            <span className="font-medium text-gray-01 font-sans">
+                              {t("jobstatus.jobdetails.companyReportIdLabel")}
+                            </span>
+                            : {saveToApiSummary.companyReportId}
+                          </div>
+                        ) : null}
                         {saveToApiSummary?.error && (
                           <div className="text-gray-02 truncate" title={saveToApiSummary.error}>
                             <span className="font-medium text-gray-01">

@@ -27,6 +27,7 @@ import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 import { FieldWithMetadata } from "../FieldWithMetadata";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
 import { reportHrefLinkPillClassName } from "@/lib/report-url-link-pill";
+import { ReportingPeriodCompanyReportInfo } from "./ReportingPeriodCompanyReportInfo";
 
 type EditedPeriodEconomy = {
   turnoverValue?: string;
@@ -284,6 +285,13 @@ export function EconomyDataTab({
                       <div>
                         <div className="text-sm font-semibold text-gray-01">{periodYear}</div>
                         <div className="text-xs text-gray-02 mt-0.5">{periodDateRange}</div>
+                        <ReportingPeriodCompanyReportInfo
+                          period={rp}
+                          pdfYearLabel={t("editor.singleCompanyView.pdfCatalogYear")}
+                          companyReportIdLabel={t(
+                            "editor.singleCompanyView.companyReportId",
+                          )}
+                        />
                       </div>
                       <div className="flex items-center gap-2">
                         <Button

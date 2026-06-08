@@ -23,6 +23,7 @@ import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 import { buildEmissionsPeriodPatch, type EditedPeriodEmissions } from "../../lib/emissions-edit";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
+import { ReportingPeriodCompanyReportInfo } from "./ReportingPeriodCompanyReportInfo";
 import { reportHrefLinkPillClassName } from "@/lib/report-url-link-pill";
 import {
   applyNullableStringEdit,
@@ -342,6 +343,14 @@ export function EmissionsDataTab({
                           <div className="text-[11px] text-gray-02 mt-0.5 leading-tight break-words">
                             {dateRangeLabel}
                           </div>
+                          <ReportingPeriodCompanyReportInfo
+                            period={rp}
+                            compact
+                            pdfYearLabel={t("editor.singleCompanyView.pdfCatalogYearShort")}
+                            companyReportIdLabel={t(
+                              "editor.singleCompanyView.companyReportIdShort",
+                            )}
+                          />
                         </>
                       ) : (
                         <div className="text-sm font-semibold text-gray-01">{dateRangeLabel}</div>

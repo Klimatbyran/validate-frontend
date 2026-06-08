@@ -13,18 +13,18 @@ export function extractTotal(
   return null;
 }
 
-/** Pick the reporting period for a given year (prefer full calendar year). */
-export function pickReportingPeriodForYear(
-  reportingPeriods: ReportingPeriod[] | undefined,
-  year: number
+export function getPeriodReportYearFromApi(
+  period: ReportingPeriod,
+): number | null {
+  const raw = period.companyReport?.reportYear?.trim();
+  if (!raw) return null;
+  const year = Number(raw);
+  return Number.isFinite(year) ? year : null;
+}
+
+function pickPreferredPeriodFromCandidates(
+  periodsForYear: ReportingPeriod[],
 ): ReportingPeriod | null {
-  if (!reportingPeriods || reportingPeriods.length === 0) return null;
-
-  const periodsForYear = reportingPeriods.filter((rp) => {
-    const endDate = new Date(rp.endDate);
-    return endDate.getFullYear() === year;
-  });
-
   if (periodsForYear.length === 0) return null;
 
   const fullYear = periodsForYear.find((rp) => {
@@ -39,6 +39,36 @@ export function pickReportingPeriodForYear(
   });
 
   return fullYear || periodsForYear[periodsForYear.length - 1];
+}
+
+/** Pick a reporting period by data year and optional PDF report year. */
+export function pickReportingPeriodForFilters(
+  reportingPeriods: ReportingPeriod[] | undefined,
+  dataYear: number,
+  reportYear?: number | null,
+): ReportingPeriod | null {
+  if (!reportingPeriods || reportingPeriods.length === 0) return null;
+
+  let periodsForDataYear = reportingPeriods.filter((rp) => {
+    const endDate = new Date(rp.endDate);
+    return endDate.getFullYear() === dataYear;
+  });
+
+  if (reportYear != null) {
+    periodsForDataYear = periodsForDataYear.filter(
+      (rp) => getPeriodReportYearFromApi(rp) === reportYear,
+    );
+  }
+
+  return pickPreferredPeriodFromCandidates(periodsForDataYear);
+}
+
+/** Pick the reporting period for a data year (prefer full calendar year). */
+export function pickReportingPeriodForYear(
+  reportingPeriods: ReportingPeriod[] | undefined,
+  year: number,
+): ReportingPeriod | null {
+  return pickReportingPeriodForFilters(reportingPeriods, year);
 }
 
 type Scope3Emissions = NonNullable<NonNullable<ReportingPeriod['emissions']>['scope3']>;

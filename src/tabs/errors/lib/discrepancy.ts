@@ -5,7 +5,7 @@ import {
   type CompanyRow,
   type ReportingPeriod,
 } from '../types';
-import { getDataPointValue, pickReportingPeriodForYear } from './emissions';
+import { getDataPointValue, pickReportingPeriodForFilters } from './emissions';
 
 /** Build a map of companies by wikidataId for quick lookup. */
 export function companiesToMapById(companies: Company[]): Map<string, Company> {
@@ -118,7 +118,8 @@ export function applyCategoryErrorToRows(
   prodMap: Map<string, Company>,
   sameScopeDataPoints: SameScopeDataPoint[],
   selectedDataPoint: string,
-  selectedYear: number
+  selectedDataYear: number,
+  selectedReportYear?: number | null,
 ): void {
   for (const row of rows) {
     if (
@@ -138,9 +139,17 @@ export function applyCategoryErrorToRows(
       row.stageValue !== null &&
       prodCompany
     ) {
-      const prodRP = pickReportingPeriodForYear(prodCompany.reportingPeriods, selectedYear);
+      const prodRP = pickReportingPeriodForFilters(
+        prodCompany.reportingPeriods,
+        selectedDataYear,
+        selectedReportYear,
+      );
       const stageRPForKind = stageCompany
-        ? pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear)
+        ? pickReportingPeriodForFilters(
+            stageCompany.reportingPeriods,
+            selectedDataYear,
+            selectedReportYear,
+          )
         : null;
       for (const otherDP of sameScopeDataPoints) {
         const otherProdValue = getDataPointValue(prodRP?.emissions, otherDP.id);
@@ -178,7 +187,11 @@ export function applyCategoryErrorToRows(
       row.prodValue !== null &&
       stageCompany
     ) {
-      const stageRP = pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear);
+      const stageRP = pickReportingPeriodForFilters(
+        stageCompany.reportingPeriods,
+        selectedDataYear,
+        selectedReportYear,
+      );
       for (const otherDP of sameScopeDataPoints) {
         const otherStageValue = getDataPointValue(stageRP?.emissions, otherDP.id);
         if (

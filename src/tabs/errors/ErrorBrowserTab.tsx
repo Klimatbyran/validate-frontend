@@ -22,7 +22,8 @@ const VIEW_MODE_LABEL_KEYS: Record<ErrorBrowserViewMode, string> = {
 
 export function ErrorBrowserTab() {
   const { t } = useI18n();
-  const [selectedYear, setSelectedYear] = React.useState(2024);
+  const [selectedDataYear, setSelectedDataYear] = React.useState(2024);
+  const [selectedReportYear, setSelectedReportYear] = React.useState("");
   const [selectedDataPoint, setSelectedDataPoint] = React.useState('cat-1');
   const [viewMode, setViewMode] = React.useState<ErrorBrowserViewMode>('browser');
   const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
@@ -39,12 +40,19 @@ export function ErrorBrowserTab() {
     fetchData,
     comparisonRows,
     availableTags,
+    availableReportYears,
     allDataPointMetrics,
     worstCompanies,
     difficultCompanyIds,
     totalWithBothRPs,
     summaryStats,
-  } = useErrorBrowserData(selectedYear, selectedDataPoint, selectedTags, verifiedOnly);
+  } = useErrorBrowserData(
+    selectedDataYear,
+    selectedReportYear ? Number(selectedReportYear) : null,
+    selectedDataPoint,
+    selectedTags,
+    verifiedOnly,
+  );
 
   const handleOverviewSelectDataPoint = (dataPointId: string) => {
     setSelectedDataPoint(dataPointId);
@@ -85,17 +93,37 @@ export function ErrorBrowserTab() {
           </div>
         </div>
 
-        {/* Year + tag selectors */}
+        {/* Data year, report year, and tag selectors */}
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-02 uppercase tracking-wide">{t("errors.year")}</label>
+            <label className="text-xs text-gray-02 uppercase tracking-wide">{t("errors.dataYear")}</label>
             <SingleSelectDropdown
               options={['2025', '2024', '2023', '2022', '2021', '2020']}
-              value={String(selectedYear)}
-              onChange={(v) => setSelectedYear(Number(v))}
-              placeholder={t("errors.year")}
-              ariaLabel={t("errors.year")}
+              value={String(selectedDataYear)}
+              onChange={(v) => setSelectedDataYear(Number(v))}
+              placeholder={t("errors.dataYear")}
+              ariaLabel={t("errors.dataYear")}
               panelMinWidth={100}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-02 uppercase tracking-wide">{t("errors.reportYear")}</label>
+            <SingleSelectDropdown
+              options={[
+                "",
+                ...(availableReportYears.length
+                  ? availableReportYears.map(String)
+                  : ["2025", "2024", "2023", "2022", "2021", "2020"]),
+              ]}
+              value={selectedReportYear}
+              onChange={setSelectedReportYear}
+              placeholder={t("errors.allReportYears")}
+              getOptionLabel={(v) =>
+                v ? v : t("errors.allReportYears")
+              }
+              ariaLabel={t("errors.reportYear")}
+              panelMinWidth={120}
             />
           </div>
 
@@ -141,7 +169,7 @@ export function ErrorBrowserTab() {
           difficultCompanyIds={difficultCompanyIds}
           selectedDataPoint={selectedDataPoint}
           onDataPointChange={setSelectedDataPoint}
-          selectedYear={selectedYear}
+          selectedYear={selectedDataYear}
           selectedTags={selectedTags}
           verifiedOnly={verifiedOnly}
         />
@@ -155,7 +183,7 @@ export function ErrorBrowserTab() {
         ) : (
           <OverviewView
             allDataPointMetrics={allDataPointMetrics}
-            selectedYear={selectedYear}
+            selectedYear={selectedDataYear}
             onSelectDataPoint={handleOverviewSelectDataPoint}
             stats={summaryStats}
           />
@@ -167,7 +195,7 @@ export function ErrorBrowserTab() {
           isLoading={isLoading}
           worstCompanies={worstCompanies}
           totalWithBothRPs={totalWithBothRPs}
-          selectedYear={selectedYear}
+          selectedYear={selectedDataYear}
         />
       )}
     </motion.div>
