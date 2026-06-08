@@ -1,6 +1,6 @@
 import { CheckCircle2 } from "lucide-react";
 import { memo } from "react";
-import { GARBO_PROD_ORIGIN } from "@/config/api-env";
+import { getKlimatkollenCompanyPath } from "@/lib/company-routing";
 import { CompanyDetails } from "../lib/crawler-types";
 import { useI18n } from "@/contexts/I18nContext";
 
@@ -15,7 +15,7 @@ const CompaniesNamesResultItem = ({
   isSelected,
   onToggle,
 }: CompaniesNamesResultItemProps) => {
-  const { wikidataId, name, reportingPeriods } = companyDetails;
+  const { id, wikidataId, name, reportingPeriods } = companyDetails;
   const { t } = useI18n();
 
   const latestReportYear =
@@ -27,7 +27,7 @@ const CompaniesNamesResultItem = ({
         <div className="flex items-center justify-between gap-3">
           <div className="flex flex-col">
             <a
-              href={`${GARBO_PROD_ORIGIN}/companies/${wikidataId}`}
+              href={getKlimatkollenCompanyPath({ id, wikidataId })}
               target="_blank"
               rel="noopener noreferrer"
             >

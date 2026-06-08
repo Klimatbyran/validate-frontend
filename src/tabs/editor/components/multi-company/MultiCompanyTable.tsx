@@ -10,7 +10,7 @@ export function MultiCompanyTable({
   selectedYear,
   allFilteredSelected,
   onToggleSelectAll,
-  selectedWikidataIds,
+  selectedCompanyIds,
   onToggleCompanySelection,
   actionLoading,
   onEdit,
@@ -19,8 +19,8 @@ export function MultiCompanyTable({
   selectedYear: string;
   allFilteredSelected: boolean;
   onToggleSelectAll: () => void;
-  selectedWikidataIds: Set<string>;
-  onToggleCompanySelection: (wikidataId: string) => void;
+  selectedCompanyIds: Set<string>;
+  onToggleCompanySelection: (companyId: string) => void;
   actionLoading: boolean;
   onEdit: (state: EditState) => void;
 }) {
@@ -70,16 +70,16 @@ export function MultiCompanyTable({
               : null;
             const scope1 = period?.emissions?.scope1?.total ?? null;
             const scope2 = getScope2Total(period);
-            const checked = selectedWikidataIds.has(c.wikidataId);
+            const checked = selectedCompanyIds.has(c.id);
 
             return (
-              <tr key={c.wikidataId} className="hover:bg-gray-04/50">
+              <tr key={c.id} className="hover:bg-gray-04/50">
                 <td className="w-10 px-2 py-3">
                   <label className="flex items-center justify-center cursor-pointer">
                     <input
                       type="checkbox"
                       checked={checked}
-                      onChange={() => onToggleCompanySelection(c.wikidataId)}
+                      onChange={() => onToggleCompanySelection(c.id)}
                       className="sr-only"
                       aria-label={t("editor.companies.select")}
                     />
@@ -100,7 +100,7 @@ export function MultiCompanyTable({
                     type="button"
                     onClick={() =>
                       onEdit({
-                        wikidataId: c.wikidataId,
+                        companyId: c.id,
                         companyName: c.name,
                         field: "tags",
                         currentValue: c.tags?.join(", ") ?? "",
@@ -132,7 +132,7 @@ export function MultiCompanyTable({
                         type="button"
                         onClick={() =>
                           onEdit({
-                            wikidataId: c.wikidataId,
+                            companyId: c.id,
                             companyName: c.name,
                             field: "reportURL",
                             year: Number(selectedYear),
@@ -154,7 +154,7 @@ export function MultiCompanyTable({
                         type="button"
                         onClick={() =>
                           onEdit({
-                            wikidataId: c.wikidataId,
+                            companyId: c.id,
                             companyName: c.name,
                             field: "scope1",
                             year: Number(selectedYear),
@@ -176,7 +176,7 @@ export function MultiCompanyTable({
                         type="button"
                         onClick={() =>
                           onEdit({
-                            wikidataId: c.wikidataId,
+                            companyId: c.id,
                             companyName: c.name,
                             field: "scope2",
                             year: Number(selectedYear),
@@ -198,7 +198,7 @@ export function MultiCompanyTable({
                           type="button"
                           onClick={() =>
                             onEdit({
-                              wikidataId: c.wikidataId,
+                              companyId: c.id,
                               companyName: c.name,
                               field: "scope1",
                               year: Number(selectedYear),
