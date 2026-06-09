@@ -31,7 +31,7 @@ export function CollapsibleSection({
       if (!(e.nativeEvent as Event).isTrusted) return;
       setOpen(e.currentTarget.open);
     },
-    []
+    [],
   );
 
   return (
@@ -60,4 +60,4 @@ export function CollapsibleSection({
       </div>
     </details>
   );
-} 
+}

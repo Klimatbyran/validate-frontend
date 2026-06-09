@@ -1,7 +1,12 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import type { TagOption } from "../../lib/types";
-import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
+import {
+  DataTable,
+  DataTableBody,
+  DataTableHead,
+  DataTableShell,
+} from "@/ui/data-table";
 
 interface TagOptionsTableProps {
   options: TagOption[];
@@ -35,10 +40,14 @@ export function TagOptionsTable({
           </tr>
         </DataTableHead>
         <DataTableBody>
-            {options.map((opt) => (
-              <tr key={opt.id} className="hover:bg-gray-04/50">
-              <td className="px-4 py-3 text-gray-01 font-mono text-sm">{opt.slug}</td>
-              <td className="px-4 py-3 text-gray-01">{opt.label ?? t("common.placeholderDash")}</td>
+          {options.map((opt) => (
+            <tr key={opt.id} className="hover:bg-gray-04/50">
+              <td className="px-4 py-3 text-gray-01 font-mono text-sm">
+                {opt.slug}
+              </td>
+              <td className="px-4 py-3 text-gray-01">
+                {opt.label ?? t("common.placeholderDash")}
+              </td>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
                   <button

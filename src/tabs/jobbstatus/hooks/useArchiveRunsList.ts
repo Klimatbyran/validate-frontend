@@ -43,7 +43,10 @@ export function useArchiveRunsList() {
         const json = (await res.json()) as ArchiveRunsListResponse;
         if (!cancelled) setData(json);
       } catch (e) {
-        if (cancelled || (e instanceof DOMException && e.name === "AbortError")) {
+        if (
+          cancelled ||
+          (e instanceof DOMException && e.name === "AbortError")
+        ) {
           return;
         }
         if (!cancelled) {

@@ -35,7 +35,10 @@ export function BulkTagUpdateModal({
 }: BulkTagUpdateModalProps) {
   const { t } = useI18n();
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
-  const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
+  const tagLabelBySlug = useMemo(
+    () => buildTagLabelBySlug(tagOptions),
+    [tagOptions],
+  );
 
   useEffect(() => {
     if (open) {
@@ -64,9 +67,13 @@ export function BulkTagUpdateModal({
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t("editor.companies.bulkUpdateTagsModal.title")}</DialogTitle>
+          <DialogTitle>
+            {t("editor.companies.bulkUpdateTagsModal.title")}
+          </DialogTitle>
           <DialogDescription>
-            {t("editor.companies.bulkUpdateTagsModal.description", { count: companyCount })}
+            {t("editor.companies.bulkUpdateTagsModal.description", {
+              count: companyCount,
+            })}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -101,12 +108,26 @@ export function BulkTagUpdateModal({
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleClose}
+              disabled={isSubmitting}
+            >
               {t("editor.fieldEdit.cancel")}
             </Button>
-            <Button type="submit" variant="primary" size="sm" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {t("editor.companies.bulkUpdateTagsModal.submit", { count: companyCount })}
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isSubmitting}
+            >
+              {isSubmitting && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
+              {t("editor.companies.bulkUpdateTagsModal.submit", {
+                count: companyCount,
+              })}
             </Button>
           </DialogFooter>
         </form>

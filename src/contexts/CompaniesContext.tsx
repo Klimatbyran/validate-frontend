@@ -19,7 +19,7 @@ export interface CompaniesContextValue {
 }
 
 const CompaniesContext = createContext<CompaniesContextValue | undefined>(
-  undefined
+  undefined,
 );
 
 export function CompaniesProvider({ children }: { children: ReactNode }) {
@@ -34,7 +34,9 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
 export function useCompaniesContext(): CompaniesContextValue {
   const ctx = useContext(CompaniesContext);
   if (ctx === undefined) {
-    throw new Error("useCompaniesContext must be used within CompaniesProvider");
+    throw new Error(
+      "useCompaniesContext must be used within CompaniesProvider",
+    );
   }
   return ctx;
 }

@@ -15,10 +15,7 @@
         "commitment_strength": "adopted_goal",
         "commitment_strength_other": "",
         "goal_type": "emission_reduction",
-        "ghg_scopes_explicit": [
-          "1",
-          "2"
-        ],
+        "ghg_scopes_explicit": ["1", "2"],
         "ghg_scopes_implicit": []
       },
       {
@@ -35,10 +32,7 @@
         "commitment_strength": "adopted_goal",
         "commitment_strength_other": "",
         "goal_type": "emission_reduction",
-        "ghg_scopes_explicit": [
-          "1",
-          "2"
-        ],
+        "ghg_scopes_explicit": ["1", "2"],
         "ghg_scopes_implicit": []
       },
       {
@@ -55,10 +49,7 @@
         "commitment_strength": "adopted_goal",
         "commitment_strength_other": "",
         "goal_type": "emission_reduction",
-        "ghg_scopes_explicit": [
-          "1",
-          "2"
-        ],
+        "ghg_scopes_explicit": ["1", "2"],
         "ghg_scopes_implicit": []
       },
       {
@@ -76,9 +67,7 @@
         "commitment_strength_other": "",
         "goal_type": "implementation",
         "ghg_scopes_explicit": [],
-        "ghg_scopes_implicit": [
-          "2"
-        ]
+        "ghg_scopes_implicit": ["2"]
       },
       {
         "goal_description": "Additional renewable energy production within the municipal group to start by 2026",
@@ -112,9 +101,7 @@
         "commitment_strength_other": "",
         "goal_type": "emission_reduction",
         "ghg_scopes_explicit": [],
-        "ghg_scopes_implicit": [
-          "2"
-        ]
+        "ghg_scopes_implicit": ["2"]
       }
     ],
     "external_references": [
@@ -166,9 +153,7 @@
       "swedish_climate_act_referenced": true,
       "swedish_national_targets_referenced": true,
       "eu_frameworks_referenced": true,
-      "eu_frameworks_named": [
-        "EU directive on energy efficiency"
-      ],
+      "eu_frameworks_named": ["EU directive on energy efficiency"],
       "alignment_character": "guiding",
       "alignment_character_other": "",
       "alignment_justification": "normative",
@@ -186,13 +171,8 @@
       "scope_clarity": "clear",
       "sectoral_targets_consistent": "yes",
       "sectoral_consistency_notes": "Sectoral targets for the municipal group align with the overall target of net zero emissions by 2045.",
-      "ghg_scopes_explicit": [
-        "1",
-        "2"
-      ],
-      "ghg_scopes_implicit": [
-        "2"
-      ],
+      "ghg_scopes_explicit": ["1", "2"],
+      "ghg_scopes_implicit": ["2"],
       "ghg_scope_notes": "Explicitly covers scope 1 and 2 for municipal operations, with some scope 2 implications for energy use targets.",
       "overall_assessment": "The plan includes clear and quantified targets for both the geographic area and municipal operations, with explicit references to GHG Protocol scopes 1 and 2. It aligns with national and EU frameworks, and references a carbon budget approach."
     }

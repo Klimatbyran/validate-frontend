@@ -66,11 +66,15 @@ export function AddReportingPeriodFlow({
 
   const handleStep1Continue = async () => {
     if (!startYmd || !endYmd) {
-      toast.error(t("editor.singleCompanyView.addReportingPeriod.validationDates"));
+      toast.error(
+        t("editor.singleCompanyView.addReportingPeriod.validationDates"),
+      );
       return;
     }
     if (startYmd > endYmd) {
-      toast.error(t("editor.singleCompanyView.addReportingPeriod.validationOrder"));
+      toast.error(
+        t("editor.singleCompanyView.addReportingPeriod.validationOrder"),
+      );
       return;
     }
 
@@ -93,7 +97,9 @@ export function AddReportingPeriodFlow({
       onSaved?.();
       const year = getPeriodYear({ startDate, endDate });
       if (!year) {
-        toast.error(t("editor.singleCompanyView.addReportingPeriod.validationYear"));
+        toast.error(
+          t("editor.singleCompanyView.addReportingPeriod.validationYear"),
+        );
         setCreating(false);
         return;
       }
@@ -125,14 +131,19 @@ export function AddReportingPeriodFlow({
         {t("editor.singleCompanyView.addReportingPeriod.button")}
       </Button>
 
-      <Dialog open={step1Open} onOpenChange={(o) => !creating && setStep1Open(o)}>
+      <Dialog
+        open={step1Open}
+        onOpenChange={(o) => !creating && setStep1Open(o)}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-gray-01">
               {t("editor.singleCompanyView.addReportingPeriod.step1Title")}
             </DialogTitle>
             <DialogDescription>
-              {t("editor.singleCompanyView.addReportingPeriod.step1Description")}
+              {t(
+                "editor.singleCompanyView.addReportingPeriod.step1Description",
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -144,7 +155,9 @@ export function AddReportingPeriodFlow({
                 type="date"
                 value={startYmd}
                 onChange={(e) => setStartYmd(e.target.value)}
-                className={inputClassName + " bg-gray-04 w-full min-w-0 !max-w-none"}
+                className={
+                  inputClassName + " bg-gray-04 w-full min-w-0 !max-w-none"
+                }
               />
             </div>
             <div>
@@ -155,7 +168,9 @@ export function AddReportingPeriodFlow({
                 type="date"
                 value={endYmd}
                 onChange={(e) => setEndYmd(e.target.value)}
-                className={inputClassName + " bg-gray-04 w-full min-w-0 !max-w-none"}
+                className={
+                  inputClassName + " bg-gray-04 w-full min-w-0 !max-w-none"
+                }
               />
             </div>
             <div>
@@ -166,7 +181,9 @@ export function AddReportingPeriodFlow({
                 type="url"
                 value={reportURL}
                 onChange={(e) => setReportURL(e.target.value)}
-                className={inputClassName + " bg-gray-04 w-full min-w-0 !max-w-none"}
+                className={
+                  inputClassName + " bg-gray-04 w-full min-w-0 !max-w-none"
+                }
                 placeholder={t("editor.fieldEdit.sourcePlaceholder")}
               />
             </div>
@@ -180,9 +197,16 @@ export function AddReportingPeriodFlow({
             >
               {t("editor.fieldEdit.cancel")}
             </Button>
-            <Button type="button" variant="primary" onClick={handleStep1Continue} disabled={creating}>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handleStep1Continue}
+              disabled={creating}
+            >
               {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {t("editor.singleCompanyView.addReportingPeriod.continueToEconomyEmissions")}
+              {t(
+                "editor.singleCompanyView.addReportingPeriod.continueToEconomyEmissions",
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

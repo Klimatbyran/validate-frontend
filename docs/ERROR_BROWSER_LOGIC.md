@@ -8,7 +8,7 @@ This document explains how the Error Browser tab computes comparisons and metric
 - **Prod**: `getProdPipelineCompaniesListUrl()` → Unearth `api.unearthdata.ai/api/pipeline/companies`
 - Pipeline endpoints return **all** reporting period rows per company (not the public one-period-per-data-year view).
 - **Deployment**: both stage and prod **Unearth API** must expose staff `GET /api/pipeline/companies`. Stage has this route; prod may return **404** until the Unearth API is deployed. Use `VITE_ERRORS_PROD_PIPELINE_URL` locally to point prod at stage while testing.
-- The UI always fetches *both* and compares them client-side.
+- The UI always fetches _both_ and compares them client-side.
 
 Key implementation: `src/tabs/errors/hooks/useErrorBrowserData.ts`.
 
@@ -40,7 +40,7 @@ These filters affect the fetched company sets and thus all views.
 
 Because not every Prod data point will be verified going forward, we support a toggle:
 
-- **Verified only (Prod)**: when enabled, *accuracy metrics* are computed only using comparisons where Prod is verified for that specific data point.
+- **Verified only (Prod)**: when enabled, _accuracy metrics_ are computed only using comparisons where Prod is verified for that specific data point.
 
 When enabled, it also filters some views to avoid mixing verified and unverified “truth”.
 
@@ -61,14 +61,14 @@ Non-eligible slots are excluded from both numerators and denominators.
 
 Notes:
 
-- **Zero-inclusive special case**: in verified-only mode, `both-null` slots can still be included *for the zero-inclusive calculation* when the company’s Prod reporting period for the selected year is otherwise “fully verified” (all present emissions data points verified; `calculated-total` ignored). This keeps zero-inclusive meaningful while still using verified truth.
+- **Zero-inclusive special case**: in verified-only mode, `both-null` slots can still be included _for the zero-inclusive calculation_ when the company’s Prod reporting period for the selected year is otherwise “fully verified” (all present emissions data points verified; `calculated-total` ignored). This keeps zero-inclusive meaningful while still using verified truth.
 
 ### Where the toggle is applied in code
 
 - **Browser “Performance Metrics”**:
   - Computed by `computePerformanceMetrics(...)` in `src/tabs/errors/lib/metrics.ts`
   - When verified-only is enabled:
-    - Exact / Precision‑tolerant metrics filter to rows where `prodVerified === true` *for the currently selected data point*.
+    - Exact / Precision‑tolerant metrics filter to rows where `prodVerified === true` _for the currently selected data point_.
     - Zero-inclusive additionally allows `both-null` rows when `prodCompanyVerifiedForYear === true`.
 - **Overview data point metrics**:
   - Computed in `allDataPointMetrics` inside `useErrorBrowserData`
@@ -87,4 +87,3 @@ Notes:
 ### What is intentionally not changed
 
 - **Company list construction** still starts from the union of stage/prod ids and tag filtering; the toggle only constrains which comparisons contribute to metrics and certain views.
-

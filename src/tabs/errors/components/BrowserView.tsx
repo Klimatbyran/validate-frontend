@@ -1,14 +1,14 @@
-import React from 'react';
-import { XCircle, Download } from 'lucide-react';
-import { useI18n } from '@/contexts/I18nContext';
-import { LoadingSpinner } from '@/ui/loading-spinner';
-import { SingleSelectDropdown } from '@/ui/single-select-dropdown';
-import { getCompanyUrlSegment } from '@/lib/company-routing';
-import { DiscrepancyType, CompanyRow, DATA_POINTS } from '../types';
-import { computePerformanceMetrics, exportComparisonToCsv } from '../lib';
-import { CompanyTableRow } from './CompanyTableRow';
-import { PerformanceMetricsTable } from './PerformanceMetricsTable';
-import { DiscrepancyFilterPills } from './DiscrepancyFilterPills';
+import React from "react";
+import { XCircle, Download } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
+import { LoadingSpinner } from "@/ui/loading-spinner";
+import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
+import { getCompanyUrlSegment } from "@/lib/company-routing";
+import { DiscrepancyType, CompanyRow, DATA_POINTS } from "../types";
+import { computePerformanceMetrics, exportComparisonToCsv } from "../lib";
+import { CompanyTableRow } from "./CompanyTableRow";
+import { PerformanceMetricsTable } from "./PerformanceMetricsTable";
+import { DiscrepancyFilterPills } from "./DiscrepancyFilterPills";
 
 interface BrowserViewProps {
   isLoading: boolean;
@@ -34,15 +34,25 @@ export function BrowserView({
   verifiedOnly,
 }: BrowserViewProps) {
   const { t } = useI18n();
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchQuery, setSearchQuery] = React.useState("");
   const [visibleTypes, setVisibleTypes] = React.useState<Set<DiscrepancyType>>(
-    new Set(['hallucination', 'missing', 'rounding', 'unit-error', 'small-error', 'error', 'category-error'])
+    new Set([
+      "hallucination",
+      "missing",
+      "rounding",
+      "unit-error",
+      "small-error",
+      "error",
+      "category-error",
+    ]),
   );
   const [showMissingCompany, setShowMissingCompany] = React.useState(false);
 
   const tagFilteredRows = React.useMemo(() => {
     if (!selectedTags.length) return comparisonRows;
-    return comparisonRows.filter((r) => (r.tags ?? []).some((t) => selectedTags.includes(t)));
+    return comparisonRows.filter((r) =>
+      (r.tags ?? []).some((t) => selectedTags.includes(t)),
+    );
   }, [comparisonRows, selectedTags]);
 
   const verifiedFilteredRows = React.useMemo(() => {
@@ -50,12 +60,13 @@ export function BrowserView({
     return tagFilteredRows.filter(
       (r) =>
         Boolean(r.prodVerified) ||
-        (r.discrepancy === 'both-null' && Boolean(r.prodCompanyVerifiedForYear)),
+        (r.discrepancy === "both-null" &&
+          Boolean(r.prodCompanyVerifiedForYear)),
     );
   }, [tagFilteredRows, verifiedOnly]);
 
   const toggleType = (type: DiscrepancyType) => {
-    setVisibleTypes(prev => {
+    setVisibleTypes((prev) => {
       const next = new Set(prev);
       if (next.has(type)) next.delete(type);
       else next.add(type);
@@ -63,22 +74,52 @@ export function BrowserView({
     });
   };
 
-  const showOnlyType = (type: DiscrepancyType) => setVisibleTypes(new Set([type]));
+  const showOnlyType = (type: DiscrepancyType) =>
+    setVisibleTypes(new Set([type]));
 
   const showAllTypes = () => {
-    setVisibleTypes(new Set(['identical', 'both-null', 'hallucination', 'missing', 'rounding', 'unit-error', 'small-error', 'error', 'category-error']));
+    setVisibleTypes(
+      new Set([
+        "identical",
+        "both-null",
+        "hallucination",
+        "missing",
+        "rounding",
+        "unit-error",
+        "small-error",
+        "error",
+        "category-error",
+      ]),
+    );
   };
 
   const showDefaultTypes = () => {
-    setVisibleTypes(new Set(['hallucination', 'missing', 'rounding', 'unit-error', 'small-error', 'error', 'category-error']));
+    setVisibleTypes(
+      new Set([
+        "hallucination",
+        "missing",
+        "rounding",
+        "unit-error",
+        "small-error",
+        "error",
+        "category-error",
+      ]),
+    );
   };
 
   // Count by discrepancy type
   const counts = React.useMemo(() => {
     const result: Record<string, number> = {
-      identical: 0, 'both-null': 0, hallucination: 0, missing: 0,
-      rounding: 0, 'unit-error': 0, 'small-error': 0, error: 0,
-      'category-error': 0, missingCompany: 0,
+      identical: 0,
+      "both-null": 0,
+      hallucination: 0,
+      missing: 0,
+      rounding: 0,
+      "unit-error": 0,
+      "small-error": 0,
+      error: 0,
+      "category-error": 0,
+      missingCompany: 0,
     };
     for (const row of verifiedFilteredRows) {
       if (!row.inStage || !row.inProd) result.missingCompany++;
@@ -99,26 +140,28 @@ export function BrowserView({
           r.name.toLowerCase().includes(query) ||
           r.id.toLowerCase().includes(query) ||
           getCompanyUrlSegment(r).toLowerCase().includes(query) ||
-          (r.wikidataId?.toLowerCase().includes(query) ?? false)
+          (r.wikidataId?.toLowerCase().includes(query) ?? false),
       );
     }
-    rows = rows.filter(r => visibleTypes.has(r.discrepancy));
+    rows = rows.filter((r) => visibleTypes.has(r.discrepancy));
     if (!showMissingCompany) {
-      rows = rows.filter(r => r.inStage && r.inProd);
+      rows = rows.filter((r) => r.inStage && r.inProd);
     }
     return rows;
   }, [verifiedFilteredRows, searchQuery, visibleTypes, showMissingCompany]);
 
   const metrics = React.useMemo(
     () => computePerformanceMetrics(verifiedFilteredRows, { verifiedOnly }),
-    [verifiedFilteredRows, verifiedOnly]
+    [verifiedFilteredRows, verifiedOnly],
   );
 
   const handleExportCsv = () => {
     exportComparisonToCsv(filteredRows, selectedDataPoint, selectedYear);
   };
 
-  const selectedDataPointLabel = DATA_POINTS.find(dp => dp.id === selectedDataPoint)?.label || selectedDataPoint;
+  const selectedDataPointLabel =
+    DATA_POINTS.find((dp) => dp.id === selectedDataPoint)?.label ||
+    selectedDataPoint;
 
   return (
     <>
@@ -126,21 +169,27 @@ export function BrowserView({
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6 space-y-4">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex flex-col gap-1 flex-1 max-w-md">
-            <label className="text-xs text-gray-02 uppercase tracking-wide">{t("errors.dataPoint")}</label>
+            <label className="text-xs text-gray-02 uppercase tracking-wide">
+              {t("errors.dataPoint")}
+            </label>
             <SingleSelectDropdown
               options={DATA_POINTS.map((dp) => dp.id)}
               value={selectedDataPoint}
               onChange={onDataPointChange}
               placeholder={t("errors.dataPoint")}
               ariaLabel={t("errors.dataPoint")}
-              getOptionLabel={(id) => DATA_POINTS.find((dp) => dp.id === id)?.label ?? id}
+              getOptionLabel={(id) =>
+                DATA_POINTS.find((dp) => dp.id === id)?.label ?? id
+              }
               panelMinWidth={260}
               panelMaxHeight={320}
             />
           </div>
 
           <div className="flex flex-col gap-1 flex-1 max-w-xs">
-            <label className="text-xs text-gray-02 uppercase tracking-wide">{t("common.search")}</label>
+            <label className="text-xs text-gray-02 uppercase tracking-wide">
+              {t("common.search")}
+            </label>
             <input
               type="text"
               placeholder={t("errors.filterCompanies")}
@@ -199,7 +248,9 @@ export function BrowserView({
           <div className="p-6 text-red-400">
             <div className="flex items-center gap-2">
               <XCircle className="w-5 h-5" />
-              <span className="font-medium">{t("errors.errorLoadingData")}</span>
+              <span className="font-medium">
+                {t("errors.errorLoadingData")}
+              </span>
             </div>
             <p className="mt-1 text-sm">{error}</p>
           </div>
@@ -208,17 +259,30 @@ export function BrowserView({
             <table className="min-w-full">
               <thead className="bg-gray-03/50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableCompany")}</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableStage")}</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableProdTruth")}</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableStatus")}</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.tableDiff")}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                    {t("errors.tableCompany")}
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                    {t("errors.tableStage")}
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                    {t("errors.tableProdTruth")}
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                    {t("errors.tableStatus")}
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                    {t("errors.tableDiff")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-03/50">
                 {filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-02">
+                    <td
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-gray-02"
+                    >
                       {t("errors.noDataTryFilters")}
                     </td>
                   </tr>
@@ -239,7 +303,12 @@ export function BrowserView({
 
         {!isLoading && !error && (
           <div className="px-4 py-3 bg-gray-03/30 text-sm text-gray-02 border-t border-gray-03/50">
-            {t("errors.showingForDataPoint", { filtered: filteredRows.length, total: verifiedFilteredRows.length, dataPoint: selectedDataPointLabel, year: selectedYear })}
+            {t("errors.showingForDataPoint", {
+              filtered: filteredRows.length,
+              total: verifiedFilteredRows.length,
+              dataPoint: selectedDataPointLabel,
+              year: selectedYear,
+            })}
           </div>
         )}
       </div>

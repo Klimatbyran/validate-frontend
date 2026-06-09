@@ -17,12 +17,14 @@ export function ReportUrlSection({
   setNullableEdit: (
     key: keyof ReportingPeriodQuickEditEdited,
     value: string,
-    hadOriginalValue: boolean
+    hadOriginalValue: boolean,
   ) => void;
 }) {
   const { t } = useI18n();
   const originalReportURL = period.reportURL ?? null;
-  const reportURL = edited.reportURL ?? (originalReportURL != null ? String(originalReportURL) : "");
+  const reportURL =
+    edited.reportURL ??
+    (originalReportURL != null ? String(originalReportURL) : "");
 
   return (
     <ReportUrlBar
@@ -33,7 +35,9 @@ export function ReportUrlSection({
       placeholder={t("editor.reportingPeriodQuickEdit.urlPlaceholder")}
       dirty={edited.reportURL != null}
       inputClassName={inputClassName}
-      onChange={(next) => setNullableEdit("reportURL", next, originalReportURL != null)}
+      onChange={(next) =>
+        setNullableEdit("reportURL", next, originalReportURL != null)
+      }
       onReset={() =>
         setEdited((p) => {
           const n = { ...p };
@@ -45,4 +49,3 @@ export function ReportUrlSection({
     />
   );
 }
-

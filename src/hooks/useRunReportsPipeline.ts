@@ -28,9 +28,8 @@ export function useRunReportsPipeline() {
   const [isRunningReports, setIsRunningReports] = useState(false);
   const [autoApprove, setAutoApprove] = useState(true);
   const [runAllWorkers, setRunAllWorkers] = useState(false);
-  const [selectedWorkers, setSelectedWorkers] = useState<RunOnlyWorkerId[]>(
-    DEFAULT_RUN_ONLY,
-  );
+  const [selectedWorkers, setSelectedWorkers] =
+    useState<RunOnlyWorkerId[]>(DEFAULT_RUN_ONLY);
   const [forceReindex, setForceReindex] = useState(false);
   const [batchDropdownChoice, setBatchDropdownChoice] = useState("");
   const [customBatchName, setCustomBatchName] = useState("");
@@ -41,7 +40,11 @@ export function useRunReportsPipeline() {
     isLoading: batchesLoading,
     refetch: refetchBatches,
   } = useBatches();
-  const { tagOptions, loading: tagsLoading, error: tagsError } = useTagOptions();
+  const {
+    tagOptions,
+    loading: tagsLoading,
+    error: tagsError,
+  } = useTagOptions();
 
   const runOnly =
     !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
@@ -123,7 +126,9 @@ export function useRunReportsPipeline() {
             }),
           );
         } else {
-          toast.success(t("registry.runReportsSuccess", { count: urls.length }));
+          toast.success(
+            t("registry.runReportsSuccess", { count: urls.length }),
+          );
         }
 
         if (batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE) {

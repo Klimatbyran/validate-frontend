@@ -1,8 +1,6 @@
 import { useI18n } from "@/contexts/I18nContext";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
-import {
-  editorDenseMultiSelectTriggerClass,
-} from "../../lib/reporting-period-ui";
+import { editorDenseMultiSelectTriggerClass } from "../../lib/reporting-period-ui";
 import {
   formatReportShellOptionLabel,
   type CompanyReportShellGroup,

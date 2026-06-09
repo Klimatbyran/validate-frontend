@@ -22,7 +22,10 @@ export function UploadTagsOptions({
   usePortal = true,
 }: UploadTagsOptionsProps) {
   const { t } = useI18n();
-  const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
+  const tagLabelBySlug = useMemo(
+    () => buildTagLabelBySlug(tagOptions),
+    [tagOptions],
+  );
 
   return (
     <>
@@ -44,7 +47,9 @@ export function UploadTagsOptions({
       {tagsError && (
         <div className="w-full">
           <div className="rounded-lg border border-gray-03 bg-gray-04/80 p-4 mt-2">
-            <p className="text-gray-01 font-medium">{t("editor.tagOptions.loadError")}</p>
+            <p className="text-gray-01 font-medium">
+              {t("editor.tagOptions.loadError")}
+            </p>
             <p className="text-sm text-gray-02 mt-1">{tagsError}</p>
           </div>
         </div>
@@ -52,4 +57,3 @@ export function UploadTagsOptions({
     </>
   );
 }
-

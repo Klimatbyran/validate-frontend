@@ -4,11 +4,11 @@ How Validate talks to **Pipeline API**, **Unearth API**, and **Garbo API** in de
 
 ## Overview
 
-| Backend | Host (stage) | Browser path (deployed) |
-|---------|----------------|-------------------------|
-| **Pipeline API** | `stage-pipeline-api.klimatkollen.se` | `/api/…` |
-| **Unearth API** | `stage-api.unearthdata.ai` | `/unearth-api/…` |
-| **Garbo API** | `stage-api.klimatkollen.se` | `/garbo-api/queue-archive/…` only |
+| Backend          | Host (stage)                         | Browser path (deployed)           |
+| ---------------- | ------------------------------------ | --------------------------------- |
+| **Pipeline API** | `stage-pipeline-api.klimatkollen.se` | `/api/…`                          |
+| **Unearth API**  | `stage-api.unearthdata.ai`           | `/unearth-api/…`                  |
+| **Garbo API**    | `stage-api.klimatkollen.se`          | `/garbo-api/queue-archive/…` only |
 
 - **Errors tab** – always compares stage and prod **Unearth API** via `/unearth-stage-api/` and `/unearth-prod-api/` (ignores target).
 
@@ -18,17 +18,17 @@ In **development**, Vite proxies same-origin paths (see network tab table below)
 
 ## Network tab paths (dev)
 
-| Path | Backend |
-|------|--------|
-| `/pipeline-local` | Pipeline API on this machine |
-| `/pipeline-stage` | Stage Pipeline API |
-| `/pipeline` | Prod Pipeline API |
-| `/unearth-local` | Local Unearth API (often localhost:3000) |
-| `/unearth-stage` | Stage Unearth API |
-| `/unearth` | Prod Unearth API |
-| `/garbo-local/api/queue-archive` | Local Garbo API |
-| `/garbo-stage/api/queue-archive` | Stage Garbo API |
-| `/garbo/api/queue-archive` | Prod Garbo API |
+| Path                             | Backend                                  |
+| -------------------------------- | ---------------------------------------- |
+| `/pipeline-local`                | Pipeline API on this machine             |
+| `/pipeline-stage`                | Stage Pipeline API                       |
+| `/pipeline`                      | Prod Pipeline API                        |
+| `/unearth-local`                 | Local Unearth API (often localhost:3000) |
+| `/unearth-stage`                 | Stage Unearth API                        |
+| `/unearth`                       | Prod Unearth API                         |
+| `/garbo-local/api/queue-archive` | Local Garbo API                          |
+| `/garbo-stage/api/queue-archive` | Stage Garbo API                          |
+| `/garbo/api/queue-archive`       | Prod Garbo API                           |
 
 Deployed builds use `/unearth-api` and `/garbo-api/queue-archive` instead.
 
@@ -76,18 +76,18 @@ See [routing / URL state](./ROUTING_URL_STATE.md#jobbstatus-live-vs-archive).
 
 See `.env.development.example`.
 
-| Variable | Purpose |
-|----------|---------|
-| `VITE_API_MODE` | Joint default for Pipeline API + Unearth/Garbo API |
-| `VITE_UNEARTH_TARGET` | Unearth API + Garbo API archive target (`local` \| `stage` \| `prod`) |
-| `VITE_PIPELINE_TARGET` | Pipeline API only |
-| `VITE_UNEARTH_STAGE_URL` | Override Unearth API stage host |
-| `VITE_GARBO_STAGE_URL` | Override Garbo API stage host |
-| `UNEARTH_API_URL` | nginx → Unearth API (includes `/api` suffix) |
-| `GARBO_API_URL` | nginx → Garbo API (includes `/api` suffix) |
-| `GARBO_ALL_ACCESS_API_KEY` | `/unearth-api/` (primary deployment target) |
-| `GARBO_STAGE_ALL_ACCESS_API_KEY` | `/unearth-stage-api/`, `/garbo-api/queue-archive/` |
-| `GARBO_PROD_ALL_ACCESS_API_KEY` | `/unearth-prod-api/` |
+| Variable                         | Purpose                                                               |
+| -------------------------------- | --------------------------------------------------------------------- |
+| `VITE_API_MODE`                  | Joint default for Pipeline API + Unearth/Garbo API                    |
+| `VITE_UNEARTH_TARGET`            | Unearth API + Garbo API archive target (`local` \| `stage` \| `prod`) |
+| `VITE_PIPELINE_TARGET`           | Pipeline API only                                                     |
+| `VITE_UNEARTH_STAGE_URL`         | Override Unearth API stage host                                       |
+| `VITE_GARBO_STAGE_URL`           | Override Garbo API stage host                                         |
+| `UNEARTH_API_URL`                | nginx → Unearth API (includes `/api` suffix)                          |
+| `GARBO_API_URL`                  | nginx → Garbo API (includes `/api` suffix)                            |
+| `GARBO_ALL_ACCESS_API_KEY`       | `/unearth-api/` (primary deployment target)                           |
+| `GARBO_STAGE_ALL_ACCESS_API_KEY` | `/unearth-stage-api/`, `/garbo-api/queue-archive/`                    |
+| `GARBO_PROD_ALL_ACCESS_API_KEY`  | `/unearth-prod-api/`                                                  |
 
 ---
 

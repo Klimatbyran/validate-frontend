@@ -41,7 +41,10 @@ export function useTagOptions() {
       fetchNow();
     };
 
-    window.addEventListener("token-updated", handleTokenUpdated as EventListener);
+    window.addEventListener(
+      "token-updated",
+      handleTokenUpdated as EventListener,
+    );
     return () => {
       cancelled = true;
       window.removeEventListener(
@@ -53,4 +56,3 @@ export function useTagOptions() {
 
   return { tagOptions, loading, error };
 }
-

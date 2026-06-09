@@ -31,7 +31,10 @@ export function Scope3CategoriesCard({
   inputClassName: string;
   categoryLineLabel: (cat: number, name: string) => string;
   categoryNameFor: (cat: number) => string;
-  getOriginalForCategory: (cat: number) => { value: number | null; metadata: GarboFieldMetadata | null };
+  getOriginalForCategory: (cat: number) => {
+    value: number | null;
+    metadata: GarboFieldMetadata | null;
+  };
   getEditedValueForCategory: (cat: number) => string;
   isEditedValueDirty: (cat: number) => boolean;
   getVerifiedForCategory: (cat: number) => boolean;
@@ -96,7 +99,9 @@ export function Scope3CategoriesCard({
                   title={toggleVerifiedTitle}
                   aria-label={toggleVerifiedTitle}
                 >
-                  <BadgeCheck className={verified ? "text-green-03" : "text-gray-02"} />
+                  <BadgeCheck
+                    className={verified ? "text-green-03" : "text-gray-02"}
+                  />
                 </IconActionButton>
               </div>
             </div>
@@ -106,4 +111,3 @@ export function Scope3CategoriesCard({
     </div>
   );
 }
-

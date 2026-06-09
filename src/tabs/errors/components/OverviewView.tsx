@@ -1,11 +1,16 @@
-import React from 'react';
-import { Download } from 'lucide-react';
-import { useI18n } from '@/contexts/I18nContext';
-import { DataPointMetric } from '../types';
-import { calculateOverviewAggregates, exportOverviewCsv } from '../lib';
-import { DataPointBar, OverviewSection, ScopeSection, ScopeSummary } from '../overview';
-import type { ErrorBrowserSummaryStats } from './SummaryView';
-import { SummaryView } from './SummaryView';
+import React from "react";
+import { Download } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
+import { DataPointMetric } from "../types";
+import { calculateOverviewAggregates, exportOverviewCsv } from "../lib";
+import {
+  DataPointBar,
+  OverviewSection,
+  ScopeSection,
+  ScopeSummary,
+} from "../overview";
+import type { ErrorBrowserSummaryStats } from "./SummaryView";
+import { SummaryView } from "./SummaryView";
 
 interface OverviewViewProps {
   allDataPointMetrics: DataPointMetric[];
@@ -25,7 +30,9 @@ function OverviewViewToggle({
 }) {
   const { t } = useI18n();
   return (
-    <div className={align === "right" ? "flex justify-end" : "flex justify-start"}>
+    <div
+      className={align === "right" ? "flex justify-end" : "flex justify-start"}
+    >
       <div className="inline-flex rounded-full bg-gray-03/60 p-1 border border-gray-02/15">
         <button
           onClick={() => onChange("graphic")}
@@ -52,36 +59,54 @@ function OverviewViewToggle({
   );
 }
 
-export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPoint, stats }: OverviewViewProps) {
+export function OverviewView({
+  allDataPointMetrics,
+  selectedYear,
+  onSelectDataPoint,
+  stats,
+}: OverviewViewProps) {
   const { t } = useI18n();
-  const [view, setView] = React.useState<'graphic' | 'table'>('graphic');
+  const [view, setView] = React.useState<"graphic" | "table">("graphic");
   if (allDataPointMetrics.length === 0) return null;
 
-  if (view === 'table') {
+  if (view === "table") {
     return (
       <div className="space-y-3">
         <OverviewViewToggle view={view} onChange={setView} align="right" />
-        <SummaryView selectedYear={selectedYear} allDataPointMetrics={allDataPointMetrics} stats={stats} />
+        <SummaryView
+          selectedYear={selectedYear}
+          allDataPointMetrics={allDataPointMetrics}
+          stats={stats}
+        />
       </div>
     );
   }
 
-  const scope1Metrics = allDataPointMetrics.filter((dp) => dp.id.startsWith('scope1-'));
-  const scope2Metrics = allDataPointMetrics.filter((dp) => dp.id.startsWith('scope2-'));
-  const scope3Metrics = allDataPointMetrics.filter((dp) => dp.id.startsWith('cat-') && dp.id !== 'cat-16');
+  const scope1Metrics = allDataPointMetrics.filter((dp) =>
+    dp.id.startsWith("scope1-"),
+  );
+  const scope2Metrics = allDataPointMetrics.filter((dp) =>
+    dp.id.startsWith("scope2-"),
+  );
+  const scope3Metrics = allDataPointMetrics.filter(
+    (dp) => dp.id.startsWith("cat-") && dp.id !== "cat-16",
+  );
   const otherMetrics = allDataPointMetrics.filter(
     (dp) =>
-      dp.id === 'cat-16' ||
-      dp.id === 'scope3-stated-total' ||
-      dp.id === 'scope3-calculated-total' ||
-      dp.id === 'stated-total' ||
-      dp.id === 'calculated-total'
+      dp.id === "cat-16" ||
+      dp.id === "scope3-stated-total" ||
+      dp.id === "scope3-calculated-total" ||
+      dp.id === "stated-total" ||
+      dp.id === "calculated-total",
   );
 
   const scope1Aggregates = calculateOverviewAggregates(scope1Metrics);
   const scope2Aggregates = calculateOverviewAggregates(scope2Metrics);
   const scope3Aggregates = calculateOverviewAggregates(scope3Metrics);
-  const scope12Aggregates = calculateOverviewAggregates([...scope1Metrics, ...scope2Metrics]);
+  const scope12Aggregates = calculateOverviewAggregates([
+    ...scope1Metrics,
+    ...scope2Metrics,
+  ]);
   const allScopesAggregates = calculateOverviewAggregates([
     ...scope1Metrics,
     ...scope2Metrics,
@@ -138,10 +163,16 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
 
         {otherMetrics.length > 0 && (
           <OverviewSection>
-            <h3 className="text-sm font-semibold text-gray-01 mb-3">{t("errors.overview.other")}</h3>
+            <h3 className="text-sm font-semibold text-gray-01 mb-3">
+              {t("errors.overview.other")}
+            </h3>
             <div className="space-y-2">
               {otherMetrics.map((dp) => (
-                <DataPointBar key={dp.id} dp={dp} onSelect={onSelectDataPoint} />
+                <DataPointBar
+                  key={dp.id}
+                  dp={dp}
+                  onSelect={onSelectDataPoint}
+                />
               ))}
             </div>
           </OverviewSection>
@@ -150,8 +181,12 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
         {allScopesAggregates.totals.withAnyData > 0 && (
           <OverviewSection>
             <ScopeSummary
-              title={t("errors.overview.overallScope123", { year: selectedYear })}
-              categoryCount={[...scope1Metrics, ...scope2Metrics, ...scope3Metrics].length}
+              title={t("errors.overview.overallScope123", {
+                year: selectedYear,
+              })}
+              categoryCount={
+                [...scope1Metrics, ...scope2Metrics, ...scope3Metrics].length
+              }
               aggregates={allScopesAggregates}
             />
           </OverviewSection>
@@ -160,7 +195,9 @@ export function OverviewView({ allDataPointMetrics, selectedYear, onSelectDataPo
         {scope12Aggregates.totals.withAnyData > 0 && (
           <OverviewSection>
             <ScopeSummary
-              title={t("errors.overview.overallScope12", { year: selectedYear })}
+              title={t("errors.overview.overallScope12", {
+                year: selectedYear,
+              })}
               categoryCount={[...scope1Metrics, ...scope2Metrics].length}
               aggregates={scope12Aggregates}
             />

@@ -400,19 +400,16 @@ See [Backend Authentication Requirements](./BACKEND_AUTH_REQUIREMENTS.md) for de
 ### Frontend Testing
 
 1. **Visit app without token:**
-
    - Should load normally (no login modal)
    - Can view all data (read operations work)
    - Header shows "Logga in" button
 
 2. **Attempt write operation without auth:**
-
    - Try to upload URL, retry job, etc.
    - Login modal should appear
    - Request should not be sent until authenticated
 
 3. **Complete GitHub auth:**
-
    - Click "Logga in med GitHub" in modal
    - Should redirect to GitHub (with redirect_uri in URL)
    - Should redirect back to `/auth/callback?code=XXX&state=YYY`
@@ -421,7 +418,6 @@ See [Backend Authentication Requirements](./BACKEND_AUTH_REQUIREMENTS.md) for de
    - Header should show user name and logout button
 
 4. **Refresh page:**
-
    - Should remain authenticated
    - Token should persist in localStorage
    - Can perform write operations without re-login

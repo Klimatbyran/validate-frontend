@@ -32,7 +32,11 @@ function listFilesRecursive(dir, exts) {
   for (const ent of entries) {
     const full = path.join(dir, ent.name);
     if (ent.isDirectory()) {
-      if (ent.name === "node_modules" || ent.name === "dist" || ent.name.startsWith(".")) {
+      if (
+        ent.name === "node_modules" ||
+        ent.name === "dist" ||
+        ent.name.startsWith(".")
+      ) {
         continue;
       }
       out.push(...listFilesRecursive(full, exts));
@@ -112,7 +116,8 @@ function detectDuplicateKeys(jsonText, filename) {
         const nextPath = pfx ? `${pfx}.${key}` : key;
         const prev = seen.get(key) ?? 0;
         seen.set(key, prev + 1);
-        if (prev >= 1) dups.push({ file: filename, path: pfx || "<root>", key });
+        if (prev >= 1)
+          dups.push({ file: filename, path: pfx || "<root>", key });
         const valueNode = prop.children?.[1];
         walk(valueNode, nextPath);
       }
@@ -189,7 +194,10 @@ function readJsonFile(file) {
 
 function readJsonFromGit(ref, relPath) {
   const cmd = `git show ${ref}:${relPath}`;
-  const raw = execSync(cmd, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  const raw = execSync(cmd, {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
   return { raw, data: JSON.parse(raw) };
 }
 
@@ -253,14 +261,18 @@ function main() {
   const missingByLocale = {};
   for (const [locale, info] of Object.entries(locales)) {
     if (locale === baseLocale) continue;
-    const missing = new Set([...baseFlat.keys()].filter((k) => !info.flat.has(k)));
+    const missing = new Set(
+      [...baseFlat.keys()].filter((k) => !info.flat.has(k)),
+    );
     missingByLocale[locale] = missing;
   }
 
   let hasIssues = false;
   if (duplicates.length) {
     hasIssues = true;
-    console.error(`\nDuplicate JSON keys (these can override each other silently):`);
+    console.error(
+      `\nDuplicate JSON keys (these can override each other silently):`,
+    );
     for (const d of duplicates) {
       console.error(`  - ${d.file}: duplicate "${d.key}" under ${d.path}`);
     }
@@ -268,19 +280,25 @@ function main() {
 
   if (missingInBase.size) {
     hasIssues = true;
-    console.error(`\nMissing keys in base locale (${baseLocale}) that are used in code:`);
+    console.error(
+      `\nMissing keys in base locale (${baseLocale}) that are used in code:`,
+    );
     console.error(formatList(missingInBase));
   }
 
   for (const [locale, missing] of Object.entries(missingByLocale)) {
     if (!missing.size) continue;
     hasIssues = true;
-    console.error(`\nMissing keys in ${locale}.json (present in ${baseLocale}.json):`);
+    console.error(
+      `\nMissing keys in ${locale}.json (present in ${baseLocale}.json):`,
+    );
     console.error(formatList(missing));
   }
 
   if (unusedInBase.size) {
-    console.error(`\nUnused keys in base locale (${baseLocale}) (present in translations but not referenced via t("...")):`);
+    console.error(
+      `\nUnused keys in base locale (${baseLocale}) (present in translations but not referenced via t("...")):`,
+    );
     console.error(formatList(unusedInBase));
   }
 
@@ -294,7 +312,9 @@ function main() {
       try {
         fromGit = readJsonFromGit(RESTORE_FROM, rel);
       } catch (e) {
-        console.error(`\n--restore-from failed for ${rel}. Is ref valid? (${RESTORE_FROM})`);
+        console.error(
+          `\n--restore-from failed for ${rel}. Is ref valid? (${RESTORE_FROM})`,
+        );
         process.exitCode = 2;
         return;
       }
@@ -313,11 +333,19 @@ function main() {
 
     if (restoredTotal > 0) {
       for (const [, info] of Object.entries(locales)) {
-        fs.writeFileSync(info.file, JSON.stringify(info.data, null, 2) + "\n", "utf8");
+        fs.writeFileSync(
+          info.file,
+          JSON.stringify(info.data, null, 2) + "\n",
+          "utf8",
+        );
       }
-      console.error(`\n--restore-from applied: restored ${restoredTotal} used keys from ${RESTORE_FROM}.`);
+      console.error(
+        `\n--restore-from applied: restored ${restoredTotal} used keys from ${RESTORE_FROM}.`,
+      );
     } else {
-      console.error(`\n--restore-from: no missing used keys found to restore from ${RESTORE_FROM}.`);
+      console.error(
+        `\n--restore-from: no missing used keys found to restore from ${RESTORE_FROM}.`,
+      );
     }
   }
 
@@ -326,13 +354,18 @@ function main() {
     for (const [locale, info] of Object.entries(locales)) {
       for (const k of unusedInBase) removeKeyPath(info.data, k);
       pruneEmptyObjects(info.data);
-      fs.writeFileSync(info.file, JSON.stringify(info.data, null, 2) + "\n", "utf8");
+      fs.writeFileSync(
+        info.file,
+        JSON.stringify(info.data, null, 2) + "\n",
+        "utf8",
+      );
     }
-    console.error(`\n--fix applied: removed ${unusedInBase.size} unused keys from all locales.`);
+    console.error(
+      `\n--fix applied: removed ${unusedInBase.size} unused keys from all locales.`,
+    );
   }
 
   if (hasIssues) process.exitCode = 1;
 }
 
 main();
-

@@ -6,13 +6,13 @@
 export {
   getStagePipelineCompaniesListUrl,
   getProdPipelineCompaniesListUrl,
-} from './api';
+} from "./api";
 export {
   pickReportingPeriodsForFilters,
   buildReportingPeriodComparisonSlots,
   findReportingPeriodForShell,
-} from './reporting-period-comparison';
-export type { ReportingPeriodComparisonSlot } from './reporting-period-comparison';
+} from "./reporting-period-comparison";
+export type { ReportingPeriodComparisonSlot } from "./reporting-period-comparison";
 export {
   extractTotal,
   pickReportingPeriodForYear,
@@ -21,26 +21,23 @@ export {
   getCategoryValue,
   getDataPointValue,
   getDataPointVerified,
-} from './emissions';
+} from "./emissions";
 export {
   companiesToMapById,
   classifyDiscrepancy,
   getUnitErrorFactor,
   reclassifyDiscrepancyForCategoryError,
   applyCategoryErrorToRows,
-} from './discrepancy';
-export type { SameScopeDataPoint } from './discrepancy';
+} from "./discrepancy";
+export type { SameScopeDataPoint } from "./discrepancy";
 export {
   computePerformanceMetrics,
   calculateOverviewAggregates,
-} from './metrics';
-export type {
-  PerformanceMetricRow,
-  OverviewAggregates,
-} from './metrics';
-export { exportOverviewCsv, exportComparisonToCsv } from './csv';
+} from "./metrics";
+export type { PerformanceMetricRow, OverviewAggregates } from "./metrics";
+export { exportOverviewCsv, exportComparisonToCsv } from "./csv";
 export {
   buildProdCompanyVerifiedForYearMap,
   isProdCompanyFullyVerifiedForYear,
   isProdReportingPeriodFullyVerified,
-} from './verification';
+} from "./verification";

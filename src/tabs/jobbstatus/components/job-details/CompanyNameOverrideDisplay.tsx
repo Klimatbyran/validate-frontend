@@ -56,8 +56,12 @@ export function CompanyNameOverrideDisplay({
       >
         {currentCompanyName && (
           <div className="bg-gray-03/20 rounded-lg p-3">
-            <div className="text-xs text-gray-02 mb-1">{t("companyOverride.currentName")}</div>
-            <div className="text-sm text-gray-01 font-medium">{currentCompanyName}</div>
+            <div className="text-xs text-gray-02 mb-1">
+              {t("companyOverride.currentName")}
+            </div>
+            <div className="text-sm text-gray-01 font-medium">
+              {currentCompanyName}
+            </div>
           </div>
         )}
 

@@ -1,13 +1,13 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Download } from 'lucide-react';
-import { useI18n } from '@/contexts/I18nContext';
-import { getCompanyUrlSegment } from '@/lib/company-routing';
-import { cn, downloadCsv } from '@/lib/utils';
-import { LoadingSpinner } from '@/ui/loading-spinner';
-import { DiscrepancyType, WorstCompany } from '../types';
-import { discrepancyConfig } from '../config/discrepancyConfig';
-import { ErrorDistributionHistogram } from './ErrorDistributionHistogram';
+import React from "react";
+import { motion } from "framer-motion";
+import { Download } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
+import { getCompanyUrlSegment } from "@/lib/company-routing";
+import { cn, downloadCsv } from "@/lib/utils";
+import { LoadingSpinner } from "@/ui/loading-spinner";
+import { DiscrepancyType, WorstCompany } from "../types";
+import { discrepancyConfig } from "../config/discrepancyConfig";
+import { ErrorDistributionHistogram } from "./ErrorDistributionHistogram";
 
 interface HardestReportsViewProps {
   isLoading: boolean;
@@ -16,17 +16,29 @@ interface HardestReportsViewProps {
   selectedYear: number;
 }
 
-function exportHardestReportsCsv(worstCompanies: WorstCompany[], selectedYear: number) {
-  const headers = ['Rank', 'Company', 'Identifier', 'Errors', 'Total Data Points', 'Difficult', 'Error Types', 'Affected Data Points'];
+function exportHardestReportsCsv(
+  worstCompanies: WorstCompany[],
+  selectedYear: number,
+) {
+  const headers = [
+    "Rank",
+    "Company",
+    "Identifier",
+    "Errors",
+    "Total Data Points",
+    "Difficult",
+    "Error Types",
+    "Affected Data Points",
+  ];
   const rows: string[][] = [headers];
 
   worstCompanies.forEach((company, index) => {
     const errorTypes = Object.entries(company.breakdown)
       .map(([type, count]) => `${type}:${count}`)
-      .join('; ');
+      .join("; ");
     const affectedDPs = company.errorDataPoints
       .map((dp) => dp.label)
-      .join('; ');
+      .join("; ");
 
     rows.push([
       String(index + 1),
@@ -34,7 +46,7 @@ function exportHardestReportsCsv(worstCompanies: WorstCompany[], selectedYear: n
       getCompanyUrlSegment(company),
       String(company.errorCount),
       String(company.totalDataPoints),
-      company.errorCount >= 5 ? 'yes' : 'no',
+      company.errorCount >= 5 ? "yes" : "no",
       `"${errorTypes}"`,
       `"${affectedDPs}"`,
     ]);
@@ -43,7 +55,12 @@ function exportHardestReportsCsv(worstCompanies: WorstCompany[], selectedYear: n
   downloadCsv(rows, `hardest-reports-${selectedYear}.csv`);
 }
 
-export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs, selectedYear }: HardestReportsViewProps) {
+export function HardestReportsView({
+  isLoading,
+  worstCompanies,
+  totalWithBothRPs,
+  selectedYear,
+}: HardestReportsViewProps) {
   const { t } = useI18n();
   // Build error distribution for histogram
   const distribution = React.useMemo(() => {
@@ -59,7 +76,7 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
 
   const difficultCount = React.useMemo(
     () => worstCompanies.filter((c) => c.errorCount >= 5).length,
-    [worstCompanies]
+    [worstCompanies],
   );
 
   return (
@@ -72,7 +89,9 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
         <>
           <div className="flex justify-end p-4 pb-0">
             <button
-              onClick={() => exportHardestReportsCsv(worstCompanies, selectedYear)}
+              onClick={() =>
+                exportHardestReportsCsv(worstCompanies, selectedYear)
+              }
               disabled={worstCompanies.length === 0}
               className="inline-flex items-center gap-2 px-3 py-2 bg-gray-03 text-gray-01 rounded-lg hover:bg-gray-02 hover:text-white disabled:opacity-50 transition-colors text-sm"
             >
@@ -89,23 +108,40 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
             <table className="min-w-full">
               <thead className="bg-gray-03/50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">#</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.company")}</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.errors")}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.breakdown")}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">{t("errors.affectedDataPoints")}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                    #
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                    {t("errors.company")}
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                    {t("errors.errors")}
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                    {t("errors.breakdown")}
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                    {t("errors.affectedDataPoints")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-03/50">
                 {worstCompanies.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-02">
+                    <td
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-gray-02"
+                    >
                       {t("errors.noCompaniesWithErrorsFound")}
                     </td>
                   </tr>
                 ) : (
                   worstCompanies.map((company, index) => (
-                    <HardestReportRow key={company.id} company={company} index={index} />
+                    <HardestReportRow
+                      key={company.id}
+                      company={company}
+                      index={index}
+                    />
                   ))
                 )}
               </tbody>
@@ -128,7 +164,13 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
   );
 }
 
-function HardestReportRow({ company, index }: { company: WorstCompany; index: number }) {
+function HardestReportRow({
+  company,
+  index,
+}: {
+  company: WorstCompany;
+  index: number;
+}) {
   const isDifficult = company.errorCount >= 5;
 
   return (
@@ -141,26 +183,36 @@ function HardestReportRow({ company, index }: { company: WorstCompany; index: nu
       <td className="px-4 py-3 text-sm text-gray-02 font-mono">{index + 1}</td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-01 text-sm">{company.name}</span>
+          <span className="font-medium text-gray-01 text-sm">
+            {company.name}
+          </span>
           {isDifficult && (
             <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-400">
               Difficult Report
             </span>
           )}
         </div>
-        <div className="text-xs text-gray-02 mt-0.5">{getCompanyUrlSegment(company)}</div>
+        <div className="text-xs text-gray-02 mt-0.5">
+          {getCompanyUrlSegment(company)}
+        </div>
       </td>
       <td className="px-4 py-3 text-center">
-        <span className={cn(
-          'inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold',
-          company.errorCount > 10 ? 'bg-red-500/20 text-red-400' :
-          company.errorCount >= 5 ? 'bg-orange-500/20 text-orange-400' :
-          'bg-yellow-500/20 text-yellow-400'
-        )}>
+        <span
+          className={cn(
+            "inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold",
+            company.errorCount > 10
+              ? "bg-red-500/20 text-red-400"
+              : company.errorCount >= 5
+                ? "bg-orange-500/20 text-orange-400"
+                : "bg-yellow-500/20 text-yellow-400",
+          )}
+        >
           {company.errorCount}
         </span>
         {company.totalDataPoints > 0 && (
-          <div className="text-xs text-gray-02 mt-0.5">/{company.totalDataPoints}</div>
+          <div className="text-xs text-gray-02 mt-0.5">
+            /{company.totalDataPoints}
+          </div>
         )}
       </td>
       <td className="px-4 py-3">
@@ -171,7 +223,11 @@ function HardestReportRow({ company, index }: { company: WorstCompany; index: nu
             return (
               <span
                 key={type}
-                className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium', config.bgColor, config.textColor)}
+                className={cn(
+                  "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium",
+                  config.bgColor,
+                  config.textColor,
+                )}
               >
                 {config.icon}
                 {count}
@@ -187,10 +243,14 @@ function HardestReportRow({ company, index }: { company: WorstCompany; index: nu
             return (
               <span
                 key={i}
-                className={cn('px-1.5 py-0.5 rounded text-xs', config.bgColor, config.textColor)}
+                className={cn(
+                  "px-1.5 py-0.5 rounded text-xs",
+                  config.bgColor,
+                  config.textColor,
+                )}
                 title={`${dp.label}: ${config.label}`}
               >
-                {dp.label.replace(/Cat \d+ - /, 'C').replace('Scope ', 'S')}
+                {dp.label.replace(/Cat \d+ - /, "C").replace("Scope ", "S")}
               </span>
             );
           })}

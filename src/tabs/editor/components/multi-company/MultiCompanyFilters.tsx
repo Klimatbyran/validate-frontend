@@ -32,7 +32,10 @@ export function MultiCompanyFilters({
   refreshDisabled?: boolean;
 }) {
   const { t } = useI18n();
-  const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
+  const tagLabelBySlug = useMemo(
+    () => buildTagLabelBySlug(tagOptions),
+    [tagOptions],
+  );
   const [filtersOpen, setFiltersOpen] = useState(true);
 
   return (
@@ -65,7 +68,8 @@ export function MultiCompanyFilters({
             onChange={onTagsChange}
             triggerLabel={t("editor.companies.tags")}
             getOptionLabel={(optionValue) => {
-              if (optionValue === NO_TAGS_FILTER_OPTION) return t("editor.companies.noTags");
+              if (optionValue === NO_TAGS_FILTER_OPTION)
+                return t("editor.companies.noTags");
               return tagLabelBySlug[optionValue] ?? optionValue;
             }}
             emptyLabel={t("editor.companies.allTags")}
@@ -101,4 +105,3 @@ export function MultiCompanyFilters({
     </SearchAndFiltersCard>
   );
 }
-

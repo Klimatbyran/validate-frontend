@@ -27,7 +27,10 @@ export function CompanyEditDetail({
           <TabsTrigger value="company-detail" className="rounded-md px-4 py-2">
             {t("editor.singleCompanyView.tabs.companyDetail")}
           </TabsTrigger>
-          <TabsTrigger value="reporting-periods" className="rounded-md px-4 py-2">
+          <TabsTrigger
+            value="reporting-periods"
+            className="rounded-md px-4 py-2"
+          >
             {t("editor.singleCompanyView.tabs.reportingPeriods")}
           </TabsTrigger>
           <TabsTrigger value="economy" className="rounded-md px-4 py-2">
@@ -36,7 +39,10 @@ export function CompanyEditDetail({
           <TabsTrigger value="emissions" className="rounded-md px-4 py-2">
             {t("editor.singleCompanyView.tabs.emissionsData")}
           </TabsTrigger>
-          <TabsTrigger value="goals-initiatives" className="rounded-md px-4 py-2">
+          <TabsTrigger
+            value="goals-initiatives"
+            className="rounded-md px-4 py-2"
+          >
             {t("editor.singleCompanyView.tabs.goalsInitiatives")}
           </TabsTrigger>
         </TabsList>

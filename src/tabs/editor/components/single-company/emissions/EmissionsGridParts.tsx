@@ -72,4 +72,3 @@ export const emissionsFieldCellClass = `${emissionsPeriodColBox} flex items-cent
 export const emissionsPeriodHeaderCellClass = `${emissionsPeriodColBox} flex py-2 items-center justify-end gap-2 min-h-9 min-w-0`;
 
 export const emissionsPeriodEmptyCellClass = `${emissionsPeriodColBox} py-2 min-h-[36px] min-w-0`;
-

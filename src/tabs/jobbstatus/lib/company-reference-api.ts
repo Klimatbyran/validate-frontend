@@ -8,23 +8,25 @@ import { getProdUnearthUrl } from "@/config/api-env";
 
 export async function fetchCompanyById(
   companyId: string,
-  signal: AbortSignal
+  signal: AbortSignal,
 ): Promise<any> {
   const response = await fetch(
     getProdUnearthUrl(`/api/companies/${encodeURIComponent(companyId)}`),
-    { signal }
+    { signal },
   );
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json();
 }
 
 export function getReportingPeriods(company: any): any[] {
-  return Array.isArray(company?.reportingPeriods) ? company.reportingPeriods : [];
+  return Array.isArray(company?.reportingPeriods)
+    ? company.reportingPeriods
+    : [];
 }
 
 export function findPeriodEndingInYear(
   periods: any[],
-  year: number
+  year: number,
 ): any | undefined {
   return periods.find((period: any) => {
     const endDate = period?.endDate ? new Date(period.endDate) : null;
@@ -47,7 +49,7 @@ export function useCompanyReferenceByYears<T>(
   wikidataId: string | undefined,
   years: number[],
   buildSnapshotFromPeriod: (period: any) => T,
-  errorFallback?: string
+  errorFallback?: string,
 ): UseCompanyReferenceByYearsResult<T> {
   const [referenceByYear, setReferenceByYear] = React.useState<
     Record<number, T>
@@ -69,7 +71,7 @@ export function useCompanyReferenceByYears<T>(
       try {
         const company = await fetchCompanyById(
           wikidataId!,
-          abortController.signal
+          abortController.signal,
         );
         const periods = getReportingPeriods(company);
         const nextMap: Record<number, T> = {};
@@ -83,7 +85,9 @@ export function useCompanyReferenceByYears<T>(
         }
       } catch (e: any) {
         if (isMounted && e?.name !== "AbortError") {
-          setError(e?.message || errorFallback || "Could not fetch reference data");
+          setError(
+            e?.message || errorFallback || "Could not fetch reference data",
+          );
           setIsLoading(false);
         }
       }

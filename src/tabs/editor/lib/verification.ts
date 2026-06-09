@@ -10,10 +10,16 @@ export type CompanyVerificationOverview = {
   baseYear: VerificationState;
   hasUnverifiedEmissions: boolean;
   hasUnverifiedData: boolean;
-  perYear: Array<{ year: string; emissions: VerificationState; economy: VerificationState }>;
+  perYear: Array<{
+    year: string;
+    emissions: VerificationState;
+    economy: VerificationState;
+  }>;
 };
 
-export function isAIGenerated(meta: GarboMinimalMetadata | null | undefined): boolean {
+export function isAIGenerated(
+  meta: GarboMinimalMetadata | null | undefined,
+): boolean {
   if (!meta) return false;
   const verifiedBy = meta.verifiedBy;
   const noVerifier =
@@ -23,17 +29,23 @@ export function isAIGenerated(meta: GarboMinimalMetadata | null | undefined): bo
   return noVerifier || isGarbo;
 }
 
-function stateFromAIGenerated(hasValue: boolean, aiGenerated: boolean): VerificationState {
+function stateFromAIGenerated(
+  hasValue: boolean,
+  aiGenerated: boolean,
+): VerificationState {
   if (!hasValue) return "none";
   return aiGenerated ? "unverified" : "verified";
 }
 
 export function getCompanyVerificationOverview(
-  company: GarboCompanyListItem
+  company: GarboCompanyListItem,
 ): CompanyVerificationOverview {
   const periods = company.reportingPeriods ?? [];
 
-  const perYearMap = new Map<string, { emissions: VerificationState; economy: VerificationState }>();
+  const perYearMap = new Map<
+    string,
+    { emissions: VerificationState; economy: VerificationState }
+  >();
 
   let emissionsAnyHasValue = false;
   let emissionsAnyUnverified = false;
@@ -47,7 +59,10 @@ export function getCompanyVerificationOverview(
 
     // --- emissions ---
     const e = p.emissions;
-    const emissionsPoints: Array<{ hasValue: boolean; meta: GarboMinimalMetadata | null | undefined }> = [];
+    const emissionsPoints: Array<{
+      hasValue: boolean;
+      meta: GarboMinimalMetadata | null | undefined;
+    }> = [];
 
     if (e) {
       emissionsPoints.push({
@@ -55,7 +70,8 @@ export function getCompanyVerificationOverview(
         meta: e.scope1?.metadata,
       });
       emissionsPoints.push({
-        hasValue: e.scope1And2?.total !== null && e.scope1And2?.total !== undefined,
+        hasValue:
+          e.scope1And2?.total !== null && e.scope1And2?.total !== undefined,
         meta: e.scope1And2?.metadata,
       });
       emissionsPoints.push({
@@ -86,18 +102,28 @@ export function getCompanyVerificationOverview(
     }
 
     const emissionsHasValue = emissionsPoints.some((p) => p.hasValue);
-    const emissionsIsUnverified = emissionsPoints.some((p) => p.hasValue && isAIGenerated(p.meta));
-    const emissionsState = stateFromAIGenerated(emissionsHasValue, emissionsIsUnverified);
+    const emissionsIsUnverified = emissionsPoints.some(
+      (p) => p.hasValue && isAIGenerated(p.meta),
+    );
+    const emissionsState = stateFromAIGenerated(
+      emissionsHasValue,
+      emissionsIsUnverified,
+    );
 
     // --- economy ---
     const econ = p.economy;
-    const turnoverHasValue = econ?.turnover?.value !== null && econ?.turnover?.value !== undefined;
-    const employeesHasValue = econ?.employees?.value !== null && econ?.employees?.value !== undefined;
+    const turnoverHasValue =
+      econ?.turnover?.value !== null && econ?.turnover?.value !== undefined;
+    const employeesHasValue =
+      econ?.employees?.value !== null && econ?.employees?.value !== undefined;
     const econHasValue = turnoverHasValue || employeesHasValue;
     const econIsUnverified =
       (turnoverHasValue && isAIGenerated(econ?.turnover?.metadata)) ||
       (employeesHasValue && isAIGenerated(econ?.employees?.metadata));
-    const economyState = stateFromAIGenerated(Boolean(econHasValue), econIsUnverified);
+    const economyState = stateFromAIGenerated(
+      Boolean(econHasValue),
+      econIsUnverified,
+    );
 
     perYearMap.set(y, { emissions: emissionsState, economy: economyState });
 
@@ -111,14 +137,23 @@ export function getCompanyVerificationOverview(
     }
   }
 
-  const emissions: VerificationState =
-    !emissionsAnyHasValue ? "none" : emissionsAnyUnverified ? "unverified" : "verified";
-  const economy: VerificationState =
-    !economyAnyHasValue ? "none" : economyAnyUnverified ? "unverified" : "verified";
+  const emissions: VerificationState = !emissionsAnyHasValue
+    ? "none"
+    : emissionsAnyUnverified
+      ? "unverified"
+      : "verified";
+  const economy: VerificationState = !economyAnyHasValue
+    ? "none"
+    : economyAnyUnverified
+      ? "unverified"
+      : "verified";
 
   const industryHasValue = Boolean(company.industry?.subIndustryCode);
   const industryMeta = company.industry?.metadata;
-  const industry = stateFromAIGenerated(industryHasValue, isAIGenerated(industryMeta));
+  const industry = stateFromAIGenerated(
+    industryHasValue,
+    isAIGenerated(industryMeta),
+  );
 
   const by = company.baseYear;
   const baseYearHasValue =
@@ -129,7 +164,10 @@ export function getCompanyVerificationOverview(
       by.year !== null);
   const baseYearMeta =
     typeof by === "object" && by !== null ? by.metadata : undefined;
-  const baseYear = stateFromAIGenerated(baseYearHasValue, isAIGenerated(baseYearMeta));
+  const baseYear = stateFromAIGenerated(
+    baseYearHasValue,
+    isAIGenerated(baseYearMeta),
+  );
 
   const hasUnverifiedEmissions = emissionsAnyUnverified;
   const hasUnverifiedData =
@@ -152,4 +190,3 @@ export function getCompanyVerificationOverview(
     perYear,
   };
 }
-

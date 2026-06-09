@@ -3,7 +3,10 @@ import { useI18n } from "@/contexts/I18nContext";
 import { BadgeCheck, Undo2 } from "lucide-react";
 import { IconActionButton } from "@/ui/icon-action-button";
 import { inputClassName } from "../../../lib/company-edit-utils";
-import type { GarboFieldMetadata, GarboReportingPeriodSummary } from "../../../lib/types";
+import type {
+  GarboFieldMetadata,
+  GarboReportingPeriodSummary,
+} from "../../../lib/types";
 import type { ReportingPeriodQuickEditEdited } from "../../../lib/reporting-period-quick-edit";
 import { QuickEditSectionTitle } from "./QuickEditSectionTitle";
 import { QuickEditNumberRow } from "./QuickEditNumberRow";
@@ -45,7 +48,7 @@ export function EmissionsSection({
   setNullableEdit: (
     key: keyof ReportingPeriodQuickEditEdited,
     value: string,
-    hadOriginalValue: boolean
+    hadOriginalValue: boolean,
   ) => void;
   showAllScope3Categories: boolean;
   setShowAllScope3Categories: (next: boolean) => void;
@@ -55,35 +58,56 @@ export function EmissionsSection({
   const scope12Label = t("editor.companies.scope1And2");
 
   const originalScope1 = period.emissions?.scope1?.total ?? null;
-  const originalScope1Verified = !!period.emissions?.scope1?.metadata?.verifiedBy;
+  const originalScope1Verified =
+    !!period.emissions?.scope1?.metadata?.verifiedBy;
   const originalScope1And2 = period.emissions?.scope1And2?.total ?? null;
-  const originalScope1And2Verified = !!period.emissions?.scope1And2?.metadata?.verifiedBy;
+  const originalScope1And2Verified =
+    !!period.emissions?.scope1And2?.metadata?.verifiedBy;
   const originalScope2Mb = period.emissions?.scope2?.mb ?? null;
   const originalScope2Lb = period.emissions?.scope2?.lb ?? null;
   const originalScope2Unknown = period.emissions?.scope2?.unknown ?? null;
-  const originalScope2Verified = !!period.emissions?.scope2?.metadata?.verifiedBy;
-  const originalScope3StatedTotal = period.emissions?.scope3?.statedTotalEmissions?.total ?? null;
+  const originalScope2Verified =
+    !!period.emissions?.scope2?.metadata?.verifiedBy;
+  const originalScope3StatedTotal =
+    period.emissions?.scope3?.statedTotalEmissions?.total ?? null;
   const originalScope3StatedTotalVerified =
     !!period.emissions?.scope3?.statedTotalEmissions?.metadata?.verifiedBy;
-  const originalStatedTotal = period.emissions?.statedTotalEmissions?.total ?? null;
-  const originalStatedTotalVerified = !!period.emissions?.statedTotalEmissions?.metadata?.verifiedBy;
+  const originalStatedTotal =
+    period.emissions?.statedTotalEmissions?.total ?? null;
+  const originalStatedTotalVerified =
+    !!period.emissions?.statedTotalEmissions?.metadata?.verifiedBy;
 
-  const scope1Value = edited.scope1Total ?? (originalScope1 != null ? String(originalScope1) : "");
+  const scope1Value =
+    edited.scope1Total ??
+    (originalScope1 != null ? String(originalScope1) : "");
   const scope1Verified = edited.scope1Verified ?? originalScope1Verified;
   const scope1And2Value =
-    edited.scope1And2Total ?? (originalScope1And2 != null ? String(originalScope1And2) : "");
-  const scope1And2Verified = edited.scope1And2Verified ?? originalScope1And2Verified;
-  const scope2MbValue = edited.scope2Mb ?? (originalScope2Mb != null ? String(originalScope2Mb) : "");
-  const scope2LbValue = edited.scope2Lb ?? (originalScope2Lb != null ? String(originalScope2Lb) : "");
+    edited.scope1And2Total ??
+    (originalScope1And2 != null ? String(originalScope1And2) : "");
+  const scope1And2Verified =
+    edited.scope1And2Verified ?? originalScope1And2Verified;
+  const scope2MbValue =
+    edited.scope2Mb ??
+    (originalScope2Mb != null ? String(originalScope2Mb) : "");
+  const scope2LbValue =
+    edited.scope2Lb ??
+    (originalScope2Lb != null ? String(originalScope2Lb) : "");
   const scope2UnknownValue =
-    edited.scope2Unknown ?? (originalScope2Unknown != null ? String(originalScope2Unknown) : "");
+    edited.scope2Unknown ??
+    (originalScope2Unknown != null ? String(originalScope2Unknown) : "");
   const scope2Verified = edited.scope2Verified ?? originalScope2Verified;
   const scope3StatedTotalValue =
-    edited.scope3StatedTotal ?? (originalScope3StatedTotal != null ? String(originalScope3StatedTotal) : "");
-  const scope3StatedTotalVerified = edited.scope3StatedTotalVerified ?? originalScope3StatedTotalVerified;
+    edited.scope3StatedTotal ??
+    (originalScope3StatedTotal != null
+      ? String(originalScope3StatedTotal)
+      : "");
+  const scope3StatedTotalVerified =
+    edited.scope3StatedTotalVerified ?? originalScope3StatedTotalVerified;
   const statedTotalValue =
-    edited.statedTotalEmissions ?? (originalStatedTotal != null ? String(originalStatedTotal) : "");
-  const statedTotalVerified = edited.statedTotalVerified ?? originalStatedTotalVerified;
+    edited.statedTotalEmissions ??
+    (originalStatedTotal != null ? String(originalStatedTotal) : "");
+  const statedTotalVerified =
+    edited.statedTotalVerified ?? originalStatedTotalVerified;
 
   const numberRows: NumberRowSpec[] = [
     {
@@ -94,7 +118,8 @@ export function EmissionsSection({
       dirty: edited.scope1Total != null,
       fieldLabel: t("editor.companies.scope1"),
       metadata: period.emissions?.scope1?.metadata as GarboFieldMetadata | null,
-      onChange: (next) => setNullableEdit("scope1Total", next, originalScope1 != null),
+      onChange: (next) =>
+        setNullableEdit("scope1Total", next, originalScope1 != null),
       onReset: () =>
         setEdited((p) => {
           const n = { ...p };
@@ -103,7 +128,8 @@ export function EmissionsSection({
           return n;
         }),
       resetTitle: t("editor.reportingPeriodQuickEdit.resetScope1Title"),
-      onToggleVerified: () => setEdited((p) => ({ ...p, scope1Verified: !scope1Verified })),
+      onToggleVerified: () =>
+        setEdited((p) => ({ ...p, scope1Verified: !scope1Verified })),
       toggleVerifiedTitle: t("editor.periodEditor.toggleVerifiedTitle"),
     },
     {
@@ -113,8 +139,10 @@ export function EmissionsSection({
       verified: scope1And2Verified,
       dirty: edited.scope1And2Total != null,
       fieldLabel: scope12Label,
-      metadata: period.emissions?.scope1And2?.metadata as GarboFieldMetadata | null,
-      onChange: (next) => setNullableEdit("scope1And2Total", next, originalScope1And2 != null),
+      metadata: period.emissions?.scope1And2
+        ?.metadata as GarboFieldMetadata | null,
+      onChange: (next) =>
+        setNullableEdit("scope1And2Total", next, originalScope1And2 != null),
       onReset: () =>
         setEdited((p) => {
           const n = { ...p };
@@ -134,10 +162,14 @@ export function EmissionsSection({
       verified: scope3StatedTotalVerified,
       dirty: edited.scope3StatedTotal != null,
       fieldLabel: t("editor.reportingPeriodQuickEdit.scope3StatedTotal"),
-      metadata:
-        period.emissions?.scope3?.statedTotalEmissions?.metadata as GarboFieldMetadata | null,
+      metadata: period.emissions?.scope3?.statedTotalEmissions
+        ?.metadata as GarboFieldMetadata | null,
       onChange: (next) =>
-        setNullableEdit("scope3StatedTotal", next, originalScope3StatedTotal != null),
+        setNullableEdit(
+          "scope3StatedTotal",
+          next,
+          originalScope3StatedTotal != null,
+        ),
       onReset: () =>
         setEdited((p) => {
           const n = { ...p };
@@ -160,8 +192,14 @@ export function EmissionsSection({
       verified: statedTotalVerified,
       dirty: edited.statedTotalEmissions != null,
       fieldLabel: t("editor.reportingPeriodQuickEdit.overallStatedTotal"),
-      metadata: period.emissions?.statedTotalEmissions?.metadata as GarboFieldMetadata | null,
-      onChange: (next) => setNullableEdit("statedTotalEmissions", next, originalStatedTotal != null),
+      metadata: period.emissions?.statedTotalEmissions
+        ?.metadata as GarboFieldMetadata | null,
+      onChange: (next) =>
+        setNullableEdit(
+          "statedTotalEmissions",
+          next,
+          originalStatedTotal != null,
+        ),
       onReset: () =>
         setEdited((p) => {
           const n = { ...p };
@@ -181,7 +219,9 @@ export function EmissionsSection({
 
   return (
     <div>
-      <QuickEditSectionTitle>{t("editor.reportingPeriodQuickEdit.emissionsSection")}</QuickEditSectionTitle>
+      <QuickEditSectionTitle>
+        {t("editor.reportingPeriodQuickEdit.emissionsSection")}
+      </QuickEditSectionTitle>
 
       <div className="space-y-3">
         {numberRows.slice(0, 2).map((row) => (
@@ -205,11 +245,16 @@ export function EmissionsSection({
         {/* Scope 2 card (kept as-is but moved here) */}
         <div className="rounded-lg bg-gray-04 p-3">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-sm font-medium text-gray-01">{t("editor.companies.scope2")}</div>
+            <div className="text-sm font-medium text-gray-01">
+              {t("editor.companies.scope2")}
+            </div>
             <div className="flex items-center gap-1">
               <MetadataDetailsDialog
                 fieldLabel={t("editor.companies.scope2")}
-                metadata={period.emissions?.scope2?.metadata as GarboFieldMetadata | null}
+                metadata={
+                  period.emissions?.scope2
+                    ?.metadata as GarboFieldMetadata | null
+                }
               />
               <IconActionButton
                 variant="md"
@@ -224,27 +269,41 @@ export function EmissionsSection({
                   })
                 }
                 title={t("editor.reportingPeriodQuickEdit.resetScope2Title")}
-                aria-label={t("editor.reportingPeriodQuickEdit.resetScope2Title")}
+                aria-label={t(
+                  "editor.reportingPeriodQuickEdit.resetScope2Title",
+                )}
               >
                 <Undo2 className="text-gray-02" />
               </IconActionButton>
               <IconActionButton
                 variant="md"
-                onClick={() => setEdited((p) => ({ ...p, scope2Verified: !scope2Verified }))}
+                onClick={() =>
+                  setEdited((p) => ({ ...p, scope2Verified: !scope2Verified }))
+                }
                 title={t("editor.periodEditor.toggleVerifiedScope2Title")}
                 aria-label={t("editor.periodEditor.toggleVerifiedScope2Title")}
               >
-                <BadgeCheck className={scope2Verified ? "text-green-03" : "text-gray-02"} />
+                <BadgeCheck
+                  className={scope2Verified ? "text-green-03" : "text-gray-02"}
+                />
               </IconActionButton>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
-              <div className="text-xs text-gray-02 mb-1">{t("editor.periodEditor.scope2Mb")}</div>
+              <div className="text-xs text-gray-02 mb-1">
+                {t("editor.periodEditor.scope2Mb")}
+              </div>
               <input
                 type="number"
                 value={scope2MbValue}
-                onChange={(e) => setNullableEdit("scope2Mb", e.target.value, originalScope2Mb != null)}
+                onChange={(e) =>
+                  setNullableEdit(
+                    "scope2Mb",
+                    e.target.value,
+                    originalScope2Mb != null,
+                  )
+                }
                 className={
                   inputClassName +
                   " bg-gray-04 w-full max-w-none " +
@@ -253,11 +312,19 @@ export function EmissionsSection({
               />
             </div>
             <div>
-              <div className="text-xs text-gray-02 mb-1">{t("editor.periodEditor.scope2Lb")}</div>
+              <div className="text-xs text-gray-02 mb-1">
+                {t("editor.periodEditor.scope2Lb")}
+              </div>
               <input
                 type="number"
                 value={scope2LbValue}
-                onChange={(e) => setNullableEdit("scope2Lb", e.target.value, originalScope2Lb != null)}
+                onChange={(e) =>
+                  setNullableEdit(
+                    "scope2Lb",
+                    e.target.value,
+                    originalScope2Lb != null,
+                  )
+                }
                 className={
                   inputClassName +
                   " bg-gray-04 w-full max-w-none " +
@@ -266,12 +333,18 @@ export function EmissionsSection({
               />
             </div>
             <div>
-              <div className="text-xs text-gray-02 mb-1">{t("editor.periodEditor.scope2Unknown")}</div>
+              <div className="text-xs text-gray-02 mb-1">
+                {t("editor.periodEditor.scope2Unknown")}
+              </div>
               <input
                 type="number"
                 value={scope2UnknownValue}
                 onChange={(e) =>
-                  setNullableEdit("scope2Unknown", e.target.value, originalScope2Unknown != null)
+                  setNullableEdit(
+                    "scope2Unknown",
+                    e.target.value,
+                    originalScope2Unknown != null,
+                  )
                 }
                 className={
                   inputClassName +
@@ -324,4 +397,3 @@ export function EmissionsSection({
     </div>
   );
 }
-

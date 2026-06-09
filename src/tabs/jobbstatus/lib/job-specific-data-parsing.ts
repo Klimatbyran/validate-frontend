@@ -34,7 +34,10 @@ export function getEconomyData(returnValueData: any): any[] | null {
   if (returnValueData?.economy && Array.isArray(returnValueData.economy)) {
     return returnValueData.economy;
   }
-  if (returnValueData?.value?.economy && Array.isArray(returnValueData.value.economy)) {
+  if (
+    returnValueData?.value?.economy &&
+    Array.isArray(returnValueData.value.economy)
+  ) {
     return returnValueData.value.economy;
   }
   return null;
@@ -43,14 +46,21 @@ export function getEconomyData(returnValueData: any): any[] | null {
 export function getScope3Data(processedData: any, returnValueData: any): any {
   const hasScope3 =
     (processedData.scope3 && Array.isArray(processedData.scope3)) ||
-    (returnValueData && typeof returnValueData === "object" && Array.isArray((returnValueData as any).scope3)) ||
+    (returnValueData &&
+      typeof returnValueData === "object" &&
+      Array.isArray((returnValueData as any).scope3)) ||
     (returnValueData &&
       typeof returnValueData === "object" &&
       (returnValueData as any).value &&
       Array.isArray((returnValueData as any).value.scope3));
   if (!hasScope3) return null;
-  if (processedData.scope3 && Array.isArray(processedData.scope3)) return processedData.scope3;
-  if (returnValueData && typeof returnValueData === "object" && Array.isArray((returnValueData as any).scope3)) {
+  if (processedData.scope3 && Array.isArray(processedData.scope3))
+    return processedData.scope3;
+  if (
+    returnValueData &&
+    typeof returnValueData === "object" &&
+    Array.isArray((returnValueData as any).scope3)
+  ) {
     return (returnValueData as any).scope3;
   }
   if (
@@ -64,7 +74,10 @@ export function getScope3Data(processedData: any, returnValueData: any): any {
   return null;
 }
 
-export function getWikidataApprovalData(job?: QueueJob, effectiveJob?: any): any {
+export function getWikidataApprovalData(
+  job?: QueueJob,
+  effectiveJob?: any,
+): any {
   const jobData = effectiveJob?.data || job?.data;
   const approval = jobData?.approval;
 
@@ -108,7 +121,8 @@ export function getWikidataApprovalData(job?: QueueJob, effectiveJob?: any): any
         label: "Example Company AB",
         description: "Swedish company",
       },
-      message: "Wikidata selection for Example Company AB - waiting for approval",
+      message:
+        "Wikidata selection for Example Company AB - waiting for approval",
       metadata: {
         source: "wikidata-search",
         comment: "Wikidata found via search and LLM selection",

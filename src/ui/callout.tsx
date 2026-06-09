@@ -67,7 +67,12 @@ export function Callout({
   return (
     <div className={cn(classes.wrapper, className)}>
       {hasHeader && (
-        <div className={cn("flex items-center space-x-3", description || children ? "mb-4" : "")}>
+        <div
+          className={cn(
+            "flex items-center space-x-3",
+            description || children ? "mb-4" : "",
+          )}
+        >
           {icon != null && (
             <span
               className={cn(
@@ -76,7 +81,7 @@ export function Callout({
                 variant === "info" && "[&>svg]:text-blue-03",
                 variant === "success" && "[&>svg]:text-green-03",
                 variant === "warning" && "[&>svg]:text-orange-03",
-                variant === "error" && "[&>svg]:text-pink-03"
+                variant === "error" && "[&>svg]:text-pink-03",
               )}
             >
               {icon}
@@ -85,7 +90,9 @@ export function Callout({
           <div className="flex-1 min-w-0">
             {title != null && <div className={classes.title}>{title}</div>}
             {description != null && (
-              <p className={cn("mt-1", DESCRIPTION_CLASS[variant])}>{description}</p>
+              <p className={cn("mt-1", DESCRIPTION_CLASS[variant])}>
+                {description}
+              </p>
             )}
           </div>
         </div>

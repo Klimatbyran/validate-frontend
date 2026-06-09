@@ -37,8 +37,15 @@ function targetFromEnv(
   return v === "local" || v === "prod" ? v : "stage";
 }
 
-function unearthTargetFromEnv(env: Record<string, string>, joint: string): "local" | "stage" | "prod" {
-  const v = env.VITE_UNEARTH_TARGET || env.VITE_GARBO_TARGET || env.VITE_API_MODE || joint;
+function unearthTargetFromEnv(
+  env: Record<string, string>,
+  joint: string,
+): "local" | "stage" | "prod" {
+  const v =
+    env.VITE_UNEARTH_TARGET ||
+    env.VITE_GARBO_TARGET ||
+    env.VITE_API_MODE ||
+    joint;
   return v === "local" || v === "prod" ? v : "stage";
 }
 
@@ -189,7 +196,6 @@ function setProxyApiKey(
     proxyReq.setHeader("X-API-Key", key);
   }
 }
-
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");

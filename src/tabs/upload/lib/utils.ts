@@ -4,4 +4,6 @@
 import { getPipelineUrl } from "@/config/api-env";
 
 export const PARSE_PDF_API_ENDPOINT = getPipelineUrl("/queues/parsePdf");
-export const PARSE_PDF_UPLOAD_ENDPOINT = getPipelineUrl("/queues/parsePdf/upload");
+export const PARSE_PDF_UPLOAD_ENDPOINT = getPipelineUrl(
+  "/queues/parsePdf/upload",
+);

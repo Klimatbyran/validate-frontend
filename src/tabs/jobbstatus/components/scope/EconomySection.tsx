@@ -39,7 +39,7 @@ export type EconomyReferenceSnapshot = {
 function formatCurrency(
   formatNumber: (v: number | null | undefined) => string,
   value: number | null | undefined,
-  currency: string | null | undefined
+  currency: string | null | undefined,
 ): string {
   if (value == null) return "—";
   const formatted = formatNumber(value);
@@ -47,13 +47,16 @@ function formatCurrency(
 }
 
 function buildReferenceSnapshotFromPeriod(
-  period: any
+  period: any,
 ): EconomyReferenceSnapshot {
   if (!period?.economy) return null;
   const eco = period.economy;
   return {
     turnover: eco.turnover
-      ? { value: eco.turnover.value ?? null, currency: eco.turnover.currency ?? null }
+      ? {
+          value: eco.turnover.value ?? null,
+          currency: eco.turnover.currency ?? null,
+        }
       : null,
     employees: eco.employees
       ? {
@@ -87,10 +90,12 @@ function EconomyReferencePanel({
   const latest = latestYear?.year;
   if (!latest) return null;
   const snapshot = referenceByYear[latest];
-    if (!snapshot)
+  if (!snapshot)
     return (
       <div className={REF_PANEL_CLASS}>
-        {isLoading && <div className="text-sm text-gray-02">{t("scope.fetching")}</div>}
+        {isLoading && (
+          <div className="text-sm text-gray-02">{t("scope.fetching")}</div>
+        )}
         {!isLoading && error && (
           <div className="text-sm text-gray-02">{error}</div>
         )}
@@ -103,7 +108,9 @@ function EconomyReferencePanel({
   const prodTurnover = snapshot.turnover?.value ?? null;
   const prodEmployees = snapshot.employees?.value ?? null;
   const turnoverMatch =
-    ourTurnover != null && prodTurnover != null ? ourTurnover === prodTurnover : null;
+    ourTurnover != null && prodTurnover != null
+      ? ourTurnover === prodTurnover
+      : null;
   const employeesMatch =
     ourEmployees != null && prodEmployees != null
       ? ourEmployees === prodEmployees
@@ -119,15 +126,23 @@ function EconomyReferencePanel({
           {t("scope.referenceValuesFromApi", { year: latest })}
         </span>
       </div>
-      {isLoading && <div className="text-sm text-gray-02">{t("scope.fetching")}</div>}
-      {!isLoading && error && <div className="text-sm text-gray-02">{error}</div>}
+      {isLoading && (
+        <div className="text-sm text-gray-02">{t("scope.fetching")}</div>
+      )}
+      {!isLoading && error && (
+        <div className="text-sm text-gray-02">{error}</div>
+      )}
       {!isLoading && !error && (
         <div className="divide-y divide-gray-03">
           {ourTurnover != null && (
             <div className="flex items-center justify-between py-1.5">
               <span className="text-sm text-gray-02">{t("scope.revenue")}</span>
               <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
-                {formatCurrency(formatNumber, prodTurnover, snapshot.turnover?.currency)}
+                {formatCurrency(
+                  formatNumber,
+                  prodTurnover,
+                  snapshot.turnover?.currency,
+                )}
                 {turnoverMatch != null &&
                   (turnoverMatch ? (
                     <span className="text-green-03">✓</span>
@@ -139,10 +154,11 @@ function EconomyReferencePanel({
           )}
           {ourEmployees != null && (
             <div className="flex items-center justify-between py-1.5">
-              <span className="text-sm text-gray-02">{t("scope.employees")}</span>
+              <span className="text-sm text-gray-02">
+                {t("scope.employees")}
+              </span>
               <span className="text-sm font-semibold text-gray-01 flex items-center gap-2">
-                {formatNumber(prodEmployees)}{" "}
-                {snapshot.employees?.unit ?? ""}
+                {formatNumber(prodEmployees)} {snapshot.employees?.unit ?? ""}
                 {employeesMatch != null &&
                   (employeesMatch ? (
                     <span className="text-green-03">✓</span>
@@ -158,7 +174,10 @@ function EconomyReferencePanel({
   );
 }
 
-function employeeUnitLabel(t: (key: string) => string, unit: string | null | undefined): string {
+function employeeUnitLabel(
+  t: (key: string) => string,
+  unit: string | null | undefined,
+): string {
   if (unit === "AVG") return t("scope.averageCount");
   if (unit === "FTE") return t("scope.fte");
   if (unit === "EOY") return t("scope.endOfYear");
@@ -173,14 +192,14 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
   const latestYear = sortedData[0];
   const years = React.useMemo(
     () => Array.from(new Set(sortedData.map((e) => e.year))),
-    [sortedData]
+    [sortedData],
   );
 
   const { referenceByYear, isLoading, error } = useCompanyReferenceByYears(
     wikidataId,
     years,
     buildReferenceSnapshotFromPeriod,
-    t("scope.referenceFetchError")
+    t("scope.referenceFetchError"),
   );
 
   if (economyEntries.length === 0) {
@@ -215,56 +234,60 @@ export function EconomySection({ data, wikidataId }: EconomySectionProps) {
 
             return (
               <div key={entry.year} className="mb-14">
-                <YearBadge year={entry.year} isLatest={idx === 0} accent="green" />
-                  <div className="flex flex-col md:flex-row md:items-stretch justify-center gap-4 md:gap-0 mt-2 relative max-w-2xl mx-auto">
-                    {economy.turnover && economy.turnover.value != null && (
-                      <DataCard
-                        icon={<Banknote className="w-5 h-5 text-green-03" />}
-                        title={t("scope.revenue")}
-                        className="mr-0 md:mr-2"
-                      >
-                        <div className="font-extrabold text-gray-01 text-2xl mb-1">
-                          {formatCurrency(
-                            formatNumber,
-                            economy.turnover.value,
-                            economy.turnover.currency
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-02 mt-2">
-                          {t("scope.netRevenue")}
-                        </div>
-                      </DataCard>
+                <YearBadge
+                  year={entry.year}
+                  isLatest={idx === 0}
+                  accent="green"
+                />
+                <div className="flex flex-col md:flex-row md:items-stretch justify-center gap-4 md:gap-0 mt-2 relative max-w-2xl mx-auto">
+                  {economy.turnover && economy.turnover.value != null && (
+                    <DataCard
+                      icon={<Banknote className="w-5 h-5 text-green-03" />}
+                      title={t("scope.revenue")}
+                      className="mr-0 md:mr-2"
+                    >
+                      <div className="font-extrabold text-gray-01 text-2xl mb-1">
+                        {formatCurrency(
+                          formatNumber,
+                          economy.turnover.value,
+                          economy.turnover.currency,
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-02 mt-2">
+                        {t("scope.netRevenue")}
+                      </div>
+                    </DataCard>
+                  )}
+                  {economy.turnover &&
+                    economy.turnover.value != null &&
+                    economy.employees &&
+                    economy.employees.value != null && (
+                      <div
+                        className="hidden md:block w-0.5 bg-gray-03 mx-2 rounded-full"
+                        style={{ minHeight: 140 }}
+                      />
                     )}
-                    {economy.turnover &&
-                      economy.turnover.value != null &&
-                      economy.employees &&
-                      economy.employees.value != null && (
-                        <div
-                          className="hidden md:block w-0.5 bg-gray-03 mx-2 rounded-full"
-                          style={{ minHeight: 140 }}
-                        />
-                      )}
-                    {economy.employees && economy.employees.value != null && (
-                      <DataCard
-                        icon={<Users className="w-5 h-5 text-pink-03" />}
-                        title={t("scope.employees")}
-                        className="ml-0 md:ml-2"
-                      >
-                        <div className="font-extrabold text-gray-01 text-4xl mb-1">
-                          {formatNumber(economy.employees.value)}
-                        </div>
-                        <div className="text-base text-gray-02">
-                          {economy.employees.unit || ""}
-                        </div>
-                        <div className="text-sm text-gray-02 mt-2">
-                          {employeeUnitLabel(t, economy.employees.unit)}
-                        </div>
-                      </DataCard>
-                    )}
-                  </div>
+                  {economy.employees && economy.employees.value != null && (
+                    <DataCard
+                      icon={<Users className="w-5 h-5 text-pink-03" />}
+                      title={t("scope.employees")}
+                      className="ml-0 md:ml-2"
+                    >
+                      <div className="font-extrabold text-gray-01 text-4xl mb-1">
+                        {formatNumber(economy.employees.value)}
+                      </div>
+                      <div className="text-base text-gray-02">
+                        {economy.employees.unit || ""}
+                      </div>
+                      <div className="text-sm text-gray-02 mt-2">
+                        {employeeUnitLabel(t, economy.employees.unit)}
+                      </div>
+                    </DataCard>
+                  )}
                 </div>
-              );
-            })}
+              </div>
+            );
+          })}
         </div>
 
         <JsonRawDataBlock data={data} />

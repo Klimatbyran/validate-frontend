@@ -162,8 +162,10 @@ export function convertCompaniesToSwimlaneFormat(
         new Set(
           company.processes
             .map((p) => p.batchId)
-            .filter((id): id is string => typeof id === "string" && id.length > 0)
-        )
+            .filter(
+              (id): id is string => typeof id === "string" && id.length > 0,
+            ),
+        ),
       );
 
       return {

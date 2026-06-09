@@ -42,16 +42,18 @@ export function ClimatePlansExplorer() {
       return (
         <MunicipalityDetail
           municipality={municipality}
-          onBack={() => { setView("compare"); setSelectedId(null); }}
+          onBack={() => {
+            setView("compare");
+            setSelectedId(null);
+          }}
         />
       );
     }
   }
 
   // Compare view - if only one municipality, duplicate it to demo the comparison UI
-  const compareData = municipalities.length === 1
-    ? municipalities
-    : municipalities;
+  const compareData =
+    municipalities.length === 1 ? municipalities : municipalities;
 
   return (
     <div className="space-y-6">
@@ -63,7 +65,9 @@ export function ClimatePlansExplorer() {
           <p className="text-sm text-gray-02 mt-1">
             {municipalities.length === 1
               ? t("climate.municipalitiesLoadedOne")
-              : t("climate.municipalitiesLoadedMany", { count: municipalities.length })}
+              : t("climate.municipalitiesLoadedMany", {
+                  count: municipalities.length,
+                })}
             {municipalities.length === 1 && t("climate.addMoreToCompare")}
           </p>
         </div>
@@ -72,7 +76,10 @@ export function ClimatePlansExplorer() {
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6">
         <CompareView
           municipalities={compareData}
-          onSelectMunicipality={(id) => { setSelectedId(id); setView("detail"); }}
+          onSelectMunicipality={(id) => {
+            setSelectedId(id);
+            setView("detail");
+          }}
         />
       </div>
     </div>

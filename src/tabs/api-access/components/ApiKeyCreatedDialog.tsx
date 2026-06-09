@@ -29,11 +29,15 @@ export function ApiKeyCreatedDialog({
   return (
     <Modal
       open={open}
-      onOpenChange={(v) => { if (!v) onClose(); }}
+      onOpenChange={(v) => {
+        if (!v) onClose();
+      }}
       size="md"
       title={t("apiAccess.createdDialog.title")}
       description={t("apiAccess.createdDialog.forKey", { name: keyName })}
-      footer={<Button onClick={onClose}>{t("apiAccess.createdDialog.done")}</Button>}
+      footer={
+        <Button onClick={onClose}>{t("apiAccess.createdDialog.done")}</Button>
+      }
     >
       <Callout variant="warning" icon={<AlertTriangle />}>
         <p className="text-sm text-orange-03/90">

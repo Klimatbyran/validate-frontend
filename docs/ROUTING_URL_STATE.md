@@ -92,6 +92,7 @@ The route is **`/jobbstatus`** only. **Live** and **Archive** are in-page tabs (
 - **Archive:** `/jobbstatus?source=archive`.
 
 Invalid `source` values fall back to Live. Switching to Live **removes** the `source` query param (cleaner default URL).
+
 - `/climate-plans`
 
 ### Upload (query params)

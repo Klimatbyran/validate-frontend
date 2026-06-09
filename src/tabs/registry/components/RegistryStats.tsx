@@ -12,11 +12,15 @@ const RegistryStats = ({ stats }: RegistryStatsProps) => {
     <div className="grid grid-cols-2 gap-4">
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-4 border border-gray-03/70">
         <p className="text-sm text-gray-02">{t("registry.uniqueCompanies")}</p>
-        <p className="text-2xl text-gray-01 font-semibold">{stats.uniqueCompanies}</p>
+        <p className="text-2xl text-gray-01 font-semibold">
+          {stats.uniqueCompanies}
+        </p>
       </div>
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-4 border border-gray-03/70">
         <p className="text-sm text-gray-02">{t("registry.totalReports")}</p>
-        <p className="text-2xl text-gray-01 font-semibold">{stats.totalReports}</p>
+        <p className="text-2xl text-gray-01 font-semibold">
+          {stats.totalReports}
+        </p>
       </div>
     </div>
   );

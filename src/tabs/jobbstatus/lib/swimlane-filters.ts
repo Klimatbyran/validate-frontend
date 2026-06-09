@@ -8,7 +8,10 @@ import {
   calculatePipelineStepStatus,
   getQueueAttemptSummary,
 } from "@/lib/workflow-utils";
-import { getAllPipelineSteps, getQueuesForPipelineStep } from "@/lib/workflow-config";
+import {
+  getAllPipelineSteps,
+  getQueuesForPipelineStep,
+} from "@/lib/workflow-config";
 
 export type FilterType =
   | "pending_approval"
@@ -27,7 +30,7 @@ export type RunScope = "latest" | "all";
  */
 function getYearsToCheck(
   company: SwimlaneCompany,
-  runScope: RunScope
+  runScope: RunScope,
 ): SwimlaneYearData[] {
   if (runScope === "all") {
     return company.years;
@@ -42,11 +45,11 @@ function getYearsToCheck(
  */
 export function hasPendingApproval(
   company: SwimlaneCompany,
-  runScope: RunScope = "latest"
+  runScope: RunScope = "latest",
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
   const allQueueIds = getAllPipelineSteps().flatMap((s) =>
-    getQueuesForPipelineStep(s.id)
+    getQueuesForPipelineStep(s.id),
   );
   return yearsToCheck.some((year) => {
     const canonicalThreadId =
@@ -66,11 +69,11 @@ export function hasPendingApproval(
  */
 export function hasFailedJobs(
   company: SwimlaneCompany,
-  runScope: RunScope = "latest"
+  runScope: RunScope = "latest",
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
   const allQueueIds = getAllPipelineSteps().flatMap((s) =>
-    getQueuesForPipelineStep(s.id)
+    getQueuesForPipelineStep(s.id),
   );
   return yearsToCheck.some((year) => {
     const canonicalThreadId =
@@ -90,11 +93,11 @@ export function hasFailedJobs(
  */
 export function hasProcessingJobs(
   company: SwimlaneCompany,
-  runScope: RunScope = "latest"
+  runScope: RunScope = "latest",
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
   const allQueueIds = getAllPipelineSteps().flatMap((s) =>
-    getQueuesForPipelineStep(s.id)
+    getQueuesForPipelineStep(s.id),
   );
   return yearsToCheck.some((year) => {
     const canonicalThreadId =
@@ -114,11 +117,11 @@ export function hasProcessingJobs(
  */
 export function isFullyCompleted(
   company: SwimlaneCompany,
-  runScope: RunScope = "latest"
+  runScope: RunScope = "latest",
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
   const allQueueIds = getAllPipelineSteps().flatMap((s) =>
-    getQueuesForPipelineStep(s.id)
+    getQueuesForPipelineStep(s.id),
   );
   return yearsToCheck.every((year) => {
     const canonicalThreadId =
@@ -143,11 +146,11 @@ export function isFullyCompleted(
  */
 export function hasIssues(
   company: SwimlaneCompany,
-  runScope: RunScope = "latest"
+  runScope: RunScope = "latest",
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
   const allQueueIds = getAllPipelineSteps().flatMap((s) =>
-    getQueuesForPipelineStep(s.id)
+    getQueuesForPipelineStep(s.id),
   );
   return yearsToCheck.some((year) => {
     const canonicalThreadId =
@@ -171,7 +174,7 @@ export function hasIssues(
 export function hasPipelineStepIssues(
   company: SwimlaneCompany,
   stepId: string,
-  runScope: RunScope = "latest"
+  runScope: RunScope = "latest",
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
   return yearsToCheck.some((year) => {

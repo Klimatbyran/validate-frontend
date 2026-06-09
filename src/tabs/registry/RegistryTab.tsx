@@ -285,7 +285,9 @@ export function RegistryTab() {
 
       {!isLoading && isAuthError && (
         <Callout variant="info">
-          <p className="text-sm text-blue-03/90">{t("auth.loginRequiredTab")}</p>
+          <p className="text-sm text-blue-03/90">
+            {t("auth.loginRequiredTab")}
+          </p>
         </Callout>
       )}
 
@@ -306,20 +308,23 @@ export function RegistryTab() {
           <p className="text-sm text-gray-02">{t("registry.noResults")}</p>
         )}
 
-      {!isLoading && !isAuthError && !loadError && displayedRegistry.length > 0 && (
-        <>
-          <RegistryStats stats={stats} />
-          <RegistryResultsList
-            registry={displayedRegistry}
-            selectedReports={selectedReports}
-            allSelected={selectedReports.length === displayedRegistry.length}
-            onSelectAll={handleSelectAll}
-            onToggleSelect={handleToggleSelect}
-            onEdit={handleEditEntry}
-            editingReportIds={editingReportIds}
-          />
-        </>
-      )}
+      {!isLoading &&
+        !isAuthError &&
+        !loadError &&
+        displayedRegistry.length > 0 && (
+          <>
+            <RegistryStats stats={stats} />
+            <RegistryResultsList
+              registry={displayedRegistry}
+              selectedReports={selectedReports}
+              allSelected={selectedReports.length === displayedRegistry.length}
+              onSelectAll={handleSelectAll}
+              onToggleSelect={handleToggleSelect}
+              onEdit={handleEditEntry}
+              editingReportIds={editingReportIds}
+            />
+          </>
+        )}
     </div>
   );
 }

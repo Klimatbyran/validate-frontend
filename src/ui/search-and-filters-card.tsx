@@ -33,11 +33,12 @@ export function SearchAndFiltersCard({
           {title}
         </summary>
 
-        <div className="pt-4 space-y-4 border-t border-gray-03/50 mt-2">{children}</div>
+        <div className="pt-4 space-y-4 border-t border-gray-03/50 mt-2">
+          {children}
+        </div>
       </details>
 
       {after}
     </div>
   );
 }
-

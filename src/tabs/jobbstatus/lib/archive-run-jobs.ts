@@ -43,7 +43,9 @@ export type ArchiveJobLike = {
 };
 
 /** Count terminal archive rows per queue (multiple rows ⇒ reruns / retries). */
-export function terminalAttemptCountByQueue<T extends ArchiveJobLike>(jobs: T[]): Map<string, number> {
+export function terminalAttemptCountByQueue<T extends ArchiveJobLike>(
+  jobs: T[],
+): Map<string, number> {
   const counts = new Map<string, number>();
   for (const j of jobs) {
     if (!isTerminalArchiveStatus(j.status)) continue;
@@ -58,6 +60,11 @@ export function sortedTerminalAttemptsForQueue<T extends ArchiveJobLike>(
   queueName: string,
 ): T[] {
   return jobs
-    .filter((j) => j.queueName === queueName && isTerminalArchiveStatus(j.status))
-    .sort((a, b) => new Date(a.finishedAt).getTime() - new Date(b.finishedAt).getTime());
+    .filter(
+      (j) => j.queueName === queueName && isTerminalArchiveStatus(j.status),
+    )
+    .sort(
+      (a, b) =>
+        new Date(a.finishedAt).getTime() - new Date(b.finishedAt).getTime(),
+    );
 }

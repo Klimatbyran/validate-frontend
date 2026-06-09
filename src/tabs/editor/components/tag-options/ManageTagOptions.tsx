@@ -23,7 +23,8 @@ export function ManageTagOptions() {
   const [actionLoading, setActionLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TagOption | null>(null);
-  const [deleteConfirmOption, setDeleteConfirmOption] = useState<TagOption | null>(null);
+  const [deleteConfirmOption, setDeleteConfirmOption] =
+    useState<TagOption | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,7 +95,9 @@ export function ManageTagOptions() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-02">{t("editor.tagOptions.description")}</p>
+        <p className="text-sm text-gray-02">
+          {t("editor.tagOptions.description")}
+        </p>
         <Button
           variant="primary"
           size="sm"
@@ -112,7 +115,9 @@ export function ManageTagOptions() {
         </div>
       ) : error ? (
         <div className="rounded-lg border border-gray-03 bg-gray-04/80 p-6">
-          <p className="text-gray-01 font-medium">{t("editor.tagOptions.loadError")}</p>
+          <p className="text-gray-01 font-medium">
+            {t("editor.tagOptions.loadError")}
+          </p>
           <p className="text-sm text-gray-02 mt-1">{error}</p>
           <Button variant="secondary" size="sm" className="mt-4" onClick={load}>
             {t("common.refresh")}

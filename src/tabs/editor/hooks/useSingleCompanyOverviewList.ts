@@ -34,15 +34,14 @@ export function useSingleCompanyOverviewList() {
   const [filterSector, setFilterSector] = useState("");
   const [filterUnverified, setFilterUnverifiedRaw] =
     useState<FilterUnverifiedOption>("");
-  const [filterApplyUnverifiedToSelectedYears, setFilterApplyUnverifiedToSelectedYears] =
-    useState(false);
-  const setFilterUnverified = useCallback(
-    (v: FilterUnverifiedOption) => {
-      setFilterUnverifiedRaw(v);
-      if (!v) setFilterApplyUnverifiedToSelectedYears(false);
-    },
-    [],
-  );
+  const [
+    filterApplyUnverifiedToSelectedYears,
+    setFilterApplyUnverifiedToSelectedYears,
+  ] = useState(false);
+  const setFilterUnverified = useCallback((v: FilterUnverifiedOption) => {
+    setFilterUnverifiedRaw(v);
+    if (!v) setFilterApplyUnverifiedToSelectedYears(false);
+  }, []);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [companySort, setCompanySort] = useState<CompanySortId>("name-asc");
 

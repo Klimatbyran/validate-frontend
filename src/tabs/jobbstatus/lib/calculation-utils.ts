@@ -20,7 +20,7 @@ export function calculatePercentage(value: number, total: number): number {
 export function calculatePercentageFormatted(
   value: number,
   total: number,
-  decimals: number = 1
+  decimals: number = 1,
 ): string {
   return calculatePercentage(value, total).toFixed(decimals);
 }
@@ -30,7 +30,7 @@ export function calculatePercentageFormatted(
  */
 export function calculateCompletionRate(
   completed: number,
-  total: number
+  total: number,
 ): number {
   return calculatePercentage(completed, total);
 }
@@ -43,7 +43,7 @@ export function calculateStepStatistics(
   processing: number,
   failed: number,
   needsApproval: number,
-  waiting: number
+  waiting: number,
 ) {
   const total = completed + processing + failed + needsApproval + waiting;
 
@@ -72,7 +72,7 @@ export function calculateOverallStatistics(
       jobs?: Array<any>;
       fields?: Record<string, any>;
     }>;
-  }>
+  }>,
 ) {
   let totalJobs = 0;
   let completedFields = 0;
@@ -138,7 +138,7 @@ export function calculateOverallStatistics(
 export function calculateSwimlaneOverallStats(
   companies: any[],
   getAllPipelineSteps: () => any[],
-  calculateStepJobStats: (data: any, stepId: string) => any
+  calculateStepJobStats: (data: any, stepId: string) => any,
 ) {
   let totalJobs = 0;
   let completedFields = 0;
@@ -149,7 +149,7 @@ export function calculateSwimlaneOverallStats(
 
   const pipelineSteps = getAllPipelineSteps();
   const allQueueIds = pipelineSteps.flatMap((step: any) =>
-    getQueuesForPipelineStep(step.id)
+    getQueuesForPipelineStep(step.id),
   );
 
   // Count aggregate queue outcomes from latest year only for each company
@@ -165,7 +165,11 @@ export function calculateSwimlaneOverallStats(
       null;
 
     allQueueIds.forEach((queueId: string) => {
-      const agg = getQueueAttemptSummary(queueId, latestYear, canonicalThreadId);
+      const agg = getQueueAttemptSummary(
+        queueId,
+        latestYear,
+        canonicalThreadId,
+      );
       if (agg.attempts.length === 0) return;
       switch (agg.status) {
         case "completed":
@@ -215,7 +219,11 @@ export function calculateSwimlaneOverallStats(
       (latestYear as any).threadId ||
       null;
     const hasActive = allQueueIds.some((queueId: string) => {
-      const agg = getQueueAttemptSummary(queueId, latestYear, canonicalThreadId);
+      const agg = getQueueAttemptSummary(
+        queueId,
+        latestYear,
+        canonicalThreadId,
+      );
       if (agg.attempts.length === 0) return false;
       return agg.status === "processing" || agg.status === "needs_approval";
     });
@@ -232,7 +240,11 @@ export function calculateSwimlaneOverallStats(
       (latestYear as any).threadId ||
       null;
     return allQueueIds.some((queueId: string) => {
-      const agg = getQueueAttemptSummary(queueId, latestYear, canonicalThreadId);
+      const agg = getQueueAttemptSummary(
+        queueId,
+        latestYear,
+        canonicalThreadId,
+      );
       return agg.attempts.length > 0 && agg.status === "failed";
     });
   }).length;
@@ -245,7 +257,11 @@ export function calculateSwimlaneOverallStats(
       (latestYear as any).threadId ||
       null;
     return allQueueIds.some((queueId: string) => {
-      const agg = getQueueAttemptSummary(queueId, latestYear, canonicalThreadId);
+      const agg = getQueueAttemptSummary(
+        queueId,
+        latestYear,
+        canonicalThreadId,
+      );
       return agg.attempts.length > 0 && agg.status === "needs_approval";
     });
   }).length;

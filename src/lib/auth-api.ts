@@ -22,7 +22,7 @@ export const authApi = axios.create({
  */
 export async function authenticateWithGithub(
   code: string,
-  state?: string | null
+  state?: string | null,
 ): Promise<{ token: string; redirect_uri?: string }> {
   const payload: { code: string; state?: string } = { code };
   if (state) {

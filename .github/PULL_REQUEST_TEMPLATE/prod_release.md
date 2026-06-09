@@ -3,6 +3,7 @@
 > **Title format:** `[Prod] Major/Minor/Patch Version Bump vX.X.X`
 
 ## 📦 Release type
+
 _Select one._
 
 - [ ] Major
@@ -10,6 +11,7 @@ _Select one._
 - [ ] Patch
 
 ## 🔁 Environment promotion
+
 This release promotes changes **to production**.
 
 ## 🧾 Version / artifacts
@@ -18,13 +20,15 @@ This release promotes changes **to production**.
 - **Rollback target version** (if needed): vX.X.X
 
 ## 📋 What’s being released
+
 _High-level bullets (avoid listing every file)._
 
-- 
-- 
-- 
+-
+-
+-
 
 ## ✅ Validation / smoke check (production)
+
 _Check anything you actually verified._
 
 - [ ] App loads

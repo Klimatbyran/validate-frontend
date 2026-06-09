@@ -1,6 +1,6 @@
-import React from 'react';
-import { useI18n } from '@/contexts/I18nContext';
-import { Button } from './button';
+import React from "react";
+import { useI18n } from "@/contexts/I18nContext";
+import { Button } from "./button";
 
 interface SlideshowControlsProps {
   current: number;
@@ -19,10 +19,10 @@ export const SlideshowControls: React.FC<SlideshowControlsProps> = ({
   onNext,
   onFullscreen,
   showFullscreenButton = false,
-  fullscreenMode = false
+  fullscreenMode = false,
 }) => {
   const { t } = useI18n();
-  const progressClasses = fullscreenMode 
+  const progressClasses = fullscreenMode
     ? "text-lg font-extrabold text-white tracking-wider drop-shadow-lg bg-black/50 rounded-full inline-block px-4 py-1"
     : "text-lg font-extrabold text-gray-01 tracking-wider drop-shadow-sm bg-gray-04/80 backdrop-blur-sm rounded-full inline-block px-4 py-1";
 
@@ -36,7 +36,13 @@ export const SlideshowControls: React.FC<SlideshowControlsProps> = ({
       </div>
 
       {/* Navigation buttons */}
-      <div className={fullscreenMode ? "absolute top-4 left-4 z-10 flex space-x-2" : "flex items-center space-x-2 w-full justify-center"}>
+      <div
+        className={
+          fullscreenMode
+            ? "absolute top-4 left-4 z-10 flex space-x-2"
+            : "flex items-center space-x-2 w-full justify-center"
+        }
+      >
         <Button
           variant="secondary"
           size="sm"
@@ -45,7 +51,7 @@ export const SlideshowControls: React.FC<SlideshowControlsProps> = ({
         >
           {t("ui.prev")}
         </Button>
-        
+
         {showFullscreenButton && onFullscreen && (
           <Button
             variant="primary"
@@ -56,7 +62,7 @@ export const SlideshowControls: React.FC<SlideshowControlsProps> = ({
             {t("ui.openFullscreenSlideshow")}
           </Button>
         )}
-        
+
         <Button
           variant="secondary"
           size="sm"

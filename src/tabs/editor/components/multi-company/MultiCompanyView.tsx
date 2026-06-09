@@ -4,7 +4,11 @@ import { Button } from "@/ui/button";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { toast } from "sonner";
 import { updateCompany, updateReportingPeriods } from "../../lib/companies-api";
-import type { EditState, GarboCompanyListItem, GarboMetadata } from "../../lib/types";
+import type {
+  EditState,
+  GarboCompanyListItem,
+  GarboMetadata,
+} from "../../lib/types";
 import { FieldEditModal } from "./FieldEditModal";
 import { BulkTagUpdateModal } from "./BulkTagUpdateModal";
 import { MultiCompanyFilters } from "./MultiCompanyFilters";
@@ -19,7 +23,10 @@ import {
   parseTagSlugs,
 } from "../../lib/editor-tag-and-payload-utils";
 
-function companyMatchesSearch(company: GarboCompanyListItem, query: string): boolean {
+function companyMatchesSearch(
+  company: GarboCompanyListItem,
+  query: string,
+): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   const name = (company.name ?? "").toLowerCase();
@@ -51,24 +58,28 @@ export function MultiCompanyView() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [editState, setEditState] = useState<EditState | null>(null);
-  const [selectedCompanyIds, setSelectedCompanyIds] = useState<Set<string>>(new Set());
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
 
   const filteredCompanies = useMemo(() => {
     let filteredList = companies;
     if (searchQuery.trim()) {
-      filteredList = filteredList.filter((company) => companyMatchesSearch(company, searchQuery));
+      filteredList = filteredList.filter((company) =>
+        companyMatchesSearch(company, searchQuery),
+      );
     }
     if (selectedTags.length) {
       // API returns company.tags as string[] of slugs; filter shows companies that have any selected tag
       filteredList = filteredList.filter((company) =>
-        companyMatchesTagFilter(company.tags, selectedTags)
+        companyMatchesTagFilter(company.tags, selectedTags),
       );
     }
     if (selectedYear) {
       const selectedYearNumber = Number(selectedYear);
       filteredList = filteredList.filter((company) =>
-        getPeriodForYear(company.reportingPeriods, selectedYearNumber)
+        getPeriodForYear(company.reportingPeriods, selectedYearNumber),
       );
     }
     return filteredList;
@@ -84,7 +95,9 @@ export function MultiCompanyView() {
   }, []);
 
   const selectAllFiltered = useCallback(() => {
-    setSelectedCompanyIds(new Set(filteredCompanies.map((company) => company.id)));
+    setSelectedCompanyIds(
+      new Set(filteredCompanies.map((company) => company.id)),
+    );
   }, [filteredCompanies]);
 
   const clearSelection = useCallback(() => {
@@ -106,7 +119,7 @@ export function MultiCompanyView() {
     const firstTags = selectedCompanies[0]?.tags ?? [];
     if (firstTags.length === 0) return [];
     return firstTags.filter((slug) =>
-      selectedCompanies.every((c) => (c.tags ?? []).includes(slug))
+      selectedCompanies.every((c) => (c.tags ?? []).includes(slug)),
     );
   }, [companies, selectedCompanyIds]);
 
@@ -118,7 +131,9 @@ export function MultiCompanyView() {
         let success = 0;
         let failed = 0;
         for (const companyId of selectedIds) {
-          const company = companies.find((listedCompany) => listedCompany.id === companyId);
+          const company = companies.find(
+            (listedCompany) => listedCompany.id === companyId,
+          );
           if (!company) {
             failed++;
             continue;
@@ -131,16 +146,24 @@ export function MultiCompanyView() {
           }
         }
         if (failed === 0) {
-          toast.success(t("editor.companies.bulkUpdateTagsSuccess", { count: selectedIds.length }));
+          toast.success(
+            t("editor.companies.bulkUpdateTagsSuccess", {
+              count: selectedIds.length,
+            }),
+          );
           setCompanies((prev) =>
             prev.map((company) =>
-              selectedCompanyIds.has(company.id) ? { ...company, tags } : company
-            )
+              selectedCompanyIds.has(company.id)
+                ? { ...company, tags }
+                : company,
+            ),
           );
         } else {
           toast.warning(
             t("editor.companies.bulkUpdateTagsSuccess", { count: success }) +
-              (failed > 0 ? `; ${t("editor.companies.bulkUpdateTagsError")}` : "")
+              (failed > 0
+                ? `; ${t("editor.companies.bulkUpdateTagsError")}`
+                : ""),
           );
         }
         setBulkTagModalOpen(false);
@@ -153,14 +176,11 @@ export function MultiCompanyView() {
         setActionLoading(false);
       }
     },
-    [selectedCompanyIds, companies, t, loadCompanies, setCompanies]
+    [selectedCompanyIds, companies, t, loadCompanies, setCompanies],
   );
 
   const handleSaveEdit = useCallback(
-    async (
-      value: string,
-      meta: GarboMetadata & { verified?: boolean }
-    ) => {
+    async (value: string, meta: GarboMetadata & { verified?: boolean }) => {
       if (!editState) return;
       setActionLoading(true);
       try {
@@ -173,8 +193,10 @@ export function MultiCompanyView() {
           toast.success(t("editor.tagOptions.updated"));
           setCompanies((prev) =>
             prev.map((company) =>
-              company.id === editState.companyId ? { ...company, tags } : company
-            )
+              company.id === editState.companyId
+                ? { ...company, tags }
+                : company,
+            ),
           );
         } else if (
           editState.year != null &&
@@ -184,14 +206,17 @@ export function MultiCompanyView() {
           const reportingPeriodPayload = buildReportingPeriodUpdatePayload(
             editState,
             value,
-            meta.verified
+            meta.verified,
           );
           if (!reportingPeriodPayload) {
             throw new Error("Could not build reporting period payload.");
           }
           await updateReportingPeriods(editState.companyId, {
             reportingPeriods: [reportingPeriodPayload],
-            metadata: meta.source || meta.comment ? { source: meta.source, comment: meta.comment } : undefined,
+            metadata:
+              meta.source || meta.comment
+                ? { source: meta.source, comment: meta.comment }
+                : undefined,
           });
           toast.success(t("editor.tagOptions.updated"));
         }
@@ -206,7 +231,7 @@ export function MultiCompanyView() {
         setActionLoading(false);
       }
     },
-    [editState, t, loadCompanies, setCompanies]
+    [editState, t, loadCompanies, setCompanies],
   );
 
   const renderTagsInput = useCallback(
@@ -217,7 +242,9 @@ export function MultiCompanyView() {
           <MultiSelectDropdown
             options={tagOptions.map((tagOption) => tagOption.slug)}
             selectedIds={selectedSlugs}
-            onChange={(selectedOptionIds: string[]) => onChange(selectedOptionIds.join(", "))}
+            onChange={(selectedOptionIds: string[]) =>
+              onChange(selectedOptionIds.join(", "))
+            }
             triggerLabel={t("editor.companies.tags")}
             getOptionLabel={(slug) => tagLabelBySlug[slug] ?? slug}
             emptyLabel={t("editor.tagOptions.empty")}
@@ -240,7 +267,7 @@ export function MultiCompanyView() {
         </div>
       );
     },
-    [tagOptions, t, tagLabelBySlug]
+    [tagOptions, t, tagLabelBySlug],
   );
 
   return (
@@ -264,9 +291,16 @@ export function MultiCompanyView() {
         </div>
       ) : error ? (
         <div className="rounded-lg border border-gray-03 bg-gray-04/80 p-6">
-          <p className="text-gray-01 font-medium">{t("editor.companies.loadError")}</p>
+          <p className="text-gray-01 font-medium">
+            {t("editor.companies.loadError")}
+          </p>
           <p className="text-sm text-gray-02 mt-1">{error}</p>
-          <Button variant="secondary" size="sm" className="mt-4" onClick={loadCompanies}>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="mt-4"
+            onClick={loadCompanies}
+          >
             {t("common.refresh")}
           </Button>
         </div>
@@ -304,14 +338,20 @@ export function MultiCompanyView() {
           onOpenChange={(open) => !open && setEditState(null)}
           title={`${editState.field === "tags" ? t("editor.companies.tags") : editState.field} — ${editState.companyName}`}
           currentValue={editState.currentValue}
-          initialValue={editState.currentValue != null ? String(editState.currentValue) : ""}
+          initialValue={
+            editState.currentValue != null ? String(editState.currentValue) : ""
+          }
           onSubmit={handleSaveEdit}
-          allowVerifyOnly={editState.field !== "tags" && editState.field !== "reportURL"}
+          allowVerifyOnly={
+            editState.field !== "tags" && editState.field !== "reportURL"
+          }
           isSubmitting={actionLoading}
           renderInput={
             editState.field === "tags"
               ? renderTagsInput
-              : editState.field === "scope1" || editState.field === "scope2" || editState.field === "economy"
+              : editState.field === "scope1" ||
+                  editState.field === "scope2" ||
+                  editState.field === "economy"
                 ? (value, onChange, disabled) => (
                     <input
                       type="number"

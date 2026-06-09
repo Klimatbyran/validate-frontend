@@ -6,7 +6,10 @@ export interface UploadWorkerRunOptionsProps {
   runAllWorkers: boolean;
   onRunAllWorkersChange: (value: boolean) => void;
   selectedWorkers: RunOnlyWorkerId[];
-  onSelectedWorkersChange: (workerId: RunOnlyWorkerId, checked: boolean) => void;
+  onSelectedWorkersChange: (
+    workerId: RunOnlyWorkerId,
+    checked: boolean,
+  ) => void;
   forceReindex: boolean;
   onForceReindexChange: (value: boolean) => void;
   autoApprove?: boolean;
@@ -37,7 +40,9 @@ export function UploadWorkerRunOptions({
               onClick={() => onRunAllWorkersChange(true)}
               className={cn(
                 "px-3 py-1 rounded-full text-xs font-medium transition-colors",
-                runAllWorkers ? "bg-gray-01 text-gray-05" : "text-gray-02 hover:text-gray-01",
+                runAllWorkers
+                  ? "bg-gray-01 text-gray-05"
+                  : "text-gray-02 hover:text-gray-01",
               )}
             >
               {t("upload.runAll")}
@@ -47,7 +52,9 @@ export function UploadWorkerRunOptions({
               onClick={() => onRunAllWorkersChange(false)}
               className={cn(
                 "px-3 py-1 rounded-full text-xs font-medium transition-colors",
-                !runAllWorkers ? "bg-gray-01 text-gray-05" : "text-gray-02 hover:text-gray-01",
+                !runAllWorkers
+                  ? "bg-gray-01 text-gray-05"
+                  : "text-gray-02 hover:text-gray-01",
               )}
             >
               {t("upload.runPartial")}
@@ -61,7 +68,9 @@ export function UploadWorkerRunOptions({
             runAllWorkers && "opacity-50 pointer-events-none",
           )}
         >
-          <span className="text-sm text-gray-02 shrink-0">{t("upload.runOnly")}</span>
+          <span className="text-sm text-gray-02 shrink-0">
+            {t("upload.runOnly")}
+          </span>
           <div className="flex flex-wrap gap-1.5">
             {RUN_ONLY_WORKERS.map((worker) => {
               const isSelected = selectedWorkers.includes(worker.id);
@@ -69,7 +78,9 @@ export function UploadWorkerRunOptions({
                 <button
                   key={worker.id}
                   type="button"
-                  onClick={() => onSelectedWorkersChange(worker.id, !isSelected)}
+                  onClick={() =>
+                    onSelectedWorkersChange(worker.id, !isSelected)
+                  }
                   className={cn(
                     "px-3 py-1 rounded-full text-xs font-medium transition-colors",
                     isSelected
@@ -89,7 +100,10 @@ export function UploadWorkerRunOptions({
       <div className="space-y-2 pt-2 border-t border-gray-03/50">
         {typeof autoApprove === "boolean" && onAutoApproveChange && (
           <div className="flex items-center justify-between">
-            <label htmlFor="auto-approve" className="text-sm text-gray-01 cursor-pointer">
+            <label
+              htmlFor="auto-approve"
+              className="text-sm text-gray-01 cursor-pointer"
+            >
               {t("upload.autoApprove")}
             </label>
             <button
@@ -115,7 +129,10 @@ export function UploadWorkerRunOptions({
         )}
 
         <div className="flex items-center justify-between">
-          <label htmlFor="force-reindex" className="text-sm text-gray-01 cursor-pointer">
+          <label
+            htmlFor="force-reindex"
+            className="text-sm text-gray-01 cursor-pointer"
+          >
             {t("upload.forceReindex")}
           </label>
           <button
@@ -139,8 +156,9 @@ export function UploadWorkerRunOptions({
           </button>
         </div>
       </div>
-      <p className="text-xs text-gray-02">{t("upload.forceReindexDescription")}</p>
+      <p className="text-xs text-gray-02">
+        {t("upload.forceReindexDescription")}
+      </p>
     </div>
   );
 }
-

@@ -24,13 +24,13 @@ export function JsonViewer({ data }: JsonViewerProps) {
       <pre
         className={cn(
           "bg-gray-03/20 rounded-lg p-3 overflow-x-auto",
-          isExpanded ? "max-h-none" : "max-h-32"
+          isExpanded ? "max-h-none" : "max-h-32",
         )}
       >
         {JSON.stringify(
           typeof data === "string" ? JSON.parse(data) : data,
           null,
-          2
+          2,
         )}
       </pre>
     </div>

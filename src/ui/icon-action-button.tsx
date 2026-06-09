@@ -28,7 +28,7 @@ export function IconActionButton({
         "hover:bg-gray-03/40",
         disabled && "cursor-default opacity-30 hover:bg-transparent",
         variantClass[variant],
-        className
+        className,
       )}
       {...props}
     >
