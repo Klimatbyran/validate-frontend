@@ -3,6 +3,7 @@ import { XCircle, Download } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
 import { LoadingSpinner } from '@/ui/loading-spinner';
 import { SingleSelectDropdown } from '@/ui/single-select-dropdown';
+import { getCompanyUrlSegment } from '@/lib/company-routing';
 import { DiscrepancyType, CompanyRow, DATA_POINTS } from '../types';
 import { computePerformanceMetrics, exportComparisonToCsv } from '../lib';
 import { CompanyTableRow } from './CompanyTableRow';
@@ -93,9 +94,12 @@ export function BrowserView({
     let rows = verifiedFilteredRows;
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      rows = rows.filter(r =>
-        r.name.toLowerCase().includes(query) ||
-        r.wikidataId.toLowerCase().includes(query)
+      rows = rows.filter(
+        (r) =>
+          r.name.toLowerCase().includes(query) ||
+          r.id.toLowerCase().includes(query) ||
+          getCompanyUrlSegment(r).toLowerCase().includes(query) ||
+          (r.wikidataId?.toLowerCase().includes(query) ?? false)
       );
     }
     rows = rows.filter(r => visibleTypes.has(r.discrepancy));

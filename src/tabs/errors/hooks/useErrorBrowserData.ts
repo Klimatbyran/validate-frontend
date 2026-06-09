@@ -97,15 +97,15 @@ export function useErrorBrowserData(
       (tags ?? []).some((t) => selectedTags.includes(t));
 
     stageCompanies.forEach((c) => {
-      if (matches(c.tags)) idsWithSelectedTag.add(c.wikidataId);
+      if (matches(c.tags)) idsWithSelectedTag.add(c.id);
     });
     prodCompanies.forEach((c) => {
-      if (matches(c.tags)) idsWithSelectedTag.add(c.wikidataId);
+      if (matches(c.tags)) idsWithSelectedTag.add(c.id);
     });
 
     return {
-      stage: stageCompanies.filter((c) => idsWithSelectedTag.has(c.wikidataId)),
-      prod: prodCompanies.filter((c) => idsWithSelectedTag.has(c.wikidataId)),
+      stage: stageCompanies.filter((c) => idsWithSelectedTag.has(c.id)),
+      prod: prodCompanies.filter((c) => idsWithSelectedTag.has(c.id)),
     };
   }, [stageCompanies, prodCompanies, selectedTags]);
 
@@ -116,11 +116,11 @@ export function useErrorBrowserData(
     const allIds = new Set([...stageMap.keys(), ...prodMap.keys()]);
     const rows: CompanyRow[] = [];
 
-    for (const wikidataId of allIds) {
-      const stageCompany = stageMap.get(wikidataId);
-      const prodCompany = prodMap.get(wikidataId);
+    for (const companyId of allIds) {
+      const stageCompany = stageMap.get(companyId);
+      const prodCompany = prodMap.get(companyId);
 
-      const name = stageCompany?.name || prodCompany?.name || wikidataId;
+      const name = stageCompany?.name || prodCompany?.name || companyId;
       const tags = Array.from(
         new Set([...(stageCompany?.tags ?? []), ...(prodCompany?.tags ?? [])]),
       );
@@ -164,12 +164,13 @@ export function useErrorBrowserData(
           selectedDataPoint,
         );
         const rowKey = slot.shellKey
-          ? `${wikidataId}:${slot.shellKey}`
-          : wikidataId;
+          ? `${companyId}:${slot.shellKey}`
+          : companyId;
 
         rows.push({
           rowKey,
-          wikidataId,
+          id: companyId,
+          wikidataId: stageCompany?.wikidataId ?? prodCompany?.wikidataId ?? null,
           name,
           shellKey: slot.shellKey || undefined,
           reportYear: slot.reportYear,
@@ -346,9 +347,9 @@ export function useErrorBrowserData(
         (other) => other.scope === dp.scope && other.id !== dp.id,
       );
 
-      for (const wikidataId of allIds) {
-        const stageCompany = stageMap.get(wikidataId);
-        const prodCompany = prodMap.get(wikidataId);
+      for (const companyId of allIds) {
+        const stageCompany = stageMap.get(companyId);
+        const prodCompany = prodMap.get(companyId);
 
         if (!stageCompany || !prodCompany) continue;
 
@@ -458,9 +459,9 @@ export function useErrorBrowserData(
     const allIds = Array.from(new Set([...stageMap.keys(), ...prodMap.keys()]));
     const companyErrors: WorstCompany[] = [];
 
-    for (const wikidataId of allIds) {
-      const stageCompany = stageMap.get(wikidataId);
-      const prodCompany = prodMap.get(wikidataId);
+    for (const companyId of allIds) {
+      const stageCompany = stageMap.get(companyId);
+      const prodCompany = prodMap.get(companyId);
 
       if (!stageCompany || !prodCompany) continue;
 
@@ -471,7 +472,7 @@ export function useErrorBrowserData(
         selectedReportYear,
       );
 
-      const name = stageCompany.name || prodCompany.name || wikidataId;
+      const name = stageCompany.name || prodCompany.name || companyId;
       let errorCount = 0;
       let totalDataPoints = 0;
       const breakdown: Record<string, number> = {};
@@ -520,7 +521,8 @@ export function useErrorBrowserData(
 
       if (errorCount > 0) {
         companyErrors.push({
-          wikidataId,
+          id: companyId,
+          wikidataId: stageCompany.wikidataId ?? prodCompany.wikidataId ?? null,
           name,
           errorCount,
           totalDataPoints,
@@ -536,7 +538,7 @@ export function useErrorBrowserData(
   const difficultCompanyIds = React.useMemo(() => {
     const ids = new Map<string, number>();
     for (const c of worstCompanies) {
-      if (c.errorCount >= 5) ids.set(c.wikidataId, c.errorCount);
+      if (c.errorCount >= 5) ids.set(c.id, c.errorCount);
     }
     return ids;
   }, [worstCompanies]);

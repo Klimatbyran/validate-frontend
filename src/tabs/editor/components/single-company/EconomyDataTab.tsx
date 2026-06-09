@@ -111,7 +111,7 @@ export function EconomyDataTab({
     setSelectedShellKeys,
     filterPeriodsByShell,
     visibleShellGroups,
-  } = useCompanyReportShellFilters(periods, company.wikidataId, {
+  } = useCompanyReportShellFilters(periods, company.id, {
     defaultToLatestShell: true,
   });
 
@@ -131,7 +131,7 @@ export function EconomyDataTab({
     visiblePeriods,
   } = useReportingPeriodColumnFilters<GarboReportingPeriodSummary & { id: string }>(
     periodsForShellFilter,
-    company.wikidataId,
+    company.id,
   );
 
   const shellGroupsToRender = useMemo(
@@ -147,7 +147,7 @@ export function EconomyDataTab({
   useEffect(() => {
     setEdited({});
     setSaving(false);
-  }, [company.wikidataId]);
+  }, [company.id]);
 
   const setEditedField = (rpId: string, patch: Partial<EditedPeriodEconomy>) => {
     setEdited((prev) => ({
@@ -180,7 +180,7 @@ export function EconomyDataTab({
 
     setSaving(true);
     try {
-      await updateReportingPeriods(company.wikidataId, {
+      await updateReportingPeriods(company.id, {
         reportingPeriods: payloadPeriods,
         metadata:
           meta?.source?.trim() || meta?.comment?.trim()

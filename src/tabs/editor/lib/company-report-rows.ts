@@ -39,7 +39,7 @@ export function expandCompaniesToReportRows(
 
     if (byReport.size === 0) {
       rows.push({
-        rowKey: `${company.wikidataId}:${UNLINKED_REPORT_SHELL_KEY}`,
+        rowKey: `${company.id}:${UNLINKED_REPORT_SHELL_KEY}`,
         company,
         companyReportId: "",
         reportYear: null,
@@ -59,7 +59,7 @@ export function expandCompaniesToReportRows(
           .find((y) => y != null) ?? null;
 
       rows.push({
-        rowKey: `${company.wikidataId}:${reportKey}`,
+        rowKey: `${company.id}:${reportKey}`,
         company,
         companyReportId:
           reportKey === UNLINKED_REPORT_SHELL_KEY ? "" : reportKey,

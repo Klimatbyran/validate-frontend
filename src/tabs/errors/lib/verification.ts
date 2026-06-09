@@ -40,10 +40,14 @@ export function buildProdCompanyVerifiedForYearMap(
   reportYear?: number | null,
 ): Map<string, boolean> {
   const result = new Map<string, boolean>();
-  for (const wikidataId of ids) {
+  for (const companyId of ids) {
     result.set(
-      wikidataId,
-      isProdCompanyFullyVerifiedForYear(prodMap.get(wikidataId), dataYear, reportYear),
+      companyId,
+      isProdCompanyFullyVerifiedForYear(
+        prodMap.get(companyId),
+        dataYear,
+        reportYear,
+      ),
     );
   }
   return result;

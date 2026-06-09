@@ -257,6 +257,7 @@
     "companyDetail": {
       "identifiers": "Identifiers",
       "wikidataId": "Wikidata ID",
+      "internalId": "Internal ID",
       "lei": "LEI",
       "tags": "Tags"
     },

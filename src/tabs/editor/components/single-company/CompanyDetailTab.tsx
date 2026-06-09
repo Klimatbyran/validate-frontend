@@ -14,7 +14,11 @@ import {
   updateCompanyIndustry,
   type IndustryGicsOption,
 } from "../../lib/companies-api";
-import type { GarboCompanyDetail, TagOption } from "../../lib/types";
+import {
+  WIKIDATA_ID_REGEX,
+  type GarboCompanyDetail,
+  type TagOption,
+} from "../../lib/types";
 import { displayBaseYear, getDescriptionByLang, inputClassName } from "../../lib/company-edit-utils";
 import { buildTagLabelBySlug } from "../../lib/editor-tag-and-payload-utils";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
@@ -42,6 +46,7 @@ export function CompanyDetailTab({
   const [descriptionSv, setDescriptionSv] = useState(() =>
     getDescriptionByLang(company, "SV")
   );
+  const [wikidataId, setWikidataId] = useState(company.wikidataId ?? "");
   const [lei, setLei] = useState(company.lei ?? "");
   const [url, setUrl] = useState(company.url ?? "");
   const [internalComment, setInternalComment] = useState(
@@ -68,6 +73,7 @@ export function CompanyDetailTab({
     setName(company.name ?? "");
     setDescriptionEn(getDescriptionByLang(company, "EN"));
     setDescriptionSv(getDescriptionByLang(company, "SV"));
+    setWikidataId(company.wikidataId ?? "");
     setLei(company.lei ?? "");
     setUrl(company.url ?? "");
     setInternalComment(company.internalComment ?? "");
@@ -75,8 +81,9 @@ export function CompanyDetailTab({
     setSubIndustryCode(company.industry?.subIndustryCode ?? "");
     setBaseYear(displayBaseYear(company.baseYear, dash));
   }, [
-    company.wikidataId,
+    company.id,
     company.name,
+    company.wikidataId,
     company.lei,
     company.url,
     company.internalComment,
@@ -99,9 +106,16 @@ export function CompanyDetailTab({
   }, []);
 
   const handleSaveCore = async (meta?: { comment?: string; source?: string }) => {
+    const trimmedWikidataId = wikidataId.trim();
+    if (trimmedWikidataId && !WIKIDATA_ID_REGEX.test(trimmedWikidataId)) {
+      toast.error(t("wikidata.invalidFormat"));
+      return;
+    }
+
     setSavingCore(true);
     try {
-      await updateCompany(company.wikidataId, {
+      await updateCompany(company.id, {
+        wikidataId: trimmedWikidataId || undefined,
         name,
         descriptions: [
           { language: "EN", text: descriptionEn },
@@ -134,7 +148,7 @@ export function CompanyDetailTab({
     setSavingIndustry(true);
     try {
       if (subIndustryCode) {
-        await updateCompanyIndustry(company.wikidataId, {
+        await updateCompanyIndustry(company.id, {
           industry: { subIndustryCode },
           metadata:
             meta?.comment?.trim() || meta?.source?.trim()
@@ -143,7 +157,7 @@ export function CompanyDetailTab({
         });
       }
       if (by != null) {
-        await updateCompanyBaseYear(company.wikidataId, {
+        await updateCompanyBaseYear(company.id, {
           baseYear: by,
           metadata:
             meta?.comment?.trim() || meta?.source?.trim()
@@ -278,7 +292,19 @@ export function CompanyDetailTab({
                   </label>
                   <input
                     type="text"
-                    value={company.wikidataId}
+                    value={wikidataId}
+                    onChange={(e) => setWikidataId(e.target.value)}
+                    placeholder={t("wikidata.placeholder")}
+                    className={inputClassName + " !max-w-none"}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-01 mb-1">
+                    {t("editor.companyDetail.internalId")}
+                  </label>
+                  <input
+                    type="text"
+                    value={company.id}
                     readOnly
                     className={inputClassName + " bg-gray-04/60 !max-w-none"}
                   />

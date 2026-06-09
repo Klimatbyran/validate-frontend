@@ -89,6 +89,12 @@ function pipelineCompaniesPath(segment = ""): string {
   return seg ? `${path}/${seg}` : path;
 }
 
+function internalCompaniesPath(segment = ""): string {
+  const path = "/internal-companies";
+  const seg = segment.replace(/^\//, "");
+  return seg ? `${path}/${seg}` : path;
+}
+
 function reportingPeriodPath(segment = ""): string {
   const path = "/reporting-period";
   const seg = segment.replace(/^\//, "");
@@ -120,13 +126,13 @@ export async function listCompanies(
     : [];
 }
 
-/** Get company detail by wikidataId (GET /api/pipeline/companies/:wikidataId). Requires auth. */
+/** Get company detail (GET /api/internal-companies/:ref). ref: Q-id, full UUID, or 8-char prefix. */
 export async function getCompany(
-  wikidataId: string,
+  identifier: string,
   signal?: AbortSignal,
 ): Promise<GarboCompanyDetail> {
   const res = await garboAuthFetch(
-    apiUrl(pipelineCompaniesPath(encodeURIComponent(wikidataId))),
+    apiUrl(internalCompaniesPath(encodeURIComponent(identifier))),
     {
       method: "GET",
       headers: { Accept: "application/json" },
@@ -147,10 +153,42 @@ export async function getCompany(
   return normalizeCompany(data as GarboCompanyDetail);
 }
 
-/** Create or update company (POST /api/companies/:wikidataId). Body: name, descriptions, tags, internalComment, url, logoUrl, lei, metadata, verified. */
+/** Create company (POST /api/companies). */
+export async function createCompany(body: {
+  wikidataId?: string;
+  name: string;
+  descriptions?: Array<{ language: string; text: string; id?: string }>;
+  internalComment?: string;
+  tags?: string[];
+  url?: string;
+  logoUrl?: string | null;
+  lei?: string;
+  metadata?: GarboMetadata;
+  verified?: boolean;
+}): Promise<{ ok: boolean; id: string }> {
+  const res = await garboAuthFetch(apiUrl(companiesPath()), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 401) {
+    throw new Error("Please log in to create company.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to create company: ${res.status} ${text}`);
+  }
+  return res.json();
+}
+
+/** Update company (POST /api/companies/:id). Body: name, descriptions, tags, etc. */
 export async function updateCompany(
-  wikidataId: string,
+  companyId: string,
   body: {
+    wikidataId?: string;
     name: string;
     descriptions?: Array<{ language: string; text: string; id?: string }>;
     internalComment?: string;
@@ -163,14 +201,14 @@ export async function updateCompany(
   },
 ): Promise<void> {
   const res = await garboAuthFetch(
-    apiUrl(companiesPath(encodeURIComponent(wikidataId))),
+    apiUrl(companiesPath(encodeURIComponent(companyId))),
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({ wikidataId, ...body }),
+      body: JSON.stringify(body),
     },
   );
   if (res.status === 401) {
@@ -190,9 +228,9 @@ export async function updateCompany(
   }
 }
 
-/** Create or update reporting periods and their emissions/economy (POST /api/companies/:wikidataId/reporting-periods). */
+/** Create or update reporting periods (POST /api/companies/:id/reporting-periods). */
 export async function updateReportingPeriods(
-  wikidataId: string,
+  companyId: string,
   body: {
     reportingPeriods: Array<{
       startDate: string;
@@ -209,7 +247,7 @@ export async function updateReportingPeriods(
 ): Promise<void> {
   const res = await garboAuthFetch(
     apiUrl(
-      companiesPath(`${encodeURIComponent(wikidataId)}/reporting-periods`),
+      companiesPath(`${encodeURIComponent(companyId)}/reporting-periods`),
     ),
     {
       method: "POST",
@@ -361,9 +399,9 @@ export async function fetchIndustryGics(
   return [];
 }
 
-/** Set company industry (POST /api/companies/:wikidataId/industry). */
+/** Set company industry (POST /api/companies/:id/industry). */
 export async function updateCompanyIndustry(
-  wikidataId: string,
+  companyId: string,
   body: {
     industry: { subIndustryCode: string };
     metadata?: GarboMetadata;
@@ -371,7 +409,7 @@ export async function updateCompanyIndustry(
   },
 ): Promise<void> {
   const res = await garboAuthFetch(
-    apiUrl(companiesPath(`${encodeURIComponent(wikidataId)}/industry`)),
+    apiUrl(companiesPath(`${encodeURIComponent(companyId)}/industry`)),
     {
       method: "POST",
       headers: {
@@ -389,13 +427,13 @@ export async function updateCompanyIndustry(
   }
 }
 
-/** Set company base year (POST /api/companies/:wikidataId/base-year). */
+/** Set company base year (POST /api/companies/:id/base-year). */
 export async function updateCompanyBaseYear(
-  wikidataId: string,
+  companyId: string,
   body: { baseYear: number; metadata?: GarboMetadata; verified?: boolean },
 ): Promise<void> {
   const res = await garboAuthFetch(
-    apiUrl(companiesPath(`${encodeURIComponent(wikidataId)}/base-year`)),
+    apiUrl(companiesPath(`${encodeURIComponent(companyId)}/base-year`)),
     {
       method: "POST",
       headers: {

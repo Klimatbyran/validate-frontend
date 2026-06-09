@@ -77,7 +77,7 @@ export function ReportingPeriodsDataTab({
     setSelectedShellKeys,
     filterPeriodsByShell,
     visibleShellGroups,
-  } = useCompanyReportShellFilters(periods, company.wikidataId);
+  } = useCompanyReportShellFilters(periods, company.id);
 
   const periodsForShellFilter = useMemo(
     () => filterPeriodsByShell(periods),
@@ -95,7 +95,7 @@ export function ReportingPeriodsDataTab({
     visiblePeriods,
   } = useReportingPeriodColumnFilters<
     GarboReportingPeriodSummary & { id: string }
-  >(periodsForShellFilter, company.wikidataId);
+  >(periodsForShellFilter, company.id);
 
   const shellGroupsToRender = useMemo(
     () => visibleShellGroups(visiblePeriods),
@@ -108,7 +108,7 @@ export function ReportingPeriodsDataTab({
     setDeleteModalOpen(false);
     setDeletePeriodId(null);
     setIsDeletingPeriod(false);
-  }, [company.wikidataId]);
+  }, [company.id]);
 
   const periodPendingDelete = useMemo(
     () => periods.find((p) => p.id === deletePeriodId) ?? null,
@@ -203,7 +203,7 @@ export function ReportingPeriodsDataTab({
 
     setSaving(true);
     try {
-      await updateReportingPeriods(company.wikidataId, {
+      await updateReportingPeriods(company.id, {
         reportingPeriods: payloadPeriods,
         metadata:
           meta?.source?.trim() || meta?.comment?.trim()

@@ -52,6 +52,7 @@ describe("isProdReportingPeriodFullyVerified", () => {
 describe("isProdCompanyFullyVerifiedForYear", () => {
   it("requires every matching period in the filter to be fully verified", () => {
     const company: Company = {
+      id: "company-1",
       wikidataId: "Q1",
       name: "Test Co",
       reportingPeriods: [
@@ -69,6 +70,7 @@ describe("isProdCompanyFullyVerifiedForYear", () => {
 
   it("returns true when all matching periods are verified", () => {
     const company: Company = {
+      id: "company-1",
       wikidataId: "Q1",
       name: "Test Co",
       reportingPeriods: [

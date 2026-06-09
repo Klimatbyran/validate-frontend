@@ -65,12 +65,12 @@ export function ReportingPeriodQuickEditModal({
     if (!open) return;
     const controller = new AbortController();
     setLoadingDetail(true);
-    getCompany(company.wikidataId, controller.signal)
+    getCompany(company.id, controller.signal)
       .then((c) => setDetailCompany(c))
       .catch(() => setDetailCompany(null))
       .finally(() => setLoadingDetail(false));
     return () => controller.abort();
-  }, [open, company.wikidataId]);
+  }, [open, company.id]);
 
   const period: GarboReportingPeriodSummary | null = useMemo(() => {
     const allPeriods =
@@ -115,7 +115,7 @@ export function ReportingPeriodQuickEditModal({
     setSource("");
     setSaving(false);
     setShowAllScope3Categories(false);
-  }, [open, company.wikidataId, year, periodMatch?.startDate, periodMatch?.endDate]);
+  }, [open, company.id, year, periodMatch?.startDate, periodMatch?.endDate]);
 
   const setNullableEdit = (
     key: keyof ReportingPeriodQuickEditEdited,
@@ -166,7 +166,7 @@ export function ReportingPeriodQuickEditModal({
     setSaving(true);
     try {
       await updateReportingPeriods(
-        company.wikidataId,
+        company.id,
         buildReportingPeriodQuickEditPatch({
           period,
           edited,

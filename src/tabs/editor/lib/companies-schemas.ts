@@ -8,7 +8,7 @@ export const garboCompanyIdSchema = z.string().uuid();
 export const garboCompanyListItemSchema = z
   .object({
     id: garboCompanyIdSchema,
-    wikidataId: z.string().regex(WIKIDATA_ID_REGEX),
+    wikidataId: z.string().regex(WIKIDATA_ID_REGEX).nullable().optional(),
     name: z.string(),
     tags: z.array(z.string()).optional(),
     baseYear: z.unknown().optional(),

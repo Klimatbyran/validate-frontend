@@ -40,7 +40,8 @@ export const DATA_POINTS = [
 ];
 
 export interface Company {
-  wikidataId: string;
+  id: string;
+  wikidataId?: string | null;
   name: string;
   tags?: string[];
   reportingPeriods?: ReportingPeriod[];
@@ -87,7 +88,8 @@ export interface ReportingPeriod {
 export interface CompanyRow {
   /** Unique row key (company + report shell when multiple periods). */
   rowKey: string;
-  wikidataId: string;
+  id: string;
+  wikidataId?: string | null;
   name: string;
   tags?: string[];
   shellKey?: string;
@@ -128,7 +130,8 @@ export interface DataPointMetric {
 }
 
 export interface WorstCompany {
-  wikidataId: string;
+  id: string;
+  wikidataId?: string | null;
   name: string;
   errorCount: number;
   totalDataPoints: number;

@@ -21,10 +21,12 @@ export function companyMatchesSearch(
   const name = (company.name ?? "").toLowerCase();
   const wikidataId = (company.wikidataId ?? "").toLowerCase();
   const internalId = (company.id ?? "").toLowerCase();
+  const idPrefix = internalId.split("-")[0];
   return (
     name.includes(q) ||
     wikidataId.includes(q) ||
-    internalId.includes(q)
+    internalId.includes(q) ||
+    idPrefix.includes(q)
   );
 }
 
@@ -95,7 +97,9 @@ export function sortCompanyReportRows(
       sensitivity: "base",
     });
   const byId = (a: CompanyReportRow, b: CompanyReportRow) =>
-    (a.company.wikidataId ?? "").localeCompare(b.company.wikidataId ?? "");
+    (a.company.wikidataId ?? a.company.id).localeCompare(
+      b.company.wikidataId ?? b.company.id,
+    );
   const byReportYear = (a: CompanyReportRow, b: CompanyReportRow) => {
     const ay = a.reportYear ?? "";
     const by = b.reportYear ?? "";

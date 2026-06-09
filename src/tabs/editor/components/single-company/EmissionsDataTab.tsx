@@ -72,7 +72,7 @@ export function EmissionsDataTab({
     selectedShellKeys,
     setSelectedShellKeys,
     filterPeriodsByShell,
-  } = useCompanyReportShellFilters(periods, company.wikidataId, {
+  } = useCompanyReportShellFilters(periods, company.id, {
     defaultToLatestShell: true,
   });
 
@@ -92,13 +92,13 @@ export function EmissionsDataTab({
     visiblePeriods,
   } = useReportingPeriodColumnFilters<GarboReportingPeriodSummary & { id: string }>(
     periodsForShellFilter,
-    company.wikidataId,
+    company.id,
   );
 
   useEffect(() => {
     setEdited({});
     setSaving(false);
-  }, [company.wikidataId]);
+  }, [company.id]);
 
   const setEditedField = (rpId: string, patch: Partial<EditedPeriodEmissions>) => {
     setEdited((prev) => {
@@ -217,7 +217,7 @@ export function EmissionsDataTab({
 
     setSaving(true);
     try {
-      await updateReportingPeriods(company.wikidataId, {
+      await updateReportingPeriods(company.id, {
         reportingPeriods: payloadPeriods,
         metadata:
           meta?.source?.trim() || meta?.comment?.trim()

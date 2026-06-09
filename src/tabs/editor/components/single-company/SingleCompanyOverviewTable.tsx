@@ -101,7 +101,7 @@ export function SingleCompanyOverviewTable({
               if (!open) onQuickEditChange(null);
             }}
             company={
-              list.companyList.find((x) => x.wikidataId === quickEdit.companyId)!
+              list.companyList.find((x) => x.id === quickEdit.companyId)!
             }
             year={quickEdit.year}
             companyReportId={quickEdit.companyReportId}
@@ -161,13 +161,15 @@ export function SingleCompanyOverviewTable({
               return (
                 <tr
                   key={row.rowKey}
-                  onClick={() => navigate(editorCompanyPath(c.wikidataId))}
+                  onClick={() => navigate(editorCompanyPath(c.id))}
                   className="hover:bg-gray-04/50 cursor-pointer text-gray-01 align-top"
                 >
                   <td className="px-4 py-3 font-medium">
                     <div className="flex flex-col">
                       <span>{c.name}</span>
-                      <span className="text-xs text-gray-02">{c.wikidataId}</span>
+                      <span className="text-xs text-gray-02">
+                        {c.wikidataId ?? c.id.split("-")[0]}
+                      </span>
                       {row.companyReportId ? (
                         <span className={`${editorSecondaryIdTextClass} mt-0.5`}>
                           {row.companyReportId}
@@ -200,7 +202,7 @@ export function SingleCompanyOverviewTable({
                             onClick={(e) => {
                               e.stopPropagation();
                               onQuickEditChange({
-                                companyId: c.wikidataId,
+                                companyId: c.id,
                                 year: p.year,
                                 companyReportId: row.companyReportId || undefined,
                               });
