@@ -25,10 +25,12 @@ function companyMatchesSearch(company: GarboCompanyListItem, query: string): boo
   const name = (company.name ?? "").toLowerCase();
   const wikidataId = (company.wikidataId ?? "").toLowerCase();
   const internalId = (company.id ?? "").toLowerCase();
+  const idPrefix = internalId.split("-")[0];
   return (
     name.includes(q) ||
     wikidataId.includes(q) ||
-    internalId.includes(q)
+    internalId.includes(q) ||
+    idPrefix.includes(q)
   );
 }
 
@@ -49,7 +51,7 @@ export function MultiCompanyView() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [editState, setEditState] = useState<EditState | null>(null);
-  const [selectedWikidataIds, setSelectedWikidataIds] = useState<Set<string>>(new Set());
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<Set<string>>(new Set());
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
 
   const filteredCompanies = useMemo(() => {
@@ -72,32 +74,32 @@ export function MultiCompanyView() {
     return filteredList;
   }, [companies, searchQuery, selectedYear, selectedTags]);
 
-  const toggleCompanySelection = useCallback((wikidataId: string) => {
-    setSelectedWikidataIds((prev) => {
+  const toggleCompanySelection = useCallback((companyId: string) => {
+    setSelectedCompanyIds((prev) => {
       const next = new Set(prev);
-      if (next.has(wikidataId)) next.delete(wikidataId);
-      else next.add(wikidataId);
+      if (next.has(companyId)) next.delete(companyId);
+      else next.add(companyId);
       return next;
     });
   }, []);
 
   const selectAllFiltered = useCallback(() => {
-    setSelectedWikidataIds(new Set(filteredCompanies.map((company) => company.wikidataId)));
+    setSelectedCompanyIds(new Set(filteredCompanies.map((company) => company.id)));
   }, [filteredCompanies]);
 
   const clearSelection = useCallback(() => {
-    setSelectedWikidataIds(new Set());
+    setSelectedCompanyIds(new Set());
   }, []);
 
   const allFilteredSelected =
     filteredCompanies.length > 0 &&
-    filteredCompanies.every((company) => selectedWikidataIds.has(company.wikidataId));
+    filteredCompanies.every((company) => selectedCompanyIds.has(company.id));
 
   const bulkTagInitialSelectedSlugs = useMemo(() => {
-    const selectedIds = Array.from(selectedWikidataIds);
+    const selectedIds = Array.from(selectedCompanyIds);
     if (selectedIds.length === 0) return [];
     const selectedCompanies = selectedIds
-      .map((id) => companies.find((c) => c.wikidataId === id))
+      .map((id) => companies.find((c) => c.id === id))
       .filter(Boolean) as GarboCompanyListItem[];
     if (selectedCompanies.length === 0) return [];
 
@@ -106,23 +108,23 @@ export function MultiCompanyView() {
     return firstTags.filter((slug) =>
       selectedCompanies.every((c) => (c.tags ?? []).includes(slug))
     );
-  }, [companies, selectedWikidataIds]);
+  }, [companies, selectedCompanyIds]);
 
   const handleBulkTagSubmit = useCallback(
     async (tags: string[]) => {
-      const selectedIds = Array.from(selectedWikidataIds);
+      const selectedIds = Array.from(selectedCompanyIds);
       setActionLoading(true);
       try {
         let success = 0;
         let failed = 0;
-        for (const wikidataId of selectedIds) {
-          const company = companies.find((listedCompany) => listedCompany.wikidataId === wikidataId);
+        for (const companyId of selectedIds) {
+          const company = companies.find((listedCompany) => listedCompany.id === companyId);
           if (!company) {
             failed++;
             continue;
           }
           try {
-            await updateCompany(wikidataId, { name: company.name, tags });
+            await updateCompany(companyId, { name: company.name, tags });
             success++;
           } catch {
             failed++;
@@ -132,7 +134,7 @@ export function MultiCompanyView() {
           toast.success(t("editor.companies.bulkUpdateTagsSuccess", { count: selectedIds.length }));
           setCompanies((prev) =>
             prev.map((company) =>
-              selectedWikidataIds.has(company.wikidataId) ? { ...company, tags } : company
+              selectedCompanyIds.has(company.id) ? { ...company, tags } : company
             )
           );
         } else {
@@ -142,7 +144,7 @@ export function MultiCompanyView() {
           );
         }
         setBulkTagModalOpen(false);
-        setSelectedWikidataIds(new Set());
+        setSelectedCompanyIds(new Set());
         await loadCompanies();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : String(error));
@@ -151,7 +153,7 @@ export function MultiCompanyView() {
         setActionLoading(false);
       }
     },
-    [selectedWikidataIds, companies, t, loadCompanies, setCompanies]
+    [selectedCompanyIds, companies, t, loadCompanies, setCompanies]
   );
 
   const handleSaveEdit = useCallback(
@@ -164,14 +166,14 @@ export function MultiCompanyView() {
       try {
         if (editState.field === "tags") {
           const tags = parseTagSlugs(value);
-          await updateCompany(editState.wikidataId, {
+          await updateCompany(editState.companyId, {
             name: editState.companyName,
             tags,
           });
           toast.success(t("editor.tagOptions.updated"));
           setCompanies((prev) =>
             prev.map((company) =>
-              company.wikidataId === editState.wikidataId ? { ...company, tags } : company
+              company.id === editState.companyId ? { ...company, tags } : company
             )
           );
         } else if (
@@ -187,7 +189,7 @@ export function MultiCompanyView() {
           if (!reportingPeriodPayload) {
             throw new Error("Could not build reporting period payload.");
           }
-          await updateReportingPeriods(editState.wikidataId, {
+          await updateReportingPeriods(editState.companyId, {
             reportingPeriods: [reportingPeriodPayload],
             metadata: meta.source || meta.comment ? { source: meta.source, comment: meta.comment } : undefined,
           });
@@ -275,7 +277,7 @@ export function MultiCompanyView() {
       ) : (
         <>
           <MultiCompanySelectionBar
-            count={selectedWikidataIds.size}
+            count={selectedCompanyIds.size}
             onClear={clearSelection}
             onBulkUpdateTags={() => setBulkTagModalOpen(true)}
             bulkDisabled={actionLoading}
@@ -288,7 +290,7 @@ export function MultiCompanyView() {
             onToggleSelectAll={() =>
               allFilteredSelected ? clearSelection() : selectAllFiltered()
             }
-            selectedWikidataIds={selectedWikidataIds}
+            selectedCompanyIds={selectedCompanyIds}
             onToggleCompanySelection={toggleCompanySelection}
             actionLoading={actionLoading}
             onEdit={setEditState}
@@ -329,7 +331,7 @@ export function MultiCompanyView() {
       <BulkTagUpdateModal
         open={bulkTagModalOpen}
         onOpenChange={setBulkTagModalOpen}
-        companyCount={selectedWikidataIds.size}
+        companyCount={selectedCompanyIds.size}
         tagOptions={tagOptions}
         initialSelectedSlugs={bulkTagInitialSelectedSlugs}
         onSubmit={handleBulkTagSubmit}

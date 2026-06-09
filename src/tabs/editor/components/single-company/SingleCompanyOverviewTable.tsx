@@ -94,7 +94,7 @@ export function SingleCompanyOverviewTable({
               if (!open) onQuickEditChange(null);
             }}
             company={
-              list.companyList.find((x) => x.wikidataId === quickEdit.companyId)!
+              list.companyList.find((x) => x.id === quickEdit.companyId)!
             }
             year={quickEdit.year}
             onSaved={() => {
@@ -145,17 +145,19 @@ export function SingleCompanyOverviewTable({
           </DataTableHead>
           <DataTableBody>
             {list.sortedCompanies.map((c: GarboCompanyListItem) => {
-              const overview = list.companyOverviewById.get(c.wikidataId);
+              const overview = list.companyOverviewById.get(c.id);
               return (
                 <tr
-                  key={c.wikidataId}
-                  onClick={() => navigate(editorCompanyPath(c.wikidataId))}
+                  key={c.id}
+                  onClick={() => navigate(editorCompanyPath(c.id))}
                   className="hover:bg-gray-04/50 cursor-pointer text-gray-01 align-top"
                 >
                   <td className="px-4 py-3 font-medium">
                     <div className="flex flex-col">
                       <span>{c.name}</span>
-                      <span className="text-xs text-gray-02">{c.wikidataId}</span>
+                      <span className="text-xs text-gray-02">
+                        {c.wikidataId ?? c.id.split("-")[0]}
+                      </span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-02">
@@ -180,7 +182,7 @@ export function SingleCompanyOverviewTable({
                             onClick={(e) => {
                               e.stopPropagation();
                               onQuickEditChange({
-                                companyId: c.wikidataId,
+                                companyId: c.id,
                                 year: p.year,
                               });
                             }}

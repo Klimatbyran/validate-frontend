@@ -69,7 +69,7 @@ export function CompanyDetailTab({
     setSubIndustryCode(company.industry?.subIndustryCode ?? "");
     setBaseYear(displayBaseYear(company.baseYear, dash));
   }, [
-    company.wikidataId,
+    company.id,
     company.name,
     company.lei,
     company.url,
@@ -95,7 +95,7 @@ export function CompanyDetailTab({
   const handleSaveCore = async (meta?: { comment?: string; source?: string }) => {
     setSavingCore(true);
     try {
-      await updateCompany(company.wikidataId, {
+      await updateCompany(company.id, {
         name,
         descriptions: [
           { language: "EN", text: descriptionEn },
@@ -128,7 +128,7 @@ export function CompanyDetailTab({
     setSavingIndustry(true);
     try {
       if (subIndustryCode) {
-        await updateCompanyIndustry(company.wikidataId, {
+        await updateCompanyIndustry(company.id, {
           industry: { subIndustryCode },
           metadata:
             meta?.comment?.trim() || meta?.source?.trim()
@@ -137,7 +137,7 @@ export function CompanyDetailTab({
         });
       }
       if (by != null) {
-        await updateCompanyBaseYear(company.wikidataId, {
+        await updateCompanyBaseYear(company.id, {
           baseYear: by,
           metadata:
             meta?.comment?.trim() || meta?.source?.trim()
@@ -254,7 +254,7 @@ export function CompanyDetailTab({
                   </label>
                   <input
                     type="text"
-                    value={company.wikidataId}
+                    value={company.id}
                     readOnly
                     className={inputClassName + " bg-gray-04/60 !max-w-none"}
                   />

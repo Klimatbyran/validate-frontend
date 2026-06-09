@@ -33,7 +33,7 @@ export const WIKIDATA_ID_REGEX = /^Q\d+$/;
 export interface GarboCompanyListItem {
   /** Internal Garbo company id (CUID). */
   id: string;
-  wikidataId: string;
+  wikidataId?: string | null;
   name: string;
   tags?: string[];
   /** Present when list API includes base year (number or wrapped shape with metadata). */
@@ -146,7 +146,7 @@ export interface GarboMetadata {
 // --- Editor UI helper types ---
 
 export type EditState = {
-  wikidataId: string;
+  companyId: string;
   companyName: string;
   field: "tags" | "reportURL" | "scope1" | "scope2" | "economy";
   year?: number;

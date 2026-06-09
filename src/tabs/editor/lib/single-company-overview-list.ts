@@ -27,10 +27,12 @@ export function companyMatchesSearch(
   const name = (company.name ?? "").toLowerCase();
   const wikidataId = (company.wikidataId ?? "").toLowerCase();
   const internalId = (company.id ?? "").toLowerCase();
+  const idPrefix = internalId.split("-")[0];
   return (
     name.includes(q) ||
     wikidataId.includes(q) ||
-    internalId.includes(q)
+    internalId.includes(q) ||
+    idPrefix.includes(q)
   );
 }
 
@@ -51,7 +53,7 @@ export function companyPassesOverviewFilters(
   c: GarboCompanyListItem,
   f: OverviewListFilterInput,
 ): boolean {
-  const overview = f.companyOverviewById.get(c.wikidataId);
+  const overview = f.companyOverviewById.get(c.id);
   if (!companyMatchesSearch(c, f.searchQuery)) return false;
   if (!companyMatchesTagFilter(c.tags, f.filterTags)) return false;
   if (!companyPassesExcludeTagFilter(c.tags, f.excludeFilterTags)) return false;

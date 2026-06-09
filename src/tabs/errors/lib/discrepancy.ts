@@ -7,11 +7,15 @@ import {
 } from '../types';
 import { getDataPointValue, pickReportingPeriodForYear } from './emissions';
 
-/** Build a map of companies by wikidataId for quick lookup. */
+/** Build a map of companies by internal id for quick lookup. */
 export function companiesToMapById(companies: Company[]): Map<string, Company> {
   const map = new Map<string, Company>();
-  companies.forEach((c) => map.set(c.wikidataId, c));
+  companies.forEach((c) => map.set(c.id, c));
   return map;
+}
+
+export function companyUnionKey(company: Company): string {
+  return company.id;
 }
 
 const UNIT_ERROR_POWERS = [10, 100, 1000, 10000, 100000, 1000000] as const;
@@ -128,8 +132,8 @@ export function applyCategoryErrorToRows(
     )
       continue;
 
-    const stageCompany = stageMap.get(row.wikidataId);
-    const prodCompany = prodMap.get(row.wikidataId);
+    const stageCompany = stageMap.get(row.id);
+    const prodCompany = prodMap.get(row.id);
 
     if (
       (row.discrepancy === 'error' ||

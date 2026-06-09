@@ -80,7 +80,7 @@ export function AddReportingPeriodFlow({
 
     setCreating(true);
     try {
-      await updateReportingPeriods(company.wikidataId, {
+      await updateReportingPeriods(company.id, {
         reportingPeriods: [
           {
             startDate,
@@ -89,7 +89,7 @@ export function AddReportingPeriodFlow({
           },
         ],
       });
-      const fresh = await getCompany(company.wikidataId);
+      const fresh = await getCompany(company.id);
       onSaved?.();
       const year = getPeriodYear({ startDate, endDate });
       if (!year) {

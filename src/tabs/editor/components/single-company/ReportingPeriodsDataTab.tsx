@@ -75,7 +75,7 @@ export function ReportingPeriodsDataTab({
     visiblePeriods,
   } = useReportingPeriodColumnFilters<
     GarboReportingPeriodSummary & { id: string }
-  >(periods, company.wikidataId);
+  >(periods, company.id);
 
   useEffect(() => {
     setEdited({});
@@ -83,7 +83,7 @@ export function ReportingPeriodsDataTab({
     setDeleteModalOpen(false);
     setDeletePeriodId(null);
     setIsDeletingPeriod(false);
-  }, [company.wikidataId]);
+  }, [company.id]);
 
   const periodPendingDelete = useMemo(
     () => periods.find((p) => p.id === deletePeriodId) ?? null,
@@ -173,7 +173,7 @@ export function ReportingPeriodsDataTab({
 
     setSaving(true);
     try {
-      await updateReportingPeriods(company.wikidataId, {
+      await updateReportingPeriods(company.id, {
         reportingPeriods: payloadPeriods,
         metadata:
           meta?.source?.trim() || meta?.comment?.trim()

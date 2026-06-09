@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Download } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
+import { getCompanyUrlSegment } from '@/lib/company-routing';
 import { cn, downloadCsv } from '@/lib/utils';
 import { LoadingSpinner } from '@/ui/loading-spinner';
 import { DiscrepancyType, WorstCompany } from '../types';
@@ -16,7 +17,7 @@ interface HardestReportsViewProps {
 }
 
 function exportHardestReportsCsv(worstCompanies: WorstCompany[], selectedYear: number) {
-  const headers = ['Rank', 'Company', 'WikidataId', 'Errors', 'Total Data Points', 'Difficult', 'Error Types', 'Affected Data Points'];
+  const headers = ['Rank', 'Company', 'Identifier', 'Errors', 'Total Data Points', 'Difficult', 'Error Types', 'Affected Data Points'];
   const rows: string[][] = [headers];
 
   worstCompanies.forEach((company, index) => {
@@ -30,7 +31,7 @@ function exportHardestReportsCsv(worstCompanies: WorstCompany[], selectedYear: n
     rows.push([
       String(index + 1),
       `"${company.name.replace(/"/g, '""')}"`,
-      company.wikidataId,
+      getCompanyUrlSegment(company),
       String(company.errorCount),
       String(company.totalDataPoints),
       company.errorCount >= 5 ? 'yes' : 'no',
@@ -104,7 +105,7 @@ export function HardestReportsView({ isLoading, worstCompanies, totalWithBothRPs
                   </tr>
                 ) : (
                   worstCompanies.map((company, index) => (
-                    <HardestReportRow key={company.wikidataId} company={company} index={index} />
+                    <HardestReportRow key={company.id} company={company} index={index} />
                   ))
                 )}
               </tbody>
@@ -147,7 +148,7 @@ function HardestReportRow({ company, index }: { company: WorstCompany; index: nu
             </span>
           )}
         </div>
-        <div className="text-xs text-gray-02 mt-0.5">{company.wikidataId}</div>
+        <div className="text-xs text-gray-02 mt-0.5">{getCompanyUrlSegment(company)}</div>
       </td>
       <td className="px-4 py-3 text-center">
         <span className={cn(

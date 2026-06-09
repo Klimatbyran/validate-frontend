@@ -97,7 +97,7 @@ export function useSingleCompanyOverviewList() {
       ReturnType<typeof getCompanyVerificationOverview>
     >();
     companyList.forEach((c) => {
-      map.set(c.wikidataId, getCompanyVerificationOverview(c));
+      map.set(c.id, getCompanyVerificationOverview(c));
     });
     return map;
   }, [companyList]);

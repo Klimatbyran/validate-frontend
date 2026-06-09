@@ -76,15 +76,15 @@ export function useErrorBrowserData(
       (tags ?? []).some((t) => selectedTags.includes(t));
 
     stageCompanies.forEach((c) => {
-      if (matches(c.tags)) idsWithSelectedTag.add(c.wikidataId);
+      if (matches(c.tags)) idsWithSelectedTag.add(c.id);
     });
     prodCompanies.forEach((c) => {
-      if (matches(c.tags)) idsWithSelectedTag.add(c.wikidataId);
+      if (matches(c.tags)) idsWithSelectedTag.add(c.id);
     });
 
     return {
-      stage: stageCompanies.filter((c) => idsWithSelectedTag.has(c.wikidataId)),
-      prod: prodCompanies.filter((c) => idsWithSelectedTag.has(c.wikidataId)),
+      stage: stageCompanies.filter((c) => idsWithSelectedTag.has(c.id)),
+      prod: prodCompanies.filter((c) => idsWithSelectedTag.has(c.id)),
     };
   }, [stageCompanies, prodCompanies, selectedTags]);
 
@@ -98,11 +98,11 @@ export function useErrorBrowserData(
 
     const prodCompanyVerifiedForYear = prodCompanyVerifiedForYearMap(prodMap, allIds);
 
-    for (const wikidataId of allIds) {
-      const stageCompany = stageMap.get(wikidataId);
-      const prodCompany = prodMap.get(wikidataId);
+    for (const companyId of allIds) {
+      const stageCompany = stageMap.get(companyId);
+      const prodCompany = prodMap.get(companyId);
 
-      const name = stageCompany?.name || prodCompany?.name || wikidataId;
+      const name = stageCompany?.name || prodCompany?.name || companyId;
       const tags = Array.from(
         new Set([...(stageCompany?.tags ?? []), ...(prodCompany?.tags ?? [])])
       );
@@ -119,13 +119,19 @@ export function useErrorBrowserData(
       const prodVerified = getDataPointVerified(prodRP?.emissions, selectedDataPoint);
 
       rows.push({
-        wikidataId, name, stageValue, prodValue, discrepancy, diff,
+        id: companyId,
+        wikidataId: stageCompany?.wikidataId ?? prodCompany?.wikidataId ?? null,
+        name,
+        stageValue,
+        prodValue,
+        discrepancy,
+        diff,
         tags,
         inStage: !!stageCompany,
         inProd: !!prodCompany,
         unitErrorFactor,
         prodVerified,
-        prodCompanyVerifiedForYear: prodCompanyVerifiedForYear.get(wikidataId) ?? false,
+        prodCompanyVerifiedForYear: prodCompanyVerifiedForYear.get(companyId) ?? false,
       });
     }
 
@@ -241,9 +247,9 @@ export function useErrorBrowserData(
         other => other.scope === dp.scope && other.id !== dp.id
       );
 
-      for (const wikidataId of allIds) {
-        const stageCompany = stageMap.get(wikidataId);
-        const prodCompany = prodMap.get(wikidataId);
+      for (const companyId of allIds) {
+        const stageCompany = stageMap.get(companyId);
+        const prodCompany = prodMap.get(companyId);
 
         if (!stageCompany || !prodCompany) continue;
 
@@ -259,7 +265,7 @@ export function useErrorBrowserData(
           const isVerified = getDataPointVerified(prodRP.emissions, dp.id);
           const isBothNull = stageValue === null && prodValue === null;
           const allowBothNull =
-            isBothNull && (prodCompanyVerifiedForYear.get(wikidataId) ?? false);
+            isBothNull && (prodCompanyVerifiedForYear.get(companyId) ?? false);
           if (!isVerified && !allowBothNull) continue;
         }
 
@@ -314,9 +320,9 @@ export function useErrorBrowserData(
 
     const prodCompanyVerifiedForYear = prodCompanyVerifiedForYearMap(prodMap, allIds);
 
-    for (const wikidataId of allIds) {
-      const stageCompany = stageMap.get(wikidataId);
-      const prodCompany = prodMap.get(wikidataId);
+    for (const companyId of allIds) {
+      const stageCompany = stageMap.get(companyId);
+      const prodCompany = prodMap.get(companyId);
 
       if (!stageCompany || !prodCompany) continue;
 
@@ -325,7 +331,7 @@ export function useErrorBrowserData(
 
       if (!stageRP || !prodRP) continue;
 
-      const name = stageCompany.name || prodCompany.name || wikidataId;
+      const name = stageCompany.name || prodCompany.name || companyId;
       let errorCount = 0;
       let totalDataPoints = 0;
       const breakdown: Record<string, number> = {};
@@ -339,7 +345,7 @@ export function useErrorBrowserData(
           const isVerified = getDataPointVerified(prodRP.emissions, dp.id);
           const isBothNull = stageValue === null && prodValue === null;
           const allowBothNull =
-            isBothNull && (prodCompanyVerifiedForYear.get(wikidataId) ?? false);
+            isBothNull && (prodCompanyVerifiedForYear.get(companyId) ?? false);
           if (!isVerified && !allowBothNull) continue;
         }
 
@@ -367,7 +373,15 @@ export function useErrorBrowserData(
       }
 
       if (errorCount > 0) {
-        companyErrors.push({ wikidataId, name, errorCount, totalDataPoints, breakdown, errorDataPoints });
+        companyErrors.push({
+          id: companyId,
+          wikidataId: stageCompany.wikidataId ?? prodCompany.wikidataId ?? null,
+          name,
+          errorCount,
+          totalDataPoints,
+          breakdown,
+          errorDataPoints,
+        });
       }
     }
 
@@ -378,7 +392,7 @@ export function useErrorBrowserData(
   const difficultCompanyIds = React.useMemo(() => {
     const ids = new Map<string, number>();
     for (const c of worstCompanies) {
-      if (c.errorCount >= 5) ids.set(c.wikidataId, c.errorCount);
+      if (c.errorCount >= 5) ids.set(c.id, c.errorCount);
     }
     return ids;
   }, [worstCompanies]);
