@@ -42,6 +42,7 @@ export function ReportingPeriodQuickEditModal({
   onOpenChange,
   company,
   year,
+  companyReportId,
   periodMatch,
   onSaved,
 }: {
@@ -49,6 +50,8 @@ export function ReportingPeriodQuickEditModal({
   onOpenChange: (open: boolean) => void;
   company: GarboCompanyListItem;
   year: string;
+  /** When set, only periods linked to this CompanyReport are considered. */
+  companyReportId?: string;
   /** When set (e.g. after creating a period), find this exact period instead of the first with the same calendar year. */
   periodMatch?: { startDate: string; endDate: string };
   onSaved?: () => void;
@@ -70,7 +73,15 @@ export function ReportingPeriodQuickEditModal({
   }, [open, company.id]);
 
   const period: GarboReportingPeriodSummary | null = useMemo(() => {
-    const periods = detailCompany?.reportingPeriods ?? company.reportingPeriods ?? [];
+    const allPeriods =
+      detailCompany?.reportingPeriods ?? company.reportingPeriods ?? [];
+    const periods = companyReportId
+      ? allPeriods.filter(
+          (p) =>
+            p.companyReportId === companyReportId ||
+            p.companyReport?.id === companyReportId,
+        )
+      : allPeriods;
     if (periodMatch) {
       const a = normDateKey(periodMatch.startDate);
       const b = normDateKey(periodMatch.endDate);
@@ -81,7 +92,13 @@ export function ReportingPeriodQuickEditModal({
     }
     const match = periods.find((p) => getPeriodYear(p) === year);
     return match ?? null;
-  }, [company.reportingPeriods, detailCompany?.reportingPeriods, year, periodMatch]);
+  }, [
+    company.reportingPeriods,
+    detailCompany?.reportingPeriods,
+    year,
+    periodMatch,
+    companyReportId,
+  ]);
 
   const [edited, setEdited] = useState<ReportingPeriodQuickEditEdited>({});
   const [comment, setComment] = useState("");

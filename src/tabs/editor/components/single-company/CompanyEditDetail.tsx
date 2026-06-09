@@ -11,10 +11,12 @@ export function CompanyEditDetail({
   company,
   tagOptions,
   onSaved,
+  onDeleted,
 }: {
   company: GarboCompanyDetail;
   tagOptions: TagOption[];
   onSaved?: () => void;
+  onDeleted?: () => void;
 }) {
   const { t } = useI18n();
 
@@ -40,7 +42,12 @@ export function CompanyEditDetail({
         </TabsList>
 
         <TabsContent value="company-detail" className="mt-4">
-          <CompanyDetailTab company={company} tagOptions={tagOptions} onSaved={onSaved} />
+          <CompanyDetailTab
+            company={company}
+            tagOptions={tagOptions}
+            onSaved={onSaved}
+            onDeleted={onDeleted}
+          />
         </TabsContent>
 
         <TabsContent value="reporting-periods" className="mt-4">

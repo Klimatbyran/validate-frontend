@@ -140,14 +140,22 @@ export function buildReportingPeriodQuickEditPatch({
     };
   }
   if (edited.scope3StatedTotal != null || edited.scope3StatedTotalVerified != null) {
-    emissions.scope3 = {
-      ...(emissions.scope3 ?? {}),
-      statedTotalEmissions: {
-        total: edited.scope3StatedTotal != null ? toNumberOrNull(edited.scope3StatedTotal) : undefined,
-        unit: "tCO2e",
-        verified: edited.scope3StatedTotalVerified ?? undefined,
-      },
-    };
+    const hasValueEdit = edited.scope3StatedTotal != null;
+    const hasVerifiedEdit = edited.scope3StatedTotalVerified != null;
+    const originalTotal = period.emissions?.scope3?.statedTotalEmissions?.total ?? null;
+
+    if (!(hasVerifiedEdit && !hasValueEdit && originalTotal == null)) {
+      emissions.scope3 = {
+        ...(emissions.scope3 ?? {}),
+        statedTotalEmissions: {
+          total: hasValueEdit
+            ? toNumberOrNull(edited.scope3StatedTotal ?? "")
+            : originalTotal,
+          unit: "tCO2e",
+          verified: hasVerifiedEdit ? edited.scope3StatedTotalVerified : undefined,
+        },
+      };
+    }
   }
   if (edited.scope3Categories || edited.scope3CategoriesVerified) {
     const vals = edited.scope3Categories ?? {};

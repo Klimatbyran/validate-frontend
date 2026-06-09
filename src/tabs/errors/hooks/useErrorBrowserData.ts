@@ -1,9 +1,9 @@
 import React from 'react';
+import { ApiAuthError, garboAuthFetch, throwIfAuthError } from '@/lib/garbo-auth-fetch';
 import { Company, CompanyRow, DataPointMetric, WorstCompany, DiscrepancyType, DATA_POINTS } from '../types';
 import {
-  getStageApiUrl,
-  getProdApiUrl,
-  pickReportingPeriodForYear,
+  getStagePipelineCompaniesListUrl,
+  getProdPipelineCompaniesListUrl,
   getDataPointValue,
   getDataPointVerified,
   classifyDiscrepancy,
@@ -11,56 +11,77 @@ import {
   companiesToMapById,
   reclassifyDiscrepancyForCategoryError,
   applyCategoryErrorToRows,
-  buildProdCompanyVerifiedForYearMap,
   isProdCompanyFullyVerifiedForYear,
+  isProdReportingPeriodFullyVerified,
+  buildReportingPeriodComparisonSlots,
+  pickReportingPeriodsForFilters,
+  getPeriodReportYearFromApi,
 } from '../lib';
 import type { ErrorBrowserSummaryStats } from '../components/SummaryView';
 
 export function useErrorBrowserData(
-  selectedYear: number,
+  selectedDataYear: number,
+  selectedReportYear: number | null,
   selectedDataPoint: string,
   selectedTags: string[],
-  verifiedOnly: boolean
+  verifiedOnly: boolean,
 ) {
-  const prodCompanyVerifiedForYearMap = React.useCallback(
-    (prodMap: Map<string, Company>, ids: Iterable<string>) =>
-      buildProdCompanyVerifiedForYearMap(prodMap, ids, selectedYear),
-    [selectedYear]
-  );
-
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isAuthError, setIsAuthError] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [stageCompanies, setStageCompanies] = React.useState<Company[]>([]);
   const [prodCompanies, setProdCompanies] = React.useState<Company[]>([]);
 
+  const fetchPipelineCompanies = React.useCallback(
+    async (label: 'Stage' | 'Prod', url: string): Promise<Company[]> => {
+      const response = await garboAuthFetch(url, {
+        headers: { Accept: 'application/json' },
+      });
+
+      if (response.ok) {
+        return response.json() as Promise<Company[]>;
+      }
+
+      throwIfAuthError(response.status);
+
+      const body = await response.text().catch(() => '');
+      throw new Error(
+        `Failed to fetch ${label} pipeline companies (${response.status}) from ${url}${body ? `: ${body.slice(0, 200)}` : ''}`,
+      );
+    },
+    [],
+  );
+
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setIsAuthError(false);
+
+    const stageUrl = getStagePipelineCompaniesListUrl();
+    const prodUrl = getProdPipelineCompaniesListUrl();
 
     try {
-      const [stageResponse, prodResponse] = await Promise.all([
-        // Intentionally avoid custom request headers here. Adding non-simple headers
-        // can trigger CORS preflight, which makes stage/prod comparisons flaky.
-        fetch(getStageApiUrl()),
-        fetch(getProdApiUrl()),
+      const [stage, prod] = await Promise.all([
+        fetchPipelineCompanies('Stage', stageUrl),
+        fetchPipelineCompanies('Prod', prodUrl),
       ]);
-
-      if (!stageResponse.ok) throw new Error(`Failed to fetch stage data: ${stageResponse.status}`);
-      if (!prodResponse.ok) throw new Error(`Failed to fetch prod data: ${prodResponse.status}`);
-
-      const stage: Company[] = await stageResponse.json();
-      const prod: Company[] = await prodResponse.json();
 
       setStageCompanies(stage);
       setProdCompanies(prod);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      if (import.meta.env.DEV) console.error('useErrorBrowserData fetch error:', err);
+      if (err instanceof ApiAuthError) {
+        setIsAuthError(true);
+        setStageCompanies([]);
+        setProdCompanies([]);
+      } else {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        setError(message);
+        if (import.meta.env.DEV) console.error('useErrorBrowserData fetch error:', err);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchPipelineCompanies]);
 
   React.useEffect(() => {
     fetchData();
@@ -88,7 +109,6 @@ export function useErrorBrowserData(
     };
   }, [stageCompanies, prodCompanies, selectedTags]);
 
-  // Build comparison rows for selected data point
   const comparisonRows = React.useMemo((): CompanyRow[] => {
     const stageMap = companiesToMapById(tagFilteredCompanies.stage);
     const prodMap = companiesToMapById(tagFilteredCompanies.prod);
@@ -96,57 +116,105 @@ export function useErrorBrowserData(
     const allIds = new Set([...stageMap.keys(), ...prodMap.keys()]);
     const rows: CompanyRow[] = [];
 
-    const prodCompanyVerifiedForYear = prodCompanyVerifiedForYearMap(prodMap, allIds);
-
     for (const companyId of allIds) {
       const stageCompany = stageMap.get(companyId);
       const prodCompany = prodMap.get(companyId);
 
       const name = stageCompany?.name || prodCompany?.name || companyId;
       const tags = Array.from(
-        new Set([...(stageCompany?.tags ?? []), ...(prodCompany?.tags ?? [])])
+        new Set([...(stageCompany?.tags ?? []), ...(prodCompany?.tags ?? [])]),
       );
 
-      const stageRP = stageCompany ? pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear) : null;
-      const prodRP = prodCompany ? pickReportingPeriodForYear(prodCompany.reportingPeriods, selectedYear) : null;
-
-      const stageValue = getDataPointValue(stageRP?.emissions, selectedDataPoint);
-      const prodValue = getDataPointValue(prodRP?.emissions, selectedDataPoint);
-
-      const discrepancy = classifyDiscrepancy(stageValue, prodValue, 0.5);
-      const diff = stageValue !== null && prodValue !== null ? stageValue - prodValue : null;
-      const unitErrorFactor = getUnitErrorFactor(stageValue, prodValue);
-      const prodVerified = getDataPointVerified(prodRP?.emissions, selectedDataPoint);
-
-      rows.push({
-        id: companyId,
-        wikidataId: stageCompany?.wikidataId ?? prodCompany?.wikidataId ?? null,
-        name,
-        stageValue,
-        prodValue,
-        discrepancy,
-        diff,
-        tags,
-        inStage: !!stageCompany,
-        inProd: !!prodCompany,
-        unitErrorFactor,
-        prodVerified,
-        prodCompanyVerifiedForYear: prodCompanyVerifiedForYear.get(companyId) ?? false,
-      });
-    }
-
-    const currentDP = DATA_POINTS.find(dp => dp.id === selectedDataPoint);
-    if (currentDP) {
-      const sameScopeDataPoints = DATA_POINTS.filter(
-        dp => dp.scope === currentDP.scope && dp.id !== currentDP.id
+      const slots = buildReportingPeriodComparisonSlots(
+        stageCompany?.reportingPeriods,
+        prodCompany?.reportingPeriods,
+        selectedDataYear,
+        selectedReportYear,
       );
-      if (sameScopeDataPoints.length > 0) {
-        applyCategoryErrorToRows(rows, stageMap, prodMap, sameScopeDataPoints, selectedDataPoint, selectedYear);
+
+      const slotRows =
+        slots.length > 0
+          ? slots
+          : [
+              {
+                shellKey: '',
+                companyReportId: null,
+                reportYear: null,
+                stagePeriod: null,
+                prodPeriod: null,
+              },
+            ];
+
+      for (const slot of slotRows) {
+        const stageValue = getDataPointValue(
+          slot.stagePeriod?.emissions,
+          selectedDataPoint,
+        );
+        const prodValue = getDataPointValue(
+          slot.prodPeriod?.emissions,
+          selectedDataPoint,
+        );
+
+        const discrepancy = classifyDiscrepancy(stageValue, prodValue, 0.5);
+        const diff =
+          stageValue !== null && prodValue !== null ? stageValue - prodValue : null;
+        const unitErrorFactor = getUnitErrorFactor(stageValue, prodValue);
+        const prodVerified = getDataPointVerified(
+          slot.prodPeriod?.emissions,
+          selectedDataPoint,
+        );
+        const rowKey = slot.shellKey
+          ? `${companyId}:${slot.shellKey}`
+          : companyId;
+
+        rows.push({
+          rowKey,
+          id: companyId,
+          wikidataId: stageCompany?.wikidataId ?? prodCompany?.wikidataId ?? null,
+          name,
+          shellKey: slot.shellKey || undefined,
+          reportYear: slot.reportYear,
+          companyReportId: slot.companyReportId,
+          stageValue,
+          prodValue,
+          discrepancy,
+          diff,
+          tags,
+          inStage: !!stageCompany,
+          inProd: !!prodCompany,
+          unitErrorFactor,
+          prodVerified,
+          prodCompanyVerifiedForYear: isProdReportingPeriodFullyVerified(
+            slot.prodPeriod,
+          ),
+        });
       }
     }
 
-    return rows.sort((a, b) => a.name.localeCompare(b.name));
-  }, [tagFilteredCompanies, selectedYear, selectedDataPoint, prodCompanyVerifiedForYearMap]);
+    const currentDP = DATA_POINTS.find((dp) => dp.id === selectedDataPoint);
+    if (currentDP) {
+      const sameScopeDataPoints = DATA_POINTS.filter(
+        (dp) => dp.scope === currentDP.scope && dp.id !== currentDP.id,
+      );
+      if (sameScopeDataPoints.length > 0) {
+        applyCategoryErrorToRows(
+          rows,
+          stageMap,
+          prodMap,
+          sameScopeDataPoints,
+          selectedDataPoint,
+          selectedDataYear,
+          selectedReportYear,
+        );
+      }
+    }
+
+    return rows.sort((a, b) => {
+      const nameCmp = a.name.localeCompare(b.name);
+      if (nameCmp !== 0) return nameCmp;
+      return (b.reportYear ?? 0) - (a.reportYear ?? 0);
+    });
+  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear, selectedDataPoint]);
 
   const availableTags = React.useMemo(() => {
     const tags = new Set<string>();
@@ -176,18 +244,31 @@ export function useErrorBrowserData(
 
     const hasAnyValueForYear = (company: Company | undefined): boolean => {
       if (!company) return false;
-      const rp = pickReportingPeriodForYear(company.reportingPeriods, selectedYear);
-      if (!rp?.emissions) return false;
-      return DATA_POINTS.some((dp) => getDataPointValue(rp.emissions, dp.id) !== null);
+      const periods = pickReportingPeriodsForFilters(
+        company.reportingPeriods,
+        selectedDataYear,
+        selectedReportYear,
+      );
+      return periods.some(
+        (rp) =>
+          rp.emissions != null &&
+          DATA_POINTS.some((dp) => getDataPointValue(rp.emissions, dp.id) !== null),
+      );
     };
 
     const hasReportingPeriodForYear = (company: Company | undefined): boolean => {
       if (!company) return false;
-      return pickReportingPeriodForYear(company.reportingPeriods, selectedYear) != null;
+      return (
+        pickReportingPeriodsForFilters(
+          company.reportingPeriods,
+          selectedDataYear,
+          selectedReportYear,
+        ).length > 0
+      );
     };
 
     const isFullyVerifiedInProdForYear = (company: Company | undefined): boolean =>
-      isProdCompanyFullyVerifiedForYear(company, selectedYear);
+      isProdCompanyFullyVerifiedForYear(company, selectedDataYear, selectedReportYear);
 
     for (const id of allIds) {
       const s = stageMap.get(id);
@@ -225,9 +306,23 @@ export function useErrorBrowserData(
       companiesWithReportingPeriodForYear,
       companiesFullyVerifiedInProd,
     };
-  }, [tagFilteredCompanies, selectedYear]);
+  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear]);
 
-  // Calculate metrics for ALL data points (for overview)
+  const availableReportYears = React.useMemo(() => {
+    const years = new Set<number>();
+    const collect = (companies: Company[]) => {
+      for (const company of companies) {
+        for (const period of company.reportingPeriods ?? []) {
+          const y = getPeriodReportYearFromApi(period);
+          if (y != null) years.add(y);
+        }
+      }
+    };
+    collect(stageCompanies);
+    collect(prodCompanies);
+    return Array.from(years).sort((a, b) => b - a);
+  }, [stageCompanies, prodCompanies]);
+
   const allDataPointMetrics = React.useMemo((): DataPointMetric[] => {
     if (tagFilteredCompanies.stage.length === 0 || tagFilteredCompanies.prod.length === 0)
       return [];
@@ -237,14 +332,19 @@ export function useErrorBrowserData(
 
     const allIds = Array.from(new Set([...stageMap.keys(), ...prodMap.keys()]));
 
-    const prodCompanyVerifiedForYear = prodCompanyVerifiedForYearMap(prodMap, allIds);
-
-    return DATA_POINTS.map(dp => {
-      let identical = 0, rounding = 0, hallucination = 0, missing = 0;
-      let unitError = 0, smallError = 0, errorCount = 0, categoryError = 0, bothNull = 0;
+    return DATA_POINTS.map((dp) => {
+      let identical = 0,
+        rounding = 0,
+        hallucination = 0,
+        missing = 0;
+      let unitError = 0,
+        smallError = 0,
+        errorCount = 0,
+        categoryError = 0,
+        bothNull = 0;
 
       const sameScopeDataPoints = DATA_POINTS.filter(
-        other => other.scope === dp.scope && other.id !== dp.id
+        (other) => other.scope === dp.scope && other.id !== dp.id,
       );
 
       for (const companyId of allIds) {
@@ -253,46 +353,78 @@ export function useErrorBrowserData(
 
         if (!stageCompany || !prodCompany) continue;
 
-        const stageRP = pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear);
-        const prodRP = pickReportingPeriodForYear(prodCompany.reportingPeriods, selectedYear);
-
-        if (!stageRP || !prodRP) continue;
-
-        const stageValue = getDataPointValue(stageRP?.emissions, dp.id);
-        const prodValue = getDataPointValue(prodRP?.emissions, dp.id);
-
-        if (verifiedOnly) {
-          const isVerified = getDataPointVerified(prodRP.emissions, dp.id);
-          const isBothNull = stageValue === null && prodValue === null;
-          const allowBothNull =
-            isBothNull && (prodCompanyVerifiedForYear.get(companyId) ?? false);
-          if (!isVerified && !allowBothNull) continue;
-        }
-
-        let discrepancy = classifyDiscrepancy(stageValue, prodValue, 0.5);
-        discrepancy = reclassifyDiscrepancyForCategoryError(
-          discrepancy,
-          stageValue,
-          prodValue,
-          stageRP?.emissions,
-          prodRP?.emissions,
-          sameScopeDataPoints
+        const slots = buildReportingPeriodComparisonSlots(
+          stageCompany.reportingPeriods,
+          prodCompany.reportingPeriods,
+          selectedDataYear,
+          selectedReportYear,
         );
 
-        switch (discrepancy) {
-          case 'identical': identical++; break;
-          case 'rounding': rounding++; break;
-          case 'hallucination': hallucination++; break;
-          case 'missing': missing++; break;
-          case 'unit-error': unitError++; break;
-          case 'small-error': smallError++; break;
-          case 'error': errorCount++; break;
-          case 'category-error': categoryError++; break;
-          case 'both-null': bothNull++; break;
+        for (const slot of slots) {
+          if (!slot.stagePeriod || !slot.prodPeriod) continue;
+
+          const stageValue = getDataPointValue(slot.stagePeriod.emissions, dp.id);
+          const prodValue = getDataPointValue(slot.prodPeriod.emissions, dp.id);
+
+          if (verifiedOnly) {
+            const isVerified = getDataPointVerified(slot.prodPeriod.emissions, dp.id);
+            const isBothNull = stageValue === null && prodValue === null;
+            const allowBothNull =
+              isBothNull && isProdReportingPeriodFullyVerified(slot.prodPeriod);
+            if (!isVerified && !allowBothNull) continue;
+          }
+
+          let discrepancy = classifyDiscrepancy(stageValue, prodValue, 0.5);
+          discrepancy = reclassifyDiscrepancyForCategoryError(
+            discrepancy,
+            stageValue,
+            prodValue,
+            slot.stagePeriod.emissions,
+            slot.prodPeriod.emissions,
+            sameScopeDataPoints,
+          );
+
+          switch (discrepancy) {
+            case 'identical':
+              identical++;
+              break;
+            case 'rounding':
+              rounding++;
+              break;
+            case 'hallucination':
+              hallucination++;
+              break;
+            case 'missing':
+              missing++;
+              break;
+            case 'unit-error':
+              unitError++;
+              break;
+            case 'small-error':
+              smallError++;
+              break;
+            case 'error':
+              errorCount++;
+              break;
+            case 'category-error':
+              categoryError++;
+              break;
+            case 'both-null':
+              bothNull++;
+              break;
+          }
         }
       }
 
-      const withAnyData = identical + rounding + hallucination + missing + unitError + smallError + errorCount + categoryError;
+      const withAnyData =
+        identical +
+        rounding +
+        hallucination +
+        missing +
+        unitError +
+        smallError +
+        errorCount +
+        categoryError;
       const tolerantSuccess = identical + rounding + smallError;
       const tolerantRate = withAnyData > 0 ? (tolerantSuccess / withAnyData) * 100 : 0;
 
@@ -302,12 +434,21 @@ export function useErrorBrowserData(
         tolerantRate,
         tolerantSuccess,
         withAnyData,
-        breakdown: { identical, rounding, hallucination, missing, unitError, smallError, error: errorCount, categoryError, bothNull },
+        breakdown: {
+          identical,
+          rounding,
+          hallucination,
+          missing,
+          unitError,
+          smallError,
+          error: errorCount,
+          categoryError,
+          bothNull,
+        },
       };
     });
-  }, [tagFilteredCompanies, selectedYear, verifiedOnly, prodCompanyVerifiedForYearMap]);
+  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear, verifiedOnly]);
 
-  // Worst companies: count errors across ALL data points
   const worstCompanies = React.useMemo((): WorstCompany[] => {
     if (tagFilteredCompanies.stage.length === 0 || tagFilteredCompanies.prod.length === 0)
       return [];
@@ -318,18 +459,18 @@ export function useErrorBrowserData(
     const allIds = Array.from(new Set([...stageMap.keys(), ...prodMap.keys()]));
     const companyErrors: WorstCompany[] = [];
 
-    const prodCompanyVerifiedForYear = prodCompanyVerifiedForYearMap(prodMap, allIds);
-
     for (const companyId of allIds) {
       const stageCompany = stageMap.get(companyId);
       const prodCompany = prodMap.get(companyId);
 
       if (!stageCompany || !prodCompany) continue;
 
-      const stageRP = pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear);
-      const prodRP = pickReportingPeriodForYear(prodCompany.reportingPeriods, selectedYear);
-
-      if (!stageRP || !prodRP) continue;
+      const slots = buildReportingPeriodComparisonSlots(
+        stageCompany.reportingPeriods,
+        prodCompany.reportingPeriods,
+        selectedDataYear,
+        selectedReportYear,
+      );
 
       const name = stageCompany.name || prodCompany.name || companyId;
       let errorCount = 0;
@@ -337,39 +478,45 @@ export function useErrorBrowserData(
       const breakdown: Record<string, number> = {};
       const errorDataPoints: Array<{ label: string; discrepancy: DiscrepancyType }> = [];
 
-      for (const dp of DATA_POINTS) {
-        const stageValue = getDataPointValue(stageRP.emissions, dp.id);
-        const prodValue = getDataPointValue(prodRP.emissions, dp.id);
+      for (const slot of slots) {
+        if (!slot.stagePeriod || !slot.prodPeriod) continue;
 
-        if (verifiedOnly) {
-          const isVerified = getDataPointVerified(prodRP.emissions, dp.id);
-          const isBothNull = stageValue === null && prodValue === null;
-          const allowBothNull =
-            isBothNull && (prodCompanyVerifiedForYear.get(companyId) ?? false);
-          if (!isVerified && !allowBothNull) continue;
+        for (const dp of DATA_POINTS) {
+          const stageValue = getDataPointValue(slot.stagePeriod.emissions, dp.id);
+          const prodValue = getDataPointValue(slot.prodPeriod.emissions, dp.id);
+
+          if (verifiedOnly) {
+            const isVerified = getDataPointVerified(slot.prodPeriod.emissions, dp.id);
+            const isBothNull = stageValue === null && prodValue === null;
+            const allowBothNull =
+              isBothNull && isProdReportingPeriodFullyVerified(slot.prodPeriod);
+            if (!isVerified && !allowBothNull) continue;
+          }
+
+          let discrepancy = classifyDiscrepancy(stageValue, prodValue, 0.5);
+          const sameScopeDataPoints = DATA_POINTS.filter(
+            (other) => other.scope === dp.scope && other.id !== dp.id,
+          );
+          discrepancy = reclassifyDiscrepancyForCategoryError(
+            discrepancy,
+            stageValue,
+            prodValue,
+            slot.stagePeriod.emissions,
+            slot.prodPeriod.emissions,
+            sameScopeDataPoints,
+          );
+
+          const isError =
+            discrepancy !== 'identical' &&
+            discrepancy !== 'rounding' &&
+            discrepancy !== 'both-null';
+          if (isError) {
+            errorCount++;
+            breakdown[discrepancy] = (breakdown[discrepancy] || 0) + 1;
+            errorDataPoints.push({ label: dp.label, discrepancy });
+          }
+          if (stageValue !== null || prodValue !== null) totalDataPoints++;
         }
-
-        let discrepancy = classifyDiscrepancy(stageValue, prodValue, 0.5);
-        const sameScopeDataPoints = DATA_POINTS.filter(
-          other => other.scope === dp.scope && other.id !== dp.id
-        );
-        discrepancy = reclassifyDiscrepancyForCategoryError(
-          discrepancy,
-          stageValue,
-          prodValue,
-          stageRP.emissions,
-          prodRP.emissions,
-          sameScopeDataPoints
-        );
-
-        const isError = discrepancy !== 'identical' && discrepancy !== 'rounding' && discrepancy !== 'both-null';
-        if (isError) {
-          errorCount++;
-          breakdown[discrepancy] = (breakdown[discrepancy] || 0) + 1;
-          errorDataPoints.push({ label: dp.label, discrepancy });
-        }
-        // Keep denominator aligned with the same filter: count eligible non-null comparisons
-        if (stageValue !== null || prodValue !== null) totalDataPoints++;
       }
 
       if (errorCount > 0) {
@@ -386,9 +533,8 @@ export function useErrorBrowserData(
     }
 
     return companyErrors.sort((a, b) => b.errorCount - a.errorCount);
-  }, [tagFilteredCompanies, selectedYear, verifiedOnly, prodCompanyVerifiedForYearMap]);
+  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear, verifiedOnly]);
 
-  // Set of difficult company IDs (>=5 errors)
   const difficultCompanyIds = React.useMemo(() => {
     const ids = new Map<string, number>();
     for (const c of worstCompanies) {
@@ -397,7 +543,6 @@ export function useErrorBrowserData(
     return ids;
   }, [worstCompanies]);
 
-  // Total companies with reporting periods in both APIs (for histogram)
   const totalWithBothRPs = React.useMemo(() => {
     const stageMap = companiesToMapById(tagFilteredCompanies.stage);
     const prodMap = companiesToMapById(tagFilteredCompanies.prod);
@@ -406,21 +551,30 @@ export function useErrorBrowserData(
     for (const id of new Set([...stageMap.keys(), ...prodMap.keys()])) {
       const s = stageMap.get(id);
       const p = prodMap.get(id);
-      if (s && p) {
-        const sRP = pickReportingPeriodForYear(s.reportingPeriods, selectedYear);
-        const pRP = pickReportingPeriodForYear(p.reportingPeriods, selectedYear);
-        if (sRP && pRP) count++;
+      if (!s || !p) continue;
+
+      const slots = buildReportingPeriodComparisonSlots(
+        s.reportingPeriods,
+        p.reportingPeriods,
+        selectedDataYear,
+        selectedReportYear,
+      );
+
+      for (const slot of slots) {
+        if (slot.stagePeriod && slot.prodPeriod) count++;
       }
     }
     return count;
-  }, [tagFilteredCompanies, selectedYear]);
+  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear]);
 
   return {
     isLoading,
+    isAuthError,
     error,
     fetchData,
     comparisonRows,
     availableTags,
+    availableReportYears,
     summaryStats,
     allDataPointMetrics,
     worstCompanies,

@@ -83,6 +83,12 @@ function companiesPath(segment = ""): string {
   return seg ? `${path}/${seg}` : path;
 }
 
+function pipelineCompaniesPath(segment = ""): string {
+  const path = "/pipeline/companies";
+  const seg = segment.replace(/^\//, "");
+  return seg ? `${path}/${seg}` : path;
+}
+
 function internalCompaniesPath(segment = ""): string {
   const path = "/internal-companies";
   const seg = segment.replace(/^\//, "");
@@ -95,11 +101,11 @@ function reportingPeriodPath(segment = ""): string {
   return seg ? `${path}/${seg}` : path;
 }
 
-/** List companies from Garbo (GET /api/companies). Requires auth. */
+/** List companies for staff editor (GET /api/pipeline/companies — all reporting periods). */
 export async function listCompanies(
   signal?: AbortSignal,
 ): Promise<GarboCompanyListItem[]> {
-  const res = await garboAuthFetch(apiUrl(companiesPath()), {
+  const res = await garboAuthFetch(apiUrl(pipelineCompaniesPath()), {
     method: "GET",
     headers: { Accept: "application/json" },
     signal,
@@ -269,7 +275,30 @@ export async function updateReportingPeriods(
   }
 }
 
+/** Delete a company by wikidataId (DELETE /api/companies/:wikidataId). */
+export async function deleteCompany(wikidataId: string): Promise<void> {
+  const res = await garboAuthFetch(
+    apiUrl(companiesPath(encodeURIComponent(wikidataId))),
+    {
+      method: "DELETE",
+      headers: { Accept: "application/json" },
+    },
+  );
+
+  if (res.status === 401) {
+    throw new Error("Please log in to delete company.");
+  }
+  if (res.status === 404) {
+    throw new Error("Company not found.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to delete company: ${res.status} ${text}`);
+  }
+}
+
 /** Delete a reporting period by id (DELETE /api/companies/reporting-period/:id). */
+// Whole CompanyReport delete + empty-shell cleanup after last period — see garbo k8s/jobs/README.md
 export async function deleteReportingPeriod(id: string): Promise<void> {
   const encodedId = encodeURIComponent(id);
   const res = await garboAuthFetch(

@@ -1,4 +1,5 @@
 import type { GarboCompanyListItem, GarboMinimalMetadata } from "./types";
+import { getPeriodDataYear } from "./reporting-period-ui";
 
 export type VerificationState = "none" | "verified" | "unverified";
 
@@ -11,11 +12,6 @@ export type CompanyVerificationOverview = {
   hasUnverifiedData: boolean;
   perYear: Array<{ year: string; emissions: VerificationState; economy: VerificationState }>;
 };
-
-function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
-  const y = period.endDate?.slice(0, 4) ?? period.startDate?.slice(0, 4);
-  return y || null;
-}
 
 export function isAIGenerated(meta: GarboMinimalMetadata | null | undefined): boolean {
   if (!meta) return false;
@@ -46,7 +42,7 @@ export function getCompanyVerificationOverview(
   let economyAnyUnverified = false;
 
   for (const p of periods) {
-    const y = getPeriodYear(p);
+    const y = getPeriodDataYear(p);
     if (!y) continue;
 
     // --- emissions ---

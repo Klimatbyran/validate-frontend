@@ -5,7 +5,8 @@ import {
   type CompanyRow,
   type ReportingPeriod,
 } from '../types';
-import { getDataPointValue, pickReportingPeriodForYear } from './emissions';
+import { getDataPointValue } from './emissions';
+import { findReportingPeriodForShell } from './reporting-period-comparison';
 
 /** Build a map of companies by internal id for quick lookup. */
 export function companiesToMapById(companies: Company[]): Map<string, Company> {
@@ -122,7 +123,8 @@ export function applyCategoryErrorToRows(
   prodMap: Map<string, Company>,
   sameScopeDataPoints: SameScopeDataPoint[],
   selectedDataPoint: string,
-  selectedYear: number
+  selectedDataYear: number,
+  selectedReportYear?: number | null,
 ): void {
   for (const row of rows) {
     if (
@@ -142,9 +144,20 @@ export function applyCategoryErrorToRows(
       row.stageValue !== null &&
       prodCompany
     ) {
-      const prodRP = pickReportingPeriodForYear(prodCompany.reportingPeriods, selectedYear);
+      const shellKey = row.shellKey ?? '';
+      const prodRP = findReportingPeriodForShell(
+        prodCompany.reportingPeriods,
+        selectedDataYear,
+        selectedReportYear ?? null,
+        shellKey,
+      );
       const stageRPForKind = stageCompany
-        ? pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear)
+        ? findReportingPeriodForShell(
+            stageCompany.reportingPeriods,
+            selectedDataYear,
+            selectedReportYear ?? null,
+            shellKey,
+          )
         : null;
       for (const otherDP of sameScopeDataPoints) {
         const otherProdValue = getDataPointValue(prodRP?.emissions, otherDP.id);
@@ -182,7 +195,12 @@ export function applyCategoryErrorToRows(
       row.prodValue !== null &&
       stageCompany
     ) {
-      const stageRP = pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear);
+      const stageRP = findReportingPeriodForShell(
+        stageCompany.reportingPeriods,
+        selectedDataYear,
+        selectedReportYear ?? null,
+        row.shellKey ?? '',
+      );
       for (const otherDP of sameScopeDataPoints) {
         const otherStageValue = getDataPointValue(stageRP?.emissions, otherDP.id);
         if (

@@ -14,19 +14,24 @@ import type {
 import { updateReportingPeriods } from "../../lib/companies-api";
 import { inputClassName } from "../../lib/company-edit-utils";
 import {
+  dataYearsWithMultiplePeriods,
   editorDenseMultiSelectTriggerClass,
   editorDenseToolbarClass,
   formatPeriodDateRange,
+  getPeriodDataYear,
   getPeriodYear,
   isReportingPeriodWithIdAndDates,
   toNumberOrNull,
 } from "../../lib/reporting-period-ui";
 import { useReportingPeriodColumnFilters } from "../../hooks/useReportingPeriodColumnFilters";
+import { useCompanyReportShellFilters } from "../../hooks/useCompanyReportShellFilters";
+import { CompanyReportShellFilterControls } from "./CompanyReportShellFilterControls";
 import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 import { FieldWithMetadata } from "../FieldWithMetadata";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
 import { reportHrefLinkPillClassName } from "@/lib/report-url-link-pill";
+import { ReportShellCollapsibleGroup } from "./ReportShellCollapsibleGroup";
 
 type EditedPeriodEconomy = {
   turnoverValue?: string;
@@ -99,6 +104,23 @@ export function EconomyDataTab({
   const [saving, setSaving] = useState(false);
 
   const {
+    shells,
+    showAllReports,
+    setShowAllReports,
+    selectedShellKeys,
+    setSelectedShellKeys,
+    filterPeriodsByShell,
+    visibleShellGroups,
+  } = useCompanyReportShellFilters(periods, company.id, {
+    defaultToLatestShell: true,
+  });
+
+  const periodsForShellFilter = useMemo(
+    () => filterPeriodsByShell(periods),
+    [periods, filterPeriodsByShell],
+  );
+
+  const {
     showAllYears,
     setShowAllYears,
     selectedYears,
@@ -108,8 +130,18 @@ export function EconomyDataTab({
     years,
     visiblePeriods,
   } = useReportingPeriodColumnFilters<GarboReportingPeriodSummary & { id: string }>(
-    periods,
-    company.id
+    periodsForShellFilter,
+    company.id,
+  );
+
+  const shellGroupsToRender = useMemo(
+    () => visibleShellGroups(visiblePeriods),
+    [visiblePeriods, visibleShellGroups],
+  );
+
+  const duplicateDataYears = useMemo(
+    () => dataYearsWithMultiplePeriods(periods),
+    [periods],
   );
 
   useEffect(() => {
@@ -197,6 +229,13 @@ export function EconomyDataTab({
                 ? t("editor.periodEditor.sortNewestFirst")
                 : t("editor.periodEditor.sortOldestFirst")}
             </Button>
+            <CompanyReportShellFilterControls
+              shells={shells}
+              showAllReports={showAllReports}
+              onShowAllReportsChange={setShowAllReports}
+              selectedShellKeys={selectedShellKeys}
+              onSelectedShellKeysChange={setSelectedShellKeys}
+            />
             <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-01">
               <input
                 type="checkbox"
@@ -223,14 +262,23 @@ export function EconomyDataTab({
         </div>
       </div>
 
-      {visiblePeriods.length ? (
-        <div className="w-full min-w-0">
-            <p className="text-[11px] font-semibold text-gray-02 uppercase tracking-wider px-2 mb-3">
-              {t("editor.singleCompanyView.sections.reportingPeriods")}
-            </p>
+      {duplicateDataYears.length > 0 ? (
+        <div className="mb-4 rounded-md border border-orange-03/40 bg-orange-05/10 px-3 py-2 text-xs text-gray-01">
+          {t("editor.singleCompanyView.multiplePeriodsSameDataYear", {
+            years: duplicateDataYears.join(", "),
+          })}
+        </div>
+      ) : null}
 
-            <div className="space-y-3 w-full min-w-0">
-              {visiblePeriods.map((rp) => {
+      {visiblePeriods.length ? (
+        <div className="space-y-6 w-full min-w-0">
+          {shellGroupsToRender.map((shell) => (
+            <ReportShellCollapsibleGroup
+              key={shell.shellKey}
+              shell={shell}
+              periodCount={shell.periods.length}
+            >
+              {shell.periods.map((rp) => {
                 const rpEdits = edited[rp.id] ?? {};
                 const originalTurnover = rp.economy?.turnover?.value ?? null;
                 const originalEmployees = rp.economy?.employees?.value ?? null;
@@ -260,6 +308,8 @@ export function EconomyDataTab({
                   rp.endDate,
                   t("common.placeholderDash")
                 );
+                const dataYear = getPeriodDataYear(rp) ?? "";
+                const isDuplicateDataYear = duplicateDataYears.includes(dataYear);
                 const reportUrl = (rp.reportURL ?? "").trim();
                 const s3Url = (rp.s3Url ?? "").trim();
 
@@ -284,6 +334,11 @@ export function EconomyDataTab({
                       <div>
                         <div className="text-sm font-semibold text-gray-01">{periodYear}</div>
                         <div className="text-xs text-gray-02 mt-0.5">{periodDateRange}</div>
+                        {isDuplicateDataYear ? (
+                          <p className="mt-2 text-[11px] text-orange-03/90">
+                            {t("editor.singleCompanyView.sameDataYearAsAnotherPeriod")}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -442,7 +497,8 @@ export function EconomyDataTab({
                   </div>
                 );
               })}
-            </div>
+            </ReportShellCollapsibleGroup>
+          ))}
         </div>
       ) : (
         <p className="text-sm text-gray-02 mt-3">

@@ -5,7 +5,7 @@ set -e
 BACKEND_API_URL=${BACKEND_API_URL:-https://stage-pipeline-api.klimatkollen.se}
 # Unearth HTTP API (default: staging, includes /api suffix)
 UNEARTH_API_URL=${UNEARTH_API_URL:-https://stage-api.unearthdata.ai/api}
-# Garbo monolith — queue-archive only (default: staging klimatkollen)
+# Garbo API — queue-archive only (default: staging klimatkollen)
 GARBO_API_URL=${GARBO_API_URL:-https://stage-api.klimatkollen.se/api}
 # API keys for proxied requests (injected as X-API-Key)
 GARBO_ALL_ACCESS_API_KEY=${GARBO_ALL_ACCESS_API_KEY:-}

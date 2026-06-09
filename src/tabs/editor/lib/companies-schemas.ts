@@ -19,7 +19,7 @@ export const garboCompanyListItemSchema = z
   })
   .passthrough();
 
-/** Company detail from GET /api/internal-companies/:wikidataId. */
+/** Company detail from GET /api/pipeline/companies/:wikidataId. */
 export const garboCompanyDetailSchema = garboCompanyListItemSchema
   .extend({
     url: z.string().nullable().optional(),

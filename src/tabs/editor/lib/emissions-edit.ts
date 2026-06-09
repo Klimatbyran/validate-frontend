@@ -104,17 +104,22 @@ export function buildEmissionsPeriodPatch(
   let scope3Payload: Scope3Payload | undefined;
 
   if (hasScope3StatedTotal) {
-    scope3Payload = {
-      ...scope3Payload,
-      statedTotalEmissions: {
-        total:
-          rpEdits.scope3StatedTotalEmissions != null
-            ? toNumberOrNull(rpEdits.scope3StatedTotalEmissions)
-            : undefined,
-        unit: "tCO2e",
-        verified: rpEdits.scope3StatedTotalVerified ?? undefined,
-      },
-    };
+    const hasValueEdit = rpEdits.scope3StatedTotalEmissions != null;
+    const hasVerifiedEdit = rpEdits.scope3StatedTotalVerified != null;
+    const originalTotal = rp.emissions?.scope3?.statedTotalEmissions?.total ?? null;
+
+    if (!(hasVerifiedEdit && !hasValueEdit && originalTotal == null)) {
+      scope3Payload = {
+        ...scope3Payload,
+        statedTotalEmissions: {
+          total: hasValueEdit
+            ? toNumberOrNull(rpEdits.scope3StatedTotalEmissions ?? "")
+            : originalTotal,
+          unit: "tCO2e",
+          verified: hasVerifiedEdit ? rpEdits.scope3StatedTotalVerified : undefined,
+        },
+      };
+    }
   }
 
   if (hasScope3Categories) {

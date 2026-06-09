@@ -1,14 +1,7 @@
 /**
- * Errors tab: always stage + prod garbo (comparison).
+ * Errors tab: stage + prod Unearth API company lists (all reporting periods).
  */
-import { getStageUnearthUrl, getProdUnearthUrl } from "@/config/api-env";
-
-const COMPANIES_PATH = "/api/companies";
-
-export function getStageApiUrl(): string {
-  return getStageUnearthUrl(COMPANIES_PATH);
-}
-
-export function getProdApiUrl(): string {
-  return getProdUnearthUrl(COMPANIES_PATH);
-}
+export {
+  getStagePipelineCompaniesListUrl,
+  getProdPipelineCompaniesListUrl,
+} from "@/config/api-env";

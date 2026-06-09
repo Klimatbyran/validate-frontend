@@ -132,6 +132,8 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     "url",
     "sourceUrl",
     "pdfCache",
+    "reportYear",
+    "documentReportYear",
   ];
 
   function ValueList({ items }: { items: any[] }) {
@@ -224,6 +226,29 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     Boolean(storedPdfUrl && sourceReportUrl) &&
     storedPdfUrl !== sourceReportUrl;
 
+  const pipelineReportYears = React.useMemo(() => {
+    const data = (effectiveJob?.data ?? job?.data ?? processedData) as
+      | Record<string, unknown>
+      | undefined;
+    if (!data) return null;
+
+    const readYear = (value: unknown): string | undefined => {
+      if (value === undefined || value === null) return undefined;
+      const trimmed = String(value).trim();
+      return trimmed.length ? trimmed : undefined;
+    };
+
+    const reportYearHint = readYear(data.reportYear);
+    const documentReportYear =
+      readYear(data.documentReportYear) ??
+      (data.body && typeof data.body === "object" && !Array.isArray(data.body)
+        ? readYear((data.body as Record<string, unknown>).documentReportYear)
+        : undefined);
+
+    if (!reportYearHint && !documentReportYear) return null;
+    return { reportYearHint, documentReportYear };
+  }, [effectiveJob, job, processedData]);
+
   // Get company name from multiple possible sources
   const companyName: string | undefined = React.useMemo(() => {
     const name = 
@@ -311,6 +336,38 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
           </div>
         </div>
       )}
+
+      {pipelineReportYears ? (
+        <div className="mb-4">
+          <div className="bg-gray-03/20 rounded-lg p-4 space-y-2">
+            <h4 className="text-base font-medium text-gray-01">
+              {t("jobstatus.jobdetails.reportYearPanelTitle")}
+            </h4>
+            {pipelineReportYears.documentReportYear ? (
+              <div className="text-sm text-gray-02">
+                <span className="font-medium text-gray-01">
+                  {t("jobstatus.jobdetails.documentReportYearLabel")}:
+                </span>{" "}
+                {pipelineReportYears.documentReportYear}
+                <span className="block text-xs text-gray-02 mt-0.5">
+                  {t("jobstatus.jobdetails.documentReportYearHint")}
+                </span>
+              </div>
+            ) : null}
+            {pipelineReportYears.reportYearHint ? (
+              <div className="text-sm text-gray-02">
+                <span className="font-medium text-gray-01">
+                  {t("jobstatus.jobdetails.reportYearHintLabel")}:
+                </span>{" "}
+                {pipelineReportYears.reportYearHint}
+                <span className="block text-xs text-gray-02 mt-0.5">
+                  {t("jobstatus.jobdetails.reportYearHintDescription")}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {/* Show Wikidata Approval Display if available (for guessWikidata step) */}
       {wikidataApprovalData && (

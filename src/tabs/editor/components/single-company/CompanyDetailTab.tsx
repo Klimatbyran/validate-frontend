@@ -3,9 +3,11 @@ import { Loader2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
+import { Modal } from "@/ui/modal";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { GicsTreeSelect } from "@/ui/gics-tree-select";
 import {
+  deleteCompany,
   fetchIndustryGics,
   updateCompany,
   updateCompanyBaseYear,
@@ -26,10 +28,12 @@ export function CompanyDetailTab({
   company,
   tagOptions,
   onSaved,
+  onDeleted,
 }: {
   company: GarboCompanyDetail;
   tagOptions: TagOption[];
   onSaved?: () => void;
+  onDeleted?: () => void;
 }) {
   const { t } = useI18n();
   const dash = t("common.placeholderDash");
@@ -62,6 +66,8 @@ export function CompanyDetailTab({
   const [savingCore, setSavingCore] = useState(false);
   const [savingIndustry, setSavingIndustry] = useState(false);
   const [saveDialog, setSaveDialog] = useState<null | "core" | "industry">(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingCompany, setDeletingCompany] = useState(false);
 
   useEffect(() => {
     setName(company.name ?? "");
@@ -174,6 +180,24 @@ export function CompanyDetailTab({
     () => industryOptions.find((o) => o.code === subIndustryCode) ?? null,
     [industryOptions, subIndustryCode]
   );
+
+  const handleDeleteCompany = async () => {
+    setDeletingCompany(true);
+    try {
+      await deleteCompany(company.wikidataId);
+      toast.success(t("editor.singleCompanyView.deleteCompany.deleted"));
+      setDeleteModalOpen(false);
+      onDeleted?.();
+    } catch (e) {
+      toast.error(
+        t("editor.singleCompanyView.deleteCompany.failed", {
+          message: e instanceof Error ? e.message : String(e),
+        }),
+      );
+    } finally {
+      setDeletingCompany(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -411,6 +435,62 @@ export function CompanyDetailTab({
           )}
         </div>
       </section>
+
+      <section className="rounded-lg border border-red-500/30 bg-gray-04/80 p-4">
+        <h3 className="text-sm font-semibold text-red-500 mb-2">
+          {t("editor.singleCompanyView.deleteCompany.sectionTitle")}
+        </h3>
+        <p className="text-sm text-gray-02 mb-4">
+          {t("editor.singleCompanyView.deleteCompany.sectionHint")}
+        </p>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="bg-red-500 text-white hover:bg-red-500/90 active:bg-red-500/80"
+          onClick={() => setDeleteModalOpen(true)}
+          disabled={deletingCompany}
+        >
+          {deletingCompany && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {t("editor.singleCompanyView.deleteCompany.button")}
+        </Button>
+      </section>
+
+      <Modal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        size="md"
+        title={t("editor.singleCompanyView.deleteCompany.title")}
+        description={t("editor.singleCompanyView.deleteCompany.description", {
+          name: company.name ?? company.wikidataId,
+          wikidataId: company.wikidataId,
+        })}
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setDeleteModalOpen(false)}
+              disabled={deletingCompany}
+            >
+              {t("editor.singleCompanyView.deleteCompany.cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="bg-red-500 text-white hover:bg-red-500/90 active:bg-red-500/80"
+              onClick={() => void handleDeleteCompany()}
+              disabled={deletingCompany}
+            >
+              {deletingCompany
+                ? t("editor.singleCompanyView.deleteCompany.deleting")
+                : t("editor.singleCompanyView.deleteCompany.confirm")}
+            </Button>
+          </>
+        }
+      />
 
       <ReviewerMetadataDialog
         open={saveDialog != null}

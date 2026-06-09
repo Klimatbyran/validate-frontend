@@ -12,17 +12,23 @@ import type {
 } from "../../lib/types";
 import { updateReportingPeriods } from "../../lib/companies-api";
 import {
+  dataYearsWithMultiplePeriods,
   editorDenseMultiSelectTriggerClass,
   editorDenseToolbarClass,
   formatPeriodDateRange,
+  getPeriodDataYear,
   getPeriodYear,
   isReportingPeriodWithIdAndDates,
 } from "../../lib/reporting-period-ui";
+import { publicPeriodIdsForCompany } from "../../lib/reporting-period-public-read";
 import { useReportingPeriodColumnFilters } from "../../hooks/useReportingPeriodColumnFilters";
+import { useCompanyReportShellFilters } from "../../hooks/useCompanyReportShellFilters";
+import { CompanyReportShellFilterControls } from "./CompanyReportShellFilterControls";
 import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 import { buildEmissionsPeriodPatch, type EditedPeriodEmissions } from "../../lib/emissions-edit";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
+import { ReportingPeriodCompanyReportInfo } from "./ReportingPeriodCompanyReportInfo";
 import { reportHrefLinkPillClassName } from "@/lib/report-url-link-pill";
 import {
   applyNullableStringEdit,
@@ -60,6 +66,22 @@ export function EmissionsDataTab({
   const [saving, setSaving] = useState(false);
 
   const {
+    shells,
+    showAllReports,
+    setShowAllReports,
+    selectedShellKeys,
+    setSelectedShellKeys,
+    filterPeriodsByShell,
+  } = useCompanyReportShellFilters(periods, company.id, {
+    defaultToLatestShell: true,
+  });
+
+  const periodsForShellFilter = useMemo(
+    () => filterPeriodsByShell(periods),
+    [periods, filterPeriodsByShell],
+  );
+
+  const {
     showAllYears,
     setShowAllYears,
     selectedYears,
@@ -69,8 +91,8 @@ export function EmissionsDataTab({
     years,
     visiblePeriods,
   } = useReportingPeriodColumnFilters<GarboReportingPeriodSummary & { id: string }>(
-    periods,
-    company.id
+    periodsForShellFilter,
+    company.id,
   );
 
   useEffect(() => {
@@ -140,13 +162,30 @@ export function EmissionsDataTab({
     });
   };
 
+  const duplicateDataYears = useMemo(
+    () => dataYearsWithMultiplePeriods(periods),
+    [periods],
+  );
+
+  const publicPeriodIds = useMemo(
+    () => publicPeriodIdsForCompany(periods),
+    [periods],
+  );
+
   const visibleColumns = useMemo(() => {
     return visiblePeriods.map((rp) => {
       const dateRangeLabel = formatPeriodDateRange(rp.startDate, rp.endDate, dash);
       const year = getPeriodYear(rp);
-      return { rp, dateRangeLabel, year: year ?? "" };
+      const dataYear = getPeriodDataYear(rp) ?? "";
+      return {
+        rp,
+        dateRangeLabel,
+        year: year ?? "",
+        isDuplicateDataYear: duplicateDataYears.includes(dataYear),
+        isPublicApiPeriod: publicPeriodIds.has(rp.id),
+      };
     });
-  }, [dash, visiblePeriods]);
+  }, [dash, duplicateDataYears, publicPeriodIds, visiblePeriods]);
 
   const scope3CategoryIds = useMemo(() => {
     const set = new Set<number>();
@@ -298,6 +337,13 @@ export function EmissionsDataTab({
               <Undo2 className="w-3.5 h-3.5 mr-1.5" />
               {t("editor.periodEditor.resetAll")}
             </Button>
+            <CompanyReportShellFilterControls
+              shells={shells}
+              showAllReports={showAllReports}
+              onShowAllReportsChange={setShowAllReports}
+              selectedShellKeys={selectedShellKeys}
+              onSelectedShellKeysChange={setSelectedShellKeys}
+            />
             <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-01">
               <input
                 type="checkbox"
@@ -324,6 +370,14 @@ export function EmissionsDataTab({
         </div>
       </div>
 
+      {duplicateDataYears.length > 0 ? (
+        <div className="mb-4 rounded-md border border-orange-03/40 bg-orange-05/10 px-3 py-2 text-xs text-gray-01">
+          {t("editor.singleCompanyView.multiplePeriodsSameDataYear", {
+            years: duplicateDataYears.join(", "),
+          })}
+        </div>
+      ) : null}
+
       {visiblePeriods.length ? (
         <div className="w-full min-w-0 overflow-x-auto overflow-y-visible">
           <div className="min-w-max pb-2">
@@ -333,8 +387,11 @@ export function EmissionsDataTab({
 
             <div className="mb-8">
               <EmissionsEditRow name={t("editor.periodEditor.reportingPeriodHeader")} headerName noHover>
-                {visibleColumns.map(({ rp, dateRangeLabel, year }) => (
-                  <div key={rp.id} className={emissionsPeriodHeaderCellClass}>
+                {visibleColumns.map(({ rp, dateRangeLabel, year, isDuplicateDataYear, isPublicApiPeriod }) => (
+                  <div
+                    key={rp.id}
+                    className={`${emissionsPeriodHeaderCellClass} ${isPublicApiPeriod ? "border-l-2 border-l-green-03/70" : ""}`}
+                  >
                     <div className="text-right min-w-0 flex-1">
                       {year ? (
                         <>
@@ -342,6 +399,20 @@ export function EmissionsDataTab({
                           <div className="text-[11px] text-gray-02 mt-0.5 leading-tight break-words">
                             {dateRangeLabel}
                           </div>
+                          <ReportingPeriodCompanyReportInfo period={rp} />
+                          {isPublicApiPeriod ? (
+                            <p
+                              className="mt-1.5 text-[10px] font-medium text-green-03/90 uppercase tracking-wide"
+                              title={t("editor.singleCompanyView.publicApiPeriodHint")}
+                            >
+                              {t("editor.singleCompanyView.publicApiPeriodBadge")}
+                            </p>
+                          ) : null}
+                          {isDuplicateDataYear ? (
+                            <p className="mt-1.5 text-[11px] text-orange-03/90 leading-tight">
+                              {t("editor.singleCompanyView.sameDataYearAsAnotherPeriod")}
+                            </p>
+                          ) : null}
                         </>
                       ) : (
                         <div className="text-sm font-semibold text-gray-01">{dateRangeLabel}</div>

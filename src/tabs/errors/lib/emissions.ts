@@ -1,4 +1,6 @@
+import { getPeriodReportYear } from '@/tabs/editor/lib/reporting-period-ui';
 import { ReportingPeriod, DATA_POINTS } from '../types';
+import { pickReportingPeriodsForFilters } from './reporting-period-comparison';
 
 // Emission values can be either a plain number or an object with { total: number }
 export function extractTotal(
@@ -13,32 +15,35 @@ export function extractTotal(
   return null;
 }
 
-/** Pick the reporting period for a given year (prefer full calendar year). */
+export function getPeriodReportYearFromApi(
+  period: ReportingPeriod,
+): number | null {
+  const raw = getPeriodReportYear(period);
+  if (!raw) return null;
+  const year = Number(raw);
+  return Number.isFinite(year) ? year : null;
+}
+
+/** Pick one reporting period (first match after shell sort). Prefer multi-slot helpers. */
+export function pickReportingPeriodForFilters(
+  reportingPeriods: ReportingPeriod[] | undefined,
+  dataYear: number,
+  reportYear?: number | null,
+): ReportingPeriod | null {
+  const matches = pickReportingPeriodsForFilters(
+    reportingPeriods,
+    dataYear,
+    reportYear,
+  );
+  return matches[0] ?? null;
+}
+
+/** Pick the first reporting period for a data year (legacy single-period helper). */
 export function pickReportingPeriodForYear(
   reportingPeriods: ReportingPeriod[] | undefined,
-  year: number
+  year: number,
 ): ReportingPeriod | null {
-  if (!reportingPeriods || reportingPeriods.length === 0) return null;
-
-  const periodsForYear = reportingPeriods.filter((rp) => {
-    const endDate = new Date(rp.endDate);
-    return endDate.getFullYear() === year;
-  });
-
-  if (periodsForYear.length === 0) return null;
-
-  const fullYear = periodsForYear.find((rp) => {
-    const start = new Date(rp.startDate);
-    const end = new Date(rp.endDate);
-    return (
-      start.getMonth() === 0 &&
-      start.getDate() === 1 &&
-      end.getMonth() === 11 &&
-      end.getDate() === 31
-    );
-  });
-
-  return fullYear || periodsForYear[periodsForYear.length - 1];
+  return pickReportingPeriodForFilters(reportingPeriods, year);
 }
 
 type Scope3Emissions = NonNullable<NonNullable<ReportingPeriod['emissions']>['scope3']>;

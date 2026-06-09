@@ -225,7 +225,7 @@ export function BrowserView({
                 ) : (
                   filteredRows.map((row, index) => (
                     <CompanyTableRow
-                      key={row.id}
+                      key={row.rowKey}
                       row={row}
                       index={index}
                       difficultCompanyIds={difficultCompanyIds}
