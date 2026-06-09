@@ -1,5 +1,4 @@
 import type { GarboCompanyListItem } from "./types";
-import type { CompanyVerificationOverview } from "./verification";
 import {
   companyMatchesTagFilter,
   companyPassesExcludeTagFilter,
