@@ -1,8 +1,8 @@
 import type { GarboReportingPeriodSummary } from "../../lib/types";
 import {
+  editorSecondaryIdTextClass,
   getPeriodDataYear,
   getPeriodReportYear,
-  shortenCompanyReportId,
 } from "../../lib/reporting-period-ui";
 
 export function ReportingPeriodCompanyReportInfo({
@@ -27,53 +27,45 @@ export function ReportingPeriodCompanyReportInfo({
 
   if (!reportYear && !companyReportId && !duplicateDataYearHint) return null;
 
-  const companyReportIdTitle = companyReportId
-    ? `CompanyReport: ${companyReportId}`
-    : undefined;
-
   if (compact) {
-    if (reportYear) {
-      return (
-        <div
-          className="text-[10px] text-gray-02 mt-0.5 leading-tight"
-          title={companyReportIdTitle}
-        >
-          {reportYearLabel} {reportYear}
-        </div>
-      );
-    }
-    if (companyReportId) {
-      return (
-        <div
-          className="text-[10px] text-gray-02 mt-0.5 leading-tight"
-          title={companyReportIdTitle}
-        >
-          {companyReportIdLabel}{" "}
-          {shortenCompanyReportId(companyReportId)} · {noReportYearLabel}
-        </div>
-      );
-    }
-    return null;
+    return (
+      <div className="mt-0.5 leading-tight min-w-0">
+        {reportYear ? (
+          <div className="text-[10px] text-gray-02">
+            {reportYearLabel} {reportYear}
+          </div>
+        ) : null}
+        {companyReportId ? (
+          <div className={editorSecondaryIdTextClass}>{companyReportId}</div>
+        ) : reportYear ? null : (
+          <div className="text-[10px] text-gray-02">
+            {companyReportIdLabel} · {noReportYearLabel}
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-02">
+    <div className="mt-2 flex flex-col gap-1 min-w-0">
       {reportYear ? (
-        <span title={companyReportIdTitle}>
+        <div className="text-[11px] text-gray-02">
           <span className="font-medium text-gray-01">{reportYearLabel}:</span>{" "}
           {reportYear}
-        </span>
-      ) : companyReportId ? (
-        <span title={companyReportIdTitle}>
+        </div>
+      ) : null}
+      {companyReportId ? (
+        <div className={editorSecondaryIdTextClass}>{companyReportId}</div>
+      ) : !reportYear ? (
+        <div className="text-[11px] text-gray-02">
           <span className="font-medium text-gray-01">
             {companyReportIdLabel}:
           </span>{" "}
-          {shortenCompanyReportId(companyReportId)}
-          <span className="text-orange-03/90"> · {noReportYearLabel}</span>
-        </span>
+          <span className="text-orange-03/90">{noReportYearLabel}</span>
+        </div>
       ) : null}
       {duplicateDataYearHint && dataYear ? (
-        <span className="text-orange-03/90">{duplicateDataYearHint}</span>
+        <span className="text-[11px] text-orange-03/90">{duplicateDataYearHint}</span>
       ) : null}
     </div>
   );

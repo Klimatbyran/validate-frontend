@@ -14,7 +14,7 @@ import { editorCompanyPath } from "../../lib/editor-routes";
 import type { CompanySortId } from "../../lib/single-company-overview-list";
 import { ReportingPeriodQuickEditModal } from "./ReportingPeriodQuickEditModal";
 import type { SingleCompanyOverviewList } from "../../hooks/useSingleCompanyOverviewList";
-import { shortenCompanyReportId } from "../../lib/reporting-period-ui";
+import { editorSecondaryIdTextClass } from "../../lib/reporting-period-ui";
 
 function StatusIcon({ state }: { state: VerificationState }) {
   if (state === "verified")
@@ -169,11 +169,8 @@ export function SingleCompanyOverviewTable({
                       <span>{c.name}</span>
                       <span className="text-xs text-gray-02">{c.wikidataId}</span>
                       {row.companyReportId ? (
-                        <span
-                          className="text-[10px] font-mono text-gray-03 mt-0.5"
-                          title={row.companyReportId}
-                        >
-                          {shortenCompanyReportId(row.companyReportId)}
+                        <span className={`${editorSecondaryIdTextClass} mt-0.5`}>
+                          {row.companyReportId}
                         </span>
                       ) : null}
                     </div>

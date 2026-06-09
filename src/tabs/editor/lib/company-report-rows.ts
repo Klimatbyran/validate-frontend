@@ -4,11 +4,13 @@ import {
   getPeriodReportYear,
 } from "./reporting-period-ui";
 import {
+  getPeriodShellKey,
+  UNLINKED_REPORT_SHELL_KEY,
+} from "./company-report-shells";
+import {
   getCompanyVerificationOverview,
   type CompanyVerificationOverview,
 } from "./verification";
-
-const UNLINKED_REPORT_KEY = "__unlinked__";
 
 export type CompanyReportRow = {
   rowKey: string;
@@ -29,10 +31,7 @@ export function expandCompaniesToReportRows(
     const byReport = new Map<string, GarboReportingPeriodSummary[]>();
 
     for (const period of periods) {
-      const reportKey =
-        period.companyReportId?.trim() ||
-        period.companyReport?.id?.trim() ||
-        UNLINKED_REPORT_KEY;
+      const reportKey = getPeriodShellKey(period);
       const bucket = byReport.get(reportKey) ?? [];
       bucket.push(period);
       byReport.set(reportKey, bucket);
@@ -40,7 +39,7 @@ export function expandCompaniesToReportRows(
 
     if (byReport.size === 0) {
       rows.push({
-        rowKey: `${company.wikidataId}:${UNLINKED_REPORT_KEY}`,
+        rowKey: `${company.wikidataId}:${UNLINKED_REPORT_SHELL_KEY}`,
         company,
         companyReportId: "",
         reportYear: null,
@@ -62,7 +61,8 @@ export function expandCompaniesToReportRows(
       rows.push({
         rowKey: `${company.wikidataId}:${reportKey}`,
         company,
-        companyReportId: reportKey === UNLINKED_REPORT_KEY ? "" : reportKey,
+        companyReportId:
+          reportKey === UNLINKED_REPORT_SHELL_KEY ? "" : reportKey,
         reportYear,
         periods: reportPeriods,
         overview: getCompanyVerificationOverview({

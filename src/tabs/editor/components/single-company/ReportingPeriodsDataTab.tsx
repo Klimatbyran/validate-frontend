@@ -24,8 +24,10 @@ import {
   getPeriodYear,
   isReportingPeriodWithIdAndDates,
 } from "../../lib/reporting-period-ui";
-import { ReportingPeriodCompanyReportInfo } from "./ReportingPeriodCompanyReportInfo";
 import { useReportingPeriodColumnFilters } from "../../hooks/useReportingPeriodColumnFilters";
+import { useCompanyReportShellFilters } from "../../hooks/useCompanyReportShellFilters";
+import { CompanyReportShellFilterControls } from "./CompanyReportShellFilterControls";
+import { ReportShellCollapsibleGroup } from "./ReportShellCollapsibleGroup";
 import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
@@ -68,6 +70,21 @@ export function ReportingPeriodsDataTab({
   const [isDeletingPeriod, setIsDeletingPeriod] = useState(false);
 
   const {
+    shells,
+    showAllReports,
+    setShowAllReports,
+    selectedShellKeys,
+    setSelectedShellKeys,
+    filterPeriodsByShell,
+    visibleShellGroups,
+  } = useCompanyReportShellFilters(periods, company.wikidataId);
+
+  const periodsForShellFilter = useMemo(
+    () => filterPeriodsByShell(periods),
+    [periods, filterPeriodsByShell],
+  );
+
+  const {
     showAllYears,
     setShowAllYears,
     selectedYears,
@@ -78,7 +95,12 @@ export function ReportingPeriodsDataTab({
     visiblePeriods,
   } = useReportingPeriodColumnFilters<
     GarboReportingPeriodSummary & { id: string }
-  >(periods, company.wikidataId);
+  >(periodsForShellFilter, company.wikidataId);
+
+  const shellGroupsToRender = useMemo(
+    () => visibleShellGroups(visiblePeriods),
+    [visiblePeriods, visibleShellGroups],
+  );
 
   useEffect(() => {
     setEdited({});
@@ -275,6 +297,13 @@ export function ReportingPeriodsDataTab({
               <Undo2 className="w-3.5 h-3.5 mr-1.5" />
               {t("editor.periodEditor.resetAll")}
             </Button>
+            <CompanyReportShellFilterControls
+              shells={shells}
+              showAllReports={showAllReports}
+              onShowAllReportsChange={setShowAllReports}
+              selectedShellKeys={selectedShellKeys}
+              onSelectedShellKeysChange={setSelectedShellKeys}
+            />
             <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-01">
               <input
                 type="checkbox"
@@ -310,8 +339,14 @@ export function ReportingPeriodsDataTab({
       ) : null}
 
       {visiblePeriods.length ? (
-        <div className="space-y-3 w-full min-w-0">
-          {visiblePeriods.map((rp) => {
+        <div className="space-y-6 w-full min-w-0">
+          {shellGroupsToRender.map((shell) => (
+            <ReportShellCollapsibleGroup
+              key={shell.shellKey}
+              shell={shell}
+              periodCount={shell.periods.length}
+            >
+                {shell.periods.map((rp) => {
             const rpEdits = edited[rp.id] ?? {};
             const periodYear = getPeriodYear(rp) ?? dash;
             const startVal =
@@ -341,21 +376,11 @@ export function ReportingPeriodsDataTab({
                       {formatDateStamp(rp.startDate, dash)} –{" "}
                       {formatDateStamp(rp.endDate, dash)}
                     </div>
-                    <ReportingPeriodCompanyReportInfo
-                      period={rp}
-                      reportYearLabel={t("editor.companies.reportYear")}
-                      companyReportIdLabel={t(
-                        "editor.singleCompanyView.companyReportId",
-                      )}
-                      noReportYearLabel={t(
-                        "editor.singleCompanyView.noReportYear",
-                      )}
-                      duplicateDataYearHint={
-                        isDuplicateDataYear
-                          ? t("editor.singleCompanyView.sameDataYearAsAnotherPeriod")
-                          : undefined
-                      }
-                    />
+                    {isDuplicateDataYear ? (
+                      <p className="mt-2 text-[11px] text-orange-03/90">
+                        {t("editor.singleCompanyView.sameDataYearAsAnotherPeriod")}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Button
@@ -482,6 +507,8 @@ export function ReportingPeriodsDataTab({
               </div>
             );
           })}
+            </ReportShellCollapsibleGroup>
+          ))}
         </div>
       ) : (
         <p className="text-sm text-gray-02 mt-3">

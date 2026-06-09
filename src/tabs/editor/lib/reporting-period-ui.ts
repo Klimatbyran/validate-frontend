@@ -72,6 +72,9 @@ export function shortenCompanyReportId(id: string, visibleChars = 8): string {
   return `${trimmed.slice(0, visibleChars)}…`;
 }
 
+/** Secondary id line — matches wikidataId under company name in the overview table. */
+export const editorSecondaryIdTextClass = "text-xs text-gray-02 break-all";
+
 /** Data years that appear on more than one reporting period (multiple PDFs). */
 export function dataYearsWithMultiplePeriods(
   periods: Array<{ startDate?: string; endDate?: string; year?: string | null }>,
