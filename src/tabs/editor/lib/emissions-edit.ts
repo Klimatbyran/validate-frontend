@@ -36,10 +36,16 @@ type Scope3Payload = {
 
 export function buildEmissionsPeriodPatch(
   rp: PeriodWithEmissions,
-  rpEdits: EditedPeriodEmissions
-): { startDate: string; endDate: string; emissions?: Record<string, unknown> } | null {
-  const hasScope1 = rpEdits.scope1Total != null || rpEdits.scope1Verified != null;
-  const hasScope1And2 = rpEdits.scope1And2Total != null || rpEdits.scope1And2Verified != null;
+  rpEdits: EditedPeriodEmissions,
+): {
+  startDate: string;
+  endDate: string;
+  emissions?: Record<string, unknown>;
+} | null {
+  const hasScope1 =
+    rpEdits.scope1Total != null || rpEdits.scope1Verified != null;
+  const hasScope1And2 =
+    rpEdits.scope1And2Total != null || rpEdits.scope1And2Verified != null;
   const hasScope2 =
     rpEdits.scope2Mb != null ||
     rpEdits.scope2Lb != null ||
@@ -48,9 +54,11 @@ export function buildEmissionsPeriodPatch(
   const hasStatedTotal =
     rpEdits.statedTotalEmissions != null || rpEdits.statedTotalVerified != null;
   const hasScope3StatedTotal =
-    rpEdits.scope3StatedTotalEmissions != null || rpEdits.scope3StatedTotalVerified != null;
+    rpEdits.scope3StatedTotalEmissions != null ||
+    rpEdits.scope3StatedTotalVerified != null;
   const hasScope3Categories =
-    (rpEdits.scope3Categories && Object.keys(rpEdits.scope3Categories).length > 0) ||
+    (rpEdits.scope3Categories &&
+      Object.keys(rpEdits.scope3Categories).length > 0) ||
     (rpEdits.scope3CategoriesVerified &&
       Object.keys(rpEdits.scope3CategoriesVerified).length > 0);
 
@@ -68,7 +76,10 @@ export function buildEmissionsPeriodPatch(
 
   if (hasScope1) {
     emissions.scope1 = {
-      total: rpEdits.scope1Total != null ? toNumberOrNull(rpEdits.scope1Total) : undefined,
+      total:
+        rpEdits.scope1Total != null
+          ? toNumberOrNull(rpEdits.scope1Total)
+          : undefined,
       unit: "tCO2e",
       verified: rpEdits.scope1Verified ?? undefined,
     };
@@ -76,16 +87,23 @@ export function buildEmissionsPeriodPatch(
   if (hasScope1And2) {
     emissions.scope1And2 = {
       total:
-        rpEdits.scope1And2Total != null ? toNumberOrNull(rpEdits.scope1And2Total) : undefined,
+        rpEdits.scope1And2Total != null
+          ? toNumberOrNull(rpEdits.scope1And2Total)
+          : undefined,
       unit: "tCO2e",
       verified: rpEdits.scope1And2Verified ?? undefined,
     };
   }
   if (hasScope2) {
     emissions.scope2 = {
-      mb: rpEdits.scope2Mb != null ? toNumberOrNull(rpEdits.scope2Mb) : undefined,
-      lb: rpEdits.scope2Lb != null ? toNumberOrNull(rpEdits.scope2Lb) : undefined,
-      unknown: rpEdits.scope2Unknown != null ? toNumberOrNull(rpEdits.scope2Unknown) : undefined,
+      mb:
+        rpEdits.scope2Mb != null ? toNumberOrNull(rpEdits.scope2Mb) : undefined,
+      lb:
+        rpEdits.scope2Lb != null ? toNumberOrNull(rpEdits.scope2Lb) : undefined,
+      unknown:
+        rpEdits.scope2Unknown != null
+          ? toNumberOrNull(rpEdits.scope2Unknown)
+          : undefined,
       unit: "tCO2e",
       verified: rpEdits.scope2Verified ?? undefined,
     };
@@ -106,7 +124,8 @@ export function buildEmissionsPeriodPatch(
   if (hasScope3StatedTotal) {
     const hasValueEdit = rpEdits.scope3StatedTotalEmissions != null;
     const hasVerifiedEdit = rpEdits.scope3StatedTotalVerified != null;
-    const originalTotal = rp.emissions?.scope3?.statedTotalEmissions?.total ?? null;
+    const originalTotal =
+      rp.emissions?.scope3?.statedTotalEmissions?.total ?? null;
 
     if (!(hasVerifiedEdit && !hasValueEdit && originalTotal == null)) {
       scope3Payload = {
@@ -116,7 +135,9 @@ export function buildEmissionsPeriodPatch(
             ? toNumberOrNull(rpEdits.scope3StatedTotalEmissions ?? "")
             : originalTotal,
           unit: "tCO2e",
-          verified: hasVerifiedEdit ? rpEdits.scope3StatedTotalVerified : undefined,
+          verified: hasVerifiedEdit
+            ? rpEdits.scope3StatedTotalVerified
+            : undefined,
         },
       };
     }
@@ -125,13 +146,18 @@ export function buildEmissionsPeriodPatch(
   if (hasScope3Categories) {
     const catVals = rpEdits.scope3Categories ?? {};
     const catVerified = rpEdits.scope3CategoriesVerified ?? {};
-    const changedIds = new Set<string>([...Object.keys(catVals), ...Object.keys(catVerified)]);
+    const changedIds = new Set<string>([
+      ...Object.keys(catVals),
+      ...Object.keys(catVerified),
+    ]);
 
     const categories = Array.from(changedIds)
       .map((id) => {
         const category = Number(id);
         if (!Number.isFinite(category)) return null;
-        const original = rp.emissions?.scope3?.categories?.find((c) => c.category === category);
+        const original = rp.emissions?.scope3?.categories?.find(
+          (c) => c.category === category,
+        );
         const hasVal = Object.prototype.hasOwnProperty.call(catVals, id);
         const hasVer = Object.prototype.hasOwnProperty.call(catVerified, id);
 
@@ -140,7 +166,9 @@ export function buildEmissionsPeriodPatch(
 
         return {
           category,
-          total: hasVal ? toNumberOrNull(catVals[id] ?? "") : original?.total ?? null,
+          total: hasVal
+            ? toNumberOrNull(catVals[id] ?? "")
+            : (original?.total ?? null),
           unit: "tCO2e",
           verified: hasVer ? catVerified[id] : undefined,
         };
@@ -162,4 +190,3 @@ export function buildEmissionsPeriodPatch(
     emissions: Object.keys(emissions).length ? emissions : undefined,
   };
 }
-

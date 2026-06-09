@@ -24,7 +24,7 @@ export function EditorTab() {
   const [viewMode, setViewMode] = useState<EditorViewMode>("single-company");
   const pillOptions = useMemo(
     () => VIEW_MODES.map((m) => ({ value: m.value, label: t(m.labelKey) })),
-    [t]
+    [t],
   );
 
   useEffect(() => {
@@ -49,7 +49,9 @@ export function EditorTab() {
       >
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h2 className="text-xl font-semibold text-gray-01">{t("editor.title")}</h2>
+            <h2 className="text-xl font-semibold text-gray-01">
+              {t("editor.title")}
+            </h2>
             <p className="text-sm text-gray-02 mt-1">{t("editor.subtitle")}</p>
           </div>
           <ViewModePills

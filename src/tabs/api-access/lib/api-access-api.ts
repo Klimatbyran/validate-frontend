@@ -63,7 +63,9 @@ export const fetchAPIKeys = async (): Promise<ClientApiKeyList> => {
 };
 
 export const revokeAPIKey = async (id: string): Promise<void> => {
-  const url = apiAccessUrl(`/internal/client-api-keys/${encodeURIComponent(id)}/revoke`);
+  const url = apiAccessUrl(
+    `/internal/client-api-keys/${encodeURIComponent(id)}/revoke`,
+  );
   try {
     const response = await garboAuthFetch(url, { method: "POST" });
     if (!response.ok) {

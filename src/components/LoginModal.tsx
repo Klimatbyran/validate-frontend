@@ -13,10 +13,14 @@ const FALLBACK: Record<string, string> = {
   "auth.loginRequired": "Login required",
   "auth.loginRequiredMessage": "You must log in to perform this action.",
   "auth.loginWithGitHub": "Log in with GitHub",
-  "auth.redirectToGitHub": "You will be redirected to GitHub for authentication.",
+  "auth.redirectToGitHub":
+    "You will be redirected to GitHub for authentication.",
 };
 
-function interpolate(str: string, params?: Record<string, string | number>): string {
+function interpolate(
+  str: string,
+  params?: Record<string, string | number>,
+): string {
   if (!params) return str;
   return str.replace(/\{\{(\w+)\}\}/g, (_, k) => String(params[k] ?? ""));
 }
@@ -32,11 +36,7 @@ interface LoginModalProps {
   message?: string;
 }
 
-export function LoginModal({ 
-  isOpen, 
-  onClose,
-  message
-}: LoginModalProps) {
+export function LoginModal({ isOpen, onClose, message }: LoginModalProps) {
   const { login } = useAuth();
   const i18n = useOptionalI18n();
   const t = i18n?.t ?? getT;
@@ -52,9 +52,7 @@ export function LoginModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t("auth.loginRequired")}</DialogTitle>
-          <DialogDescription>
-            {displayMessage}
-          </DialogDescription>
+          <DialogDescription>{displayMessage}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 pt-4">
           <Button onClick={handleLogin} className="w-full">

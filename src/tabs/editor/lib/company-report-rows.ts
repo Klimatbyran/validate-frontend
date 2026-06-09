@@ -1,8 +1,8 @@
-import type { GarboCompanyListItem, GarboReportingPeriodSummary } from "./types";
-import {
-  getPeriodDataYear,
-  getPeriodReportYear,
-} from "./reporting-period-ui";
+import type {
+  GarboCompanyListItem,
+  GarboReportingPeriodSummary,
+} from "./types";
+import { getPeriodDataYear, getPeriodReportYear } from "./reporting-period-ui";
 import {
   getPeriodShellKey,
   UNLINKED_REPORT_SHELL_KEY,

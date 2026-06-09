@@ -171,7 +171,9 @@ export function SingleCompanyOverviewTable({
                         {c.wikidataId ?? c.id.split("-")[0]}
                       </span>
                       {row.companyReportId ? (
-                        <span className={`${editorSecondaryIdTextClass} mt-0.5`}>
+                        <span
+                          className={`${editorSecondaryIdTextClass} mt-0.5`}
+                        >
                           {row.companyReportId}
                         </span>
                       ) : null}
@@ -204,7 +206,8 @@ export function SingleCompanyOverviewTable({
                               onQuickEditChange({
                                 companyId: c.id,
                                 year: p.year,
-                                companyReportId: row.companyReportId || undefined,
+                                companyReportId:
+                                  row.companyReportId || undefined,
                               });
                             }}
                             className="inline-flex items-center gap-2 rounded-full border border-gray-03 px-2 py-1 text-xs text-gray-01 bg-gray-05 hover:bg-gray-03/40"
@@ -214,11 +217,15 @@ export function SingleCompanyOverviewTable({
                           >
                             <span className="font-semibold">{p.year}</span>
                             <span className="inline-flex items-center gap-1">
-                              <span className="text-[10px] text-gray-03">E</span>
+                              <span className="text-[10px] text-gray-03">
+                                E
+                              </span>
                               <StatusIcon state={p.emissions} />
                             </span>
                             <span className="inline-flex items-center gap-1">
-                              <span className="text-[10px] text-gray-03">$</span>
+                              <span className="text-[10px] text-gray-03">
+                                $
+                              </span>
                               <StatusIcon state={p.economy} />
                             </span>
                           </button>

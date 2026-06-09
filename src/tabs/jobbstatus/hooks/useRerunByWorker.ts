@@ -35,7 +35,10 @@ export function useRerunByWorker(companies: SwimlaneCompany[]) {
         const latestYear = company.years?.[0];
         if (!latestYear) continue;
 
-        const extractEmissionsJob = findJobByQueueId("extractEmissions", latestYear);
+        const extractEmissionsJob = findJobByQueueId(
+          "extractEmissions",
+          latestYear,
+        );
         if (!extractEmissionsJob?.id) continue;
         targets.push({
           companyName: company.name,
@@ -45,11 +48,18 @@ export function useRerunByWorker(companies: SwimlaneCompany[]) {
       }
 
       if (targets.length === 0) {
-        toast.error(t("jobstatus.rerunByWorker.noCompanies", { worker: workerLabel }));
+        toast.error(
+          t("jobstatus.rerunByWorker.noCompanies", { worker: workerLabel }),
+        );
         return;
       }
 
-      toast.info(t("jobstatus.rerunByWorker.starting", { worker: workerLabel, count: targets.length }));
+      toast.info(
+        t("jobstatus.rerunByWorker.starting", {
+          worker: workerLabel,
+          count: targets.length,
+        }),
+      );
 
       let successes = 0;
       let failures = 0;
@@ -58,35 +68,55 @@ export function useRerunByWorker(companies: SwimlaneCompany[]) {
         try {
           const response = await authenticatedFetch(
             getPipelineUrl(
-              `/queues/extractEmissions/${encodeURIComponent(target.extractEmissionsJobId)}/rerun-and-save`
+              `/queues/extractEmissions/${encodeURIComponent(target.extractEmissionsJobId)}/rerun-and-save`,
             ),
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(buildRerunAndSaveBody([scopeKey], target.wikidataNode)),
-            }
+              body: JSON.stringify(
+                buildRerunAndSaveBody([scopeKey], target.wikidataNode),
+              ),
+            },
           );
           if (response.ok) {
             successes++;
-            console.log(`[rerun-by-worker] ${workerName} OK for ${target.companyName}`);
+            console.log(
+              `[rerun-by-worker] ${workerName} OK for ${target.companyName}`,
+            );
           } else {
             failures++;
             const errorText = await response.text();
-            console.error(`[rerun-by-worker] ${workerName} FAILED for ${target.companyName}: ${errorText}`);
+            console.error(
+              `[rerun-by-worker] ${workerName} FAILED for ${target.companyName}: ${errorText}`,
+            );
           }
         } catch (err) {
           failures++;
-          console.error(`[rerun-by-worker] ${workerName} ERROR for ${target.companyName}:`, err);
+          console.error(
+            `[rerun-by-worker] ${workerName} ERROR for ${target.companyName}:`,
+            err,
+          );
         }
       }
 
       if (failures === 0) {
-        toast.success(t("jobstatus.rerunByWorker.success", { worker: workerLabel, count: successes }));
+        toast.success(
+          t("jobstatus.rerunByWorker.success", {
+            worker: workerLabel,
+            count: successes,
+          }),
+        );
       } else {
-        toast.warning(t("jobstatus.rerunByWorker.partial", { worker: workerLabel, successes, failures }));
+        toast.warning(
+          t("jobstatus.rerunByWorker.partial", {
+            worker: workerLabel,
+            successes,
+            failures,
+          }),
+        );
       }
     },
-    [companies, t]
+    [companies, t],
   );
 
   return handleRerunByWorker;

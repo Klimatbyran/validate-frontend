@@ -1,25 +1,25 @@
-import { getCompanyUrlSegment } from '@/lib/company-routing';
-import { downloadCsv } from '@/lib/utils';
-import type { CompanyRow, DataPointMetric } from '../types';
+import { getCompanyUrlSegment } from "@/lib/company-routing";
+import { downloadCsv } from "@/lib/utils";
+import type { CompanyRow, DataPointMetric } from "../types";
 
 /** Trigger CSV download for overview metrics. */
 export function exportOverviewCsv(
   metrics: DataPointMetric[],
-  selectedYear: number
+  selectedYear: number,
 ): void {
   const headers = [
-    'Data Point',
-    'Identical',
-    'Rounding',
-    'Small Error',
-    'Hallucination',
-    'Missing',
-    'Unit Error',
-    'Category Error',
-    'Error',
-    'Both Empty',
-    'With Data',
-    'Tolerant Rate %',
+    "Data Point",
+    "Identical",
+    "Rounding",
+    "Small Error",
+    "Hallucination",
+    "Missing",
+    "Unit Error",
+    "Category Error",
+    "Error",
+    "Both Empty",
+    "With Data",
+    "Tolerant Rate %",
   ];
   const rows: string[][] = [headers];
 
@@ -47,19 +47,19 @@ export function exportOverviewCsv(
 export function exportComparisonToCsv(
   rows: CompanyRow[],
   dataPointId: string,
-  year: number
+  year: number,
 ): void {
   const headers = [
-    'Company',
-    'Identifier',
-    'Report Year',
-    'CompanyReportId',
-    'Stage',
-    'Prod',
-    'Diff',
-    'Status',
-    'In Stage',
-    'In Prod',
+    "Company",
+    "Identifier",
+    "Report Year",
+    "CompanyReportId",
+    "Stage",
+    "Prod",
+    "Diff",
+    "Status",
+    "In Stage",
+    "In Prod",
   ];
   const csvRows: string[][] = [headers];
 
@@ -67,14 +67,14 @@ export function exportComparisonToCsv(
     csvRows.push([
       `"${row.name.replace(/"/g, '""')}"`,
       getCompanyUrlSegment(row),
-      row.reportYear != null ? String(row.reportYear) : '',
-      row.companyReportId ?? '',
-      String(row.stageValue ?? ''),
-      String(row.prodValue ?? ''),
-      String(row.diff ?? ''),
+      row.reportYear != null ? String(row.reportYear) : "",
+      row.companyReportId ?? "",
+      String(row.stageValue ?? ""),
+      String(row.prodValue ?? ""),
+      String(row.diff ?? ""),
       row.discrepancy,
-      row.inStage ? 'yes' : 'no',
-      row.inProd ? 'yes' : 'no',
+      row.inStage ? "yes" : "no",
+      row.inProd ? "yes" : "no",
     ]);
   }
 

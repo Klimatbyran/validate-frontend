@@ -79,7 +79,7 @@ export function getJobStatus(job: any): SwimlaneStatusType {
  * Get the status from a field data object
  */
 export function getFieldStatus(
-  fieldData: SwimlaneStatusType | SwimlaneFieldData | undefined
+  fieldData: SwimlaneStatusType | SwimlaneFieldData | undefined,
 ): SwimlaneStatusType {
   if (!fieldData) {
     return "waiting";
@@ -97,7 +97,7 @@ export function getFieldStatus(
  */
 export function getJobsForStep(
   data: SwimlaneYearData | SwimlaneCompany[],
-  stepId: string
+  stepId: string,
 ): any[] {
   const queueIds = getQueuesForPipelineStep(stepId);
 
@@ -253,13 +253,15 @@ export function getQueueAttemptSummary(
  */
 export function findJobByQueueId(
   queueId: string,
-  yearData: SwimlaneYearData
+  yearData: SwimlaneYearData,
 ): any | undefined {
   const effective = getEffectiveJobs(yearData);
   const jobsForQueue = effective.filter((job: any) => job.queueId === queueId);
   if (jobsForQueue.length === 0) return undefined;
   return jobsForQueue.reduce((latest: any, cur: any) =>
-    getJobOrderingTimestamp(cur) > getJobOrderingTimestamp(latest) ? cur : latest
+    getJobOrderingTimestamp(cur) > getJobOrderingTimestamp(latest)
+      ? cur
+      : latest,
   );
 }
 
@@ -269,7 +271,7 @@ export function findJobByQueueId(
  */
 export function calculateStepJobStats(
   data: SwimlaneYearData | SwimlaneCompany[],
-  stepId: string
+  stepId: string,
 ): {
   completed: number;
   processing: number;
@@ -363,7 +365,7 @@ function isJobActivelyProcessing(job: any): boolean {
  */
 export function calculatePipelineStepStatus(
   yearData: SwimlaneYearData,
-  stepId: string
+  stepId: string,
 ): "completed" | "processing" | "failed" | "waiting" | "needs_approval" {
   // Get English queue IDs instead of Swedish display names
   const queueIds = getQueuesForPipelineStep(stepId);
@@ -383,7 +385,12 @@ export function calculatePipelineStepStatus(
   const jobsWithStatuses = queueIds.map((queueId) => {
     const agg = getQueueAttemptSummary(queueId, yearData, canonicalThreadId);
     const latestJob = agg.attempts[0];
-    return { queueId, job: latestJob, status: agg.status, attempts: agg.attempts };
+    return {
+      queueId,
+      job: latestJob,
+      status: agg.status,
+      attempts: agg.attempts,
+    };
   });
 
   // Special case for finalize step: show green if saveToAPI (API Lagring) is completed
@@ -394,7 +401,7 @@ export function calculatePipelineStepStatus(
     const hasDelayed = jobsWithStatuses.some(
       (entry) =>
         Array.isArray(entry.attempts) &&
-        entry.attempts.some((j: any) => j && j.status === "delayed")
+        entry.attempts.some((j: any) => j && j.status === "delayed"),
     );
 
     if (hasDelayed) {
@@ -402,7 +409,7 @@ export function calculatePipelineStepStatus(
     }
 
     const saveToAPIEntry = jobsWithStatuses.find(
-      (entry) => entry.queueId === "saveToAPI"
+      (entry) => entry.queueId === "saveToAPI",
     );
     if (saveToAPIEntry && saveToAPIEntry.status === "completed") {
       return "completed";
@@ -416,9 +423,10 @@ export function calculatePipelineStepStatus(
   // - Show gray (waiting) if any job is delayed
   if (stepId === "preprocessing" || stepId === "data-extraction") {
     // Check if any job is actively processing first (highest priority)
-    const hasActivelyProcessing = jobsWithStatuses.some((entry) =>
-      Array.isArray(entry.attempts) &&
-      entry.attempts.some((j: any) => isJobActivelyProcessing(j))
+    const hasActivelyProcessing = jobsWithStatuses.some(
+      (entry) =>
+        Array.isArray(entry.attempts) &&
+        entry.attempts.some((j: any) => isJobActivelyProcessing(j)),
     );
 
     if (hasActivelyProcessing) {
@@ -429,7 +437,7 @@ export function calculatePipelineStepStatus(
     const hasDelayed = jobsWithStatuses.some(
       (entry) =>
         Array.isArray(entry.attempts) &&
-        entry.attempts.some((j: any) => j && j.status === "delayed")
+        entry.attempts.some((j: any) => j && j.status === "delayed"),
     );
 
     if (hasDelayed) {
@@ -437,9 +445,10 @@ export function calculatePipelineStepStatus(
     }
 
     // Filter to only jobs that have been started (ignore waiting jobs that haven't been run)
-    const startedJobs = jobsWithStatuses.filter((entry) =>
-      Array.isArray(entry.attempts) &&
-      entry.attempts.some((j: any) => hasJobBeenStarted(j))
+    const startedJobs = jobsWithStatuses.filter(
+      (entry) =>
+        Array.isArray(entry.attempts) &&
+        entry.attempts.some((j: any) => hasJobBeenStarted(j)),
     );
 
     if (startedJobs.length === 0) {
@@ -451,10 +460,10 @@ export function calculatePipelineStepStatus(
     const startedStatuses = startedJobs.map((entry) => entry.status);
     const hasFailed = startedStatuses.some((status) => status === "failed");
     const allCompleted = startedStatuses.every(
-      (status) => status === "completed"
+      (status) => status === "completed",
     );
     const hasCompleted = startedStatuses.some(
-      (status) => status === "completed"
+      (status) => status === "completed",
     );
 
     // If any started job failed, show failed
@@ -482,7 +491,7 @@ export function calculatePipelineStepStatus(
   const hasDelayed = jobsWithStatuses.some(
     (entry) =>
       Array.isArray(entry.attempts) &&
-      entry.attempts.some((j: any) => j && j.status === "delayed")
+      entry.attempts.some((j: any) => j && j.status === "delayed"),
   );
 
   if (hasDelayed) {
@@ -505,7 +514,7 @@ export function calculatePipelineStepStatus(
   // 3. If there's at least one gray (waiting) → show gray
   // 4. Otherwise, if there's any green (completed) → show green
   const hasNeedsApproval = fieldStatuses.some(
-    (status) => status === "needs_approval"
+    (status) => status === "needs_approval",
   );
   if (hasFailed) {
     return "failed";
@@ -526,7 +535,7 @@ export function calculatePipelineStepStatus(
  * Convert grouped companies data to swimlane format
  */
 export function convertGroupedCompaniesToSwimlaneFormat(
-  groupedCompanies: any[]
+  groupedCompanies: any[],
 ): SwimlaneCompany[] {
   return groupedCompanies.map((company) => {
     const years: SwimlaneYearData[] = (company.attempts || []).map(
@@ -566,7 +575,7 @@ export function convertGroupedCompaniesToSwimlaneFormat(
         });
 
         return yearData;
-      }
+      },
     );
 
     const result = {

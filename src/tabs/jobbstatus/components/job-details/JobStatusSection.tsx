@@ -60,16 +60,19 @@ export function JobStatusSection({
   const statusIcon = getCentralizedStatusIcon(
     primaryStatus,
     "detailed",
-    isActivelyProcessing
+    isActivelyProcessing,
   );
   const statusColor = getStatusBackgroundColor(primaryStatus);
   const statusText = t(getStatusLabelKey(primaryStatus, isActivelyProcessing));
 
-  const anySucceededInThread = aggregate?.anySucceeded ?? (primaryStatus === "completed");
+  const anySucceededInThread =
+    aggregate?.anySucceeded ?? primaryStatus === "completed";
 
   return (
     <div className="bg-gray-03/20 rounded-lg p-4">
-      <h3 className="text-lg font-medium text-gray-01 mb-4">{t("jobstatus.jobdetails.statusLabel")}</h3>
+      <h3 className="text-lg font-medium text-gray-01 mb-4">
+        {t("jobstatus.jobdetails.statusLabel")}
+      </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex items-center space-x-3">
           <div className={cn("p-2 rounded-full", statusColor)}>
@@ -77,7 +80,11 @@ export function JobStatusSection({
           </div>
           <div>
             <div className="font-medium text-gray-01">
-              {job.queueId && t(`jobstatus.queues.${job.queueId}`) !== `jobstatus.queues.${job.queueId}` ? t(`jobstatus.queues.${job.queueId}`) : (stage?.name || job.queueId)}
+              {job.queueId &&
+              t(`jobstatus.queues.${job.queueId}`) !==
+                `jobstatus.queues.${job.queueId}`
+                ? t(`jobstatus.queues.${job.queueId}`)
+                : stage?.name || job.queueId}
             </div>
             <div className="text-sm text-gray-02">{statusText}</div>
             {yearData && job.queueId && (
@@ -96,10 +103,10 @@ export function JobStatusSection({
         </div>
 
         <div>
-          <div className="text-sm text-gray-02">{t("jobstatus.jobdetails.created")}</div>
-          <div className="text-gray-01">
-            {formatDate(job.timestamp)}
+          <div className="text-sm text-gray-02">
+            {t("jobstatus.jobdetails.created")}
           </div>
+          <div className="text-gray-01">{formatDate(job.timestamp)}</div>
         </div>
       </div>
 
@@ -110,31 +117,40 @@ export function JobStatusSection({
             aria-hidden
           />
           <p>
-            <span className="font-medium text-gray-01">{t("jobstatus.jobdetails.rerunTitle")}</span>{" "}
+            <span className="font-medium text-gray-01">
+              {t("jobstatus.jobdetails.rerunTitle")}
+            </span>{" "}
             {t("jobstatus.jobdetails.rerunExplanation")}
           </p>
         </div>
       )}
 
-      {yearData && job.queueId && (
+      {yearData &&
+        job.queueId &&
         (() => {
-          const attempts = (getQueueAttempts(
-            job.queueId,
-            yearData,
-            canonicalThreadId,
-          ) as QueueJob[])
+          const attempts = (
+            getQueueAttempts(
+              job.queueId,
+              yearData,
+              canonicalThreadId,
+            ) as QueueJob[]
+          )
             .slice()
             // Make attempt numbering stable: oldest -> newest.
             .sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
           if (attempts.length <= 1) return null;
-          const agg = aggregate ?? getQueueAttemptSummary(job.queueId, yearData, canonicalThreadId);
+          const agg =
+            aggregate ??
+            getQueueAttemptSummary(job.queueId, yearData, canonicalThreadId);
           const hasSuccess = agg.anySucceeded;
 
           return (
             <div className="mt-4 pt-4 border-t border-gray-03">
               <div className="flex items-center justify-between gap-3">
                 <div className="text-sm font-medium text-gray-01">
-                  {t("jobstatus.jobdetails.attemptsLabel", { count: attempts.length })}
+                  {t("jobstatus.jobdetails.attemptsLabel", {
+                    count: attempts.length,
+                  })}
                 </div>
                 {hasSuccess && agg.hasMixedOutcomes && (
                   <div className="text-xs text-gray-02">
@@ -147,18 +163,22 @@ export function JobStatusSection({
                   const status = getJobStatus(a);
                   const isSelected = a.id === job.id;
                   const garboChunk =
-                    job.queueId === "saveToAPI" ? extractGarboChunkFromSaveToApiJob(a) : null;
+                    job.queueId === "saveToAPI"
+                      ? extractGarboChunkFromSaveToApiJob(a)
+                      : null;
 
                   // Show attempts as 1..N in chronological order (oldest first).
                   const attemptNumber = idx + 1;
                   const saveToApiSummary =
-                    job.queueId === "saveToAPI" ? summarizeSaveToApiPayload(a) : null;
+                    job.queueId === "saveToAPI"
+                      ? summarizeSaveToApiPayload(a)
+                      : null;
                   return (
                     <div
                       key={`${a.id}-${idx}`}
                       className={cn(
                         "flex items-center justify-between gap-3 rounded-md border border-gray-03/60 bg-gray-05/40 px-3 py-2 text-xs",
-                        isSelected ? "ring-2 ring-blue-03/60" : ""
+                        isSelected ? "ring-2 ring-blue-03/60" : "",
                       )}
                     >
                       <div className="min-w-0">
@@ -187,7 +207,10 @@ export function JobStatusSection({
                           </div>
                         ) : null}
                         {saveToApiSummary?.keys && (
-                          <div className="text-gray-02 truncate" title={saveToApiSummary.keys}>
+                          <div
+                            className="text-gray-02 truncate"
+                            title={saveToApiSummary.keys}
+                          >
                             <span className="font-medium text-gray-01">
                               {t("jobstatus.jobdetails.saveToApiKeysLabel")}
                             </span>
@@ -197,13 +220,18 @@ export function JobStatusSection({
                         {saveToApiSummary?.documentReportYear ? (
                           <div className="text-gray-02">
                             <span className="font-medium text-gray-01">
-                              {t("jobstatus.jobdetails.documentReportYearLabel")}
+                              {t(
+                                "jobstatus.jobdetails.documentReportYearLabel",
+                              )}
                             </span>
                             : {saveToApiSummary.documentReportYear}
                           </div>
                         ) : null}
                         {saveToApiSummary?.companyReportId ? (
-                          <div className="text-gray-02 font-mono truncate" title={saveToApiSummary.companyReportId}>
+                          <div
+                            className="text-gray-02 font-mono truncate"
+                            title={saveToApiSummary.companyReportId}
+                          >
                             <span className="font-medium text-gray-01 font-sans">
                               {t("jobstatus.jobdetails.companyReportIdLabel")}
                             </span>
@@ -211,15 +239,22 @@ export function JobStatusSection({
                           </div>
                         ) : null}
                         {saveToApiSummary?.error && (
-                          <div className="text-gray-02 truncate" title={saveToApiSummary.error}>
+                          <div
+                            className="text-gray-02 truncate"
+                            title={saveToApiSummary.error}
+                          >
                             <span className="font-medium text-gray-01">
                               {t("jobstatus.jobdetails.saveToApiErrorLabel")}
                             </span>
                             : {saveToApiSummary.error}
                           </div>
                         )}
-                        <div className="font-mono text-gray-02 truncate" title={String(a.id)}>
-                          {t("jobstatus.jobdetails.saveToApiJobIdLabel")}: {a.id}
+                        <div
+                          className="font-mono text-gray-02 truncate"
+                          title={String(a.id)}
+                        >
+                          {t("jobstatus.jobdetails.saveToApiJobIdLabel")}:{" "}
+                          {a.id}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -229,7 +264,7 @@ export function JobStatusSection({
                         <span
                           className={cn(
                             "px-2 py-0.5 rounded",
-                            getStatusBackgroundColor(status)
+                            getStatusBackgroundColor(status),
                           )}
                         >
                           {t(getStatusLabelKey(status))}
@@ -241,8 +276,7 @@ export function JobStatusSection({
               </div>
             </div>
           );
-        })()
-      )}
+        })()}
     </div>
   );
 }

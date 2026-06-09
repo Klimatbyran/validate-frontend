@@ -101,16 +101,16 @@
 /* Dark theme: all rows readable on dark background */
 .markdown-tables th,
 .markdown-tables td {
-  border: 1px solid #2E2E2E; /* gray-03 */
+  border: 1px solid #2e2e2e; /* gray-03 */
   padding: 0.25rem 0.5rem;
   text-align: left;
-  color: #F7F7F7; /* gray-01 */
+  color: #f7f7f7; /* gray-01 */
 }
 
 .markdown-tables th {
-  background-color: #2E2E2E; /* gray-03 */
+  background-color: #2e2e2e; /* gray-03 */
   font-weight: 600;
-  color: #F7F7F7;
+  color: #f7f7f7;
 }
 
 .markdown-tables tbody tr:nth-child(odd) {
@@ -124,7 +124,7 @@
 .markdown-tables hr {
   margin-top: 2rem;
   margin-bottom: 2rem;
-  border-color: #2E2E2E;
+  border-color: #2e2e2e;
 }
 
 /* Chevron rotation when details/summary is open */

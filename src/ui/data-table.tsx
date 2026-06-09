@@ -11,7 +11,7 @@ export function DataTableShell({
     <div
       className={cn(
         "bg-gray-04/80 backdrop-blur-sm rounded-lg overflow-hidden",
-        className
+        className,
       )}
     >
       <div className="overflow-x-auto">{children}</div>
@@ -56,4 +56,3 @@ export function DataTableBody({
     </tbody>
   );
 }
-

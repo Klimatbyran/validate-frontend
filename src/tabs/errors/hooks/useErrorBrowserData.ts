@@ -1,6 +1,17 @@
-import React from 'react';
-import { ApiAuthError, garboAuthFetch, throwIfAuthError } from '@/lib/garbo-auth-fetch';
-import { Company, CompanyRow, DataPointMetric, WorstCompany, DiscrepancyType, DATA_POINTS } from '../types';
+import React from "react";
+import {
+  ApiAuthError,
+  garboAuthFetch,
+  throwIfAuthError,
+} from "@/lib/garbo-auth-fetch";
+import {
+  Company,
+  CompanyRow,
+  DataPointMetric,
+  WorstCompany,
+  DiscrepancyType,
+  DATA_POINTS,
+} from "../types";
 import {
   getStagePipelineCompaniesListUrl,
   getProdPipelineCompaniesListUrl,
@@ -16,8 +27,8 @@ import {
   buildReportingPeriodComparisonSlots,
   pickReportingPeriodsForFilters,
   getPeriodReportYearFromApi,
-} from '../lib';
-import type { ErrorBrowserSummaryStats } from '../components/SummaryView';
+} from "../lib";
+import type { ErrorBrowserSummaryStats } from "../components/SummaryView";
 
 export function useErrorBrowserData(
   selectedDataYear: number,
@@ -33,9 +44,9 @@ export function useErrorBrowserData(
   const [prodCompanies, setProdCompanies] = React.useState<Company[]>([]);
 
   const fetchPipelineCompanies = React.useCallback(
-    async (label: 'Stage' | 'Prod', url: string): Promise<Company[]> => {
+    async (label: "Stage" | "Prod", url: string): Promise<Company[]> => {
       const response = await garboAuthFetch(url, {
-        headers: { Accept: 'application/json' },
+        headers: { Accept: "application/json" },
       });
 
       if (response.ok) {
@@ -44,9 +55,9 @@ export function useErrorBrowserData(
 
       throwIfAuthError(response.status);
 
-      const body = await response.text().catch(() => '');
+      const body = await response.text().catch(() => "");
       throw new Error(
-        `Failed to fetch ${label} pipeline companies (${response.status}) from ${url}${body ? `: ${body.slice(0, 200)}` : ''}`,
+        `Failed to fetch ${label} pipeline companies (${response.status}) from ${url}${body ? `: ${body.slice(0, 200)}` : ""}`,
       );
     },
     [],
@@ -62,8 +73,8 @@ export function useErrorBrowserData(
 
     try {
       const [stage, prod] = await Promise.all([
-        fetchPipelineCompanies('Stage', stageUrl),
-        fetchPipelineCompanies('Prod', prodUrl),
+        fetchPipelineCompanies("Stage", stageUrl),
+        fetchPipelineCompanies("Prod", prodUrl),
       ]);
 
       setStageCompanies(stage);
@@ -74,9 +85,10 @@ export function useErrorBrowserData(
         setStageCompanies([]);
         setProdCompanies([]);
       } else {
-        const message = err instanceof Error ? err.message : 'Unknown error';
+        const message = err instanceof Error ? err.message : "Unknown error";
         setError(message);
-        if (import.meta.env.DEV) console.error('useErrorBrowserData fetch error:', err);
+        if (import.meta.env.DEV)
+          console.error("useErrorBrowserData fetch error:", err);
       }
     } finally {
       setIsLoading(false);
@@ -137,7 +149,7 @@ export function useErrorBrowserData(
           ? slots
           : [
               {
-                shellKey: '',
+                shellKey: "",
                 companyReportId: null,
                 reportYear: null,
                 stagePeriod: null,
@@ -157,7 +169,9 @@ export function useErrorBrowserData(
 
         const discrepancy = classifyDiscrepancy(stageValue, prodValue, 0.5);
         const diff =
-          stageValue !== null && prodValue !== null ? stageValue - prodValue : null;
+          stageValue !== null && prodValue !== null
+            ? stageValue - prodValue
+            : null;
         const unitErrorFactor = getUnitErrorFactor(stageValue, prodValue);
         const prodVerified = getDataPointVerified(
           slot.prodPeriod?.emissions,
@@ -170,7 +184,8 @@ export function useErrorBrowserData(
         rows.push({
           rowKey,
           id: companyId,
-          wikidataId: stageCompany?.wikidataId ?? prodCompany?.wikidataId ?? null,
+          wikidataId:
+            stageCompany?.wikidataId ?? prodCompany?.wikidataId ?? null,
           name,
           shellKey: slot.shellKey || undefined,
           reportYear: slot.reportYear,
@@ -214,7 +229,12 @@ export function useErrorBrowserData(
       if (nameCmp !== 0) return nameCmp;
       return (b.reportYear ?? 0) - (a.reportYear ?? 0);
     });
-  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear, selectedDataPoint]);
+  }, [
+    tagFilteredCompanies,
+    selectedDataYear,
+    selectedReportYear,
+    selectedDataPoint,
+  ]);
 
   const availableTags = React.useMemo(() => {
     const tags = new Set<string>();
@@ -239,7 +259,11 @@ export function useErrorBrowserData(
     let companiesFullyVerifiedInProd = 0;
 
     const hasAnyReportingPeriods = (company: Company | undefined): boolean => {
-      return !!company && Array.isArray(company.reportingPeriods) && company.reportingPeriods.length > 0;
+      return (
+        !!company &&
+        Array.isArray(company.reportingPeriods) &&
+        company.reportingPeriods.length > 0
+      );
     };
 
     const hasAnyValueForYear = (company: Company | undefined): boolean => {
@@ -252,11 +276,15 @@ export function useErrorBrowserData(
       return periods.some(
         (rp) =>
           rp.emissions != null &&
-          DATA_POINTS.some((dp) => getDataPointValue(rp.emissions, dp.id) !== null),
+          DATA_POINTS.some(
+            (dp) => getDataPointValue(rp.emissions, dp.id) !== null,
+          ),
       );
     };
 
-    const hasReportingPeriodForYear = (company: Company | undefined): boolean => {
+    const hasReportingPeriodForYear = (
+      company: Company | undefined,
+    ): boolean => {
       if (!company) return false;
       return (
         pickReportingPeriodsForFilters(
@@ -267,8 +295,14 @@ export function useErrorBrowserData(
       );
     };
 
-    const isFullyVerifiedInProdForYear = (company: Company | undefined): boolean =>
-      isProdCompanyFullyVerifiedForYear(company, selectedDataYear, selectedReportYear);
+    const isFullyVerifiedInProdForYear = (
+      company: Company | undefined,
+    ): boolean =>
+      isProdCompanyFullyVerifiedForYear(
+        company,
+        selectedDataYear,
+        selectedReportYear,
+      );
 
     for (const id of allIds) {
       const s = stageMap.get(id);
@@ -277,7 +311,8 @@ export function useErrorBrowserData(
       const hasAnyRP = hasAnyReportingPeriods(s) || hasAnyReportingPeriods(p);
       if (!hasAnyRP) companiesWithNoReportingPeriods++;
 
-      const hasYearRP = hasReportingPeriodForYear(s) || hasReportingPeriodForYear(p);
+      const hasYearRP =
+        hasReportingPeriodForYear(s) || hasReportingPeriodForYear(p);
       if (hasYearRP) companiesWithReportingPeriodForYear++;
 
       const hasStageYear = hasReportingPeriodForYear(s);
@@ -324,7 +359,10 @@ export function useErrorBrowserData(
   }, [stageCompanies, prodCompanies]);
 
   const allDataPointMetrics = React.useMemo((): DataPointMetric[] => {
-    if (tagFilteredCompanies.stage.length === 0 || tagFilteredCompanies.prod.length === 0)
+    if (
+      tagFilteredCompanies.stage.length === 0 ||
+      tagFilteredCompanies.prod.length === 0
+    )
       return [];
 
     const stageMap = companiesToMapById(tagFilteredCompanies.stage);
@@ -363,11 +401,17 @@ export function useErrorBrowserData(
         for (const slot of slots) {
           if (!slot.stagePeriod || !slot.prodPeriod) continue;
 
-          const stageValue = getDataPointValue(slot.stagePeriod.emissions, dp.id);
+          const stageValue = getDataPointValue(
+            slot.stagePeriod.emissions,
+            dp.id,
+          );
           const prodValue = getDataPointValue(slot.prodPeriod.emissions, dp.id);
 
           if (verifiedOnly) {
-            const isVerified = getDataPointVerified(slot.prodPeriod.emissions, dp.id);
+            const isVerified = getDataPointVerified(
+              slot.prodPeriod.emissions,
+              dp.id,
+            );
             const isBothNull = stageValue === null && prodValue === null;
             const allowBothNull =
               isBothNull && isProdReportingPeriodFullyVerified(slot.prodPeriod);
@@ -385,31 +429,31 @@ export function useErrorBrowserData(
           );
 
           switch (discrepancy) {
-            case 'identical':
+            case "identical":
               identical++;
               break;
-            case 'rounding':
+            case "rounding":
               rounding++;
               break;
-            case 'hallucination':
+            case "hallucination":
               hallucination++;
               break;
-            case 'missing':
+            case "missing":
               missing++;
               break;
-            case 'unit-error':
+            case "unit-error":
               unitError++;
               break;
-            case 'small-error':
+            case "small-error":
               smallError++;
               break;
-            case 'error':
+            case "error":
               errorCount++;
               break;
-            case 'category-error':
+            case "category-error":
               categoryError++;
               break;
-            case 'both-null':
+            case "both-null":
               bothNull++;
               break;
           }
@@ -426,7 +470,8 @@ export function useErrorBrowserData(
         errorCount +
         categoryError;
       const tolerantSuccess = identical + rounding + smallError;
-      const tolerantRate = withAnyData > 0 ? (tolerantSuccess / withAnyData) * 100 : 0;
+      const tolerantRate =
+        withAnyData > 0 ? (tolerantSuccess / withAnyData) * 100 : 0;
 
       return {
         id: dp.id,
@@ -447,10 +492,18 @@ export function useErrorBrowserData(
         },
       };
     });
-  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear, verifiedOnly]);
+  }, [
+    tagFilteredCompanies,
+    selectedDataYear,
+    selectedReportYear,
+    verifiedOnly,
+  ]);
 
   const worstCompanies = React.useMemo((): WorstCompany[] => {
-    if (tagFilteredCompanies.stage.length === 0 || tagFilteredCompanies.prod.length === 0)
+    if (
+      tagFilteredCompanies.stage.length === 0 ||
+      tagFilteredCompanies.prod.length === 0
+    )
       return [];
 
     const stageMap = companiesToMapById(tagFilteredCompanies.stage);
@@ -476,17 +529,26 @@ export function useErrorBrowserData(
       let errorCount = 0;
       let totalDataPoints = 0;
       const breakdown: Record<string, number> = {};
-      const errorDataPoints: Array<{ label: string; discrepancy: DiscrepancyType }> = [];
+      const errorDataPoints: Array<{
+        label: string;
+        discrepancy: DiscrepancyType;
+      }> = [];
 
       for (const slot of slots) {
         if (!slot.stagePeriod || !slot.prodPeriod) continue;
 
         for (const dp of DATA_POINTS) {
-          const stageValue = getDataPointValue(slot.stagePeriod.emissions, dp.id);
+          const stageValue = getDataPointValue(
+            slot.stagePeriod.emissions,
+            dp.id,
+          );
           const prodValue = getDataPointValue(slot.prodPeriod.emissions, dp.id);
 
           if (verifiedOnly) {
-            const isVerified = getDataPointVerified(slot.prodPeriod.emissions, dp.id);
+            const isVerified = getDataPointVerified(
+              slot.prodPeriod.emissions,
+              dp.id,
+            );
             const isBothNull = stageValue === null && prodValue === null;
             const allowBothNull =
               isBothNull && isProdReportingPeriodFullyVerified(slot.prodPeriod);
@@ -507,9 +569,9 @@ export function useErrorBrowserData(
           );
 
           const isError =
-            discrepancy !== 'identical' &&
-            discrepancy !== 'rounding' &&
-            discrepancy !== 'both-null';
+            discrepancy !== "identical" &&
+            discrepancy !== "rounding" &&
+            discrepancy !== "both-null";
           if (isError) {
             errorCount++;
             breakdown[discrepancy] = (breakdown[discrepancy] || 0) + 1;
@@ -533,7 +595,12 @@ export function useErrorBrowserData(
     }
 
     return companyErrors.sort((a, b) => b.errorCount - a.errorCount);
-  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear, verifiedOnly]);
+  }, [
+    tagFilteredCompanies,
+    selectedDataYear,
+    selectedReportYear,
+    verifiedOnly,
+  ]);
 
   const difficultCompanyIds = React.useMemo(() => {
     const ids = new Map<string, number>();

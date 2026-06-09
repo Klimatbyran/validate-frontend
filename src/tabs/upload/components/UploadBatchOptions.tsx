@@ -26,7 +26,9 @@ export function UploadBatchOptions({
 
   return (
     <>
-      <span className="text-sm text-gray-02 shrink-0">{t("upload.batch")}:</span>
+      <span className="text-sm text-gray-02 shrink-0">
+        {t("upload.batch")}:
+      </span>
       <SingleSelectDropdown
         options={[
           "",
@@ -45,7 +47,7 @@ export function UploadBatchOptions({
             ? t("upload.noBatch")
             : v === NEW_BATCH_DROPDOWN_VALUE
               ? t("upload.newBatch")
-              : existingBatches.find((b) => b.id === v)?.batchName ?? v
+              : (existingBatches.find((b) => b.id === v)?.batchName ?? v)
         }
         panelMinWidth={200}
         usePortal={usePortal}
@@ -63,4 +65,3 @@ export function UploadBatchOptions({
     </>
   );
 }
-

@@ -26,12 +26,19 @@ export interface FieldEditModalProps {
   /** Initial value for the edit input (often same as currentValue) */
   initialValue?: string;
   /** Submit: new value + metadata. Verified is applied when user checks "Mark as verified". */
-  onSubmit: (value: string, meta: GarboMetadata & { verified?: boolean }) => Promise<void>;
+  onSubmit: (
+    value: string,
+    meta: GarboMetadata & { verified?: boolean },
+  ) => Promise<void>;
   /** When true, show a "Verify only" button that submits without changing the value (verified: true). */
   allowVerifyOnly?: boolean;
   isSubmitting?: boolean;
   /** Custom input (e.g. number input). Default: single-line text. */
-  renderInput?: (value: string, onChange: (v: string) => void, disabled: boolean) => React.ReactNode;
+  renderInput?: (
+    value: string,
+    onChange: (v: string) => void,
+    disabled: boolean,
+  ) => React.ReactNode;
 }
 
 export function FieldEditModal({
@@ -54,7 +61,8 @@ export function FieldEditModal({
 
   useEffect(() => {
     if (open) {
-      const init = initialValue ?? (currentValue != null ? String(currentValue) : "");
+      const init =
+        initialValue ?? (currentValue != null ? String(currentValue) : "");
       setValue(init);
       setSource("");
       setComment("");
@@ -69,7 +77,7 @@ export function FieldEditModal({
       if (asVerifyOnly) {
         await onSubmit(
           initialValue ?? (currentValue != null ? String(currentValue) : ""),
-          { verified: true }
+          { verified: true },
         );
       } else {
         await onSubmit(value.trim(), {
@@ -89,9 +97,7 @@ export function FieldEditModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description && (
-            <DialogDescription>{description}</DialogDescription>
-          )}
+          {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         <form
           onSubmit={(e) => {
@@ -131,7 +137,10 @@ export function FieldEditModal({
               htmlFor="field-edit-source"
               className="block text-sm font-medium text-gray-01 mb-1"
             >
-              {t("editor.fieldEdit.source")} <span className="text-gray-03 font-normal">({t("common.optional")})</span>
+              {t("editor.fieldEdit.source")}{" "}
+              <span className="text-gray-03 font-normal">
+                ({t("common.optional")})
+              </span>
             </label>
             <input
               id="field-edit-source"
@@ -148,7 +157,10 @@ export function FieldEditModal({
               htmlFor="field-edit-comment"
               className="block text-sm font-medium text-gray-01 mb-1"
             >
-              {t("editor.fieldEdit.comment")} <span className="text-gray-03 font-normal">({t("common.optional")})</span>
+              {t("editor.fieldEdit.comment")}{" "}
+              <span className="text-gray-03 font-normal">
+                ({t("common.optional")})
+              </span>
             </label>
             <textarea
               id="field-edit-comment"
@@ -168,7 +180,9 @@ export function FieldEditModal({
               disabled={isSubmitting}
               className="rounded border-gray-03"
             />
-            <span className="text-sm text-gray-01">{t("editor.fieldEdit.markVerified")}</span>
+            <span className="text-sm text-gray-01">
+              {t("editor.fieldEdit.markVerified")}
+            </span>
           </label>
 
           <DialogFooter className="gap-2 sm:gap-0">
@@ -180,7 +194,9 @@ export function FieldEditModal({
                 disabled={isSubmitting}
                 onClick={() => void handleSubmit(true)}
               >
-                {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {isSubmitting && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
                 {t("editor.fieldEdit.verifyOnly")}
               </Button>
             )}
@@ -194,7 +210,9 @@ export function FieldEditModal({
               disabled={isSubmitting}
               className={editorPrimaryActionButtonClass}
             >
-              {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {isSubmitting && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
               {t("editor.fieldEdit.save")}
             </Button>
           </DialogFooter>

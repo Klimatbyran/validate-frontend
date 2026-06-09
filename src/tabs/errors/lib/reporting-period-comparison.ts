@@ -14,7 +14,10 @@ export type ReportingPeriodComparisonSlot = {
   prodPeriod: ReportingPeriod | null;
 };
 
-function periodMatchesDataYear(period: ReportingPeriod, dataYear: number): boolean {
+function periodMatchesDataYear(
+  period: ReportingPeriod,
+  dataYear: number,
+): boolean {
   const dataYearKey = getPeriodDataYear(period);
   if (!dataYearKey) return false;
   const parsed = Number(dataYearKey);

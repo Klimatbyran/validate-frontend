@@ -8,7 +8,7 @@ type PeriodLike = { startDate: string; endDate: string };
  */
 export function useReportingPeriodColumnFilters<TPeriod extends PeriodLike>(
   periods: TPeriod[],
-  resetKey: string
+  resetKey: string,
 ) {
   const [showAllYears, setShowAllYears] = useState(true);
   const [selectedYears, setSelectedYears] = useState<string[]>([]);

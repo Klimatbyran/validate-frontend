@@ -1,7 +1,7 @@
-import type { Company, ReportingPeriod } from '../types';
-import { DATA_POINTS } from '../types';
-import { getDataPointValue, getDataPointVerified } from './emissions';
-import { pickReportingPeriodsForFilters } from './reporting-period-comparison';
+import type { Company, ReportingPeriod } from "../types";
+import { DATA_POINTS } from "../types";
+import { getDataPointValue, getDataPointVerified } from "./emissions";
+import { pickReportingPeriodsForFilters } from "./reporting-period-comparison";
 
 export function isProdReportingPeriodFullyVerified(
   prodPeriod: ReportingPeriod | null | undefined,
@@ -9,7 +9,7 @@ export function isProdReportingPeriodFullyVerified(
   if (!prodPeriod?.emissions) return false;
 
   return DATA_POINTS.every((dp) => {
-    if (dp.id === 'calculated-total') return true;
+    if (dp.id === "calculated-total") return true;
     const value = getDataPointValue(prodPeriod.emissions, dp.id);
     if (value === null) return true;
     return getDataPointVerified(prodPeriod.emissions, dp.id);
@@ -30,7 +30,9 @@ export function isProdCompanyFullyVerifiedForYear(
   );
   if (prodPeriods.length === 0) return false;
 
-  return prodPeriods.every((period) => isProdReportingPeriodFullyVerified(period));
+  return prodPeriods.every((period) =>
+    isProdReportingPeriodFullyVerified(period),
+  );
 }
 
 export function buildProdCompanyVerifiedForYearMap(

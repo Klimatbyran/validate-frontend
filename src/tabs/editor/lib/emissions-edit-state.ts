@@ -6,7 +6,7 @@ export type EditedEmissionsByPeriodId = Record<string, EditedPeriodEmissions>;
 function dropPeriodIfEmpty(
   prev: EditedEmissionsByPeriodId,
   rpId: string,
-  nextForRp: EditedPeriodEmissions
+  nextForRp: EditedPeriodEmissions,
 ): EditedEmissionsByPeriodId {
   const hasAny = Object.keys(nextForRp).length > 0;
   if (hasAny) return { ...prev, [rpId]: nextForRp };
@@ -20,14 +20,14 @@ export function applyNullableStringEdit(
   rpId: string,
   key: keyof EditedPeriodEmissions,
   value: string,
-  hadOriginalValue: boolean
+  hadOriginalValue: boolean,
 ): EditedEmissionsByPeriodId {
   const current = { ...(prev[rpId] ?? {}) } as Record<string, unknown>;
   const nextForRp = assignNullableStringKey(
     current,
     String(key),
     value,
-    hadOriginalValue
+    hadOriginalValue,
   ) as EditedPeriodEmissions;
   return dropPeriodIfEmpty(prev, rpId, nextForRp);
 }
@@ -37,7 +37,7 @@ export function applyScope3CategoryValueEdit(
   rpId: string,
   category: number,
   value: string,
-  hadOriginalValue: boolean
+  hadOriginalValue: boolean,
 ): EditedEmissionsByPeriodId {
   const key = String(category);
   const current = prev[rpId] ?? {};
@@ -50,7 +50,9 @@ export function applyScope3CategoryValueEdit(
     nextCats[key] = value.trim() === "" ? "" : value;
   }
 
-  nextForRp.scope3Categories = Object.keys(nextCats).length ? nextCats : undefined;
+  nextForRp.scope3Categories = Object.keys(nextCats).length
+    ? nextCats
+    : undefined;
   return dropPeriodIfEmpty(prev, rpId, nextForRp);
 }
 
@@ -58,7 +60,7 @@ export function applyScope3CategoryVerifiedEdit(
   prev: EditedEmissionsByPeriodId,
   rpId: string,
   category: number,
-  verified: boolean
+  verified: boolean,
 ): EditedEmissionsByPeriodId {
   const key = String(category);
   const current = prev[rpId] ?? {};
@@ -69,7 +71,7 @@ export function applyScope3CategoryVerifiedEdit(
 export function applyScope3CategoryClear(
   prev: EditedEmissionsByPeriodId,
   rpId: string,
-  category: number
+  category: number,
 ): EditedEmissionsByPeriodId {
   const current = prev[rpId];
   if (!current) return prev;
@@ -79,14 +81,17 @@ export function applyScope3CategoryClear(
   if (nextForRp.scope3Categories) {
     const nextCats = { ...nextForRp.scope3Categories };
     delete nextCats[key];
-    nextForRp.scope3Categories = Object.keys(nextCats).length ? nextCats : undefined;
+    nextForRp.scope3Categories = Object.keys(nextCats).length
+      ? nextCats
+      : undefined;
   }
   if (nextForRp.scope3CategoriesVerified) {
     const nextV = { ...nextForRp.scope3CategoriesVerified };
     delete nextV[key];
-    nextForRp.scope3CategoriesVerified = Object.keys(nextV).length ? nextV : undefined;
+    nextForRp.scope3CategoriesVerified = Object.keys(nextV).length
+      ? nextV
+      : undefined;
   }
 
   return dropPeriodIfEmpty(prev, rpId, nextForRp);
 }
-

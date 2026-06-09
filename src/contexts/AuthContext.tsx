@@ -148,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     },
-    [navigate]
+    [navigate],
   );
 
   // Load token from localStorage on mount
@@ -236,14 +236,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener(
       "token-updated",
-      handleTokenUpdate as EventListener
+      handleTokenUpdate as EventListener,
     );
     window.addEventListener("auth-required", handleAuthRequired);
 
     return () => {
       window.removeEventListener(
         "token-updated",
-        handleTokenUpdate as EventListener
+        handleTokenUpdate as EventListener,
       );
       window.removeEventListener("auth-required", handleAuthRequired);
     };

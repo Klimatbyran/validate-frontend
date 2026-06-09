@@ -1,4 +1,4 @@
-import type { CompanyRow, DataPointMetric } from '../types';
+import type { CompanyRow, DataPointMetric } from "../types";
 
 export interface PerformanceMetricRow {
   /** Translation key for the metric name (e.g. errors.metrics.exactMatch). */
@@ -13,7 +13,7 @@ export interface PerformanceMetricRow {
 /** Build performance metrics from comparison rows for the browser view. */
 export function computePerformanceMetrics(
   comparisonRows: CompanyRow[],
-  opts?: { verifiedOnly?: boolean }
+  opts?: { verifiedOnly?: boolean },
 ): {
   totalCompanies: number;
   withAnyData: number;
@@ -23,25 +23,33 @@ export function computePerformanceMetrics(
 } | null {
   const verifiedOnly = Boolean(opts?.verifiedOnly);
   const bothExist = comparisonRows.filter((r) => r.inStage && r.inProd);
-  const rows = verifiedOnly ? bothExist.filter((r) => r.prodVerified) : bothExist;
+  const rows = verifiedOnly
+    ? bothExist.filter((r) => r.prodVerified)
+    : bothExist;
   const zeroInclusiveRows = verifiedOnly
     ? bothExist.filter(
         (r) =>
           r.prodVerified ||
-          (r.discrepancy === 'both-null' && r.prodCompanyVerifiedForYear)
+          (r.discrepancy === "both-null" && r.prodCompanyVerifiedForYear),
       )
     : bothExist;
   if (rows.length === 0) return null;
 
-  const identical = rows.filter((r) => r.discrepancy === 'identical').length;
-  const rounding = rows.filter((r) => r.discrepancy === 'rounding').length;
-  const bothNull = zeroInclusiveRows.filter((r) => r.discrepancy === 'both-null').length;
-  const hallucination = rows.filter((r) => r.discrepancy === 'hallucination').length;
-  const missing = rows.filter((r) => r.discrepancy === 'missing').length;
-  const unitError = rows.filter((r) => r.discrepancy === 'unit-error').length;
-  const smallError = rows.filter((r) => r.discrepancy === 'small-error').length;
-  const errorCount = rows.filter((r) => r.discrepancy === 'error').length;
-  const categoryError = rows.filter((r) => r.discrepancy === 'category-error').length;
+  const identical = rows.filter((r) => r.discrepancy === "identical").length;
+  const rounding = rows.filter((r) => r.discrepancy === "rounding").length;
+  const bothNull = zeroInclusiveRows.filter(
+    (r) => r.discrepancy === "both-null",
+  ).length;
+  const hallucination = rows.filter(
+    (r) => r.discrepancy === "hallucination",
+  ).length;
+  const missing = rows.filter((r) => r.discrepancy === "missing").length;
+  const unitError = rows.filter((r) => r.discrepancy === "unit-error").length;
+  const smallError = rows.filter((r) => r.discrepancy === "small-error").length;
+  const errorCount = rows.filter((r) => r.discrepancy === "error").length;
+  const categoryError = rows.filter(
+    (r) => r.discrepancy === "category-error",
+  ).length;
 
   const totalCompanies = rows.length;
   const withAnyData =
@@ -61,15 +69,15 @@ export function computePerformanceMetrics(
       success: identical,
       total: withAnyData,
       rate: withAnyData > 0 ? (identical / withAnyData) * 100 : 0,
-      labelKey: 'errors.metrics.exactMatch',
-      excludesKey: 'errors.metrics.notes.nothing',
+      labelKey: "errors.metrics.exactMatch",
+      excludesKey: "errors.metrics.notes.nothing",
     },
     tolerant: {
       success: identical + rounding,
       total: withAnyData,
       rate: withAnyData > 0 ? ((identical + rounding) / withAnyData) * 100 : 0,
-      labelKey: 'errors.metrics.precisionTolerant',
-      excludesKey: 'errors.metrics.notes.rounding',
+      labelKey: "errors.metrics.precisionTolerant",
+      excludesKey: "errors.metrics.notes.rounding",
     },
     zeroInclusive: {
       success: identical + rounding + bothNull,
@@ -78,8 +86,8 @@ export function computePerformanceMetrics(
         zeroInclusiveRows.length > 0
           ? ((identical + rounding + bothNull) / zeroInclusiveRows.length) * 100
           : 0,
-      labelKey: 'errors.metrics.zeroInclusive',
-      excludesKey: 'errors.metrics.notes.zeroInclusive',
+      labelKey: "errors.metrics.zeroInclusive",
+      excludesKey: "errors.metrics.notes.zeroInclusive",
     },
   };
 }
@@ -107,7 +115,7 @@ export interface OverviewAggregates {
 
 /** Compute aggregate rates and totals for overview scope sections. */
 export function calculateOverviewAggregates(
-  metrics: DataPointMetric[]
+  metrics: DataPointMetric[],
 ): OverviewAggregates {
   const totals = metrics.reduce(
     (acc, dp) => {
@@ -146,12 +154,14 @@ export function calculateOverviewAggregates(
       bothNull: 0,
       withAnyData: 0,
       totalCompanies: 0,
-    }
+    },
   );
 
   return {
     exactMatch:
-      totals.withAnyData > 0 ? (totals.identical / totals.withAnyData) * 100 : 0,
+      totals.withAnyData > 0
+        ? (totals.identical / totals.withAnyData) * 100
+        : 0,
     tolerant:
       totals.withAnyData > 0
         ? ((totals.identical + totals.rounding) / totals.withAnyData) * 100

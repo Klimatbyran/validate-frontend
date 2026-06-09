@@ -54,10 +54,16 @@ export function RunReportsModal({
             </p>
             <ul className="space-y-1 max-h-40 overflow-y-auto pr-2">
               {items.map((entry) => {
-                const key = entry.id ?? `${entry.wikidataId ?? ""}-${entry.url}`;
+                const key =
+                  entry.id ?? `${entry.wikidataId ?? ""}-${entry.url}`;
                 return (
-                  <li key={key} className="text-sm text-gray-02 truncate" title={entry.url}>
-                    {(entry.companyName && entry.companyName.trim()) || entry.url}
+                  <li
+                    key={key}
+                    className="text-sm text-gray-02 truncate"
+                    title={entry.url}
+                  >
+                    {(entry.companyName && entry.companyName.trim()) ||
+                      entry.url}
                   </li>
                 );
               })}
@@ -90,7 +96,9 @@ export function RunReportsModal({
             onClick={() => void onRunReports()}
             disabled={isRunning || items.length === 0}
           >
-            {isRunning ? t("registry.runningReports") : t("registry.runReports")}
+            {isRunning
+              ? t("registry.runningReports")
+              : t("registry.runReports")}
           </Button>
         </DialogFooter>
       </DialogContent>

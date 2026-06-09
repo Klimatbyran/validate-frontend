@@ -58,7 +58,9 @@ export function ReportingPeriodQuickEditModal({
 }) {
   const { t } = useI18n();
   const dash = t("common.placeholderDash");
-  const [detailCompany, setDetailCompany] = useState<GarboCompanyDetail | null>(null);
+  const [detailCompany, setDetailCompany] = useState<GarboCompanyDetail | null>(
+    null,
+  );
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   useEffect(() => {
@@ -86,7 +88,7 @@ export function ReportingPeriodQuickEditModal({
       const a = normDateKey(periodMatch.startDate);
       const b = normDateKey(periodMatch.endDate);
       const byDates = periods.find(
-        (p) => normDateKey(p.startDate) === a && normDateKey(p.endDate) === b
+        (p) => normDateKey(p.startDate) === a && normDateKey(p.endDate) === b,
       );
       if (byDates) return byDates;
     }
@@ -120,15 +122,16 @@ export function ReportingPeriodQuickEditModal({
   const setNullableEdit = (
     key: keyof ReportingPeriodQuickEditEdited,
     value: string,
-    hadOriginalValue: boolean
+    hadOriginalValue: boolean,
   ) => {
-    setEdited((prev) =>
-      assignNullableStringKey(
-        { ...prev },
-        String(key),
-        value,
-        hadOriginalValue
-      ) as ReportingPeriodQuickEditEdited
+    setEdited(
+      (prev) =>
+        assignNullableStringKey(
+          { ...prev },
+          String(key),
+          value,
+          hadOriginalValue,
+        ) as ReportingPeriodQuickEditEdited,
     );
   };
 
@@ -139,7 +142,9 @@ export function ReportingPeriodQuickEditModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>{t("editor.reportingPeriodQuickEdit.notFoundTitle", { year })}</DialogTitle>
+            <DialogTitle>
+              {t("editor.reportingPeriodQuickEdit.notFoundTitle", { year })}
+            </DialogTitle>
             <DialogDescription>
               {loadingDetail
                 ? t("editor.periodEditor.loadingEllipsis")
@@ -174,7 +179,7 @@ export function ReportingPeriodQuickEditModal({
           source,
           originalScope3Categories: scope3CategoryTotalsForPatch,
           toNumberOrNull,
-        })
+        }),
       );
       toast.success(t("editor.reportingPeriodQuickEdit.updatedToast"));
       onSaved?.();
@@ -264,4 +269,3 @@ export function ReportingPeriodQuickEditModal({
     </Dialog>
   );
 }
-

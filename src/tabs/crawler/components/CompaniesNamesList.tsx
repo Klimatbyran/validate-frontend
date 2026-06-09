@@ -151,7 +151,10 @@ const CompaniesNamesList = ({
                   <th className="pl-4 py-3 flex flex-col text-xs tracking-wider">
                     <span className="font-semibold flex gap-2 text-gray-02 uppercase">
                       {t("crawler.select")}{" "}
-                      <button className="flex" onClick={handleSelectAllCompanies}>
+                      <button
+                        className="flex"
+                        onClick={handleSelectAllCompanies}
+                      >
                         <span className="flex gap-2">
                           ({t("crawler.clickSelectAll")})
                         </span>

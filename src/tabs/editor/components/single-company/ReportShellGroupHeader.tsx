@@ -19,7 +19,9 @@ export function ReportShellGroupHeader({
           {t("editor.periodEditor.unlinkedReportShell")}
         </div>
         <div className="text-xs text-gray-02 mt-1">
-          {t("editor.periodEditor.reportShellPeriodCount", { count: periodCount })}
+          {t("editor.periodEditor.reportShellPeriodCount", {
+            count: periodCount,
+          })}
         </div>
       </div>
     );
@@ -34,7 +36,9 @@ export function ReportShellGroupHeader({
             : t("editor.singleCompanyView.noReportYear")}
         </span>
         <span className="text-xs text-gray-02">
-          {t("editor.periodEditor.reportShellPeriodCount", { count: periodCount })}
+          {t("editor.periodEditor.reportShellPeriodCount", {
+            count: periodCount,
+          })}
         </span>
       </div>
       <div className={`mt-1.5 ${editorSecondaryIdTextClass}`}>

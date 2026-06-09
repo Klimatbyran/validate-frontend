@@ -9,15 +9,7 @@ import {
   CustomAPIJob,
 } from "./types";
 
-import {
-  Observable,
-  Subject,
-  from,
-  of,
-  timer,
-  concat,
-  throwError,
-} from "rxjs";
+import { Observable, Subject, from, of, timer, concat, throwError } from "rxjs";
 import {
   concatMap,
   tap,
@@ -60,11 +52,11 @@ class RxRateLimiter {
                 error: null,
               })),
               catchError((error) =>
-                of({ result: null, observer: item.observer, error })
-              )
-            )
+                of({ result: null, observer: item.observer, error }),
+              ),
+            ),
           );
-        })
+        }),
       )
       .subscribe((item) => {
         if (!item || !item.observer) {
@@ -161,7 +153,9 @@ api.interceptors.request.use(
 
     // Check if this is a write operation
     const method = config.method?.toUpperCase() || "";
-    const isWriteOperation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+    const isWriteOperation = ["POST", "PUT", "PATCH", "DELETE"].includes(
+      method,
+    );
 
     if (isWriteOperation) {
       const token = localStorage.getItem(TOKEN_STORAGE_KEY);
@@ -176,9 +170,11 @@ api.interceptors.request.use(
                 return api(config);
               },
             },
-          })
+          }),
         );
-        return Promise.reject(new Error("Authentication required for write operations"));
+        return Promise.reject(
+          new Error("Authentication required for write operations"),
+        );
       }
     }
 
@@ -192,7 +188,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Add response interceptor for logging, retry handling, and auth
@@ -204,7 +200,7 @@ api.interceptors.response.use(
       localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
       // Dispatch event to update AuthContext
       window.dispatchEvent(
-        new CustomEvent("token-updated", { detail: newToken })
+        new CustomEvent("token-updated", { detail: newToken }),
       );
     }
     return response;
@@ -215,7 +211,9 @@ api.interceptors.response.use(
     // Handle 401 Unauthorized - token invalid or expired
     if (error.response?.status === 401) {
       const method = config?.method?.toUpperCase() || "";
-      const isWriteOperation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+      const isWriteOperation = ["POST", "PUT", "PATCH", "DELETE"].includes(
+        method,
+      );
 
       // Clear invalid token
       localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -230,7 +228,7 @@ api.interceptors.response.use(
                 return api(config);
               },
             },
-          })
+          }),
         );
       } else {
         // For GET requests, just trigger auth-required event (silent failure)
@@ -255,7 +253,7 @@ api.interceptors.response.use(
       const jitter = Math.random() * 1000;
       const backoffDelay = Math.min(
         1000 * 2 ** (config as any).retryCount + jitter,
-        10000
+        10000,
       );
 
       await new Promise((resolve) => setTimeout(resolve, backoffDelay));
@@ -264,45 +262,69 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export function fetchQueueJobs(
   queueName: string,
-  status?: string
+  status?: string,
 ): Promise<QueueJobsResponse> {
   // Create an observable for the API request
   return new Promise((resolve, reject) => {
     try {
       const params = status ? { status } : {};
       const subscription = rateLimiter
-        .throttle(() =>
-          api.get(`/queues/${queueName}`, { params })
-        )
+        .throttle(() => api.get(`/queues/${queueName}`, { params }))
         .pipe(
           map((response) => {
             try {
               // The custom API returns an array of jobs directly
               const jobs = response.data || [];
-              
+
               // Sort jobs by timestamp descending to get latest jobs first
-              const sortedJobs = jobs.sort((a: CustomAPIJob, b: CustomAPIJob) => (b.timestamp || 0) - (a.timestamp || 0));
-              
+              const sortedJobs = jobs.sort(
+                (a: CustomAPIJob, b: CustomAPIJob) =>
+                  (b.timestamp || 0) - (a.timestamp || 0),
+              );
+
               // Transform the custom API response to match the expected format
               const queue = {
                 name: queueName,
                 type: "bullmq" as const,
                 isPaused: false,
-                statuses: ["active", "waiting", "completed", "failed", "delayed", "paused"],
+                statuses: [
+                  "active",
+                  "waiting",
+                  "completed",
+                  "failed",
+                  "delayed",
+                  "paused",
+                ],
                 counts: {
-                  active: sortedJobs.filter((job: CustomAPIJob) => job.status === "active").length,
-                  waiting: sortedJobs.filter((job: CustomAPIJob) => job.status === "waiting").length,
-                  completed: sortedJobs.filter((job: CustomAPIJob) => job.status === "completed").length,
-                  failed: sortedJobs.filter((job: CustomAPIJob) => job.status === "failed").length,
-                  delayed: sortedJobs.filter((job: CustomAPIJob) => job.status === "delayed").length,
-                  paused: sortedJobs.filter((job: CustomAPIJob) => job.status === "paused").length,
-                  prioritized: sortedJobs.filter((job: CustomAPIJob) => job.status === "prioritized").length,
-                  "waiting-children": sortedJobs.filter((job: CustomAPIJob) => job.status === "waiting-children").length,
+                  active: sortedJobs.filter(
+                    (job: CustomAPIJob) => job.status === "active",
+                  ).length,
+                  waiting: sortedJobs.filter(
+                    (job: CustomAPIJob) => job.status === "waiting",
+                  ).length,
+                  completed: sortedJobs.filter(
+                    (job: CustomAPIJob) => job.status === "completed",
+                  ).length,
+                  failed: sortedJobs.filter(
+                    (job: CustomAPIJob) => job.status === "failed",
+                  ).length,
+                  delayed: sortedJobs.filter(
+                    (job: CustomAPIJob) => job.status === "delayed",
+                  ).length,
+                  paused: sortedJobs.filter(
+                    (job: CustomAPIJob) => job.status === "paused",
+                  ).length,
+                  prioritized: sortedJobs.filter(
+                    (job: CustomAPIJob) => job.status === "prioritized",
+                  ).length,
+                  "waiting-children": sortedJobs.filter(
+                    (job: CustomAPIJob) => job.status === "waiting-children",
+                  ).length,
                 },
                 jobs: sortedJobs.map((job: CustomAPIJob) => {
                   const threadId =
@@ -331,7 +353,8 @@ export function fetchQueueJobs(
                       description: job.approval?.summary,
                       year: job.year,
                       status: job.status,
-                      needsApproval: !job.autoApprove && !job.approval?.approved,
+                      needsApproval:
+                        !job.autoApprove && !job.approval?.approved,
                       comment: job.approval?.metadata?.comment,
                     },
                     parent: undefined,
@@ -393,7 +416,7 @@ export function fetchQueueJobs(
               return throwError(() => handledError);
             }
           }),
-          finalize(() => {})
+          finalize(() => {}),
         )
         .subscribe({
           next: (result) => {
@@ -421,7 +444,7 @@ export function fetchQueueJobs(
 // Load all historical jobs for a queue - simplified for custom API
 export function fetchAllHistoricalJobs(
   queueName: string,
-  status?: string
+  status?: string,
 ): Observable<QueueJobsResponse> {
   // The custom API returns all jobs at once, so we just need to fetch them
   return from(fetchQueueJobs(queueName, status)).pipe(
@@ -456,7 +479,7 @@ export function fetchAllHistoricalJobs(
         },
       });
     }),
-    share()
+    share(),
   );
 }
 
@@ -471,7 +494,7 @@ export function fetchProcesses(): Promise<CustomAPIProcess[]> {
           catchError((error) => {
             console.error("Error fetching processes:", error);
             return of([]);
-          })
+          }),
         )
         .subscribe({
           next: (processes) => resolve(processes),
@@ -496,7 +519,7 @@ export function fetchProcessesByCompany(): Promise<CustomAPICompany[]> {
             console.error("Error fetching processes by company:", error);
             // Propagate error so callers can decide how to handle state updates
             return throwError(() => error);
-          })
+          }),
         )
         .subscribe({
           next: (companies) => resolve(companies),
@@ -526,7 +549,7 @@ function parseCompaniesResponse(data: unknown): CustomAPICompany[] {
   if (import.meta.env.DEV) {
     console.warn(
       "fetchCompanies/fetchCompaniesPage: unexpected response shape",
-      data
+      data,
     );
   }
   return [];
@@ -540,7 +563,7 @@ export async function fetchCompanies(): Promise<CustomAPICompany[]> {
 
 export async function fetchCompaniesPage(
   page: number,
-  pageSize: number
+  pageSize: number,
 ): Promise<CustomAPICompany[]> {
   const safePage = Math.max(1, page);
   const safePageSize = Math.max(1, pageSize);
@@ -550,7 +573,9 @@ export async function fetchCompaniesPage(
   return parseCompaniesResponse(response.data);
 }
 
-export function fetchProcessById(processId: string): Promise<CustomAPIProcess | null> {
+export function fetchProcessById(
+  processId: string,
+): Promise<CustomAPIProcess | null> {
   return new Promise((resolve, reject) => {
     try {
       const subscription = rateLimiter
@@ -560,7 +585,7 @@ export function fetchProcessById(processId: string): Promise<CustomAPIProcess | 
           catchError((error) => {
             console.error(`Error fetching process ${processId}:`, error);
             return of(null);
-          })
+          }),
         )
         .subscribe({
           next: (process) => resolve(process),
@@ -584,7 +609,7 @@ export function fetchQueueStats(): Promise<CustomAPIQueueStats[]> {
           catchError((error) => {
             console.error("Error fetching queue stats:", error);
             return of([]);
-          })
+          }),
         )
         .subscribe({
           next: (stats) => resolve(stats),
@@ -611,7 +636,7 @@ function handleApiError(error: unknown, context?: string): Error {
       }
       if (error.code === "ERR_NETWORK") {
         return new Error(
-          `${errorPrefix}Kunde inte nå servern. Kontrollera din internetanslutning.`
+          `${errorPrefix}Kunde inte nå servern. Kontrollera din internetanslutning.`,
         );
       }
       return new Error(`${errorPrefix}Kunde inte nå servern: ${error.message}`);
@@ -634,14 +659,14 @@ function handleApiError(error: unknown, context?: string): Error {
       case 503:
       case 504:
         return new Error(
-          `${errorPrefix}Ett serverfel har inträffat (${statusCode})`
+          `${errorPrefix}Ett serverfel har inträffat (${statusCode})`,
         );
       default: {
         // Include response data in error message if available
         const errorMessage =
           responseData?.message || responseData?.error || error.message;
         return new Error(
-          `${errorPrefix}Ett fel uppstod (${statusCode}): ${errorMessage}`
+          `${errorPrefix}Ett fel uppstod (${statusCode}): ${errorMessage}`,
         );
       }
     }

@@ -3,7 +3,10 @@ import { QueueJob } from "@/lib/types";
 import { MarkdownVectorPagesDisplay } from "@/ui/markdown-display";
 import { isMarkdown, isJsonString, getWikidataInfo } from "@/lib/utils";
 import { FiscalYearDisplay } from "@/ui/fiscal-year-display";
-import { ScopeEmissionsDisplay, Scope3EmissionsDisplay } from "../scope/ScopeEmissionsDisplay";
+import {
+  ScopeEmissionsDisplay,
+  Scope3EmissionsDisplay,
+} from "../scope/ScopeEmissionsDisplay";
 import { MetadataDisplay } from "@/ui/metadata-display";
 import { ScreenshotSlideshow } from "@/components/screenshot-slideshow";
 import { CollapsibleSection } from "@/ui/collapsible-section";
@@ -42,7 +45,12 @@ function JobReportUrlRow({ title, url }: { title: string; url: string }) {
         <p className="text-sm text-gray-02 break-all">{url}</p>
       </div>
       {isHttpReportUrl(url) ? (
-        <Button variant="ghost" size="sm" asChild className="shrink-0 self-start sm:self-center">
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="shrink-0 self-start sm:self-center"
+        >
           <a
             href={url}
             target="_blank"
@@ -83,7 +91,9 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       }
     }
     loadDetails();
-    return () => { aborted = true; };
+    return () => {
+      aborted = true;
+    };
   }, [job?.id, job?.queueId, Boolean(job?.returnvalue)]);
 
   const effectiveJob = React.useMemo(() => {
@@ -164,8 +174,13 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
 
   const renderValue = (value: any): React.ReactNode => {
     if (value === null)
-      return <span className="text-gray-02">{t("jobstatus.jobdetails.noValue")}</span>;
-    if (typeof value === "boolean") return value ? t("common.yes") : t("common.no");
+      return (
+        <span className="text-gray-02">
+          {t("jobstatus.jobdetails.noValue")}
+        </span>
+      );
+    if (typeof value === "boolean")
+      return value ? t("common.yes") : t("common.no");
     if (typeof value === "string") {
       return isMarkdown(value) ? (
         <MarkdownVectorPagesDisplay value={value} />
@@ -189,11 +204,13 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob);
   const wikidataId: string | undefined = React.useMemo(() => {
     const fromJob = getWikidataInfo(effectiveJob as any)?.node;
-    const fromProcessed = (processedData as any)?.wikidataId || (processedData as any)?.wikidata?.node;
+    const fromProcessed =
+      (processedData as any)?.wikidataId ||
+      (processedData as any)?.wikidata?.node;
     const fromApproval = wikidataApprovalData?.wikidata?.node;
     const candidate = fromJob || fromProcessed || fromApproval;
     if (!candidate) return undefined;
-    const id = typeof candidate === 'string' ? candidate : String(candidate);
+    const id = typeof candidate === "string" ? candidate : String(candidate);
     const trimmed = id.trim();
     return trimmed.length > 0 ? trimmed : undefined;
   }, [effectiveJob, processedData, wikidataApprovalData]);
@@ -251,15 +268,15 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
 
   // Get company name from multiple possible sources
   const companyName: string | undefined = React.useMemo(() => {
-    const name = 
-      effectiveJob?.data?.companyName || 
-      job?.data?.companyName || 
+    const name =
+      effectiveJob?.data?.companyName ||
+      job?.data?.companyName ||
       processedData?.companyName ||
       effectiveJob?.data?.company ||
       job?.data?.company ||
       processedData?.company;
     if (!name) return undefined;
-    const nameString = typeof name === 'string' ? name : String(name);
+    const nameString = typeof name === "string" ? name : String(name);
     return nameString.trim() || undefined;
   }, [effectiveJob, job, processedData]);
 
@@ -272,23 +289,33 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
 
   React.useEffect(() => {
     try {
-      console.log('[JobSpecificDataView] scope3 panel context', {
+      console.log("[JobSpecificDataView] scope3 panel context", {
         jobId: job?.id,
         queueId: job?.queueId,
         hasReturnValue: !!job?.returnvalue,
         derivedWikidataId: wikidataId,
         hasScope3Data: !!scope3Data,
       });
-      console.log('[JobSpecificDataView] threadId sources', {
+      console.log("[JobSpecificDataView] threadId sources", {
         dataThreadId: (job as any)?.data?.threadId,
         effectiveDataThreadId: (effectiveJob as any)?.data?.threadId,
         detailedKeys: detailed ? Object.keys(detailed) : [],
-        detailedDataKeys: (detailed as any)?.data ? Object.keys((detailed as any).data) : [],
+        detailedDataKeys: (detailed as any)?.data
+          ? Object.keys((detailed as any).data)
+          : [],
       });
     } catch {
       // ignore debug logging errors
     }
-  }, [job?.id, job?.queueId, Boolean(job?.returnvalue), wikidataId, Boolean(scope3Data), effectiveJob, detailed]);
+  }, [
+    job?.id,
+    job?.queueId,
+    Boolean(job?.returnvalue),
+    wikidataId,
+    Boolean(scope3Data),
+    effectiveJob,
+    detailed,
+  ]);
 
   // Helper flags for follow-up scope jobs
   const isFollowUpScope12Job =
@@ -316,7 +343,10 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
               </div>
               <div className="min-w-0 flex-1 space-y-4">
                 {showBothUrls && sourceReportUrl ? (
-                  <JobReportUrlRow title={t("registry.sourceUrl")} url={sourceReportUrl} />
+                  <JobReportUrlRow
+                    title={t("registry.sourceUrl")}
+                    url={sourceReportUrl}
+                  />
                 ) : null}
                 {storedPdfUrl ? (
                   <JobReportUrlRow
@@ -329,7 +359,10 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
                   />
                 ) : null}
                 {!storedPdfUrl && sourceReportUrl ? (
-                  <JobReportUrlRow title={t("jobstatus.jobdetails.reportLabel")} url={sourceReportUrl} />
+                  <JobReportUrlRow
+                    title={t("jobstatus.jobdetails.reportLabel")}
+                    url={sourceReportUrl}
+                  />
                 ) : null}
               </div>
             </div>
@@ -399,20 +432,29 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       {/* Show Scope 1+2 emissions data if available */}
       {scopeData && (
         <div className="mb-4">
-          <ScopeEmissionsDisplay data={{ scope12: scopeData }} wikidataId={wikidataId} />
+          <ScopeEmissionsDisplay
+            data={{ scope12: scopeData }}
+            wikidataId={wikidataId}
+          />
         </div>
       )}
       {/* Combined Scope 1+2 value is now surfaced inside the Scope 1 card in the Scope 1 & 2 panel */}
       {/* Show Scope 3 emissions data if available */}
       {scope3Data && (
         <div className="mb-4">
-          <Scope3EmissionsDisplay data={{ scope3: scope3Data }} wikidataId={wikidataId} />
+          <Scope3EmissionsDisplay
+            data={{ scope3: scope3Data }}
+            wikidataId={wikidataId}
+          />
         </div>
       )}
       {/* Show Economy data if available */}
       {economyData && (
         <div className="mb-4">
-          <EconomySection data={{ economy: economyData }} wikidataId={wikidataId} />
+          <EconomySection
+            data={{ economy: economyData }}
+            wikidataId={wikidataId}
+          />
         </div>
       )}
       {/* Show Screenshot slideshow if scopeData and PDF URL exist */}
@@ -474,7 +516,13 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleRerunAndSave("followUpScope12", ["scope1", "scope2"], t("jobstatus.jobdetails.rerunAndSaveScope12"))}
+              onClick={() =>
+                handleRerunAndSave(
+                  "followUpScope12",
+                  ["scope1", "scope2"],
+                  t("jobstatus.jobdetails.rerunAndSaveScope12"),
+                )
+              }
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
@@ -485,7 +533,13 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleRerunAndSave("followUpScope1", ["scope1"], t("jobstatus.jobdetails.rerunAndSaveScope1"))}
+              onClick={() =>
+                handleRerunAndSave(
+                  "followUpScope1",
+                  ["scope1"],
+                  t("jobstatus.jobdetails.rerunAndSaveScope1"),
+                )
+              }
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
@@ -496,7 +550,13 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleRerunAndSave("followUpScope2", ["scope2"], t("jobstatus.jobdetails.rerunAndSaveScope2"))}
+              onClick={() =>
+                handleRerunAndSave(
+                  "followUpScope2",
+                  ["scope2"],
+                  t("jobstatus.jobdetails.rerunAndSaveScope2"),
+                )
+              }
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
@@ -507,7 +567,13 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleRerunAndSave("followUpScope3", ["scope3"], t("jobstatus.jobdetails.rerunAndSaveScope3"))}
+              onClick={() =>
+                handleRerunAndSave(
+                  "followUpScope3",
+                  ["scope3"],
+                  t("jobstatus.jobdetails.rerunAndSaveScope3"),
+                )
+              }
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />

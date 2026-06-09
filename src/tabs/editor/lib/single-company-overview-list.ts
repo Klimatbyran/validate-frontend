@@ -54,9 +54,11 @@ export function reportRowPassesOverviewFilters(
   if (!companyPassesExcludeTagFilter(company.tags, f.excludeFilterTags))
     return false;
   if (!reportRowHasDataYears(row, f.filterDataYears)) return false;
-  if (!reportRowMatchesReportYearFilter(row, f.filterReportYears))
-    return false;
-  if (f.filterSector && (company.industry?.subIndustryCode ?? "") !== f.filterSector)
+  if (!reportRowMatchesReportYearFilter(row, f.filterReportYears)) return false;
+  if (
+    f.filterSector &&
+    (company.industry?.subIndustryCode ?? "") !== f.filterSector
+  )
     return false;
 
   if (f.filterUnverified) {
@@ -76,7 +78,10 @@ export function reportRowPassesOverviewFilters(
       });
       if (!hasUnverifiedInYears) return false;
     } else {
-      if (f.filterUnverified === "emissions" && !overview.hasUnverifiedEmissions)
+      if (
+        f.filterUnverified === "emissions" &&
+        !overview.hasUnverifiedEmissions
+      )
         return false;
       if (f.filterUnverified === "all" && !overview.hasUnverifiedData)
         return false;

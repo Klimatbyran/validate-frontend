@@ -10,10 +10,7 @@ import {
   DialogTitle,
 } from "@/ui/dialog";
 import type { RegistryNewEntry } from "../lib/registry-types";
-import {
-  isValidHttpUrl,
-  isValidOptionalHttpUrl,
-} from "../lib/registry-utils";
+import { isValidHttpUrl, isValidOptionalHttpUrl } from "../lib/registry-utils";
 
 interface RegistryAddModalProps {
   open: boolean;
@@ -136,7 +133,9 @@ const RegistryAddModal = ({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("registry.addEntryTitle")}</DialogTitle>
-          <DialogDescription>{t("registry.addEntryDescription")}</DialogDescription>
+          <DialogDescription>
+            {t("registry.addEntryDescription")}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3">
@@ -185,7 +184,9 @@ const RegistryAddModal = ({
               placeholder="2024"
             />
             {yearError && (
-              <span className="mt-1 block text-xs text-red-500">{yearError}</span>
+              <span className="mt-1 block text-xs text-red-500">
+                {yearError}
+              </span>
             )}
           </label>
 
@@ -201,7 +202,9 @@ const RegistryAddModal = ({
               placeholder="https://…"
             />
             {urlError && (
-              <span className="mt-1 block text-xs text-red-500">{urlError}</span>
+              <span className="mt-1 block text-xs text-red-500">
+                {urlError}
+              </span>
             )}
           </label>
 

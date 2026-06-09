@@ -86,14 +86,19 @@ export function MultiSelectDropdown({
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       const active = document.activeElement;
-      const activeInWrapper = !!active && !!wrapperRef.current?.contains(active);
+      const activeInWrapper =
+        !!active && !!wrapperRef.current?.contains(active);
       const activeInPanel = !!active && !!panelRef.current?.contains(active);
       if (!activeInWrapper && !activeInPanel) return;
       const panel = panelRef.current;
       const buttons = panel
-        ? Array.from(panel.querySelectorAll<HTMLButtonElement>('button[role="option"]'))
+        ? Array.from(
+            panel.querySelectorAll<HTMLButtonElement>('button[role="option"]'),
+          )
         : [];
-      const currentIndex = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      const currentIndex = buttons.indexOf(
+        document.activeElement as HTMLButtonElement,
+      );
 
       if (e.key === "Escape") {
         e.preventDefault();
@@ -102,7 +107,8 @@ export function MultiSelectDropdown({
       }
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        const next = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, buttons.length - 1);
+        const next =
+          currentIndex < 0 ? 0 : Math.min(currentIndex + 1, buttons.length - 1);
         buttons[next]?.focus();
         return;
       }
@@ -139,7 +145,10 @@ export function MultiSelectDropdown({
       const maxHeight = Math.min(panelMaxHeight, available);
 
       const width = Math.max(panelMinWidth, rect.width);
-      const left = Math.min(Math.max(padding, rect.left), window.innerWidth - padding - width);
+      const left = Math.min(
+        Math.max(padding, rect.left),
+        window.innerWidth - padding - width,
+      );
       const top = openUp
         ? Math.max(padding, rect.top - offset - maxHeight)
         : rect.bottom + offset;
@@ -234,7 +243,7 @@ export function MultiSelectDropdown({
               <span
                 className={cn(
                   "flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center",
-                  isSelected ? "bg-blue-03 border-blue-03" : "border-gray-03"
+                  isSelected ? "bg-blue-03 border-blue-03" : "border-gray-03",
                 )}
               >
                 {isSelected && <Check className="w-3 h-3 text-white" />}
@@ -262,7 +271,7 @@ export function MultiSelectDropdown({
         className={cn(
           "!w-auto !min-w-0 h-9 px-4 text-sm rounded-md border border-gray-03 bg-gray-05 text-gray-01 hover:bg-gray-03/40 flex items-center gap-2",
           hasSelection && "border-blue-03 bg-blue-03/10 text-blue-03",
-          triggerClassName
+          triggerClassName,
         )}
         aria-expanded={open}
         aria-haspopup="listbox"

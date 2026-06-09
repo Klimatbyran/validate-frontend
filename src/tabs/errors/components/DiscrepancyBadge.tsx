@@ -1,7 +1,7 @@
-import { cn } from '@/lib/utils';
-import { useI18n } from '@/contexts/I18nContext';
-import { CompanyRow } from '../types';
-import { discrepancyConfig } from '../config/discrepancyConfig';
+import { cn } from "@/lib/utils";
+import { useI18n } from "@/contexts/I18nContext";
+import { CompanyRow } from "../types";
+import { discrepancyConfig } from "../config/discrepancyConfig";
 
 interface DiscrepancyBadgeProps {
   row: CompanyRow;
@@ -9,33 +9,50 @@ interface DiscrepancyBadgeProps {
 
 export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
   const { t, formatNumber } = useI18n();
-  const config = discrepancyConfig[row.discrepancy] ?? discrepancyConfig['error'];
+  const config =
+    discrepancyConfig[row.discrepancy] ?? discrepancyConfig["error"];
 
   return (
     <div>
       <div className="inline-flex items-center gap-1.5 flex-wrap justify-center">
-        <span className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
-          config.bgColor,
-          config.textColor
-        )}>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
+            config.bgColor,
+            config.textColor,
+          )}
+        >
           {config.icon}
           {t(`errors.filterType.${row.discrepancy}`)}
-          {row.discrepancy === 'small-error' && row.stageValue !== null && row.prodValue !== null && Math.abs(row.prodValue) > 0 && (() => {
-            const pct = Math.abs(row.stageValue - row.prodValue) / Math.abs(row.prodValue) * 100;
-            return (
-              <span className="opacity-75">
-                ({pct < 0.1 ? pct.toFixed(2) : pct.toFixed(1)}%)
-              </span>
-            );
-          })()}
+          {row.discrepancy === "small-error" &&
+            row.stageValue !== null &&
+            row.prodValue !== null &&
+            Math.abs(row.prodValue) > 0 &&
+            (() => {
+              const pct =
+                (Math.abs(row.stageValue - row.prodValue) /
+                  Math.abs(row.prodValue)) *
+                100;
+              return (
+                <span className="opacity-75">
+                  ({pct < 0.1 ? pct.toFixed(2) : pct.toFixed(1)}%)
+                </span>
+              );
+            })()}
         </span>
         {row.unitErrorFactor !== undefined && (
           <span
             className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-mono font-medium bg-indigo-500/20 text-indigo-400 cursor-help"
-            title={t("errors.unitErrorTooltip", { factor: row.unitErrorFactor >= 1 ? formatNumber(row.unitErrorFactor) + '×' : '1/' + formatNumber(1 / row.unitErrorFactor) + '×' })}
+            title={t("errors.unitErrorTooltip", {
+              factor:
+                row.unitErrorFactor >= 1
+                  ? formatNumber(row.unitErrorFactor) + "×"
+                  : "1/" + formatNumber(1 / row.unitErrorFactor) + "×",
+            })}
           >
-            {row.unitErrorFactor >= 1 ? `×${formatNumber(row.unitErrorFactor)}` : `÷${formatNumber(1 / row.unitErrorFactor)}`}
+            {row.unitErrorFactor >= 1
+              ? `×${formatNumber(row.unitErrorFactor)}`
+              : `÷${formatNumber(1 / row.unitErrorFactor)}`}
           </span>
         )}
         {row.categoryErrorKind && (
@@ -44,40 +61,54 @@ export function DiscrepancyBadge({ row }: DiscrepancyBadgeProps) {
       </div>
       {row.matchedDataPoint && (
         <div className="text-xs text-cyan-400/70 mt-0.5">
-          {t('errors.foundIn', { dataPoint: row.matchedDataPoint })}
+          {t("errors.foundIn", { dataPoint: row.matchedDataPoint })}
         </div>
       )}
     </div>
   );
 }
 
-function CategoryErrorKindBadge({ kind }: { kind: NonNullable<CompanyRow['categoryErrorKind']> }) {
+function CategoryErrorKindBadge({
+  kind,
+}: {
+  kind: NonNullable<CompanyRow["categoryErrorKind"]>;
+}) {
   const { t } = useI18n();
   const kindConfig = {
     conservative: {
-      bg: 'bg-green-500/20', text: 'text-green-400', dot: 'bg-green-400',
-      label: t('errors.discrepancyConservativeLabel'),
-      title: t('errors.discrepancyGeneric'),
+      bg: "bg-green-500/20",
+      text: "text-green-400",
+      dot: "bg-green-400",
+      label: t("errors.discrepancyConservativeLabel"),
+      title: t("errors.discrepancyGeneric"),
     },
     swap: {
-      bg: 'bg-yellow-500/20', text: 'text-yellow-400', dot: 'bg-yellow-400',
-      label: t('errors.discrepancySwapLabel'),
-      title: t('errors.discrepancySwap'),
+      bg: "bg-yellow-500/20",
+      text: "text-yellow-400",
+      dot: "bg-yellow-400",
+      label: t("errors.discrepancySwapLabel"),
+      title: t("errors.discrepancySwap"),
     },
-    'mix-up': {
-      bg: 'bg-orange-500/20', text: 'text-orange-400', dot: 'bg-orange-400',
-      label: t('errors.discrepancyMixUpLabel'),
-      title: t('errors.discrepancyWrongCategory'),
+    "mix-up": {
+      bg: "bg-orange-500/20",
+      text: "text-orange-400",
+      dot: "bg-orange-400",
+      label: t("errors.discrepancyMixUpLabel"),
+      title: t("errors.discrepancyWrongCategory"),
     },
     overcategorized: {
-      bg: 'bg-fuchsia-500/20', text: 'text-fuchsia-400', dot: 'bg-fuchsia-400',
-      label: t('errors.discrepancyOvercategorizedLabel'),
-      title: t('errors.discrepancyFalsePrecision'),
+      bg: "bg-fuchsia-500/20",
+      text: "text-fuchsia-400",
+      dot: "bg-fuchsia-400",
+      label: t("errors.discrepancyOvercategorizedLabel"),
+      title: t("errors.discrepancyFalsePrecision"),
     },
     duplicating: {
-      bg: 'bg-red-500/20', text: 'text-red-400', dot: 'bg-red-400',
-      label: t('errors.discrepancyDuplicatingLabel'),
-      title: t('errors.discrepancyDuplicate'),
+      bg: "bg-red-500/20",
+      text: "text-red-400",
+      dot: "bg-red-400",
+      label: t("errors.discrepancyDuplicatingLabel"),
+      title: t("errors.discrepancyDuplicate"),
     },
   };
 
@@ -85,10 +116,14 @@ function CategoryErrorKindBadge({ kind }: { kind: NonNullable<CompanyRow['catego
 
   return (
     <span
-      className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium cursor-help', cfg.bg, cfg.text)}
+      className={cn(
+        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium cursor-help",
+        cfg.bg,
+        cfg.text,
+      )}
       title={cfg.title}
     >
-      <span className={cn('w-2 h-2 rounded-full', cfg.dot)} />
+      <span className={cn("w-2 h-2 rounded-full", cfg.dot)} />
       {cfg.label}
     </span>
   );

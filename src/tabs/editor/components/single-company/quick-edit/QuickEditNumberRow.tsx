@@ -40,7 +40,9 @@ export function QuickEditNumberRow({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={
-            inputClassName + " bg-gray-04 !w-44 !max-w-none " + (dirty ? " border-orange-03" : "")
+            inputClassName +
+            " bg-gray-04 !w-44 !max-w-none " +
+            (dirty ? " border-orange-03" : "")
           }
           step="any"
         />
@@ -61,4 +63,3 @@ export function QuickEditNumberRow({
     </div>
   );
 }
-

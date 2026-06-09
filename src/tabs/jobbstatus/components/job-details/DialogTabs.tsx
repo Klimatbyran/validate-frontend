@@ -15,7 +15,11 @@ function primaryReportHref(job: QueueJob): string | undefined {
   const url = job.data?.url?.trim();
   const sourceRaw = job.data?.sourceUrl;
   const source =
-    typeof sourceRaw === "string" ? sourceRaw.trim() : sourceRaw != null ? String(sourceRaw).trim() : "";
+    typeof sourceRaw === "string"
+      ? sourceRaw.trim()
+      : sourceRaw != null
+        ? String(sourceRaw).trim()
+        : "";
   if (source && /^https?:\/\//i.test(source)) return source;
   if (url) return url;
   if (source) return source;
@@ -29,7 +33,10 @@ export function DialogTabs({ activeTab, setActiveTab, job }: DialogTabsProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-6">
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "user" | "technical")}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as "user" | "technical")}
+      >
         <TabsList className="bg-gray-04/50 h-auto p-1">
           <TabsTrigger value="user" className="gap-2 px-4 py-2">
             <Info className="w-4 h-4 shrink-0" />

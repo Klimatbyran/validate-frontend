@@ -27,10 +27,7 @@ export function useCompanyReportShellFilters(
   const pendingLatestDefault = useRef(defaultToLatestShell);
   const lastResetKey = useRef<string | null>(null);
 
-  const shells = useMemo(
-    () => groupPeriodsByReportShell(periods),
-    [periods],
-  );
+  const shells = useMemo(() => groupPeriodsByReportShell(periods), [periods]);
 
   useEffect(() => {
     if (lastResetKey.current === resetKey) return;

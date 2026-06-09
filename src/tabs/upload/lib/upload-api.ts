@@ -23,7 +23,9 @@ function parseErrorMessage(errorText: string): string {
     }
     if (Array.isArray(parsed?.errors) && parsed.errors.length > 0) {
       const details = parsed.errors
-        .map((e) => (e?.url && e?.error ? `${e.url}: ${e.error}` : (e?.error ?? "")))
+        .map((e) =>
+          e?.url && e?.error ? `${e.url}: ${e.error}` : (e?.error ?? ""),
+        )
         .filter((s) => s.length > 0)
         .join("; ");
       if (details.length > 0 && !message.includes(details)) {
@@ -108,7 +110,8 @@ export async function uploadPdfsToParsePdf({
   formData.append("forceReindex", String(Boolean(forceReindex)));
   formData.append("replaceAllEmissions", "true");
   if (batchId) formData.append("batchId", batchId);
-  if (runOnly && runOnly.length > 0) formData.append("runOnly", JSON.stringify(runOnly));
+  if (runOnly && runOnly.length > 0)
+    formData.append("runOnly", JSON.stringify(runOnly));
   if (tags && tags.length > 0) formData.append("tags", JSON.stringify(tags));
 
   const response = await authenticatedFetch(PARSE_PDF_UPLOAD_ENDPOINT, {
@@ -160,4 +163,3 @@ export async function createJobsFromUrls({
 
   return response.json() as Promise<CreateJobsFromUrlsResult>;
 }
-

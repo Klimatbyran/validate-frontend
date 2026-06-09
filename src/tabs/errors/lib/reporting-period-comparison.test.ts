@@ -8,7 +8,8 @@ import {
 import { UNLINKED_REPORT_SHELL_KEY } from "@/tabs/editor/lib/company-report-shells";
 
 function period(
-  overrides: Partial<ReportingPeriod> & Pick<ReportingPeriod, "startDate" | "endDate">,
+  overrides: Partial<ReportingPeriod> &
+    Pick<ReportingPeriod, "startDate" | "endDate">,
 ): ReportingPeriod {
   return {
     emissions: { scope1: { total: 100 } },
@@ -34,9 +35,9 @@ describe("pickReportingPeriodsForFilters", () => {
     ];
 
     expect(pickReportingPeriodsForFilters(periods, 2024)).toHaveLength(1);
-    expect(pickReportingPeriodsForFilters(periods, 2024)[0]?.companyReportId).toBe(
-      "report-a",
-    );
+    expect(
+      pickReportingPeriodsForFilters(periods, 2024)[0]?.companyReportId,
+    ).toBe("report-a");
   });
 
   it("filters by PDF report year when provided", () => {
@@ -58,9 +59,9 @@ describe("pickReportingPeriodsForFilters", () => {
     ];
 
     expect(pickReportingPeriodsForFilters(periods, 2024, 2024)).toHaveLength(1);
-    expect(pickReportingPeriodsForFilters(periods, 2024, 2024)[0]?.companyReportId).toBe(
-      "report-2024",
-    );
+    expect(
+      pickReportingPeriodsForFilters(periods, 2024, 2024)[0]?.companyReportId,
+    ).toBe("report-2024");
   });
 });
 
@@ -91,7 +92,10 @@ describe("buildReportingPeriodComparisonSlots", () => {
     );
 
     expect(slots).toHaveLength(2);
-    expect(slots.map((slot) => slot.shellKey).sort()).toEqual(["shell-a", "shell-b"]);
+    expect(slots.map((slot) => slot.shellKey).sort()).toEqual([
+      "shell-a",
+      "shell-b",
+    ]);
   });
 
   it("unions stage-only and prod-only shells", () => {
@@ -141,7 +145,12 @@ describe("buildReportingPeriodComparisonSlots", () => {
       year: "2024",
     });
 
-    const [slot] = buildReportingPeriodComparisonSlots([unlinked], [], 2024, null);
+    const [slot] = buildReportingPeriodComparisonSlots(
+      [unlinked],
+      [],
+      2024,
+      null,
+    );
 
     expect(slot.shellKey).toBe(UNLINKED_REPORT_SHELL_KEY);
     expect(slot.companyReportId).toBeNull();
@@ -160,7 +169,12 @@ describe("findReportingPeriodForShell", () => {
       }),
     ];
 
-    const found = findReportingPeriodForShell(periods, 2024, null, "target-shell");
+    const found = findReportingPeriodForShell(
+      periods,
+      2024,
+      null,
+      "target-shell",
+    );
 
     expect(found?.companyReportId).toBe("target-shell");
   });

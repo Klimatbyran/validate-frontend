@@ -25,7 +25,8 @@ function jointMode(): ApiTarget {
   if (v === "local" || v === "stage" || v === "prod") return v;
   if (!import.meta.env.DEV && typeof window !== "undefined") {
     const hostname = window.location.hostname;
-    if (hostname.includes("stage") || hostname.includes("staging")) return "stage";
+    if (hostname.includes("stage") || hostname.includes("staging"))
+      return "stage";
     return "prod";
   }
   return "stage";
@@ -145,7 +146,9 @@ export function getStagePipelineCompaniesListUrl(): string {
  * Override with VITE_ERRORS_PROD_PIPELINE_URL until prod Unearth API deploys the route.
  */
 export function getProdPipelineCompaniesListUrl(): string {
-  const override = import.meta.env.VITE_ERRORS_PROD_PIPELINE_URL as string | undefined;
+  const override = import.meta.env.VITE_ERRORS_PROD_PIPELINE_URL as
+    | string
+    | undefined;
   if (override?.trim()) return override.trim();
   return joinApiPath(getProdUnearthUrl("/api"), PIPELINE_COMPANIES_LIST_PATH);
 }

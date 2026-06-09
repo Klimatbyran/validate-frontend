@@ -12,7 +12,9 @@ import type {
 import { parseGarboCompanyDetail } from "./companies-schemas";
 import { apiUrl } from "./api-utils";
 
-function normalizeReportingPeriodUrls(company: GarboCompanyDetail): GarboCompanyDetail {
+function normalizeReportingPeriodUrls(
+  company: GarboCompanyDetail,
+): GarboCompanyDetail {
   const periods = company.reportingPeriods;
   if (!Array.isArray(periods) || periods.length === 0) return company;
 
@@ -53,11 +55,15 @@ function normalizeIndustrySubIndustryCode(
       ? industry.subIndustryCode
       : undefined;
   const codeFromIndustryGics =
-    industry && industry.industryGics && typeof industry.industryGics.subIndustryCode === "string"
+    industry &&
+    industry.industryGics &&
+    typeof industry.industryGics.subIndustryCode === "string"
       ? industry.industryGics.subIndustryCode
       : undefined;
   const codeFromIndustryGICS =
-    industry && industry.industryGICS && typeof industry.industryGICS.subIndustryCode === "string"
+    industry &&
+    industry.industryGICS &&
+    typeof industry.industryGICS.subIndustryCode === "string"
       ? industry.industryGICS.subIndustryCode
       : undefined;
 
@@ -67,14 +73,18 @@ function normalizeIndustrySubIndustryCode(
   return {
     ...company,
     industry: {
-      ...(typeof company.industry === "object" && company.industry ? company.industry : {}),
+      ...(typeof company.industry === "object" && company.industry
+        ? company.industry
+        : {}),
       subIndustryCode: resolved,
     },
   };
 }
 
 function normalizeCompany(company: GarboCompanyDetail): GarboCompanyDetail {
-  return normalizeReportingPeriodUrls(normalizeIndustrySubIndustryCode(company));
+  return normalizeReportingPeriodUrls(
+    normalizeIndustrySubIndustryCode(company),
+  );
 }
 
 function companiesPath(segment = ""): string {
@@ -118,7 +128,9 @@ export async function listCompanies(
     throw new Error(`Failed to list companies: ${res.status} ${text}`);
   }
   const data = await res.json();
-  const list = Array.isArray(data) ? data : (data.companies ?? data.items ?? []);
+  const list = Array.isArray(data)
+    ? data
+    : (data.companies ?? data.items ?? []);
   return Array.isArray(list)
     ? (list as unknown[]).map((raw) =>
         normalizeCompany(parseGarboCompanyDetail(raw) as GarboCompanyDetail),
@@ -246,9 +258,7 @@ export async function updateReportingPeriods(
   },
 ): Promise<void> {
   const res = await garboAuthFetch(
-    apiUrl(
-      companiesPath(`${encodeURIComponent(companyId)}/reporting-periods`),
-    ),
+    apiUrl(companiesPath(`${encodeURIComponent(companyId)}/reporting-periods`)),
     {
       method: "POST",
       headers: {

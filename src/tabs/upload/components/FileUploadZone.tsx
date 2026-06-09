@@ -44,14 +44,14 @@ export function FileUploadZone({
           "bg-gray-04/50 backdrop-blur-sm",
           isDragging
             ? "border-orange-03 bg-orange-05/10"
-            : "border-gray-03 hover:border-gray-02"
+            : "border-gray-03 hover:border-gray-02",
         )}
       >
         <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
           <FileUp
             className={cn(
               "w-12 h-12 mb-4",
-              isDragging ? "text-orange-03" : "text-gray-02"
+              isDragging ? "text-orange-03" : "text-gray-02",
             )}
           />
         </motion.div>

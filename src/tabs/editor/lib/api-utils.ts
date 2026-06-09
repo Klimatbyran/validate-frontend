@@ -6,4 +6,3 @@ export function apiUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${BASE}${p}`.replace(/\/+/g, "/");
 }
-

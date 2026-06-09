@@ -7,13 +7,19 @@ import { Activity } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
-import { RERUN_WORKERS, LIMIT_OPTIONS, type RerunWorker } from "../lib/filter-config";
+import {
+  RERUN_WORKERS,
+  LIMIT_OPTIONS,
+  type RerunWorker,
+} from "../lib/filter-config";
 
 interface FilterBarRerunSectionProps {
   onRerunByWorker: (worker: RerunWorker, limit: number | "all") => void;
 }
 
-export function FilterBarRerunSection({ onRerunByWorker }: FilterBarRerunSectionProps) {
+export function FilterBarRerunSection({
+  onRerunByWorker,
+}: FilterBarRerunSectionProps) {
   const { t } = useI18n();
   const [rerunLimit, setRerunLimit] = useState<number | "all">(5);
 
@@ -48,14 +54,10 @@ export function FilterBarRerunSection({ onRerunByWorker }: FilterBarRerunSection
         <SingleSelectDropdown
           options={LIMIT_OPTIONS.map((opt) => String(opt.value))}
           value={String(rerunLimit)}
-          onChange={(val) =>
-            setRerunLimit(val === "all" ? "all" : Number(val))
-          }
+          onChange={(val) => setRerunLimit(val === "all" ? "all" : Number(val))}
           placeholder={t("jobstatus.count")}
           ariaLabel={t("jobstatus.count")}
-          getOptionLabel={(v) =>
-            v === "all" ? t("jobstatus.limitAll") : v
-          }
+          getOptionLabel={(v) => (v === "all" ? t("jobstatus.limitAll") : v)}
           panelMinWidth={120}
         />
       </div>
