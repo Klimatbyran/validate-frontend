@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  getPeriodShellKey,
   groupPeriodsByReportShell,
   type CompanyReportShellGroup,
 } from "../lib/company-report-shells";
 import type { GarboReportingPeriodSummary } from "../lib/types";
-import { getPeriodShellKey } from "../lib/company-report-shells";
 
 type UseCompanyReportShellFiltersOptions = {
   /** When true, filter to the newest report shell on load and company change. */

@@ -354,5 +354,9 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    test: {
+      environment: "node",
+      include: ["src/**/*.test.ts"],
+    },
   };
 });

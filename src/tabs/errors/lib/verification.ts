@@ -1,10 +1,7 @@
 import type { Company, ReportingPeriod } from '../types';
 import { DATA_POINTS } from '../types';
 import { getDataPointValue, getDataPointVerified } from './emissions';
-import {
-  buildReportingPeriodComparisonSlots,
-  pickReportingPeriodsForFilters,
-} from './reporting-period-comparison';
+import { pickReportingPeriodsForFilters } from './reporting-period-comparison';
 
 export function isProdReportingPeriodFullyVerified(
   prodPeriod: ReportingPeriod | null | undefined,
@@ -49,31 +46,5 @@ export function buildProdCompanyVerifiedForYearMap(
       isProdCompanyFullyVerifiedForYear(prodMap.get(wikidataId), dataYear, reportYear),
     );
   }
-  return result;
-}
-
-export function buildProdShellVerifiedMap(
-  prodMap: Map<string, Company>,
-  ids: Iterable<string>,
-  dataYear: number,
-  reportYear: number | null,
-): Map<string, boolean> {
-  const result = new Map<string, boolean>();
-
-  for (const wikidataId of ids) {
-    const prodCompany = prodMap.get(wikidataId);
-    const slots = buildReportingPeriodComparisonSlots(
-      undefined,
-      prodCompany?.reportingPeriods,
-      dataYear,
-      reportYear,
-    );
-
-    for (const slot of slots) {
-      const key = `${wikidataId}:${slot.shellKey}`;
-      result.set(key, isProdReportingPeriodFullyVerified(slot.prodPeriod));
-    }
-  }
-
   return result;
 }

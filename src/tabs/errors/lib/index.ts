@@ -45,7 +45,6 @@ export type {
 export { exportOverviewCsv, exportComparisonToCsv } from './csv';
 export {
   buildProdCompanyVerifiedForYearMap,
-  buildProdShellVerifiedMap,
   isProdCompanyFullyVerifiedForYear,
   isProdReportingPeriodFullyVerified,
 } from './verification';

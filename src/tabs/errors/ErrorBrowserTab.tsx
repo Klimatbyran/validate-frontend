@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
 import { ViewModePills } from '@/ui/view-mode-pills';
+import { Callout } from '@/ui/callout';
 import { LoadingSpinner } from '@/ui/loading-spinner';
 import { SingleSelectDropdown } from '@/ui/single-select-dropdown';
 import { MultiSelectDropdown } from '@/ui/multi-select-dropdown';
@@ -36,6 +37,7 @@ export function ErrorBrowserTab() {
 
   const {
     isLoading,
+    isAuthError,
     error,
     fetchData,
     comparisonRows,
@@ -160,11 +162,17 @@ export function ErrorBrowserTab() {
         </div>
       </div>
 
+      {!isLoading && isAuthError && (
+        <Callout variant="info">
+          <p className="text-sm text-blue-03/90">{t("auth.loginRequiredTab")}</p>
+        </Callout>
+      )}
+
       {/* View content */}
       {viewMode === 'browser' && (
         <BrowserView
           isLoading={isLoading}
-          error={error}
+          error={isAuthError ? null : error}
           comparisonRows={comparisonRows}
           difficultCompanyIds={difficultCompanyIds}
           selectedDataPoint={selectedDataPoint}
@@ -175,7 +183,7 @@ export function ErrorBrowserTab() {
         />
       )}
 
-      {viewMode === 'overview' && (
+      {viewMode === 'overview' && !isAuthError && (
         isLoading ? (
           <div className="flex justify-center items-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
             <LoadingSpinner label={t("errors.loadingOverview")} />
@@ -190,7 +198,7 @@ export function ErrorBrowserTab() {
         )
       )}
 
-      {viewMode === 'worst' && (
+      {viewMode === 'worst' && !isAuthError && (
         <HardestReportsView
           isLoading={isLoading}
           worstCompanies={worstCompanies}

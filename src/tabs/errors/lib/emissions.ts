@@ -38,7 +38,7 @@ export function pickReportingPeriodForFilters(
   return matches[0] ?? null;
 }
 
-/** Pick the reporting period for a data year (prefer full calendar year). */
+/** Pick the first reporting period for a data year (legacy single-period helper). */
 export function pickReportingPeriodForYear(
   reportingPeriods: ReportingPeriod[] | undefined,
   year: number,

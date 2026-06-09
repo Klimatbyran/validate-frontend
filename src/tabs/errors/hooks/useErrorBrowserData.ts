@@ -1,5 +1,5 @@
 import React from 'react';
-import { garboAuthFetch, throwIfAuthError } from '@/lib/garbo-auth-fetch';
+import { ApiAuthError, garboAuthFetch, throwIfAuthError } from '@/lib/garbo-auth-fetch';
 import { Company, CompanyRow, DataPointMetric, WorstCompany, DiscrepancyType, DATA_POINTS } from '../types';
 import {
   getStagePipelineCompaniesListUrl,
@@ -11,7 +11,6 @@ import {
   companiesToMapById,
   reclassifyDiscrepancyForCategoryError,
   applyCategoryErrorToRows,
-  buildProdCompanyVerifiedForYearMap,
   isProdCompanyFullyVerifiedForYear,
   isProdReportingPeriodFullyVerified,
   buildReportingPeriodComparisonSlots,
@@ -27,18 +26,8 @@ export function useErrorBrowserData(
   selectedTags: string[],
   verifiedOnly: boolean,
 ) {
-  const prodCompanyVerifiedForYearMap = React.useCallback(
-    (prodMap: Map<string, Company>, ids: Iterable<string>) =>
-      buildProdCompanyVerifiedForYearMap(
-        prodMap,
-        ids,
-        selectedDataYear,
-        selectedReportYear,
-      ),
-    [selectedDataYear, selectedReportYear],
-  );
-
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isAuthError, setIsAuthError] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [stageCompanies, setStageCompanies] = React.useState<Company[]>([]);
   const [prodCompanies, setProdCompanies] = React.useState<Company[]>([]);
@@ -66,6 +55,7 @@ export function useErrorBrowserData(
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setIsAuthError(false);
 
     const stageUrl = getStagePipelineCompaniesListUrl();
     const prodUrl = getProdPipelineCompaniesListUrl();
@@ -79,9 +69,15 @@ export function useErrorBrowserData(
       setStageCompanies(stage);
       setProdCompanies(prod);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      if (import.meta.env.DEV) console.error('useErrorBrowserData fetch error:', err);
+      if (err instanceof ApiAuthError) {
+        setIsAuthError(true);
+        setStageCompanies([]);
+        setProdCompanies([]);
+      } else {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        setError(message);
+        if (import.meta.env.DEV) console.error('useErrorBrowserData fetch error:', err);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -119,8 +115,6 @@ export function useErrorBrowserData(
 
     const allIds = new Set([...stageMap.keys(), ...prodMap.keys()]);
     const rows: CompanyRow[] = [];
-
-    const prodCompanyVerifiedForYear = prodCompanyVerifiedForYearMap(prodMap, allIds);
 
     for (const wikidataId of allIds) {
       const stageCompany = stageMap.get(wikidataId);
@@ -189,10 +183,9 @@ export function useErrorBrowserData(
           inProd: !!prodCompany,
           unitErrorFactor,
           prodVerified,
-          prodCompanyVerifiedForYear:
-            slot.prodPeriod != null
-              ? isProdReportingPeriodFullyVerified(slot.prodPeriod)
-              : (prodCompanyVerifiedForYear.get(wikidataId) ?? false),
+          prodCompanyVerifiedForYear: isProdReportingPeriodFullyVerified(
+            slot.prodPeriod,
+          ),
         });
       }
     }
@@ -220,13 +213,7 @@ export function useErrorBrowserData(
       if (nameCmp !== 0) return nameCmp;
       return (b.reportYear ?? 0) - (a.reportYear ?? 0);
     });
-  }, [
-    tagFilteredCompanies,
-    selectedDataYear,
-    selectedReportYear,
-    selectedDataPoint,
-    prodCompanyVerifiedForYearMap,
-  ]);
+  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear, selectedDataPoint]);
 
   const availableTags = React.useMemo(() => {
     const tags = new Set<string>();
@@ -344,8 +331,6 @@ export function useErrorBrowserData(
 
     const allIds = Array.from(new Set([...stageMap.keys(), ...prodMap.keys()]));
 
-    const prodCompanyVerifiedForYear = prodCompanyVerifiedForYearMap(prodMap, allIds);
-
     return DATA_POINTS.map((dp) => {
       let identical = 0,
         rounding = 0,
@@ -384,7 +369,7 @@ export function useErrorBrowserData(
             const isVerified = getDataPointVerified(slot.prodPeriod.emissions, dp.id);
             const isBothNull = stageValue === null && prodValue === null;
             const allowBothNull =
-              isBothNull && (prodCompanyVerifiedForYear.get(wikidataId) ?? false);
+              isBothNull && isProdReportingPeriodFullyVerified(slot.prodPeriod);
             if (!isVerified && !allowBothNull) continue;
           }
 
@@ -461,13 +446,7 @@ export function useErrorBrowserData(
         },
       };
     });
-  }, [
-    tagFilteredCompanies,
-    selectedDataYear,
-    selectedReportYear,
-    verifiedOnly,
-    prodCompanyVerifiedForYearMap,
-  ]);
+  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear, verifiedOnly]);
 
   const worstCompanies = React.useMemo((): WorstCompany[] => {
     if (tagFilteredCompanies.stage.length === 0 || tagFilteredCompanies.prod.length === 0)
@@ -478,8 +457,6 @@ export function useErrorBrowserData(
 
     const allIds = Array.from(new Set([...stageMap.keys(), ...prodMap.keys()]));
     const companyErrors: WorstCompany[] = [];
-
-    const prodCompanyVerifiedForYear = prodCompanyVerifiedForYearMap(prodMap, allIds);
 
     for (const wikidataId of allIds) {
       const stageCompany = stageMap.get(wikidataId);
@@ -511,7 +488,7 @@ export function useErrorBrowserData(
             const isVerified = getDataPointVerified(slot.prodPeriod.emissions, dp.id);
             const isBothNull = stageValue === null && prodValue === null;
             const allowBothNull =
-              isBothNull && (prodCompanyVerifiedForYear.get(wikidataId) ?? false);
+              isBothNull && isProdReportingPeriodFullyVerified(slot.prodPeriod);
             if (!isVerified && !allowBothNull) continue;
           }
 
@@ -554,13 +531,7 @@ export function useErrorBrowserData(
     }
 
     return companyErrors.sort((a, b) => b.errorCount - a.errorCount);
-  }, [
-    tagFilteredCompanies,
-    selectedDataYear,
-    selectedReportYear,
-    verifiedOnly,
-    prodCompanyVerifiedForYearMap,
-  ]);
+  }, [tagFilteredCompanies, selectedDataYear, selectedReportYear, verifiedOnly]);
 
   const difficultCompanyIds = React.useMemo(() => {
     const ids = new Map<string, number>();
@@ -596,6 +567,7 @@ export function useErrorBrowserData(
 
   return {
     isLoading,
+    isAuthError,
     error,
     fetchData,
     comparisonRows,
