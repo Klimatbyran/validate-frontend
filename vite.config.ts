@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -225,6 +226,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), climatePlansManifest()],
+    test: {
+      environment: "jsdom",
+      setupFiles: ["./src/test/setup.ts"],
+      globals: true,
+    },
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
