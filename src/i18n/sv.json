@@ -94,6 +94,7 @@
     "companyDetail": {
       "identifiers": "Identifierare",
       "wikidataId": "Wikidata-ID",
+      "internalId": "Internt ID",
       "lei": "LEI",
       "tags": "Taggar"
     },

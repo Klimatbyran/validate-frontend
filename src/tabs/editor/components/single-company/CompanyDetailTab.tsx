@@ -254,6 +254,18 @@ export function CompanyDetailTab({
                   </label>
                   <input
                     type="text"
+                    value={company.wikidataId ?? ""}
+                    readOnly
+                    placeholder={dash}
+                    className={inputClassName + " bg-gray-04/60 !max-w-none"}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-01 mb-1">
+                    {t("editor.companyDetail.internalId")}
+                  </label>
+                  <input
+                    type="text"
                     value={company.id}
                     readOnly
                     className={inputClassName + " bg-gray-04/60 !max-w-none"}
