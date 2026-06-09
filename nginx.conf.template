@@ -34,7 +34,7 @@ server {
         return 308 /garbo-api/;
     }
 
-    # Garbo monolith: queue-archive only
+    # Garbo API: queue-archive only
     location /garbo-api/queue-archive/ {
         proxy_pass ${GARBO_API_URL}/queue-archive/;
         proxy_http_version 1.1;

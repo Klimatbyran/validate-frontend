@@ -3,7 +3,20 @@
  * Implementation lives in: api, emissions, discrepancy, metrics, csv.
  */
 
-export { getStageApiUrl, getProdApiUrl } from './api';
+export {
+  getStageApiUrl,
+  getProdApiUrl,
+  getStagePipelineCompaniesUrl,
+  getProdPipelineCompaniesUrl,
+  getStagePipelineCompaniesListUrl,
+  getProdPipelineCompaniesListUrl,
+} from './api';
+export {
+  pickReportingPeriodsForFilters,
+  buildReportingPeriodComparisonSlots,
+  findReportingPeriodForShell,
+} from './reporting-period-comparison';
+export type { ReportingPeriodComparisonSlot } from './reporting-period-comparison';
 export {
   extractTotal,
   pickReportingPeriodForYear,
@@ -32,5 +45,7 @@ export type {
 export { exportOverviewCsv, exportComparisonToCsv } from './csv';
 export {
   buildProdCompanyVerifiedForYearMap,
+  buildProdShellVerifiedMap,
   isProdCompanyFullyVerifiedForYear,
+  isProdReportingPeriodFullyVerified,
 } from './verification';

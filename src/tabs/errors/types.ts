@@ -54,6 +54,8 @@ export interface VerifiedBy {
 export interface ReportingPeriod {
   startDate: string;
   endDate: string;
+  /** Data year key in DB (may differ from endDate calendar year). */
+  year?: string | null;
   companyReportId?: string | null;
   companyReport?: {
     id?: string;
@@ -83,9 +85,14 @@ export interface ReportingPeriod {
 }
 
 export interface CompanyRow {
+  /** Unique row key (company + report shell when multiple periods). */
+  rowKey: string;
   wikidataId: string;
   name: string;
   tags?: string[];
+  shellKey?: string;
+  reportYear?: number | null;
+  companyReportId?: string | null;
   stageValue: number | null;
   prodValue: number | null;
   discrepancy: DiscrepancyType;

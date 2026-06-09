@@ -1,5 +1,6 @@
 import { getPeriodReportYear } from '@/tabs/editor/lib/reporting-period-ui';
 import { ReportingPeriod, DATA_POINTS } from '../types';
+import { pickReportingPeriodsForFilters } from './reporting-period-comparison';
 
 // Emission values can be either a plain number or an object with { total: number }
 export function extractTotal(
@@ -23,45 +24,18 @@ export function getPeriodReportYearFromApi(
   return Number.isFinite(year) ? year : null;
 }
 
-function pickPreferredPeriodFromCandidates(
-  periodsForYear: ReportingPeriod[],
-): ReportingPeriod | null {
-  if (periodsForYear.length === 0) return null;
-
-  const fullYear = periodsForYear.find((rp) => {
-    const start = new Date(rp.startDate);
-    const end = new Date(rp.endDate);
-    return (
-      start.getMonth() === 0 &&
-      start.getDate() === 1 &&
-      end.getMonth() === 11 &&
-      end.getDate() === 31
-    );
-  });
-
-  return fullYear || periodsForYear[periodsForYear.length - 1];
-}
-
-/** Pick a reporting period by data year and optional PDF report year. */
+/** Pick one reporting period (first match after shell sort). Prefer multi-slot helpers. */
 export function pickReportingPeriodForFilters(
   reportingPeriods: ReportingPeriod[] | undefined,
   dataYear: number,
   reportYear?: number | null,
 ): ReportingPeriod | null {
-  if (!reportingPeriods || reportingPeriods.length === 0) return null;
-
-  let periodsForDataYear = reportingPeriods.filter((rp) => {
-    const endDate = new Date(rp.endDate);
-    return endDate.getFullYear() === dataYear;
-  });
-
-  if (reportYear != null) {
-    periodsForDataYear = periodsForDataYear.filter(
-      (rp) => getPeriodReportYearFromApi(rp) === reportYear,
-    );
-  }
-
-  return pickPreferredPeriodFromCandidates(periodsForDataYear);
+  const matches = pickReportingPeriodsForFilters(
+    reportingPeriods,
+    dataYear,
+    reportYear,
+  );
+  return matches[0] ?? null;
 }
 
 /** Pick the reporting period for a data year (prefer full calendar year). */

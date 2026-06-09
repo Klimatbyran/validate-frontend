@@ -4,8 +4,10 @@ This document explains how the Error Browser tab computes comparisons and metric
 
 ### Data sources
 
-- **Stage**: `getStageApiUrl()` → `/api/companies`
-- **Prod**: `getProdApiUrl()` → `/api/companies`
+- **Stage**: `getStagePipelineCompaniesListUrl()` → Unearth `stage-api.unearthdata.ai/api/pipeline/companies`
+- **Prod**: `getProdPipelineCompaniesListUrl()` → Unearth `api.unearthdata.ai/api/pipeline/companies`
+- Pipeline endpoints return **all** reporting period rows per company (not the public one-period-per-data-year view).
+- **Deployment**: both stage and prod **Unearth API** must expose staff `GET /api/pipeline/companies`. Stage has this route; prod may return **404** until the Unearth API is deployed. Use `VITE_ERRORS_PROD_PIPELINE_URL` locally to point prod at stage while testing.
 - The UI always fetches *both* and compares them client-side.
 
 Key implementation: `src/tabs/errors/hooks/useErrorBrowserData.ts`.
@@ -13,7 +15,8 @@ Key implementation: `src/tabs/errors/hooks/useErrorBrowserData.ts`.
 ### Core concepts
 
 - **Company union**: most views start from the union of company ids across Stage and Prod (`wikidataId`).
-- **Reporting period selection**: for a selected year, `pickReportingPeriodForYear(...)` picks a reporting period whose `endDate` is in that year (prefers full calendar year).
+- **Reporting period selection**: for a selected **data year**, `pickReportingPeriodsForFilters(...)` matches the DB `year` field (via `getPeriodDataYear`). Optional **report year** filters by PDF catalog year on `CompanyReport`.
+- **Multiple rows per company**: when several report shells have data for the same data year, the browser shows one comparison row per shell (matched by `companyReportId`).
 - **Data points**: the set of emissions data points is `DATA_POINTS` in `src/tabs/errors/types.ts`.
 - **Discrepancy classification**: Stage/Prod values are compared and assigned a discrepancy type via `classifyDiscrepancy(...)` (plus category-error reclassification).
 - **Prod verification**: a data point is considered verified when Prod metadata indicates it (see `getDataPointVerified(...)` in `src/tabs/errors/lib/emissions.ts`).

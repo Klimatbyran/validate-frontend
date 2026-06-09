@@ -51,6 +51,8 @@ export function exportComparisonToCsv(
   const headers = [
     'Company',
     'WikidataId',
+    'Report Year',
+    'CompanyReportId',
     'Stage',
     'Prod',
     'Diff',
@@ -64,6 +66,8 @@ export function exportComparisonToCsv(
     csvRows.push([
       `"${row.name.replace(/"/g, '""')}"`,
       row.wikidataId,
+      row.reportYear != null ? String(row.reportYear) : '',
+      row.companyReportId ?? '',
       String(row.stageValue ?? ''),
       String(row.prodValue ?? ''),
       String(row.diff ?? ''),

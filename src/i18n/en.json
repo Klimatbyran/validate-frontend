@@ -751,7 +751,7 @@
   },
   "errors": {
     "title": "Error Browser",
-    "subtitle": "Compare emissions data between Stage and Prod APIs",
+    "subtitle": "Compare emissions between stage and prod (all reporting periods per report)",
     "viewMode": "View mode",
     "loadingOverview": "Loading overview...",
     "filterCompanies": "Filter companies...",
@@ -783,6 +783,7 @@
     "year": "Year",
     "dataYear": "Data year",
     "reportYear": "Report year",
+    "reportYearShort": "Report {{year}}",
     "allReportYears": "All report years",
     "verifiedOnly": "Truth filter",
     "verifiedOnlyLabel": "Verified only",

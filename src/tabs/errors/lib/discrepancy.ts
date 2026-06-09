@@ -5,7 +5,8 @@ import {
   type CompanyRow,
   type ReportingPeriod,
 } from '../types';
-import { getDataPointValue, pickReportingPeriodForFilters } from './emissions';
+import { getDataPointValue } from './emissions';
+import { findReportingPeriodForShell } from './reporting-period-comparison';
 
 /** Build a map of companies by wikidataId for quick lookup. */
 export function companiesToMapById(companies: Company[]): Map<string, Company> {
@@ -139,16 +140,19 @@ export function applyCategoryErrorToRows(
       row.stageValue !== null &&
       prodCompany
     ) {
-      const prodRP = pickReportingPeriodForFilters(
+      const shellKey = row.shellKey ?? '';
+      const prodRP = findReportingPeriodForShell(
         prodCompany.reportingPeriods,
         selectedDataYear,
-        selectedReportYear,
+        selectedReportYear ?? null,
+        shellKey,
       );
       const stageRPForKind = stageCompany
-        ? pickReportingPeriodForFilters(
+        ? findReportingPeriodForShell(
             stageCompany.reportingPeriods,
             selectedDataYear,
-            selectedReportYear,
+            selectedReportYear ?? null,
+            shellKey,
           )
         : null;
       for (const otherDP of sameScopeDataPoints) {
@@ -187,10 +191,11 @@ export function applyCategoryErrorToRows(
       row.prodValue !== null &&
       stageCompany
     ) {
-      const stageRP = pickReportingPeriodForFilters(
+      const stageRP = findReportingPeriodForShell(
         stageCompany.reportingPeriods,
         selectedDataYear,
-        selectedReportYear,
+        selectedReportYear ?? null,
+        row.shellKey ?? '',
       );
       for (const otherDP of sameScopeDataPoints) {
         const otherStageValue = getDataPointValue(stageRP?.emissions, otherDP.id);

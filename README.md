@@ -88,7 +88,7 @@ The app talks to three backends:
 | Backend | Used for | Default host (stage) |
 |---------|----------|----------------------|
 | **Unearth API** | Auth, crawler, registry, api-access, errors tab | `stage-api.unearthdata.ai` |
-| **Garbo monolith** | Queue archive (Jobbstatus Archive, batch pickers) | `stage-api.klimatkollen.se` |
+| **Garbo API** | Queue archive (Jobbstatus Archive, batch pickers) | `stage-api.klimatkollen.se` |
 | **Pipeline** | Live job status, upload, reruns | `stage-pipeline-api.klimatkollen.se` |
 
 In **local dev**, Unearth uses `/unearth-stage/api/...` and Garbo archive uses `/garbo-stage/api/queue-archive/...`.

@@ -34,8 +34,13 @@ export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTabl
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className="text-xs text-gray-02">{row.wikidataId}</span>
+          {row.reportYear != null ? (
+            <span className="text-xs text-gray-02">
+              {t("errors.reportYearShort", { year: row.reportYear })}
+            </span>
+          ) : null}
           {isMissingCompany && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">
               {!row.inStage ? t('errors.notInStage') : t('errors.notInProd')}

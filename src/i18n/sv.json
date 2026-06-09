@@ -751,7 +751,7 @@
   },
   "errors": {
     "title": "Felöversikt",
-    "subtitle": "Jämför utsläppsdata mellan Stage- och Prod-API:er",
+    "subtitle": "Jämför utsläppdata mellan stage och prod (alla rapporteringsperioder per rapport)",
     "viewMode": "Visningsläge",
     "loadingOverview": "Laddar översikt...",
     "filterCompanies": "Filtrera företag...",
@@ -783,6 +783,7 @@
     "year": "År",
     "dataYear": "Dataår",
     "reportYear": "Rapportår",
+    "reportYearShort": "Rapport {{year}}",
     "allReportYears": "Alla rapportår",
     "verifiedOnly": "Sanningsfilter",
     "verifiedOnlyLabel": "Endast verifierad",
