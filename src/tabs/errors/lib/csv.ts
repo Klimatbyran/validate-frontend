@@ -1,3 +1,4 @@
+import { getCompanyUrlSegment } from '@/lib/company-routing';
 import { downloadCsv } from '@/lib/utils';
 import type { CompanyRow, DataPointMetric } from '../types';
 
@@ -50,7 +51,7 @@ export function exportComparisonToCsv(
 ): void {
   const headers = [
     'Company',
-    'WikidataId',
+    'Identifier',
     'Stage',
     'Prod',
     'Diff',
@@ -63,7 +64,7 @@ export function exportComparisonToCsv(
   for (const row of rows) {
     csvRows.push([
       `"${row.name.replace(/"/g, '""')}"`,
-      row.wikidataId,
+      getCompanyUrlSegment(row),
       String(row.stageValue ?? ''),
       String(row.prodValue ?? ''),
       String(row.diff ?? ''),

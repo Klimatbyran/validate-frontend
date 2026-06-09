@@ -132,8 +132,8 @@ export function applyCategoryErrorToRows(
     )
       continue;
 
-    const stageCompany = stageMap.get(row.wikidataId);
-    const prodCompany = prodMap.get(row.wikidataId);
+    const stageCompany = stageMap.get(row.id);
+    const prodCompany = prodMap.get(row.id);
 
     if (
       (row.discrepancy === 'error' ||

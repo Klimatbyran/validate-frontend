@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { AlertTriangle, BadgeCheck } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
 import { cn } from '@/lib/utils';
+import { getCompanyUrlSegment } from '@/lib/company-routing';
 import { CompanyRow } from '../types';
 import { DiscrepancyBadge } from './DiscrepancyBadge';
 
@@ -14,6 +15,7 @@ interface CompanyTableRowProps {
 export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTableRowProps) {
   const { t, formatNumber } = useI18n();
   const isMissingCompany = !row.inStage || !row.inProd;
+  const displayId = getCompanyUrlSegment(row);
 
   return (
     <motion.tr
@@ -25,17 +27,17 @@ export function CompanyTableRow({ row, index, difficultCompanyIds }: CompanyTabl
       <td className="px-4 py-3">
         <div className="flex items-center gap-1.5 font-medium text-gray-01 text-sm">
           {row.name}
-          {difficultCompanyIds.has(row.wikidataId) && (
+          {difficultCompanyIds.has(row.id) && (
             <span
               className="text-red-400 cursor-help"
-              title={t("errors.difficultReportTooltip", { count: difficultCompanyIds.get(row.wikidataId) ?? 0 })}
+              title={t("errors.difficultReportTooltip", { count: difficultCompanyIds.get(row.id) ?? 0 })}
             >
               <AlertTriangle className="w-3.5 h-3.5" />
             </span>
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs text-gray-02">{row.wikidataId}</span>
+          <span className="text-xs text-gray-02">{displayId}</span>
           {isMissingCompany && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">
               {!row.inStage ? t('errors.notInStage') : t('errors.notInProd')}
