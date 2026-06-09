@@ -4,10 +4,6 @@
  */
 
 export {
-  getStageApiUrl,
-  getProdApiUrl,
-  getStagePipelineCompaniesUrl,
-  getProdPipelineCompaniesUrl,
   getStagePipelineCompaniesListUrl,
   getProdPipelineCompaniesListUrl,
 } from './api';

@@ -399,19 +399,7 @@ export function EmissionsDataTab({
                           <div className="text-[11px] text-gray-02 mt-0.5 leading-tight break-words">
                             {dateRangeLabel}
                           </div>
-                          <ReportingPeriodCompanyReportInfo
-                            period={rp}
-                            compact
-                            reportYearLabel={t(
-                              "editor.singleCompanyView.pdfCatalogYearShort",
-                            )}
-                            companyReportIdLabel={t(
-                              "editor.singleCompanyView.companyReportIdShort",
-                            )}
-                            noReportYearLabel={t(
-                              "editor.singleCompanyView.noReportYear",
-                            )}
-                          />
+                          <ReportingPeriodCompanyReportInfo period={rp} />
                           {isPublicApiPeriod ? (
                             <p
                               className="mt-1.5 text-[10px] font-medium text-green-03/90 uppercase tracking-wide"

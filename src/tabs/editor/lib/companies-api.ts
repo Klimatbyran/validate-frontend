@@ -298,7 +298,7 @@ export async function deleteCompany(wikidataId: string): Promise<void> {
 }
 
 /** Delete a reporting period by id (DELETE /api/companies/reporting-period/:id). */
-// PR 5: whole CompanyReport delete + empty-shell cleanup after last period — see garbo k8s/jobs/README.md
+// Whole CompanyReport delete + empty-shell cleanup after last period — see garbo k8s/jobs/README.md
 export async function deleteReportingPeriod(id: string): Promise<void> {
   const encodedId = encodeURIComponent(id);
   const res = await garboAuthFetch(
