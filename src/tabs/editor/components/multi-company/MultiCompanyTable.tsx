@@ -14,7 +14,12 @@ import {
   getPeriodForYear,
 } from "../../lib/multi-company-utils";
 
-function periodEditContext(period: { startDate: string; endDate: string; companyReportId?: string | null; companyReport?: { id?: string } | null }) {
+function periodEditContext(period: {
+  startDate: string;
+  endDate: string;
+  companyReportId?: string | null;
+  companyReport?: { id?: string } | null;
+}) {
   return {
     startDate: period.startDate,
     endDate: period.endDate,

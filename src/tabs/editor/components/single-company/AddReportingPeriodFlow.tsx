@@ -56,7 +56,9 @@ function defaultTargetShellKey(
 // registry when the save carries URL/S3/hash identity. New report + no URL creates an
 // unlinked company report (registryReportId null). Add UX to pick an existing Report row or set
 // report identity explicitly (registry tab / GET .../reports) before prod manual entry relies on this.
-function companyReportIdForTargetShell(targetShellKey: string): string | undefined {
+function companyReportIdForTargetShell(
+  targetShellKey: string,
+): string | undefined {
   if (
     targetShellKey === NEW_REPORT_SHELL_KEY ||
     targetShellKey === UNLINKED_REPORT_SHELL_KEY
@@ -215,12 +217,16 @@ export function AddReportingPeriodFlow({
             {shellOptions.length > 1 ? (
               <div>
                 <label className="block text-xs font-medium text-gray-01 mb-1">
-                  {t("editor.singleCompanyView.addReportingPeriod.targetReportShell")}
+                  {t(
+                    "editor.singleCompanyView.addReportingPeriod.targetReportShell",
+                  )}
                 </label>
                 <select
                   value={targetShellKey}
                   onChange={(e) => setTargetShellKey(e.target.value)}
-                  className={inputClassName + " bg-gray-04 w-full min-w-0 !max-w-none"}
+                  className={
+                    inputClassName + " bg-gray-04 w-full min-w-0 !max-w-none"
+                  }
                 >
                   {shellOptions.map((option) => (
                     <option key={option.shellKey} value={option.shellKey}>
@@ -229,7 +235,9 @@ export function AddReportingPeriodFlow({
                   ))}
                 </select>
                 <p className="mt-1 text-xs text-gray-02">
-                  {t("editor.singleCompanyView.addReportingPeriod.targetReportShellHint")}
+                  {t(
+                    "editor.singleCompanyView.addReportingPeriod.targetReportShellHint",
+                  )}
                 </p>
               </div>
             ) : null}
