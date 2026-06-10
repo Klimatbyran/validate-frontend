@@ -1,15 +1,11 @@
+import { attachCompanyReportIdToPeriodPatch } from "./company-report-shells";
+import type { ReportingPeriodWritePayload } from "./companies-api";
 import type { GarboReportingPeriodSummary } from "./types";
 
 const ALL_SCOPE3_CATEGORY_IDS = Array.from({ length: 16 }, (_, i) => i + 1);
 
 type UpdateReportingPeriodsPayload = {
-  reportingPeriods: Array<{
-    startDate: string;
-    endDate: string;
-    reportURL?: string | null;
-    economy?: Record<string, unknown>;
-    emissions?: Record<string, unknown>;
-  }>;
+  reportingPeriods: ReportingPeriodWritePayload[];
   metadata?: { source?: string; comment?: string };
 };
 
@@ -192,14 +188,14 @@ export function buildReportingPeriodQuickEditPatch({
 
   return {
     reportingPeriods: [
-      {
+      attachCompanyReportIdToPeriodPatch(period, {
         startDate: period.startDate,
         endDate: period.endDate,
         reportURL:
           edited.reportURL !== undefined ? (edited.reportURL.trim() ? edited.reportURL.trim() : null) : undefined,
         economy: Object.keys(economy).length ? economy : undefined,
         emissions: Object.keys(emissions).length ? emissions : undefined,
-      },
+      }),
     ],
     metadata:
       source.trim() || comment.trim()

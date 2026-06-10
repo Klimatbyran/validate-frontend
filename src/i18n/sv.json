@@ -322,7 +322,10 @@
         "validationDates": "Ange både start- och slutdatum.",
         "validationOrder": "Startdatum måste vara på eller före slutdatum.",
         "validationYear": "Kunde inte avgöra rapporteringsår från datumen.",
-        "created": "Rapporteringsperiod skapad."
+        "created": "Rapporteringsperiod skapad.",
+        "targetReportShell": "Rapport (PDF-skall)",
+        "targetReportShellHint": "Välj ett befintligt rapportskall eller skapa ett nytt för denna PDF.",
+        "newReportShell": "Nytt rapportskall (ny PDF)"
       },
       "deleteReportingPeriod": {
         "title": "Ta bort rapporteringsperiod",

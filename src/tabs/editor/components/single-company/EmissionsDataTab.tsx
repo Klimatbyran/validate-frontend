@@ -10,7 +10,10 @@ import type {
   GarboFieldMetadata,
   GarboReportingPeriodSummary,
 } from "../../lib/types";
-import { updateReportingPeriods } from "../../lib/companies-api";
+import {
+  updateReportingPeriods,
+  type ReportingPeriodWritePayload,
+} from "../../lib/companies-api";
 import {
   dataYearsWithMultiplePeriods,
   editorDenseMultiSelectTriggerClass,
@@ -204,11 +207,7 @@ export function EmissionsDataTab({
         if (!rpEdits) return null;
         return buildEmissionsPeriodPatch(rp, rpEdits);
       })
-      .filter(Boolean) as Array<{
-      startDate: string;
-      endDate: string;
-      emissions?: Record<string, unknown>;
-    }>;
+      .filter(Boolean) as ReportingPeriodWritePayload[];
 
     if (!payloadPeriods.length) {
       toast.message(t("editor.periodEditor.nothingToSave"));

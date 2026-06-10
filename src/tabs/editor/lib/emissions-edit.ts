@@ -1,4 +1,6 @@
+import { attachCompanyReportIdToPeriodPatch } from "./company-report-shells";
 import { toNumberOrNull } from "./reporting-period-ui";
+import type { ReportingPeriodWritePayload } from "./companies-api";
 import type { GarboReportingPeriodSummary } from "./types";
 
 export type EditedPeriodEmissions = {
@@ -37,7 +39,7 @@ type Scope3Payload = {
 export function buildEmissionsPeriodPatch(
   rp: PeriodWithEmissions,
   rpEdits: EditedPeriodEmissions
-): { startDate: string; endDate: string; emissions?: Record<string, unknown> } | null {
+): ReportingPeriodWritePayload | null {
   const hasScope1 = rpEdits.scope1Total != null || rpEdits.scope1Verified != null;
   const hasScope1And2 = rpEdits.scope1And2Total != null || rpEdits.scope1And2Verified != null;
   const hasScope2 =
@@ -156,10 +158,10 @@ export function buildEmissionsPeriodPatch(
     emissions.scope3 = scope3Payload;
   }
 
-  return {
+  return attachCompanyReportIdToPeriodPatch(rp, {
     startDate: rp.startDate,
     endDate: rp.endDate,
     emissions: Object.keys(emissions).length ? emissions : undefined,
-  };
+  });
 }
 

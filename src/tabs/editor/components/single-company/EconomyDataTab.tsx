@@ -11,7 +11,11 @@ import type {
   GarboFieldMetadata,
   GarboReportingPeriodSummary,
 } from "../../lib/types";
-import { updateReportingPeriods } from "../../lib/companies-api";
+import {
+  updateReportingPeriods,
+  type ReportingPeriodWritePayload,
+} from "../../lib/companies-api";
+import { attachCompanyReportIdToPeriodPatch } from "../../lib/company-report-shells";
 import { inputClassName } from "../../lib/company-edit-utils";
 import {
   dataYearsWithMultiplePeriods,
@@ -51,7 +55,7 @@ function employeesUnitOptionsFor(current: string | null | undefined): string[] {
 function buildEconomyPeriodPatch(
   rp: GarboReportingPeriodSummary,
   rpEdits: EditedPeriodEconomy
-): { startDate: string; endDate: string; economy?: Record<string, unknown> } | null {
+): ReportingPeriodWritePayload | null {
   const hasTurnover =
     rpEdits.turnoverValue != null ||
     rpEdits.turnoverVerified != null ||
@@ -78,11 +82,11 @@ function buildEconomyPeriodPatch(
     };
   }
 
-  return {
+  return attachCompanyReportIdToPeriodPatch(rp, {
     startDate: rp.startDate,
     endDate: rp.endDate,
     economy: Object.keys(economy).length ? economy : undefined,
-  };
+  });
 }
 
 export function EconomyDataTab({
@@ -171,7 +175,7 @@ export function EconomyDataTab({
         if (!rpEdits) return null;
         return buildEconomyPeriodPatch(rp, rpEdits);
       })
-      .filter(Boolean) as Array<{ startDate: string; endDate: string; economy?: Record<string, unknown> }>;
+      .filter(Boolean) as ReportingPeriodWritePayload[];
 
     if (!payloadPeriods.length) {
       toast.message(t("editor.periodEditor.nothingToSave"));

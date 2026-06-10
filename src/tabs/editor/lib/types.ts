@@ -163,5 +163,6 @@ export type EditState = {
   year?: number;
   startDate?: string;
   endDate?: string;
+  companyReportId?: string;
   currentValue: string | number | null;
 };

@@ -322,7 +322,10 @@
         "validationDates": "Enter both start and end dates.",
         "validationOrder": "Start date must be on or before end date.",
         "validationYear": "Could not determine reporting year from the dates.",
-        "created": "Reporting period created."
+        "created": "Reporting period created.",
+        "targetReportShell": "Report (PDF shell)",
+        "targetReportShellHint": "Choose an existing report shell or create a new one for this PDF.",
+        "newReportShell": "New report shell (new PDF)"
       },
       "deleteReportingPeriod": {
         "title": "Delete Reporting Period",

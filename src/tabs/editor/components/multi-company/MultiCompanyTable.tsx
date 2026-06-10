@@ -3,7 +3,16 @@ import { useI18n } from "@/contexts/I18nContext";
 import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
 import type { GarboCompanyListItem } from "../../lib/types";
 import type { EditState } from "../../lib/types";
+import { resolveCompanyReportId } from "../../lib/company-report-shells";
 import { formatNumber, getScope2Total, getPeriodForYear } from "../../lib/multi-company-utils";
+
+function periodEditContext(period: { startDate: string; endDate: string; companyReportId?: string | null; companyReport?: { id?: string } | null }) {
+  return {
+    startDate: period.startDate,
+    endDate: period.endDate,
+    companyReportId: resolveCompanyReportId(period),
+  };
+}
 
 export function MultiCompanyTable({
   companies,
@@ -136,8 +145,7 @@ export function MultiCompanyTable({
                             companyName: c.name,
                             field: "reportURL",
                             year: Number(selectedYear),
-                            startDate: period.startDate,
-                            endDate: period.endDate,
+                            ...periodEditContext(period),
                             currentValue: period.reportURL ?? "",
                           })
                         }
@@ -158,8 +166,7 @@ export function MultiCompanyTable({
                             companyName: c.name,
                             field: "scope1",
                             year: Number(selectedYear),
-                            startDate: period.startDate,
-                            endDate: period.endDate,
+                            ...periodEditContext(period),
                             currentValue: scope1,
                           })
                         }
@@ -180,8 +187,7 @@ export function MultiCompanyTable({
                             companyName: c.name,
                             field: "scope2",
                             year: Number(selectedYear),
-                            startDate: period.startDate,
-                            endDate: period.endDate,
+                            ...periodEditContext(period),
                             currentValue: scope2,
                           })
                         }
@@ -202,8 +208,7 @@ export function MultiCompanyTable({
                               companyName: c.name,
                               field: "scope1",
                               year: Number(selectedYear),
-                              startDate: period.startDate,
-                              endDate: period.endDate,
+                              ...periodEditContext(period),
                               currentValue: scope1,
                             })
                           }
