@@ -52,10 +52,10 @@ function defaultTargetShellKey(
   return NEW_REPORT_SHELL_KEY;
 }
 
-// TODO: "New report shell" omits companyReportId; Garbo only links CompanyReport → Report
-// registry when the save carries URL/S3/hash identity. New shell + no report URL creates an
-// orphan shell (registryReportId null). Add UX to pick an existing Report row or set report
-// identity explicitly (registry tab / GET .../reports) before we rely on this for prod manual entry.
+// TODO: "New company report" omits companyReportId; Garbo only links CompanyReport → Report
+// registry when the save carries URL/S3/hash identity. New report + no URL creates an
+// unlinked company report (registryReportId null). Add UX to pick an existing Report row or set
+// report identity explicitly (registry tab / GET .../reports) before prod manual entry relies on this.
 function companyReportIdForTargetShell(targetShellKey: string): string | undefined {
   if (
     targetShellKey === NEW_REPORT_SHELL_KEY ||
