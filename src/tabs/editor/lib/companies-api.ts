@@ -4,10 +4,11 @@
  */
 
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
-import type {
-  GarboCompanyListItem,
-  GarboCompanyDetail,
-  GarboMetadata,
+import {
+  WIKIDATA_ID_REGEX,
+  type GarboCompanyListItem,
+  type GarboCompanyDetail,
+  type GarboMetadata,
 } from "./types";
 import { parseGarboCompanyDetail } from "./companies-schemas";
 import { apiUrl } from "./api-utils";
@@ -99,12 +100,6 @@ function pipelineCompaniesPath(segment = ""): string {
   return seg ? `${path}/${seg}` : path;
 }
 
-function internalCompaniesPath(segment = ""): string {
-  const path = "/internal-companies";
-  const seg = segment.replace(/^\//, "");
-  return seg ? `${path}/${seg}` : path;
-}
-
 function reportingPeriodPath(segment = ""): string {
   const path = "/reporting-period";
   const seg = segment.replace(/^\//, "");
@@ -138,13 +133,22 @@ export async function listCompanies(
     : [];
 }
 
-/** Get company detail (GET /api/internal-companies/:ref). ref: Q-id, full UUID, or 8-char prefix. */
-export async function getCompany(
-  identifier: string,
+function companyMatchesEditorRef(
+  company: GarboCompanyListItem,
+  ref: string,
+): boolean {
+  if (company.id === ref) return true;
+  if (company.wikidataId === ref) return true;
+  const idPrefix = company.id.split("-")[0];
+  return idPrefix.toLowerCase() === ref.toLowerCase();
+}
+
+async function fetchPipelineCompanyByRef(
+  pipelineRef: string,
   signal?: AbortSignal,
 ): Promise<GarboCompanyDetail> {
   const res = await garboAuthFetch(
-    apiUrl(internalCompaniesPath(encodeURIComponent(identifier))),
+    apiUrl(pipelineCompaniesPath(encodeURIComponent(pipelineRef))),
     {
       method: "GET",
       headers: { Accept: "application/json" },
@@ -163,6 +167,35 @@ export async function getCompany(
   }
   const data = parseGarboCompanyDetail(await res.json());
   return normalizeCompany(data as GarboCompanyDetail);
+}
+
+/**
+ * Editor detail: all reporting periods (pipeline staff API).
+ * Pipeline GET /:ref only accepts Wikidata IDs; internal id / UUID prefix is
+ * resolved via the pipeline list, then fetched by wikidataId when present.
+ */
+export async function getCompany(
+  identifier: string,
+  signal?: AbortSignal,
+): Promise<GarboCompanyDetail> {
+  const ref = identifier.trim();
+  if (WIKIDATA_ID_REGEX.test(ref)) {
+    return fetchPipelineCompanyByRef(ref, signal);
+  }
+
+  const companies = await listCompanies(signal);
+  const match = companies.find((company) =>
+    companyMatchesEditorRef(company, ref),
+  );
+  if (!match) {
+    throw new Error("Company not found.");
+  }
+
+  if (match.wikidataId) {
+    return fetchPipelineCompanyByRef(match.wikidataId, signal);
+  }
+
+  return match as GarboCompanyDetail;
 }
 
 /** Create company (POST /api/companies). */
