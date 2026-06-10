@@ -10,9 +10,9 @@ import type {
   GarboCompanyDetail,
   GarboFieldMetadata,
   GarboReportingPeriodSummary,
+  ReportingPeriodWritePayload,
 } from "../../lib/types";
 import { updateReportingPeriods } from "../../lib/companies-api";
-import type { ReportingPeriodWritePayload } from "../../lib/types";
 import { attachCompanyReportIdToPeriodPatch } from "../../lib/company-report-shells";
 import { inputClassName } from "../../lib/company-edit-utils";
 import {

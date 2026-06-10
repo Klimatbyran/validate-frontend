@@ -9,12 +9,12 @@ import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import type {
   GarboCompanyDetail,
   GarboReportingPeriodSummary,
+  ReportingPeriodWritePayload,
 } from "../../lib/types";
 import {
   deleteReportingPeriod,
   updateReportingPeriods,
 } from "../../lib/companies-api";
-import type { ReportingPeriodWritePayload } from "../../lib/types";
 import { attachCompanyReportIdToPeriodPatch } from "../../lib/company-report-shells";
 import { inputClassName } from "../../lib/company-edit-utils";
 import {

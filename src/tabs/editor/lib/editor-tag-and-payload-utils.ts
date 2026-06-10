@@ -1,7 +1,9 @@
-import type { EditState, TagOption } from "./types";
-import { NO_TAGS_FILTER_OPTION } from "./types";
-
-import type { ReportingPeriodWritePayload } from "./types";
+import {
+  NO_TAGS_FILTER_OPTION,
+  type EditState,
+  type ReportingPeriodWritePayload,
+  type TagOption,
+} from "./types";
 
 export type ReportingPeriodUpdatePayload = ReportingPeriodWritePayload;
 
