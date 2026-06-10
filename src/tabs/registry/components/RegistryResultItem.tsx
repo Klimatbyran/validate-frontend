@@ -33,9 +33,15 @@ const RegistryResultItem = ({
     trimmedUrl !== trimmedS3Url;
 
   const linkItems: Array<{ label: string; href: string }> = [
-    ...(trimmedSourceUrl ? [{ label: t("registry.sourceUrl"), href: trimmedSourceUrl }] : []),
-    ...(trimmedS3Url ? [{ label: t("registry.s3Url"), href: trimmedS3Url }] : []),
-    ...(showReportUrlButton ? [{ label: t("registry.reportUrl"), href: trimmedUrl }] : []),
+    ...(trimmedSourceUrl
+      ? [{ label: t("registry.sourceUrl"), href: trimmedSourceUrl }]
+      : []),
+    ...(trimmedS3Url
+      ? [{ label: t("registry.s3Url"), href: trimmedS3Url }]
+      : []),
+    ...(showReportUrlButton
+      ? [{ label: t("registry.reportUrl"), href: trimmedUrl }]
+      : []),
   ];
 
   const handleClick = () => {
@@ -78,12 +84,16 @@ const RegistryResultItem = ({
                 title={link.href}
                 aria-label={`${link.label}: ${link.href}`}
               >
-                <span className="font-medium whitespace-nowrap">{link.label}</span>
+                <span className="font-medium whitespace-nowrap">
+                  {link.label}
+                </span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             ))
           ) : (
-            <span className="text-xs text-gray-02">{t("common.placeholderDash")}</span>
+            <span className="text-xs text-gray-02">
+              {t("common.placeholderDash")}
+            </span>
           )}
         </div>
       </td>

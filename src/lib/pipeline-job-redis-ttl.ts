@@ -27,8 +27,10 @@ export function pipelineJobRedisRetentionAnchorMs(job: {
   finishedOn?: number;
   timestamp?: number;
 }): number | null {
-  if (typeof job.finishedOn === "number" && job.finishedOn > 0) return job.finishedOn;
-  if (typeof job.timestamp === "number" && job.timestamp > 0) return job.timestamp;
+  if (typeof job.finishedOn === "number" && job.finishedOn > 0)
+    return job.finishedOn;
+  if (typeof job.timestamp === "number" && job.timestamp > 0)
+    return job.timestamp;
   return null;
 }
 

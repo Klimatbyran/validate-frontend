@@ -1,10 +1,18 @@
 import { Check, CheckCircle, Pencil } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
-import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
-import type { GarboCompanyListItem } from "../../lib/types";
-import type { EditState } from "../../lib/types";
+import {
+  DataTable,
+  DataTableBody,
+  DataTableHead,
+  DataTableShell,
+} from "@/ui/data-table";
+import type { EditState, GarboCompanyListItem } from "../../lib/types";
 import { resolveCompanyReportId } from "../../lib/company-report-shells";
-import { formatNumber, getScope2Total, getPeriodForYear } from "../../lib/multi-company-utils";
+import {
+  formatNumber,
+  getScope2Total,
+  getPeriodForYear,
+} from "../../lib/multi-company-utils";
 
 function periodEditContext(period: { startDate: string; endDate: string; companyReportId?: string | null; companyReport?: { id?: string } | null }) {
   return {
@@ -52,22 +60,38 @@ export function MultiCompanyTable({
                 />
                 <span
                   className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
-                    allFilteredSelected ? "bg-blue-03 border-blue-03" : "border-gray-03"
+                    allFilteredSelected
+                      ? "bg-blue-03 border-blue-03"
+                      : "border-gray-03"
                   }`}
                   aria-hidden
                 >
-                  {allFilteredSelected && <Check className="w-3 h-3 text-white" />}
+                  {allFilteredSelected && (
+                    <Check className="w-3 h-3 text-white" />
+                  )}
                 </span>
               </label>
             </th>
-            <th className="px-4 py-3 font-medium">{t("editor.companies.company")}</th>
-            <th className="px-4 py-3 font-medium">{t("editor.companies.tags")}</th>
+            <th className="px-4 py-3 font-medium">
+              {t("editor.companies.company")}
+            </th>
+            <th className="px-4 py-3 font-medium">
+              {t("editor.companies.tags")}
+            </th>
             {selectedYear && (
               <>
-                <th className="px-4 py-3 font-medium">{t("editor.companies.reportUrl")}</th>
-                <th className="px-4 py-3 font-medium">{t("editor.companies.scope1")}</th>
-                <th className="px-4 py-3 font-medium">{t("editor.companies.scope2")}</th>
-                <th className="px-4 py-3 font-medium w-24">{t("editor.companies.edit")}</th>
+                <th className="px-4 py-3 font-medium">
+                  {t("editor.companies.reportUrl")}
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  {t("editor.companies.scope1")}
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  {t("editor.companies.scope2")}
+                </th>
+                <th className="px-4 py-3 font-medium w-24">
+                  {t("editor.companies.edit")}
+                </th>
               </>
             )}
           </tr>
@@ -231,4 +255,3 @@ export function MultiCompanyTable({
     </DataTableShell>
   );
 }
-

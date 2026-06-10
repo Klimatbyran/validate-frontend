@@ -22,10 +22,26 @@ export interface PrimaryFilterConfig {
 }
 
 export const PRIMARY_FILTER_CONFIG: PrimaryFilterConfig[] = [
-  { id: "pending_approval", badgeColorClass: "bg-orange-03/20 text-orange-03", activeColor: "bg-orange-03 text-white hover:bg-orange-03/90" },
-  { id: "has_failed", badgeColorClass: "bg-pink-03/20 text-pink-03", activeColor: "bg-pink-03 text-white hover:bg-pink-03/90" },
-  { id: "has_processing", badgeColorClass: "bg-blue-03/20 text-blue-03", activeColor: "bg-blue-03 text-white hover:bg-blue-03/90" },
-  { id: "has_issues", badgeColorClass: "bg-orange-03/20 text-orange-03", activeColor: "bg-orange-03 text-white hover:bg-orange-03/90" },
+  {
+    id: "pending_approval",
+    badgeColorClass: "bg-orange-03/20 text-orange-03",
+    activeColor: "bg-orange-03 text-white hover:bg-orange-03/90",
+  },
+  {
+    id: "has_failed",
+    badgeColorClass: "bg-pink-03/20 text-pink-03",
+    activeColor: "bg-pink-03 text-white hover:bg-pink-03/90",
+  },
+  {
+    id: "has_processing",
+    badgeColorClass: "bg-blue-03/20 text-blue-03",
+    activeColor: "bg-blue-03 text-white hover:bg-blue-03/90",
+  },
+  {
+    id: "has_issues",
+    badgeColorClass: "bg-orange-03/20 text-orange-03",
+    activeColor: "bg-orange-03 text-white hover:bg-orange-03/90",
+  },
 ];
 
 export const SECONDARY_FILTER_CONFIG: Array<{ id: FilterType }> = [

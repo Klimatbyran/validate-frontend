@@ -27,7 +27,7 @@ export function AuthCallback() {
       setError(
         errorParam === "access_denied"
           ? t("auth.loginAborted")
-          : t("auth.loginErrorWithParam", { param: errorParam })
+          : t("auth.loginErrorWithParam", { param: errorParam }),
       );
       return;
     }
@@ -56,9 +56,7 @@ export function AuthCallback() {
       <div className="min-h-screen bg-gray-05 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="text-gray-01">{t("auth.authenticating")}</div>
-          <div className="text-sm text-gray-02">
-            {t("auth.pleaseWait")}
-          </div>
+          <div className="text-sm text-gray-02">{t("auth.pleaseWait")}</div>
         </div>
       </div>
     );

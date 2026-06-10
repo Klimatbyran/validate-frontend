@@ -4,7 +4,9 @@
 
 import type { QueueJob } from "@/lib/types";
 
-export function extractGarboChunkFromSaveToApiJob(job: QueueJob): string | null {
+export function extractGarboChunkFromSaveToApiJob(
+  job: QueueJob,
+): string | null {
   const pieces: string[] = [];
   if (typeof job.failedReason === "string") pieces.push(job.failedReason);
   if (Array.isArray(job.stacktrace)) pieces.push(job.stacktrace.join("\n"));
@@ -47,7 +49,9 @@ function readOptionalString(value: unknown): string | undefined {
   return trimmed.length ? trimmed : undefined;
 }
 
-export function summarizeSaveToApiPayload(job: QueueJob): SaveToApiJobPayloadSummary {
+export function summarizeSaveToApiPayload(
+  job: QueueJob,
+): SaveToApiJobPayloadSummary {
   const data = job.data as Record<string, unknown> | undefined;
   const subEndpoint =
     typeof data?.apiSubEndpoint === "string" ? data.apiSubEndpoint : undefined;

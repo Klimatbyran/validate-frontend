@@ -29,9 +29,8 @@ export function displayText(value: unknown, placeholder: string): string {
 
 export function getDescriptionByLang(
   company: { descriptions?: Array<{ language: string; text: unknown }> },
-  lang: string
+  lang: string,
 ): string {
   const d = company.descriptions?.find((x) => x.language === lang);
   return d && typeof d.text === "string" ? d.text : "";
 }
-

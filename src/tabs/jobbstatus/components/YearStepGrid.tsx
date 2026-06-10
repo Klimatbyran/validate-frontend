@@ -7,10 +7,7 @@ import {
   getQueuesForPipelineStep,
   getQueueDisplayName,
 } from "@/lib/workflow-config";
-import {
-  findJobByQueueId,
-  getQueueAttemptSummary,
-} from "@/lib/workflow-utils";
+import { findJobByQueueId, getQueueAttemptSummary } from "@/lib/workflow-utils";
 import {
   getStatusIcon,
   getStatusLabel,
@@ -30,7 +27,7 @@ interface YearStepGridProps {
   onFieldClick: (
     field: string,
     runData?: SwimlaneYearData,
-    options?: { isRerun?: boolean }
+    options?: { isRerun?: boolean },
   ) => void;
   variant: "compact" | "full";
   allRuns?: SwimlaneYearData[];
@@ -58,16 +55,23 @@ export function YearStepGrid({
     variant === "compact"
       ? "p-7 space-y-2 bg-gray-05"
       : "p-7 bg-gray-05 space-y-4";
-  const finalWrapperClass = [wrapperClass, containerClassName].filter(Boolean).join(" ");
+  const finalWrapperClass = [wrapperClass, containerClassName]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className={finalWrapperClass}>
       {yearStepStats.map((step, stepIndex) => {
         const queueIds = getQueuesForPipelineStep(step.id);
-        const stepLabel = stepNameKeyMap[step.id] ? t(stepNameKeyMap[step.id]) : step.name;
+        const stepLabel = stepNameKeyMap[step.id]
+          ? t(stepNameKeyMap[step.id])
+          : step.name;
         const cells = queueIds.map((queueId) => {
           const queueKey = `jobstatus.queues.${queueId}`;
-          const fieldName = t(queueKey) !== queueKey ? t(queueKey) : getQueueDisplayName(queueId);
+          const fieldName =
+            t(queueKey) !== queueKey
+              ? t(queueKey)
+              : getQueueDisplayName(queueId);
           const job = findJobByQueueId(queueId, yearData);
           const allJobsForQueueAndThread =
             currentThreadId != null && allRuns
@@ -78,32 +82,38 @@ export function YearStepGrid({
                       (j as any).threadId ||
                       (run as any).threadId;
                     return (
-                      j.queueId === queueId &&
-                      jobThreadId === currentThreadId
+                      j.queueId === queueId && jobThreadId === currentThreadId
                     );
-                  })
+                  }),
                 )
               : [];
-          const aggregate = getQueueAttemptSummary(queueId, yearData, currentThreadId);
+          const aggregate = getQueueAttemptSummary(
+            queueId,
+            yearData,
+            currentThreadId,
+          );
           const isRerun =
             (currentThreadId != null &&
               Array.isArray(allJobsForQueueAndThread) &&
               allJobsForQueueAndThread.length > 1) ||
             aggregate.attempts.length > 1;
           const isActive =
-            (job?.processedOn && !job?.finishedOn) ||
-            job?.status === "active";
+            (job?.processedOn && !job?.finishedOn) || job?.status === "active";
           const statusDisplay = {
             status: aggregate.status,
             icon: getStatusIcon(
               aggregate.status,
               variant === "compact" ? "compact" : "detailed",
-              !!isActive
+              !!isActive,
             ),
             text: getStatusLabel(aggregate.status, !!isActive),
             styles:
               variant === "compact"
-                ? getCompactStyles(aggregate.status, !!isActive, job !== undefined)
+                ? getCompactStyles(
+                    aggregate.status,
+                    !!isActive,
+                    job !== undefined,
+                  )
                 : undefined,
           };
 
@@ -123,9 +133,7 @@ export function YearStepGrid({
                 )}
                 <span className="flex items-center gap-1">
                   <span
-                    className={
-                      isActive ? "inline-block animate-spin-slow" : ""
-                    }
+                    className={isActive ? "inline-block animate-spin-slow" : ""}
                   >
                     {statusDisplay.icon}
                   </span>
@@ -156,9 +164,7 @@ export function YearStepGrid({
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-gray-02">
-                  {statusDisplay.text}
-                </div>
+                <div className="text-xs text-gray-02">{statusDisplay.text}</div>
               </div>
             </button>
           );

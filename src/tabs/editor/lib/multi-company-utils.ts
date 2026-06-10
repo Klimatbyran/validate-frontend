@@ -2,7 +2,7 @@ import type { GarboReportingPeriodSummary } from "./types";
 
 export function getPeriodForYear(
   periods: GarboReportingPeriodSummary[] | undefined,
-  year: number
+  year: number,
 ): GarboReportingPeriodSummary | null {
   if (!periods?.length) return null;
   const y = String(year);
@@ -14,19 +14,23 @@ export function getPeriodForYear(
         (p.startDate &&
           p.endDate &&
           y >= p.startDate.slice(0, 4) &&
-          y <= p.endDate.slice(0, 4))
+          y <= p.endDate.slice(0, 4)),
     ) ?? null
   );
 }
 
-export function formatNumber(v: number | null | undefined, placeholder: string): string {
+export function formatNumber(
+  v: number | null | undefined,
+  placeholder: string,
+): string {
   if (v == null) return placeholder;
   return v.toLocaleString();
 }
 
-export function getScope2Total(period: GarboReportingPeriodSummary | null): number | null {
+export function getScope2Total(
+  period: GarboReportingPeriodSummary | null,
+): number | null {
   if (!period?.emissions?.scope2) return null;
   const s2 = period.emissions.scope2;
-  return (s2.mb ?? s2.lb ?? s2.unknown) ?? null;
+  return s2.mb ?? s2.lb ?? s2.unknown ?? null;
 }
-

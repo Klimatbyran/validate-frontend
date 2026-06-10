@@ -26,10 +26,15 @@ import type { ArchiveRunJobRow, ArchiveRunSummary } from "../lib/archive-types";
 import { formatArchiveWhen } from "../lib/format-archive-datetime";
 import { ArchiveQueueStepPill } from "./ArchiveQueueStepPill";
 
-export type { ArchiveRunJobRow, ArchiveRunCardModel } from "../lib/archive-types";
+export type {
+  ArchiveRunJobRow,
+  ArchiveRunCardModel,
+} from "../lib/archive-types";
 
 /** Latest job per queue; failed beats completed when timestamps tie. */
-function latestTerminalJobByQueue(jobs: ArchiveRunJobRow[]): Map<string, ArchiveRunJobRow> {
+function latestTerminalJobByQueue(
+  jobs: ArchiveRunJobRow[],
+): Map<string, ArchiveRunJobRow> {
   const map = new Map<string, ArchiveRunJobRow>();
   for (const j of jobs) {
     if (!terminalArchiveJobStatusToSwimlane(j.status)) continue;
@@ -96,7 +101,10 @@ export function JobbstatusArchiveRunCard({
   const { t, localeIntl } = useI18n();
   const [expanded, setExpanded] = useState(false);
 
-  const jobByQueue = useMemo(() => latestTerminalJobByQueue(run.jobs), [run.jobs]);
+  const jobByQueue = useMemo(
+    () => latestTerminalJobByQueue(run.jobs),
+    [run.jobs],
+  );
   const terminalCount = jobByQueue.size;
   const attemptCountByQueue = useMemo(
     () => terminalAttemptCountByQueue(run.jobs),
@@ -156,7 +164,9 @@ export function JobbstatusArchiveRunCard({
           className="flex items-center gap-3 min-w-0 flex-1 text-left hover:opacity-80 transition-opacity rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-03/40"
           aria-expanded={expanded}
           aria-label={
-            expanded ? t("jobstatus.archiveCollapseAria") : t("jobstatus.archiveExpandAria")
+            expanded
+              ? t("jobstatus.archiveCollapseAria")
+              : t("jobstatus.archiveExpandAria")
           }
         >
           <ChevronDown
@@ -167,7 +177,9 @@ export function JobbstatusArchiveRunCard({
           />
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-mono text-gray-02 shrink-0">{positionInList}.</span>
+              <span className="text-xs font-mono text-gray-02 shrink-0">
+                {positionInList}.
+              </span>
               <h3 className="font-bold text-gray-01 truncate">
                 {run.companyName || run.threadId}
               </h3>
@@ -181,7 +193,9 @@ export function JobbstatusArchiveRunCard({
               {run.wikidataId ? (
                 <span className="shrink-0">
                   {t("jobstatus.archiveWikidata")}:{" "}
-                  <span className="font-mono text-gray-01">{run.wikidataId}</span>
+                  <span className="font-mono text-gray-01">
+                    {run.wikidataId}
+                  </span>
                 </span>
               ) : null}
               {run.batch?.batchName ? (
@@ -189,7 +203,9 @@ export function JobbstatusArchiveRunCard({
                   <span className="text-gray-02/80 hidden sm:inline">•</span>
                   <span className="shrink-0">
                     {t("jobstatus.batch")}:{" "}
-                    <span className="font-mono text-gray-01">{run.batch.batchName}</span>
+                    <span className="font-mono text-gray-01">
+                      {run.batch.batchName}
+                    </span>
                   </span>
                 </>
               ) : null}
@@ -225,7 +241,9 @@ export function JobbstatusArchiveRunCard({
       {expanded && (
         <div className="p-7 space-y-2 bg-gray-05 border-t border-gray-03">
           {terminalCount === 0 ? (
-            <p className="text-sm text-gray-02">{t("jobstatus.archiveNoTerminalJobs")}</p>
+            <p className="text-sm text-gray-02">
+              {t("jobstatus.archiveNoTerminalJobs")}
+            </p>
           ) : (
             (() => {
               const sections = pipelineSteps
@@ -238,19 +256,34 @@ export function JobbstatusArchiveRunCard({
                     if (!swim) return [];
                     const queueKey = `jobstatus.queues.${queueId}`;
                     const fieldName =
-                      t(queueKey) !== queueKey ? t(queueKey) : getQueueDisplayName(queueId);
+                      t(queueKey) !== queueKey
+                        ? t(queueKey)
+                        : getQueueDisplayName(queueId);
                     return [
-                      renderQueuePill(queueId, job, swim, fieldName, `${queueId}-${job.jobId}`),
+                      renderQueuePill(
+                        queueId,
+                        job,
+                        swim,
+                        fieldName,
+                        `${queueId}-${job.jobId}`,
+                      ),
                     ];
                   });
                   if (cells.length === 0) return null;
-                  const stepTitleKey = getPipelineStepSectionTitleI18nKey(step.id);
+                  const stepTitleKey = getPipelineStepSectionTitleI18nKey(
+                    step.id,
+                  );
                   const stepLabel = stepTitleKey ? t(stepTitleKey) : step.name;
                   return { id: step.id, stepLabel, cells };
                 })
                 .filter(
-                  (s): s is { id: string; stepLabel: string; cells: ReactElement[] } =>
-                    s != null,
+                  (
+                    s,
+                  ): s is {
+                    id: string;
+                    stepLabel: string;
+                    cells: ReactElement[];
+                  } => s != null,
                 );
 
               const orphanCells: ReactElement[] = [];
@@ -286,7 +319,9 @@ export function JobbstatusArchiveRunCard({
                         {section.stepLabel}
                       </span>
                     </div>
-                    <div className="flex-1 flex flex-wrap gap-1.5">{section.cells}</div>
+                    <div className="flex-1 flex flex-wrap gap-1.5">
+                      {section.cells}
+                    </div>
                   </div>
                   {idx < sections.length - 1 && (
                     <div className="mt-3 mb-2">

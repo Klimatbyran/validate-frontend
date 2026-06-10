@@ -10,17 +10,23 @@ export function toNumberOrNull(value: string): number | null {
 }
 
 export function isReportingPeriodWithIdAndDates(
-  rp: GarboReportingPeriodSummary
+  rp: GarboReportingPeriodSummary,
 ): rp is GarboReportingPeriodSummary & { id: string } {
   return Boolean(rp.id && rp.startDate && rp.endDate);
 }
 
-export function formatDateStamp(isoLike: string | null | undefined, placeholder: string): string {
+export function formatDateStamp(
+  isoLike: string | null | undefined,
+  placeholder: string,
+): string {
   if (!isoLike) return placeholder;
   return isoLike.slice(0, 10);
 }
 
-export function getPeriodYear(period: { startDate?: string; endDate?: string }): string | null {
+export function getPeriodYear(period: {
+  startDate?: string;
+  endDate?: string;
+}): string | null {
   const y = period.endDate?.slice(0, 4) ?? period.startDate?.slice(0, 4);
   return y || null;
 }
@@ -77,7 +83,11 @@ export const editorSecondaryIdTextClass = "text-xs text-gray-02 break-all";
 
 /** Data years that appear on more than one reporting period (multiple PDFs). */
 export function dataYearsWithMultiplePeriods(
-  periods: Array<{ startDate?: string; endDate?: string; year?: string | null }>,
+  periods: Array<{
+    startDate?: string;
+    endDate?: string;
+    year?: string | null;
+  }>,
 ): string[] {
   const counts = new Map<string, number>();
   for (const period of periods) {
@@ -94,7 +104,7 @@ export function dataYearsWithMultiplePeriods(
 export function formatPeriodDateRange(
   startDate: string | undefined,
   endDate: string | undefined,
-  placeholder: string
+  placeholder: string,
 ): string {
   return `${formatDateStamp(startDate, placeholder)} – ${formatDateStamp(endDate, placeholder)}`;
 }
@@ -103,7 +113,8 @@ export function formatPeriodDateRange(
 export const editorDenseToolbarClass = "min-w-0 max-w-none px-3 text-xs h-8";
 
 /** `MultiSelectDropdown` trigger matching toolbar height. */
-export const editorDenseMultiSelectTriggerClass = "min-w-[130px] !h-8 !text-xs px-3";
+export const editorDenseMultiSelectTriggerClass =
+  "min-w-[130px] !h-8 !text-xs px-3";
 
 /**
  * Copy-on-write: set or remove a string key on a shallow draft record (editor state).
@@ -112,7 +123,7 @@ export function assignNullableStringKey<T extends Record<string, unknown>>(
   prev: T,
   key: string,
   value: string,
-  hadOriginalValue: boolean
+  hadOriginalValue: boolean,
 ): T {
   const next: Record<string, unknown> = { ...prev };
   const trimmedEmpty = value.trim() === "";

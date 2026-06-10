@@ -16,7 +16,12 @@ export function JobMetadataSection({ job }: JobMetadataSectionProps) {
     },
     {
       label: t("jobstatus.metadata.queue"),
-      value: job.queueId && t(`jobstatus.queues.${job.queueId}`) !== `jobstatus.queues.${job.queueId}` ? t(`jobstatus.queues.${job.queueId}`) : job.queueId,
+      value:
+        job.queueId &&
+        t(`jobstatus.queues.${job.queueId}`) !==
+          `jobstatus.queues.${job.queueId}`
+          ? t(`jobstatus.queues.${job.queueId}`)
+          : job.queueId,
     },
     {
       label: t("jobstatus.metadata.created"),
@@ -38,7 +43,9 @@ export function JobMetadataSection({ job }: JobMetadataSectionProps) {
 
   return (
     <div className="bg-gray-03/20 rounded-lg p-4">
-      <h3 className="text-lg font-medium text-gray-01 mb-4">{t("jobstatus.metadata.title")}</h3>
+      <h3 className="text-lg font-medium text-gray-01 mb-4">
+        {t("jobstatus.metadata.title")}
+      </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         {metadataFields.map((field, index) => (
           <div key={index}>

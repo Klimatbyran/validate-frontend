@@ -19,7 +19,11 @@ import {
   type GarboCompanyDetail,
   type TagOption,
 } from "../../lib/types";
-import { displayBaseYear, getDescriptionByLang, inputClassName } from "../../lib/company-edit-utils";
+import {
+  displayBaseYear,
+  getDescriptionByLang,
+  inputClassName,
+} from "../../lib/company-edit-utils";
 import { buildTagLabelBySlug } from "../../lib/editor-tag-and-payload-utils";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
@@ -37,35 +41,44 @@ export function CompanyDetailTab({
 }) {
   const { t } = useI18n();
   const dash = t("common.placeholderDash");
-  const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
+  const tagLabelBySlug = useMemo(
+    () => buildTagLabelBySlug(tagOptions),
+    [tagOptions],
+  );
 
   const [name, setName] = useState(company.name ?? "");
   const [descriptionEn, setDescriptionEn] = useState(() =>
-    getDescriptionByLang(company, "EN")
+    getDescriptionByLang(company, "EN"),
   );
   const [descriptionSv, setDescriptionSv] = useState(() =>
-    getDescriptionByLang(company, "SV")
+    getDescriptionByLang(company, "SV"),
   );
   const [wikidataId, setWikidataId] = useState(company.wikidataId ?? "");
   const [lei, setLei] = useState(company.lei ?? "");
   const [url, setUrl] = useState(company.url ?? "");
   const [internalComment, setInternalComment] = useState(
-    company.internalComment ?? ""
+    company.internalComment ?? "",
   );
-  const [selectedTags, setSelectedTags] = useState<string[]>(company.tags ?? []);
+  const [selectedTags, setSelectedTags] = useState<string[]>(
+    company.tags ?? [],
+  );
 
   const [subIndustryCode, setSubIndustryCode] = useState(
-    company.industry?.subIndustryCode ?? ""
+    company.industry?.subIndustryCode ?? "",
   );
-  const [baseYear, setBaseYear] = useState(() => displayBaseYear(company.baseYear, dash));
+  const [baseYear, setBaseYear] = useState(() =>
+    displayBaseYear(company.baseYear, dash),
+  );
 
   const [industryOptions, setIndustryOptions] = useState<IndustryGicsOption[]>(
-    []
+    [],
   );
   const [industryOptionsLoading, setIndustryOptionsLoading] = useState(false);
   const [savingCore, setSavingCore] = useState(false);
   const [savingIndustry, setSavingIndustry] = useState(false);
-  const [saveDialog, setSaveDialog] = useState<null | "core" | "industry">(null);
+  const [saveDialog, setSaveDialog] = useState<null | "core" | "industry">(
+    null,
+  );
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingCompany, setDeletingCompany] = useState(false);
 
@@ -100,12 +113,19 @@ export function CompanyDetailTab({
       .then(setIndustryOptions)
       .catch((e) => {
         setIndustryOptions([]);
-        toast.error(e instanceof Error ? e.message : t("editor.singleCompanyView.loadError"));
+        toast.error(
+          e instanceof Error
+            ? e.message
+            : t("editor.singleCompanyView.loadError"),
+        );
       })
       .finally(() => setIndustryOptionsLoading(false));
   }, []);
 
-  const handleSaveCore = async (meta?: { comment?: string; source?: string }) => {
+  const handleSaveCore = async (meta?: {
+    comment?: string;
+    source?: string;
+  }) => {
     const trimmedWikidataId = wikidataId.trim();
     if (trimmedWikidataId && !WIKIDATA_ID_REGEX.test(trimmedWikidataId)) {
       toast.error(t("wikidata.invalidFormat"));
@@ -127,7 +147,10 @@ export function CompanyDetailTab({
         tags: selectedTags,
         metadata:
           meta?.comment?.trim() || meta?.source?.trim()
-            ? { comment: meta.comment?.trim() || undefined, source: meta.source?.trim() || undefined }
+            ? {
+                comment: meta.comment?.trim() || undefined,
+                source: meta.source?.trim() || undefined,
+              }
             : undefined,
       });
       toast.success(t("editor.tagOptions.updated"));
@@ -139,7 +162,10 @@ export function CompanyDetailTab({
     }
   };
 
-  const handleSaveIndustry = async (meta?: { comment?: string; source?: string }) => {
+  const handleSaveIndustry = async (meta?: {
+    comment?: string;
+    source?: string;
+  }) => {
     const by = baseYear.trim() ? parseInt(baseYear, 10) : undefined;
     if (by != null && (isNaN(by) || by < 1990 || by > 2100)) {
       toast.error(t("editor.singleCompanyView.invalidBaseYear"));
@@ -152,7 +178,10 @@ export function CompanyDetailTab({
           industry: { subIndustryCode },
           metadata:
             meta?.comment?.trim() || meta?.source?.trim()
-              ? { comment: meta.comment?.trim() || undefined, source: meta.source?.trim() || undefined }
+              ? {
+                  comment: meta.comment?.trim() || undefined,
+                  source: meta.source?.trim() || undefined,
+                }
               : undefined,
         });
       }
@@ -161,7 +190,10 @@ export function CompanyDetailTab({
           baseYear: by,
           metadata:
             meta?.comment?.trim() || meta?.source?.trim()
-              ? { comment: meta.comment?.trim() || undefined, source: meta.source?.trim() || undefined }
+              ? {
+                  comment: meta.comment?.trim() || undefined,
+                  source: meta.source?.trim() || undefined,
+                }
               : undefined,
         });
       }
@@ -178,7 +210,7 @@ export function CompanyDetailTab({
 
   const selectedIndustry = useMemo(
     () => industryOptions.find((o) => o.code === subIndustryCode) ?? null,
-    [industryOptions, subIndustryCode]
+    [industryOptions, subIndustryCode],
   );
 
   const handleDeleteCompany = async () => {
@@ -251,7 +283,9 @@ export function CompanyDetailTab({
                   value={descriptionEn}
                   onChange={(e) => setDescriptionEn(e.target.value)}
                   rows={8}
-                  className={inputClassName + " resize-y !max-w-none min-h-[11rem]"}
+                  className={
+                    inputClassName + " resize-y !max-w-none min-h-[11rem]"
+                  }
                 />
               </div>
               <div>
@@ -262,7 +296,9 @@ export function CompanyDetailTab({
                   value={descriptionSv}
                   onChange={(e) => setDescriptionSv(e.target.value)}
                   rows={8}
-                  className={inputClassName + " resize-y !max-w-none min-h-[11rem]"}
+                  className={
+                    inputClassName + " resize-y !max-w-none min-h-[11rem]"
+                  }
                 />
               </div>
             </div>
@@ -383,7 +419,9 @@ export function CompanyDetailTab({
                 max={2100}
                 value={baseYear}
                 onChange={(e) => setBaseYear(e.target.value)}
-                className={inputClassName + " w-full !max-w-none !h-8 !text-xs px-3"}
+                className={
+                  inputClassName + " w-full !max-w-none !h-8 !text-xs px-3"
+                }
               />
             </div>
 
@@ -412,7 +450,9 @@ export function CompanyDetailTab({
               disabled={savingIndustry}
               className={editorPrimaryActionButtonClass}
             >
-              {savingIndustry && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {savingIndustry && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
               {t("editor.fieldEdit.save")}
             </Button>
           </div>
@@ -422,14 +462,21 @@ export function CompanyDetailTab({
               <span className="font-medium text-gray-02">
                 {selectedIndustry.sector ?? "—"}
               </span>{" "}
-              &gt; <span className="font-medium text-gray-02">{selectedIndustry.group ?? "—"}</span>{" "}
+              &gt;{" "}
+              <span className="font-medium text-gray-02">
+                {selectedIndustry.group ?? "—"}
+              </span>{" "}
               &gt;{" "}
               <span className="font-medium text-gray-02">
                 {selectedIndustry.industry ?? "—"}
               </span>{" "}
               &gt;{" "}
               <span className="font-medium text-gray-02">
-                {(selectedIndustry.subIndustryName ?? selectedIndustry.label ?? selectedIndustry.code) as string}
+                {
+                  (selectedIndustry.subIndustryName ??
+                    selectedIndustry.label ??
+                    selectedIndustry.code) as string
+                }
               </span>
             </div>
           )}
@@ -510,4 +557,3 @@ export function CompanyDetailTab({
     </div>
   );
 }
-

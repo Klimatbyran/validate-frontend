@@ -35,7 +35,7 @@ export type Scope12ReferenceSnapshot = {
 } | null;
 
 export function buildReferenceSnapshotFromPeriod(
-  period: any
+  period: any,
 ): Scope12ReferenceSnapshot {
   if (!period?.emissions) return null;
   const s1 = period.emissions.scope1;

@@ -27,7 +27,10 @@ import { useCompanyReportShellFilters } from "../../hooks/useCompanyReportShellF
 import { CompanyReportShellFilterControls } from "./CompanyReportShellFilterControls";
 import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
-import { buildEmissionsPeriodPatch, type EditedPeriodEmissions } from "../../lib/emissions-edit";
+import {
+  buildEmissionsPeriodPatch,
+  type EditedPeriodEmissions,
+} from "../../lib/emissions-edit";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
 import { ReportingPeriodCompanyReportInfo } from "./ReportingPeriodCompanyReportInfo";
 import { reportHrefLinkPillClassName } from "@/lib/report-url-link-pill";
@@ -60,10 +63,12 @@ export function EmissionsDataTab({
   const periods = useMemo(
     () =>
       (company.reportingPeriods ?? []).filter(isReportingPeriodWithIdAndDates),
-    [company.reportingPeriods]
+    [company.reportingPeriods],
   );
 
-  const [edited, setEdited] = useState<Record<string, EditedPeriodEmissions>>({});
+  const [edited, setEdited] = useState<Record<string, EditedPeriodEmissions>>(
+    {},
+  );
   const [saving, setSaving] = useState(false);
 
   const {
@@ -91,17 +96,19 @@ export function EmissionsDataTab({
     setSortOrder,
     years,
     visiblePeriods,
-  } = useReportingPeriodColumnFilters<GarboReportingPeriodSummary & { id: string }>(
-    periodsForShellFilter,
-    company.id,
-  );
+  } = useReportingPeriodColumnFilters<
+    GarboReportingPeriodSummary & { id: string }
+  >(periodsForShellFilter, company.id);
 
   useEffect(() => {
     setEdited({});
     setSaving(false);
   }, [company.id]);
 
-  const setEditedField = (rpId: string, patch: Partial<EditedPeriodEmissions>) => {
+  const setEditedField = (
+    rpId: string,
+    patch: Partial<EditedPeriodEmissions>,
+  ) => {
     setEdited((prev) => {
       const current = prev[rpId] ?? {};
       const nextForRp: EditedPeriodEmissions = { ...current, ...patch };
@@ -115,22 +122,38 @@ export function EmissionsDataTab({
     rpId: string,
     key: keyof EditedPeriodEmissions,
     value: string,
-    hadOriginalValue: boolean
+    hadOriginalValue: boolean,
   ) => {
-    setEdited((prev) => applyNullableStringEdit(prev, rpId, key, value, hadOriginalValue));
+    setEdited((prev) =>
+      applyNullableStringEdit(prev, rpId, key, value, hadOriginalValue),
+    );
   };
 
   const setScope3CategoryValue = (
     rpId: string,
     category: number,
     value: string,
-    hadOriginalValue: boolean
+    hadOriginalValue: boolean,
   ) => {
-    setEdited((prev) => applyScope3CategoryValueEdit(prev, rpId, category, value, hadOriginalValue));
+    setEdited((prev) =>
+      applyScope3CategoryValueEdit(
+        prev,
+        rpId,
+        category,
+        value,
+        hadOriginalValue,
+      ),
+    );
   };
 
-  const setScope3CategoryVerified = (rpId: string, category: number, verified: boolean) => {
-    setEdited((prev) => applyScope3CategoryVerifiedEdit(prev, rpId, category, verified));
+  const setScope3CategoryVerified = (
+    rpId: string,
+    category: number,
+    verified: boolean,
+  ) => {
+    setEdited((prev) =>
+      applyScope3CategoryVerifiedEdit(prev, rpId, category, verified),
+    );
   };
 
   const resetPeriod = (rpId: string) => {
@@ -143,7 +166,10 @@ export function EmissionsDataTab({
 
   const resetAll = () => setEdited({});
 
-  const clearEditedKeys = (rpId: string, keys: Array<keyof EditedPeriodEmissions>) => {
+  const clearEditedKeys = (
+    rpId: string,
+    keys: Array<keyof EditedPeriodEmissions>,
+  ) => {
     setEdited((prev) => {
       const current = prev[rpId];
       if (!current) return prev;
@@ -175,7 +201,11 @@ export function EmissionsDataTab({
 
   const visibleColumns = useMemo(() => {
     return visiblePeriods.map((rp) => {
-      const dateRangeLabel = formatPeriodDateRange(rp.startDate, rp.endDate, dash);
+      const dateRangeLabel = formatPeriodDateRange(
+        rp.startDate,
+        rp.endDate,
+        dash,
+      );
       const year = getPeriodYear(rp);
       const dataYear = getPeriodDataYear(rp) ?? "";
       return {
@@ -218,7 +248,10 @@ export function EmissionsDataTab({
         reportingPeriods: payloadPeriods,
         metadata:
           meta?.source?.trim() || meta?.comment?.trim()
-            ? { source: meta.source?.trim() || undefined, comment: meta.comment?.trim() || undefined }
+            ? {
+                source: meta.source?.trim() || undefined,
+                comment: meta.comment?.trim() || undefined,
+              }
             : undefined,
       });
       toast.success(t("editor.periodEditor.reportingDataSaved"));
@@ -246,17 +279,16 @@ export function EmissionsDataTab({
     /** Left-hand row label. */
     rowName: string;
     /** Which edited key holds the numeric value (nullable-string edit). */
-    valueKey:
-      | "statedTotalEmissions"
-      | "scope1Total"
-      | "scope1And2Total";
+    valueKey: "statedTotalEmissions" | "scope1Total" | "scope1And2Total";
     /** Which edited key holds the verified toggle for this value. */
     verifiedKey:
       | "statedTotalVerified"
       | "scope1Verified"
       | "scope1And2Verified";
     getOriginalTotal: (rp: GarboReportingPeriodSummary) => number | null;
-    getOriginalMeta: (rp: GarboReportingPeriodSummary) => GarboFieldMetadata | null;
+    getOriginalMeta: (
+      rp: GarboReportingPeriodSummary,
+    ) => GarboFieldMetadata | null;
     fieldLabel: (year: string) => string;
     undoTitle: string;
   };
@@ -269,9 +301,11 @@ export function EmissionsDataTab({
         rowName: overall,
         valueKey: "statedTotalEmissions",
         verifiedKey: "statedTotalVerified",
-        getOriginalTotal: (rp) => rp.emissions?.statedTotalEmissions?.total ?? null,
+        getOriginalTotal: (rp) =>
+          rp.emissions?.statedTotalEmissions?.total ?? null,
         getOriginalMeta: (rp) =>
-          (rp.emissions?.statedTotalEmissions?.metadata as GarboFieldMetadata | null) ?? null,
+          (rp.emissions?.statedTotalEmissions
+            ?.metadata as GarboFieldMetadata | null) ?? null,
         fieldLabel: (year) => `${overall} (${year})`,
         undoTitle: t("editor.periodEditor.undoField", { field: overall }),
       },
@@ -291,9 +325,12 @@ export function EmissionsDataTab({
         verifiedKey: "scope1And2Verified",
         getOriginalTotal: (rp) => rp.emissions?.scope1And2?.total ?? null,
         getOriginalMeta: (rp) =>
-          (rp.emissions?.scope1And2?.metadata as GarboFieldMetadata | null) ?? null,
+          (rp.emissions?.scope1And2?.metadata as GarboFieldMetadata | null) ??
+          null,
         fieldLabel: (year) => `${scope1And2Display} (${year})`,
-        undoTitle: t("editor.periodEditor.undoField", { field: scope1And2Display }),
+        undoTitle: t("editor.periodEditor.undoField", {
+          field: scope1And2Display,
+        }),
       },
     ];
   }, [scope1And2Display, t]);
@@ -315,7 +352,9 @@ export function EmissionsDataTab({
               type="button"
               variant="secondary"
               size="sm"
-              onClick={() => setSortOrder((o) => (o === "desc" ? "asc" : "desc"))}
+              onClick={() =>
+                setSortOrder((o) => (o === "desc" ? "asc" : "desc"))
+              }
               className={editorDenseToolbarClass}
             >
               {sortOrder === "desc"
@@ -383,48 +422,70 @@ export function EmissionsDataTab({
             </p>
 
             <div className="mb-8">
-              <EmissionsEditRow name={t("editor.periodEditor.reportingPeriodHeader")} headerName noHover>
-                {visibleColumns.map(({ rp, dateRangeLabel, year, isDuplicateDataYear, isPublicApiPeriod }) => (
-                  <div
-                    key={rp.id}
-                    className={`${emissionsPeriodHeaderCellClass} ${isPublicApiPeriod ? "border-l-2 border-l-green-03/70" : ""}`}
-                  >
-                    <div className="text-right min-w-0 flex-1">
-                      {year ? (
-                        <>
-                          <div className="text-sm font-semibold text-gray-01">{year}</div>
-                          <div className="text-[11px] text-gray-02 mt-0.5 leading-tight break-words">
+              <EmissionsEditRow
+                name={t("editor.periodEditor.reportingPeriodHeader")}
+                headerName
+                noHover
+              >
+                {visibleColumns.map(
+                  ({
+                    rp,
+                    dateRangeLabel,
+                    year,
+                    isDuplicateDataYear,
+                    isPublicApiPeriod,
+                  }) => (
+                    <div
+                      key={rp.id}
+                      className={`${emissionsPeriodHeaderCellClass} ${isPublicApiPeriod ? "border-l-2 border-l-green-03/70" : ""}`}
+                    >
+                      <div className="text-right min-w-0 flex-1">
+                        {year ? (
+                          <>
+                            <div className="text-sm font-semibold text-gray-01">
+                              {year}
+                            </div>
+                            <div className="text-[11px] text-gray-02 mt-0.5 leading-tight break-words">
+                              {dateRangeLabel}
+                            </div>
+                            <ReportingPeriodCompanyReportInfo period={rp} />
+                            {isPublicApiPeriod ? (
+                              <p
+                                className="mt-1.5 text-[10px] font-medium text-green-03/90 uppercase tracking-wide"
+                                title={t(
+                                  "editor.singleCompanyView.publicApiPeriodHint",
+                                )}
+                              >
+                                {t(
+                                  "editor.singleCompanyView.publicApiPeriodBadge",
+                                )}
+                              </p>
+                            ) : null}
+                            {isDuplicateDataYear ? (
+                              <p className="mt-1.5 text-[11px] text-orange-03/90 leading-tight">
+                                {t(
+                                  "editor.singleCompanyView.sameDataYearAsAnotherPeriod",
+                                )}
+                              </p>
+                            ) : null}
+                          </>
+                        ) : (
+                          <div className="text-sm font-semibold text-gray-01">
                             {dateRangeLabel}
                           </div>
-                          <ReportingPeriodCompanyReportInfo period={rp} />
-                          {isPublicApiPeriod ? (
-                            <p
-                              className="mt-1.5 text-[10px] font-medium text-green-03/90 uppercase tracking-wide"
-                              title={t("editor.singleCompanyView.publicApiPeriodHint")}
-                            >
-                              {t("editor.singleCompanyView.publicApiPeriodBadge")}
-                            </p>
-                          ) : null}
-                          {isDuplicateDataYear ? (
-                            <p className="mt-1.5 text-[11px] text-orange-03/90 leading-tight">
-                              {t("editor.singleCompanyView.sameDataYearAsAnotherPeriod")}
-                            </p>
-                          ) : null}
-                        </>
-                      ) : (
-                        <div className="text-sm font-semibold text-gray-01">{dateRangeLabel}</div>
-                      )}
+                        )}
+                      </div>
+                      <IconActionButton
+                        onClick={() => resetPeriod(rp.id)}
+                        disabled={!edited[rp.id]}
+                        title={t("editor.periodEditor.resetThisYearTitle")}
+                        aria-label={t("editor.periodEditor.resetThisYearTitle")}
+                      >
+                        <Undo2 className="text-gray-02" />
+                      </IconActionButton>
                     </div>
-                    <IconActionButton
-                      onClick={() => resetPeriod(rp.id)}
-                      disabled={!edited[rp.id]}
-                      title={t("editor.periodEditor.resetThisYearTitle")}
-                      aria-label={t("editor.periodEditor.resetThisYearTitle")}
-                    >
-                      <Undo2 className="text-gray-02" />
-                    </IconActionButton>
-                  </div>
-                ))}
+                  ),
+                )}
               </EmissionsEditRow>
 
               <EmissionsEditRow name={t("editor.companies.reportUrl")}>
@@ -439,13 +500,16 @@ export function EmissionsDataTab({
                     ...(reportUrl
                       ? [{ label: t("registry.sourceUrl"), href: reportUrl }]
                       : []),
-                    ...(s3Url ? [{ label: t("registry.s3Url"), href: s3Url }] : []),
+                    ...(s3Url
+                      ? [{ label: t("registry.s3Url"), href: s3Url }]
+                      : []),
                   ];
                   return (
                     <div
                       key={rp.id}
                       className={
-                        emissionsFieldCellClass + " justify-center sm:justify-start"
+                        emissionsFieldCellClass +
+                        " justify-center sm:justify-start"
                       }
                     >
                       {links.length ? (
@@ -460,7 +524,9 @@ export function EmissionsDataTab({
                               title={l.href}
                               aria-label={`${l.label}: ${l.href}`}
                             >
-                              <span className="font-medium whitespace-nowrap">{l.label}</span>
+                              <span className="font-medium whitespace-nowrap">
+                                {l.label}
+                              </span>
                               <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           ))}
@@ -480,16 +546,22 @@ export function EmissionsDataTab({
 
             <div className="mb-8">
               {numberRowSpecs.map((spec) => (
-                <EmissionsEditRow key={spec.valueKey} name={spec.rowName} headerName>
+                <EmissionsEditRow
+                  key={spec.valueKey}
+                  name={spec.rowName}
+                  headerName
+                >
                   {visibleColumns.map(({ rp, year }) => {
                     const rpEdits = edited[rp.id] ?? {};
                     const original = spec.getOriginalTotal(rp);
                     const originalMeta = spec.getOriginalMeta(rp);
                     const originalVerified = !!originalMeta?.verifiedBy;
-                    const value = (rpEdits[spec.valueKey] ?? (original != null ? String(original) : "")) as string;
+                    const value = (rpEdits[spec.valueKey] ??
+                      (original != null ? String(original) : "")) as string;
                     const dirty = rpEdits[spec.valueKey] != null;
                     const dirtyVerified = rpEdits[spec.verifiedKey] != null;
-                    const verified = (rpEdits[spec.verifiedKey] ?? originalVerified) as boolean;
+                    const verified = (rpEdits[spec.verifiedKey] ??
+                      originalVerified) as boolean;
                     const undoDisabled = !(dirty || dirtyVerified);
                     const yearLabel = year || "";
                     return (
@@ -502,17 +574,22 @@ export function EmissionsDataTab({
                               rp.id,
                               spec.valueKey,
                               next,
-                              original != null
+                              original != null,
                             )
                           }
                           metadata={originalMeta}
                           fieldLabel={spec.fieldLabel(yearLabel)}
                           verified={verified}
                           onToggleVerified={() =>
-                            setEditedField(rp.id, { [spec.verifiedKey]: !verified })
+                            setEditedField(rp.id, {
+                              [spec.verifiedKey]: !verified,
+                            })
                           }
                           onUndo={() =>
-                            clearEditedKeys(rp.id, [spec.valueKey, spec.verifiedKey])
+                            clearEditedKeys(rp.id, [
+                              spec.valueKey,
+                              spec.verifiedKey,
+                            ])
                           }
                           undoDisabled={undoDisabled}
                           verifyTitle={t("editor.fieldEdit.markVerified")}
@@ -546,7 +623,9 @@ export function EmissionsDataTab({
                 setScope3CategoryValue={setScope3CategoryValue}
                 setScope3CategoryVerified={setScope3CategoryVerified}
                 clearScope3Category={(rpId, category) =>
-                  setEdited((prev) => applyScope3CategoryClear(prev, rpId, category))
+                  setEdited((prev) =>
+                    applyScope3CategoryClear(prev, rpId, category),
+                  )
                 }
                 numInputClass={numInputClass}
               />
@@ -585,4 +664,3 @@ export function EmissionsDataTab({
     </section>
   );
 }
-

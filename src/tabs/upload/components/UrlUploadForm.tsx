@@ -26,7 +26,10 @@ export function UrlUploadForm({
           <label className="block text-sm font-medium text-gray-01">
             {t("upload.pastePdfLinks")}
           </label>
-          <AutoApproveToggle value={autoApprove} onChange={onAutoApproveChange} />
+          <AutoApproveToggle
+            value={autoApprove}
+            onChange={onAutoApproveChange}
+          />
         </div>
         <textarea
           value={urlInput}

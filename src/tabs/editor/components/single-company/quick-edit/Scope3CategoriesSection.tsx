@@ -2,7 +2,10 @@ import type { Dispatch, SetStateAction } from "react";
 import { useMemo } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { inputClassName } from "../../../lib/company-edit-utils";
-import type { GarboFieldMetadata, GarboReportingPeriodSummary } from "../../../lib/types";
+import type {
+  GarboFieldMetadata,
+  GarboReportingPeriodSummary,
+} from "../../../lib/types";
 import {
   quickEditScope3CategoryName,
   scope3CategoryIdsForDisplay,
@@ -28,8 +31,10 @@ export function Scope3CategoriesSection({
   const scope3Categories = period.emissions?.scope3?.categories ?? [];
   const categoryIds = useMemo(
     () =>
-      Array.from(new Set(scope3Categories.map((c) => c.category))).sort((a, b) => a - b),
-    [scope3Categories]
+      Array.from(new Set(scope3Categories.map((c) => c.category))).sort(
+        (a, b) => a - b,
+      ),
+    [scope3Categories],
   );
 
   const displayScope3CategoryIds = useMemo(
@@ -39,7 +44,7 @@ export function Scope3CategoriesSection({
         edited,
         showAllScope3Categories,
       }),
-    [categoryIds, edited, showAllScope3Categories]
+    [categoryIds, edited, showAllScope3Categories],
   );
 
   const resetScope3Category = (category: number) => {
@@ -51,12 +56,18 @@ export function Scope3CategoriesSection({
       delete vals[k];
       delete vers[k];
       next.scope3Categories = Object.keys(vals).length ? vals : undefined;
-      next.scope3CategoriesVerified = Object.keys(vers).length ? vers : undefined;
+      next.scope3CategoriesVerified = Object.keys(vers).length
+        ? vers
+        : undefined;
       return next;
     });
   };
 
-  const setScope3CatVal = (category: number, value: string, hadOriginalValue: boolean) => {
+  const setScope3CatVal = (
+    category: number,
+    value: string,
+    hadOriginalValue: boolean,
+  ) => {
     const k = String(category);
     setEdited((prev) => {
       const next = { ...prev };
@@ -83,7 +94,9 @@ export function Scope3CategoriesSection({
   return (
     <Scope3CategoriesCard
       title={t("editor.reportingPeriodQuickEdit.scope3CategoriesSection")}
-      showAllLabel={t("editor.reportingPeriodQuickEdit.showAllScope3Categories")}
+      showAllLabel={t(
+        "editor.reportingPeriodQuickEdit.showAllScope3Categories",
+      )}
       showAllChecked={showAllScope3Categories}
       onToggleShowAll={setShowAllScope3Categories}
       ids={displayScope3CategoryIds}
@@ -105,13 +118,18 @@ export function Scope3CategoriesSection({
         const editedVal = edited.scope3Categories?.[String(cat)];
         return editedVal ?? (originalVal != null ? String(originalVal) : "");
       }}
-      isEditedValueDirty={(cat) => edited.scope3Categories?.[String(cat)] != null}
+      isEditedValueDirty={(cat) =>
+        edited.scope3Categories?.[String(cat)] != null
+      }
       getVerifiedForCategory={(cat) => {
         const original = scope3Categories.find((c) => c.category === cat);
         const originalVerified = !!original?.metadata?.verifiedBy;
         const hasEditedVerified =
           edited.scope3CategoriesVerified != null &&
-          Object.prototype.hasOwnProperty.call(edited.scope3CategoriesVerified, String(cat));
+          Object.prototype.hasOwnProperty.call(
+            edited.scope3CategoriesVerified,
+            String(cat),
+          );
         return hasEditedVerified
           ? !!edited.scope3CategoriesVerified?.[String(cat)]
           : originalVerified;
@@ -131,4 +149,3 @@ export function Scope3CategoriesSection({
     />
   );
 }
-

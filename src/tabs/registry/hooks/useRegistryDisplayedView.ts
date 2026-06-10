@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 import type { RegistryEntry } from "../lib/registry-types";
-import { buildRegistryStats, filterRegistryEntries } from "../lib/registry-utils";
+import {
+  buildRegistryStats,
+  filterRegistryEntries,
+} from "../lib/registry-utils";
 import {
   applyRegistryTableFilters,
   collectDistinctReportYears,

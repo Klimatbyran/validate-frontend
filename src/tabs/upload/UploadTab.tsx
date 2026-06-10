@@ -35,9 +35,8 @@ export function UploadTab() {
   const [processedUrls, setProcessedUrls] = useState<UrlInput[]>([]);
   const [autoApprove, setAutoApprove] = useState(true);
   const [runAllWorkers, setRunAllWorkers] = useState(false);
-  const [selectedWorkers, setSelectedWorkers] = useState<RunOnlyWorkerId[]>(
-    DEFAULT_RUN_ONLY,
-  );
+  const [selectedWorkers, setSelectedWorkers] =
+    useState<RunOnlyWorkerId[]>(DEFAULT_RUN_ONLY);
   const [forceReindex, setForceReindex] = useState(false);
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState("");
@@ -46,7 +45,11 @@ export function UploadTab() {
     isLoading: batchesLoading,
     refetch: refetchBatches,
   } = useBatches();
-  const { tagOptions, loading: tagsLoading, error: tagsError } = useTagOptions();
+  const {
+    tagOptions,
+    loading: tagsLoading,
+    error: tagsError,
+  } = useTagOptions();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   // Upload is the main entrypoint and performs write operations; require auth here.
@@ -58,7 +61,8 @@ export function UploadTab() {
     login();
   }, [authLoading, isAuthenticated, login]);
 
-  const runOnly = !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
+  const runOnly =
+    !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
   const tags = selectedTags.length > 0 ? selectedTags : undefined;
 
   const handleFileSubmit = useCallback(async () => {
@@ -109,14 +113,18 @@ export function UploadTab() {
         ? result.uploads.filter((u) => u.reusedExisting).length
         : 0;
 
-      const newUrls: UrlInput[] = uploadedFiles.map(({ file, id, company }) => ({
-        url: `uploaded:${file.name}`,
-        id,
-        company,
-      }));
+      const newUrls: UrlInput[] = uploadedFiles.map(
+        ({ file, id, company }) => ({
+          url: `uploaded:${file.name}`,
+          id,
+          company,
+        }),
+      );
       setProcessedUrls((prev) => [...prev, ...newUrls]);
       setUploadedFiles([]);
-      toast.success(t("upload.filesSubmitted", { count: uploadedFiles.length }));
+      toast.success(
+        t("upload.filesSubmitted", { count: uploadedFiles.length }),
+      );
       if (reusedCount > 0) {
         toast.info(t("upload.storageDeduplicated", { count: reusedCount }));
       }
@@ -129,7 +137,8 @@ export function UploadTab() {
         toast.error(t("upload.fileTooLarge"));
         return;
       }
-      const errorMessage = error instanceof Error ? error.message : t("upload.unknownError");
+      const errorMessage =
+        error instanceof Error ? error.message : t("upload.unknownError");
       toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
   }, [
@@ -156,31 +165,34 @@ export function UploadTab() {
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
 
-    const files = Array.from(e.dataTransfer.files).filter(
-      (file) => file.type === "application/pdf"
-    );
+      const files = Array.from(e.dataTransfer.files).filter(
+        (file) => file.type === "application/pdf",
+      );
 
-    if (files.length === 0) {
-      toast.error(t("upload.onlyPdfAllowed"));
-      return;
-    }
+      if (files.length === 0) {
+        toast.error(t("upload.onlyPdfAllowed"));
+        return;
+      }
 
-    const newFiles = files.map((file) => ({
-      file,
-      id: crypto.randomUUID(),
-      company: file.name.split("_")[0],
-    }));
+      const newFiles = files.map((file) => ({
+        file,
+        id: crypto.randomUUID(),
+        company: file.name.split("_")[0],
+      }));
 
-    setUploadedFiles((prev) => {
-      const updatedFiles = [...prev, ...newFiles];
-      toast.success(t("upload.filesUploaded", { count: files.length }));
-      return updatedFiles;
-    });
-  }, [t]);
+      setUploadedFiles((prev) => {
+        const updatedFiles = [...prev, ...newFiles];
+        toast.success(t("upload.filesUploaded", { count: files.length }));
+        return updatedFiles;
+      });
+    },
+    [t],
+  );
 
   const handleUrlSubmit = useCallback(async () => {
     // Split the input by newlines and filter out empty lines
@@ -199,7 +211,9 @@ export function UploadTab() {
     const { valid: urls, invalid: invalidUrls } = validateUrls(urlLines);
 
     if (invalidUrls.length > 0) {
-      toast.warning(t("upload.invalidUrlsSkipped", { count: invalidUrls.length }));
+      toast.warning(
+        t("upload.invalidUrlsSkipped", { count: invalidUrls.length }),
+      );
     }
 
     if (urls.length === 0) {
@@ -248,17 +262,29 @@ export function UploadTab() {
       });
       console.log("Jobs created successfully:", result);
 
-      const envelope = !Array.isArray(result) && result && typeof result === "object" ? result : null;
-      const cached = envelope && Array.isArray(envelope.cached) ? envelope.cached : undefined;
+      const envelope =
+        !Array.isArray(result) && result && typeof result === "object"
+          ? result
+          : null;
+      const cached =
+        envelope && Array.isArray(envelope.cached)
+          ? envelope.cached
+          : undefined;
       const cacheErrors =
-        envelope && Array.isArray(envelope.errors) ? envelope.errors : undefined;
+        envelope && Array.isArray(envelope.errors)
+          ? envelope.errors
+          : undefined;
       const failedUrls = new Set(
-        (cacheErrors ?? []).map((e) => (e && typeof e.url === "string" ? e.url : "")).filter(Boolean),
+        (cacheErrors ?? [])
+          .map((e) => (e && typeof e.url === "string" ? e.url : ""))
+          .filter(Boolean),
       );
       const succeededUrls = urls.filter((u) => !failedUrls.has(u));
 
       if (Array.isArray(cached) && cached.length > 0) {
-        const reused = cached.filter((c) => (c as { reusedExisting?: boolean })?.reusedExisting).length;
+        const reused = cached.filter(
+          (c) => (c as { reusedExisting?: boolean })?.reusedExisting,
+        ).length;
         toast.info(
           t("upload.pdfCachedSummary", { total: cached.length, reused }),
         );
@@ -297,7 +323,8 @@ export function UploadTab() {
         toast.error(t("upload.fileTooLarge"));
         return;
       }
-      const errorMessage = error instanceof Error ? error.message : t("upload.unknownError");
+      const errorMessage =
+        error instanceof Error ? error.message : t("upload.unknownError");
       toast.error(t("upload.couldNotAddJobs", { message: errorMessage }));
     }
   }, [
@@ -314,11 +341,14 @@ export function UploadTab() {
     refetchBatches,
   ]);
 
-  const handleWorkerToggle = useCallback((workerId: RunOnlyWorkerId, checked: boolean) => {
-    setSelectedWorkers((prev) =>
-      checked ? [...prev, workerId] : prev.filter((id) => id !== workerId),
-    );
-  }, []);
+  const handleWorkerToggle = useCallback(
+    (workerId: RunOnlyWorkerId, checked: boolean) => {
+      setSelectedWorkers((prev) =>
+        checked ? [...prev, workerId] : prev.filter((id) => id !== workerId),
+      );
+    },
+    [],
+  );
 
   if (authLoading || !isAuthenticated) {
     return (
@@ -347,7 +377,7 @@ export function UploadTab() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="url" >
+        <TabsContent value="url">
           <UploadRunOptions
             batch={{
               existingBatches,

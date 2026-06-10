@@ -2,7 +2,11 @@ import { useI18n } from "@/contexts/I18nContext";
 import type { GarboCompanyDetail } from "../../lib/types";
 import { displayText } from "../../lib/company-edit-utils";
 
-export function GoalsInitiativesTab({ company }: { company: GarboCompanyDetail }) {
+export function GoalsInitiativesTab({
+  company,
+}: {
+  company: GarboCompanyDetail;
+}) {
   const { t } = useI18n();
   const dash = t("common.placeholderDash");
 
@@ -42,4 +46,3 @@ export function GoalsInitiativesTab({ company }: { company: GarboCompanyDetail }
     </div>
   );
 }
-

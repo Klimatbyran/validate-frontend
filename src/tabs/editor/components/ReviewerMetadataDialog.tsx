@@ -4,7 +4,10 @@ import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import { cn } from "@/lib/utils";
 import { inputClassName } from "../lib/company-edit-utils";
-import { editorPrimaryActionButtonClass, editorSecondaryActionButtonClass } from "../lib/editor-button-classes";
+import {
+  editorPrimaryActionButtonClass,
+  editorSecondaryActionButtonClass,
+} from "../lib/editor-button-classes";
 
 export function ReviewerMetadataDialog({
   open,
@@ -25,14 +28,18 @@ export function ReviewerMetadataDialog({
   saving?: boolean;
   initialComment?: string;
   initialSource?: string;
-  onConfirm: (meta: { comment: string; source: string }) => void | Promise<void>;
+  onConfirm: (meta: {
+    comment: string;
+    source: string;
+  }) => void | Promise<void>;
 }) {
   const { t } = useI18n();
   const [comment, setComment] = useState(initialComment);
   const [source, setSource] = useState(initialSource);
 
   const resolvedTitle = title ?? t("editor.reviewerDialog.title");
-  const resolvedDescription = description ?? t("editor.reviewerDialog.description");
+  const resolvedDescription =
+    description ?? t("editor.reviewerDialog.description");
   const resolvedConfirm = confirmLabel ?? t("editor.fieldEdit.save");
 
   useEffect(() => {
@@ -64,7 +71,9 @@ export function ReviewerMetadataDialog({
             type="button"
             variant="primary"
             size="sm"
-            onClick={() => onConfirm({ comment: comment.trim(), source: source.trim() })}
+            onClick={() =>
+              onConfirm({ comment: comment.trim(), source: source.trim() })
+            }
             disabled={!!saving}
             className={editorPrimaryActionButtonClass}
           >
@@ -74,39 +83,42 @@ export function ReviewerMetadataDialog({
       }
     >
       <div className="grid gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-01 mb-1">
-              {t("editor.reviewerDialog.comment")}{" "}
-              <span className="text-sm font-normal text-gray-02">
-                {t("editor.reviewerDialog.optional")}
-              </span>
-            </label>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className={cn(
-                inputClassName,
-                "bg-gray-04 min-h-[90px] resize-y !placeholder:text-gray-02"
-              )}
-              rows={3}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-01 mb-1">
-              {t("editor.reviewerDialog.source")}{" "}
-              <span className="text-sm font-normal text-gray-02">
-                {t("editor.reviewerDialog.optional")}
-              </span>
-            </label>
-            <input
-              type="text"
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-              className={cn(inputClassName, "bg-gray-04 !placeholder:text-gray-02")}
-              placeholder={t("editor.reviewerDialog.sourcePlaceholder")}
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-01 mb-1">
+            {t("editor.reviewerDialog.comment")}{" "}
+            <span className="text-sm font-normal text-gray-02">
+              {t("editor.reviewerDialog.optional")}
+            </span>
+          </label>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            className={cn(
+              inputClassName,
+              "bg-gray-04 min-h-[90px] resize-y !placeholder:text-gray-02",
+            )}
+            rows={3}
+          />
         </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-01 mb-1">
+            {t("editor.reviewerDialog.source")}{" "}
+            <span className="text-sm font-normal text-gray-02">
+              {t("editor.reviewerDialog.optional")}
+            </span>
+          </label>
+          <input
+            type="text"
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+            className={cn(
+              inputClassName,
+              "bg-gray-04 !placeholder:text-gray-02",
+            )}
+            placeholder={t("editor.reviewerDialog.sourcePlaceholder")}
+          />
+        </div>
+      </div>
     </Modal>
   );
 }

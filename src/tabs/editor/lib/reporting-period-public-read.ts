@@ -27,9 +27,7 @@ function publicationTime(period: PeriodForPublicPick): number {
 
 function companyReportIdForPick(period: PeriodForPublicPick): string {
   return (
-    period.companyReport?.id?.trim() ||
-    period.companyReportId?.trim() ||
-    ""
+    period.companyReport?.id?.trim() || period.companyReportId?.trim() || ""
   );
 }
 

@@ -32,7 +32,7 @@ export function useReviewerMetadataSave({
       onSaved?.();
       setDialogOpen(false);
     },
-    [onSave, onSaved]
+    [onSave, onSaved],
   );
 
   return {
@@ -47,4 +47,3 @@ export function useReviewerMetadataSave({
     confirmSave,
   };
 }
-

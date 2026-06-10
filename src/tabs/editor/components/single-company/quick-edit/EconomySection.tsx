@@ -3,7 +3,10 @@ import { useMemo } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { inputClassName } from "../../../lib/company-edit-utils";
-import type { GarboFieldMetadata, GarboReportingPeriodSummary } from "../../../lib/types";
+import type {
+  GarboFieldMetadata,
+  GarboReportingPeriodSummary,
+} from "../../../lib/types";
 import type { ReportingPeriodQuickEditEdited } from "../../../lib/reporting-period-quick-edit";
 import { MetadataVerifyUndoActions } from "../../MetadataVerifyUndoActions";
 import { QuickEditSectionTitle } from "./QuickEditSectionTitle";
@@ -21,7 +24,7 @@ export function EconomySection({
   setNullableEdit: (
     key: keyof ReportingPeriodQuickEditEdited,
     value: string,
-    hadOriginalValue: boolean
+    hadOriginalValue: boolean,
   ) => void;
 }) {
   const { t } = useI18n();
@@ -29,32 +32,50 @@ export function EconomySection({
 
   const originalTurnover = period.economy?.turnover?.value ?? null;
   const originalTurnoverCurrency = period.economy?.turnover?.currency ?? "SEK";
-  const originalTurnoverVerified = !!period.economy?.turnover?.metadata?.verifiedBy;
+  const originalTurnoverVerified =
+    !!period.economy?.turnover?.metadata?.verifiedBy;
   const originalEmployees = period.economy?.employees?.value ?? null;
   const originalEmployeesUnit = period.economy?.employees?.unit ?? "FTE";
-  const originalEmployeesVerified = !!period.economy?.employees?.metadata?.verifiedBy;
+  const originalEmployeesVerified =
+    !!period.economy?.employees?.metadata?.verifiedBy;
 
-  const turnoverValue = edited.turnoverValue ?? (originalTurnover != null ? String(originalTurnover) : "");
+  const turnoverValue =
+    edited.turnoverValue ??
+    (originalTurnover != null ? String(originalTurnover) : "");
   const turnoverCurrency =
-    edited.turnoverCurrency ?? (originalTurnoverCurrency != null ? String(originalTurnoverCurrency) : "SEK");
+    edited.turnoverCurrency ??
+    (originalTurnoverCurrency != null
+      ? String(originalTurnoverCurrency)
+      : "SEK");
   const turnoverVerified = edited.turnoverVerified ?? originalTurnoverVerified;
 
-  const employeesValue = edited.employeesValue ?? (originalEmployees != null ? String(originalEmployees) : "");
-  const employeesUnit = edited.employeesUnit ?? (originalEmployeesUnit != null ? String(originalEmployeesUnit) : "FTE");
-  const employeesVerified = edited.employeesVerified ?? originalEmployeesVerified;
+  const employeesValue =
+    edited.employeesValue ??
+    (originalEmployees != null ? String(originalEmployees) : "");
+  const employeesUnit =
+    edited.employeesUnit ??
+    (originalEmployeesUnit != null ? String(originalEmployeesUnit) : "FTE");
+  const employeesVerified =
+    edited.employeesVerified ?? originalEmployeesVerified;
 
   return (
     <div>
-      <QuickEditSectionTitle>{t("editor.reportingPeriodQuickEdit.economySection")}</QuickEditSectionTitle>
+      <QuickEditSectionTitle>
+        {t("editor.reportingPeriodQuickEdit.economySection")}
+      </QuickEditSectionTitle>
       <div className="space-y-4">
         <QuickEditNumberRow
           label={t("editor.periodEditor.turnover")}
           value={turnoverValue}
-          onChange={(next) => setNullableEdit("turnoverValue", next, originalTurnover != null)}
+          onChange={(next) =>
+            setNullableEdit("turnoverValue", next, originalTurnover != null)
+          }
           dirty={edited.turnoverValue != null}
           inputClassName={inputClassName}
           fieldLabel={t("editor.periodEditor.turnover")}
-          metadata={period.economy?.turnover?.metadata as GarboFieldMetadata | null}
+          metadata={
+            period.economy?.turnover?.metadata as GarboFieldMetadata | null
+          }
           onReset={() =>
             setEdited((p) => {
               const n = { ...p };
@@ -95,13 +116,21 @@ export function EconomySection({
 
         <div>
           <div className="mb-1">
-            <label className="text-sm font-medium text-gray-01">{t("editor.periodEditor.employees")}</label>
+            <label className="text-sm font-medium text-gray-01">
+              {t("editor.periodEditor.employees")}
+            </label>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <input
               type="number"
               value={employeesValue}
-              onChange={(e) => setNullableEdit("employeesValue", e.target.value, originalEmployees != null)}
+              onChange={(e) =>
+                setNullableEdit(
+                  "employeesValue",
+                  e.target.value,
+                  originalEmployees != null,
+                )
+              }
               className={
                 inputClassName +
                 " bg-gray-04 w-44 max-w-none " +
@@ -116,7 +145,8 @@ export function EconomySection({
               placeholder={t("editor.periodEditor.employeesUnitPlaceholder")}
               usePortal={false}
               triggerClassName={
-                "w-28 justify-between " + (edited.employeesUnit != null ? "border-orange-03" : "")
+                "w-28 justify-between " +
+                (edited.employeesUnit != null ? "border-orange-03" : "")
               }
               panelMinWidth={180}
               getOptionLabel={(v) => {
@@ -128,7 +158,9 @@ export function EconomySection({
             />
             <MetadataVerifyUndoActions
               fieldLabel={t("editor.periodEditor.employees")}
-              metadata={period.economy?.employees?.metadata as GarboFieldMetadata | null}
+              metadata={
+                period.economy?.employees?.metadata as GarboFieldMetadata | null
+              }
               verified={employeesVerified}
               onToggleVerified={() =>
                 setEdited((p) => ({
@@ -147,8 +179,12 @@ export function EconomySection({
                   return n;
                 })
               }
-              undoTitle={t("editor.reportingPeriodQuickEdit.resetEmployeesTitle")}
-              undoAriaLabel={t("editor.reportingPeriodQuickEdit.resetEmployeesTitle")}
+              undoTitle={t(
+                "editor.reportingPeriodQuickEdit.resetEmployeesTitle",
+              )}
+              undoAriaLabel={t(
+                "editor.reportingPeriodQuickEdit.resetEmployeesTitle",
+              )}
               variant="md"
             />
           </div>
@@ -157,4 +193,3 @@ export function EconomySection({
     </div>
   );
 }
-

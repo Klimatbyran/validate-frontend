@@ -164,40 +164,40 @@ export function JobDetailsDialog({
 
     return (
       <Modal open={isOpen} onOpenChange={onOpenChange} size="2xl" scrollable>
-          <div className="space-y-6 py-4">
-            <div className="text-center space-y-3">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-03/30">
-                <HelpCircle className="w-6 h-6 text-gray-02" />
-              </div>
-              <h2 className="text-lg font-semibold text-gray-01">
-                {displayName}
-              </h2>
-              <p className="text-sm text-gray-02">
-                {t("jobstatus.jobdetails.jobNotRunYet")}
-              </p>
+        <div className="space-y-6 py-4">
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-03/30">
+              <HelpCircle className="w-6 h-6 text-gray-02" />
             </div>
-
-            {!extractEmissionsJob && (
-              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-sm text-orange-300">
-                {t("jobstatus.jobdetails.noExtractEmissionsParent")}
-              </div>
-            )}
-
-            <div className="flex justify-center pt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRunAndSave}
-                disabled={!extractEmissionsJob}
-                className="text-green-03 hover:bg-green-03/10"
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                {t("jobstatus.jobdetails.runAndSaveButton", {
-                  name: displayName,
-                })}
-              </Button>
-            </div>
+            <h2 className="text-lg font-semibold text-gray-01">
+              {displayName}
+            </h2>
+            <p className="text-sm text-gray-02">
+              {t("jobstatus.jobdetails.jobNotRunYet")}
+            </p>
           </div>
+
+          {!extractEmissionsJob && (
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-sm text-orange-300">
+              {t("jobstatus.jobdetails.noExtractEmissionsParent")}
+            </div>
+          )}
+
+          <div className="flex justify-center pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRunAndSave}
+              disabled={!extractEmissionsJob}
+              className="text-green-03 hover:bg-green-03/10"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              {t("jobstatus.jobdetails.runAndSaveButton", {
+                name: displayName,
+              })}
+            </Button>
+          </div>
+        </div>
       </Modal>
     );
   }
@@ -334,7 +334,13 @@ export function JobDetailsDialog({
   );
 
   return (
-    <Modal open={isOpen} onOpenChange={onOpenChange} size="6xl" scrollable footer={footer}>
+    <Modal
+      open={isOpen}
+      onOpenChange={onOpenChange}
+      size="6xl"
+      scrollable
+      footer={footer}
+    >
       <JobDialogHeader job={job} />
 
       <JobRedisRetentionHint job={effectiveJob ?? job} />

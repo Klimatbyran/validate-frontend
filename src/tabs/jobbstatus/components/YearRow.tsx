@@ -6,9 +6,7 @@
 import { useMemo } from "react";
 import { Calendar, ChevronsDown, ChevronsUp } from "lucide-react";
 import { Button } from "@/ui/button";
-import {
-  getAllPipelineSteps,
-} from "@/lib/workflow-config";
+import { getAllPipelineSteps } from "@/lib/workflow-config";
 import {
   calculatePipelineStepStatus,
   calculateStepJobStats,
@@ -25,7 +23,7 @@ interface YearRowProps {
   onFieldClick: (
     field: string,
     runData?: SwimlaneYearData,
-    options?: { isRerun?: boolean }
+    options?: { isRerun?: boolean },
   ) => void;
   allRuns?: SwimlaneYearData[];
   isExpanded?: boolean;

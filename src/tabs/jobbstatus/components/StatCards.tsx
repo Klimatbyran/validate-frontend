@@ -37,14 +37,14 @@ export function StatCard({
     <div className={`bg-gray-03/50 rounded-lg p-4 ${className}`}>
       <div
         className={`${sizeClasses[size]} font-bold ${getStatCardValueColor(
-          color
+          color,
         )}`}
       >
         {value}
       </div>
       <div
         className={`text-xs ${getStatCardLabelColor(
-          color
+          color,
         )} mt-1 flex items-center gap-1`}
       >
         {icon}

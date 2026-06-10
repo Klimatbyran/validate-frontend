@@ -148,7 +148,7 @@ export function getWorkflowStages(): WorkflowStage[] {
  * Get pipeline step for a given queue ID
  */
 export function getPipelineStepForQueue(
-  queueId: string
+  queueId: string,
 ): PipelineStep | undefined {
   return PIPELINE_STEPS.find((step) => step.stageIds.includes(queueId));
 }

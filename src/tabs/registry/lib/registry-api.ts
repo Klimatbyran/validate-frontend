@@ -97,18 +97,13 @@ type PdfCacheResult = {
   sha256: string;
 };
 
-async function cachePdfToS3(
-  sourceUrl: string,
-): Promise<PdfCacheResult | null> {
+async function cachePdfToS3(sourceUrl: string): Promise<PdfCacheResult | null> {
   try {
-    const response = await authenticatedFetch(
-      getPipelineUrl("cache-pdf"),
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: sourceUrl }),
-      },
-    );
+    const response = await authenticatedFetch(getPipelineUrl("cache-pdf"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: sourceUrl }),
+    });
     if (!response.ok) return null;
     return (await response.json()) as PdfCacheResult;
   } catch {

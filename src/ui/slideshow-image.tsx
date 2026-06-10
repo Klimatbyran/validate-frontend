@@ -1,5 +1,5 @@
-import React from 'react';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import React from "react";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 interface SlideshowImageProps {
   src: string;
@@ -12,7 +12,7 @@ export const SlideshowImage: React.FC<SlideshowImageProps> = ({
   src,
   alt,
   fullscreenMode = false,
-  onError
+  onError,
 }) => {
   const imageClasses = fullscreenMode
     ? "w-auto h-auto max-w-[95vw] max-h-[90vh] cursor-grab block"
@@ -41,18 +41,18 @@ export const SlideshowImage: React.FC<SlideshowImageProps> = ({
         >
           <TransformComponent
             wrapperStyle={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
             contentStyle={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <img

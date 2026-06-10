@@ -41,7 +41,10 @@ export function SingleCompanyOverviewFilters({ list, afterSlot }: Props) {
             {t("editor.companies.tag")}
           </label>
           <MultiSelectDropdown
-            options={[NO_TAGS_FILTER_OPTION, ...list.tagOptions.map((o) => o.slug)]}
+            options={[
+              NO_TAGS_FILTER_OPTION,
+              ...list.tagOptions.map((o) => o.slug),
+            ]}
             selectedIds={list.filterTags}
             onChange={list.setFilterTags}
             triggerLabel={t("editor.companies.tags")}
@@ -122,9 +125,13 @@ export function SingleCompanyOverviewFilters({ list, afterSlot }: Props) {
             placeholder={t("editor.singleCompanyView.filterUnverifiedNoFilter")}
             getOptionLabel={(v) => {
               if (v === "emissions")
-                return t("editor.singleCompanyView.filterUnverifiedEmissionsOnly");
+                return t(
+                  "editor.singleCompanyView.filterUnverifiedEmissionsOnly",
+                );
               if (v === "all")
-                return t("editor.singleCompanyView.filterUnverifiedEmissionsAndEconomy");
+                return t(
+                  "editor.singleCompanyView.filterUnverifiedEmissionsAndEconomy",
+                );
               return t("editor.singleCompanyView.filterUnverifiedNoFilter");
             }}
             triggerClassName="min-w-[180px] !h-8 !text-xs px-3"

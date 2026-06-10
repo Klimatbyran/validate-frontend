@@ -27,15 +27,15 @@ function periodWithScope1(
 
 describe("isProdReportingPeriodFullyVerified", () => {
   it("returns true when non-null values are verified and nulls are ignored", () => {
-    expect(isProdReportingPeriodFullyVerified(periodWithScope1(100, true))).toBe(
-      true,
-    );
+    expect(
+      isProdReportingPeriodFullyVerified(periodWithScope1(100, true)),
+    ).toBe(true);
   });
 
   it("returns false when a non-null value is not verified", () => {
-    expect(isProdReportingPeriodFullyVerified(periodWithScope1(100, false))).toBe(
-      false,
-    );
+    expect(
+      isProdReportingPeriodFullyVerified(periodWithScope1(100, false)),
+    ).toBe(false);
   });
 
   it("returns false when emissions are missing", () => {

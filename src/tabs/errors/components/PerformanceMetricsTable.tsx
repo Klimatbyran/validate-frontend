@@ -1,6 +1,6 @@
-import { cn } from '@/lib/utils';
-import { useI18n } from '@/contexts/I18nContext';
-import type { PerformanceMetricRow } from '../lib';
+import { cn } from "@/lib/utils";
+import { useI18n } from "@/contexts/I18nContext";
+import type { PerformanceMetricRow } from "../lib";
 
 export type { PerformanceMetricRow };
 
@@ -25,7 +25,9 @@ export function PerformanceMetricsTable({
   return (
     <div className="pt-4 border-t border-gray-03/50">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-01">{t("errors.performanceMetrics")}</h3>
+        <h3 className="text-sm font-semibold text-gray-01">
+          {t("errors.performanceMetrics")}
+        </h3>
         <span className="text-xs text-gray-02">
           {t("errors.companiesInBothWithData", { totalCompanies, withAnyData })}
         </span>
@@ -45,16 +47,24 @@ export function PerformanceMetricsTable({
               <tr
                 key={m.labelKey}
                 className={cn(
-                  'border-t border-gray-03/30',
-                  m.rate >= 85 ? 'bg-green-500/20' : m.rate >= 70 ? 'bg-yellow-500/20' : 'bg-red-500/20'
+                  "border-t border-gray-03/30",
+                  m.rate >= 85
+                    ? "bg-green-500/20"
+                    : m.rate >= 70
+                      ? "bg-yellow-500/20"
+                      : "bg-red-500/20",
                 )}
               >
                 <td className="pr-4 py-2 font-medium">{t(m.labelKey)}</td>
                 <td className="px-4 py-2 text-right font-mono">
                   {m.success}/{m.total}
                 </td>
-                <td className="px-4 py-2 text-right font-mono font-semibold">{m.rate.toFixed(1)}%</td>
-                <td className="pl-4 py-2 text-gray-02 text-xs">{t(m.excludesKey)}</td>
+                <td className="px-4 py-2 text-right font-mono font-semibold">
+                  {m.rate.toFixed(1)}%
+                </td>
+                <td className="pl-4 py-2 text-gray-02 text-xs">
+                  {t(m.excludesKey)}
+                </td>
               </tr>
             ))}
           </tbody>

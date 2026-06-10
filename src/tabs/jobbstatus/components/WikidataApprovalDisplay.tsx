@@ -81,7 +81,9 @@ export function WikidataApprovalDisplay({
         {isApproved ? (
           <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-green-03/20 border border-green-03">
             <Check className="w-4 h-4 text-green-03" />
-            <span className="text-sm font-medium text-green-03">{t("wikidata.approved")}</span>
+            <span className="text-sm font-medium text-green-03">
+              {t("wikidata.approved")}
+            </span>
           </div>
         ) : (
           <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-orange-03/20 border border-orange-03">
@@ -102,7 +104,9 @@ export function WikidataApprovalDisplay({
 
       {/* Wikidata Information */}
       <div className="bg-gray-03/20 rounded-lg p-4 space-y-3">
-        <h4 className="text-base font-medium text-gray-01">{t("wikidata.wikidataInfo")}</h4>
+        <h4 className="text-base font-medium text-gray-01">
+          {t("wikidata.wikidataInfo")}
+        </h4>
 
         <div className="space-y-2">
           <div>
@@ -111,12 +115,7 @@ export function WikidataApprovalDisplay({
               <code className="text-sm font-mono text-gray-01 bg-gray-04 px-2 py-1 rounded">
                 {data.wikidata.node}
               </code>
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="h-7 px-2"
-              >
+              <Button variant="ghost" size="sm" asChild className="h-7 px-2">
                 <a
                   href={data.wikidata.url}
                   target="_blank"
@@ -130,13 +129,17 @@ export function WikidataApprovalDisplay({
           </div>
 
           <div>
-            <div className="text-xs text-gray-02 mb-1">{t("wikidata.name")}</div>
+            <div className="text-xs text-gray-02 mb-1">
+              {t("wikidata.name")}
+            </div>
             <div className="text-sm text-gray-01">{data.wikidata.label}</div>
           </div>
 
           {data.wikidata.description && (
             <div>
-              <div className="text-xs text-gray-02 mb-1">{t("wikidata.description")}</div>
+              <div className="text-xs text-gray-02 mb-1">
+                {t("wikidata.description")}
+              </div>
               <div className="text-sm text-gray-01">
                 {data.wikidata.description}
               </div>
@@ -192,7 +195,7 @@ export function WikidataApprovalDisplay({
                     "focus:outline-none focus:ring-2 focus:ring-blue-03 focus:border-transparent",
                     overrideError
                       ? "border-pink-03 focus:ring-pink-03"
-                      : "border-gray-03"
+                      : "border-gray-03",
                   )}
                 />
                 <Button
@@ -220,10 +223,13 @@ export function WikidataApprovalDisplay({
       {/* Metadata */}
       {data.metadata && (
         <div className="bg-gray-03/20 rounded-lg p-3 space-y-2">
-          <div className="text-xs font-medium text-gray-02">{t("wikidata.metadata")}</div>
+          <div className="text-xs font-medium text-gray-02">
+            {t("wikidata.metadata")}
+          </div>
           {data.metadata.source && (
             <div className="text-xs text-gray-01">
-              <span className="text-gray-02">{t("wikidata.source")}:</span> {data.metadata.source}
+              <span className="text-gray-02">{t("wikidata.source")}:</span>{" "}
+              {data.metadata.source}
             </div>
           )}
           {data.metadata.comment && (
@@ -237,4 +243,3 @@ export function WikidataApprovalDisplay({
     </div>
   );
 }
-

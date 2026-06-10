@@ -36,9 +36,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t("auth.loginRequired")}</DialogTitle>
-            <DialogDescription>
-              {t("auth.loginRequiredApp")}
-            </DialogDescription>
+            <DialogDescription>{t("auth.loginRequiredApp")}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 pt-4">
             <Button onClick={login} className="w-full">

@@ -22,7 +22,13 @@ export type GicsTreeOption = {
 
 type Row =
   | { kind: "heading"; key: string; depth: number; label: string }
-  | { kind: "option"; key: string; depth: number; value: string; label: string };
+  | {
+      kind: "option";
+      key: string;
+      depth: number;
+      value: string;
+      label: string;
+    };
 
 function optionLabel(opt: GicsTreeOption): string {
   return opt.label ?? opt.subIndustryName ?? opt.code;
@@ -61,7 +67,12 @@ function buildRows(options: GicsTreeOption[], query: string): Row[] {
   const rows: Row[] = [];
   const sectors = Array.from(bySector.keys()).sort(sortText);
   for (const sector of sectors) {
-    rows.push({ kind: "heading", key: `sector:${sector}`, depth: 0, label: sector });
+    rows.push({
+      kind: "heading",
+      key: `sector:${sector}`,
+      depth: 0,
+      label: sector,
+    });
 
     const sectorOpts = bySector.get(sector) ?? [];
     const byGroup = new Map<string, GicsTreeOption[]>();
@@ -74,7 +85,12 @@ function buildRows(options: GicsTreeOption[], query: string): Row[] {
 
     const groups = Array.from(byGroup.keys()).sort(sortText);
     for (const group of groups) {
-      rows.push({ kind: "heading", key: `group:${sector}:${group}`, depth: 1, label: group });
+      rows.push({
+        kind: "heading",
+        key: `group:${sector}:${group}`,
+        depth: 1,
+        label: group,
+      });
 
       const groupOpts = byGroup.get(group) ?? [];
       const byIndustry = new Map<string, GicsTreeOption[]>();
@@ -171,9 +187,13 @@ export function GicsTreeSelect({
       if (!wrapperRef.current?.contains(document.activeElement)) return;
       const panel = panelRef.current;
       const buttons = panel
-        ? Array.from(panel.querySelectorAll<HTMLButtonElement>('button[role="option"]'))
+        ? Array.from(
+            panel.querySelectorAll<HTMLButtonElement>('button[role="option"]'),
+          )
         : [];
-      const currentIndex = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      const currentIndex = buttons.indexOf(
+        document.activeElement as HTMLButtonElement,
+      );
 
       if (e.key === "Escape") {
         e.preventDefault();
@@ -182,7 +202,8 @@ export function GicsTreeSelect({
       }
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        const next = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, buttons.length - 1);
+        const next =
+          currentIndex < 0 ? 0 : Math.min(currentIndex + 1, buttons.length - 1);
         buttons[next]?.focus();
         return;
       }
@@ -214,10 +235,16 @@ export function GicsTreeSelect({
 
       const desiredMax = panelMaxHeight;
       // Flip above if below space is tight and above is better.
-      const placeAbove = availableBelow < 200 && availableAbove > availableBelow;
-      const maxHeight = Math.max(160, Math.min(desiredMax, placeAbove ? availableAbove : availableBelow));
+      const placeAbove =
+        availableBelow < 200 && availableAbove > availableBelow;
+      const maxHeight = Math.max(
+        160,
+        Math.min(desiredMax, placeAbove ? availableAbove : availableBelow),
+      );
 
-      const top = placeAbove ? rect.top - offset - maxHeight : rect.bottom + offset;
+      const top = placeAbove
+        ? rect.top - offset - maxHeight
+        : rect.bottom + offset;
       setPanelPosition({ top, left: rect.left, width: rect.width, maxHeight });
     };
     updatePosition();
@@ -231,11 +258,16 @@ export function GicsTreeSelect({
 
   const selected = useMemo(
     () => options.find((o) => o.code === value) ?? null,
-    [options, value]
+    [options, value],
   );
-  const triggerDisplay = selected ? `${optionLabel(selected)} (${selected.code})` : placeholder;
+  const triggerDisplay = selected
+    ? `${optionLabel(selected)} (${selected.code})`
+    : placeholder;
 
-  const rows = useMemo(() => (loading ? [] : buildRows(options, query)), [loading, options, query]);
+  const rows = useMemo(
+    () => (loading ? [] : buildRows(options, query)),
+    [loading, options, query],
+  );
   const hasAnyOptions = options.length > 0;
   const hasAnyRows = rows.some((r) => r.kind === "option");
 
@@ -256,7 +288,7 @@ export function GicsTreeSelect({
         ref={triggerRef}
         className={cn(
           "!w-auto !min-w-0 h-9 px-4 text-sm rounded-md border border-gray-03 bg-gray-05 text-gray-01 hover:bg-gray-03/40 flex items-center gap-2",
-          triggerClassName
+          triggerClassName,
         )}
         aria-expanded={open}
         aria-haspopup="listbox"
@@ -340,11 +372,15 @@ export function GicsTreeSelect({
                       <span
                         className={cn(
                           "flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center",
-                          isSelected ? "border-blue-03 bg-blue-03" : "border-gray-03"
+                          isSelected
+                            ? "border-blue-03 bg-blue-03"
+                            : "border-gray-03",
                         )}
                         aria-hidden
                       >
-                        {isSelected ? <Check className="w-3.5 h-3.5 text-white" /> : null}
+                        {isSelected ? (
+                          <Check className="w-3.5 h-3.5 text-white" />
+                        ) : null}
                       </span>
                       <span className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap">
                         {row.label}
@@ -354,10 +390,9 @@ export function GicsTreeSelect({
                 })
               )}
             </div>,
-            document.body
+            document.body,
           )
         : null}
     </div>
   );
 }
-

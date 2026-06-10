@@ -56,8 +56,7 @@ export function groupPeriodsByReportShell(
 
     groups.push({
       shellKey,
-      companyReportId:
-        shellKey === UNLINKED_REPORT_SHELL_KEY ? "" : shellKey,
+      companyReportId: shellKey === UNLINKED_REPORT_SHELL_KEY ? "" : shellKey,
       reportYear,
       periods: shellPeriods,
     });

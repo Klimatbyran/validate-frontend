@@ -1,8 +1,4 @@
-import {
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/ui/dialog";
+import { DialogHeader, DialogTitle, DialogDescription } from "@/ui/dialog";
 import { QueueJob } from "@/lib/types";
 import { getWikidataInfo } from "@/lib/utils";
 import { useI18n } from "@/contexts/I18nContext";
@@ -22,7 +18,8 @@ export function JobDialogHeader({ job }: JobDialogHeaderProps) {
           </DialogTitle>
           {getWikidataInfo(job)?.node && (
             <div className="text-sm text-gray-02 mb-2">
-              {t("jobstatus.jobdetails.wikidataIdLabel")}: {getWikidataInfo(job)?.node}
+              {t("jobstatus.jobdetails.wikidataIdLabel")}:{" "}
+              {getWikidataInfo(job)?.node}
             </div>
           )}
           {job.data.description && (

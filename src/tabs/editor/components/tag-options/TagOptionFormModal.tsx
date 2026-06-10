@@ -70,10 +70,13 @@ export function TagOptionFormModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {editing ? t("editor.tagOptions.editTitle") : t("editor.tagOptions.addTitle")}
+            {editing
+              ? t("editor.tagOptions.editTitle")
+              : t("editor.tagOptions.addTitle")}
           </DialogTitle>
           <DialogDescription>
-            {t("editor.tagOptions.dialogDescription")} {t("editor.tagOptions.slugFormatHint")}
+            {t("editor.tagOptions.dialogDescription")}{" "}
+            {t("editor.tagOptions.slugFormatHint")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -120,8 +123,12 @@ export function TagOptionFormModal({
               {t("auth.back")}
             </Button>
             <Button type="submit" variant="primary" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {editing ? t("editor.tagOptions.save") : t("editor.tagOptions.create")}
+              {isSubmitting && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
+              {editing
+                ? t("editor.tagOptions.save")
+                : t("editor.tagOptions.create")}
             </Button>
           </DialogFooter>
         </form>
