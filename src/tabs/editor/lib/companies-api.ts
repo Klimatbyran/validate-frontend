@@ -9,6 +9,7 @@ import {
   type GarboCompanyListItem,
   type GarboCompanyDetail,
   type GarboMetadata,
+  type ReportingPeriodWritePayload,
 } from "./types";
 import { parseGarboCompanyDetail } from "./companies-schemas";
 import { apiUrl } from "./api-utils";
@@ -277,15 +278,7 @@ export async function updateCompany(
 export async function updateReportingPeriods(
   companyId: string,
   body: {
-    reportingPeriods: Array<{
-      startDate: string;
-      endDate: string;
-      reportURL?: string | null;
-      reportS3Url?: string | null;
-      reportSha256?: string | null;
-      emissions?: Record<string, unknown>;
-      economy?: Record<string, unknown>;
-    }>;
+    reportingPeriods: ReportingPeriodWritePayload[];
     metadata?: GarboMetadata;
     replaceAllEmissions?: boolean;
   },

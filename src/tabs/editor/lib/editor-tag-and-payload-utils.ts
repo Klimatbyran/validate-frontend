@@ -1,13 +1,11 @@
-import type { EditState, TagOption } from "./types";
-import { NO_TAGS_FILTER_OPTION } from "./types";
+import {
+  NO_TAGS_FILTER_OPTION,
+  type EditState,
+  type ReportingPeriodWritePayload,
+  type TagOption,
+} from "./types";
 
-export type ReportingPeriodUpdatePayload = {
-  startDate: string;
-  endDate: string;
-  reportURL?: string;
-  emissions?: Record<string, unknown>;
-  economy?: Record<string, unknown>;
-};
+export type ReportingPeriodUpdatePayload = ReportingPeriodWritePayload;
 
 export function parseTagSlugs(value: string): string[] {
   return value
@@ -74,6 +72,10 @@ export function buildReportingPeriodUpdatePayload(
     startDate: editState.startDate,
     endDate: editState.endDate,
   };
+
+  if (editState.companyReportId) {
+    payload.companyReportId = editState.companyReportId;
+  }
 
   if (editState.field === "reportURL") {
     payload.reportURL = value || undefined;

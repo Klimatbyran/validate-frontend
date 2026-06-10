@@ -9,6 +9,7 @@ import type {
   GarboCompanyDetail,
   GarboFieldMetadata,
   GarboReportingPeriodSummary,
+  ReportingPeriodWritePayload,
 } from "../../lib/types";
 import { updateReportingPeriods } from "../../lib/companies-api";
 import {
@@ -234,11 +235,7 @@ export function EmissionsDataTab({
         if (!rpEdits) return null;
         return buildEmissionsPeriodPatch(rp, rpEdits);
       })
-      .filter(Boolean) as Array<{
-      startDate: string;
-      endDate: string;
-      emissions?: Record<string, unknown>;
-    }>;
+      .filter(Boolean) as ReportingPeriodWritePayload[];
 
     if (!payloadPeriods.length) {
       toast.message(t("editor.periodEditor.nothingToSave"));

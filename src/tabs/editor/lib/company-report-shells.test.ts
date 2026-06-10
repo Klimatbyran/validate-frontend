@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  attachCompanyReportIdToPeriodPatch,
   getPeriodShellKey,
   groupPeriodsByReportShell,
+  resolveCompanyReportId,
   UNLINKED_REPORT_SHELL_KEY,
 } from "./company-report-shells";
 import type { GarboReportingPeriodSummary } from "./types";
@@ -24,6 +26,49 @@ describe("getPeriodShellKey", () => {
     };
 
     expect(getPeriodShellKey(period)).toBe(UNLINKED_REPORT_SHELL_KEY);
+  });
+});
+
+describe("resolveCompanyReportId", () => {
+  it("prefers companyReportId over nested companyReport.id", () => {
+    const period: GarboReportingPeriodSummary = {
+      startDate: "2024-01-01",
+      endDate: "2024-12-31",
+      companyReportId: "top-level",
+      companyReport: { id: "nested" },
+    };
+
+    expect(resolveCompanyReportId(period)).toBe("top-level");
+  });
+
+  it("returns undefined when no report link exists", () => {
+    const period: GarboReportingPeriodSummary = {
+      startDate: "2024-01-01",
+      endDate: "2024-12-31",
+    };
+
+    expect(resolveCompanyReportId(period)).toBeUndefined();
+  });
+});
+
+describe("attachCompanyReportIdToPeriodPatch", () => {
+  it("adds companyReportId when the period is linked to a shell", () => {
+    const period: GarboReportingPeriodSummary = {
+      startDate: "2024-01-01",
+      endDate: "2024-12-31",
+      companyReportId: "shell-1",
+    };
+
+    expect(
+      attachCompanyReportIdToPeriodPatch(period, {
+        startDate: period.startDate,
+        endDate: period.endDate,
+      }),
+    ).toEqual({
+      startDate: "2024-01-01",
+      endDate: "2024-12-31",
+      companyReportId: "shell-1",
+    });
   });
 });
 
