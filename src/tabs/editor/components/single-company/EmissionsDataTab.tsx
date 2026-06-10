@@ -10,10 +10,8 @@ import type {
   GarboFieldMetadata,
   GarboReportingPeriodSummary,
 } from "../../lib/types";
-import {
-  updateReportingPeriods,
-  type ReportingPeriodWritePayload,
-} from "../../lib/companies-api";
+import { updateReportingPeriods } from "../../lib/companies-api";
+import type { ReportingPeriodWritePayload } from "../../lib/types";
 import {
   dataYearsWithMultiplePeriods,
   editorDenseMultiSelectTriggerClass,

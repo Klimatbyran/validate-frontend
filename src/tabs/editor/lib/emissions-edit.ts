@@ -1,7 +1,6 @@
 import { attachCompanyReportIdToPeriodPatch } from "./company-report-shells";
 import { toNumberOrNull } from "./reporting-period-ui";
-import type { ReportingPeriodWritePayload } from "./companies-api";
-import type { GarboReportingPeriodSummary } from "./types";
+import type { GarboReportingPeriodSummary, ReportingPeriodWritePayload } from "./types";
 
 export type EditedPeriodEmissions = {
   scope1Total?: string;

@@ -1,6 +1,5 @@
 import { attachCompanyReportIdToPeriodPatch } from "./company-report-shells";
-import type { ReportingPeriodWritePayload } from "./companies-api";
-import type { GarboReportingPeriodSummary } from "./types";
+import type { GarboReportingPeriodSummary, ReportingPeriodWritePayload } from "./types";
 
 const ALL_SCOPE3_CATEGORY_IDS = Array.from({ length: 16 }, (_, i) => i + 1);
 

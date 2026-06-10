@@ -1,7 +1,7 @@
 import type { EditState, TagOption } from "./types";
 import { NO_TAGS_FILTER_OPTION } from "./types";
 
-import type { ReportingPeriodWritePayload } from "./companies-api";
+import type { ReportingPeriodWritePayload } from "./types";
 
 export type ReportingPeriodUpdatePayload = ReportingPeriodWritePayload;
 

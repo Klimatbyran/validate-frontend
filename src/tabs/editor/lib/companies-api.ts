@@ -9,6 +9,7 @@ import {
   type GarboCompanyListItem,
   type GarboCompanyDetail,
   type GarboMetadata,
+  type ReportingPeriodWritePayload,
 } from "./types";
 import { parseGarboCompanyDetail } from "./companies-schemas";
 import { apiUrl } from "./api-utils";
@@ -185,18 +186,6 @@ export async function getCompany(
 
   return match as GarboCompanyDetail;
 }
-
-/** One period in POST /api/companies/:id/reporting-periods. */
-export type ReportingPeriodWritePayload = {
-  startDate: string;
-  endDate: string;
-  companyReportId?: string;
-  reportURL?: string | null;
-  reportS3Url?: string | null;
-  reportSha256?: string | null;
-  emissions?: Record<string, unknown>;
-  economy?: Record<string, unknown>;
-};
 
 /** Create company (POST /api/companies). */
 export async function createCompany(body: {
