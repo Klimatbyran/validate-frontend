@@ -9,31 +9,15 @@ import {
   fetchCompanyRegistryReports,
   updateCompanyReport,
 } from "../../lib/companies-api";
+import { formatRegistryOptionLabel } from "../../lib/registry-report-display";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
 import { editorSecondaryIdTextClass } from "../../lib/reporting-period-ui";
+import type { GarboRegistryReportSummary } from "../../lib/types";
 
-type RegistryReportOption = {
-  id: string;
-  url: string;
-  sourceUrl?: string | null;
-  s3Url?: string | null;
-  reportYear?: string | null;
-};
-
-function truncateUrl(url: string, max = 56): string {
-  const trimmed = url.trim();
-  if (trimmed.length <= max) return trimmed;
-  return `${trimmed.slice(0, max - 1)}…`;
-}
-
-function formatRegistryOptionLabel(
-  option: RegistryReportOption,
-  noYearLabel: string,
-): string {
-  const year = option.reportYear?.trim() || noYearLabel;
-  const href =
-    option.sourceUrl?.trim() || option.url.trim() || option.s3Url?.trim() || "";
-  return `${year} · ${truncateUrl(href)}`;
+function isRegistryReportWithId(
+  report: GarboRegistryReportSummary,
+): report is GarboRegistryReportSummary & { id: string } {
+  return Boolean(report.id?.trim());
 }
 
 export function LinkRegistryReportModal({
@@ -57,7 +41,7 @@ export function LinkRegistryReportModal({
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [options, setOptions] = useState<RegistryReportOption[]>([]);
+  const [options, setOptions] = useState<GarboRegistryReportSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -72,11 +56,7 @@ export function LinkRegistryReportModal({
 
     fetchCompanyRegistryReports(companyId, controller.signal)
       .then((reports) => {
-        setOptions(
-          reports.filter((report): report is RegistryReportOption =>
-            Boolean(report.id?.trim()),
-          ),
-        );
+        setOptions(reports.filter(isRegistryReportWithId));
       })
       .catch((error) => {
         if (controller.signal.aborted) return;
@@ -93,10 +73,15 @@ export function LinkRegistryReportModal({
     return () => controller.abort();
   }, [open, companyId, currentRegistryReportId, t]);
 
-  const selectedOption = useMemo(
-    () => options.find((option) => option.id === selectedId) ?? null,
-    [options, selectedId],
-  );
+  const optionsById = useMemo(() => {
+    const map = new Map<string, GarboRegistryReportSummary>();
+    for (const report of options) {
+      if (report.id) map.set(report.id, report);
+    }
+    return map;
+  }, [options]);
+
+  const selectedOption = selectedId ? optionsById.get(selectedId) : undefined;
 
   const canSave =
     Boolean(selectedId) && selectedId !== (currentRegistryReportId?.trim() || "");
@@ -177,11 +162,11 @@ export function LinkRegistryReportModal({
         ) : (
           <>
             <SingleSelectDropdown
-              options={options.map((option) => option.id)}
-              value={selectedId}
-              onChange={setSelectedId}
+              options={options.map((option) => option.id!)}
+              value={selectedId ?? ""}
+              onChange={(value) => setSelectedId(value || null)}
               getOptionLabel={(id) => {
-                const option = options.find((entry) => entry.id === id);
+                const option = optionsById.get(id);
                 return option
                   ? formatRegistryOptionLabel(option, noYearLabel)
                   : dash;
@@ -191,7 +176,7 @@ export function LinkRegistryReportModal({
               )}
               triggerClassName="w-full !h-auto min-h-9 !text-sm px-3 py-2"
             />
-            {selectedOption ? (
+            {selectedOption?.id ? (
               <p className="text-xs text-gray-02 break-all">
                 {selectedOption.id}
               </p>

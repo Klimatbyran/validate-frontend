@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   buildCompanyReportOverview,
+  isValidReportCatalogYear,
+  pickReportLink,
   registryYearMismatch,
 } from "./company-report-overview";
 import type { GarboCompanyDetail } from "./types";
@@ -49,5 +51,19 @@ describe("buildCompanyReportOverview", () => {
     expect(rows[0]?.periodCount).toBe(2);
     expect(rows[0]?.periodDataYears).toEqual(["2024", "2023"]);
     expect(registryYearMismatch(rows[0]!)).toBe(true);
+    expect(pickReportLink(rows[0]!)).toBe("https://example.com/report.pdf");
+  });
+});
+
+describe("isValidReportCatalogYear", () => {
+  it("accepts years in catalog range", () => {
+    expect(isValidReportCatalogYear("2024")).toBe(true);
+    expect(isValidReportCatalogYear("1990")).toBe(true);
+  });
+
+  it("rejects invalid shapes and out-of-range years", () => {
+    expect(isValidReportCatalogYear("24")).toBe(false);
+    expect(isValidReportCatalogYear("1800")).toBe(false);
+    expect(isValidReportCatalogYear("2200")).toBe(false);
   });
 });

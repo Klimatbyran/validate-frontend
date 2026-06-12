@@ -88,3 +88,30 @@ export function registryYearMismatch(row: CompanyReportOverviewRow): boolean {
   if (!companyYear || !registryYear) return false;
   return companyYear !== registryYear;
 }
+
+const REPORT_CATALOG_YEAR_PATTERN = /^\d{4}$/;
+const REPORT_CATALOG_YEAR_MIN = 1990;
+const REPORT_CATALOG_YEAR_MAX = 2100;
+
+export function isValidReportCatalogYear(year: string): boolean {
+  if (!REPORT_CATALOG_YEAR_PATTERN.test(year)) return false;
+  const n = Number(year);
+  return n >= REPORT_CATALOG_YEAR_MIN && n <= REPORT_CATALOG_YEAR_MAX;
+}
+
+export function pickReportLink(row: CompanyReportOverviewRow): string | null {
+  const registry = row.registryReport;
+  return (
+    registry?.url?.trim() ||
+    registry?.sourceUrl?.trim() ||
+    row.sampleReportUrl?.trim() ||
+    row.sampleSourceUrl?.trim() ||
+    null
+  );
+}
+
+export function pickS3Link(row: CompanyReportOverviewRow): string | null {
+  return (
+    row.registryReport?.s3Url?.trim() || row.sampleS3Url?.trim() || null
+  );
+}

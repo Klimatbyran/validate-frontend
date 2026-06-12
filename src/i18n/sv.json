@@ -315,6 +315,7 @@
       "economyDataHint": "Per rapporteringsperiod: redigera omsättning, valuta, antal anställda och enhet. Öppna rapportlänken när en URL finns (datum och URL redigeras under fliken rapporteringsperioder). Markera som verifierat vid granskning och spara. Filtrera på år eller visa alla perioder.",
       "emissionsDataHint": "Per rapporteringskolumn: redigera redovisade totaler och scope 1–3 (inkl. scope 3-kategorier). Öppna rapportlänken när en URL finns (datum och URL redigeras under fliken rapporteringsperioder). Använd metadata, markera som verifierat, ångra ändringar, filtrera eller sortera år, scrolla vid behov, spara med valfri granskningskommentar och källa.",
       "reportingPeriodsDataHint": "Ange start- och slutdatum samt rapport-URL för varje period. PDF-katalogår och CompanyReport-id visar vilken bearbetad rapport varje period är kopplad till. Sortera eller filtrera år, återställ osparade ändringar, spara med valfri granskningskommentar och källa.",
+      "companyReportsDataHint": "Varje företagsrapport är ett bearbetat PDF-skäl. Rapporteringsperioder länkas via companyReportId; register-Report kopplas via registryReportId. Redigera dokumentåret om pipeline sparade fel år, eller koppla ett olinkat skäl till registret.",
       "pdfCatalogYear": "PDF-katalogår",
       "pdfCatalogYearShort": "PDF",
       "companyReportId": "CompanyReport",
@@ -386,7 +387,9 @@
         "goalsInitiatives": "Mål & initiativ"
       },
       "companyReports": {
-        "hint": "Varje företagsrapport är ett bearbetat PDF-skäl. Rapporteringsperioder länkas via companyReportId. När den är kopplad ansluts registerposten Report via registryReportId. Redigera dokumentåret här om pipeline sparade fel år (t.ex. från målår eller PDF-filnamn).",
+        "empty": "Inga företagsrapporter ännu. Rapporteringsperioder visas här när de kopplats till ett CompanyReport-skäl.",
+        "yearSaveFailed": "Kunde inte uppdatera företagsrapportens år.",
+        "relationshipDetailsLabel": "Hur de hänger ihop",
         "relationship": "ReportingPeriod → companyReportId → CompanyReport → registryReportId → Report (register)",
         "columns": {
           "reportYear": "Dokumentår",

@@ -315,6 +315,7 @@
       "economyDataHint": "Per reporting period: edit turnover, currency, employees, and unit. Open the report link when a URL exists (edit dates and URL on the Reporting Periods tab). Mark verified when reviewed, then save. Filter by year or show all periods.",
       "emissionsDataHint": "Per reporting period column: edit stated totals and scopes 1–3 (including Scope 3 categories). Open the report link when a URL exists (edit dates and URL on the Reporting Periods tab). Use metadata, mark verified, undo edits, filter or sort years, scroll when needed, then save with optional reviewer comment and source.",
       "reportingPeriodsDataHint": "Set start and end dates and the report URL for each period. PDF catalog year and CompanyReport id show which processed report each period is linked to. Sort or filter years, reset unsaved changes, then save with optional reviewer comment and source.",
+      "companyReportsDataHint": "Each company report is one processed PDF shell. Reporting periods link via companyReportId; the registry Report connects through registryReportId. Edit the document year if pipeline save picked the wrong year, or link an unlinked shell to the registry.",
       "pdfCatalogYear": "PDF catalog year",
       "pdfCatalogYearShort": "PDF",
       "companyReportId": "CompanyReport",
@@ -386,7 +387,9 @@
         "goalsInitiatives": "Goals & Initiatives"
       },
       "companyReports": {
-        "hint": "Each company report is one processed PDF shell. Reporting periods link to it via companyReportId. When linked, the registry Report row (catalog) is connected through registryReportId. Edit the document year here if pipeline save picked the wrong year (e.g. from target years or the PDF filename).",
+        "empty": "No company reports yet. Reporting periods will appear here once linked to a CompanyReport shell.",
+        "yearSaveFailed": "Failed to update company report year.",
+        "relationshipDetailsLabel": "How these connect",
         "relationship": "ReportingPeriod → companyReportId → CompanyReport → registryReportId → Report (registry)",
         "columns": {
           "reportYear": "Document year",

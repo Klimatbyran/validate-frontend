@@ -61,6 +61,7 @@ export interface GarboRegistryReportSummary {
   s3Url?: string | null;
   reportYear?: string | null;
   sha256?: string | null;
+  wikidataId?: string | null;
 }
 
 /** Linked processed PDF (CompanyReport) for a reporting period. */

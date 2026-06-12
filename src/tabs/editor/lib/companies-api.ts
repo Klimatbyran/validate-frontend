@@ -9,6 +9,7 @@ import {
   type GarboCompanyListItem,
   type GarboCompanyDetail,
   type GarboMetadata,
+  type GarboRegistryReportSummary,
 } from "./types";
 import { parseGarboCompanyDetail } from "./companies-schemas";
 import { apiUrl } from "./api-utils";
@@ -474,17 +475,7 @@ export async function updateCompanyIndustry(
 export async function fetchCompanyRegistryReports(
   companyId: string,
   signal?: AbortSignal,
-): Promise<
-  Array<{
-    id: string;
-    url: string;
-    sourceUrl?: string | null;
-    s3Url?: string | null;
-    reportYear?: string | null;
-    sha256?: string | null;
-    wikidataId?: string | null;
-  }>
-> {
+): Promise<GarboRegistryReportSummary[]> {
   const res = await garboAuthFetch(
     apiUrl(
       companiesPath(`${encodeURIComponent(companyId)}/registry-reports`),
