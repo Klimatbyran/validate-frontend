@@ -71,6 +71,20 @@ export function getPipelineUrl(path: string): string {
   return getPipelineApiBaseUrl() + p;
 }
 
+/**
+ * Fixed stage Pipeline API (ignores VITE_PIPELINE_TARGET).
+ * Dev: /pipeline-stage-api mirrors /pipeline-stage. Deployed: /pipeline-stage-api.
+ */
+export function getStagePipelineApiBaseUrl(): string {
+  if (import.meta.env.DEV) return "/pipeline-stage-api";
+  return "/pipeline-stage-api";
+}
+
+export function getStagePipelineUrl(path: string): string {
+  const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
+  return getStagePipelineApiBaseUrl() + p;
+}
+
 // --- Unearth API ---
 
 /** Unearth API base. Dev: /unearth-stage/api, etc. Prod: /unearth-api. No trailing slash. */
@@ -108,6 +122,15 @@ export function getGarboQueueArchiveUrl(path: string): string {
   const base = getGarboApiBaseUrl().replace(/\/+$/, "");
   const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
   return `${base}/queue-archive${p}`;
+}
+
+/** Stage Garbo queue-archive (ignores VITE_UNEARTH_TARGET). */
+export function getStageGarboQueueArchiveUrl(path: string): string {
+  const base = import.meta.env.DEV
+    ? "/garbo-stage/api"
+    : "/garbo-stage-api";
+  const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
+  return `${base.replace(/\/+$/, "")}/queue-archive${p}`;
 }
 
 // --- Errors tab: fixed Unearth API stage + prod (ignores VITE_UNEARTH_TARGET) ---
@@ -150,5 +173,16 @@ export function getProdPipelineCompaniesListUrl(): string {
     | string
     | undefined;
   if (override?.trim()) return override.trim();
+  return getRealProdPipelineCompaniesListUrl();
+}
+
+/** Prod validated DB — never uses VITE_ERRORS_PROD_PIPELINE_URL. */
+export function getRealProdPipelineCompaniesListUrl(): string {
   return joinApiPath(getProdUnearthUrl("/api"), PIPELINE_COMPANIES_LIST_PATH);
+}
+
+export function prodPipelineCompaniesListUrlPointsAtStage(): boolean {
+  return (
+    getProdPipelineCompaniesListUrl() === getStagePipelineCompaniesListUrl()
+  );
 }

@@ -287,6 +287,15 @@ export default defineConfig(({ mode }) => {
           proxyTimeout: PROXY_TIMEOUT_MS,
           configure: pipelineProxyConfigure(urls.pipelineStage),
         },
+        "/pipeline-stage-api": {
+          target: urls.pipelineStage,
+          changeOrigin: true,
+          secure: !urls.pipelineStage.startsWith("http://"),
+          rewrite: (path) => "/api" + path.replace(/^\/pipeline-stage-api/, ""),
+          timeout: PROXY_TIMEOUT_MS,
+          proxyTimeout: PROXY_TIMEOUT_MS,
+          configure: pipelineProxyConfigure(urls.pipelineStage),
+        },
         "/pipeline": {
           target: urls.pipelineProd,
           changeOrigin: true,
@@ -301,6 +310,20 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: true,
           rewrite: (path) => path.replace(/^\/garbo-stage/, ""),
+          timeout: PROXY_TIMEOUT_MS,
+          proxyTimeout: PROXY_TIMEOUT_MS,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              setProxyApiKey(proxyReq, env.GARBO_STAGE_ALL_ACCESS_API_KEY);
+            });
+          },
+        },
+        "/garbo-stage-api/queue-archive": {
+          target: urls.garboStage,
+          changeOrigin: true,
+          secure: true,
+          rewrite: (path) =>
+            path.replace(/^\/garbo-stage-api/, "/api"),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
           configure: (proxy) => {

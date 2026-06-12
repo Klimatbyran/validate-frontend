@@ -11,11 +11,23 @@
     "scrollToTop": "Scrolla till toppen",
     "yes": "Ja",
     "no": "Nej",
-    "optional": "valfritt"
+    "optional": "valfritt",
+    "pagination": {
+      "empty": "Inga rader matchar de aktuella filtren.",
+      "range": "Visar {{from}}–{{to}} av {{total}} rader",
+      "showingAll": "Visar alla {{total}} rader",
+      "filteredOfTotal": "({{total}} före filter)",
+      "page": "Sida {{page}} av {{totalPages}}",
+      "showAll": "Visa alla",
+      "showPages": "Visa sidor",
+      "prev": "Föregående",
+      "next": "Nästa"
+    }
   },
   "nav": {
     "upload": "Ladda upp",
     "registry": "Register",
+    "overview": "Översikt",
     "jobStatus": "Jobbstatus",
     "apiAccess": "API Access",
     "workflow": "Processflöde",
@@ -368,9 +380,42 @@
       "tabs": {
         "companyDetail": "Företagsdetaljer",
         "reportingPeriods": "Rapporteringsperioder",
+        "companyReports": "Företagsrapporter",
         "economyData": "Ekonomidata",
         "emissionsData": "Utsläppsdata",
         "goalsInitiatives": "Mål & initiativ"
+      },
+      "companyReports": {
+        "hint": "Varje företagsrapport är ett bearbetat PDF-skäl. Rapporteringsperioder länkas via companyReportId. När den är kopplad ansluts registerposten Report via registryReportId. Redigera dokumentåret här om pipeline sparade fel år (t.ex. från målår eller PDF-filnamn).",
+        "relationship": "ReportingPeriod → companyReportId → CompanyReport → registryReportId → Report (register)",
+        "columns": {
+          "reportYear": "Dokumentår",
+          "registry": "Register-Report",
+          "dataYears": "Dataår",
+          "periods": "Perioder",
+          "links": "Länkar"
+        },
+        "saveYear": "Spara år",
+        "yearSaved": "Företagsrapportens år uppdaterat.",
+        "invalidYear": "Ange ett fyrsiffrigt år mellan 1990 och 2100.",
+        "notLinkedToRegistry": "Ej kopplad till register",
+        "registryYearMismatch": "Företagsrapportens år ({{companyYear}}) skiljer sig från registret ({{registryYear}}). Sparning här uppdaterar båda när de är kopplade.",
+        "reportLink": "Rapport",
+        "s3Link": "S3-PDF",
+        "linkRegistry": "Koppla register",
+        "changeRegistryLink": "Byt koppling",
+        "linkModal": {
+          "title": "Koppla register-rapport",
+          "description": "Välj en Report-rad i registret för detta företag. Det sätter CompanyReport.registryReportId.",
+          "loading": "Laddar registerrapporter…",
+          "empty": "Inga registerrapporter hittades för detta företag (wikidataId). Lägg till rapporten i registerfliken först, eller kör pipeline igen efter att registerkopplingen är deployad.",
+          "placeholder": "Välj register-rapport",
+          "cancel": "Avbryt",
+          "save": "Koppla rapport",
+          "linked": "Register-rapport kopplad.",
+          "linkFailed": "Kunde inte koppla register-rapport.",
+          "loadFailed": "Kunde inte ladda registerrapporter."
+        }
       },
       "noGoalsOrInitiatives": "Inga mål eller initiativ för detta företag."
     },
@@ -952,6 +997,135 @@
     "tagsSelected": "{{count}} tagg(ar) valda",
     "noTags": "Inga taggar tillgängliga",
     "clearTagFilter": "Rensa filter"
+  },
+  "overview": {
+    "title": "Statusöversikt",
+    "subtitle": "Överblick över register, kö-arkiv, stage och prod.",
+    "subtitleCompanyYears": "Företag × rapportår (2020–nu). Hitta saknade register-rapporter och datagap per företag.",
+    "subtitleRegistryReports": "En rad per registerpost. Hitta saknade Wikidata-ID, olänkade CompanyReports och pipeline-status per sparad rapport.",
+    "viewModeLabel": "Översiktsvy",
+    "views": {
+      "companyYears": "Företagsår",
+      "registryReports": "Register-rapporter",
+      "prodToStage": "Prod → Stage"
+    },
+    "subtitleProdToStage": "Prod CompanyReports med minst ett verifierat utsläppsvärde där motsvarande stage-rapport ännu saknar utsläppsdata. Kör valda laddar upp prod-rapportens URL via stage-pipeline endast.",
+    "filtersTitle": "Sök och filter",
+    "searchLabel": "Företagsnamn eller ID",
+    "searchPlaceholder": "Sök företag, Wikidata-ID, CompanyReport-ID eller URL",
+    "reportYearFilter": "Rapportår",
+    "tagFilter": "Taggar",
+    "issueFilter": "Visa problem i",
+    "gapFiltersTitle": "Visa endast gap",
+    "gapFilters": {
+      "missingRegistry": "Saknar register-rapport",
+      "missingCompanyReport": "Saknar CompanyReport",
+      "notRunInPipeline": "Ej körd i pipeline"
+    },
+    "gapFiltersHintCompanyYears": "Kombinera kryssrutor för att hitta företag × år som saknar sparad rapport, Garbo CompanyReport eller pipeline-körning.",
+    "gapFiltersHintRegistryReports": "Använd dessa för att hitta register-PDF:er som ännu inte körts i pipeline eller saknar CompanyReport-länk i Garbo.",
+    "prodToStage": {
+      "bannerTitle": "Prod-data in, stage-pipeline ut",
+      "bannerReadProd": "Rader byggs från prod Garbo: länkade CompanyReports med minst ett verifierat utsläppsvärde, där motsvarande stage-rapport (via URL eller shell) ännu saknar länkad CompanyReport med utsläppsdata.",
+      "bannerRunStage": "Kör valda köar jobb på stage Pipeline API med prod-rapportens URL (ny uppladdning till stage).",
+      "bannerNeverProd": "Denna flik kör aldrig prod-pipeline — endast stage.",
+      "deployBlocked": "Prod pipeline companies API är inte live än ({{prodUrl}}). Använder stage-data för prod tills VITE_ERRORS_PROD_PIPELINE_URL tas bort.",
+      "runOnStage": "Kör på stage ({{count}})",
+      "runSuccess": "Köade {{count}} rapport(er) på stage-pipeline.",
+      "runPartial": "{{failed}} av {{total}} rapport(er) kunde inte köas på stage. {{succeeded}} köades.",
+      "runError": "Kunde inte köa på stage-pipeline: {{message}}",
+      "prodCompanyReport": "Prod CompanyReport",
+      "validatedOnProd": "Verifierad i prod",
+      "stageStatus": "Stage-status",
+      "prodReportUrl": "Prod rapport-URL",
+      "verifiedCount": "{{count}} verifierade värden",
+      "stageHasVerified": "Har verifierade utsläpp (visas inte här)",
+      "stageUnverified": "Period finns, inga verifierade utsläpp",
+      "stageMissing": "Ingen matchande period i stage",
+      "noRunnableUrl": "Ingen HTTP-URL att köra",
+      "runnableOnly": "Endast körbara (har URL)",
+      "emptyDiagnosticsTitle": "Inga rader matchade — uppdelning",
+      "emptyDiagnosticsCompanies": "{{prod}} prod-bolag, {{stage}} stage-bolag inlästa",
+      "emptyDiagnosticsShells": "{{count}} länkade prod CompanyReport-shells granskade",
+      "emptyDiagnosticsSkippedUnlinked": "{{count}} hoppades över (saknar CompanyReport-id på prod)",
+      "emptyDiagnosticsSkippedUnverified": "{{count}} hoppades över (inga verifierade utsläpp på prod)",
+      "emptyDiagnosticsSkippedStage": "{{count}} hoppades över (matchande stage-rapport har redan utsläppsdata)",
+      "emptyDiagnosticsIncluded": "{{count}} skulle visas före filter",
+      "stats": {
+        "total": "Visas",
+        "runnable": "Körbara",
+        "selected": "Valda",
+        "allCandidates": "Alla kandidater"
+      }
+    },
+    "fetchError": "Kunde inte ladda översiktsdata.",
+    "runSelected": "Kör valda ({{count}})",
+    "selectAll": "Markera alla synliga rader",
+    "selectRow": "Markera {{company}}",
+    "columns": {
+      "report": "I registret",
+      "pipeline": "Pipeline",
+      "pipelineErrors": "Fel",
+      "stageData": "Stage",
+      "prodData": "Prod",
+      "prodVerified": "Verifierad",
+      "wikidata": "Wikidata",
+      "registryFile": "Fil sparad",
+      "companyReport": "CompanyReport"
+    },
+    "columnHints": {
+      "companyYears": {
+        "company": "Garbo-bolag från stage- eller prod-pipelinedata. Klicka på en rad för att öppna editorn.",
+        "reportYear": "PDF-dokumentår för rapporten (från CompanyReport eller rapport-URL:er), inte utsläppens dataår.",
+        "tags": "Bolagstaggar från Garbo (union av stage och prod).",
+        "report": "Om det finns en registerpost för detta bolag och dokumentår, med sparad URL eller S3-fil.",
+        "pipeline": "Senaste arkiverade pipeline-körningen för bolag och dokumentår (queue archive). Saknas = ingen körning hittades.",
+        "pipelineErrors": "Jobbresultat från den arkiverade körningen. Grön endast när körningen har jobb och alla slutfördes utan fel. Saknas när det inte finns någon körning, körningen pågår eller det saknas jobb att bedöma.",
+        "stageData": "Om stage-Garbo har rapporteringsperioder för detta PDF-dokumentår.",
+        "prodData": "Om prod-Garbo har rapporteringsperioder för detta PDF-dokumentår.",
+        "prodVerified": "Om prod-utsläpp för detta dokumentår är fullt verifierade (varje ifyllt datapunkt har verifiedBy-metadata)."
+      },
+      "registryReports": {
+        "company": "Bolagsnamn från registerposten.",
+        "reportYear": "Dokumentår på registerposten.",
+        "companyReportId": "Länkat Garbo CompanyReport-ID när en stage- eller prod-period matchar denna register-rapport.",
+        "wikidata": "Om registerposten har Wikidata-ID för matchning mot Garbo-bolag.",
+        "registryFile": "Om registerposten har käll-URL och/eller cachad S3-fil.",
+        "companyReport": "Om denna register-PDF är kopplad till ett Garbo CompanyReport-skall.",
+        "pipeline": "Senaste arkiverade pipeline-körningen matchad mot register-URL eller bolag och dokumentår.",
+        "pipelineErrors": "Jobbresultat från den arkiverade körningen. Grön endast när körningen har jobb och alla slutfördes utan fel."
+      }
+    },
+    "stats": {
+      "total": "Rader",
+      "withReport": "I registret",
+      "pipelineCompleted": "Pipeline klar",
+      "pipelineFailed": "Pipeline misslyckad",
+      "inStage": "I stage",
+      "inProd": "I prod",
+      "prodVerified": "Prod verifierad",
+      "missingWikidata": "Saknar Wikidata",
+      "linkedCompanyReport": "Länkad CompanyReport",
+      "selected": "Valda"
+    },
+    "table": {
+      "company": "Företag",
+      "reportYear": "Rapportår",
+      "companyReportId": "CompanyReport-ID",
+      "tags": "Taggar",
+      "footer": "Visar {{shown}} av {{total}} rader",
+      "pagination": {
+        "empty": "Inga rader matchar de aktuella filtren.",
+        "range": "Visar {{from}}–{{to}} av {{total}} rader",
+        "showingAll": "Visar alla {{total}} rader",
+        "filteredOfTotal": "({{total}} före filter)",
+        "page": "Sida {{page}} av {{totalPages}}",
+        "showAll": "Visa alla",
+        "showPages": "Visa sidor",
+        "prev": "Föregående",
+        "next": "Nästa"
+      }
+    }
   },
   "registry": {
     "title": "Register",

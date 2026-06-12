@@ -53,11 +53,24 @@ export interface GarboCompanyListItem {
   hasUnverifiedData?: boolean;
 }
 
+/** Registry Report row linked from CompanyReport.registryReportId. */
+export interface GarboRegistryReportSummary {
+  id?: string;
+  url?: string | null;
+  sourceUrl?: string | null;
+  s3Url?: string | null;
+  reportYear?: string | null;
+  sha256?: string | null;
+}
+
 /** Linked processed PDF (CompanyReport) for a reporting period. */
 export interface GarboCompanyReportSummary {
   id?: string;
   reportYear?: string | null;
   reportPublicationDate?: string | null;
+  registryReportId?: string | null;
+  createdAt?: string | null;
+  report?: GarboRegistryReportSummary | null;
 }
 
 /** Summary of a reporting period (for list/grid). */

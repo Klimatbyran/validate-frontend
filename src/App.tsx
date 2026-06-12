@@ -11,6 +11,7 @@ import { DebugTab } from "@/tabs/debug/DebugTab";
 import { EditorTab } from "@/tabs/editor/EditorTab";
 import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
 import { JobbstatusTab } from "@/tabs/jobbstatus/JobbstatusTab";
+import { OverviewTab } from "@/tabs/overview/OverviewTab";
 import { RegistryTab } from "@/tabs/registry/RegistryTab";
 import { UploadTab } from "@/tabs/upload/UploadTab";
 import { WorkflowTab } from "@/tabs/workflow/WorkflowTab";
@@ -31,6 +32,7 @@ function App() {
           />
           <Route path="/crawler" element={<CrawlerTab />} />
           <Route path="/registry" element={<RegistryTab />} />
+          <Route path="/overview" element={<OverviewTab />} />
           <Route path="/upload" element={<UploadTab />} />
           <Route path="/access" element={<ApiAccessTab />} />
           <Route path="/jobbstatus" element={<JobbstatusTab />} />

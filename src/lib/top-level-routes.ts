@@ -5,6 +5,7 @@
 export const TOP_LEVEL_TAB_SEGMENTS = [
   "crawler",
   "registry",
+  "overview",
   "upload",
   "access",
   "jobbstatus",

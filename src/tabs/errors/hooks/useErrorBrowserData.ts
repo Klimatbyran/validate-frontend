@@ -1,10 +1,5 @@
 import React from "react";
 import {
-  ApiAuthError,
-  garboAuthFetch,
-  throwIfAuthError,
-} from "@/lib/garbo-auth-fetch";
-import {
   Company,
   CompanyRow,
   DataPointMetric,
@@ -13,8 +8,10 @@ import {
   DATA_POINTS,
 } from "../types";
 import {
-  getStagePipelineCompaniesListUrl,
-  getProdPipelineCompaniesListUrl,
+  ApiAuthError,
+  fetchStageAndProdPipelineCompanies,
+} from "@/lib/pipeline-companies-cross-env";
+import {
   getDataPointValue,
   getDataPointVerified,
   classifyDiscrepancy,
@@ -43,39 +40,14 @@ export function useErrorBrowserData(
   const [stageCompanies, setStageCompanies] = React.useState<Company[]>([]);
   const [prodCompanies, setProdCompanies] = React.useState<Company[]>([]);
 
-  const fetchPipelineCompanies = React.useCallback(
-    async (label: "Stage" | "Prod", url: string): Promise<Company[]> => {
-      const response = await garboAuthFetch(url, {
-        headers: { Accept: "application/json" },
-      });
-
-      if (response.ok) {
-        return response.json() as Promise<Company[]>;
-      }
-
-      throwIfAuthError(response.status);
-
-      const body = await response.text().catch(() => "");
-      throw new Error(
-        `Failed to fetch ${label} pipeline companies (${response.status}) from ${url}${body ? `: ${body.slice(0, 200)}` : ""}`,
-      );
-    },
-    [],
-  );
-
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
     setIsAuthError(false);
 
-    const stageUrl = getStagePipelineCompaniesListUrl();
-    const prodUrl = getProdPipelineCompaniesListUrl();
-
     try {
-      const [stage, prod] = await Promise.all([
-        fetchPipelineCompanies("Stage", stageUrl),
-        fetchPipelineCompanies("Prod", prodUrl),
-      ]);
+      const { stageCompanies: stage, prodCompanies: prod } =
+        await fetchStageAndProdPipelineCompanies();
 
       setStageCompanies(stage);
       setProdCompanies(prod);
@@ -93,7 +65,7 @@ export function useErrorBrowserData(
     } finally {
       setIsLoading(false);
     }
-  }, [fetchPipelineCompanies]);
+  }, []);
 
   React.useEffect(() => {
     fetchData();

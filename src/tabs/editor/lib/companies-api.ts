@@ -470,6 +470,112 @@ export async function updateCompanyIndustry(
   }
 }
 
+/** Registry Report rows for a company (GET /api/companies/:id/registry-reports). */
+export async function fetchCompanyRegistryReports(
+  companyId: string,
+  signal?: AbortSignal,
+): Promise<
+  Array<{
+    id: string;
+    url: string;
+    sourceUrl?: string | null;
+    s3Url?: string | null;
+    reportYear?: string | null;
+    sha256?: string | null;
+    wikidataId?: string | null;
+  }>
+> {
+  const res = await garboAuthFetch(
+    apiUrl(
+      companiesPath(`${encodeURIComponent(companyId)}/registry-reports`),
+    ),
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal,
+    },
+  );
+  if (res.status === 401) {
+    throw new Error("Please log in to list registry reports.");
+  }
+  if (res.status === 404) {
+    throw new Error("Company not found.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to list registry reports: ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type UpdateCompanyReportBody = {
+  reportYear?: string;
+  registryReportId?: string;
+};
+
+/** Update company report shell (PATCH /api/companies/:id/company-reports/:companyReportId). */
+export async function updateCompanyReport(
+  companyId: string,
+  companyReportId: string,
+  body: UpdateCompanyReportBody,
+): Promise<{
+  reportYear: string | null;
+  registryReportId: string | null;
+}> {
+  const res = await garboAuthFetch(
+    apiUrl(
+      companiesPath(
+        `${encodeURIComponent(companyId)}/company-reports/${encodeURIComponent(companyReportId)}`,
+      ),
+    ),
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+  );
+  if (res.status === 401) {
+    throw new Error("Please log in to update company report.");
+  }
+  if (res.status === 404) {
+    throw new Error("Company or company report not found.");
+  }
+  if (res.status === 400) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(
+      (data as { message?: string }).message ?? "Invalid company report update.",
+    );
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to update company report: ${res.status} ${text}`);
+  }
+  const data = (await res.json()) as {
+    reportYear?: string | null;
+    registryReportId?: string | null;
+  };
+  return {
+    reportYear: data.reportYear ?? null,
+    registryReportId: data.registryReportId ?? null,
+  };
+}
+
+/** Set company report document year. */
+export async function updateCompanyReportYear(
+  companyId: string,
+  companyReportId: string,
+  reportYear: string,
+): Promise<{ reportYear: string | null }> {
+  const result = await updateCompanyReport(companyId, companyReportId, {
+    reportYear,
+  });
+  return { reportYear: result.reportYear };
+}
+
 /** Set company base year (POST /api/companies/:id/base-year). */
 export async function updateCompanyBaseYear(
   companyId: string,

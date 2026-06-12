@@ -94,6 +94,8 @@ export interface CreateJobsFromUrlsOptions {
   tags?: string[];
   /** When true (default), pipeline-api fetches each URL and caches to S3 before enqueueing. Set false for local API without S3. */
   cachePdf?: boolean;
+  /** Override parsePdf endpoint (e.g. fixed stage pipeline). */
+  parsePdfEndpoint?: string;
 }
 
 export async function uploadPdfsToParsePdf({
@@ -137,6 +139,7 @@ export async function createJobsFromUrls({
   runOnly,
   tags,
   cachePdf = true,
+  parsePdfEndpoint = PARSE_PDF_API_ENDPOINT,
 }: CreateJobsFromUrlsOptions): Promise<CreateJobsFromUrlsResult> {
   const body = {
     autoApprove: Boolean(autoApprove),
@@ -149,7 +152,7 @@ export async function createJobsFromUrls({
     urls,
   };
 
-  const response = await authenticatedFetch(PARSE_PDF_API_ENDPOINT, {
+  const response = await authenticatedFetch(parsePdfEndpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

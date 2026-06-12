@@ -1,0 +1,53 @@
+import { describe, expect, it } from "vitest";
+import {
+  buildCompanyReportOverview,
+  registryYearMismatch,
+} from "./company-report-overview";
+import type { GarboCompanyDetail } from "./types";
+
+describe("buildCompanyReportOverview", () => {
+  it("groups periods by company report and surfaces registry link", () => {
+    const company = {
+      id: "00000000-0000-4000-8000-000000000001",
+      name: "Test Co",
+      reportingPeriods: [
+        {
+          id: "p1",
+          startDate: "2024-01-01",
+          endDate: "2024-12-31",
+          companyReportId: "cr-1",
+          companyReport: {
+            id: "cr-1",
+            reportYear: "2025",
+            registryReportId: "reg-1",
+            report: {
+              id: "reg-1",
+              reportYear: "2024",
+              url: "https://example.com/report.pdf",
+            },
+          },
+        },
+        {
+          id: "p2",
+          startDate: "2023-01-01",
+          endDate: "2023-12-31",
+          companyReportId: "cr-1",
+          companyReport: {
+            id: "cr-1",
+            reportYear: "2025",
+            registryReportId: "reg-1",
+          },
+        },
+      ],
+    } as GarboCompanyDetail;
+
+    const rows = buildCompanyReportOverview(company);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.companyReportId).toBe("cr-1");
+    expect(rows[0]?.reportYear).toBe("2025");
+    expect(rows[0]?.registryReportId).toBe("reg-1");
+    expect(rows[0]?.periodCount).toBe(2);
+    expect(rows[0]?.periodDataYears).toEqual(["2024", "2023"]);
+    expect(registryYearMismatch(rows[0]!)).toBe(true);
+  });
+});
