@@ -19,7 +19,8 @@ export function useBatches(batchesListUrl?: string): {
   const [isLoading, setIsLoading] = useState(true);
   const [version, setVersion] = useState(0);
   const listUrl =
-    batchesListUrl ?? getGarboQueueArchiveUrl(`/batches?limit=${BATCHES_LIMIT}`);
+    batchesListUrl ??
+    getGarboQueueArchiveUrl(`/batches?limit=${BATCHES_LIMIT}`);
 
   const refetch = useCallback(() => {
     setVersion((v) => v + 1);

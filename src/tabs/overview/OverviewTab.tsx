@@ -39,7 +39,9 @@ export function OverviewTab() {
   } = useKeySetSelection({ resetWhen: data.viewMode });
   const [isRunReportsOpen, setIsRunReportsOpen] = useState(false);
   const envPipeline = useRunReportsPipeline();
-  const stagePipeline = useRunReportsPipeline(STAGE_RUN_REPORTS_PIPELINE_CONFIG);
+  const stagePipeline = useRunReportsPipeline(
+    STAGE_RUN_REPORTS_PIPELINE_CONFIG,
+  );
 
   const isProdToStage = data.viewMode === "prodToStage";
   const activePipeline = isProdToStage ? stagePipeline : envPipeline;
@@ -170,7 +172,9 @@ export function OverviewTab() {
             </Button>
             <Button
               onClick={() => setIsRunReportsOpen(true)}
-              disabled={runItems.length === 0 || activePipeline.isRunningReports}
+              disabled={
+                runItems.length === 0 || activePipeline.isRunningReports
+              }
             >
               {activePipeline.isRunningReports ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -189,7 +193,9 @@ export function OverviewTab() {
         {isProdToStage ? (
           <div className="space-y-3">
             <div className="rounded-lg border border-blue-03/30 bg-blue-03/10 px-4 py-3 text-sm text-gray-01 space-y-2">
-              <p className="font-medium">{t("overview.prodToStage.bannerTitle")}</p>
+              <p className="font-medium">
+                {t("overview.prodToStage.bannerTitle")}
+              </p>
               <ul className="list-disc pl-5 text-gray-02 space-y-1 text-xs">
                 <li>{t("overview.prodToStage.bannerReadProd")}</li>
                 <li>{t("overview.prodToStage.bannerRunStage")}</li>
@@ -262,9 +268,7 @@ export function OverviewTab() {
             />
             <MetricCard
               label={t("overview.prodToStage.stats.runnable")}
-              value={
-                data.prodToStageRows.filter((row) => row.reportUrl).length
-              }
+              value={data.prodToStageRows.filter((row) => row.reportUrl).length}
             />
             <MetricCard
               label={t("overview.prodToStage.stats.selected")}

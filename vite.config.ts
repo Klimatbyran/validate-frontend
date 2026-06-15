@@ -322,8 +322,7 @@ export default defineConfig(({ mode }) => {
           target: urls.garboStage,
           changeOrigin: true,
           secure: true,
-          rewrite: (path) =>
-            path.replace(/^\/garbo-stage-api/, "/api"),
+          rewrite: (path) => path.replace(/^\/garbo-stage-api/, "/api"),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
           configure: (proxy) => {

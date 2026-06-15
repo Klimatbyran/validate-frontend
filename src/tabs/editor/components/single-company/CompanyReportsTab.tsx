@@ -101,7 +101,9 @@ export function CompanyReportsTab({
           </p>
           <details className="mt-3 text-xs text-gray-02">
             <summary className="cursor-pointer select-none hover:text-gray-01">
-              {t("editor.singleCompanyView.companyReports.relationshipDetailsLabel")}
+              {t(
+                "editor.singleCompanyView.companyReports.relationshipDetailsLabel",
+              )}
             </summary>
             <p className="mt-2 font-mono break-all leading-relaxed">
               {t("editor.singleCompanyView.companyReports.relationship")}
@@ -115,7 +117,9 @@ export function CompanyReportsTab({
           <DataTableHead>
             <tr>
               <th className="text-left">
-                {t("editor.singleCompanyView.companyReports.columns.reportYear")}
+                {t(
+                  "editor.singleCompanyView.companyReports.columns.reportYear",
+                )}
               </th>
               <th className="text-left">
                 {t("editor.singleCompanyView.companyReportId")}

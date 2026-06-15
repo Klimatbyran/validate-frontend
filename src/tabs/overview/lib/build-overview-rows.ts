@@ -86,9 +86,7 @@ function mergeCompanies(stageCompanies: Company[], prodCompanies: Company[]) {
       ],
     });
   }
-  return Array.from(byId.values()).sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
+  return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function findGarboCompanyById(
@@ -326,18 +324,25 @@ function buildRegistryFileStatus(entry: RegistryEntry): OverviewStatusDetail {
     ]);
   }
 
-  return statusDetail("ok", "File saved", [
-    entry.url ? `URL: ${entry.url}` : "No source URL.",
-    entry.s3Url ? `S3: ${entry.s3Url}` : "No S3 cache.",
-    entry.sha256 ? `SHA256: ${entry.sha256}` : "No file hash recorded.",
-  ], links.length ? links : undefined);
+  return statusDetail(
+    "ok",
+    "File saved",
+    [
+      entry.url ? `URL: ${entry.url}` : "No source URL.",
+      entry.s3Url ? `S3: ${entry.s3Url}` : "No S3 cache.",
+      entry.sha256 ? `SHA256: ${entry.sha256}` : "No file hash recorded.",
+    ],
+    links.length ? links : undefined,
+  );
 }
 
 function buildWikidataStatus(
   wikidataId: string | null | undefined,
 ): OverviewStatusDetail {
   if (isWikidataIdPresent(wikidataId)) {
-    return statusDetail("ok", "Present", [`Wikidata ID: ${wikidataId!.trim()}`]);
+    return statusDetail("ok", "Present", [
+      `Wikidata ID: ${wikidataId!.trim()}`,
+    ]);
   }
   return statusDetail("warning", "Missing", [
     "Registry entry has no Wikidata ID — harder to match to Garbo companies and company-year coverage.",
@@ -437,7 +442,9 @@ function buildProdVerifiedStatus(
   ]);
 }
 
-function pipelineLinks(companyId: string | null): OverviewStatusDetail["links"] {
+function pipelineLinks(
+  companyId: string | null,
+): OverviewStatusDetail["links"] {
   const links: OverviewStatusDetail["links"] = [
     { label: "Open job status archive", href: "/jobbstatus?source=archive" },
   ];
@@ -524,10 +531,7 @@ function buildPipelineErrorsStatus(
 function buildPipelineStatuses(
   archiveRun: ArchiveRunSummary | null,
   companyId: string | null,
-): Pick<
-  OverviewRow["statuses"],
-  "pipeline" | "pipelineErrors"
-> {
+): Pick<OverviewRow["statuses"], "pipeline" | "pipelineErrors"> {
   const pipelineSummary = summarizeArchiveRun(archiveRun);
   const links = pipelineLinks(companyId);
 
@@ -632,7 +636,7 @@ export function buildRegistryReportRows(
               entry.companyName ?? "",
               reportYear,
             )
-          : entry.id ?? entry.url;
+          : (entry.id ?? entry.url);
       const archiveRun = findLatestArchiveRunForRow({
         index: archiveIndex,
         rowKey: archiveLookupKey,
@@ -645,8 +649,8 @@ export function buildRegistryReportRows(
         companyId != null
           ? [
               ...new Set([
-                ...(findGarboCompanyById(input.prodCompanies, companyId)?.tags ??
-                  []),
+                ...(findGarboCompanyById(input.prodCompanies, companyId)
+                  ?.tags ?? []),
                 ...(findGarboCompanyById(input.stageCompanies, companyId)
                   ?.tags ?? []),
               ]),
@@ -711,9 +715,8 @@ export function computeOverviewStats(
     withReport: rows.filter((row) => row.statuses.report?.kind === "ok").length,
     inStage: rows.filter((row) => row.statuses.stageData?.kind === "ok").length,
     inProd: rows.filter((row) => row.statuses.prodData?.kind === "ok").length,
-    prodVerified: rows.filter(
-      (row) => row.statuses.prodVerified?.kind === "ok",
-    ).length,
+    prodVerified: rows.filter((row) => row.statuses.prodVerified?.kind === "ok")
+      .length,
     pipelineCompleted,
     pipelineFailed,
   };

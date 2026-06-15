@@ -29,9 +29,7 @@ export function rowMatchesGapFilters(
   row: OverviewRow,
   filters: Pick<
     OverviewFilters,
-    | "missingRegistryOnly"
-    | "missingCompanyReportOnly"
-    | "notRunInPipelineOnly"
+    "missingRegistryOnly" | "missingCompanyReportOnly" | "notRunInPipelineOnly"
   >,
 ): boolean {
   if (filters.missingRegistryOnly && !rowMissingRegistryReport(row)) {

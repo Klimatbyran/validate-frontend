@@ -8,10 +8,7 @@ export function truncateUrl(url: string, max = 56): string {
 
 export function registryReportHref(report: GarboRegistryReportSummary): string {
   return (
-    report.sourceUrl?.trim() ||
-    report.url?.trim() ||
-    report.s3Url?.trim() ||
-    ""
+    report.sourceUrl?.trim() || report.url?.trim() || report.s3Url?.trim() || ""
   );
 }
 

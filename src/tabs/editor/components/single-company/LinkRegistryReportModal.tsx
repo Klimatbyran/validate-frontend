@@ -84,7 +84,8 @@ export function LinkRegistryReportModal({
   const selectedOption = selectedId ? optionsById.get(selectedId) : undefined;
 
   const canSave =
-    Boolean(selectedId) && selectedId !== (currentRegistryReportId?.trim() || "");
+    Boolean(selectedId) &&
+    selectedId !== (currentRegistryReportId?.trim() || "");
 
   const handleSave = async () => {
     if (!selectedId) return;

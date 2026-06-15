@@ -25,7 +25,11 @@ export function useClientTablePagination<T>(rows: T[]) {
   }, [rows, showAll, safePage, totalRows]);
 
   const from =
-    totalRows === 0 ? 0 : showAll ? 1 : (safePage - 1) * CLIENT_TABLE_PAGE_SIZE + 1;
+    totalRows === 0
+      ? 0
+      : showAll
+        ? 1
+        : (safePage - 1) * CLIENT_TABLE_PAGE_SIZE + 1;
   const to = showAll
     ? totalRows
     : Math.min(safePage * CLIENT_TABLE_PAGE_SIZE, totalRows);

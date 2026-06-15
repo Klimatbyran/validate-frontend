@@ -34,10 +34,7 @@ export function CompanyEditDetail({
           >
             {t("editor.singleCompanyView.tabs.reportingPeriods")}
           </TabsTrigger>
-          <TabsTrigger
-            value="company-reports"
-            className="rounded-md px-4 py-2"
-          >
+          <TabsTrigger value="company-reports" className="rounded-md px-4 py-2">
             {t("editor.singleCompanyView.tabs.companyReports")}
           </TabsTrigger>
           <TabsTrigger value="economy" className="rounded-md px-4 py-2">

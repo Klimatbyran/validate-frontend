@@ -126,9 +126,7 @@ export function getGarboQueueArchiveUrl(path: string): string {
 
 /** Stage Garbo queue-archive (ignores VITE_UNEARTH_TARGET). */
 export function getStageGarboQueueArchiveUrl(path: string): string {
-  const base = import.meta.env.DEV
-    ? "/garbo-stage/api"
-    : "/garbo-stage-api";
+  const base = import.meta.env.DEV ? "/garbo-stage/api" : "/garbo-stage-api";
   const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
   return `${base.replace(/\/+$/, "")}/queue-archive${p}`;
 }

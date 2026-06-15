@@ -41,7 +41,9 @@ function firstPeriodMeta(periods: GarboReportingPeriodSummary[]) {
   };
 }
 
-function overviewRowFromShell(shell: CompanyReportShellGroup): CompanyReportOverviewRow {
+function overviewRowFromShell(
+  shell: CompanyReportShellGroup,
+): CompanyReportOverviewRow {
   const meta = firstPeriodMeta(shell.periods);
   const companyReport = meta.companyReport;
   const registryReport = companyReport?.report ?? null;
@@ -78,7 +80,9 @@ export function buildCompanyReportOverview(
   return groupPeriodsByReportShell(periods).map(overviewRowFromShell);
 }
 
-export function isUnlinkedCompanyReportRow(row: CompanyReportOverviewRow): boolean {
+export function isUnlinkedCompanyReportRow(
+  row: CompanyReportOverviewRow,
+): boolean {
   return row.shellKey === UNLINKED_REPORT_SHELL_KEY;
 }
 
@@ -111,7 +115,5 @@ export function pickReportLink(row: CompanyReportOverviewRow): string | null {
 }
 
 export function pickS3Link(row: CompanyReportOverviewRow): string | null {
-  return (
-    row.registryReport?.s3Url?.trim() || row.sampleS3Url?.trim() || null
-  );
+  return row.registryReport?.s3Url?.trim() || row.sampleS3Url?.trim() || null;
 }

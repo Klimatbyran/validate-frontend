@@ -1,4 +1,10 @@
-import { AlertTriangle, ExternalLink, Link2, Loader2, Save } from "lucide-react";
+import {
+  AlertTriangle,
+  ExternalLink,
+  Link2,
+  Loader2,
+  Save,
+} from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { reportHrefLinkPillClassName } from "@/lib/report-url-link-pill";
 import { Button } from "@/ui/button";

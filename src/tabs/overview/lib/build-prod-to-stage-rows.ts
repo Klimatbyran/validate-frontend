@@ -47,9 +47,7 @@ export function pickPipelineReportUrl(
   const httpUrls = periods
     .flatMap((period) => periodReportUrls(period))
     .filter((url) => /^https?:\/\//i.test(url));
-  const nonStorage = httpUrls.find(
-    (url) => !/amazonaws|\.s3\./i.test(url),
-  );
+  const nonStorage = httpUrls.find((url) => !/amazonaws|\.s3\./i.test(url));
   return nonStorage ?? httpUrls[0] ?? null;
 }
 
@@ -174,7 +172,9 @@ function stagePeriodsMatchingProdShell(
 }
 
 function shellKeyToRowId(shellKey: string): string {
-  return shellKey === UNLINKED_REPORT_SHELL_KEY ? UNLINKED_REPORT_SHELL_KEY : shellKey;
+  return shellKey === UNLINKED_REPORT_SHELL_KEY
+    ? UNLINKED_REPORT_SHELL_KEY
+    : shellKey;
 }
 
 function stageMatchingReportHasEmissionsData(

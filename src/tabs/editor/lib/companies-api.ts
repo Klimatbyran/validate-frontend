@@ -477,9 +477,7 @@ export async function fetchCompanyRegistryReports(
   signal?: AbortSignal,
 ): Promise<GarboRegistryReportSummary[]> {
   const res = await garboAuthFetch(
-    apiUrl(
-      companiesPath(`${encodeURIComponent(companyId)}/registry-reports`),
-    ),
+    apiUrl(companiesPath(`${encodeURIComponent(companyId)}/registry-reports`)),
     {
       method: "GET",
       headers: { Accept: "application/json" },
@@ -538,7 +536,8 @@ export async function updateCompanyReport(
   if (res.status === 400) {
     const data = await res.json().catch(() => ({}));
     throw new Error(
-      (data as { message?: string }).message ?? "Invalid company report update.",
+      (data as { message?: string }).message ??
+        "Invalid company report update.",
     );
   }
   if (!res.ok) {

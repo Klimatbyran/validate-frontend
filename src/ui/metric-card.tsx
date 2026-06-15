@@ -9,7 +9,9 @@ type MetricCardProps = {
 export function MetricCard({ label, value }: MetricCardProps) {
   return (
     <div className="rounded-lg border border-gray-03 bg-gray-05/70 px-3 py-2">
-      <p className="text-[11px] uppercase tracking-wide text-gray-02">{label}</p>
+      <p className="text-[11px] uppercase tracking-wide text-gray-02">
+        {label}
+      </p>
       <p className="text-lg font-semibold text-gray-01">{value}</p>
     </div>
   );
@@ -21,7 +23,5 @@ type MetricCardGridProps = {
 };
 
 export function MetricCardGrid({ children, className }: MetricCardGridProps) {
-  return (
-    <div className={cn("grid gap-3", className)}>{children}</div>
-  );
+  return <div className={cn("grid gap-3", className)}>{children}</div>;
 }

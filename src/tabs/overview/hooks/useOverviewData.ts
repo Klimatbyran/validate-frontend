@@ -167,7 +167,8 @@ export function useOverviewData() {
     [stageCompanies, prodCompanies],
   );
 
-  const prodPipelineUsesStageOverride = crossEnvProdPipelineUrlUsesStageOverride();
+  const prodPipelineUsesStageOverride =
+    crossEnvProdPipelineUrlUsesStageOverride();
 
   const allRows: OverviewRow[] =
     viewMode === "companyYears"
