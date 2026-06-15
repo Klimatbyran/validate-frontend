@@ -32,7 +32,7 @@ export function ReportShellGroupHeader({
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="text-sm font-semibold text-gray-01">
           {shell.reportYear
-            ? `${t("editor.companies.reportYear")}: ${shell.reportYear}`
+            ? `${t("yearLabels.companyReportYear")}: ${shell.reportYear}`
             : t("editor.singleCompanyView.noReportYear")}
         </span>
         <span className="text-xs text-gray-02">

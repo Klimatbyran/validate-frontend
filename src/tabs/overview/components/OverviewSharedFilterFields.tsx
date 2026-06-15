@@ -30,25 +30,28 @@ type ReportYearFilterProps = {
   years: string[];
   selectedYears: string[];
   onChange: (years: string[]) => void;
+  labelKey: string;
 };
 
 export function OverviewReportYearFilter({
   years,
   selectedYears,
   onChange,
+  labelKey,
 }: ReportYearFilterProps) {
   const { t } = useI18n();
+  const label = t(labelKey);
 
   return (
     <div>
       <label className="block text-xs font-medium text-gray-02 mb-1">
-        {t("overview.reportYearFilter")}
+        {label}
       </label>
       <MultiSelectDropdown
         options={years}
         selectedIds={selectedYears}
         onChange={onChange}
-        triggerLabel={t("overview.reportYearFilter")}
+        triggerLabel={label}
         getOptionLabel={(year) => year}
         triggerClassName="min-w-[160px]"
       />

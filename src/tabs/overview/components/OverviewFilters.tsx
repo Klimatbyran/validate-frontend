@@ -60,6 +60,11 @@ export function OverviewFilters({ data }: Props) {
           years={data.distinctReportYears}
           selectedYears={data.filters.reportYears}
           onChange={(reportYears) => data.patchFilters({ reportYears })}
+          labelKey={
+            data.viewMode === "registryReports"
+              ? "overview.reportYearFilter"
+              : "overview.companyReportYearFilter"
+          }
         />
 
         {data.viewMode === "companyYears" ? (

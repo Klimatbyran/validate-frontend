@@ -31,7 +31,7 @@ export const WIKIDATA_ID_REGEX = /^Q\d+$/;
 
 /** Minimal company from Garbo GET /api/companies (list). */
 export interface GarboCompanyListItem {
-  /** Internal Garbo company id (CUID). */
+  /** Internal Garbo company id (UUID). */
   id: string;
   wikidataId?: string | null;
   name: string;
@@ -66,7 +66,7 @@ export interface GarboRegistryReportSummary {
 
 /** Linked processed PDF (CompanyReport) for a reporting period. */
 export interface GarboCompanyReportSummary {
-  id?: string;
+  id: string;
   reportYear?: string | null;
   reportPublicationDate?: string | null;
   registryReportId?: string | null;

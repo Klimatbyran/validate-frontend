@@ -7,6 +7,7 @@ import { Modal } from "@/ui/modal";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import {
   fetchCompanyRegistryReports,
+  linkReportingPeriodsToCompanyReport,
   updateCompanyReport,
 } from "../../lib/companies-api";
 import { formatRegistryOptionLabel } from "../../lib/registry-report-display";
@@ -25,19 +26,22 @@ export function LinkRegistryReportModal({
   onOpenChange,
   companyId,
   companyReportId,
+  reportingPeriodIds,
   currentRegistryReportId,
   onLinked,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   companyId: string;
-  companyReportId: string;
+  companyReportId?: string;
+  reportingPeriodIds?: string[];
   currentRegistryReportId?: string | null;
   onLinked?: () => void;
 }) {
   const { t } = useI18n();
   const dash = t("common.placeholderDash");
   const noYearLabel = t("editor.singleCompanyView.noReportYear");
+  const linkingUnlinked = !companyReportId?.trim();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -87,14 +91,37 @@ export function LinkRegistryReportModal({
     Boolean(selectedId) &&
     selectedId !== (currentRegistryReportId?.trim() || "");
 
+  const handleRegistrySelection = (value: string) => {
+    if (!value.trim()) {
+      toast.info(
+        t("editor.singleCompanyView.companyReports.linkModal.cannotUnlink"),
+      );
+      return;
+    }
+    setSelectedId(value);
+  };
+
   const handleSave = async () => {
     if (!selectedId) return;
 
     setSaving(true);
     try {
-      await updateCompanyReport(companyId, companyReportId, {
-        registryReportId: selectedId,
-      });
+      if (linkingUnlinked) {
+        const periodIds = reportingPeriodIds ?? [];
+        if (periodIds.length === 0) {
+          throw new Error(
+            t("editor.singleCompanyView.companyReports.linkModal.noPeriods"),
+          );
+        }
+        await linkReportingPeriodsToCompanyReport(companyId, {
+          registryReportId: selectedId,
+          reportingPeriodIds: periodIds,
+        });
+      } else {
+        await updateCompanyReport(companyId, companyReportId!, {
+          registryReportId: selectedId,
+        });
+      }
       toast.success(
         t("editor.singleCompanyView.companyReports.linkModal.linked"),
       );
@@ -117,9 +144,13 @@ export function LinkRegistryReportModal({
       onOpenChange={onOpenChange}
       size="lg"
       title={t("editor.singleCompanyView.companyReports.linkModal.title")}
-      description={t(
-        "editor.singleCompanyView.companyReports.linkModal.description",
-      )}
+      description={
+        linkingUnlinked
+          ? t(
+              "editor.singleCompanyView.companyReports.linkModal.descriptionUnlinked",
+            )
+          : t("editor.singleCompanyView.companyReports.linkModal.description")
+      }
       footer={
         <>
           <Button
@@ -147,7 +178,9 @@ export function LinkRegistryReportModal({
       }
     >
       <div className="space-y-4">
-        <div className={editorSecondaryIdTextClass}>{companyReportId}</div>
+        {companyReportId ? (
+          <div className={editorSecondaryIdTextClass}>{companyReportId}</div>
+        ) : null}
 
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-gray-02">
@@ -165,7 +198,7 @@ export function LinkRegistryReportModal({
             <SingleSelectDropdown
               options={options.map((option) => option.id!)}
               value={selectedId ?? ""}
-              onChange={(value) => setSelectedId(value || null)}
+              onChange={handleRegistrySelection}
               getOptionLabel={(id) => {
                 const option = optionsById.get(id);
                 return option
@@ -177,6 +210,11 @@ export function LinkRegistryReportModal({
               )}
               triggerClassName="w-full !h-auto min-h-9 !text-sm px-3 py-2"
             />
+            <p className="text-xs text-gray-02">
+              {t(
+                "editor.singleCompanyView.companyReports.linkModal.cannotUnlinkHint",
+              )}
+            </p>
             {selectedOption?.id ? (
               <p className="text-xs text-gray-02 break-all">
                 {selectedOption.id}

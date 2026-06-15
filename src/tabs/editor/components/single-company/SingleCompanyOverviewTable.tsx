@@ -117,7 +117,7 @@ export function SingleCompanyOverviewTable({
                 {t("editor.companies.company")}
               </th>
               <th className="px-4 py-3 font-medium w-[10%]">
-                {t("editor.companies.reportYear")}
+                {t("yearLabels.companyReportYear")}
               </th>
               <th className="px-4 py-3 font-medium">
                 <div className="leading-tight">
@@ -144,7 +144,7 @@ export function SingleCompanyOverviewTable({
                 </div>
               </th>
               <th className="px-4 py-3 font-medium">
-                {t("editor.companies.dataYear")}
+                {t("yearLabels.dataYear")}
               </th>
               <th className="px-4 py-3 font-medium">
                 {t("editor.singleCompanyView.sections.industry")}

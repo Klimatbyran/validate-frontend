@@ -51,7 +51,7 @@ export function ProdToStageTable({
               {t("overview.table.company")}
             </th>
             <th className="px-4 py-3 font-medium w-[7%]">
-              {t("overview.table.reportYear")}
+              {t("overview.table.companyReportYear")}
             </th>
             <th className="px-4 py-3 font-medium w-[12%]">
               <EnvBadge env="prod">

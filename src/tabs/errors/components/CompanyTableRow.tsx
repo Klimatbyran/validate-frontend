@@ -46,7 +46,7 @@ export function CompanyTableRow({
           <span className="text-xs text-gray-02">{displayId}</span>
           {row.reportYear != null ? (
             <span className="text-xs text-gray-02">
-              {t("errors.reportYearShort", { year: row.reportYear })}
+              {t("errors.companyReportYearShort", { year: row.reportYear })}
             </span>
           ) : null}
           {isMissingCompany && (

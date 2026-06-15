@@ -40,7 +40,7 @@ function RegistryLinkCell({
           </div>
           {row.registryReport?.reportYear ? (
             <div className="text-xs text-gray-02">
-              {t("editor.companies.reportYear")}:{" "}
+              {t("yearLabels.reportYear")}:{" "}
               {row.registryReport.reportYear}
             </div>
           ) : (
@@ -134,11 +134,16 @@ export function CompanyReportOverviewTableRow({
 
   return (
     <tr>
-      <td className="align-top min-w-[140px]">
+      <td className="align-top min-w-[160px]">
         {unlinked ? (
           <span className="text-sm text-gray-02">{dash}</span>
         ) : (
           <div className="flex flex-col gap-2">
+            <p className="text-[11px] text-gray-02 leading-snug">
+              {t(
+                "editor.singleCompanyView.companyReports.companyReportYearFieldHint",
+              )}
+            </p>
             <input
               type="text"
               inputMode="numeric"
@@ -147,7 +152,7 @@ export function CompanyReportOverviewTableRow({
               value={displayYear}
               onChange={(e) => onYearChange(e.target.value)}
               aria-label={t(
-                "editor.singleCompanyView.companyReports.columns.reportYear",
+                "editor.singleCompanyView.companyReports.columns.companyReportYear",
               )}
             />
             {isYearDirty ? (
@@ -175,7 +180,7 @@ export function CompanyReportOverviewTableRow({
                   {t(
                     "editor.singleCompanyView.companyReports.registryYearMismatch",
                     {
-                      companyYear: row.reportYear,
+                      shellYear: row.companyReportYear,
                       registryYear: row.registryReport?.reportYear ?? dash,
                     },
                   )}
@@ -197,14 +202,15 @@ export function CompanyReportOverviewTableRow({
         )}
       </td>
       <td className="align-top min-w-[180px]">
-        {unlinked ? (
-          <span className="text-sm text-gray-02">{dash}</span>
-        ) : (
-          <RegistryLinkCell row={row} onLinkRegistry={onLinkRegistry} />
-        )}
+        <RegistryLinkCell row={row} onLinkRegistry={onLinkRegistry} />
       </td>
-      <td className="align-top text-sm text-gray-01">
-        {row.periodDataYears.length ? row.periodDataYears.join(", ") : dash}
+      <td className="align-top">
+        <div className="text-sm text-gray-01">
+          {row.periodDataYears.length ? row.periodDataYears.join(", ") : dash}
+        </div>
+        <p className="text-[11px] text-gray-02 mt-1 leading-snug">
+          {t("editor.singleCompanyView.companyReports.dataYearsFieldHint")}
+        </p>
       </td>
       <td className="align-top text-sm text-gray-01">{row.periodCount}</td>
       <td className="align-top">

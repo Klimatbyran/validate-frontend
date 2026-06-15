@@ -45,21 +45,74 @@ function parseCatalogYearFromUrl(
   return String(Math.max(...years));
 }
 
-/** PDF catalog year from linked CompanyReport, else best-effort from report URLs. */
-export function getPeriodReportYear(period: {
+export type CompanyReportYearSource = "companyReport" | "urlEstimate";
+
+/** CompanyReport.reportYear from the linked shell only (no URL guess). */
+export function getPersistedCompanyReportYearFromPeriod(period: {
+  companyReport?: { id?: string | null; reportYear?: string | null } | null;
+  companyReportId?: string | null;
+}): string | null {
+  return period.companyReport?.reportYear?.trim() || null;
+}
+
+/** Look up persisted shell year by CompanyReport id from API list rows or period embeds. */
+export function lookupPersistedCompanyReportYear(
+  companyReportId: string | null | undefined,
+  shells: Array<{ id?: string; reportYear?: string | null }>,
+  periods: Array<{
+    companyReportId?: string | null;
+    companyReport?: { id?: string | null; reportYear?: string | null } | null;
+  }> = [],
+): string | null {
+  const id = companyReportId?.trim();
+  if (!id) return null;
+
+  const fromShellList = shells.find((shell) => shell.id?.trim() === id);
+  const listYear = fromShellList?.reportYear?.trim();
+  if (listYear) return listYear;
+
+  for (const period of periods) {
+    const periodShellId =
+      period.companyReportId?.trim() ?? period.companyReport?.id?.trim();
+    if (periodShellId !== id) continue;
+    const embeddedYear = period.companyReport?.reportYear?.trim();
+    if (embeddedYear) return embeddedYear;
+  }
+
+  return null;
+}
+
+/** CompanyReport.reportYear on the linked shell, else a URL estimate when the shell year is missing. */
+export function resolveCompanyReportYearFromPeriod(period: {
+  companyReport?: { reportYear?: string | null } | null;
+  reportURL?: string | null;
+  reportS3Url?: string | null;
+  s3Url?: string | null;
+}): { year: string | null; source: CompanyReportYearSource | null } {
+  const fromShell = getPersistedCompanyReportYearFromPeriod(period);
+  if (fromShell) {
+    return { year: fromShell, source: "companyReport" };
+  }
+  for (const url of [period.reportURL, period.reportS3Url, period.s3Url]) {
+    const fromUrl = parseCatalogYearFromUrl(url);
+    if (fromUrl) {
+      return { year: fromUrl, source: "urlEstimate" };
+    }
+  }
+  return { year: null, source: null };
+}
+
+export function getCompanyReportYearFromPeriod(period: {
   companyReport?: { reportYear?: string | null } | null;
   reportURL?: string | null;
   reportS3Url?: string | null;
   s3Url?: string | null;
 }): string | null {
-  const fromShell = period.companyReport?.reportYear?.trim();
-  if (fromShell) return fromShell;
-  for (const url of [period.reportURL, period.reportS3Url, period.s3Url]) {
-    const fromUrl = parseCatalogYearFromUrl(url);
-    if (fromUrl) return fromUrl;
-  }
-  return null;
+  return resolveCompanyReportYearFromPeriod(period).year;
 }
+
+/** @deprecated Use getCompanyReportYearFromPeriod */
+export const getPeriodReportYear = getCompanyReportYearFromPeriod;
 
 /** Reporting period data year (DB `year` field, else end/start date). */
 export function getPeriodDataYear(period: {

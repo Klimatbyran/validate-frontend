@@ -36,6 +36,7 @@ export function ProdToStageFilters({ data }: Props) {
           onChange={(reportYears) =>
             data.patchProdToStageFilters({ reportYears })
           }
+          labelKey="overview.companyReportYearFilter"
         />
 
         <OverviewTagFilter

@@ -120,7 +120,7 @@ export function ErrorBrowserTab() {
 
           <div className="flex flex-col gap-1">
             <label className="text-xs text-gray-02 uppercase tracking-wide">
-              {t("errors.reportYear")}
+              {t("yearLabels.companyReportYear")}
             </label>
             <SingleSelectDropdown
               options={[
@@ -131,9 +131,9 @@ export function ErrorBrowserTab() {
               ]}
               value={selectedReportYear}
               onChange={setSelectedReportYear}
-              placeholder={t("errors.allReportYears")}
-              getOptionLabel={(v) => (v ? v : t("errors.allReportYears"))}
-              ariaLabel={t("errors.reportYear")}
+              placeholder={t("errors.allCompanyReportYears")}
+              getOptionLabel={(v) => (v ? v : t("errors.allCompanyReportYears"))}
+              ariaLabel={t("yearLabels.companyReportYear")}
               panelMinWidth={120}
             />
           </div>

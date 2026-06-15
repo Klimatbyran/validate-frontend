@@ -8,6 +8,7 @@ import {
   WIKIDATA_ID_REGEX,
   type GarboCompanyListItem,
   type GarboCompanyDetail,
+  type GarboCompanyReportSummary,
   type GarboMetadata,
   type GarboRegistryReportSummary,
 } from "./types";
@@ -469,6 +470,82 @@ export async function updateCompanyIndustry(
     const text = await res.text();
     throw new Error(`Failed to update industry: ${res.status} ${text}`);
   }
+}
+
+/** CompanyReport shells for a company (GET /api/companies/:id/company-reports). */
+export async function fetchCompanyReports(
+  companyId: string,
+  signal?: AbortSignal,
+): Promise<GarboCompanyReportSummary[]> {
+  const res = await garboAuthFetch(
+    apiUrl(companiesPath(`${encodeURIComponent(companyId)}/company-reports`)),
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal,
+    },
+  );
+  if (res.status === 401) {
+    throw new Error("Please log in to list company reports.");
+  }
+  if (res.status === 404) {
+    throw new Error("Company not found.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to list company reports: ${res.status} ${text}`);
+  }
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+/** Link unlinked reporting periods to a registry report (POST …/company-reports/link-periods). */
+export async function linkReportingPeriodsToCompanyReport(
+  companyId: string,
+  body: { registryReportId: string; reportingPeriodIds: string[] },
+): Promise<{ companyReportId: string; registryReportId: string }> {
+  const res = await garboAuthFetch(
+    apiUrl(
+      companiesPath(
+        `${encodeURIComponent(companyId)}/company-reports/link-periods`,
+      ),
+    ),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+  );
+  if (res.status === 401) {
+    throw new Error("Please log in to link reporting periods.");
+  }
+  if (res.status === 404) {
+    throw new Error("Company not found.");
+  }
+  if (res.status === 400) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(
+      (data as { message?: string }).message ?? "Invalid link request.",
+    );
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to link reporting periods: ${res.status} ${text}`);
+  }
+  const data = (await res.json()) as {
+    companyReportId?: string;
+    registryReportId?: string;
+  };
+  if (!data.companyReportId || !data.registryReportId) {
+    throw new Error("Link response missing company report id.");
+  }
+  return {
+    companyReportId: data.companyReportId,
+    registryReportId: data.registryReportId,
+  };
 }
 
 /** Registry Report rows for a company (GET /api/companies/:id/registry-reports). */

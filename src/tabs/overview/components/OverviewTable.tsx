@@ -94,9 +94,15 @@ export function OverviewTable({
               </th>
               <th
                 className="px-4 py-3 font-medium w-[8%] cursor-help"
-                title={headerHint("reportYear")}
+                title={headerHint(
+                  data.viewMode === "registryReports"
+                    ? "reportYear"
+                    : "companyReportYear",
+                )}
               >
-                {t("overview.table.reportYear")}
+                {data.viewMode === "registryReports"
+                  ? t("overview.table.reportYear")
+                  : t("overview.table.companyReportYear")}
               </th>
               {data.viewMode === "registryReports" ? (
                 <th

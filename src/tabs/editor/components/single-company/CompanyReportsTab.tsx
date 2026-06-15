@@ -7,10 +7,14 @@ import {
   DataTableHead,
   DataTableShell,
 } from "@/ui/data-table";
-import { updateCompanyReportYear } from "../../lib/companies-api";
+import { LoadingSpinner } from "@/ui/loading-spinner";
+import {
+  fetchCompanyReports,
+  updateCompanyReportYear,
+} from "../../lib/companies-api";
 import {
   buildCompanyReportOverview,
-  isUnlinkedCompanyReportRow,
+  getReportCatalogYearMax,
   isValidReportCatalogYear,
   type CompanyReportOverviewRow,
 } from "../../lib/company-report-overview";
@@ -26,8 +30,13 @@ export function CompanyReportsTab({
   onSaved?: () => void;
 }) {
   const { t } = useI18n();
+  const currentYear = getReportCatalogYearMax();
 
-  const rows = useMemo(() => buildCompanyReportOverview(company), [company]);
+  const [companyReports, setCompanyReports] = useState<
+    Awaited<ReturnType<typeof fetchCompanyReports>>
+  >([]);
+  const [loadingShells, setLoadingShells] = useState(true);
+  const [shellsError, setShellsError] = useState<string | null>(null);
 
   const [editedYears, setEditedYears] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -35,26 +44,71 @@ export function CompanyReportsTab({
     null,
   );
 
+  const loadCompanyReports = (signal?: AbortSignal) => {
+    setLoadingShells(true);
+    setShellsError(null);
+    return fetchCompanyReports(company.id, signal)
+      .then((reports) => {
+        if (signal?.aborted) return;
+        setCompanyReports(reports);
+      })
+      .catch((error) => {
+        if (signal?.aborted) return;
+        const message =
+          error instanceof Error
+            ? error.message
+            : t("editor.singleCompanyView.companyReports.loadFailed");
+        setShellsError(message);
+      })
+      .finally(() => {
+        if (!signal?.aborted) setLoadingShells(false);
+      });
+  };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadCompanyReports(controller.signal);
+    return () => controller.abort();
+  }, [company.id]);
+
   useEffect(() => {
     setEditedYears({});
   }, [company.id]);
 
+  const rows = useMemo(
+    () =>
+      buildCompanyReportOverview(
+        companyReports,
+        company.reportingPeriods ?? [],
+      ),
+    [companyReports, company.reportingPeriods],
+  );
+
+  const rowKey = (row: CompanyReportOverviewRow) =>
+    row.isUnlinked ? row.shellKey : row.companyReportId;
+
   const displayYear = (row: CompanyReportOverviewRow) => {
-    const edited = editedYears[row.companyReportId];
+    const key = rowKey(row);
+    const edited = editedYears[key];
     if (edited !== undefined) return edited;
-    return row.reportYear ?? "";
+    return row.companyReportYear ?? "";
   };
 
   const isYearDirty = (row: CompanyReportOverviewRow) => {
-    const edited = editedYears[row.companyReportId];
+    const key = rowKey(row);
+    const edited = editedYears[key];
     if (edited === undefined) return false;
-    return edited !== (row.reportYear ?? "");
+    return edited !== (row.companyReportYear ?? "");
   };
 
   const handleSaveYear = async (row: CompanyReportOverviewRow) => {
     const nextYear = displayYear(row).trim();
     if (!isValidReportCatalogYear(nextYear)) {
-      toast.error(t("editor.singleCompanyView.companyReports.invalidYear"));
+      toast.error(
+        t("editor.singleCompanyView.companyReports.invalidYear", {
+          maxYear: String(currentYear),
+        }),
+      );
       return;
     }
 
@@ -64,9 +118,10 @@ export function CompanyReportsTab({
       toast.success(t("editor.singleCompanyView.companyReports.yearSaved"));
       setEditedYears((prev) => {
         const next = { ...prev };
-        delete next[row.companyReportId];
+        delete next[rowKey(row)];
         return next;
       });
+      await loadCompanyReports();
       onSaved?.();
     } catch (error) {
       const message =
@@ -78,6 +133,27 @@ export function CompanyReportsTab({
       setSavingId(null);
     }
   };
+
+  const handleLinked = async () => {
+    await loadCompanyReports();
+    onSaved?.();
+  };
+
+  if (loadingShells) {
+    return (
+      <section className="rounded-lg bg-gray-05 p-4 w-full min-w-0 max-w-full flex justify-center py-12">
+        <LoadingSpinner />
+      </section>
+    );
+  }
+
+  if (shellsError) {
+    return (
+      <section className="rounded-lg bg-gray-05 p-4 w-full min-w-0 max-w-full">
+        <p className="text-sm text-red-500">{shellsError}</p>
+      </section>
+    );
+  }
 
   if (rows.length === 0) {
     return (
@@ -118,7 +194,7 @@ export function CompanyReportsTab({
             <tr>
               <th className="text-left">
                 {t(
-                  "editor.singleCompanyView.companyReports.columns.reportYear",
+                  "editor.singleCompanyView.companyReports.columns.companyReportYear",
                 )}
               </th>
               <th className="text-left">
@@ -149,7 +225,7 @@ export function CompanyReportsTab({
                 onYearChange={(value) =>
                   setEditedYears((prev) => ({
                     ...prev,
-                    [row.companyReportId]: value,
+                    [rowKey(row)]: value,
                   }))
                 }
                 onSaveYear={() => void handleSaveYear(row)}
@@ -160,16 +236,21 @@ export function CompanyReportsTab({
         </DataTable>
       </DataTableShell>
 
-      {linkTarget && !isUnlinkedCompanyReportRow(linkTarget) ? (
+      {linkTarget ? (
         <LinkRegistryReportModal
           open={true}
           onOpenChange={(open) => {
             if (!open) setLinkTarget(null);
           }}
           companyId={company.id}
-          companyReportId={linkTarget.companyReportId}
+          companyReportId={
+            linkTarget.isUnlinked ? undefined : linkTarget.companyReportId
+          }
+          reportingPeriodIds={
+            linkTarget.isUnlinked ? linkTarget.periodIds : undefined
+          }
           currentRegistryReportId={linkTarget.registryReportId}
-          onLinked={onSaved}
+          onLinked={() => void handleLinked()}
         />
       ) : null}
     </section>
