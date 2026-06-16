@@ -1,5 +1,4 @@
 import { useI18n } from "@/contexts/I18nContext";
-import { useClientTablePagination } from "@/hooks/useClientTablePagination";
 import {
   DataTable,
   DataTableBody,
@@ -8,11 +7,11 @@ import {
 } from "@/ui/data-table";
 import { ClientTablePagination } from "@/ui/client-table-pagination";
 import { EnvBadge } from "@/ui/env-badge";
-import type { ProdToStageRow } from "../lib/build-prod-to-stage-rows";
+import type { OverviewData } from "../hooks/useOverviewData";
+import type { ProdToStageRow } from "../lib/overview-types";
 
 type Props = {
-  rows: ProdToStageRow[];
-  totalRows: number;
+  data: OverviewData;
   selectedKeys: Set<string>;
   tagLabelBySlug: Record<string, string>;
   onToggleSelect: (row: ProdToStageRow) => void;
@@ -20,8 +19,7 @@ type Props = {
 };
 
 export function ProdToStageTable({
-  rows,
-  totalRows,
+  data,
   selectedKeys,
   tagLabelBySlug,
   onToggleSelect,
@@ -29,10 +27,10 @@ export function ProdToStageTable({
 }: Props) {
   const { t } = useI18n();
   const dash = t("common.placeholderDash");
-  const pagination = useClientTablePagination(rows);
+  const rows = data.prodToStageRows;
+  const pagination = data.pagination;
   const allSelected =
-    pagination.pageRows.length > 0 &&
-    pagination.pageRows.every((row) => selectedKeys.has(row.key));
+    rows.length > 0 && rows.every((row) => selectedKeys.has(row.key));
 
   return (
     <DataTableShell>
@@ -43,7 +41,7 @@ export function ProdToStageTable({
               <input
                 type="checkbox"
                 checked={allSelected}
-                onChange={() => onToggleSelectAll(pagination.pageRows)}
+                onChange={() => onToggleSelectAll(rows)}
                 aria-label={t("overview.selectAll")}
               />
             </th>
@@ -71,7 +69,7 @@ export function ProdToStageTable({
           </tr>
         </DataTableHead>
         <DataTableBody>
-          {pagination.pageRows.map((row) => {
+          {rows.map((row) => {
             const runnable = Boolean(row.reportUrl);
             return (
               <tr
@@ -151,7 +149,6 @@ export function ProdToStageTable({
         from={pagination.from}
         to={pagination.to}
         filteredTotal={pagination.totalRows}
-        unfilteredTotal={totalRows}
         page={pagination.page}
         totalPages={pagination.totalPages}
         showAll={pagination.showAll}

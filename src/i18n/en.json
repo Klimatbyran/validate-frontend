@@ -1060,7 +1060,6 @@
       "bannerReadProd": "Rows are built from prod Garbo: linked CompanyReports with at least one verified emissions value, where the matching stage report (by URL or shell) has no linked CompanyReport with emissions data yet.",
       "bannerRunStage": "Run selected queues jobs on the stage Pipeline API using the prod report URL (new upload to stage).",
       "bannerNeverProd": "This tab never runs the prod pipeline — only stage.",
-      "deployBlocked": "Prod pipeline companies API is not live yet ({{prodUrl}}). Using stage data for prod until VITE_ERRORS_PROD_PIPELINE_URL is removed.",
       "runOnStage": "Run on stage ({{count}})",
       "runSuccess": "Queued {{count}} report(s) on stage pipeline.",
       "runPartial": "{{failed}} of {{total}} report(s) failed to queue on stage. {{succeeded}} queued.",

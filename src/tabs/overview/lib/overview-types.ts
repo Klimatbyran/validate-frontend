@@ -94,9 +94,10 @@ export type OverviewFilters = {
 };
 
 export function defaultOverviewFilters(): OverviewFilters {
+  const currentYear = String(new Date().getFullYear());
   return {
     searchQuery: "",
-    reportYears: [],
+    reportYears: [currentYear],
     tagSlugs: [],
     statusFilters: [],
     missingRegistryOnly: false,
@@ -113,9 +114,10 @@ export type ProdToStageFilters = {
 };
 
 export function defaultProdToStageFilters(): ProdToStageFilters {
+  const currentYear = String(new Date().getFullYear());
   return {
     searchQuery: "",
-    reportYears: [],
+    reportYears: [currentYear],
     tagSlugs: [],
     runnableOnly: false,
   };
@@ -148,4 +150,31 @@ export function statusColumnsForView(
   return viewMode === "companyYears"
     ? COMPANY_YEAR_STATUS_COLUMNS
     : REGISTRY_REPORT_STATUS_COLUMNS;
+}
+
+export type ProdToStageRow = {
+  key: string;
+  companyName: string;
+  wikidataId: string | null;
+  prodCompanyId: string;
+  prodCompanyReportId: string;
+  reportYear: string | null;
+  reportUrl: string | null;
+  validatedDataPointLabels: string[];
+  stageCompanyId: string | null;
+  tags: string[];
+};
+
+export function overviewFiltersAreActive(filters: OverviewFilters): boolean {
+  const currentYear = String(new Date().getFullYear());
+  return (
+    Boolean(filters.searchQuery.trim()) ||
+    filters.reportYears.length !== 1 ||
+    filters.reportYears[0] !== currentYear ||
+    filters.tagSlugs.length > 0 ||
+    filters.statusFilters.length > 0 ||
+    filters.missingRegistryOnly ||
+    filters.missingCompanyReportOnly ||
+    filters.notRunInPipelineOnly
+  );
 }

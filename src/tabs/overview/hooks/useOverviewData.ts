@@ -1,41 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { fetchAllArchiveRuns } from "@/lib/archive-runs-api";
-import {
-  ApiAuthError,
-  crossEnvProdPipelineUrlUsesStageOverride,
-  fetchStageAndProdPipelineCompanies,
-} from "@/lib/pipeline-companies-cross-env";
-import type { Company } from "@/tabs/errors/types";
-import type { ArchiveRunSummary } from "@/tabs/jobbstatus/lib/archive-types";
-import { fetchRegistryList } from "@/tabs/registry/lib/registry-api";
-import type { RegistryEntry } from "@/tabs/registry/lib/registry-types";
 import { buildTagLabelBySlug } from "@/tabs/editor/lib/editor-tag-and-payload-utils";
 import { useTagOptions } from "@/tabs/upload/hooks/useTagOptions";
 import {
-  buildCompanyYearRows,
-  buildRegistryReportRows,
-  computeOverviewStats,
-  rowMatchesOverviewFilters,
-} from "../lib/build-overview-rows";
-import {
-  buildProdToStageRows,
-  diagnoseProdToStageBuild,
-  prodToStageRowMatchesFilters,
+  fetchCompanyYearsOverview,
+  fetchProdToStageOverview,
+  fetchRegistryReportsOverview,
+  OVERVIEW_PAGE_SIZE,
   type ProdToStageBuildDiagnostics,
-  type ProdToStageRow,
-} from "../lib/build-prod-to-stage-rows";
+} from "../lib/overview-api";
 import {
   defaultOverviewFilters,
   defaultProdToStageFilters,
+  overviewFiltersAreActive,
   overviewYearRange,
   type OverviewFilters,
   type OverviewRow,
   type OverviewStats,
   type OverviewViewMode,
   type ProdToStageFilters,
+  type ProdToStageRow,
 } from "../lib/overview-types";
-import { overviewFiltersAreActive } from "../lib/overview-row-gaps";
 
 const OVERVIEW_VIEW_QUERY = "view";
 
@@ -54,19 +39,40 @@ function viewModeToQuery(mode: OverviewViewMode): string | null {
   return null;
 }
 
+const EMPTY_STATS: OverviewStats = {
+  totalRows: 0,
+  pipelineCompleted: 0,
+  pipelineFailed: 0,
+};
+
+const EMPTY_DIAGNOSTICS: ProdToStageBuildDiagnostics = {
+  prodShells: 0,
+  skippedUnlinked: 0,
+  skippedNoVerifiedOnProd: 0,
+  skippedStageHasEmissions: 0,
+  included: 0,
+};
+
 export function useOverviewData() {
   const [searchParams, setSearchParams] = useSearchParams();
   const viewMode = overviewViewFromSearchParams(searchParams);
 
-  const [registry, setRegistry] = useState<RegistryEntry[]>([]);
-  const [archiveRuns, setArchiveRuns] = useState<ArchiveRunSummary[]>([]);
-  const [stageCompanies, setStageCompanies] = useState<Company[]>([]);
-  const [prodCompanies, setProdCompanies] = useState<Company[]>([]);
+  const [rows, setRows] = useState<OverviewRow[]>([]);
+  const [prodToStageRows, setProdToStageRows] = useState<ProdToStageRow[]>([]);
+  const [stats, setStats] = useState<OverviewStats>(EMPTY_STATS);
+  const [prodToStageDiagnostics, setProdToStageDiagnostics] =
+    useState<ProdToStageBuildDiagnostics>(EMPTY_DIAGNOSTICS);
+  const [stageCompanyCount, setStageCompanyCount] = useState(0);
+  const [prodCompanyCount, setProdCompanyCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalRows, setTotalRows] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [showAll, setShowAll] = useState(false);
+
   const { tagOptions } = useTagOptions();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isAuthError, setIsAuthError] = useState(false);
   const [filters, setFilters] = useState<OverviewFilters>(
     defaultOverviewFilters(),
   );
@@ -78,6 +84,8 @@ export function useOverviewData() {
     (mode: OverviewViewMode) => {
       setFilters(defaultOverviewFilters());
       setProdToStageFilters(defaultProdToStageFilters());
+      setPage(1);
+      setShowAll(false);
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
@@ -92,135 +100,90 @@ export function useOverviewData() {
     [setSearchParams],
   );
 
-  const buildInput = useMemo(
-    () => ({
-      registry,
-      archiveRuns,
-      stageCompanies,
-      prodCompanies,
-    }),
-    [registry, archiveRuns, stageCompanies, prodCompanies],
-  );
+  const loadData = useCallback(
+    async (isManualRefresh = false) => {
+      if (isManualRefresh) setIsRefreshing(true);
+      else setIsLoading(true);
 
-  const loadData = useCallback(async (isManualRefresh = false) => {
-    if (isManualRefresh) setIsRefreshing(true);
-    else setIsLoading(true);
+      setError(null);
 
-    setError(null);
-    setIsAuthError(false);
+      try {
+        const requestPage = showAll ? 1 : page;
+        const pageSize = showAll ? 200 : OVERVIEW_PAGE_SIZE;
 
-    try {
-      const [registryData, archive, pipelineCompanies] = await Promise.all([
-        fetchRegistryList(),
-        fetchAllArchiveRuns(),
-        fetchStageAndProdPipelineCompanies(),
-      ]);
-      const { stageCompanies: stage, prodCompanies: prod } = pipelineCompanies;
-
-      setRegistry(Array.isArray(registryData) ? registryData : []);
-      setArchiveRuns(archive);
-      setStageCompanies(stage);
-      setProdCompanies(prod);
-    } catch (err) {
-      if (err instanceof ApiAuthError) {
-        setIsAuthError(true);
-        setRegistry([]);
-        setArchiveRuns([]);
-        setStageCompanies([]);
-        setProdCompanies([]);
-      } else {
+        if (viewMode === "prodToStage") {
+          const response = await fetchProdToStageOverview(
+            prodToStageFilters,
+            requestPage,
+            pageSize,
+          );
+          setProdToStageRows(response.rows);
+          setRows([]);
+          setStats({
+            totalRows: response.stats.totalRows,
+            pipelineCompleted: 0,
+            pipelineFailed: 0,
+          });
+          setProdToStageDiagnostics(response.diagnostics);
+          setStageCompanyCount(response.stageCompanyCount);
+          setProdCompanyCount(response.prodCompanyCount);
+          setTotalRows(response.total);
+          setTotalPages(
+            showAll ? 1 : Math.max(1, Math.ceil(response.total / pageSize)),
+          );
+        } else if (viewMode === "registryReports") {
+          const response = await fetchRegistryReportsOverview(
+            filters,
+            requestPage,
+            pageSize,
+          );
+          setRows(response.rows);
+          setProdToStageRows([]);
+          setStats(response.stats);
+          setTotalRows(response.total);
+          setTotalPages(
+            showAll ? 1 : Math.max(1, Math.ceil(response.total / pageSize)),
+          );
+        } else {
+          const response = await fetchCompanyYearsOverview(
+            filters,
+            requestPage,
+            pageSize,
+          );
+          setRows(response.rows);
+          setProdToStageRows([]);
+          setStats(response.stats);
+          setTotalRows(response.total);
+          setTotalPages(
+            showAll ? 1 : Math.max(1, Math.ceil(response.total / pageSize)),
+          );
+        }
+      } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
+        setRows([]);
+        setProdToStageRows([]);
+        setStats(EMPTY_STATS);
+        setTotalRows(0);
+        setTotalPages(1);
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
       }
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, []);
+    },
+    [viewMode, filters, prodToStageFilters, page, showAll],
+  );
 
   useEffect(() => {
     void loadData(false);
   }, [loadData]);
 
-  const companyYearRows = useMemo(
-    () => buildCompanyYearRows(buildInput),
-    [buildInput],
-  );
-  const registryReportRows = useMemo(
-    () => buildRegistryReportRows(buildInput),
-    [buildInput],
-  );
-  const prodToStageRows = useMemo(
-    () =>
-      buildProdToStageRows({
-        stageCompanies,
-        prodCompanies,
-      }),
-    [stageCompanies, prodCompanies],
-  );
+  useEffect(() => {
+    setPage(1);
+    setShowAll(false);
+  }, [viewMode, filters, prodToStageFilters]);
 
-  const prodToStageDiagnostics = useMemo(
-    (): ProdToStageBuildDiagnostics =>
-      diagnoseProdToStageBuild({
-        stageCompanies,
-        prodCompanies,
-      }),
-    [stageCompanies, prodCompanies],
-  );
-
-  const prodPipelineUsesStageOverride =
-    crossEnvProdPipelineUrlUsesStageOverride();
-
-  const allRows: OverviewRow[] =
-    viewMode === "companyYears"
-      ? companyYearRows
-      : viewMode === "registryReports"
-        ? registryReportRows
-        : [];
-
-  const filteredRows = useMemo(
-    () => allRows.filter((row) => rowMatchesOverviewFilters(row, filters)),
-    [allRows, filters],
-  );
-
-  const filteredProdToStageRows = useMemo(
-    () =>
-      prodToStageRows.filter((row) =>
-        prodToStageRowMatchesFilters(row, prodToStageFilters),
-      ),
-    [prodToStageRows, prodToStageFilters],
-  );
-
-  const stats = useMemo((): OverviewStats => {
-    if (viewMode === "prodToStage") {
-      return {
-        totalRows: filteredProdToStageRows.length,
-        pipelineCompleted: 0,
-        pipelineFailed: 0,
-      };
-    }
-    return computeOverviewStats(filteredRows, viewMode);
-  }, [viewMode, filteredRows, filteredProdToStageRows]);
-
-  const distinctReportYears = useMemo(() => {
-    if (viewMode === "companyYears") return overviewYearRange();
-    const source =
-      viewMode === "registryReports" ? registryReportRows : prodToStageRows;
-    const years = new Set(
-      source
-        .map((row) => ("reportYear" in row ? row.reportYear : null))
-        .filter((year): year is string => Boolean(year)),
-    );
-    return Array.from(years).sort((a, b) => Number(b) - Number(a));
-  }, [viewMode, registryReportRows, prodToStageRows]);
-
-  const prodToStageDistinctYears = useMemo(() => {
-    const years = new Set(
-      prodToStageRows
-        .map((row) => row.reportYear)
-        .filter((year): year is string => Boolean(year)),
-    );
-    return Array.from(years).sort((a, b) => Number(b) - Number(a));
-  }, [prodToStageRows]);
+  const distinctReportYears = useMemo(() => overviewYearRange(), []);
+  const prodToStageDistinctYears = distinctReportYears;
 
   const tagLabelBySlug = useMemo(
     () => buildTagLabelBySlug(tagOptions),
@@ -246,22 +209,33 @@ export function useOverviewData() {
   const filtersAreActive =
     viewMode === "prodToStage"
       ? Boolean(prodToStageFilters.searchQuery.trim()) ||
-        prodToStageFilters.reportYears.length > 0 ||
+        prodToStageFilters.reportYears.length !== 1 ||
+        prodToStageFilters.reportYears[0] !==
+          String(new Date().getFullYear()) ||
         prodToStageFilters.tagSlugs.length > 0 ||
         prodToStageFilters.runnableOnly
       : overviewFiltersAreActive(filters);
 
+  const paginationFrom =
+    totalRows === 0
+      ? 0
+      : showAll
+        ? 1
+        : (page - 1) * OVERVIEW_PAGE_SIZE + 1;
+  const paginationTo = showAll
+    ? totalRows
+    : Math.min(page * OVERVIEW_PAGE_SIZE, totalRows);
+
   return {
     viewMode,
     setViewMode,
-    rows: filteredRows,
-    allRows,
-    prodToStageRows: filteredProdToStageRows,
+    rows,
+    allRows: rows,
+    prodToStageRows,
     allProdToStageRows: prodToStageRows,
     prodToStageDiagnostics,
-    prodPipelineUsesStageOverride,
-    stageCompanyCount: stageCompanies.length,
-    prodCompanyCount: prodCompanies.length,
+    stageCompanyCount,
+    prodCompanyCount,
     stats,
     filters,
     prodToStageFilters,
@@ -275,9 +249,19 @@ export function useOverviewData() {
     isLoading,
     isRefreshing,
     error,
-    isAuthError,
     refresh: () => loadData(true),
     filtersAreActive,
+    pagination: {
+      page,
+      totalPages,
+      totalRows,
+      from: paginationFrom,
+      to: paginationTo,
+      showAll,
+      setPage,
+      setShowAll,
+      canPaginate: totalRows > OVERVIEW_PAGE_SIZE,
+    },
   };
 }
 
@@ -288,7 +272,6 @@ export type {
   OverviewStats,
   OverviewFilters,
   OverviewViewMode,
-  ProdToStageBuildDiagnostics,
   ProdToStageFilters,
   ProdToStageRow,
 };

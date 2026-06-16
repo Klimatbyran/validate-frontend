@@ -1060,7 +1060,6 @@
       "bannerReadProd": "Rader byggs från prod Garbo: länkade CompanyReports med minst ett verifierat utsläppsvärde, där motsvarande stage-rapport (via URL eller shell) ännu saknar länkad CompanyReport med utsläppsdata.",
       "bannerRunStage": "Kör valda köar jobb på stage Pipeline API med prod-rapportens URL (ny uppladdning till stage).",
       "bannerNeverProd": "Denna flik kör aldrig prod-pipeline — endast stage.",
-      "deployBlocked": "Prod pipeline companies API är inte live än ({{prodUrl}}). Använder stage-data för prod tills VITE_ERRORS_PROD_PIPELINE_URL tas bort.",
       "runOnStage": "Kör på stage ({{count}})",
       "runSuccess": "Köade {{count}} rapport(er) på stage-pipeline.",
       "runPartial": "{{failed}} av {{total}} rapport(er) kunde inte köas på stage. {{succeeded}} köades.",

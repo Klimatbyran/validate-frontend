@@ -164,23 +164,7 @@ export function getStagePipelineCompaniesListUrl(): string {
 
 /**
  * Errors tab: Unearth API staff list (prod validated DB).
- * Override with VITE_ERRORS_PROD_PIPELINE_URL until prod Unearth API deploys the route.
  */
 export function getProdPipelineCompaniesListUrl(): string {
-  const override = import.meta.env.VITE_ERRORS_PROD_PIPELINE_URL as
-    | string
-    | undefined;
-  if (override?.trim()) return override.trim();
-  return getRealProdPipelineCompaniesListUrl();
-}
-
-/** Prod validated DB — never uses VITE_ERRORS_PROD_PIPELINE_URL. */
-export function getRealProdPipelineCompaniesListUrl(): string {
   return joinApiPath(getProdUnearthUrl("/api"), PIPELINE_COMPANIES_LIST_PATH);
-}
-
-export function prodPipelineCompaniesListUrlPointsAtStage(): boolean {
-  return (
-    getProdPipelineCompaniesListUrl() === getStagePipelineCompaniesListUrl()
-  );
 }

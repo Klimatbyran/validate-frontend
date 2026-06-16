@@ -43,7 +43,7 @@ Fetches **both** stage and prod **Unearth API** via staff pipeline company lists
 - Stage: `getStagePipelineCompaniesListUrl()` → `/unearth-stage/api/pipeline/companies` (dev) or `/unearth-stage-api/api/pipeline/companies` (deployed)
 - Prod: `getProdPipelineCompaniesListUrl()` → `/unearth/api/pipeline/companies` (dev) or `/unearth-prod-api/api/pipeline/companies` (deployed)
 
-Requires login (Bearer JWT). **Production Unearth API** must expose `GET /api/pipeline/companies`; until deploy prod may return 404. Override: `VITE_ERRORS_PROD_PIPELINE_URL=/unearth-stage/api/pipeline/companies`.
+Requires login (Bearer JWT). Both stage and prod **Unearth API** must expose staff `GET /api/pipeline/companies`.
 
 ### 2. Unearth API – auth, crawler, registry
 

@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Loader2, Play, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
-import { getRealProdPipelineCompaniesListUrl } from "@/config/api-env";
 import { useI18n } from "@/contexts/I18nContext";
 import { useKeySetSelection } from "@/hooks/useKeySetSelection";
 import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
@@ -18,8 +17,11 @@ import { ProdToStageFilters } from "./components/ProdToStageFilters";
 import { OverviewStatsBar } from "./components/OverviewStatsBar";
 import { OverviewTable } from "./components/OverviewTable";
 import { ProdToStageTable } from "./components/ProdToStageTable";
-import type { OverviewRow, OverviewViewMode } from "./lib/overview-types";
-import type { ProdToStageRow } from "./lib/build-prod-to-stage-rows";
+import type {
+  OverviewRow,
+  OverviewViewMode,
+  ProdToStageRow,
+} from "./lib/overview-types";
 
 const VIEW_MODES: { value: OverviewViewMode; labelKey: string }[] = [
   { value: "companyYears", labelKey: "overview.views.companyYears" },
@@ -128,8 +130,6 @@ export function OverviewTab() {
     ? selectedProdToStageRows.length
     : selectedOverviewRows.length;
 
-  const prodPipelineUrl = getRealProdPipelineCompaniesListUrl();
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -202,18 +202,9 @@ export function OverviewTab() {
                 <li>{t("overview.prodToStage.bannerNeverProd")}</li>
               </ul>
             </div>
-            {data.prodPipelineUsesStageOverride ? (
-              <Callout variant="warning">
-                <p className="text-sm">
-                  {t("overview.prodToStage.deployBlocked", {
-                    prodUrl: prodPipelineUrl,
-                  })}
-                </p>
-              </Callout>
-            ) : null}
             {!data.isLoading &&
             !data.error &&
-            data.allProdToStageRows.length === 0 ? (
+            data.pagination.totalRows === 0 ? (
               <div className="rounded-lg border border-gray-03 bg-gray-05/70 px-4 py-3 text-xs text-gray-02 space-y-1">
                 <p className="font-medium text-gray-01">
                   {t("overview.prodToStage.emptyDiagnosticsTitle")}
@@ -276,7 +267,7 @@ export function OverviewTab() {
             />
             <MetricCard
               label={t("overview.prodToStage.stats.allCandidates")}
-              value={data.allProdToStageRows.length}
+              value={data.pagination.totalRows}
             />
           </MetricCardGrid>
         )}
@@ -291,18 +282,11 @@ export function OverviewTab() {
           <div className="py-16 flex justify-center">
             <LoadingSpinner />
           </div>
-        ) : data.isAuthError ? (
-          <Callout variant="info">
-            <p className="text-sm text-blue-03/90">
-              {t("auth.loginRequiredTab")}
-            </p>
-          </Callout>
         ) : data.error ? (
-          <p className="text-sm text-red-01">{t("overview.fetchError")}</p>
+          <p className="text-sm text-red-01">{data.error}</p>
         ) : isProdToStage ? (
           <ProdToStageTable
-            rows={data.prodToStageRows}
-            totalRows={data.allProdToStageRows.length}
+            data={data}
             selectedKeys={selectedKeys}
             tagLabelBySlug={data.tagLabelBySlug}
             onToggleSelect={toggleSelectProdToStage}

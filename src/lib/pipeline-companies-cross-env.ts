@@ -6,26 +6,13 @@ import {
 import {
   getProdPipelineCompaniesListUrl,
   getStagePipelineCompaniesListUrl,
-  prodPipelineCompaniesListUrlPointsAtStage,
 } from "@/config/api-env";
 import type { Company } from "@/tabs/errors/types";
 
 /**
  * Stage + prod company lists for cross-env tabs (Error Browser, Overview prod→stage).
  * Always uses fixed stage/prod Unearth hosts (ignores VITE_UNEARTH_TARGET).
- *
- * Prod uses VITE_ERRORS_PROD_PIPELINE_URL when set (typically stage) until prod
- * exposes GET /api/pipeline/companies. Cross-env gaps are not meaningful until then.
  */
-export function resolveCrossEnvProdPipelineCompaniesListUrl(): string {
-  return getProdPipelineCompaniesListUrl();
-}
-
-/** True when prod is configured to the same URL as stage (pre-prod-deploy stub). */
-export function crossEnvProdPipelineUrlUsesStageOverride(): boolean {
-  return prodPipelineCompaniesListUrlPointsAtStage();
-}
-
 async function fetchPipelineCompanies(
   label: "Stage" | "Prod",
   url: string,
@@ -46,6 +33,14 @@ async function fetchPipelineCompanies(
   );
 }
 
+export async function fetchStagePipelineCompanies(): Promise<Company[]> {
+  return fetchPipelineCompanies("Stage", getStagePipelineCompaniesListUrl());
+}
+
+export async function fetchProdPipelineCompanies(): Promise<Company[]> {
+  return fetchPipelineCompanies("Prod", getProdPipelineCompaniesListUrl());
+}
+
 export async function fetchStageAndProdPipelineCompanies(): Promise<{
   stageCompanies: Company[];
   prodCompanies: Company[];
@@ -53,11 +48,11 @@ export async function fetchStageAndProdPipelineCompanies(): Promise<{
   prodUrl: string;
 }> {
   const stageUrl = getStagePipelineCompaniesListUrl();
-  const prodUrl = resolveCrossEnvProdPipelineCompaniesListUrl();
+  const prodUrl = getProdPipelineCompaniesListUrl();
 
   const [stageCompanies, prodCompanies] = await Promise.all([
-    fetchPipelineCompanies("Stage", stageUrl),
-    fetchPipelineCompanies("Prod", prodUrl),
+    fetchStagePipelineCompanies(),
+    fetchProdPipelineCompanies(),
   ]);
 
   return { stageCompanies, prodCompanies, stageUrl, prodUrl };

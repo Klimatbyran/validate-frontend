@@ -14,7 +14,6 @@ import {
   type OverviewRow,
   type OverviewStatusColumn,
 } from "../lib/overview-types";
-import { useClientTablePagination } from "@/hooks/useClientTablePagination";
 import { ClientTablePagination } from "@/ui/client-table-pagination";
 import { OverviewStatusIcon } from "./OverviewStatusIcon";
 import { OverviewStatusModal } from "./OverviewStatusModal";
@@ -45,10 +44,11 @@ export function OverviewTable({
     data.viewMode === "companyYears"
       ? "overview.columnHints.companyYears"
       : "overview.columnHints.registryReports";
-  const pagination = useClientTablePagination(data.rows);
+  const pagination = data.pagination;
+  const pageRows = data.rows;
   const allSelected =
-    pagination.pageRows.length > 0 &&
-    pagination.pageRows.every((row) => selectedKeys.has(row.key));
+    pageRows.length > 0 &&
+    pageRows.every((row) => selectedKeys.has(row.key));
 
   function headerHint(key: string): string {
     return t(`${columnHintPrefix}.${key}`);
@@ -82,7 +82,7 @@ export function OverviewTable({
                 <input
                   type="checkbox"
                   checked={allSelected}
-                  onChange={() => onToggleSelectAll(pagination.pageRows)}
+                  onChange={() => onToggleSelectAll(pageRows)}
                   aria-label={t("overview.selectAll")}
                 />
               </th>
@@ -134,7 +134,7 @@ export function OverviewTable({
             </tr>
           </DataTableHead>
           <DataTableBody>
-            {pagination.pageRows.map((row) => (
+            {pageRows.map((row) => (
               <tr
                 key={row.key}
                 className="hover:bg-gray-04/40 text-gray-01 align-top"
@@ -221,7 +221,6 @@ export function OverviewTable({
           from={pagination.from}
           to={pagination.to}
           filteredTotal={pagination.totalRows}
-          unfilteredTotal={data.allRows.length}
           page={pagination.page}
           totalPages={pagination.totalPages}
           showAll={pagination.showAll}
