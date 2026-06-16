@@ -132,7 +132,9 @@ export function ErrorBrowserTab() {
               value={selectedReportYear}
               onChange={setSelectedReportYear}
               placeholder={t("errors.allCompanyReportYears")}
-              getOptionLabel={(v) => (v ? v : t("errors.allCompanyReportYears"))}
+              getOptionLabel={(v) =>
+                v ? v : t("errors.allCompanyReportYears")
+              }
               ariaLabel={t("yearLabels.companyReportYear")}
               panelMinWidth={120}
             />

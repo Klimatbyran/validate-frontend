@@ -54,7 +54,7 @@ One Unearth API backend from `VITE_UNEARTH_TARGET` (legacy: `VITE_GARBO_TARGET`)
 
 Jobbstatus Archive, batch pickers, `POST /queue-archive/batches`. Helper: `getGarboQueueArchiveUrl()` → `/garbo-api/queue-archive/…` (deployed) or `/garbo-stage/api/queue-archive/…` (dev).
 
-Requires JWT from Unearth API login (`garboAuthFetch`); Garbo API must share `JWT_SECRET` with Unearth API.
+Requires JWT from Unearth login (`garboAuthFetch`). Garbo also exposes the **same handler** at `/api/internal-queue-archive` (X-API-Key) for server callers (e.g. Unearth overview backend) — keep both: staff browser vs integration, not interchangeable auth.
 
 ### 4. Pipeline API – live job status
 
@@ -62,7 +62,7 @@ Requires JWT from Unearth API login (`garboAuthFetch`); Garbo API must share `JW
 
 ### 5. Overview tab
 
-`getUnearthApiBaseUrl()` + `/internal-validate-overview/{company-years|registry-reports|prod-to-stage}`. Requires `reportYears` or `allYears`; default page size 50. Prod → Stage runs use `STAGE_RUN_REPORTS_PIPELINE_CONFIG` (stage pipeline + Garbo batches only).
+`getUnearthApiBaseUrl()` + `/internal-validate-overview/{company-years|registry-reports|prod-to-stage}` (X-API-Key via proxy). Unearth also has staff `GET /api/pipeline/companies` with an internal X-API-Key twin for peer/cross-env reads. Overview aggregation is internal-only (no staff JWT route). Requires `reportYears` or `allYears`; default page size 50. Prod → Stage runs use `STAGE_RUN_REPORTS_PIPELINE_CONFIG` (stage pipeline + Garbo batches only).
 
 ---
 

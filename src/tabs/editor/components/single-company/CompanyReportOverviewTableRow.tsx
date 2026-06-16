@@ -40,8 +40,7 @@ function RegistryLinkCell({
           </div>
           {row.registryReport?.reportYear ? (
             <div className="text-xs text-gray-02">
-              {t("yearLabels.reportYear")}:{" "}
-              {row.registryReport.reportYear}
+              {t("yearLabels.reportYear")}: {row.registryReport.reportYear}
             </div>
           ) : (
             <div className="text-xs text-gray-02">

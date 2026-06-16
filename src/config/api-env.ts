@@ -93,6 +93,7 @@ export function getGarboApiBaseUrl(): string {
   return url.replace(/\/+$/, "");
 }
 
+/** Staff JWT path (Jobbstatus). Garbo twin: `/api/internal-queue-archive` (X-API-Key). */
 export function getGarboQueueArchiveUrl(path: string): string {
   const base = getGarboApiBaseUrl().replace(/\/+$/, "");
   const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");

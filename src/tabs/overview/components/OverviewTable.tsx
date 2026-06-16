@@ -47,8 +47,7 @@ export function OverviewTable({
   const pagination = data.pagination;
   const pageRows = data.rows;
   const allSelected =
-    pageRows.length > 0 &&
-    pageRows.every((row) => selectedKeys.has(row.key));
+    pageRows.length > 0 && pageRows.every((row) => selectedKeys.has(row.key));
 
   function headerHint(key: string): string {
     return t(`${columnHintPrefix}.${key}`);

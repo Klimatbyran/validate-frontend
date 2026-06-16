@@ -217,11 +217,7 @@ export function useOverviewData() {
       : overviewFiltersAreActive(filters);
 
   const paginationFrom =
-    totalRows === 0
-      ? 0
-      : showAll
-        ? 1
-        : (page - 1) * OVERVIEW_PAGE_SIZE + 1;
+    totalRows === 0 ? 0 : showAll ? 1 : (page - 1) * OVERVIEW_PAGE_SIZE + 1;
   const paginationTo = showAll
     ? totalRows
     : Math.min(page * OVERVIEW_PAGE_SIZE, totalRows);

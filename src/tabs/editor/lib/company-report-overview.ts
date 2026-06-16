@@ -140,9 +140,7 @@ function rowFromOrphanPeriods(
       embedded?.reportYear?.trim() ||
       null,
     registryReportId:
-      embedded?.registryReportId?.trim() ||
-      registryReport?.id?.trim() ||
-      null,
+      embedded?.registryReportId?.trim() || registryReport?.id?.trim() || null,
     registryReport,
     periodDataYears: collectPeriodDataYears(periods),
     periodCount: periods.length,
