@@ -1,8 +1,3 @@
-/**
- * Garbo Postgres `Batch` rows for upload / jobstatus / archive (same source of truth).
- * Requires auth; returns empty list if unauthenticated or request fails.
- */
-
 import { useState, useEffect, useCallback } from "react";
 import { getGarboQueueArchiveUrl } from "@/config/api-env";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";

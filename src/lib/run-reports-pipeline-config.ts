@@ -6,7 +6,7 @@ import type { RunReportsPipelineConfig } from "@/hooks/useRunReportsPipeline";
 
 const BATCHES_LIMIT = 500;
 
-/** Fixed stage pipeline + Garbo batch endpoints for Overview Prod → Stage runs. */
+/** Stage pipeline + Garbo batches for Overview Prod → Stage runs. */
 export const STAGE_RUN_REPORTS_PIPELINE_CONFIG: RunReportsPipelineConfig = {
   batchesApiUrl: getStageGarboQueueArchiveUrl("/batches"),
   batchesListUrl: getStageGarboQueueArchiveUrl(

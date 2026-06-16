@@ -9,10 +9,7 @@ import {
 } from "@/config/api-env";
 import type { Company } from "@/tabs/errors/types";
 
-/**
- * Stage + prod company lists for cross-env tabs (Error Browser, Overview prod→stage).
- * Always uses fixed stage/prod Unearth hosts (ignores VITE_UNEARTH_TARGET).
- */
+/** Error Browser: staff pipeline company lists from fixed stage/prod Unearth hosts. */
 async function fetchPipelineCompanies(
   label: "Stage" | "Prod",
   url: string,

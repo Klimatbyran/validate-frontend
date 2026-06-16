@@ -9,7 +9,6 @@ import { lookupPersistedCompanyReportYear } from "./reporting-period-ui";
 export type CompanyReportOverviewRow = {
   shellKey: string;
   companyReportId: string;
-  /** CompanyReport.reportYear — PDF document year on the processed shell. */
   companyReportYear: string | null;
   registryReportId: string | null;
   registryReport: GarboRegistryReportSummary | null;
@@ -180,10 +179,6 @@ function unlinkedRow(
   };
 }
 
-/**
- * Build tab rows from CompanyReport shells (source of truth) plus reporting
- * periods for data-year lists and unlinked buckets.
- */
 export function buildCompanyReportOverview(
   companyReports: GarboCompanyReportSummary[],
   reportingPeriods: GarboReportingPeriodSummary[],
@@ -237,7 +232,7 @@ export function isUnlinkedCompanyReportRow(
   return row.isUnlinked;
 }
 
-/** Shell document year differs from linked registry Report.reportYear. */
+/** True when shell `reportYear` and linked registry `reportYear` differ. */
 export function registryYearMismatch(row: CompanyReportOverviewRow): boolean {
   const shellYear = row.companyReportYear?.trim();
   const registryYear = row.registryReport?.reportYear?.trim();

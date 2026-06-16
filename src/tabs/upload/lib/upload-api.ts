@@ -92,9 +92,7 @@ export interface CreateJobsFromUrlsOptions {
   batchId?: string;
   runOnly?: RunOnlyWorkerId[];
   tags?: string[];
-  /** When true (default), pipeline-api fetches each URL and caches to S3 before enqueueing. Set false for local API without S3. */
   cachePdf?: boolean;
-  /** Override parsePdf endpoint (e.g. fixed stage pipeline). */
   parsePdfEndpoint?: string;
 }
 

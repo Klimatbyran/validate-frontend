@@ -1,7 +1,4 @@
-/**
- * Top-level app tabs: URL first segment must match Tabs `value` (see ROUTING_URL_STATE.md).
- * Deeper paths (e.g. /editor/company/Q123) still use the first segment for the main tab.
- */
+/** First URL segment selects the main tab. See docs/ROUTING_URL_STATE.md. */
 export const TOP_LEVEL_TAB_SEGMENTS = [
   "crawler",
   "registry",

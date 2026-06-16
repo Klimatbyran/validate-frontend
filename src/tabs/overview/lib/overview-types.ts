@@ -15,7 +15,6 @@ export type OverviewStatusKind =
   | "progress"
   | "partial";
 
-/** Status columns for company × report-year coverage grid. */
 export type CompanyYearStatusColumn =
   | "report"
   | "pipeline"
@@ -24,7 +23,6 @@ export type CompanyYearStatusColumn =
   | "prodData"
   | "prodVerified";
 
-/** Status columns for registry-first report rows. */
 export type RegistryReportStatusColumn =
   | "wikidata"
   | "registryFile"
@@ -85,11 +83,8 @@ export type OverviewFilters = {
   reportYears: string[];
   tagSlugs: string[];
   statusFilters: OverviewStatusColumn[];
-  /** Company years: no registry entry for this company + report year. */
   missingRegistryOnly: boolean;
-  /** No CompanyReport linked in Garbo for this report year. */
   missingCompanyReportOnly: boolean;
-  /** No archived pipeline run found for this row. */
   notRunInPipelineOnly: boolean;
 };
 

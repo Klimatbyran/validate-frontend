@@ -20,7 +20,6 @@ const URLS_BY_TARGET = {
     stage: "https://stage-pipeline-api.klimatkollen.se",
     prod: "https://pipeline-api.klimatkollen.se",
   },
-  /** Local API when target is local (Unearth and/or Garbo on this machine, e.g. localhost:3000). */
   apiBackendLocal: "http://localhost:3000",
 } as const;
 
@@ -49,7 +48,7 @@ function unearthTargetFromEnv(
   return v === "local" || v === "prod" ? v : "stage";
 }
 
-/** Resolve proxy targets from pipeline and Unearth/Garbo targets (joint or overrides). */
+/** Resolve proxy targets from env (joint mode or per-service overrides). */
 function getProxyTargets(env: Record<string, string>) {
   const joint = env.VITE_API_MODE || "stage";
   const pipelineTarget = targetFromEnv(env, "VITE_PIPELINE_TARGET", joint);
@@ -268,7 +267,7 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
-        // More specific first: pipeline paths so network tab shows which backend (local, stage, prod)
+        // Pipeline proxies (most specific paths first)
         "/pipeline-local": {
           target: urls.pipelineLocal,
           changeOrigin: true,

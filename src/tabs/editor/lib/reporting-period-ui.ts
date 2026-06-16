@@ -1,5 +1,3 @@
-/** Shared helpers and layout tokens for economy / emissions / reporting period editors. */
-
 import type { GarboReportingPeriodSummary } from "./types";
 
 export function toNumberOrNull(value: string): number | null {
@@ -31,7 +29,6 @@ export function getPeriodYear(period: {
   return y || null;
 }
 
-/** Parse a 4-digit catalog year from a report URL (fallback when API omits companyReport). */
 function parseCatalogYearFromUrl(
   raw: string | null | undefined,
 ): string | null {
@@ -47,7 +44,6 @@ function parseCatalogYearFromUrl(
 
 export type CompanyReportYearSource = "companyReport" | "urlEstimate";
 
-/** CompanyReport.reportYear from the linked shell only (no URL guess). */
 export function getPersistedCompanyReportYearFromPeriod(period: {
   companyReport?: { id?: string | null; reportYear?: string | null } | null;
   companyReportId?: string | null;
@@ -55,7 +51,6 @@ export function getPersistedCompanyReportYearFromPeriod(period: {
   return period.companyReport?.reportYear?.trim() || null;
 }
 
-/** Look up persisted shell year by CompanyReport id from API list rows or period embeds. */
 export function lookupPersistedCompanyReportYear(
   companyReportId: string | null | undefined,
   shells: Array<{ id?: string; reportYear?: string | null }>,
@@ -82,7 +77,6 @@ export function lookupPersistedCompanyReportYear(
   return null;
 }
 
-/** CompanyReport.reportYear on the linked shell, else a URL estimate when the shell year is missing. */
 export function resolveCompanyReportYearFromPeriod(period: {
   companyReport?: { reportYear?: string | null } | null;
   reportURL?: string | null;
@@ -114,7 +108,7 @@ export function getCompanyReportYearFromPeriod(period: {
 /** @deprecated Use getCompanyReportYearFromPeriod */
 export const getPeriodReportYear = getCompanyReportYearFromPeriod;
 
-/** Reporting period data year (DB `year` field, else end/start date). */
+/** DB `year` field, else period end/start date. */
 export function getPeriodDataYear(period: {
   startDate?: string;
   endDate?: string;
@@ -131,10 +125,8 @@ export function shortenCompanyReportId(id: string, visibleChars = 8): string {
   return `${trimmed.slice(0, visibleChars)}…`;
 }
 
-/** Secondary id line — matches wikidataId under company name in the overview table. */
 export const editorSecondaryIdTextClass = "text-xs text-gray-02 break-all";
 
-/** Data years that appear on more than one reporting period (multiple PDFs). */
 export function dataYearsWithMultiplePeriods(
   periods: Array<{
     startDate?: string;
@@ -162,16 +154,11 @@ export function formatPeriodDateRange(
   return `${formatDateStamp(startDate, placeholder)} – ${formatDateStamp(endDate, placeholder)}`;
 }
 
-/** Primary toolbar `Button` / compact control sizing in period editors. */
 export const editorDenseToolbarClass = "min-w-0 max-w-none px-3 text-xs h-8";
 
-/** `MultiSelectDropdown` trigger matching toolbar height. */
 export const editorDenseMultiSelectTriggerClass =
   "min-w-[130px] !h-8 !text-xs px-3";
 
-/**
- * Copy-on-write: set or remove a string key on a shallow draft record (editor state).
- */
 export function assignNullableStringKey<T extends Record<string, unknown>>(
   prev: T,
   key: string,

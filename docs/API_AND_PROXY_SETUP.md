@@ -11,6 +11,7 @@ How Validate talks to **Pipeline API**, **Unearth API**, and **Garbo API** in de
 | **Garbo API**    | `stage-api.klimatkollen.se`          | `/garbo-api/queue-archive/…` only |
 
 - **Errors tab** – always compares stage and prod **Unearth API** via `/unearth-stage-api/` and `/unearth-prod-api/` (ignores target).
+- **Overview tab** – paginated views from Unearth `GET /internal-validate-overview/*` (X-API-Key via proxy; aggregation is server-side).
 
 In **development**, Vite proxies same-origin paths (see network tab table below).
 
@@ -58,6 +59,10 @@ Requires JWT from Unearth API login (`garboAuthFetch`); Garbo API must share `JW
 ### 4. Pipeline API – live job status
 
 `getPipelineApiBaseUrl()` → `/pipeline-stage`, etc.
+
+### 5. Overview tab
+
+`getUnearthApiBaseUrl()` + `/internal-validate-overview/{company-years|registry-reports|prod-to-stage}`. Requires `reportYears` or `allYears`; default page size 50. Prod → Stage runs use `STAGE_RUN_REPORTS_PIPELINE_CONFIG` (stage pipeline + Garbo batches only).
 
 ---
 

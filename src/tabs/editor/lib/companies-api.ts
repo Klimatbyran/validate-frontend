@@ -1,8 +1,3 @@
-/**
- * Garbo companies API for the editor: list, get by wikidataId, update company,
- * reporting periods, industry, base year. All endpoints require auth (garboAuthFetch).
- */
-
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import {
   WIKIDATA_ID_REGEX,
@@ -108,7 +103,6 @@ function reportingPeriodPath(segment = ""): string {
   return seg ? `${path}/${seg}` : path;
 }
 
-/** List companies for staff editor (GET /api/pipeline/companies — all reporting periods). */
 export async function listCompanies(
   signal?: AbortSignal,
 ): Promise<GarboCompanyListItem[]> {
@@ -172,9 +166,7 @@ async function fetchPipelineCompanyByRef(
 }
 
 /**
- * Editor detail: all reporting periods (pipeline staff API).
- * Pipeline GET /:ref only accepts Wikidata IDs; internal id / UUID prefix is
- * resolved via the pipeline list, then fetched by wikidataId when present.
+ * Pipeline GET /:ref only accepts Wikidata IDs; other refs resolve via list lookup.
  */
 export async function getCompany(
   identifier: string,
@@ -200,7 +192,6 @@ export async function getCompany(
   return match as GarboCompanyDetail;
 }
 
-/** Create company (POST /api/companies). */
 export async function createCompany(body: {
   wikidataId?: string;
   name: string;
@@ -231,7 +222,6 @@ export async function createCompany(body: {
   return res.json();
 }
 
-/** Update company (POST /api/companies/:id). Body: name, descriptions, tags, etc. */
 export async function updateCompany(
   companyId: string,
   body: {
@@ -275,7 +265,6 @@ export async function updateCompany(
   }
 }
 
-/** Create or update reporting periods (POST /api/companies/:id/reporting-periods). */
 export async function updateReportingPeriods(
   companyId: string,
   body: {
@@ -320,7 +309,6 @@ export async function updateReportingPeriods(
   }
 }
 
-/** Delete a company by wikidataId (DELETE /api/companies/:wikidataId). */
 export async function deleteCompany(wikidataId: string): Promise<void> {
   const res = await garboAuthFetch(
     apiUrl(companiesPath(encodeURIComponent(wikidataId))),
@@ -342,8 +330,7 @@ export async function deleteCompany(wikidataId: string): Promise<void> {
   }
 }
 
-/** Delete a reporting period by id (DELETE /api/companies/reporting-period/:id). */
-// Whole CompanyReport delete + empty-shell cleanup after last period — see garbo k8s/jobs/README.md
+// Shell cleanup after last period delete: garbo k8s/jobs/README.md
 export async function deleteReportingPeriod(id: string): Promise<void> {
   const encodedId = encodeURIComponent(id);
   const res = await garboAuthFetch(
@@ -366,7 +353,6 @@ export async function deleteReportingPeriod(id: string): Promise<void> {
   }
 }
 
-/** Industry GICS option from GET /api/industry-gics. */
 export interface IndustryGicsOption {
   code: string;
   label?: string;
@@ -376,7 +362,6 @@ export interface IndustryGicsOption {
   industry?: string;
 }
 
-/** List industry GICS codes (GET /api/industry-gics). Requires auth. */
 export async function fetchIndustryGics(
   signal?: AbortSignal,
 ): Promise<IndustryGicsOption[]> {
@@ -399,7 +384,7 @@ export async function fetchIndustryGics(
   if (Array.isArray((data as { items?: unknown }).items))
     return (data as { items: IndustryGicsOption[] }).items;
 
-  // Some envs return an object keyed by subIndustryCode, e.g. { "10101010": { sectorName, groupName, ... }, ... }.
+  // Object keyed by subIndustryCode
   if (data && typeof data === "object") {
     const entries = Object.entries(data as Record<string, unknown>);
     const mapped: IndustryGicsOption[] = entries
@@ -444,7 +429,6 @@ export async function fetchIndustryGics(
   return [];
 }
 
-/** Set company industry (POST /api/companies/:id/industry). */
 export async function updateCompanyIndustry(
   companyId: string,
   body: {
@@ -472,7 +456,6 @@ export async function updateCompanyIndustry(
   }
 }
 
-/** CompanyReport shells for a company (GET /api/companies/:id/company-reports). */
 export async function fetchCompanyReports(
   companyId: string,
   signal?: AbortSignal,
@@ -499,7 +482,6 @@ export async function fetchCompanyReports(
   return Array.isArray(data) ? data : [];
 }
 
-/** Link unlinked reporting periods to a registry report (POST …/company-reports/link-periods). */
 export async function linkReportingPeriodsToCompanyReport(
   companyId: string,
   body: { registryReportId: string; reportingPeriodIds: string[] },
@@ -548,7 +530,6 @@ export async function linkReportingPeriodsToCompanyReport(
   };
 }
 
-/** Registry Report rows for a company (GET /api/companies/:id/registry-reports). */
 export async function fetchCompanyRegistryReports(
   companyId: string,
   signal?: AbortSignal,
@@ -580,7 +561,6 @@ export type UpdateCompanyReportBody = {
   registryReportId?: string;
 };
 
-/** Update company report shell (PATCH /api/companies/:id/company-reports/:companyReportId). */
 export async function updateCompanyReport(
   companyId: string,
   companyReportId: string,
@@ -631,7 +611,6 @@ export async function updateCompanyReport(
   };
 }
 
-/** Set company report document year. */
 export async function updateCompanyReportYear(
   companyId: string,
   companyReportId: string,
@@ -643,7 +622,6 @@ export async function updateCompanyReportYear(
   return { reportYear: result.reportYear };
 }
 
-/** Set company base year (POST /api/companies/:id/base-year). */
 export async function updateCompanyBaseYear(
   companyId: string,
   body: { baseYear: number; metadata?: GarboMetadata; verified?: boolean },

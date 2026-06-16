@@ -39,11 +39,7 @@ const DEFAULT_TOAST_KEYS: RunReportsPipelineToastKeys = {
   error: "registry.runReportsError",
 };
 
-/**
- * Shared pipeline run state + `createJobsFromUrls` flow for Registry, Crawler,
- * and Overview “run reports” modals. Pass {@link RunReportsPipelineConfig} for
- * fixed stage endpoints (Prod → Stage tab).
- */
+/** Shared run-reports flow for Registry, Crawler, and Overview. Optional config for fixed stage endpoints. */
 export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
   const { t } = useI18n();
   const toastKeys = { ...DEFAULT_TOAST_KEYS, ...config?.toastKeys };
