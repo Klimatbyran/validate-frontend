@@ -80,7 +80,9 @@ export function ApiKeysListView({
         ) : keysError ? (
           <p className="mt-3 text-xs text-red-400">{keysError}</p>
         ) : keys.length === 0 ? (
-          <p className="mt-3 text-xs text-gray-02">{t("apiAccess.keysEmpty")}</p>
+          <p className="mt-3 text-xs text-gray-02">
+            {t("apiAccess.keysEmpty")}
+          </p>
         ) : (
           <ul className="mt-3 space-y-2">
             {keys.map((keyItem) => {
@@ -112,8 +114,12 @@ export function ApiKeysListView({
                           <button
                             type="button"
                             onClick={() => setRevoking(keyItem.id)}
-                            title={t("apiAccess.revokeAria", { name: keyItem.name })}
-                            aria-label={t("apiAccess.revokeAria", { name: keyItem.name })}
+                            title={t("apiAccess.revokeAria", {
+                              name: keyItem.name,
+                            })}
+                            aria-label={t("apiAccess.revokeAria", {
+                              name: keyItem.name,
+                            })}
                             className="text-gray-02 hover:text-pink-03 transition-colors"
                           >
                             <Ban className="w-4 h-4" />
@@ -133,12 +139,20 @@ export function ApiKeysListView({
                     </span>
                     <span>
                       {t("apiAccess.keysLastUsed")}:{" "}
-                      {formatDate(keyItem.lastUsedAt ? new Date(keyItem.lastUsedAt) : null)}
+                      {formatDate(
+                        keyItem.lastUsedAt
+                          ? new Date(keyItem.lastUsedAt)
+                          : null,
+                      )}
                     </span>
                     {isRevoked ? (
                       <span className="text-pink-03/80">
                         {t("apiAccess.keysRevoked")}:{" "}
-                        {formatDate(keyItem.revokedAt ? new Date(keyItem.revokedAt) : null)}
+                        {formatDate(
+                          keyItem.revokedAt
+                            ? new Date(keyItem.revokedAt)
+                            : null,
+                        )}
                       </span>
                     ) : null}
                   </div>

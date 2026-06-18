@@ -1,6 +1,12 @@
-import { Info } from 'lucide-react';
+import { Info } from "lucide-react";
 
-export function HelpTip({ text, widthClassName = 'w-64' }: { text: string; widthClassName?: string }) {
+export function HelpTip({
+  text,
+  widthClassName = "w-64",
+}: {
+  text: string;
+  widthClassName?: string;
+}) {
   return (
     <span className="relative inline-flex items-center group">
       <Info className="w-3.5 h-3.5 text-blue-03 cursor-help" />
@@ -15,4 +21,3 @@ export function HelpTip({ text, widthClassName = 'w-64' }: { text: string; width
     </span>
   );
 }
-

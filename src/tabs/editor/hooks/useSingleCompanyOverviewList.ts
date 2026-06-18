@@ -2,16 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { listCompanies } from "../lib/companies-api";
 import { fetchTagOptions } from "../lib/tag-options-api";
 import type { GarboCompanyListItem, TagOption } from "../lib/types";
-import { getCompanyVerificationOverview } from "../lib/verification";
 import { buildTagLabelBySlug } from "../lib/editor-tag-and-payload-utils";
-import { getPeriodYear } from "../lib/reporting-period-ui";
 import {
   type CompanySortId,
   type FilterUnverifiedOption,
-  companyPassesOverviewFilters,
+  reportRowPassesOverviewFilters,
   computeOverviewFilterPeriodStats,
-  sortGarboCompanyListRows,
+  sortCompanyReportRows,
 } from "../lib/single-company-overview-list";
+import {
+  collectDataYearsFromCompanies,
+  collectReportYearsFromCompanies,
+  expandCompaniesToReportRows,
+} from "../lib/company-report-rows";
 
 export function useSingleCompanyOverviewList() {
   const [companyList, setCompanyList] = useState<GarboCompanyListItem[]>([]);
@@ -22,23 +25,23 @@ export function useSingleCompanyOverviewList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [excludeFilterTags, setExcludeFilterTags] = useState<string[]>([]);
-  const [filterYears, setFilterYearsRaw] = useState<string[]>([]);
-  const setFilterYears = useCallback((years: string[]) => {
-    setFilterYearsRaw(years);
+  const [filterDataYears, setFilterDataYearsRaw] = useState<string[]>([]);
+  const setFilterDataYears = useCallback((years: string[]) => {
+    setFilterDataYearsRaw(years);
     if (!years.length) setFilterApplyUnverifiedToSelectedYears(false);
   }, []);
+  const [filterReportYears, setFilterReportYears] = useState<string[]>([]);
   const [filterSector, setFilterSector] = useState("");
   const [filterUnverified, setFilterUnverifiedRaw] =
     useState<FilterUnverifiedOption>("");
-  const [filterApplyUnverifiedToSelectedYears, setFilterApplyUnverifiedToSelectedYears] =
-    useState(false);
-  const setFilterUnverified = useCallback(
-    (v: FilterUnverifiedOption) => {
-      setFilterUnverifiedRaw(v);
-      if (!v) setFilterApplyUnverifiedToSelectedYears(false);
-    },
-    [],
-  );
+  const [
+    filterApplyUnverifiedToSelectedYears,
+    setFilterApplyUnverifiedToSelectedYears,
+  ] = useState(false);
+  const setFilterUnverified = useCallback((v: FilterUnverifiedOption) => {
+    setFilterUnverifiedRaw(v);
+    if (!v) setFilterApplyUnverifiedToSelectedYears(false);
+  }, []);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [companySort, setCompanySort] = useState<CompanySortId>("name-asc");
 
@@ -71,16 +74,15 @@ export function useSingleCompanyOverviewList() {
     return listCompanies().then(setCompanyList);
   }, []);
 
-  const years = useMemo(() => {
-    const set = new Set<string>();
-    companyList.forEach((c) => {
-      c.reportingPeriods?.forEach((p) => {
-        const y = getPeriodYear(p);
-        if (y) set.add(y);
-      });
-    });
-    return Array.from(set).sort((a, b) => b.localeCompare(a));
-  }, [companyList]);
+  const dataYears = useMemo(
+    () => collectDataYearsFromCompanies(companyList),
+    [companyList],
+  );
+
+  const reportYears = useMemo(
+    () => collectReportYearsFromCompanies(companyList),
+    [companyList],
+  );
 
   const sectors = useMemo(() => {
     const set = new Set<string>();
@@ -91,53 +93,50 @@ export function useSingleCompanyOverviewList() {
     return Array.from(set).sort();
   }, [companyList]);
 
-  const companyOverviewById = useMemo(() => {
-    const map = new Map<
-      string,
-      ReturnType<typeof getCompanyVerificationOverview>
-    >();
-    companyList.forEach((c) => {
-      map.set(c.wikidataId, getCompanyVerificationOverview(c));
-    });
-    return map;
-  }, [companyList]);
+  const allReportRows = useMemo(
+    () => expandCompaniesToReportRows(companyList),
+    [companyList],
+  );
 
   const filterInput = useMemo(
     () => ({
       searchQuery,
       filterTags,
       excludeFilterTags,
-      filterYears,
+      filterDataYears,
+      filterReportYears,
       filterSector,
       filterUnverified,
       filterApplyUnverifiedToSelectedYears,
-      companyOverviewById,
     }),
     [
       searchQuery,
       filterTags,
       excludeFilterTags,
-      filterYears,
+      filterDataYears,
+      filterReportYears,
       filterSector,
       filterUnverified,
       filterApplyUnverifiedToSelectedYears,
-      companyOverviewById,
     ],
   );
 
-  const filteredCompanies = useMemo(
-    () => companyList.filter((c) => companyPassesOverviewFilters(c, filterInput)),
-    [companyList, filterInput],
+  const filteredReportRows = useMemo(
+    () =>
+      allReportRows.filter((row) =>
+        reportRowPassesOverviewFilters(row, filterInput),
+      ),
+    [allReportRows, filterInput],
   );
 
-  const sortedCompanies = useMemo(
-    () => sortGarboCompanyListRows(filteredCompanies, companySort),
-    [filteredCompanies, companySort],
+  const sortedReportRows = useMemo(
+    () => sortCompanyReportRows(filteredReportRows, companySort),
+    [filteredReportRows, companySort],
   );
 
   const filterPeriodStats = useMemo(
-    () => computeOverviewFilterPeriodStats(filteredCompanies, companyOverviewById),
-    [filteredCompanies, companyOverviewById],
+    () => computeOverviewFilterPeriodStats(filteredReportRows),
+    [filteredReportRows],
   );
 
   const tagLabelBySlug = useMemo(
@@ -158,8 +157,10 @@ export function useSingleCompanyOverviewList() {
     setFilterTags,
     excludeFilterTags,
     setExcludeFilterTags,
-    filterYears,
-    setFilterYears,
+    filterDataYears,
+    setFilterDataYears,
+    filterReportYears,
+    setFilterReportYears,
     filterSector,
     setFilterSector,
     filterUnverified,
@@ -170,11 +171,12 @@ export function useSingleCompanyOverviewList() {
     setFiltersOpen,
     companySort,
     setCompanySort,
-    years,
+    dataYears,
+    reportYears,
     sectors,
-    companyOverviewById,
-    filteredCompanies,
-    sortedCompanies,
+    allReportRows,
+    filteredReportRows,
+    sortedReportRows,
     filterPeriodStats,
     tagLabelBySlug,
   };

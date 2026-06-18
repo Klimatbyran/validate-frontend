@@ -14,14 +14,14 @@ function isWriteOperation(method: string | undefined): boolean {
  * Authenticated fetch wrapper
  * Automatically checks for authentication on write operations
  * and shows login modal if not authenticated
- * 
+ *
  * @param url - Request URL
  * @param options - Fetch options (same as native fetch)
  * @returns Promise<Response>
  */
 export async function authenticatedFetch(
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<Response> {
   const isWrite = isWriteOperation(options.method);
 
@@ -41,7 +41,7 @@ export async function authenticatedFetch(
                     reject(new Error("Authentication required"));
                     return;
                   }
-                  
+
                   const fetchOptions: RequestInit = {
                     ...options,
                     headers: {
@@ -49,7 +49,7 @@ export async function authenticatedFetch(
                       Authorization: `Bearer ${token}`,
                     },
                   };
-                  
+
                   const response = await fetch(url, fetchOptions);
                   resolve(response);
                 } catch (error) {
@@ -57,7 +57,7 @@ export async function authenticatedFetch(
                 }
               },
             },
-          })
+          }),
         );
         // Don't reject immediately - wait for login to complete
         // The promise will be resolved/rejected in the action callback

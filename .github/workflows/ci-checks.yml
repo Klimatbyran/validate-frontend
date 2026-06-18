@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -39,7 +39,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -60,7 +60,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -85,7 +85,7 @@ jobs:
           # Only check files that are likely to need formatting.
           # (We intentionally exclude YAML/Kubernetes/Workflow files to avoid noisy failures.)
           mapfile -t files < <(git diff --name-only "${base_sha}" "${head_sha}" \
-            | grep -E '\\.(ts|tsx|js|jsx|json|css|md|html)$' || true)
+            | grep -E '\.(ts|tsx|js|jsx|json|css|md|html)$' || true)
 
           if [[ "${#files[@]}" -eq 0 ]]; then
             echo "No relevant files changed; skipping Prettier check."
@@ -106,7 +106,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -125,11 +125,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build app
         run: npm run build
-

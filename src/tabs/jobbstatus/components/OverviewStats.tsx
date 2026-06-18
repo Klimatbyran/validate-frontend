@@ -25,7 +25,7 @@ export function OverviewStats({
   const stats = calculateSwimlaneOverallStats(
     companies,
     getAllPipelineSteps,
-    calculateStepJobStats
+    calculateStepJobStats,
   );
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -54,7 +54,9 @@ export function OverviewStats({
           <ChevronRight className="w-5 h-5 text-gray-02" />
         )}
         <BarChart3 className="w-5 h-5 text-gray-02" />
-        <h2 className="text-3xl text-gray-01">{t("jobstatus.overview.title")}</h2>
+        <h2 className="text-3xl text-gray-01">
+          {t("jobstatus.overview.title")}
+        </h2>
       </button>
 
       {isExpanded && (
@@ -65,7 +67,11 @@ export function OverviewStats({
               label={t("jobstatus.overview.companies")}
               color="gray"
             />
-            <StatCard value={stats.totalJobs} label={t("jobstatus.overview.reports")} color="gray" />
+            <StatCard
+              value={stats.totalJobs}
+              label={t("jobstatus.overview.reports")}
+              color="gray"
+            />
             <StatCard
               value={stats.activeJobs}
               label={t("jobstatus.overview.activeJobs")}
@@ -129,7 +135,11 @@ export function OverviewStats({
                 return (
                   <PipelineStepCard
                     key={index}
-                    name={stepNameToKey[step.name] ? t(stepNameToKey[step.name]) : step.name}
+                    name={
+                      stepNameToKey[step.name]
+                        ? t(stepNameToKey[step.name])
+                        : step.name
+                    }
                     completed={step.completed}
                     processing={step.processing}
                     failed={step.failed}

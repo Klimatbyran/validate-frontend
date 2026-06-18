@@ -31,7 +31,9 @@ export const WIKIDATA_ID_REGEX = /^Q\d+$/;
 
 /** Minimal company from Garbo GET /api/companies (list). */
 export interface GarboCompanyListItem {
-  wikidataId: string;
+  /** Internal Garbo company id (CUID). */
+  id: string;
+  wikidataId?: string | null;
   name: string;
   tags?: string[];
   /** Present when list API includes base year (number or wrapped shape with metadata). */
@@ -51,11 +53,22 @@ export interface GarboCompanyListItem {
   hasUnverifiedData?: boolean;
 }
 
+/** Linked processed PDF (CompanyReport) for a reporting period. */
+export interface GarboCompanyReportSummary {
+  id?: string;
+  reportYear?: string | null;
+  reportPublicationDate?: string | null;
+}
+
 /** Summary of a reporting period (for list/grid). */
 export interface GarboReportingPeriodSummary {
   id?: string;
   startDate: string;
   endDate: string;
+  /** Data year key in DB (may differ from PDF catalog year on CompanyReport). */
+  year?: string | null;
+  companyReportId?: string | null;
+  companyReport?: GarboCompanyReportSummary | null;
   reportURL?: string | null;
   /** Original source URL (e.g. crawler page). */
   sourceUrl?: string | null;
@@ -75,6 +88,18 @@ export interface GarboReportingPeriodSummary {
   economy?: GarboEconomySummary;
 }
 
+/** One period in POST /api/companies/:id/reporting-periods. */
+export type ReportingPeriodWritePayload = {
+  startDate: string;
+  endDate: string;
+  companyReportId?: string;
+  reportURL?: string | null;
+  reportS3Url?: string | null;
+  reportSha256?: string | null;
+  emissions?: Record<string, unknown>;
+  economy?: Record<string, unknown>;
+};
+
 export interface GarboMinimalMetadata {
   user?: { name?: string | null } | null;
   verifiedBy?: { name: string } | null;
@@ -91,17 +116,26 @@ export interface GarboFieldMetadata extends GarboMinimalMetadata {
 }
 
 export interface GarboEmissionsSummary {
-  scope1?: { total?: number | null; metadata?: GarboMinimalMetadata | null } | null;
+  scope1?: {
+    total?: number | null;
+    metadata?: GarboMinimalMetadata | null;
+  } | null;
   scope2?: {
     mb?: number | null;
     lb?: number | null;
     unknown?: number | null;
     metadata?: GarboMinimalMetadata | null;
   } | null;
-  scope1And2?: { total?: number | null; metadata?: GarboMinimalMetadata | null } | null;
+  scope1And2?: {
+    total?: number | null;
+    metadata?: GarboMinimalMetadata | null;
+  } | null;
   scope3?: {
     metadata?: GarboMinimalMetadata | null;
-    statedTotalEmissions?: { total?: number | null; metadata?: GarboMinimalMetadata | null } | null;
+    statedTotalEmissions?: {
+      total?: number | null;
+      metadata?: GarboMinimalMetadata | null;
+    } | null;
     categories?: Array<{
       category: number;
       total?: number | null;
@@ -109,12 +143,23 @@ export interface GarboEmissionsSummary {
     }>;
   } | null;
   biogenic?: { total?: number | null } | null;
-  statedTotalEmissions?: { total?: number | null; metadata?: GarboMinimalMetadata | null } | null;
+  statedTotalEmissions?: {
+    total?: number | null;
+    metadata?: GarboMinimalMetadata | null;
+  } | null;
 }
 
 export interface GarboEconomySummary {
-  turnover?: { value?: number | null; currency?: string | null; metadata?: GarboMinimalMetadata | null } | null;
-  employees?: { value?: number | null; unit?: string | null; metadata?: GarboMinimalMetadata | null } | null;
+  turnover?: {
+    value?: number | null;
+    currency?: string | null;
+    metadata?: GarboMinimalMetadata | null;
+  } | null;
+  employees?: {
+    value?: number | null;
+    unit?: string | null;
+    metadata?: GarboMinimalMetadata | null;
+  } | null;
 }
 
 /** Full company detail from GET /api/companies/:wikidataId (for single-company edit). */
@@ -126,12 +171,25 @@ export interface GarboCompanyDetail extends GarboCompanyListItem {
   descriptions?: Array<{ id?: string; language: string; text: string }>;
   industry?: { subIndustryCode?: string } | null;
   baseYear?: number | null;
-  goals?: Array<{ id: string; description?: string; year?: number; target?: string; baseYear?: number }>;
-  initiatives?: Array<{ id: string; title: string; description?: string; year?: number; scope?: string }>;
+  goals?: Array<{
+    id: string;
+    description?: string;
+    year?: number;
+    target?: string;
+    baseYear?: number;
+  }>;
+  initiatives?: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    year?: number;
+    scope?: string;
+  }>;
   reportingPeriods?: GarboReportingPeriodDetail[];
 }
 
-export interface GarboReportingPeriodDetail extends GarboReportingPeriodSummary {
+export interface GarboReportingPeriodDetail
+  extends GarboReportingPeriodSummary {
   id: string;
 }
 
@@ -144,11 +202,12 @@ export interface GarboMetadata {
 // --- Editor UI helper types ---
 
 export type EditState = {
-  wikidataId: string;
+  companyId: string;
   companyName: string;
   field: "tags" | "reportURL" | "scope1" | "scope2" | "economy";
   year?: number;
   startDate?: string;
   endDate?: string;
+  companyReportId?: string;
   currentValue: string | number | null;
 };

@@ -45,7 +45,7 @@ export function ViewModePills<T extends string = string>({
             className={cn(
               "px-4 py-2 text-sm font-medium rounded-full transition-all",
               isActive ? defaultActiveClass : defaultInactiveClass,
-              getButtonClassName?.(option.value, isActive)
+              getButtonClassName?.(option.value, isActive),
             )}
             aria-pressed={isActive}
           >

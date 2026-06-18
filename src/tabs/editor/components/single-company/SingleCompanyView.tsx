@@ -19,16 +19,19 @@ export function SingleCompanyView() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { companyId: companyIdParam } = useParams<{ companyId?: string }>();
-  const routeCompanyId = companyIdParam ? decodeURIComponent(companyIdParam) : null;
+  const routeCompanyId = companyIdParam
+    ? decodeURIComponent(companyIdParam)
+    : null;
 
   const overviewList = useSingleCompanyOverviewList();
 
   const [detail, setDetail] = useState<GarboCompanyDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
-  const [quickEdit, setQuickEdit] = useState<{ companyId: string; year: string } | null>(
-    null,
-  );
+  const [quickEdit, setQuickEdit] = useState<{
+    companyId: string;
+    year: string;
+  } | null>(null);
 
   const activeCompanyIdRef = useRef<string | null>(routeCompanyId);
   const detailRefreshTokenRef = useRef(0);
@@ -70,8 +73,7 @@ export function SingleCompanyView() {
   }, [navigate]);
 
   const detailPending =
-    Boolean(routeCompanyId) &&
-    (loadingDetail || (!detail && !detailError));
+    Boolean(routeCompanyId) && (loadingDetail || (!detail && !detailError));
 
   if (detailPending) {
     return (
@@ -139,6 +141,10 @@ export function SingleCompanyView() {
                 setDetail(company);
               })
               .catch(() => {});
+          }}
+          onDeleted={() => {
+            void overviewList.refreshCompanyList();
+            navigate(EDITOR_INDEX_PATH);
           }}
         />
       </div>

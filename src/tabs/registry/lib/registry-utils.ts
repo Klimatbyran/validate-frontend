@@ -59,7 +59,14 @@ export function writeRegistryEntriesToCsv(entries: RegistryEntry[]): void {
     return `"${escaped}"`;
   };
 
-  const header = ["companyName", "wikidataId", "reportYear", "url", "sourceUrl", "s3Url"]
+  const header = [
+    "companyName",
+    "wikidataId",
+    "reportYear",
+    "url",
+    "sourceUrl",
+    "s3Url",
+  ]
     .map(escapeCsvValue)
     .join(";");
 

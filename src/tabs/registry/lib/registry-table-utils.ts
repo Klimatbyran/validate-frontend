@@ -55,9 +55,7 @@ export function isWikidataIdPresent(
   return typeof wikidataId === "string" && /^Q\d+$/i.test(wikidataId.trim());
 }
 
-export function collectDistinctReportYears(
-  entries: RegistryEntry[],
-): string[] {
+export function collectDistinctReportYears(entries: RegistryEntry[]): string[] {
   const set = new Set<string>();
   for (const e of entries) {
     const y = e.reportYear?.trim();
@@ -83,8 +81,10 @@ function compareReportYear(
 ): number {
   const na = Number((a.reportYear ?? "").trim());
   const nb = Number((b.reportYear ?? "").trim());
-  const aOk = Number.isFinite(na) && /^\d{4}$/.test((a.reportYear ?? "").trim());
-  const bOk = Number.isFinite(nb) && /^\d{4}$/.test((b.reportYear ?? "").trim());
+  const aOk =
+    Number.isFinite(na) && /^\d{4}$/.test((a.reportYear ?? "").trim());
+  const bOk =
+    Number.isFinite(nb) && /^\d{4}$/.test((b.reportYear ?? "").trim());
   if (!aOk && !bOk) return idTiebreak(a, b);
   if (!aOk) return dir === "asc" ? 1 : -1;
   if (!bOk) return dir === "asc" ? -1 : 1;
@@ -101,16 +101,24 @@ export function sortRegistryEntries(
     case "companyNameAsc":
       return copy.sort(
         (a, b) =>
-          companyNameForSort(a).localeCompare(companyNameForSort(b), undefined, {
-            sensitivity: "base",
-          }) || idTiebreak(a, b),
+          companyNameForSort(a).localeCompare(
+            companyNameForSort(b),
+            undefined,
+            {
+              sensitivity: "base",
+            },
+          ) || idTiebreak(a, b),
       );
     case "companyNameDesc":
       return copy.sort(
         (a, b) =>
-          companyNameForSort(b).localeCompare(companyNameForSort(a), undefined, {
-            sensitivity: "base",
-          }) || idTiebreak(a, b),
+          companyNameForSort(b).localeCompare(
+            companyNameForSort(a),
+            undefined,
+            {
+              sensitivity: "base",
+            },
+          ) || idTiebreak(a, b),
       );
     case "reportYearAsc":
       return copy.sort((a, b) => compareReportYear(a, b, "asc"));

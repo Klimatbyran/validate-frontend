@@ -9,20 +9,27 @@ import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import type {
   GarboCompanyDetail,
   GarboReportingPeriodSummary,
+  ReportingPeriodWritePayload,
 } from "../../lib/types";
 import {
   deleteReportingPeriod,
   updateReportingPeriods,
 } from "../../lib/companies-api";
+import { attachCompanyReportIdToPeriodPatch } from "../../lib/company-report-shells";
 import { inputClassName } from "../../lib/company-edit-utils";
 import {
   editorDenseMultiSelectTriggerClass,
   editorDenseToolbarClass,
   formatDateStamp,
+  dataYearsWithMultiplePeriods,
+  getPeriodDataYear,
   getPeriodYear,
   isReportingPeriodWithIdAndDates,
 } from "../../lib/reporting-period-ui";
 import { useReportingPeriodColumnFilters } from "../../hooks/useReportingPeriodColumnFilters";
+import { useCompanyReportShellFilters } from "../../hooks/useCompanyReportShellFilters";
+import { CompanyReportShellFilterControls } from "./CompanyReportShellFilterControls";
+import { ReportShellCollapsibleGroup } from "./ReportShellCollapsibleGroup";
 import { useReviewerMetadataSave } from "../../hooks/useReviewerMetadataSave";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
@@ -65,6 +72,21 @@ export function ReportingPeriodsDataTab({
   const [isDeletingPeriod, setIsDeletingPeriod] = useState(false);
 
   const {
+    shells,
+    showAllReports,
+    setShowAllReports,
+    selectedShellKeys,
+    setSelectedShellKeys,
+    filterPeriodsByShell,
+    visibleShellGroups,
+  } = useCompanyReportShellFilters(periods, company.id);
+
+  const periodsForShellFilter = useMemo(
+    () => filterPeriodsByShell(periods),
+    [periods, filterPeriodsByShell],
+  );
+
+  const {
     showAllYears,
     setShowAllYears,
     selectedYears,
@@ -75,7 +97,12 @@ export function ReportingPeriodsDataTab({
     visiblePeriods,
   } = useReportingPeriodColumnFilters<
     GarboReportingPeriodSummary & { id: string }
-  >(periods, company.wikidataId);
+  >(periodsForShellFilter, company.id);
+
+  const shellGroupsToRender = useMemo(
+    () => visibleShellGroups(visiblePeriods),
+    [visiblePeriods, visibleShellGroups],
+  );
 
   useEffect(() => {
     setEdited({});
@@ -83,11 +110,16 @@ export function ReportingPeriodsDataTab({
     setDeleteModalOpen(false);
     setDeletePeriodId(null);
     setIsDeletingPeriod(false);
-  }, [company.wikidataId]);
+  }, [company.id]);
 
   const periodPendingDelete = useMemo(
     () => periods.find((p) => p.id === deletePeriodId) ?? null,
     [periods, deletePeriodId],
+  );
+
+  const duplicateDataYears = useMemo(
+    () => dataYearsWithMultiplePeriods(periods),
+    [periods],
   );
 
   const setPatch = (rpId: string, patch: Partial<EditedPeriod>) => {
@@ -158,13 +190,13 @@ export function ReportingPeriodsDataTab({
 
         if (!startChanged && !endChanged && !urlChanged) return null;
 
-        return { startDate, endDate, reportURL };
+        return attachCompanyReportIdToPeriodPatch(rp, {
+          startDate,
+          endDate,
+          reportURL,
+        });
       })
-      .filter(Boolean) as Array<{
-      startDate: string;
-      endDate: string;
-      reportURL?: string;
-    }>;
+      .filter(Boolean) as ReportingPeriodWritePayload[];
 
     if (!payloadPeriods.length) {
       toast.message(t("editor.periodEditor.nothingToSave"));
@@ -173,7 +205,7 @@ export function ReportingPeriodsDataTab({
 
     setSaving(true);
     try {
-      await updateReportingPeriods(company.wikidataId, {
+      await updateReportingPeriods(company.id, {
         reportingPeriods: payloadPeriods,
         metadata:
           meta?.source?.trim() || meta?.comment?.trim()
@@ -267,6 +299,13 @@ export function ReportingPeriodsDataTab({
               <Undo2 className="w-3.5 h-3.5 mr-1.5" />
               {t("editor.periodEditor.resetAll")}
             </Button>
+            <CompanyReportShellFilterControls
+              shells={shells}
+              showAllReports={showAllReports}
+              onShowAllReportsChange={setShowAllReports}
+              selectedShellKeys={selectedShellKeys}
+              onSelectedShellKeysChange={setSelectedShellKeys}
+            />
             <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-01">
               <input
                 type="checkbox"
@@ -293,162 +332,189 @@ export function ReportingPeriodsDataTab({
         </div>
       </div>
 
+      {duplicateDataYears.length > 0 ? (
+        <div className="mb-4 rounded-md border border-orange-03/40 bg-orange-05/10 px-3 py-2 text-xs text-gray-01">
+          {t("editor.singleCompanyView.multiplePeriodsSameDataYear", {
+            years: duplicateDataYears.join(", "),
+          })}
+        </div>
+      ) : null}
+
       {visiblePeriods.length ? (
-        <div className="space-y-3 w-full min-w-0">
-          {visiblePeriods.map((rp) => {
-            const rpEdits = edited[rp.id] ?? {};
-            const periodYear = getPeriodYear(rp) ?? dash;
-            const startVal =
-              rpEdits.startDate ?? formatDateStamp(rp.startDate, dash);
-            const endVal = rpEdits.endDate ?? formatDateStamp(rp.endDate, dash);
-            const urlVal = rpEdits.reportURL ?? rp.reportURL ?? "";
-            const startDirty = rpEdits.startDate != null;
-            const endDirty = rpEdits.endDate != null;
-            const urlDirty = rpEdits.reportURL != null;
-            const anyDirty = startDirty || endDirty || urlDirty;
-            const reportUrlTrimmed = (rp.reportURL ?? "").trim();
-            const s3UrlTrimmed = (rp.s3Url ?? "").trim();
+        <div className="space-y-6 w-full min-w-0">
+          {shellGroupsToRender.map((shell) => (
+            <ReportShellCollapsibleGroup
+              key={shell.shellKey}
+              shell={shell}
+              periodCount={shell.periods.length}
+            >
+              {shell.periods.map((rp) => {
+                const rpEdits = edited[rp.id] ?? {};
+                const periodYear = getPeriodYear(rp) ?? dash;
+                const startVal =
+                  rpEdits.startDate ?? formatDateStamp(rp.startDate, dash);
+                const endVal =
+                  rpEdits.endDate ?? formatDateStamp(rp.endDate, dash);
+                const urlVal = rpEdits.reportURL ?? rp.reportURL ?? "";
+                const startDirty = rpEdits.startDate != null;
+                const endDirty = rpEdits.endDate != null;
+                const urlDirty = rpEdits.reportURL != null;
+                const anyDirty = startDirty || endDirty || urlDirty;
+                const reportUrlTrimmed = (rp.reportURL ?? "").trim();
+                const s3UrlTrimmed = (rp.s3Url ?? "").trim();
+                const dataYear = getPeriodDataYear(rp) ?? "";
+                const isDuplicateDataYear =
+                  duplicateDataYears.includes(dataYear);
 
-            return (
-              <div
-                key={rp.id}
-                className="rounded-lg bg-gray-04 p-3 w-full min-w-0 max-w-full"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3 min-w-0">
-                  <div>
-                    <div className="text-sm font-semibold text-gray-01">
-                      {periodYear}
-                    </div>
-                    <div className="text-xs text-gray-02 mt-0.5">
-                      {formatDateStamp(rp.startDate, dash)} –{" "}
-                      {formatDateStamp(rp.endDate, dash)}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => resetPeriod(rp.id)}
-                      disabled={!anyDirty}
-                      className={editorDenseToolbarClass}
-                    >
-                      <Undo2 className="w-3.5 h-3.5 mr-1.5" />
-                      {t("editor.periodEditor.reset")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setDeletePeriodId(rp.id);
-                        setDeleteModalOpen(true);
-                      }}
-                      className="h-8 w-8 shrink-0 text-pink-03 hover:text-pink-02 hover:bg-pink-05/20 rounded-full"
-                      aria-label={t(
-                        "editor.singleCompanyView.deleteReportingPeriod.trashAriaLabel",
-                      )}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 w-full min-w-0">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-01 mb-1">
-                      {t("editor.singleCompanyView.reportingPeriodStart")}
-                    </label>
-                    <input
-                      type="date"
-                      value={startVal === dash ? "" : startVal}
-                      onChange={(e) =>
-                        setPatch(rp.id, { startDate: e.target.value })
-                      }
-                      className={
-                        inputClassName +
-                        " bg-gray-04 w-full min-w-0 !max-w-none " +
-                        (startDirty ? " border-orange-03" : "")
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-01 mb-1">
-                      {t("editor.singleCompanyView.reportingPeriodEnd")}
-                    </label>
-                    <input
-                      type="date"
-                      value={endVal === dash ? "" : endVal}
-                      onChange={(e) =>
-                        setPatch(rp.id, { endDate: e.target.value })
-                      }
-                      className={
-                        inputClassName +
-                        " bg-gray-04 w-full min-w-0 !max-w-none " +
-                        (endDirty ? " border-orange-03" : "")
-                      }
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-medium text-gray-01 mb-1">
-                      {t("editor.companies.reportUrl")}
-                    </label>
-                    <input
-                      type="url"
-                      value={urlVal}
-                      onChange={(e) =>
-                        setUrl(
-                          rp.id,
-                          e.target.value,
-                          Boolean((rp.reportURL ?? "").trim()),
-                        )
-                      }
-                      className={
-                        inputClassName +
-                        " bg-gray-04 w-full min-w-0 !max-w-none " +
-                        (urlDirty ? " border-orange-03" : "")
-                      }
-                      placeholder={t("editor.fieldEdit.sourcePlaceholder")}
-                    />
-                    {(reportUrlTrimmed || s3UrlTrimmed) && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {reportUrlTrimmed ? (
-                          <a
-                            href={reportUrlTrimmed}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={reportHrefLinkPillClassName}
-                            title={reportUrlTrimmed}
-                            aria-label={`${t("registry.sourceUrl")}: ${reportUrlTrimmed}`}
-                          >
-                            <span className="font-medium whitespace-nowrap">
-                              {t("registry.sourceUrl")}
-                            </span>
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        ) : null}
-                        {s3UrlTrimmed ? (
-                          <a
-                            href={s3UrlTrimmed}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={reportHrefLinkPillClassName}
-                            title={s3UrlTrimmed}
-                            aria-label={`${t("registry.s3Url")}: ${s3UrlTrimmed}`}
-                          >
-                            <span className="font-medium whitespace-nowrap">
-                              {t("registry.s3Url")}
-                            </span>
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
+                return (
+                  <div
+                    key={rp.id}
+                    className="rounded-lg bg-gray-04 p-3 w-full min-w-0 max-w-full"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3 min-w-0">
+                      <div>
+                        <div className="text-sm font-semibold text-gray-01">
+                          {periodYear}
+                        </div>
+                        <div className="text-xs text-gray-02 mt-0.5">
+                          {formatDateStamp(rp.startDate, dash)} –{" "}
+                          {formatDateStamp(rp.endDate, dash)}
+                        </div>
+                        {isDuplicateDataYear ? (
+                          <p className="mt-2 text-[11px] text-orange-03/90">
+                            {t(
+                              "editor.singleCompanyView.sameDataYearAsAnotherPeriod",
+                            )}
+                          </p>
                         ) : null}
                       </div>
-                    )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => resetPeriod(rp.id)}
+                          disabled={!anyDirty}
+                          className={editorDenseToolbarClass}
+                        >
+                          <Undo2 className="w-3.5 h-3.5 mr-1.5" />
+                          {t("editor.periodEditor.reset")}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setDeletePeriodId(rp.id);
+                            setDeleteModalOpen(true);
+                          }}
+                          className="h-8 w-8 shrink-0 text-pink-03 hover:text-pink-02 hover:bg-pink-05/20 rounded-full"
+                          aria-label={t(
+                            "editor.singleCompanyView.deleteReportingPeriod.trashAriaLabel",
+                          )}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 w-full min-w-0">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-01 mb-1">
+                          {t("editor.singleCompanyView.reportingPeriodStart")}
+                        </label>
+                        <input
+                          type="date"
+                          value={startVal === dash ? "" : startVal}
+                          onChange={(e) =>
+                            setPatch(rp.id, { startDate: e.target.value })
+                          }
+                          className={
+                            inputClassName +
+                            " bg-gray-04 w-full min-w-0 !max-w-none " +
+                            (startDirty ? " border-orange-03" : "")
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-01 mb-1">
+                          {t("editor.singleCompanyView.reportingPeriodEnd")}
+                        </label>
+                        <input
+                          type="date"
+                          value={endVal === dash ? "" : endVal}
+                          onChange={(e) =>
+                            setPatch(rp.id, { endDate: e.target.value })
+                          }
+                          className={
+                            inputClassName +
+                            " bg-gray-04 w-full min-w-0 !max-w-none " +
+                            (endDirty ? " border-orange-03" : "")
+                          }
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-medium text-gray-01 mb-1">
+                          {t("editor.companies.reportUrl")}
+                        </label>
+                        <input
+                          type="url"
+                          value={urlVal}
+                          onChange={(e) =>
+                            setUrl(
+                              rp.id,
+                              e.target.value,
+                              Boolean((rp.reportURL ?? "").trim()),
+                            )
+                          }
+                          className={
+                            inputClassName +
+                            " bg-gray-04 w-full min-w-0 !max-w-none " +
+                            (urlDirty ? " border-orange-03" : "")
+                          }
+                          placeholder={t("editor.fieldEdit.sourcePlaceholder")}
+                        />
+                        {(reportUrlTrimmed || s3UrlTrimmed) && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {reportUrlTrimmed ? (
+                              <a
+                                href={reportUrlTrimmed}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={reportHrefLinkPillClassName}
+                                title={reportUrlTrimmed}
+                                aria-label={`${t("registry.sourceUrl")}: ${reportUrlTrimmed}`}
+                              >
+                                <span className="font-medium whitespace-nowrap">
+                                  {t("registry.sourceUrl")}
+                                </span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            ) : null}
+                            {s3UrlTrimmed ? (
+                              <a
+                                href={s3UrlTrimmed}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={reportHrefLinkPillClassName}
+                                title={s3UrlTrimmed}
+                                aria-label={`${t("registry.s3Url")}: ${s3UrlTrimmed}`}
+                              >
+                                <span className="font-medium whitespace-nowrap">
+                                  {t("registry.s3Url")}
+                                </span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            ) : null}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </ReportShellCollapsibleGroup>
+          ))}
         </div>
       ) : (
         <p className="text-sm text-gray-02 mt-3">
@@ -475,9 +541,14 @@ export function ReportingPeriodsDataTab({
         onOpenChange={setDeleteModalOpen}
         size="md"
         title={t("editor.singleCompanyView.deleteReportingPeriod.title")}
-        description={t("editor.singleCompanyView.deleteReportingPeriod.description", {
-          year: periodPendingDelete ? (getPeriodYear(periodPendingDelete) ?? dash) : dash,
-        })}
+        description={t(
+          "editor.singleCompanyView.deleteReportingPeriod.description",
+          {
+            year: periodPendingDelete
+              ? (getPeriodYear(periodPendingDelete) ?? dash)
+              : dash,
+          },
+        )}
         footer={
           <>
             <Button

@@ -85,17 +85,23 @@ On startup, the terminal logs which backends the Vite proxy targets, for example
 
 The app talks to three backends:
 
-| Backend | Used for | Default host (stage) |
-|---------|----------|----------------------|
-| **Unearth API** | Auth, crawler, registry, api-access, errors tab | `stage-api.unearthdata.ai` |
-| **Garbo monolith** | Queue archive (Jobbstatus Archive, batch pickers) | `stage-api.klimatkollen.se` |
-| **Pipeline** | Live job status, upload, reruns | `stage-pipeline-api.klimatkollen.se` |
+| Backend         | Used for                                          | Default host (stage)                 |
+| --------------- | ------------------------------------------------- | ------------------------------------ |
+| **Unearth API** | Auth, crawler, registry, api-access, errors tab   | `stage-api.unearthdata.ai`           |
+| **Garbo API**   | Queue archive (Jobbstatus Archive, batch pickers) | `stage-api.klimatkollen.se`          |
+| **Pipeline**    | Live job status, upload, reruns                   | `stage-pipeline-api.klimatkollen.se` |
 
 In **local dev**, Unearth uses `/unearth-stage/api/...` and Garbo archive uses `/garbo-stage/api/queue-archive/...`.
 
 In **staging/production**, nginx proxies `/unearth-api/` → `UNEARTH_API_URL` and `/garbo-api/queue-archive/` → `GARBO_API_URL`. Pipeline uses `BACKEND_API_URL`.
 
 For path names, env vars, and Jobbstatus live vs archive, see [API and proxy setup](./docs/API_AND_PROXY_SETUP.md).
+
+### Company editor routing
+
+The company editor uses **full internal UUID** in paths (`/editor/company/:id`). Staff API mutations also take `company.id` in path segments. Partner/integration **read** endpoints still accept Wikidata ID, full UUID, or 8-char prefix (legacy `/editor/company/Q123` bookmarks keep working).
+
+Public Klimatkollen links use `wikidataId` when present, otherwise the 8-char UUID prefix — see `src/lib/company-routing.ts` and [ROUTING_URL_STATE.md](./docs/ROUTING_URL_STATE.md).
 
 ## Development
 

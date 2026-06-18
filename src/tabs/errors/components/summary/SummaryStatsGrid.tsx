@@ -17,7 +17,9 @@ function SummaryStatCard({
     <div className="rounded-lg bg-gray-03/50 border border-gray-02/15 p-4">
       <div className="text-xs text-gray-02">{title}</div>
       {children}
-      {footer ? <div className="text-[11px] text-gray-02 mt-2">{footer}</div> : null}
+      {footer ? (
+        <div className="text-[11px] text-gray-02 mt-2">{footer}</div>
+      ) : null}
     </div>
   );
 }
@@ -77,8 +79,12 @@ export function SummaryStatsGrid({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-5">
       <SummaryStatCard title={t("errors.summary.totalCompanies")}>
-        <div className="text-2xl font-semibold text-gray-01 mt-1">{formatInt(stats.totalCompanies)}</div>
-        <div className="text-[11px] text-gray-02 mt-1">{t("errors.summary.notYearFiltered")}</div>
+        <div className="text-2xl font-semibold text-gray-01 mt-1">
+          {formatInt(stats.totalCompanies)}
+        </div>
+        <div className="text-[11px] text-gray-02 mt-1">
+          {t("errors.summary.notYearFiltered")}
+        </div>
         <div className="mt-3 text-sm text-gray-01">
           <SummaryStatRow
             label={t("errors.summary.noReportingPeriods")}
@@ -94,28 +100,40 @@ export function SummaryStatsGrid({
         <div className="text-sm text-gray-01 mt-2 space-y-1">
           <SummaryStatRowWithHelp
             label={t("errors.summary.inBoth")}
-            helpText={t("errors.summary.stageProdHelp.inBoth", { year: selectedYear })}
+            helpText={t("errors.summary.stageProdHelp.inBoth", {
+              year: selectedYear,
+            })}
             value={formatInt(stats.companiesInBothForYear)}
           />
           <SummaryStatRowWithHelp
             label={t("errors.summary.stageOnly")}
-            helpText={t("errors.summary.stageProdHelp.stageOnly", { year: selectedYear })}
+            helpText={t("errors.summary.stageProdHelp.stageOnly", {
+              year: selectedYear,
+            })}
             value={formatInt(stats.companiesStageOnlyForYear)}
           />
           <SummaryStatRowWithHelp
             label={t("errors.summary.prodOnly")}
-            helpText={t("errors.summary.stageProdHelp.prodOnly", { year: selectedYear })}
+            helpText={t("errors.summary.stageProdHelp.prodOnly", {
+              year: selectedYear,
+            })}
             value={formatInt(stats.companiesProdOnlyForYear)}
           />
           <SummaryStatRowWithHelp
             label={t("errors.summary.neither")}
-            helpText={t("errors.summary.stageProdHelp.neither", { year: selectedYear })}
+            helpText={t("errors.summary.stageProdHelp.neither", {
+              year: selectedYear,
+            })}
             value={formatInt(stats.companiesNeitherForYear)}
           />
         </div>
       </SummaryStatCard>
 
-      <SummaryStatCard title={t("errors.summary.emissionsCoverageForYear", { year: selectedYear })}>
+      <SummaryStatCard
+        title={t("errors.summary.emissionsCoverageForYear", {
+          year: selectedYear,
+        })}
+      >
         <div className="text-sm text-gray-01 mt-2 space-y-1">
           <SummaryStatRow
             label={t("errors.summary.withAnyEmissions")}
@@ -136,36 +154,60 @@ export function SummaryStatsGrid({
         <div className="text-2xl font-semibold text-gray-01 mt-1">
           {formatInt(stats.companiesFullyVerifiedInProd)}
         </div>
-        <div className="text-[11px] text-gray-02 mt-1">{t("errors.summary.verifiedNote")}</div>
+        <div className="text-[11px] text-gray-02 mt-1">
+          {t("errors.summary.verifiedNote")}
+        </div>
       </SummaryStatCard>
 
       <SummaryStatCard title={t("errors.summary.avgAccuracy")}>
         {avg ? (
           <div className="text-sm text-gray-01 mt-2 space-y-1">
             <div className="flex justify-between gap-3">
-              <span className="text-gray-02">{t("errors.metrics.zeroInclusive")}</span>
-              <span className={cn("font-medium tabular-nums", rateTextClass(avg.zeroInclusive))}>
+              <span className="text-gray-02">
+                {t("errors.metrics.zeroInclusive")}
+              </span>
+              <span
+                className={cn(
+                  "font-medium tabular-nums",
+                  rateTextClass(avg.zeroInclusive),
+                )}
+              >
                 {formatPct(avg.zeroInclusive)}
               </span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-gray-02">{t("errors.metrics.precisionTolerant")}</span>
-              <span className={cn("font-medium tabular-nums", rateTextClass(avg.tolerant))}>
+              <span className="text-gray-02">
+                {t("errors.metrics.precisionTolerant")}
+              </span>
+              <span
+                className={cn(
+                  "font-medium tabular-nums",
+                  rateTextClass(avg.tolerant),
+                )}
+              >
                 {formatPct(avg.tolerant)}
               </span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-gray-02">{t("errors.metrics.exactMatch")}</span>
-              <span className={cn("font-medium tabular-nums", rateTextClass(avg.exactMatch))}>
+              <span className="text-gray-02">
+                {t("errors.metrics.exactMatch")}
+              </span>
+              <span
+                className={cn(
+                  "font-medium tabular-nums",
+                  rateTextClass(avg.exactMatch),
+                )}
+              >
                 {formatPct(avg.exactMatch)}
               </span>
             </div>
           </div>
         ) : (
-          <div className="text-sm text-gray-02 mt-2">{t("errors.summary.noAvgAccuracy")}</div>
+          <div className="text-sm text-gray-02 mt-2">
+            {t("errors.summary.noAvgAccuracy")}
+          </div>
         )}
       </SummaryStatCard>
     </div>
   );
 }
-

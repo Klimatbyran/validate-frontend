@@ -29,7 +29,9 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
   const [missingQueueId, setMissingQueueId] = useState<string | undefined>();
-  const [selectedYearData, setSelectedYearData] = useState<SwimlaneYearData | undefined>();
+  const [selectedYearData, setSelectedYearData] = useState<
+    SwimlaneYearData | undefined
+  >();
   const [selectedIsRerun, setSelectedIsRerun] = useState(false);
 
   const latestYear = company.years?.[0];
@@ -79,7 +81,10 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
                     : t("jobstatus.yearsOfData_other", { count: totalYears })}
                 </span>
                 <span>•</span>
-                <span>{t("jobstatus.latestLabel")}: {latestYear?.year ?? t("jobstatus.na")}</span>
+                <span>
+                  {t("jobstatus.latestLabel")}:{" "}
+                  {latestYear?.year ?? t("jobstatus.na")}
+                </span>
               </div>
             </div>
           </button>
@@ -95,14 +100,17 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
         </div>
 
         {(() => {
-          const yearsByYear = (company.years || []).reduce((acc, yearData) => {
-            const year = yearData.year;
-            if (!acc[year]) {
-              acc[year] = [];
-            }
-            acc[year].push(yearData);
-            return acc;
-          }, {} as Record<number, typeof company.years>);
+          const yearsByYear = (company.years || []).reduce(
+            (acc, yearData) => {
+              const year = yearData.year;
+              if (!acc[year]) {
+                acc[year] = [];
+              }
+              acc[year].push(yearData);
+              return acc;
+            },
+            {} as Record<number, typeof company.years>,
+          );
 
           const sortedYearNumbers = Object.keys(yearsByYear)
             .map(Number)
@@ -111,7 +119,7 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
           return sortedYearNumbers.map((year) => {
             const runsForYear = yearsByYear[year];
             const sortedRuns = [...runsForYear].sort(
-              (a, b) => (b.latestTimestamp || 0) - (a.latestTimestamp || 0)
+              (a, b) => (b.latestTimestamp || 0) - (a.latestTimestamp || 0),
             );
             const latestRun = sortedRuns[0];
             const previousRuns = sortedRuns.slice(1);
@@ -131,16 +139,24 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
                       (targetRun.jobs?.[0] as any)?.threadId ||
                       (targetRun as any).threadId ||
                       null;
-                    const job = getLatestQueueAttempt(queueId, targetRun, canonicalThreadId) as
-                      | QueueJob
-                      | undefined;
-                    const attempts = getQueueAttempts(queueId, targetRun, canonicalThreadId);
+                    const job = getLatestQueueAttempt(
+                      queueId,
+                      targetRun,
+                      canonicalThreadId,
+                    ) as QueueJob | undefined;
+                    const attempts = getQueueAttempts(
+                      queueId,
+                      targetRun,
+                      canonicalThreadId,
+                    );
 
                     if (job) {
                       setSelectedJob(job);
                       setMissingQueueId(undefined);
                       setSelectedYearData(targetRun);
-                      setSelectedIsRerun((options?.isRerun ?? false) || attempts.length > 1);
+                      setSelectedIsRerun(
+                        (options?.isRerun ?? false) || attempts.length > 1,
+                      );
                       setIsDialogOpen(true);
                     } else if (isFollowUpQueue(queueId)) {
                       // Allow opening non-existent follow-up jobs
@@ -151,7 +167,7 @@ export function CompanyCard({ company, positionInList }: CompanyCardProps) {
                       setIsDialogOpen(true);
                     } else {
                       console.warn(
-                        `No job found for queueId: ${queueId} in the specified run`
+                        `No job found for queueId: ${queueId} in the specified run`,
                       );
                     }
                   }}

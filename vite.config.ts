@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -36,8 +37,15 @@ function targetFromEnv(
   return v === "local" || v === "prod" ? v : "stage";
 }
 
-function unearthTargetFromEnv(env: Record<string, string>, joint: string): "local" | "stage" | "prod" {
-  const v = env.VITE_UNEARTH_TARGET || env.VITE_GARBO_TARGET || env.VITE_API_MODE || joint;
+function unearthTargetFromEnv(
+  env: Record<string, string>,
+  joint: string,
+): "local" | "stage" | "prod" {
+  const v =
+    env.VITE_UNEARTH_TARGET ||
+    env.VITE_GARBO_TARGET ||
+    env.VITE_API_MODE ||
+    joint;
   return v === "local" || v === "prod" ? v : "stage";
 }
 
@@ -189,7 +197,6 @@ function setProxyApiKey(
   }
 }
 
-
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const urls = getProxyTargets(env);
@@ -225,6 +232,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), climatePlansManifest()],
+    test: {
+      environment: "jsdom",
+      setupFiles: ["./src/test/setup.ts"],
+      globals: true,
+    },
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),

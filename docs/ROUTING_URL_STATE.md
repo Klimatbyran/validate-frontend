@@ -28,7 +28,7 @@ Use path segments for:
 Use query params for:
 
 - **Tabs/subtabs inside a page**
-  - Example: `/editor/company/Q123?tab=emissions`
+  - Example: `/editor/company/a1b2c3d4-e5f6-7890-abcd-ef1234567890?tab=emissions` (full internal UUID; legacy `/editor/company/Q123` still resolves via read API)
 - **Filters and search**
   - Example: `?q=volvo&tags=auto,sweden&years=2023,2024`
 - **Sorting and paging**
@@ -92,6 +92,7 @@ The route is **`/jobbstatus`** only. **Live** and **Archive** are in-page tabs (
 - **Archive:** `/jobbstatus?source=archive`.
 
 Invalid `source` values fall back to Live. Switching to Live **removes** the `source` query param (cleaner default URL).
+
 - `/climate-plans`
 
 ### Upload (query params)

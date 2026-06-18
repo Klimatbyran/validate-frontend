@@ -1,8 +1,8 @@
 /**
- * API config: pipeline, Unearth HTTP API, and Garbo monolith (queue-archive).
+ * API config: Pipeline API, Unearth API, and Garbo API (queue-archive).
  *
  * Dev proxies: /pipeline-*, /unearth-*, /garbo-* (see docs/API_AND_PROXY_SETUP.md).
- * Deployed: /api (pipeline), /unearth-api (Unearth), /garbo-api (Garbo monolith queue-archive only).
+ * Deployed: /api (pipeline), /unearth-api (Unearth API), /garbo-api (Garbo API queue-archive only).
  * Env: VITE_API_MODE, VITE_PIPELINE_TARGET, VITE_UNEARTH_TARGET (legacy: VITE_GARBO_TARGET).
  */
 
@@ -16,7 +16,7 @@ export const GARBO_PROD_ORIGIN = "https://klimatkollen.se";
 export const UNEARTH_STAGE_API = "https://stage-api.unearthdata.ai";
 export const UNEARTH_PROD_API = "https://api.unearthdata.ai";
 
-/** Garbo monolith hosts (workers, Postgres queue-archive). */
+/** Garbo API hosts (workers, Postgres queue-archive). */
 export const GARBO_STAGE_API = "https://stage-api.klimatkollen.se";
 export const GARBO_PROD_API = "https://api.klimatkollen.se";
 
@@ -25,7 +25,8 @@ function jointMode(): ApiTarget {
   if (v === "local" || v === "stage" || v === "prod") return v;
   if (!import.meta.env.DEV && typeof window !== "undefined") {
     const hostname = window.location.hostname;
-    if (hostname.includes("stage") || hostname.includes("staging")) return "stage";
+    if (hostname.includes("stage") || hostname.includes("staging"))
+      return "stage";
     return "prod";
   }
   return "stage";
@@ -47,7 +48,7 @@ export function getUnearthTarget(): ApiTarget {
   return jointMode();
 }
 
-/** Garbo monolith target (queue-archive). Same selector as {@link getUnearthTarget}. */
+/** Garbo API target (queue-archive). Same selector as {@link getUnearthTarget}. */
 export function getGarboTarget(): ApiTarget {
   return getUnearthTarget();
 }
@@ -86,9 +87,9 @@ export function getUnearthApiBaseUrl(): string {
   return url.replace(/\/+$/, "");
 }
 
-// --- Garbo monolith (queue-archive only) ---
+// --- Garbo API (queue-archive only) ---
 
-/** Garbo monolith base. Dev: /garbo-stage/api, etc. Prod: /garbo-api. No trailing slash. */
+/** Garbo API base. Dev: /garbo-stage/api, etc. Prod: /garbo-api. No trailing slash. */
 export function getGarboApiBaseUrl(): string {
   const target = getGarboTarget();
   let url: string;
@@ -102,14 +103,14 @@ export function getGarboApiBaseUrl(): string {
   return url.replace(/\/+$/, "");
 }
 
-/** Queue-archive paths on the Garbo monolith (`/api/queue-archive/…` on the server). */
+/** Queue-archive paths on the Garbo API (`/api/queue-archive/…` on the server). */
 export function getGarboQueueArchiveUrl(path: string): string {
   const base = getGarboApiBaseUrl().replace(/\/+$/, "");
   const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
   return `${base}/queue-archive${p}`;
 }
 
-// --- Errors tab: fixed Unearth stage + prod (ignores target) ---
+// --- Errors tab: fixed Unearth API stage + prod (ignores VITE_UNEARTH_TARGET) ---
 
 export function getStageUnearthUrl(path: string): string {
   const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
@@ -123,12 +124,31 @@ export function getProdUnearthUrl(path: string): string {
   return `/unearth-prod-api${p}`;
 }
 
-/** @deprecated Use {@link getStageUnearthUrl} */
-export function getStageGarboUrl(path: string): string {
-  return getStageUnearthUrl(path);
+/** Path segment for staff pipeline company list (GET …/pipeline/companies). */
+export const PIPELINE_COMPANIES_LIST_PATH = "/pipeline/companies";
+
+function joinApiPath(base: string, segment: string): string {
+  const normalizedBase = base.replace(/\/+$/, "");
+  const normalizedSegment = segment.startsWith("/") ? segment : `/${segment}`;
+  return `${normalizedBase}${normalizedSegment}`.replace(/\/+/g, "/");
 }
 
-/** @deprecated Use {@link getProdUnearthUrl} */
-export function getProdGarboUrl(path: string): string {
-  return getProdUnearthUrl(path);
+/**
+ * Errors tab: Unearth API staff list with all reporting periods (stage).
+ * Same route as editor `apiUrl(PIPELINE_COMPANIES_LIST_PATH)` but fixed stage host.
+ */
+export function getStagePipelineCompaniesListUrl(): string {
+  return joinApiPath(getStageUnearthUrl("/api"), PIPELINE_COMPANIES_LIST_PATH);
+}
+
+/**
+ * Errors tab: Unearth API staff list (prod validated DB).
+ * Override with VITE_ERRORS_PROD_PIPELINE_URL until prod Unearth API deploys the route.
+ */
+export function getProdPipelineCompaniesListUrl(): string {
+  const override = import.meta.env.VITE_ERRORS_PROD_PIPELINE_URL as
+    | string
+    | undefined;
+  if (override?.trim()) return override.trim();
+  return joinApiPath(getProdUnearthUrl("/api"), PIPELINE_COMPANIES_LIST_PATH);
 }

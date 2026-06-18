@@ -24,7 +24,7 @@ spec:
             # Unearth HTTP API (override in overlays for prod)
             - name: UNEARTH_API_URL
               value: "https://stage-api.unearthdata.ai/api"
-            # Garbo monolith — queue-archive only
+            # Garbo API — queue-archive only
             - name: GARBO_API_URL
               value: "https://stage-api.klimatkollen.se/api"
             # Garbo all-access API key - for /unearth-api/ (primary target: stage or prod per deployment)

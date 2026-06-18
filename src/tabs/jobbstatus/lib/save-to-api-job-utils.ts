@@ -4,7 +4,9 @@
 
 import type { QueueJob } from "@/lib/types";
 
-export function extractGarboChunkFromSaveToApiJob(job: QueueJob): string | null {
+export function extractGarboChunkFromSaveToApiJob(
+  job: QueueJob,
+): string | null {
   const pieces: string[] = [];
   if (typeof job.failedReason === "string") pieces.push(job.failedReason);
   if (Array.isArray(job.stacktrace)) pieces.push(job.stacktrace.join("\n"));
@@ -36,19 +38,34 @@ export function extractGarboChunkFromSaveToApiJob(job: QueueJob): string | null 
 export type SaveToApiJobPayloadSummary = {
   subEndpoint?: string;
   keys?: string;
+  documentReportYear?: string;
+  companyReportId?: string;
   error?: string;
 };
 
-export function summarizeSaveToApiPayload(job: QueueJob): SaveToApiJobPayloadSummary {
+function readOptionalString(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const trimmed = String(value).trim();
+  return trimmed.length ? trimmed : undefined;
+}
+
+export function summarizeSaveToApiPayload(
+  job: QueueJob,
+): SaveToApiJobPayloadSummary {
   const data = job.data as Record<string, unknown> | undefined;
   const subEndpoint =
     typeof data?.apiSubEndpoint === "string" ? data.apiSubEndpoint : undefined;
 
   let keys: string | undefined;
   const body = data?.body;
+  let documentReportYear = readOptionalString(data?.documentReportYear);
+  let companyReportId = readOptionalString(data?.companyReportId);
   if (body && typeof body === "object" && !Array.isArray(body)) {
-    const topKeys = Object.keys(body as object).slice(0, 10);
+    const bodyRecord = body as Record<string, unknown>;
+    const topKeys = Object.keys(bodyRecord).slice(0, 10);
     keys = topKeys.length ? topKeys.join(", ") : undefined;
+    documentReportYear ??= readOptionalString(bodyRecord.documentReportYear);
+    companyReportId ??= readOptionalString(bodyRecord.companyReportId);
   }
 
   const failedReason =
@@ -62,5 +79,11 @@ export function summarizeSaveToApiPayload(job: QueueJob): SaveToApiJobPayloadSum
 
   const error = failedReason || returnValueString;
 
-  return { subEndpoint: subEndpoint || undefined, keys, error };
+  return {
+    subEndpoint: subEndpoint || undefined,
+    keys,
+    documentReportYear,
+    companyReportId,
+    error,
+  };
 }

@@ -22,6 +22,7 @@ export interface CompanyReport {
 }
 
 export interface CompanyDetails {
+  id: string;
   name: string;
   wikidataId?: string;
   tags?: string[];

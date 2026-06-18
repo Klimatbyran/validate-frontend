@@ -18,7 +18,10 @@ function getStoredLocale(): Locale {
   return "en";
 }
 
-function getNested(obj: Record<string, unknown>, path: string): string | undefined {
+function getNested(
+  obj: Record<string, unknown>,
+  path: string,
+): string | undefined {
   const parts = path.split(".");
   let current: unknown = obj;
   for (const part of parts) {
@@ -28,7 +31,10 @@ function getNested(obj: Record<string, unknown>, path: string): string | undefin
   return typeof current === "string" ? current : undefined;
 }
 
-function interpolate(str: string, params?: Record<string, string | number>): string {
+function interpolate(
+  str: string,
+  params?: Record<string, string | number>,
+): string {
   if (!params) return str;
   return str.replace(/\{\{(\w+)\}\}/g, (_, key) => String(params[key] ?? ""));
 }
@@ -75,7 +81,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       if (enValue != null) return interpolate(enValue, params);
       return key;
     },
-    [locale]
+    [locale],
   );
 
   const localeIntl = LOCALE_INTL[locale];
@@ -85,7 +91,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       if (value === null || value === undefined) return "—";
       return value.toLocaleString(localeIntl);
     },
-    [localeIntl]
+    [localeIntl],
   );
 
   const formatDate = useCallback(
@@ -94,12 +100,12 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       const d = typeof date === "number" ? new Date(date) : date;
       return d.toLocaleString(localeIntl);
     },
-    [localeIntl]
+    [localeIntl],
   );
 
   const value = useMemo(
     () => ({ locale, setLocale, t, localeIntl, formatNumber, formatDate }),
-    [locale, setLocale, t, localeIntl, formatNumber, formatDate]
+    [locale, setLocale, t, localeIntl, formatNumber, formatDate],
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

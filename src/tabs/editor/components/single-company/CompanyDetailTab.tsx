@@ -3,17 +3,27 @@ import { Loader2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
+import { Modal } from "@/ui/modal";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { GicsTreeSelect } from "@/ui/gics-tree-select";
 import {
+  deleteCompany,
   fetchIndustryGics,
   updateCompany,
   updateCompanyBaseYear,
   updateCompanyIndustry,
   type IndustryGicsOption,
 } from "../../lib/companies-api";
-import type { GarboCompanyDetail, TagOption } from "../../lib/types";
-import { displayBaseYear, getDescriptionByLang, inputClassName } from "../../lib/company-edit-utils";
+import {
+  WIKIDATA_ID_REGEX,
+  type GarboCompanyDetail,
+  type TagOption,
+} from "../../lib/types";
+import {
+  displayBaseYear,
+  getDescriptionByLang,
+  inputClassName,
+} from "../../lib/company-edit-utils";
 import { buildTagLabelBySlug } from "../../lib/editor-tag-and-payload-utils";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
@@ -22,46 +32,61 @@ export function CompanyDetailTab({
   company,
   tagOptions,
   onSaved,
+  onDeleted,
 }: {
   company: GarboCompanyDetail;
   tagOptions: TagOption[];
   onSaved?: () => void;
+  onDeleted?: () => void;
 }) {
   const { t } = useI18n();
   const dash = t("common.placeholderDash");
-  const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
+  const tagLabelBySlug = useMemo(
+    () => buildTagLabelBySlug(tagOptions),
+    [tagOptions],
+  );
 
   const [name, setName] = useState(company.name ?? "");
   const [descriptionEn, setDescriptionEn] = useState(() =>
-    getDescriptionByLang(company, "EN")
+    getDescriptionByLang(company, "EN"),
   );
   const [descriptionSv, setDescriptionSv] = useState(() =>
-    getDescriptionByLang(company, "SV")
+    getDescriptionByLang(company, "SV"),
   );
+  const [wikidataId, setWikidataId] = useState(company.wikidataId ?? "");
   const [lei, setLei] = useState(company.lei ?? "");
   const [url, setUrl] = useState(company.url ?? "");
   const [internalComment, setInternalComment] = useState(
-    company.internalComment ?? ""
+    company.internalComment ?? "",
   );
-  const [selectedTags, setSelectedTags] = useState<string[]>(company.tags ?? []);
+  const [selectedTags, setSelectedTags] = useState<string[]>(
+    company.tags ?? [],
+  );
 
   const [subIndustryCode, setSubIndustryCode] = useState(
-    company.industry?.subIndustryCode ?? ""
+    company.industry?.subIndustryCode ?? "",
   );
-  const [baseYear, setBaseYear] = useState(() => displayBaseYear(company.baseYear, dash));
+  const [baseYear, setBaseYear] = useState(() =>
+    displayBaseYear(company.baseYear, dash),
+  );
 
   const [industryOptions, setIndustryOptions] = useState<IndustryGicsOption[]>(
-    []
+    [],
   );
   const [industryOptionsLoading, setIndustryOptionsLoading] = useState(false);
   const [savingCore, setSavingCore] = useState(false);
   const [savingIndustry, setSavingIndustry] = useState(false);
-  const [saveDialog, setSaveDialog] = useState<null | "core" | "industry">(null);
+  const [saveDialog, setSaveDialog] = useState<null | "core" | "industry">(
+    null,
+  );
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingCompany, setDeletingCompany] = useState(false);
 
   useEffect(() => {
     setName(company.name ?? "");
     setDescriptionEn(getDescriptionByLang(company, "EN"));
     setDescriptionSv(getDescriptionByLang(company, "SV"));
+    setWikidataId(company.wikidataId ?? "");
     setLei(company.lei ?? "");
     setUrl(company.url ?? "");
     setInternalComment(company.internalComment ?? "");
@@ -69,8 +94,9 @@ export function CompanyDetailTab({
     setSubIndustryCode(company.industry?.subIndustryCode ?? "");
     setBaseYear(displayBaseYear(company.baseYear, dash));
   }, [
-    company.wikidataId,
+    company.id,
     company.name,
+    company.wikidataId,
     company.lei,
     company.url,
     company.internalComment,
@@ -87,15 +113,29 @@ export function CompanyDetailTab({
       .then(setIndustryOptions)
       .catch((e) => {
         setIndustryOptions([]);
-        toast.error(e instanceof Error ? e.message : t("editor.singleCompanyView.loadError"));
+        toast.error(
+          e instanceof Error
+            ? e.message
+            : t("editor.singleCompanyView.loadError"),
+        );
       })
       .finally(() => setIndustryOptionsLoading(false));
   }, []);
 
-  const handleSaveCore = async (meta?: { comment?: string; source?: string }) => {
+  const handleSaveCore = async (meta?: {
+    comment?: string;
+    source?: string;
+  }) => {
+    const trimmedWikidataId = wikidataId.trim();
+    if (trimmedWikidataId && !WIKIDATA_ID_REGEX.test(trimmedWikidataId)) {
+      toast.error(t("wikidata.invalidFormat"));
+      return;
+    }
+
     setSavingCore(true);
     try {
-      await updateCompany(company.wikidataId, {
+      await updateCompany(company.id, {
+        wikidataId: trimmedWikidataId || undefined,
         name,
         descriptions: [
           { language: "EN", text: descriptionEn },
@@ -107,7 +147,10 @@ export function CompanyDetailTab({
         tags: selectedTags,
         metadata:
           meta?.comment?.trim() || meta?.source?.trim()
-            ? { comment: meta.comment?.trim() || undefined, source: meta.source?.trim() || undefined }
+            ? {
+                comment: meta.comment?.trim() || undefined,
+                source: meta.source?.trim() || undefined,
+              }
             : undefined,
       });
       toast.success(t("editor.tagOptions.updated"));
@@ -119,7 +162,10 @@ export function CompanyDetailTab({
     }
   };
 
-  const handleSaveIndustry = async (meta?: { comment?: string; source?: string }) => {
+  const handleSaveIndustry = async (meta?: {
+    comment?: string;
+    source?: string;
+  }) => {
     const by = baseYear.trim() ? parseInt(baseYear, 10) : undefined;
     if (by != null && (isNaN(by) || by < 1990 || by > 2100)) {
       toast.error(t("editor.singleCompanyView.invalidBaseYear"));
@@ -128,20 +174,26 @@ export function CompanyDetailTab({
     setSavingIndustry(true);
     try {
       if (subIndustryCode) {
-        await updateCompanyIndustry(company.wikidataId, {
+        await updateCompanyIndustry(company.id, {
           industry: { subIndustryCode },
           metadata:
             meta?.comment?.trim() || meta?.source?.trim()
-              ? { comment: meta.comment?.trim() || undefined, source: meta.source?.trim() || undefined }
+              ? {
+                  comment: meta.comment?.trim() || undefined,
+                  source: meta.source?.trim() || undefined,
+                }
               : undefined,
         });
       }
       if (by != null) {
-        await updateCompanyBaseYear(company.wikidataId, {
+        await updateCompanyBaseYear(company.id, {
           baseYear: by,
           metadata:
             meta?.comment?.trim() || meta?.source?.trim()
-              ? { comment: meta.comment?.trim() || undefined, source: meta.source?.trim() || undefined }
+              ? {
+                  comment: meta.comment?.trim() || undefined,
+                  source: meta.source?.trim() || undefined,
+                }
               : undefined,
         });
       }
@@ -158,8 +210,26 @@ export function CompanyDetailTab({
 
   const selectedIndustry = useMemo(
     () => industryOptions.find((o) => o.code === subIndustryCode) ?? null,
-    [industryOptions, subIndustryCode]
+    [industryOptions, subIndustryCode],
   );
+
+  const handleDeleteCompany = async () => {
+    setDeletingCompany(true);
+    try {
+      await deleteCompany(company.wikidataId);
+      toast.success(t("editor.singleCompanyView.deleteCompany.deleted"));
+      setDeleteModalOpen(false);
+      onDeleted?.();
+    } catch (e) {
+      toast.error(
+        t("editor.singleCompanyView.deleteCompany.failed", {
+          message: e instanceof Error ? e.message : String(e),
+        }),
+      );
+    } finally {
+      setDeletingCompany(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -213,7 +283,9 @@ export function CompanyDetailTab({
                   value={descriptionEn}
                   onChange={(e) => setDescriptionEn(e.target.value)}
                   rows={8}
-                  className={inputClassName + " resize-y !max-w-none min-h-[11rem]"}
+                  className={
+                    inputClassName + " resize-y !max-w-none min-h-[11rem]"
+                  }
                 />
               </div>
               <div>
@@ -224,7 +296,9 @@ export function CompanyDetailTab({
                   value={descriptionSv}
                   onChange={(e) => setDescriptionSv(e.target.value)}
                   rows={8}
-                  className={inputClassName + " resize-y !max-w-none min-h-[11rem]"}
+                  className={
+                    inputClassName + " resize-y !max-w-none min-h-[11rem]"
+                  }
                 />
               </div>
             </div>
@@ -254,7 +328,19 @@ export function CompanyDetailTab({
                   </label>
                   <input
                     type="text"
-                    value={company.wikidataId}
+                    value={wikidataId}
+                    onChange={(e) => setWikidataId(e.target.value)}
+                    placeholder={t("wikidata.placeholder")}
+                    className={inputClassName + " !max-w-none"}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-01 mb-1">
+                    {t("editor.companyDetail.internalId")}
+                  </label>
+                  <input
+                    type="text"
+                    value={company.id}
                     readOnly
                     className={inputClassName + " bg-gray-04/60 !max-w-none"}
                   />
@@ -333,7 +419,9 @@ export function CompanyDetailTab({
                 max={2100}
                 value={baseYear}
                 onChange={(e) => setBaseYear(e.target.value)}
-                className={inputClassName + " w-full !max-w-none !h-8 !text-xs px-3"}
+                className={
+                  inputClassName + " w-full !max-w-none !h-8 !text-xs px-3"
+                }
               />
             </div>
 
@@ -362,7 +450,9 @@ export function CompanyDetailTab({
               disabled={savingIndustry}
               className={editorPrimaryActionButtonClass}
             >
-              {savingIndustry && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {savingIndustry && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
               {t("editor.fieldEdit.save")}
             </Button>
           </div>
@@ -372,19 +462,82 @@ export function CompanyDetailTab({
               <span className="font-medium text-gray-02">
                 {selectedIndustry.sector ?? "—"}
               </span>{" "}
-              &gt; <span className="font-medium text-gray-02">{selectedIndustry.group ?? "—"}</span>{" "}
+              &gt;{" "}
+              <span className="font-medium text-gray-02">
+                {selectedIndustry.group ?? "—"}
+              </span>{" "}
               &gt;{" "}
               <span className="font-medium text-gray-02">
                 {selectedIndustry.industry ?? "—"}
               </span>{" "}
               &gt;{" "}
               <span className="font-medium text-gray-02">
-                {(selectedIndustry.subIndustryName ?? selectedIndustry.label ?? selectedIndustry.code) as string}
+                {
+                  (selectedIndustry.subIndustryName ??
+                    selectedIndustry.label ??
+                    selectedIndustry.code) as string
+                }
               </span>
             </div>
           )}
         </div>
       </section>
+
+      <section className="rounded-lg border border-red-500/30 bg-gray-04/80 p-4">
+        <h3 className="text-sm font-semibold text-red-500 mb-2">
+          {t("editor.singleCompanyView.deleteCompany.sectionTitle")}
+        </h3>
+        <p className="text-sm text-gray-02 mb-4">
+          {t("editor.singleCompanyView.deleteCompany.sectionHint")}
+        </p>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="bg-red-500 text-white hover:bg-red-500/90 active:bg-red-500/80"
+          onClick={() => setDeleteModalOpen(true)}
+          disabled={deletingCompany}
+        >
+          {deletingCompany && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {t("editor.singleCompanyView.deleteCompany.button")}
+        </Button>
+      </section>
+
+      <Modal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        size="md"
+        title={t("editor.singleCompanyView.deleteCompany.title")}
+        description={t("editor.singleCompanyView.deleteCompany.description", {
+          name: company.name ?? company.wikidataId,
+          wikidataId: company.wikidataId,
+        })}
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setDeleteModalOpen(false)}
+              disabled={deletingCompany}
+            >
+              {t("editor.singleCompanyView.deleteCompany.cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="bg-red-500 text-white hover:bg-red-500/90 active:bg-red-500/80"
+              onClick={() => void handleDeleteCompany()}
+              disabled={deletingCompany}
+            >
+              {deletingCompany
+                ? t("editor.singleCompanyView.deleteCompany.deleting")
+                : t("editor.singleCompanyView.deleteCompany.confirm")}
+            </Button>
+          </>
+        }
+      />
 
       <ReviewerMetadataDialog
         open={saveDialog != null}
@@ -404,4 +557,3 @@ export function CompanyDetailTab({
     </div>
   );
 }
-

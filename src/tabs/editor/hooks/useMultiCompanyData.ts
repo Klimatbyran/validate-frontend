@@ -36,14 +36,21 @@ export function useMultiCompanyData() {
     const uniqueYears = new Set<string>();
     companies.forEach((company) => {
       company.reportingPeriods?.forEach((reportingPeriod) => {
-        const year = reportingPeriod.startDate?.slice(0, 4) ?? reportingPeriod.endDate?.slice(0, 4);
+        const year =
+          reportingPeriod.startDate?.slice(0, 4) ??
+          reportingPeriod.endDate?.slice(0, 4);
         if (year) uniqueYears.add(year);
       });
     });
-    return Array.from(uniqueYears).sort((yearA, yearB) => yearB.localeCompare(yearA));
+    return Array.from(uniqueYears).sort((yearA, yearB) =>
+      yearB.localeCompare(yearA),
+    );
   }, [companies]);
 
-  const tagLabelBySlug = useMemo(() => buildTagLabelBySlug(tagOptions), [tagOptions]);
+  const tagLabelBySlug = useMemo(
+    () => buildTagLabelBySlug(tagOptions),
+    [tagOptions],
+  );
 
   return {
     companies,
@@ -56,4 +63,3 @@ export function useMultiCompanyData() {
     reload,
   };
 }
-

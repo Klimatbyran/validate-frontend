@@ -4,16 +4,19 @@ This document explains how the Error Browser tab computes comparisons and metric
 
 ### Data sources
 
-- **Stage**: `getStageApiUrl()` → `/api/companies`
-- **Prod**: `getProdApiUrl()` → `/api/companies`
-- The UI always fetches *both* and compares them client-side.
+- **Stage**: `getStagePipelineCompaniesListUrl()` → Unearth `stage-api.unearthdata.ai/api/pipeline/companies`
+- **Prod**: `getProdPipelineCompaniesListUrl()` → Unearth `api.unearthdata.ai/api/pipeline/companies`
+- Pipeline endpoints return **all** reporting period rows per company (not the public one-period-per-data-year view).
+- **Deployment**: both stage and prod **Unearth API** must expose staff `GET /api/pipeline/companies`. Stage has this route; prod may return **404** until the Unearth API is deployed. Use `VITE_ERRORS_PROD_PIPELINE_URL` locally to point prod at stage while testing.
+- The UI always fetches _both_ and compares them client-side.
 
 Key implementation: `src/tabs/errors/hooks/useErrorBrowserData.ts`.
 
 ### Core concepts
 
 - **Company union**: most views start from the union of company ids across Stage and Prod (`wikidataId`).
-- **Reporting period selection**: for a selected year, `pickReportingPeriodForYear(...)` picks a reporting period whose `endDate` is in that year (prefers full calendar year).
+- **Reporting period selection**: for a selected **data year**, `pickReportingPeriodsForFilters(...)` matches the DB `year` field (via `getPeriodDataYear`). Optional **report year** filters by PDF catalog year on `CompanyReport`.
+- **Multiple rows per company**: when several report shells have data for the same data year, the browser shows one comparison row per shell (matched by `companyReportId`).
 - **Data points**: the set of emissions data points is `DATA_POINTS` in `src/tabs/errors/types.ts`.
 - **Discrepancy classification**: Stage/Prod values are compared and assigned a discrepancy type via `classifyDiscrepancy(...)` (plus category-error reclassification).
 - **Prod verification**: a data point is considered verified when Prod metadata indicates it (see `getDataPointVerified(...)` in `src/tabs/errors/lib/emissions.ts`).
@@ -37,7 +40,7 @@ These filters affect the fetched company sets and thus all views.
 
 Because not every Prod data point will be verified going forward, we support a toggle:
 
-- **Verified only (Prod)**: when enabled, *accuracy metrics* are computed only using comparisons where Prod is verified for that specific data point.
+- **Verified only (Prod)**: when enabled, _accuracy metrics_ are computed only using comparisons where Prod is verified for that specific data point.
 
 When enabled, it also filters some views to avoid mixing verified and unverified “truth”.
 
@@ -58,14 +61,14 @@ Non-eligible slots are excluded from both numerators and denominators.
 
 Notes:
 
-- **Zero-inclusive special case**: in verified-only mode, `both-null` slots can still be included *for the zero-inclusive calculation* when the company’s Prod reporting period for the selected year is otherwise “fully verified” (all present emissions data points verified; `calculated-total` ignored). This keeps zero-inclusive meaningful while still using verified truth.
+- **Zero-inclusive special case**: in verified-only mode, `both-null` slots can still be included _for the zero-inclusive calculation_ when the company’s Prod reporting period for the selected year is otherwise “fully verified” (all present emissions data points verified; `calculated-total` ignored). This keeps zero-inclusive meaningful while still using verified truth.
 
 ### Where the toggle is applied in code
 
 - **Browser “Performance Metrics”**:
   - Computed by `computePerformanceMetrics(...)` in `src/tabs/errors/lib/metrics.ts`
   - When verified-only is enabled:
-    - Exact / Precision‑tolerant metrics filter to rows where `prodVerified === true` *for the currently selected data point*.
+    - Exact / Precision‑tolerant metrics filter to rows where `prodVerified === true` _for the currently selected data point_.
     - Zero-inclusive additionally allows `both-null` rows when `prodCompanyVerifiedForYear === true`.
 - **Overview data point metrics**:
   - Computed in `allDataPointMetrics` inside `useErrorBrowserData`
@@ -84,4 +87,3 @@ Notes:
 ### What is intentionally not changed
 
 - **Company list construction** still starts from the union of stage/prod ids and tag filtering; the toggle only constrains which comparisons contribute to metrics and certain views.
-

@@ -15,7 +15,7 @@ export function SectionCard({
       className={cn(
         "bg-gray-04/80 backdrop-blur-sm rounded-lg",
         overflowHidden && "overflow-hidden",
-        className
+        className,
       )}
     >
       {children}
@@ -39,7 +39,9 @@ export function SectionCardHeader({
       <div className="flex items-baseline justify-between gap-4">
         <div>
           <div className="text-sm font-semibold text-gray-01">{title}</div>
-          {subtitle ? <div className="text-xs text-gray-02 mt-1">{subtitle}</div> : null}
+          {subtitle ? (
+            <div className="text-xs text-gray-02 mt-1">{subtitle}</div>
+          ) : null}
         </div>
         {right ? <div className="shrink-0">{right}</div> : null}
       </div>
@@ -56,4 +58,3 @@ export function SectionCardBody({
 }) {
   return <div className={cn("p-6", className)}>{children}</div>;
 }
-

@@ -42,6 +42,7 @@ export function ReportingPeriodQuickEditModal({
   onOpenChange,
   company,
   year,
+  companyReportId,
   periodMatch,
   onSaved,
 }: {
@@ -49,39 +50,57 @@ export function ReportingPeriodQuickEditModal({
   onOpenChange: (open: boolean) => void;
   company: GarboCompanyListItem;
   year: string;
+  /** When set, only periods linked to this CompanyReport are considered. */
+  companyReportId?: string;
   /** When set (e.g. after creating a period), find this exact period instead of the first with the same calendar year. */
   periodMatch?: { startDate: string; endDate: string };
   onSaved?: () => void;
 }) {
   const { t } = useI18n();
   const dash = t("common.placeholderDash");
-  const [detailCompany, setDetailCompany] = useState<GarboCompanyDetail | null>(null);
+  const [detailCompany, setDetailCompany] = useState<GarboCompanyDetail | null>(
+    null,
+  );
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     const controller = new AbortController();
     setLoadingDetail(true);
-    getCompany(company.wikidataId, controller.signal)
+    getCompany(company.id, controller.signal)
       .then((c) => setDetailCompany(c))
       .catch(() => setDetailCompany(null))
       .finally(() => setLoadingDetail(false));
     return () => controller.abort();
-  }, [open, company.wikidataId]);
+  }, [open, company.id]);
 
   const period: GarboReportingPeriodSummary | null = useMemo(() => {
-    const periods = detailCompany?.reportingPeriods ?? company.reportingPeriods ?? [];
+    const allPeriods =
+      detailCompany?.reportingPeriods ?? company.reportingPeriods ?? [];
+    const periods = companyReportId
+      ? allPeriods.filter(
+          (p) =>
+            p.companyReportId === companyReportId ||
+            p.companyReport?.id === companyReportId,
+        )
+      : allPeriods;
     if (periodMatch) {
       const a = normDateKey(periodMatch.startDate);
       const b = normDateKey(periodMatch.endDate);
       const byDates = periods.find(
-        (p) => normDateKey(p.startDate) === a && normDateKey(p.endDate) === b
+        (p) => normDateKey(p.startDate) === a && normDateKey(p.endDate) === b,
       );
       if (byDates) return byDates;
     }
     const match = periods.find((p) => getPeriodYear(p) === year);
     return match ?? null;
-  }, [company.reportingPeriods, detailCompany?.reportingPeriods, year, periodMatch]);
+  }, [
+    company.reportingPeriods,
+    detailCompany?.reportingPeriods,
+    year,
+    periodMatch,
+    companyReportId,
+  ]);
 
   const [edited, setEdited] = useState<ReportingPeriodQuickEditEdited>({});
   const [comment, setComment] = useState("");
@@ -98,20 +117,21 @@ export function ReportingPeriodQuickEditModal({
     setSource("");
     setSaving(false);
     setShowAllScope3Categories(false);
-  }, [open, company.wikidataId, year, periodMatch?.startDate, periodMatch?.endDate]);
+  }, [open, company.id, year, periodMatch?.startDate, periodMatch?.endDate]);
 
   const setNullableEdit = (
     key: keyof ReportingPeriodQuickEditEdited,
     value: string,
-    hadOriginalValue: boolean
+    hadOriginalValue: boolean,
   ) => {
-    setEdited((prev) =>
-      assignNullableStringKey(
-        { ...prev },
-        String(key),
-        value,
-        hadOriginalValue
-      ) as ReportingPeriodQuickEditEdited
+    setEdited(
+      (prev) =>
+        assignNullableStringKey(
+          { ...prev },
+          String(key),
+          value,
+          hadOriginalValue,
+        ) as ReportingPeriodQuickEditEdited,
     );
   };
 
@@ -122,7 +142,9 @@ export function ReportingPeriodQuickEditModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>{t("editor.reportingPeriodQuickEdit.notFoundTitle", { year })}</DialogTitle>
+            <DialogTitle>
+              {t("editor.reportingPeriodQuickEdit.notFoundTitle", { year })}
+            </DialogTitle>
             <DialogDescription>
               {loadingDetail
                 ? t("editor.periodEditor.loadingEllipsis")
@@ -149,7 +171,7 @@ export function ReportingPeriodQuickEditModal({
     setSaving(true);
     try {
       await updateReportingPeriods(
-        company.wikidataId,
+        company.id,
         buildReportingPeriodQuickEditPatch({
           period,
           edited,
@@ -157,7 +179,7 @@ export function ReportingPeriodQuickEditModal({
           source,
           originalScope3Categories: scope3CategoryTotalsForPatch,
           toNumberOrNull,
-        })
+        }),
       );
       toast.success(t("editor.reportingPeriodQuickEdit.updatedToast"));
       onSaved?.();
@@ -247,4 +269,3 @@ export function ReportingPeriodQuickEditModal({
     </Dialog>
   );
 }
-

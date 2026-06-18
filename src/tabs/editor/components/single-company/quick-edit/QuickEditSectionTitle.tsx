@@ -7,4 +7,3 @@ export function QuickEditSectionTitle({ children }: { children: ReactNode }) {
     </div>
   );
 }
-

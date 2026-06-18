@@ -1,33 +1,32 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import mermaid from 'mermaid';
+import React from "react";
+import { motion } from "framer-motion";
+import mermaid from "mermaid";
 
 // Initialize mermaid with dark theme configuration
 mermaid.initialize({
   startOnLoad: false,
-  theme: 'dark',
+  theme: "dark",
   themeVariables: {
-    primaryColor: '#F48F2A',
-    primaryTextColor: '#F7F7F7',
-    primaryBorderColor: '#2E2E2E',
-    lineColor: '#878787',
-    secondaryColor: '#59A0E1',
-    tertiaryColor: '#AAE506',
+    primaryColor: "#F48F2A",
+    primaryTextColor: "#F7F7F7",
+    primaryBorderColor: "#2E2E2E",
+    lineColor: "#878787",
+    secondaryColor: "#59A0E1",
+    tertiaryColor: "#AAE506",
   },
   flowchart: {
     useMaxWidth: true,
     htmlLabels: true,
-    curve: 'basis',
+    curve: "basis",
   },
-  securityLevel: 'loose',
+  securityLevel: "loose",
 });
 
 export function WorkflowDiagram() {
-  const [svg, setSvg] = React.useState<string>('');
+  const [svg, setSvg] = React.useState<string>("");
 
   // Create the diagram without job counts
   const diagram = React.useMemo(() => {
-
     return `
       flowchart TB
         %% Define subgraphs with styling
@@ -144,10 +143,10 @@ export function WorkflowDiagram() {
   React.useEffect(() => {
     const renderDiagram = async () => {
       try {
-        const { svg } = await mermaid.render('workflow-diagram', diagram);
+        const { svg } = await mermaid.render("workflow-diagram", diagram);
         setSvg(svg);
       } catch (error) {
-        console.error('Failed to render diagram:', error);
+        console.error("Failed to render diagram:", error);
       }
     };
 
@@ -160,10 +159,8 @@ export function WorkflowDiagram() {
       animate={{ opacity: 1, y: 0 }}
       className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6"
     >
-      <h2 className="text-xl font-semibold text-gray-01 mb-6">
-        Processflöde
-      </h2>
-      <div 
+      <h2 className="text-xl font-semibold text-gray-01 mb-6">Processflöde</h2>
+      <div
         className="text-center overflow-x-auto"
         dangerouslySetInnerHTML={{ __html: svg }}
       />

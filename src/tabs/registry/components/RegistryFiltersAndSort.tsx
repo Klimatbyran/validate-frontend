@@ -15,7 +15,11 @@ import type {
   WikidataPresenceFilter,
 } from "../lib/registry-table-utils";
 
-const WIKIDATA_OPTIONS: WikidataPresenceFilter[] = ["all", "present", "missing"];
+const WIKIDATA_OPTIONS: WikidataPresenceFilter[] = [
+  "all",
+  "present",
+  "missing",
+];
 
 const TAG_MODE_OPTIONS: RegistryTagFilterMode[] = [
   "ignore",
@@ -206,7 +210,9 @@ const RegistryFiltersAndSort = ({
               </label>
               <DisableWrap
                 disabled={
-                  tagControlsDisabled || tagsOptionsLoading || !tagOptions.length
+                  tagControlsDisabled ||
+                  tagsOptionsLoading ||
+                  !tagOptions.length
                 }
               >
                 <MultiSelectDropdown
@@ -235,7 +241,9 @@ const RegistryFiltersAndSort = ({
               <SingleSelectDropdown
                 options={[...SORT_KEYS]}
                 value={filters.sort}
-                onChange={(v) => onFiltersChange({ sort: v as RegistrySortKey })}
+                onChange={(v) =>
+                  onFiltersChange({ sort: v as RegistrySortKey })
+                }
                 placeholder={t("registry.sortBy")}
                 getOptionLabel={labelSort}
                 ariaLabel={t("registry.sortBy")}

@@ -44,12 +44,9 @@ export function isFollowUpQueue(queueId: string): boolean {
  */
 export function buildRerunAndSaveBody(
   scopes: string[],
-  wikidata?: { node?: string } | string | null
+  wikidata?: { node?: string } | string | null,
 ): { scopes: string[]; jobData?: { wikidata: { node: string } } } {
-  const node =
-    typeof wikidata === "string"
-      ? wikidata
-      : wikidata?.node;
+  const node = typeof wikidata === "string" ? wikidata : wikidata?.node;
   return {
     scopes,
     ...(node ? { jobData: { wikidata: { node } } } : {}),
@@ -63,23 +60,15 @@ export function buildRerunAndSaveBody(
 export function getJobData(
   job?: QueueJob | null,
   effectiveJob?: any,
-  detailed?: DetailedJobResponse | null
+  detailed?: DetailedJobResponse | null,
 ): Record<string, any> {
-  return (
-    effectiveJob?.data ||
-    job?.data ||
-    detailed?.data ||
-    {}
-  );
+  return effectiveJob?.data || job?.data || detailed?.data || {};
 }
 
 /**
  * Gets the return value from a job.
  */
-export function getReturnValue(
-  job?: QueueJob | null,
-  effectiveJob?: any
-): any {
+export function getReturnValue(job?: QueueJob | null, effectiveJob?: any): any {
   return effectiveJob?.returnvalue ?? job?.returnvalue;
 }
 
@@ -90,7 +79,7 @@ export function getReturnValue(
 export function extractMarkdownFromJob(
   job?: QueueJob | null,
   effectiveJob?: any,
-  detailed?: DetailedJobResponse | null
+  detailed?: DetailedJobResponse | null,
 ): string | undefined {
   const jobData = getJobData(job, effectiveJob, detailed);
   const returnValue = getReturnValue(job, effectiveJob);
@@ -149,7 +138,9 @@ export function extractMarkdownFromJob(
 /**
  * Flattens job data by merging any nested `jobData` field into the top level.
  */
-export function flattenJobData(rawData: Record<string, any>): Record<string, any> {
+export function flattenJobData(
+  rawData: Record<string, any>,
+): Record<string, any> {
   const { jobData: nestedJobData, ...rest } = rawData;
   return {
     ...(nestedJobData || {}),
@@ -165,7 +156,7 @@ export function buildRerunRequestData(
   queueId: string,
   job?: QueueJob | null,
   effectiveJob?: any,
-  detailed?: DetailedJobResponse | null
+  detailed?: DetailedJobResponse | null,
 ): { data: Record<string, any> } {
   const rawData = getJobData(job, effectiveJob, detailed);
   const flattenedBaseData = flattenJobData(rawData);
@@ -176,7 +167,11 @@ export function buildRerunRequestData(
   // For extractEmissions jobs, add markdown context if available
   let markdownContext: Record<string, string> = {};
   if (queueId === "extractEmissions") {
-    const extractedMarkdown = extractMarkdownFromJob(job, effectiveJob, detailed);
+    const extractedMarkdown = extractMarkdownFromJob(
+      job,
+      effectiveJob,
+      detailed,
+    );
     if (extractedMarkdown) {
       markdownContext = {
         markdownContextScope1: extractedMarkdown,

@@ -1,16 +1,38 @@
 import { Check, CheckCircle, Pencil } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
-import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
-import type { GarboCompanyListItem } from "../../lib/types";
-import type { EditState } from "../../lib/types";
-import { formatNumber, getScope2Total, getPeriodForYear } from "../../lib/multi-company-utils";
+import {
+  DataTable,
+  DataTableBody,
+  DataTableHead,
+  DataTableShell,
+} from "@/ui/data-table";
+import type { EditState, GarboCompanyListItem } from "../../lib/types";
+import { resolveCompanyReportId } from "../../lib/company-report-shells";
+import {
+  formatNumber,
+  getScope2Total,
+  getPeriodForYear,
+} from "../../lib/multi-company-utils";
+
+function periodEditContext(period: {
+  startDate: string;
+  endDate: string;
+  companyReportId?: string | null;
+  companyReport?: { id?: string } | null;
+}) {
+  return {
+    startDate: period.startDate,
+    endDate: period.endDate,
+    companyReportId: resolveCompanyReportId(period),
+  };
+}
 
 export function MultiCompanyTable({
   companies,
   selectedYear,
   allFilteredSelected,
   onToggleSelectAll,
-  selectedWikidataIds,
+  selectedCompanyIds,
   onToggleCompanySelection,
   actionLoading,
   onEdit,
@@ -19,8 +41,8 @@ export function MultiCompanyTable({
   selectedYear: string;
   allFilteredSelected: boolean;
   onToggleSelectAll: () => void;
-  selectedWikidataIds: Set<string>;
-  onToggleCompanySelection: (wikidataId: string) => void;
+  selectedCompanyIds: Set<string>;
+  onToggleCompanySelection: (companyId: string) => void;
   actionLoading: boolean;
   onEdit: (state: EditState) => void;
 }) {
@@ -43,22 +65,38 @@ export function MultiCompanyTable({
                 />
                 <span
                   className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
-                    allFilteredSelected ? "bg-blue-03 border-blue-03" : "border-gray-03"
+                    allFilteredSelected
+                      ? "bg-blue-03 border-blue-03"
+                      : "border-gray-03"
                   }`}
                   aria-hidden
                 >
-                  {allFilteredSelected && <Check className="w-3 h-3 text-white" />}
+                  {allFilteredSelected && (
+                    <Check className="w-3 h-3 text-white" />
+                  )}
                 </span>
               </label>
             </th>
-            <th className="px-4 py-3 font-medium">{t("editor.companies.company")}</th>
-            <th className="px-4 py-3 font-medium">{t("editor.companies.tags")}</th>
+            <th className="px-4 py-3 font-medium">
+              {t("editor.companies.company")}
+            </th>
+            <th className="px-4 py-3 font-medium">
+              {t("editor.companies.tags")}
+            </th>
             {selectedYear && (
               <>
-                <th className="px-4 py-3 font-medium">{t("editor.companies.reportUrl")}</th>
-                <th className="px-4 py-3 font-medium">{t("editor.companies.scope1")}</th>
-                <th className="px-4 py-3 font-medium">{t("editor.companies.scope2")}</th>
-                <th className="px-4 py-3 font-medium w-24">{t("editor.companies.edit")}</th>
+                <th className="px-4 py-3 font-medium">
+                  {t("editor.companies.reportUrl")}
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  {t("editor.companies.scope1")}
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  {t("editor.companies.scope2")}
+                </th>
+                <th className="px-4 py-3 font-medium w-24">
+                  {t("editor.companies.edit")}
+                </th>
               </>
             )}
           </tr>
@@ -70,16 +108,16 @@ export function MultiCompanyTable({
               : null;
             const scope1 = period?.emissions?.scope1?.total ?? null;
             const scope2 = getScope2Total(period);
-            const checked = selectedWikidataIds.has(c.wikidataId);
+            const checked = selectedCompanyIds.has(c.id);
 
             return (
-              <tr key={c.wikidataId} className="hover:bg-gray-04/50">
+              <tr key={c.id} className="hover:bg-gray-04/50">
                 <td className="w-10 px-2 py-3">
                   <label className="flex items-center justify-center cursor-pointer">
                     <input
                       type="checkbox"
                       checked={checked}
-                      onChange={() => onToggleCompanySelection(c.wikidataId)}
+                      onChange={() => onToggleCompanySelection(c.id)}
                       className="sr-only"
                       aria-label={t("editor.companies.select")}
                     />
@@ -100,7 +138,7 @@ export function MultiCompanyTable({
                     type="button"
                     onClick={() =>
                       onEdit({
-                        wikidataId: c.wikidataId,
+                        companyId: c.id,
                         companyName: c.name,
                         field: "tags",
                         currentValue: c.tags?.join(", ") ?? "",
@@ -132,12 +170,11 @@ export function MultiCompanyTable({
                         type="button"
                         onClick={() =>
                           onEdit({
-                            wikidataId: c.wikidataId,
+                            companyId: c.id,
                             companyName: c.name,
                             field: "reportURL",
                             year: Number(selectedYear),
-                            startDate: period.startDate,
-                            endDate: period.endDate,
+                            ...periodEditContext(period),
                             currentValue: period.reportURL ?? "",
                           })
                         }
@@ -154,12 +191,11 @@ export function MultiCompanyTable({
                         type="button"
                         onClick={() =>
                           onEdit({
-                            wikidataId: c.wikidataId,
+                            companyId: c.id,
                             companyName: c.name,
                             field: "scope1",
                             year: Number(selectedYear),
-                            startDate: period.startDate,
-                            endDate: period.endDate,
+                            ...periodEditContext(period),
                             currentValue: scope1,
                           })
                         }
@@ -176,12 +212,11 @@ export function MultiCompanyTable({
                         type="button"
                         onClick={() =>
                           onEdit({
-                            wikidataId: c.wikidataId,
+                            companyId: c.id,
                             companyName: c.name,
                             field: "scope2",
                             year: Number(selectedYear),
-                            startDate: period.startDate,
-                            endDate: period.endDate,
+                            ...periodEditContext(period),
                             currentValue: scope2,
                           })
                         }
@@ -198,12 +233,11 @@ export function MultiCompanyTable({
                           type="button"
                           onClick={() =>
                             onEdit({
-                              wikidataId: c.wikidataId,
+                              companyId: c.id,
                               companyName: c.name,
                               field: "scope1",
                               year: Number(selectedYear),
-                              startDate: period.startDate,
-                              endDate: period.endDate,
+                              ...periodEditContext(period),
                               currentValue: scope1,
                             })
                           }
@@ -226,4 +260,3 @@ export function MultiCompanyTable({
     </DataTableShell>
   );
 }
-

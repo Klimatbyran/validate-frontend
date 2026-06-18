@@ -9,6 +9,7 @@ This document records key architectural decisions made for the validate-frontend
 ## Problem Statement
 
 The frontend application makes API calls to `/api/*` endpoints. In production:
+
 - The app is built as static files and served by nginx
 - Nginx was trying to serve `/api/*` requests as static files → 404 errors
 - API calls were failing because there was no proxy configuration
@@ -26,25 +27,29 @@ We chose **runtime configuration** (template-based nginx config) over **build-ti
 ### Why Runtime Configuration?
 
 **Our code structure:**
+
 ```typescript
 // src/lib/api.ts
 const api = axios.create({
-  baseURL: "/api",  // Relative path, not absolute URL
+  baseURL: "/api", // Relative path, not absolute URL
 });
 ```
 
 The frontend uses **relative paths** (`/api`), which means:
+
 - ✅ JavaScript doesn't need to know the API URL
 - ✅ Nginx can handle the proxying
 - ✅ Perfect fit for runtime configuration
 
 **Benefits:**
+
 - ✅ One Docker image for all environments (staging and production)
 - ✅ Change API URL without rebuilding
 - ✅ Simpler CI/CD pipeline (build once, deploy everywhere)
 - ✅ Test different API URLs locally with the same image
 
 **Alternative (Build-Time):**
+
 - ❌ Would require code changes (switch to absolute URLs)
 - ❌ Need separate Docker images for each environment
 - ❌ Must rebuild to change API URL
@@ -53,6 +58,7 @@ The frontend uses **relative paths** (`/api`), which means:
 ### Comparison with Other Frontend
 
 The other frontend uses build-time configuration because:
+
 - It uses absolute URLs in JavaScript (`import.meta.env.VITE_API_PROXY`)
 - It doesn't need API proxying (or handles it differently)
 - Same config works for all environments
@@ -70,16 +76,19 @@ We chose **nginx template with environment variable substitution** over **static
 ### Why Template Approach?
 
 **Requirements:**
+
 - Different API URLs for staging vs production:
   - Staging: `https://stage-pipeline-api.klimatkollen.se`
   - Production: `https://pipeline-api.klimatkollen.se`
 
 **Template approach:**
+
 - ✅ Same Docker image, different runtime configuration
 - ✅ API URL injected via Kubernetes environment variables
 - ✅ Flexible and maintainable
 
 **Static config alternative:**
+
 - ❌ Would need separate nginx.conf files per environment
 - ❌ Would need separate Docker images
 - ❌ Less flexible
@@ -87,11 +96,13 @@ We chose **nginx template with environment variable substitution** over **static
 ### Implementation
 
 **Files:**
+
 - `nginx.conf.template` - Template with `${BACKEND_API_URL}` variable
 - `docker-entrypoint.sh` - Processes template at container startup
 - Extracts hostname for proper Host header
 
 **Flow:**
+
 ```
 Container starts → Entrypoint runs → Template processed → Nginx config created → Nginx starts
 ```
@@ -154,6 +165,7 @@ When using a variable in `proxy_pass`, nginx doesn't automatically set the Host 
 Extract hostname from `BACKEND_API_URL` and set it explicitly:
 
 **docker-entrypoint.sh:**
+
 ```bash
 # Extract hostname from BACKEND_API_URL
 BACKEND_HOST=$(echo "$BACKEND_API_URL" | sed -E 's|^https?://||' | sed -E 's|/.*$||')
@@ -161,6 +173,7 @@ export BACKEND_HOST
 ```
 
 **nginx.conf.template:**
+
 ```nginx
 proxy_set_header Host ${BACKEND_HOST};
 ```
@@ -172,17 +185,20 @@ This ensures the Host header matches the backend API domain, not the frontend do
 ## Key Changes Summary
 
 ### Docker
+
 - ✅ Added nginx template processing (gettext, envsubst)
 - ✅ Custom entrypoint script to process template at runtime
 - ✅ Extracts hostname for proper Host header
 
 ### Kubernetes
+
 - ✅ Base/overlay pattern for environment separation
 - ✅ Environment variables for API URL configuration
 - ✅ Proper ingress configuration (cert-manager, ingressClassName)
 - ✅ Explicit namespace resources
 
 ### Nginx
+
 - ✅ API proxy configuration (`location /api`)
 - ✅ Proper proxy headers (Host, X-Real-IP, etc.)
 - ✅ Timeout configuration
@@ -209,13 +225,15 @@ See [Local Testing Guide](../testing/LOCAL_TESTING.md) for instructions on testi
 ## Flux Integration
 
 Flux automatically manages image updates:
+
 - **Staging**: Updates automatically with `-rc` versions
 - **Production**: Only updates with stable versions (no `-rc`)
 - Image tags in kustomization.yaml are managed by Flux ImagePolicy
 
 See Flux annotations in kustomization files:
+
 ```yaml
-newTag: '1.1.0' # {"$imagepolicy": "flux-system:validate-frontend:tag"}
+newTag: "1.1.0" # {"$imagepolicy": "flux-system:validate-frontend:tag"}
 ```
 
 ---
@@ -225,6 +243,7 @@ newTag: '1.1.0' # {"$imagepolicy": "flux-system:validate-frontend:tag"}
 ### The Problem
 
 The validate tool is an **internal tool** used for validating and processing pipeline data. Without authentication:
+
 - ❌ Anyone with access to the URL could use the tool
 - ❌ Unauthorized users could trigger pipeline processing
 - ❌ No audit trail of who performed which actions
@@ -254,6 +273,7 @@ The validate tool is an **internal tool** used for validating and processing pip
 **Key Decision:** Authentication uses a **separate API backend** from the main pipeline API.
 
 **Pipeline API** (`/api`):
+
 - Used for all application data (queues, jobs, processes)
 - Environments:
   - Dev: `https://stage-pipeline-api.klimatkollen.se` (via vite proxy)
@@ -261,6 +281,7 @@ The validate tool is an **internal tool** used for validating and processing pip
   - Production: `https://pipeline-api.klimatkollen.se`
 
 **Auth API** (separate backend):
+
 - Used ONLY for authentication endpoints
 - Environments:
   - Dev: `https://stage-api.klimatkollen.se` (via `/api/auth` proxy) or `localhost:PORT`
@@ -271,6 +292,7 @@ The validate tool is an **internal tool** used for validating and processing pip
   - `POST /api/auth/github` - Token exchange (accepts `{ code: string }`)
 
 **Why Separate APIs?**
+
 - Auth API is shared infrastructure (used by other Klimatkollen applications)
 - Pipeline API is specific to this tool
 - Separation of concerns
@@ -279,6 +301,7 @@ The validate tool is an **internal tool** used for validating and processing pip
 ### Implementation Overview
 
 **Frontend Components:**
+
 1. **AuthContext** (`src/contexts/AuthContext.tsx`)
    - Manages authentication state
    - Handles login, token exchange, logout
@@ -341,6 +364,7 @@ The validate tool is an **internal tool** used for validating and processing pip
 ### Environment Configuration
 
 **Development:**
+
 - Auth API proxy configured in `vite.config.ts`:
   ```typescript
   "/api/auth": {
@@ -350,6 +374,7 @@ The validate tool is an **internal tool** used for validating and processing pip
   ```
 
 **Production/Staging:**
+
 - Auth API URL auto-detected from hostname:
   - `stage.*` → `https://stage-api.klimatkollen.se`
   - Otherwise → `https://api.klimatkollen.se`
@@ -359,12 +384,14 @@ The validate tool is an **internal tool** used for validating and processing pip
 ⚠️ **IMPORTANT:** Frontend blocking is **UX only, not security**.
 
 The **pipeline-api backend MUST validate JWT tokens** on every request. Without backend validation:
+
 - Anyone can bypass frontend by making direct API calls
 - Frontend code can be modified in browser
 - JavaScript can be disabled
 - No real security exists
 
 **Backend must:**
+
 1. Extract token from `Authorization: Bearer <token>` header
 2. Verify token signature (using same secret as auth API)
 3. Check token expiration
@@ -375,6 +402,7 @@ See [Backend Authentication Requirements](../auth/BACKEND_AUTH_REQUIREMENTS.md) 
 ### Files Created/Modified
 
 **Created:**
+
 - `src/lib/auth-types.ts` - Type definitions
 - `src/lib/auth-api.ts` - Auth API client
 - `src/contexts/AuthContext.tsx` - Auth state management
@@ -382,22 +410,26 @@ See [Backend Authentication Requirements](../auth/BACKEND_AUTH_REQUIREMENTS.md) 
 - `src/pages/AuthCallback.tsx` - OAuth callback handler
 
 **Modified:**
+
 - `src/lib/api.ts` - Added auth middleware
 - `src/App.tsx` - Wrapped with AuthProvider and ProtectedRoute
 - `vite.config.ts` - Added `/authapi` proxy
 
 **Dependencies:**
+
 - `jwt-decode` - For decoding JWT tokens
 
 ### Testing
 
 **Verify Frontend:**
+
 1. Visit app without token → Should show login modal
 2. Complete GitHub auth → Should redirect and show app
 3. Refresh page → Should remain authenticated
 4. Wait for token expiration → Should auto-logout
 
 **Verify Backend (Critical):**
+
 ```bash
 # Should return 401 if backend validates tokens
 curl https://pipeline-api.klimatkollen.se/api/queues/myqueue
@@ -422,12 +454,14 @@ If either returns `200 OK`, the backend is not validating tokens and needs to be
 ## Future Considerations
 
 ### Potential Enhancements
+
 - Add bot detection (like other frontend)
 - Add language routing if needed
 - Configure separate screenshots API endpoint if needed
 - Add more environment-specific configuration via templates
 
 ### Maintenance
+
 - Keep nginx template in sync with other frontend features if needed
 - Monitor proxy performance and adjust timeouts if necessary
 - Consider adding health checks for backend API

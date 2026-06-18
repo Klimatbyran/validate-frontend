@@ -11,10 +11,12 @@ export function CompanyEditDetail({
   company,
   tagOptions,
   onSaved,
+  onDeleted,
 }: {
   company: GarboCompanyDetail;
   tagOptions: TagOption[];
   onSaved?: () => void;
+  onDeleted?: () => void;
 }) {
   const { t } = useI18n();
 
@@ -25,7 +27,10 @@ export function CompanyEditDetail({
           <TabsTrigger value="company-detail" className="rounded-md px-4 py-2">
             {t("editor.singleCompanyView.tabs.companyDetail")}
           </TabsTrigger>
-          <TabsTrigger value="reporting-periods" className="rounded-md px-4 py-2">
+          <TabsTrigger
+            value="reporting-periods"
+            className="rounded-md px-4 py-2"
+          >
             {t("editor.singleCompanyView.tabs.reportingPeriods")}
           </TabsTrigger>
           <TabsTrigger value="economy" className="rounded-md px-4 py-2">
@@ -34,13 +39,21 @@ export function CompanyEditDetail({
           <TabsTrigger value="emissions" className="rounded-md px-4 py-2">
             {t("editor.singleCompanyView.tabs.emissionsData")}
           </TabsTrigger>
-          <TabsTrigger value="goals-initiatives" className="rounded-md px-4 py-2">
+          <TabsTrigger
+            value="goals-initiatives"
+            className="rounded-md px-4 py-2"
+          >
             {t("editor.singleCompanyView.tabs.goalsInitiatives")}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="company-detail" className="mt-4">
-          <CompanyDetailTab company={company} tagOptions={tagOptions} onSaved={onSaved} />
+          <CompanyDetailTab
+            company={company}
+            tagOptions={tagOptions}
+            onSaved={onSaved}
+            onDeleted={onDeleted}
+          />
         </TabsContent>
 
         <TabsContent value="reporting-periods" className="mt-4">

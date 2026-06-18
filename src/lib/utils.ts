@@ -40,8 +40,6 @@ export function isMarkdown(value: string) {
   return /^(#{1,6}\s|[-*+]\s|>\s|\d+\.\s|```|\|.*\|)/m.test(value);
 }
 
-
-
 // Utility function to check if a string is valid JSON
 export function isJsonString(str: string): boolean {
   try {
@@ -54,7 +52,7 @@ export function isJsonString(str: string): boolean {
 
 // Utility function to extract wikidata information from job data
 export function getWikidataInfo(
-  job: any
+  job: any,
 ): { node?: string; label?: string } | null {
   if (!job?.data) return null;
 
@@ -89,10 +87,10 @@ export function getWikidataInfo(
 
 /** Trigger a CSV file download. Rows are arrays of cell values (joined with commas). */
 export function downloadCsv(rows: string[][], filename: string): void {
-  const csvContent = rows.map((row) => row.join(',')).join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const csvContent = rows.map((row) => row.join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   a.click();

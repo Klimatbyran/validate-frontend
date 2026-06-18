@@ -26,10 +26,16 @@ export function GlobalLoginModal() {
       setIsOpen(true);
     };
 
-    window.addEventListener("show-login-modal", handleShowLogin as EventListener);
-    
+    window.addEventListener(
+      "show-login-modal",
+      handleShowLogin as EventListener,
+    );
+
     return () => {
-      window.removeEventListener("show-login-modal", handleShowLogin as EventListener);
+      window.removeEventListener(
+        "show-login-modal",
+        handleShowLogin as EventListener,
+      );
     };
   }, []);
 

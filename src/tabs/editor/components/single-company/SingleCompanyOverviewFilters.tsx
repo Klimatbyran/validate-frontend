@@ -41,7 +41,10 @@ export function SingleCompanyOverviewFilters({ list, afterSlot }: Props) {
             {t("editor.companies.tag")}
           </label>
           <MultiSelectDropdown
-            options={[NO_TAGS_FILTER_OPTION, ...list.tagOptions.map((o) => o.slug)]}
+            options={[
+              NO_TAGS_FILTER_OPTION,
+              ...list.tagOptions.map((o) => o.slug),
+            ]}
             selectedIds={list.filterTags}
             onChange={list.setFilterTags}
             triggerLabel={t("editor.companies.tags")}
@@ -70,14 +73,27 @@ export function SingleCompanyOverviewFilters({ list, afterSlot }: Props) {
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-02 mb-1">
-            {t("editor.companies.year")}
+            {t("editor.companies.dataYear")}
           </label>
           <MultiSelectDropdown
-            options={list.years}
-            selectedIds={list.filterYears}
-            onChange={list.setFilterYears}
-            triggerLabel={t("editor.companies.year")}
-            emptyLabel={t("editor.companies.allYears")}
+            options={list.dataYears}
+            selectedIds={list.filterDataYears}
+            onChange={list.setFilterDataYears}
+            triggerLabel={t("editor.companies.dataYear")}
+            emptyLabel={t("editor.companies.allDataYears")}
+            triggerClassName="min-w-[120px] !h-8 !text-xs px-3"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-02 mb-1">
+            {t("editor.companies.reportYear")}
+          </label>
+          <MultiSelectDropdown
+            options={list.reportYears}
+            selectedIds={list.filterReportYears}
+            onChange={list.setFilterReportYears}
+            triggerLabel={t("editor.companies.reportYear")}
+            emptyLabel={t("editor.companies.allReportYears")}
             triggerClassName="min-w-[120px] !h-8 !text-xs px-3"
           />
         </div>
@@ -109,9 +125,13 @@ export function SingleCompanyOverviewFilters({ list, afterSlot }: Props) {
             placeholder={t("editor.singleCompanyView.filterUnverifiedNoFilter")}
             getOptionLabel={(v) => {
               if (v === "emissions")
-                return t("editor.singleCompanyView.filterUnverifiedEmissionsOnly");
+                return t(
+                  "editor.singleCompanyView.filterUnverifiedEmissionsOnly",
+                );
               if (v === "all")
-                return t("editor.singleCompanyView.filterUnverifiedEmissionsAndEconomy");
+                return t(
+                  "editor.singleCompanyView.filterUnverifiedEmissionsAndEconomy",
+                );
               return t("editor.singleCompanyView.filterUnverifiedNoFilter");
             }}
             triggerClassName="min-w-[180px] !h-8 !text-xs px-3"
@@ -121,14 +141,14 @@ export function SingleCompanyOverviewFilters({ list, afterSlot }: Props) {
           <div
             className="self-end"
             title={
-              list.filterYears.length === 0
+              list.filterDataYears.length === 0
                 ? t("editor.singleCompanyView.filterApplyToSelectedYearsHint")
                 : undefined
             }
           >
             <label
               className={`flex items-center h-8 gap-2 text-xs ${
-                list.filterYears.length > 0
+                list.filterDataYears.length > 0
                   ? "cursor-pointer text-gray-01"
                   : "cursor-not-allowed text-gray-03"
               }`}
@@ -139,7 +159,7 @@ export function SingleCompanyOverviewFilters({ list, afterSlot }: Props) {
                 onChange={(e) =>
                   list.setFilterApplyUnverifiedToSelectedYears(e.target.checked)
                 }
-                disabled={list.filterYears.length === 0}
+                disabled={list.filterDataYears.length === 0}
                 className="rounded border-gray-03 disabled:opacity-40"
               />
               {t("editor.singleCompanyView.filterApplyToSelectedYears")}
@@ -147,7 +167,7 @@ export function SingleCompanyOverviewFilters({ list, afterSlot }: Props) {
           </div>
         )}
       </div>
-      {!list.loadingList && list.filteredCompanies.length > 0 && (
+      {!list.loadingList && list.filteredReportRows.length > 0 && (
         <p className="text-xs text-gray-02 mt-3 pt-3 border-t border-gray-03/50">
           {t("editor.singleCompanyView.filterPeriodValidationSummary", {
             verified: list.filterPeriodStats.verifiedEmissionsPeriods,
@@ -183,7 +203,7 @@ export function SingleCompanyOverviewListAfterSlot({
         </div>
       )}
 
-      {!list.loadingList && list.filteredCompanies.length === 0 && (
+      {!list.loadingList && list.filteredReportRows.length === 0 && (
         <div className="py-8 text-center text-gray-02 text-sm">
           {t("editor.singleCompanyView.noCompaniesMatch")}
         </div>

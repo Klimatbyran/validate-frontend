@@ -56,76 +56,82 @@ export function JobbstatusArchiveQueueAttemptsDialog({
   );
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title={queueLabel} size="lg" scrollable>
-        <p className="text-xs text-gray-02 -mt-1">
-          {t("jobstatus.archiveQueueHistoryIntro", { count: attempts.length })}
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={queueLabel}
+      size="lg"
+      scrollable
+    >
+      <p className="text-xs text-gray-02 -mt-1">
+        {t("jobstatus.archiveQueueHistoryIntro", { count: attempts.length })}
+      </p>
+      {anySucceeded && hasMixedOutcomes && (
+        <p className="text-xs text-gray-02 mt-2">
+          {t("jobstatus.jobdetails.attemptsMixedOutcomesHint")}
         </p>
-        {anySucceeded && hasMixedOutcomes && (
-          <p className="text-xs text-gray-02 mt-2">
-            {t("jobstatus.jobdetails.attemptsMixedOutcomesHint")}
-          </p>
-        )}
-        <div className="mt-3 space-y-2">
-          {attempts.map((row, idx) => {
-            const swim = archiveJobStatusToSwimlaneBadge(row.status);
-            const statusKey = swimlaneStatusLabelKey(swim);
-            return (
-              <div
-                key={row.id ?? `${row.jobId}-${row.finishedAt}-${idx}`}
-                className="flex items-start justify-between gap-3 rounded-md border border-gray-03/60 bg-gray-05/40 px-3 py-2 text-xs"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-gray-01 font-medium">
-                    {t("jobstatus.jobdetails.saveToApiAttemptNumber", {
-                      number: idx + 1,
-                    })}
-                  </div>
+      )}
+      <div className="mt-3 space-y-2">
+        {attempts.map((row, idx) => {
+          const swim = archiveJobStatusToSwimlaneBadge(row.status);
+          const statusKey = swimlaneStatusLabelKey(swim);
+          return (
+            <div
+              key={row.id ?? `${row.jobId}-${row.finishedAt}-${idx}`}
+              className="flex items-start justify-between gap-3 rounded-md border border-gray-03/60 bg-gray-05/40 px-3 py-2 text-xs"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="text-gray-01 font-medium">
+                  {t("jobstatus.jobdetails.saveToApiAttemptNumber", {
+                    number: idx + 1,
+                  })}
+                </div>
+                <div className="text-gray-02 mt-0.5">
+                  {formatArchiveWhen(row.finishedAt, localeIntl)}
+                </div>
+                {row.startedAt ? (
                   <div className="text-gray-02 mt-0.5">
-                    {formatArchiveWhen(row.finishedAt, localeIntl)}
-                  </div>
-                  {row.startedAt ? (
-                    <div className="text-gray-02 mt-0.5">
-                      <span className="font-medium text-gray-01">
-                        {t("jobstatus.archiveColStarted")}
-                      </span>
-                      : {formatArchiveWhen(row.startedAt, localeIntl)}
-                    </div>
-                  ) : null}
-                  <div
-                    className="font-mono text-gray-02 truncate mt-1"
-                    title={row.jobId}
-                  >
-                    {t("jobstatus.jobdetails.saveToApiJobIdLabel")}: {row.jobId}
-                  </div>
-                  {row.failedReason ? (
-                    <div
-                      className="text-pink-02 mt-1 break-words"
-                      title={row.failedReason}
-                    >
-                      <span className="font-medium text-gray-01">
-                        {t("jobstatus.jobdetails.saveToApiErrorLabel")}
-                      </span>
-                      : {row.failedReason}
-                    </div>
-                  ) : null}
-                </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1 px-2 py-0.5 rounded",
-                      getStatusBackgroundColor(swim),
-                    )}
-                  >
-                    <span className="scale-90">
-                      {getStatusIcon(swim, "compact", false)}
+                    <span className="font-medium text-gray-01">
+                      {t("jobstatus.archiveColStarted")}
                     </span>
-                    <span>{t(statusKey)}</span>
-                  </span>
+                    : {formatArchiveWhen(row.startedAt, localeIntl)}
+                  </div>
+                ) : null}
+                <div
+                  className="font-mono text-gray-02 truncate mt-1"
+                  title={row.jobId}
+                >
+                  {t("jobstatus.jobdetails.saveToApiJobIdLabel")}: {row.jobId}
                 </div>
+                {row.failedReason ? (
+                  <div
+                    className="text-pink-02 mt-1 break-words"
+                    title={row.failedReason}
+                  >
+                    <span className="font-medium text-gray-01">
+                      {t("jobstatus.jobdetails.saveToApiErrorLabel")}
+                    </span>
+                    : {row.failedReason}
+                  </div>
+                ) : null}
               </div>
-            );
-          })}
-        </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2 py-0.5 rounded",
+                    getStatusBackgroundColor(swim),
+                  )}
+                >
+                  <span className="scale-90">
+                    {getStatusIcon(swim, "compact", false)}
+                  </span>
+                  <span>{t(statusKey)}</span>
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </Modal>
   );
 }

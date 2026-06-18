@@ -33,7 +33,9 @@ const ManuallyAddReportItem = ({
   return (
     <div className="w-full px-4 py-3 border-b border-gray-03 flex items-center gap-4 bg-gray-03/25">
       <div className="flex items-center gap-4 w-full">
-        <span className="text-sm w-64 text-gray-02">{t("crawler.manuallyAddReport")}:</span>
+        <span className="text-sm w-64 text-gray-02">
+          {t("crawler.manuallyAddReport")}:
+        </span>
         <input
           type="url"
           value={manualUrl}

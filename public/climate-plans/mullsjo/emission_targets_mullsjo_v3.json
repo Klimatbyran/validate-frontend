@@ -16,11 +16,7 @@
         "commitment_strength_other": "",
         "goal_type": "emission_reduction",
         "ghg_scopes_explicit": [],
-        "ghg_scopes_implicit": [
-          "1",
-          "2",
-          "3"
-        ]
+        "ghg_scopes_implicit": ["1", "2", "3"]
       },
       {
         "goal_description": "Reduce total energy use per capita by 30% between 2016 and 2030",
@@ -37,9 +33,7 @@
         "commitment_strength_other": "",
         "goal_type": "emission_reduction",
         "ghg_scopes_explicit": [],
-        "ghg_scopes_implicit": [
-          "2"
-        ]
+        "ghg_scopes_implicit": ["2"]
       },
       {
         "goal_description": "Municipal operations to use only renewable energy (electricity and heat) from 2020 to 2030",
@@ -56,9 +50,7 @@
         "commitment_strength_other": "",
         "goal_type": "implementation",
         "ghg_scopes_explicit": [],
-        "ghg_scopes_implicit": [
-          "2"
-        ]
+        "ghg_scopes_implicit": ["2"]
       },
       {
         "goal_description": "Municipal fleet to be fossil fuel-free by 2030",
@@ -75,9 +67,7 @@
         "commitment_strength_other": "",
         "goal_type": "implementation",
         "ghg_scopes_explicit": [],
-        "ghg_scopes_implicit": [
-          "1"
-        ]
+        "ghg_scopes_implicit": ["1"]
       },
       {
         "goal_description": "50% of registered vehicles in the municipality to use renewable fuels and/or electricity by 2030",
@@ -94,9 +84,7 @@
         "commitment_strength_other": "",
         "goal_type": "implementation",
         "ghg_scopes_explicit": [],
-        "ghg_scopes_implicit": [
-          "1"
-        ]
+        "ghg_scopes_implicit": ["1"]
       }
     ],
     "external_references": [
@@ -165,11 +153,7 @@
       "sectoral_targets_consistent": "yes",
       "sectoral_consistency_notes": "Sectoral targets such as energy use reduction and renewable energy adoption align with the overall municipal target of reducing emissions to 3.0 tons per capita by 2030.",
       "ghg_scopes_explicit": [],
-      "ghg_scopes_implicit": [
-        "1",
-        "2",
-        "3"
-      ],
+      "ghg_scopes_implicit": ["1", "2", "3"],
       "ghg_scope_notes": "No explicit mention of GHG Protocol scopes, but targets imply coverage of scopes 1, 2, and 3 through direct, indirect, and consumption-based emissions.",
       "overall_assessment": "The plan sets clear and ambitious targets for emission reductions and energy use, with a strong alignment to national and international frameworks. It includes both territorial and consumption-based emissions, although the methodology is not explicitly described."
     }

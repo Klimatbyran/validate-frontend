@@ -6,8 +6,15 @@ import { useApiUsageData } from "../hooks/useApiUsageData";
 
 export function ApiUsageView() {
   const { t, formatDate } = useI18n();
-  const { usage, usageError, usageLoading, isAuthError, since, setSince, loadUsage } =
-    useApiUsageData();
+  const {
+    usage,
+    usageError,
+    usageLoading,
+    isAuthError,
+    since,
+    setSince,
+    loadUsage,
+  } = useApiUsageData();
 
   useEffect(() => {
     void loadUsage();

@@ -102,7 +102,9 @@ export function JobbstatusArchivePanel({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-02 max-w-3xl">{t("jobstatus.archiveIntro")}</p>
+      <p className="text-sm text-gray-02 max-w-3xl">
+        {t("jobstatus.archiveIntro")}
+      </p>
 
       <div className={`${ARCHIVE_FILTER_CARD_CLASS} gap-3`}>
         <div className="flex-1 min-w-[12rem] max-w-md">

@@ -55,11 +55,7 @@ const RegistryControls = ({
           {t("common.refresh")}
           <RefreshCw className="w-4 h-4 ml-2" />
         </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={onAddEntry}
-        >
+        <Button size="sm" variant="secondary" onClick={onAddEntry}>
           {t("registry.addEntry")}
           <PlusCircle className="w-4 h-4 ml-2" />
         </Button>
