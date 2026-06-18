@@ -1,0 +1,15 @@
+{
+  "municipalities": [
+    {
+      "id": "nassjo",
+      "name": "Nässjö",
+      "file": "nassjo.json"
+    },
+    {
+      "id": "jonköping",
+      "name": "Jönköping",
+      "file": "jonköping.json"
+    }
+
+  ]
+}

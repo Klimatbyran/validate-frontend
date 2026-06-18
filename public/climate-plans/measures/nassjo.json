@@ -1,0 +1,3527 @@
+[
+  {
+    "measure_text": "Utsläppen av koldioxid från Nässjö kommuns geografiska område ska årligen minska med minst 7 procent till år 2030 och vara nära noll år 2045.",
+    "activity": "none",
+    "activity_shift_score": 1,
+    "activity_shifts": [],
+    "intervention_who": "none",
+    "intervention_when": "none",
+    "intervention_what": "none",
+    "intervention_how": "none",
+    "intervention_score": 1,
+    "intervention_reasoning": "The measure is a target for emission reduction without specifying any responsible actor, timeline, specific action, or mechanism.",
+    "intervention_type": "none"
+  },
+  {
+    "measure_text": "Verka för attraktiv, robust och utbredd tåg- och busstrafik för ett ökat pendlande och resande utan bil.",
+    "activity": "road transport",
+    "activity_shift_score": 4,
+    "activity_shifts": [
+      {
+        "activity": "commuting and travelling",
+        "shift_from": "travelling by car",
+        "shift_to": "travelling by train",
+        "need": "mobility",
+        "type": "Type Shift",
+        "type_reasoning": "The measure suggests a shift from car travel to train travel, which is a change in the mode of transport.",
+        "score": 4,
+        "reasoning": "The shift from car to train is implied but not explicitly stated. The need for mobility is clear.",
+        "transition_element_matches": [
+          {
+            "stable_id": "transfer_from_car_to_railway",
+            "short_label": "T-1A1a-TE-6 - Shift from car to railway",
+            "description": "Shift from car to railway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric rail in person kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.6126,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          }
+        ],
+        "transition_element_suggested_new": {
+          "short_label": "Shift from car to railway",
+          "description": "This transition encourages commuters to use rail transport instead of personal vehicles, promoting sustainable travel options."
+        },
+        "transition_element_candidates": [
+          {
+            "stable_id": "shift_to_electric_passenger_rail",
+            "short_label": "T-1A2-TE-2 - Shift to travel by electric rail",
+            "description": "Shift to travel by electric rail. Shift person kilometer from diesel passenger rail to electric passenger rail in person kilometer to fulfill the need of mobility. from: diesel passenger rail. to: electric rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.6826
+          },
+          {
+            "stable_id": "shift_from_passenger_air_transport_to_railway",
+            "short_label": "T-1A3-TE-4 - Shift from air travel to railway",
+            "description": "Shift from air travel to railway. Shift person kilometer from passenger transportation by air to electric rail in person kilometer to fulfill the need of mobility. from: passenger transportation by air. to: electric rail. Transport > Mobility > Aviation",
+            "sector_path": "Transport > Mobility > Aviation",
+            "acts_on_labels": [
+              "passenger transportation by air"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.6607
+          },
+          {
+            "stable_id": "shift_to_hydrogen_passenger_rail",
+            "short_label": "T-1A2-TE-3 - Shift to travel by hydrogen rail",
+            "description": "Shift to travel by hydrogen rail. Shift person kilometer from diesel passenger rail to hydrogen passenger rail in person kilometer to fulfill the need of mobility. from: diesel passenger rail. to: hydrogen passenger rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [
+              "hydrogen passenger rail"
+            ],
+            "score": 0.6267
+          },
+          {
+            "stable_id": "transfer_from_car_to_railway",
+            "short_label": "T-1A1a-TE-6 - Shift from car to railway",
+            "description": "Shift from car to railway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric rail in person kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.6126
+          },
+          {
+            "stable_id": "electrification_of_domestic_sea_passenger_transport",
+            "short_label": "T-1A4-TE-5 - Shift to electric marine passenger transportion",
+            "description": "Shift to electric marine passenger transportion. Shift person kilometer from ship passenger to electric shipping passenger in person kilometer to fulfill the need of mobility. from: ship passenger, gas oil shipping passenger. to: electric shipping passenger. Transport > Mobility > Waterborne",
+            "sector_path": "Transport > Mobility > Waterborne",
+            "acts_on_labels": [
+              "ship passenger",
+              "gas oil shipping passenger"
+            ],
+            "shifts_to_labels": [
+              "electric shipping passenger"
+            ],
+            "score": 0.5618
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_diesel_bus",
+            "short_label": "T-1A1a-TE-17 - Shift to travel by diesel bus",
+            "description": "Shift to travel by diesel bus. Shift vehicle kilometer from petrol and diesel vehicles to diesel buses. from: petrol vehicles, diesel vehicles. to: diesel buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "diesel buses"
+            ],
+            "score": 0.5608
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_petrol_bus",
+            "short_label": "T-1A1a-TE-16 - Shift to travel by petrol bus",
+            "description": "Shift to travel by petrol bus. Shift vehicle kilometer from petrol and diesel vehicles to petrol buses. from: petrol vehicles, diesel vehicles. to: petrol buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "petrol buses"
+            ],
+            "score": 0.5605
+          },
+          {
+            "stable_id": "increased_proportion_of_commuting_by_electric_bus",
+            "short_label": "T-1A1a-TE-12 - Shift to travel by electric bus",
+            "description": "Shift to travel by electric bus. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric bus. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric bus. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bus"
+            ],
+            "score": 0.5605
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_trams_and_light_rail",
+            "short_label": "T-1A1a-TE-18 - Shift to trams, light rail and subway",
+            "description": "Shift to trams, light rail and subway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to tram and light rail. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: tram and light rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "tram and light rail"
+            ],
+            "score": 0.5589
+          },
+          {
+            "stable_id": "electric_passenger_airplanes",
+            "short_label": "T-1A3-TE-3 - Shift to electric air passenger transport",
+            "description": "Shift to electric air passenger transport. Shift person kilometer from passenger transportation by air to electric passenger transportation by air in person kilometer to fulfill the need of mobility. from: passenger transportation by air. to: electric passenger transportation by air. Transport > Mobility > Aviation",
+            "sector_path": "Transport > Mobility > Aviation",
+            "acts_on_labels": [
+              "passenger transportation by air"
+            ],
+            "shifts_to_labels": [
+              "electric passenger transportation by air"
+            ],
+            "score": 0.554
+          },
+          {
+            "stable_id": "biofuel_for_diesel_rail_passenger",
+            "short_label": "T-1A2-TE-1 - Biofuel for rail passenger transport",
+            "description": "Biofuel for rail passenger transport. Increase the proportion of HVO biodiesel in diesel. from: diesel passenger rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.5207
+          },
+          {
+            "stable_id": "more_efficient_commuting_by_car",
+            "short_label": "T-1A1a-TE-5 - Increase journey sharing",
+            "description": "Increase journey sharing. Reduce the number of vehicle kilometers from petrol, diesel, lpg and natural gas vehicles to fulfill the need of commuting through more efficient commuting by car. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, battery electric vehicles, hydrogen vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "battery electric vehicles",
+              "hydrogen vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4864
+          },
+          {
+            "stable_id": "improved_urban_planning",
+            "short_label": "T-1A1a-TE-22 - Improved urban planning",
+            "description": "Improved urban planning. Reduce the amount of vehicle kilometer from cars to fulfill the need of mobility through improved urban planning. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, lng vehicles, hydrogen vehicles, battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "lng vehicles",
+              "hydrogen vehicles",
+              "battery electric vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.463
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_gas_bus",
+            "short_label": "T-1A1a-TE-15 - Shift to travel by gas bus",
+            "description": "Shift to travel by gas bus. Shift vehicle kilometer from petrol and diesel vehicles to gas buses. from: petrol vehicles, diesel vehicles. to: gas buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas buses"
+            ],
+            "score": 0.4513
+          },
+          {
+            "stable_id": "biofuel_for_gas_buses",
+            "short_label": "T-1A1c-TE-2 - Biofuel for gas buses",
+            "description": "Biofuel for gas buses. Increase the proportion of biogas in gas mix. from: gas buses. Transport > Mobility > Road > Buses",
+            "sector_path": "Transport > Mobility > Road > Buses",
+            "acts_on_labels": [
+              "gas buses"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4379
+          },
+          {
+            "stable_id": "biofuel_for_diesel_rail_freight",
+            "short_label": "T-1B2-TE-1 - Biofuel for rail freight transport",
+            "description": "Biofuel for rail freight transport. Increase the proportion of HVO biodiesel in diesel. from: diesel rail freight. Transport > Freight > Rail",
+            "sector_path": "Transport > Freight > Rail",
+            "acts_on_labels": [
+              "diesel rail freight"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4364
+          }
+        ]
+      },
+      {
+        "activity": "commuting and travelling",
+        "shift_from": "travelling by car",
+        "shift_to": "travelling by bus",
+        "need": "mobility",
+        "type": "Type Shift",
+        "type_reasoning": "The measure suggests a shift from car travel to bus travel, which is a change in the mode of transport.",
+        "score": 4,
+        "reasoning": "The shift from car to bus is implied but not explicitly stated. The need for mobility is clear.",
+        "transition_element_matches": [
+          {
+            "stable_id": "increased_proportion_of_commuting_by_electric_bus",
+            "short_label": "T-1A1a-TE-12 - Shift to travel by electric bus",
+            "description": "Shift to travel by electric bus. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric bus. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric bus. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bus"
+            ],
+            "score": 0.6684,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "shift_to_electric_buses",
+            "short_label": "T-1A1C-TE-5 - Shift to electric busses",
+            "description": "Shift to electric busses. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: diesel buses, petrol buses, lpg buses. to: electric bus. Transport > Mobility > Road > Buses",
+            "sector_path": "Transport > Mobility > Road > Buses",
+            "acts_on_labels": [
+              "diesel buses",
+              "petrol buses",
+              "lpg buses"
+            ],
+            "shifts_to_labels": [
+              "electric bus"
+            ],
+            "score": 0.5742,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "transfer_from_car_to_railway",
+            "short_label": "T-1A1a-TE-6 - Shift from car to railway",
+            "description": "Shift from car to railway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric rail in person kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.4444,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          }
+        ],
+        "transition_element_suggested_new": {
+          "short_label": "Shift to electric buses",
+          "description": "This transition encourages the use of electric buses for commuting and travelling, reducing reliance on cars."
+        },
+        "transition_element_candidates": [
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_petrol_bus",
+            "short_label": "T-1A1a-TE-16 - Shift to travel by petrol bus",
+            "description": "Shift to travel by petrol bus. Shift vehicle kilometer from petrol and diesel vehicles to petrol buses. from: petrol vehicles, diesel vehicles. to: petrol buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "petrol buses"
+            ],
+            "score": 0.6687
+          },
+          {
+            "stable_id": "increased_proportion_of_commuting_by_electric_bus",
+            "short_label": "T-1A1a-TE-12 - Shift to travel by electric bus",
+            "description": "Shift to travel by electric bus. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric bus. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric bus. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bus"
+            ],
+            "score": 0.6684
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_diesel_bus",
+            "short_label": "T-1A1a-TE-17 - Shift to travel by diesel bus",
+            "description": "Shift to travel by diesel bus. Shift vehicle kilometer from petrol and diesel vehicles to diesel buses. from: petrol vehicles, diesel vehicles. to: diesel buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "diesel buses"
+            ],
+            "score": 0.655
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_gas_bus",
+            "short_label": "T-1A1a-TE-15 - Shift to travel by gas bus",
+            "description": "Shift to travel by gas bus. Shift vehicle kilometer from petrol and diesel vehicles to gas buses. from: petrol vehicles, diesel vehicles. to: gas buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas buses"
+            ],
+            "score": 0.6457
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_lpg_bus",
+            "short_label": "T-1A1a-TE-14 - Shift to travel by LPG bus",
+            "description": "Shift to travel by LPG bus. Shift vehicle kilometer from petrol and diesel vehicles to LPG buses. from: petrol vehicles, diesel vehicles. to: lpg buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "lpg buses"
+            ],
+            "score": 0.6401
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_hydrogen_bus",
+            "short_label": "T-1A1a-TE-13 - Shift to travel by hydrogen bus",
+            "description": "Shift to travel by hydrogen bus. Shift vehicle kilometer from petrol and diesel vehicles to hydrogen buses. from: petrol vehicles, diesel vehicles. to: hydrogen buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "hydrogen buses"
+            ],
+            "score": 0.6177
+          },
+          {
+            "stable_id": "shift_to_electric_passenger_rail",
+            "short_label": "T-1A2-TE-2 - Shift to travel by electric rail",
+            "description": "Shift to travel by electric rail. Shift person kilometer from diesel passenger rail to electric passenger rail in person kilometer to fulfill the need of mobility. from: diesel passenger rail. to: electric rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.5872
+          },
+          {
+            "stable_id": "shift_to_electric_buses",
+            "short_label": "T-1A1C-TE-5 - Shift to electric busses",
+            "description": "Shift to electric busses. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: diesel buses, petrol buses, lpg buses. to: electric bus. Transport > Mobility > Road > Buses",
+            "sector_path": "Transport > Mobility > Road > Buses",
+            "acts_on_labels": [
+              "diesel buses",
+              "petrol buses",
+              "lpg buses"
+            ],
+            "shifts_to_labels": [
+              "electric bus"
+            ],
+            "score": 0.5742
+          },
+          {
+            "stable_id": "shift_from_passenger_air_transport_to_railway",
+            "short_label": "T-1A3-TE-4 - Shift from air travel to railway",
+            "description": "Shift from air travel to railway. Shift person kilometer from passenger transportation by air to electric rail in person kilometer to fulfill the need of mobility. from: passenger transportation by air. to: electric rail. Transport > Mobility > Aviation",
+            "sector_path": "Transport > Mobility > Aviation",
+            "acts_on_labels": [
+              "passenger transportation by air"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.5733
+          },
+          {
+            "stable_id": "shift_to_electric_bikes",
+            "short_label": "T-1A1a-TE-11 - Shift to electric bikes",
+            "description": "Shift to electric bikes. Shift vehicle kilometer from petrol,diesel and LPG vehicles to electric bike in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles. to: electric bikes. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bikes"
+            ],
+            "score": 0.5709
+          },
+          {
+            "stable_id": "biofuel_for_diesel_rail_passenger",
+            "short_label": "T-1A2-TE-1 - Biofuel for rail passenger transport",
+            "description": "Biofuel for rail passenger transport. Increase the proportion of HVO biodiesel in diesel. from: diesel passenger rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4939
+          },
+          {
+            "stable_id": "biofuel_for_gas_buses",
+            "short_label": "T-1A1c-TE-2 - Biofuel for gas buses",
+            "description": "Biofuel for gas buses. Increase the proportion of biogas in gas mix. from: gas buses. Transport > Mobility > Road > Buses",
+            "sector_path": "Transport > Mobility > Road > Buses",
+            "acts_on_labels": [
+              "gas buses"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.486
+          },
+          {
+            "stable_id": "more_efficient_commuting_by_car",
+            "short_label": "T-1A1a-TE-5 - Increase journey sharing",
+            "description": "Increase journey sharing. Reduce the number of vehicle kilometers from petrol, diesel, lpg and natural gas vehicles to fulfill the need of commuting through more efficient commuting by car. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, battery electric vehicles, hydrogen vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "battery electric vehicles",
+              "hydrogen vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4854
+          },
+          {
+            "stable_id": "biofuel_for_diesel_buses",
+            "short_label": "T-1A1c-TE-1 - Biofuel for diesel buses",
+            "description": "Biofuel for diesel buses. Increase the proportion of biodiesel in diesel. from: diesel buses. Transport > Mobility > Road > Buses",
+            "sector_path": "Transport > Mobility > Road > Buses",
+            "acts_on_labels": [
+              "diesel buses"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4622
+          },
+          {
+            "stable_id": "improved_urban_planning",
+            "short_label": "T-1A1a-TE-22 - Improved urban planning",
+            "description": "Improved urban planning. Reduce the amount of vehicle kilometer from cars to fulfill the need of mobility through improved urban planning. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, lng vehicles, hydrogen vehicles, battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "lng vehicles",
+              "hydrogen vehicles",
+              "battery electric vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4607
+          },
+          {
+            "stable_id": "biofuel_for_petrol_buses",
+            "short_label": "T-1A1c-TE-3 - Biofuel for petrol buses",
+            "description": "Biofuel for petrol buses. Increase the proportion of ethanol in petrol. from: petrol buses. Transport > Mobility > Road > Buses",
+            "sector_path": "Transport > Mobility > Road > Buses",
+            "acts_on_labels": [
+              "petrol buses"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4574
+          },
+          {
+            "stable_id": "transfer_from_car_to_railway",
+            "short_label": "T-1A1a-TE-6 - Shift from car to railway",
+            "description": "Shift from car to railway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric rail in person kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.4444
+          }
+        ]
+      }
+    ],
+    "intervention_who": "none",
+    "intervention_when": "none",
+    "intervention_what": "none",
+    "intervention_how": "none",
+    "intervention_score": 1,
+    "intervention_reasoning": "The measure advocates for improved public transport but lacks specific actors, timelines, actions, or mechanisms.",
+    "intervention_type": "none"
+  },
+  {
+    "measure_text": "Verka för delningslösningar för fossiloberoende fordon.",
+    "activity": "road transport",
+    "activity_shift_score": 5,
+    "activity_shifts": [
+      {
+        "activity": "using vehicles",
+        "shift_from": "individual use of fossil fuel vehicles",
+        "shift_to": "shared use of fossil-independent vehicles",
+        "need": "mobility",
+        "type": "Utilisation Shift",
+        "type_reasoning": "The measure suggests a shift towards shared use of vehicles, which is a change in utilisation pattern.",
+        "score": 5,
+        "reasoning": "The shift from individual to shared use is implied, and the need for mobility is clear. The shift to fossil-independent vehicles is also implied.",
+        "transition_element_matches": [
+          {
+            "stable_id": "more_efficient_commuting_by_car",
+            "short_label": "T-1A1a-TE-5 - Increase journey sharing",
+            "description": "Increase journey sharing. Reduce the number of vehicle kilometers from petrol, diesel, lpg and natural gas vehicles to fulfill the need of commuting through more efficient commuting by car. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, battery electric vehicles, hydrogen vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "battery electric vehicles",
+              "hydrogen vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.6363,
+            "match_reasoning": "acts_on=yes, shifts_to=empty"
+          },
+          {
+            "stable_id": "shift_to_electric_bikes",
+            "short_label": "T-1A1a-TE-11 - Shift to electric bikes",
+            "description": "Shift to electric bikes. Shift vehicle kilometer from petrol,diesel and LPG vehicles to electric bike in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles. to: electric bikes. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bikes"
+            ],
+            "score": 0.6336,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "shift_to_gas_vehicles",
+            "short_label": "T-1A1a-TE-19 - Shift to gas cars",
+            "description": "Shift to gas cars. Shift vehicle kilometer from petrol and diesel vehicles to gas vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles. to: gas vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas vehicles"
+            ],
+            "score": 0.6316,
+            "match_reasoning": "acts_on=yes, shifts_to=no"
+          },
+          {
+            "stable_id": "increased_proportion_of_walking_and_cycling",
+            "short_label": "T-1A1a-TE-10 - Shift to walking and cycling",
+            "description": "Shift to walking and cycling. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to walking cycling. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: walking cycling. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "walking cycling"
+            ],
+            "score": 0.6263,
+            "match_reasoning": "acts_on=yes, shifts_to=no"
+          },
+          {
+            "stable_id": "shift_to_hydrogen_vehicles",
+            "short_label": "T-1A1a-TE-2 - Shift to hydrogen cars",
+            "description": "Shift to hydrogen cars. Shift vehicle kilometer from petrol and diesel vehicles to hydrogen vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles. to: hydrogen vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "hydrogen vehicles"
+            ],
+            "score": 0.6229,
+            "match_reasoning": "acts_on=yes, shifts_to=no"
+          },
+          {
+            "stable_id": "shift_to_electric_vehicles",
+            "short_label": "T-1A1a-TE-1 - Shift to electric cars",
+            "description": "Shift to electric cars. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to battery electric vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "battery electric vehicles"
+            ],
+            "score": 0.6221,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "transfer_from_car_to_remote_working",
+            "short_label": "T-1A1a-TE-8 - Shift from car to remote working",
+            "description": "Shift from car to remote working. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to remote working. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: remote working. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "remote working"
+            ],
+            "score": 0.6162,
+            "match_reasoning": "acts_on=yes, shifts_to=no"
+          },
+          {
+            "stable_id": "transfer_from_car_to_railway",
+            "short_label": "T-1A1a-TE-6 - Shift from car to railway",
+            "description": "Shift from car to railway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric rail in person kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.6146,
+            "match_reasoning": "acts_on=yes, shifts_to=no"
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_petrol_bus",
+            "short_label": "T-1A1a-TE-16 - Shift to travel by petrol bus",
+            "description": "Shift to travel by petrol bus. Shift vehicle kilometer from petrol and diesel vehicles to petrol buses. from: petrol vehicles, diesel vehicles. to: petrol buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "petrol buses"
+            ],
+            "score": 0.6091,
+            "match_reasoning": "acts_on=yes, shifts_to=no"
+          },
+          {
+            "stable_id": "increased_proportion_of_non_travel_meetings_and_services",
+            "short_label": "T-1A1a-TE-7 - Shift to online meetings and services",
+            "description": "Shift to online meetings and services. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to e-meetings in hours to fulfill the need of business trips. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: e meetings. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "e meetings"
+            ],
+            "score": 0.6074,
+            "match_reasoning": "acts_on=yes, shifts_to=no"
+          },
+          {
+            "stable_id": "improved_urban_planning",
+            "short_label": "T-1A1a-TE-22 - Improved urban planning",
+            "description": "Improved urban planning. Reduce the amount of vehicle kilometer from cars to fulfill the need of mobility through improved urban planning. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, lng vehicles, hydrogen vehicles, battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "lng vehicles",
+              "hydrogen vehicles",
+              "battery electric vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.5184,
+            "match_reasoning": "acts_on=yes, shifts_to=empty"
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_gas_bus",
+            "short_label": "T-1A1a-TE-15 - Shift to travel by gas bus",
+            "description": "Shift to travel by gas bus. Shift vehicle kilometer from petrol and diesel vehicles to gas buses. from: petrol vehicles, diesel vehicles. to: gas buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas buses"
+            ],
+            "score": 0.4699,
+            "match_reasoning": "acts_on=yes, shifts_to=no"
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_diesel_bus",
+            "short_label": "T-1A1a-TE-17 - Shift to travel by diesel bus",
+            "description": "Shift to travel by diesel bus. Shift vehicle kilometer from petrol and diesel vehicles to diesel buses. from: petrol vehicles, diesel vehicles. to: diesel buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "diesel buses"
+            ],
+            "score": 0.4686,
+            "match_reasoning": "acts_on=yes, shifts_to=no"
+          }
+        ],
+        "transition_element_suggested_new": {
+          "short_label": "Shared Mobility Solutions",
+          "description": "Promote shared use of fossil-independent vehicles to reduce individual reliance on fossil fuel vehicles."
+        },
+        "transition_element_candidates": [
+          {
+            "stable_id": "more_efficient_commuting_by_car",
+            "short_label": "T-1A1a-TE-5 - Increase journey sharing",
+            "description": "Increase journey sharing. Reduce the number of vehicle kilometers from petrol, diesel, lpg and natural gas vehicles to fulfill the need of commuting through more efficient commuting by car. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, battery electric vehicles, hydrogen vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "battery electric vehicles",
+              "hydrogen vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.6363
+          },
+          {
+            "stable_id": "shift_to_electric_bikes",
+            "short_label": "T-1A1a-TE-11 - Shift to electric bikes",
+            "description": "Shift to electric bikes. Shift vehicle kilometer from petrol,diesel and LPG vehicles to electric bike in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles. to: electric bikes. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bikes"
+            ],
+            "score": 0.6336
+          },
+          {
+            "stable_id": "shift_to_gas_vehicles",
+            "short_label": "T-1A1a-TE-19 - Shift to gas cars",
+            "description": "Shift to gas cars. Shift vehicle kilometer from petrol and diesel vehicles to gas vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles. to: gas vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas vehicles"
+            ],
+            "score": 0.6316
+          },
+          {
+            "stable_id": "increased_proportion_of_walking_and_cycling",
+            "short_label": "T-1A1a-TE-10 - Shift to walking and cycling",
+            "description": "Shift to walking and cycling. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to walking cycling. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: walking cycling. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "walking cycling"
+            ],
+            "score": 0.6263
+          },
+          {
+            "stable_id": "shift_to_hydrogen_vehicles",
+            "short_label": "T-1A1a-TE-2 - Shift to hydrogen cars",
+            "description": "Shift to hydrogen cars. Shift vehicle kilometer from petrol and diesel vehicles to hydrogen vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles. to: hydrogen vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "hydrogen vehicles"
+            ],
+            "score": 0.6229
+          },
+          {
+            "stable_id": "shift_to_electric_vehicles",
+            "short_label": "T-1A1a-TE-1 - Shift to electric cars",
+            "description": "Shift to electric cars. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to battery electric vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "battery electric vehicles"
+            ],
+            "score": 0.6221
+          },
+          {
+            "stable_id": "transfer_from_car_to_remote_working",
+            "short_label": "T-1A1a-TE-8 - Shift from car to remote working",
+            "description": "Shift from car to remote working. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to remote working. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: remote working. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "remote working"
+            ],
+            "score": 0.6162
+          },
+          {
+            "stable_id": "transfer_from_car_to_railway",
+            "short_label": "T-1A1a-TE-6 - Shift from car to railway",
+            "description": "Shift from car to railway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric rail in person kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.6146
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_petrol_bus",
+            "short_label": "T-1A1a-TE-16 - Shift to travel by petrol bus",
+            "description": "Shift to travel by petrol bus. Shift vehicle kilometer from petrol and diesel vehicles to petrol buses. from: petrol vehicles, diesel vehicles. to: petrol buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "petrol buses"
+            ],
+            "score": 0.6091
+          },
+          {
+            "stable_id": "increased_proportion_of_non_travel_meetings_and_services",
+            "short_label": "T-1A1a-TE-7 - Shift to online meetings and services",
+            "description": "Shift to online meetings and services. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to e-meetings in hours to fulfill the need of business trips. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: e meetings. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "e meetings"
+            ],
+            "score": 0.6074
+          },
+          {
+            "stable_id": "improved_urban_planning",
+            "short_label": "T-1A1a-TE-22 - Improved urban planning",
+            "description": "Improved urban planning. Reduce the amount of vehicle kilometer from cars to fulfill the need of mobility through improved urban planning. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, lng vehicles, hydrogen vehicles, battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "lng vehicles",
+              "hydrogen vehicles",
+              "battery electric vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.5184
+          },
+          {
+            "stable_id": "increase_renewable_proportion_in_diesel",
+            "short_label": "T-1A1a-TE-21 - Biofuel for diesel cars",
+            "description": "Biofuel for diesel cars. Increase the proportion of HVO biodiesel in diesel. from: diesel vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4768
+          },
+          {
+            "stable_id": "biofuel_for_gas_vehicles",
+            "short_label": "T-1A1a-TE-20 - Biofuel for gas cars",
+            "description": "Biofuel for gas cars. Increase the proportion of biogas in gas mix. from: gas vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4701
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_gas_bus",
+            "short_label": "T-1A1a-TE-15 - Shift to travel by gas bus",
+            "description": "Shift to travel by gas bus. Shift vehicle kilometer from petrol and diesel vehicles to gas buses. from: petrol vehicles, diesel vehicles. to: gas buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas buses"
+            ],
+            "score": 0.4699
+          },
+          {
+            "stable_id": "biofuel_for_diesel_rail_passenger",
+            "short_label": "T-1A2-TE-1 - Biofuel for rail passenger transport",
+            "description": "Biofuel for rail passenger transport. Increase the proportion of HVO biodiesel in diesel. from: diesel passenger rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4687
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_diesel_bus",
+            "short_label": "T-1A1a-TE-17 - Shift to travel by diesel bus",
+            "description": "Shift to travel by diesel bus. Shift vehicle kilometer from petrol and diesel vehicles to diesel buses. from: petrol vehicles, diesel vehicles. to: diesel buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "diesel buses"
+            ],
+            "score": 0.4686
+          }
+        ]
+      },
+      {
+        "activity": "using vehicles",
+        "shift_from": "using fossil fuel vehicles",
+        "shift_to": "using fossil-independent vehicles",
+        "need": "mobility",
+        "type": "Resource Shift",
+        "type_reasoning": "The measure suggests a shift from fossil fuel vehicles to fossil-independent vehicles, which is a change in the resource used.",
+        "score": 5,
+        "reasoning": "The shift from fossil fuel to fossil-independent vehicles is implied, and the need for mobility is clear.",
+        "transition_element_matches": [
+          {
+            "stable_id": "shift_to_electric_vehicles",
+            "short_label": "T-1A1a-TE-1 - Shift to electric cars",
+            "description": "Shift to electric cars. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to battery electric vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "battery electric vehicles"
+            ],
+            "score": 0.6569,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          }
+        ],
+        "transition_element_suggested_new": {
+          "short_label": "Shift to electric vehicles",
+          "description": "This transition promotes the use of battery electric vehicles, aligning with the goal of moving away from fossil fuel vehicles."
+        },
+        "transition_element_candidates": [
+          {
+            "stable_id": "shift_to_gas_vehicles",
+            "short_label": "T-1A1a-TE-19 - Shift to gas cars",
+            "description": "Shift to gas cars. Shift vehicle kilometer from petrol and diesel vehicles to gas vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles. to: gas vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas vehicles"
+            ],
+            "score": 0.6634
+          },
+          {
+            "stable_id": "shift_to_hydrogen_vehicles",
+            "short_label": "T-1A1a-TE-2 - Shift to hydrogen cars",
+            "description": "Shift to hydrogen cars. Shift vehicle kilometer from petrol and diesel vehicles to hydrogen vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles. to: hydrogen vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "hydrogen vehicles"
+            ],
+            "score": 0.6576
+          },
+          {
+            "stable_id": "shift_to_electric_vehicles",
+            "short_label": "T-1A1a-TE-1 - Shift to electric cars",
+            "description": "Shift to electric cars. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to battery electric vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "battery electric vehicles"
+            ],
+            "score": 0.6569
+          },
+          {
+            "stable_id": "shift_to_electric_bikes",
+            "short_label": "T-1A1a-TE-11 - Shift to electric bikes",
+            "description": "Shift to electric bikes. Shift vehicle kilometer from petrol,diesel and LPG vehicles to electric bike in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles. to: electric bikes. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bikes"
+            ],
+            "score": 0.6414
+          },
+          {
+            "stable_id": "increased_proportion_of_walking_and_cycling",
+            "short_label": "T-1A1a-TE-10 - Shift to walking and cycling",
+            "description": "Shift to walking and cycling. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to walking cycling. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: walking cycling. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "walking cycling"
+            ],
+            "score": 0.6317
+          },
+          {
+            "stable_id": "transfer_from_car_to_railway",
+            "short_label": "T-1A1a-TE-6 - Shift from car to railway",
+            "description": "Shift from car to railway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric rail in person kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.6269
+          },
+          {
+            "stable_id": "transfer_from_car_to_remote_working",
+            "short_label": "T-1A1a-TE-8 - Shift from car to remote working",
+            "description": "Shift from car to remote working. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to remote working. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: remote working. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "remote working"
+            ],
+            "score": 0.623
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_petrol_bus",
+            "short_label": "T-1A1a-TE-16 - Shift to travel by petrol bus",
+            "description": "Shift to travel by petrol bus. Shift vehicle kilometer from petrol and diesel vehicles to petrol buses. from: petrol vehicles, diesel vehicles. to: petrol buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "petrol buses"
+            ],
+            "score": 0.6221
+          },
+          {
+            "stable_id": "shift_to_electric_motorcycles",
+            "short_label": "T-1A1b-TE-2 - Shift to electric motorcycles",
+            "description": "Shift to electric motorcycles. Shift vehicle kilometer from petrol motorcycles to electric motorcycles in vehicle kilometer to fulfill the need of mobility. from: petrol motorcycles. to: electric motorcycles. Transport > Mobility > Road > 2 3 Wheel Vehicles",
+            "sector_path": "Transport > Mobility > Road > 2 3 Wheel Vehicles",
+            "acts_on_labels": [
+              "petrol motorcycles"
+            ],
+            "shifts_to_labels": [
+              "electric motorcycles"
+            ],
+            "score": 0.6194
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_gas_bus",
+            "short_label": "T-1A1a-TE-15 - Shift to travel by gas bus",
+            "description": "Shift to travel by gas bus. Shift vehicle kilometer from petrol and diesel vehicles to gas buses. from: petrol vehicles, diesel vehicles. to: gas buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas buses"
+            ],
+            "score": 0.6073
+          },
+          {
+            "stable_id": "more_efficient_commuting_by_car",
+            "short_label": "T-1A1a-TE-5 - Increase journey sharing",
+            "description": "Increase journey sharing. Reduce the number of vehicle kilometers from petrol, diesel, lpg and natural gas vehicles to fulfill the need of commuting through more efficient commuting by car. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, battery electric vehicles, hydrogen vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "battery electric vehicles",
+              "hydrogen vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.5546
+          },
+          {
+            "stable_id": "improved_urban_planning",
+            "short_label": "T-1A1a-TE-22 - Improved urban planning",
+            "description": "Improved urban planning. Reduce the amount of vehicle kilometer from cars to fulfill the need of mobility through improved urban planning. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, lng vehicles, hydrogen vehicles, battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "lng vehicles",
+              "hydrogen vehicles",
+              "battery electric vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.5281
+          },
+          {
+            "stable_id": "increase_renewable_proportion_in_diesel",
+            "short_label": "T-1A1a-TE-21 - Biofuel for diesel cars",
+            "description": "Biofuel for diesel cars. Increase the proportion of HVO biodiesel in diesel. from: diesel vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.5087
+          },
+          {
+            "stable_id": "biofuel_for_gas_vehicles",
+            "short_label": "T-1A1a-TE-20 - Biofuel for gas cars",
+            "description": "Biofuel for gas cars. Increase the proportion of biogas in gas mix. from: gas vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.493
+          },
+          {
+            "stable_id": "increased_proportion_of_non_travel_meetings_and_services",
+            "short_label": "T-1A1a-TE-7 - Shift to online meetings and services",
+            "description": "Shift to online meetings and services. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to e-meetings in hours to fulfill the need of business trips. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: e meetings. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "e meetings"
+            ],
+            "score": 0.4859
+          },
+          {
+            "stable_id": "biofuel_for_diesel_rail_passenger",
+            "short_label": "T-1A2-TE-1 - Biofuel for rail passenger transport",
+            "description": "Biofuel for rail passenger transport. Increase the proportion of HVO biodiesel in diesel. from: diesel passenger rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4847
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_diesel_bus",
+            "short_label": "T-1A1a-TE-17 - Shift to travel by diesel bus",
+            "description": "Shift to travel by diesel bus. Shift vehicle kilometer from petrol and diesel vehicles to diesel buses. from: petrol vehicles, diesel vehicles. to: diesel buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "diesel buses"
+            ],
+            "score": 0.4827
+          }
+        ]
+      }
+    ],
+    "intervention_who": "none",
+    "intervention_when": "none",
+    "intervention_what": "none",
+    "intervention_how": "none",
+    "intervention_score": 1,
+    "intervention_reasoning": "The measure advocates for shared solutions but lacks specific actors, timelines, actions, or mechanisms.",
+    "intervention_type": "none"
+  },
+  {
+    "measure_text": "Bygga ut gång- och cykelvägnätet enligt trafikstrategin.",
+    "activity": "cycling",
+    "activity_shift_score": 3,
+    "activity_shifts": [
+      {
+        "activity": "travelling",
+        "shift_from": "travelling by car",
+        "shift_to": "walking or cycling",
+        "need": "mobility",
+        "type": "Type Shift",
+        "type_reasoning": "The measure implies a shift from car travel to walking or cycling, which is a change in the mode of transport.",
+        "score": 3,
+        "reasoning": "The shift to walking or cycling is implied by the expansion of infrastructure, but the shift from car travel is not explicitly stated.",
+        "transition_element_matches": [
+          {
+            "stable_id": "increased_proportion_of_walking_and_cycling",
+            "short_label": "T-1A1a-TE-10 - Shift to walking and cycling",
+            "description": "Shift to walking and cycling. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to walking cycling. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: walking cycling. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "walking cycling"
+            ],
+            "score": 0.6953,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          }
+        ],
+        "transition_element_suggested_new": {
+          "short_label": "Shift to walking and cycling",
+          "description": "The measure aims to expand the walking and cycling network, promoting a shift from car travel to more sustainable modes of transport."
+        },
+        "transition_element_candidates": [
+          {
+            "stable_id": "increased_proportion_of_walking_and_cycling",
+            "short_label": "T-1A1a-TE-10 - Shift to walking and cycling",
+            "description": "Shift to walking and cycling. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to walking cycling. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: walking cycling. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "walking cycling"
+            ],
+            "score": 0.6953
+          },
+          {
+            "stable_id": "shift_to_electric_bikes",
+            "short_label": "T-1A1a-TE-11 - Shift to electric bikes",
+            "description": "Shift to electric bikes. Shift vehicle kilometer from petrol,diesel and LPG vehicles to electric bike in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles. to: electric bikes. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bikes"
+            ],
+            "score": 0.6119
+          },
+          {
+            "stable_id": "shift_to_electric_motorcycles",
+            "short_label": "T-1A1b-TE-2 - Shift to electric motorcycles",
+            "description": "Shift to electric motorcycles. Shift vehicle kilometer from petrol motorcycles to electric motorcycles in vehicle kilometer to fulfill the need of mobility. from: petrol motorcycles. to: electric motorcycles. Transport > Mobility > Road > 2 3 Wheel Vehicles",
+            "sector_path": "Transport > Mobility > Road > 2 3 Wheel Vehicles",
+            "acts_on_labels": [
+              "petrol motorcycles"
+            ],
+            "shifts_to_labels": [
+              "electric motorcycles"
+            ],
+            "score": 0.5777
+          },
+          {
+            "stable_id": "shift_to_electric_passenger_rail",
+            "short_label": "T-1A2-TE-2 - Shift to travel by electric rail",
+            "description": "Shift to travel by electric rail. Shift person kilometer from diesel passenger rail to electric passenger rail in person kilometer to fulfill the need of mobility. from: diesel passenger rail. to: electric rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.5519
+          },
+          {
+            "stable_id": "shift_from_passenger_air_transport_to_railway",
+            "short_label": "T-1A3-TE-4 - Shift from air travel to railway",
+            "description": "Shift from air travel to railway. Shift person kilometer from passenger transportation by air to electric rail in person kilometer to fulfill the need of mobility. from: passenger transportation by air. to: electric rail. Transport > Mobility > Aviation",
+            "sector_path": "Transport > Mobility > Aviation",
+            "acts_on_labels": [
+              "passenger transportation by air"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.5478
+          },
+          {
+            "stable_id": "transfer_from_car_to_remote_working",
+            "short_label": "T-1A1a-TE-8 - Shift from car to remote working",
+            "description": "Shift from car to remote working. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to remote working. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: remote working. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "remote working"
+            ],
+            "score": 0.54
+          },
+          {
+            "stable_id": "shift_to_electric_vehicles",
+            "short_label": "T-1A1a-TE-1 - Shift to electric cars",
+            "description": "Shift to electric cars. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to battery electric vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "battery electric vehicles"
+            ],
+            "score": 0.5332
+          },
+          {
+            "stable_id": "electrification_of_domestic_sea_passenger_transport",
+            "short_label": "T-1A4-TE-5 - Shift to electric marine passenger transportion",
+            "description": "Shift to electric marine passenger transportion. Shift person kilometer from ship passenger to electric shipping passenger in person kilometer to fulfill the need of mobility. from: ship passenger, gas oil shipping passenger. to: electric shipping passenger. Transport > Mobility > Waterborne",
+            "sector_path": "Transport > Mobility > Waterborne",
+            "acts_on_labels": [
+              "ship passenger",
+              "gas oil shipping passenger"
+            ],
+            "shifts_to_labels": [
+              "electric shipping passenger"
+            ],
+            "score": 0.533
+          },
+          {
+            "stable_id": "transfer_from_car_to_railway",
+            "short_label": "T-1A1a-TE-6 - Shift from car to railway",
+            "description": "Shift from car to railway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric rail in person kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.5324
+          },
+          {
+            "stable_id": "shift_to_gas_vehicles",
+            "short_label": "T-1A1a-TE-19 - Shift to gas cars",
+            "description": "Shift to gas cars. Shift vehicle kilometer from petrol and diesel vehicles to gas vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles. to: gas vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas vehicles"
+            ],
+            "score": 0.5322
+          },
+          {
+            "stable_id": "improved_urban_planning",
+            "short_label": "T-1A1a-TE-22 - Improved urban planning",
+            "description": "Improved urban planning. Reduce the amount of vehicle kilometer from cars to fulfill the need of mobility through improved urban planning. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, lng vehicles, hydrogen vehicles, battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "lng vehicles",
+              "hydrogen vehicles",
+              "battery electric vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4472
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_gas_bus",
+            "short_label": "T-1A1a-TE-15 - Shift to travel by gas bus",
+            "description": "Shift to travel by gas bus. Shift vehicle kilometer from petrol and diesel vehicles to gas buses. from: petrol vehicles, diesel vehicles. to: gas buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas buses"
+            ],
+            "score": 0.4019
+          },
+          {
+            "stable_id": "more_efficient_commuting_by_car",
+            "short_label": "T-1A1a-TE-5 - Increase journey sharing",
+            "description": "Increase journey sharing. Reduce the number of vehicle kilometers from petrol, diesel, lpg and natural gas vehicles to fulfill the need of commuting through more efficient commuting by car. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, battery electric vehicles, hydrogen vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "battery electric vehicles",
+              "hydrogen vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.399
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_petrol_bus",
+            "short_label": "T-1A1a-TE-16 - Shift to travel by petrol bus",
+            "description": "Shift to travel by petrol bus. Shift vehicle kilometer from petrol and diesel vehicles to petrol buses. from: petrol vehicles, diesel vehicles. to: petrol buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "petrol buses"
+            ],
+            "score": 0.3907
+          },
+          {
+            "stable_id": "biofuel_for_gas_buses",
+            "short_label": "T-1A1c-TE-2 - Biofuel for gas buses",
+            "description": "Biofuel for gas buses. Increase the proportion of biogas in gas mix. from: gas buses. Transport > Mobility > Road > Buses",
+            "sector_path": "Transport > Mobility > Road > Buses",
+            "acts_on_labels": [
+              "gas buses"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.3843
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_diesel_bus",
+            "short_label": "T-1A1a-TE-17 - Shift to travel by diesel bus",
+            "description": "Shift to travel by diesel bus. Shift vehicle kilometer from petrol and diesel vehicles to diesel buses. from: petrol vehicles, diesel vehicles. to: diesel buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "diesel buses"
+            ],
+            "score": 0.3833
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_trams_and_light_rail",
+            "short_label": "T-1A1a-TE-18 - Shift to trams, light rail and subway",
+            "description": "Shift to trams, light rail and subway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to tram and light rail. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: tram and light rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "tram and light rail"
+            ],
+            "score": 0.381
+          },
+          {
+            "stable_id": "biofuel_for_diesel_rail_passenger",
+            "short_label": "T-1A2-TE-1 - Biofuel for rail passenger transport",
+            "description": "Biofuel for rail passenger transport. Increase the proportion of HVO biodiesel in diesel. from: diesel passenger rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.3743
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_lpg_bus",
+            "short_label": "T-1A1a-TE-14 - Shift to travel by LPG bus",
+            "description": "Shift to travel by LPG bus. Shift vehicle kilometer from petrol and diesel vehicles to LPG buses. from: petrol vehicles, diesel vehicles. to: lpg buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "lpg buses"
+            ],
+            "score": 0.3732
+          }
+        ]
+      }
+    ],
+    "intervention_who": "none",
+    "intervention_when": "none",
+    "intervention_what": "building infrastructure",
+    "intervention_how": "according to traffic strategy",
+    "intervention_score": 3,
+    "intervention_reasoning": "The measure specifies what (building infrastructure) and how (according to traffic strategy), but lacks a responsible actor and timeline.",
+    "intervention_type": "direct"
+  },
+  {
+    "measure_text": "Fortsätta byta ut kommunkoncernens bensin- och dieselfordon mot fossiloberoende alternativ.",
+    "activity": "road transport",
+    "activity_shift_score": 6,
+    "activity_shifts": [
+      {
+        "activity": "using vehicles",
+        "shift_from": "using petrol and diesel vehicles",
+        "shift_to": "using fossil-independent vehicles",
+        "need": "mobility",
+        "type": "Resource Shift",
+        "type_reasoning": "The measure involves replacing petrol and diesel vehicles with fossil-independent alternatives, which is a change in the resource used.",
+        "score": 6,
+        "reasoning": "The shift from petrol and diesel to fossil-independent vehicles is clearly stated, and the need for mobility is inferable.",
+        "transition_element_matches": [
+          {
+            "stable_id": "shift_to_electric_vehicles",
+            "short_label": "T-1A1a-TE-1 - Shift to electric cars",
+            "description": "Shift to electric cars. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to battery electric vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "battery electric vehicles"
+            ],
+            "score": 0.6569,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "increased_proportion_of_commuting_by_electric_bus",
+            "short_label": "T-1A1a-TE-12 - Shift to travel by electric bus",
+            "description": "Shift to travel by electric bus. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric bus. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric bus. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bus"
+            ],
+            "score": 0.5251,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          }
+        ],
+        "transition_element_suggested_new": {
+          "short_label": "Shift to electric vehicles",
+          "description": "This transition involves replacing petrol and diesel vehicles with battery electric vehicles, contributing to fossil independence."
+        },
+        "transition_element_candidates": [
+          {
+            "stable_id": "shift_to_gas_vehicles",
+            "short_label": "T-1A1a-TE-19 - Shift to gas cars",
+            "description": "Shift to gas cars. Shift vehicle kilometer from petrol and diesel vehicles to gas vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles. to: gas vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas vehicles"
+            ],
+            "score": 0.6635
+          },
+          {
+            "stable_id": "shift_to_hydrogen_vehicles",
+            "short_label": "T-1A1a-TE-2 - Shift to hydrogen cars",
+            "description": "Shift to hydrogen cars. Shift vehicle kilometer from petrol and diesel vehicles to hydrogen vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles. to: hydrogen vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "hydrogen vehicles"
+            ],
+            "score": 0.6577
+          },
+          {
+            "stable_id": "shift_to_electric_vehicles",
+            "short_label": "T-1A1a-TE-1 - Shift to electric cars",
+            "description": "Shift to electric cars. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to battery electric vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "battery electric vehicles"
+            ],
+            "score": 0.6569
+          },
+          {
+            "stable_id": "shift_to_electric_bikes",
+            "short_label": "T-1A1a-TE-11 - Shift to electric bikes",
+            "description": "Shift to electric bikes. Shift vehicle kilometer from petrol,diesel and LPG vehicles to electric bike in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles. to: electric bikes. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bikes"
+            ],
+            "score": 0.6415
+          },
+          {
+            "stable_id": "increased_proportion_of_walking_and_cycling",
+            "short_label": "T-1A1a-TE-10 - Shift to walking and cycling",
+            "description": "Shift to walking and cycling. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to walking cycling. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: walking cycling. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "walking cycling"
+            ],
+            "score": 0.6317
+          },
+          {
+            "stable_id": "transfer_from_car_to_railway",
+            "short_label": "T-1A1a-TE-6 - Shift from car to railway",
+            "description": "Shift from car to railway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric rail in person kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.627
+          },
+          {
+            "stable_id": "transfer_from_car_to_remote_working",
+            "short_label": "T-1A1a-TE-8 - Shift from car to remote working",
+            "description": "Shift from car to remote working. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to remote working. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: remote working. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "remote working"
+            ],
+            "score": 0.623
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_petrol_bus",
+            "short_label": "T-1A1a-TE-16 - Shift to travel by petrol bus",
+            "description": "Shift to travel by petrol bus. Shift vehicle kilometer from petrol and diesel vehicles to petrol buses. from: petrol vehicles, diesel vehicles. to: petrol buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "petrol buses"
+            ],
+            "score": 0.6222
+          },
+          {
+            "stable_id": "shift_to_electric_motorcycles",
+            "short_label": "T-1A1b-TE-2 - Shift to electric motorcycles",
+            "description": "Shift to electric motorcycles. Shift vehicle kilometer from petrol motorcycles to electric motorcycles in vehicle kilometer to fulfill the need of mobility. from: petrol motorcycles. to: electric motorcycles. Transport > Mobility > Road > 2 3 Wheel Vehicles",
+            "sector_path": "Transport > Mobility > Road > 2 3 Wheel Vehicles",
+            "acts_on_labels": [
+              "petrol motorcycles"
+            ],
+            "shifts_to_labels": [
+              "electric motorcycles"
+            ],
+            "score": 0.6194
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_gas_bus",
+            "short_label": "T-1A1a-TE-15 - Shift to travel by gas bus",
+            "description": "Shift to travel by gas bus. Shift vehicle kilometer from petrol and diesel vehicles to gas buses. from: petrol vehicles, diesel vehicles. to: gas buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas buses"
+            ],
+            "score": 0.6074
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_diesel_bus",
+            "short_label": "T-1A1a-TE-17 - Shift to travel by diesel bus",
+            "description": "Shift to travel by diesel bus. Shift vehicle kilometer from petrol and diesel vehicles to diesel buses. from: petrol vehicles, diesel vehicles. to: diesel buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "diesel buses"
+            ],
+            "score": 0.5658
+          },
+          {
+            "stable_id": "improved_urban_planning",
+            "short_label": "T-1A1a-TE-22 - Improved urban planning",
+            "description": "Improved urban planning. Reduce the amount of vehicle kilometer from cars to fulfill the need of mobility through improved urban planning. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, lng vehicles, hydrogen vehicles, battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "lng vehicles",
+              "hydrogen vehicles",
+              "battery electric vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.5483
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_hydrogen_bus",
+            "short_label": "T-1A1a-TE-13 - Shift to travel by hydrogen bus",
+            "description": "Shift to travel by hydrogen bus. Shift vehicle kilometer from petrol and diesel vehicles to hydrogen buses. from: petrol vehicles, diesel vehicles. to: hydrogen buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "hydrogen buses"
+            ],
+            "score": 0.5477
+          },
+          {
+            "stable_id": "more_efficient_commuting_by_car",
+            "short_label": "T-1A1a-TE-5 - Increase journey sharing",
+            "description": "Increase journey sharing. Reduce the number of vehicle kilometers from petrol, diesel, lpg and natural gas vehicles to fulfill the need of commuting through more efficient commuting by car. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, battery electric vehicles, hydrogen vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "battery electric vehicles",
+              "hydrogen vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.5442
+          },
+          {
+            "stable_id": "biofuel_for_diesel_rail_passenger",
+            "short_label": "T-1A2-TE-1 - Biofuel for rail passenger transport",
+            "description": "Biofuel for rail passenger transport. Increase the proportion of HVO biodiesel in diesel. from: diesel passenger rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.5345
+          },
+          {
+            "stable_id": "increase_renewable_proportion_in_diesel",
+            "short_label": "T-1A1a-TE-21 - Biofuel for diesel cars",
+            "description": "Biofuel for diesel cars. Increase the proportion of HVO biodiesel in diesel. from: diesel vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.5303
+          },
+          {
+            "stable_id": "increased_proportion_of_commuting_by_electric_bus",
+            "short_label": "T-1A1a-TE-12 - Shift to travel by electric bus",
+            "description": "Shift to travel by electric bus. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric bus. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric bus. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bus"
+            ],
+            "score": 0.5251
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_lpg_bus",
+            "short_label": "T-1A1a-TE-14 - Shift to travel by LPG bus",
+            "description": "Shift to travel by LPG bus. Shift vehicle kilometer from petrol and diesel vehicles to LPG buses. from: petrol vehicles, diesel vehicles. to: lpg buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "lpg buses"
+            ],
+            "score": 0.5234
+          }
+        ]
+      }
+    ],
+    "intervention_who": "municipal corporation",
+    "intervention_when": "none",
+    "intervention_what": "replacing vehicles",
+    "intervention_how": "none",
+    "intervention_score": 3,
+    "intervention_reasoning": "The measure specifies who (municipal corporation) and what (replacing vehicles), but lacks a timeline and mechanism.",
+    "intervention_type": "direct"
+  },
+  {
+    "measure_text": "Utbilda kommunkoncernens chefer och medarbetare för att kunna göra medvetna val som minskar klimatpåverkan.",
+    "activity": "none",
+    "activity_shift_score": 1,
+    "activity_shifts": [],
+    "intervention_who": "municipal corporation",
+    "intervention_when": "none",
+    "intervention_what": "educating managers and employees",
+    "intervention_how": "none",
+    "intervention_score": 3,
+    "intervention_reasoning": "The measure specifies who (municipal corporation) and what (educating managers and employees), but lacks a timeline and mechanism.",
+    "intervention_type": "indirect"
+  },
+  {
+    "measure_text": "Minska matsvinnet i alla led i enlighet med måltidspolicyn.",
+    "activity": "food consumption",
+    "activity_shift_score": 4,
+    "activity_shifts": [
+      {
+        "activity": "handling food",
+        "shift_from": "wasting food",
+        "shift_to": "reducing food waste",
+        "need": "food provision",
+        "type": "Resource Efficiency Shift",
+        "type_reasoning": "The measure involves reducing food waste, which is a more efficient use of resources.",
+        "score": 4,
+        "reasoning": "The shift to reducing food waste is implied, but the current state of wasting food is not explicitly stated. The need for food provision is clear.",
+        "transition_element_matches": [],
+        "transition_element_suggested_new": {
+          "short_label": "Reduce Food Waste",
+          "description": "Implement measures to minimize food waste across all stages of food handling and provision."
+        },
+        "transition_element_candidates": [
+          {
+            "stable_id": "shift_to_composting_of_organic_waste",
+            "short_label": "T-6A1-TE-2 - Shift to composting of organic waste",
+            "description": "Shift to composting of organic waste. Shift tonne from solid waste disposal in landfills to composting of organic waste in tonne to fulfill the need of waste handling. from: solid waste disposal in landfills and open dumps etc, incineration and open burning of waste, open burning of waste, solid waste disposal landfill with gas recovery. to: composting of organic waste. Waste > Solids > Solid Waste Disposal",
+            "sector_path": "Waste > Solids > Solid Waste Disposal",
+            "acts_on_labels": [
+              "solid waste disposal in landfills and open dumps etc",
+              "incineration and open burning of waste",
+              "open burning of waste",
+              "solid waste disposal landfill with gas recovery"
+            ],
+            "shifts_to_labels": [
+              "composting of organic waste"
+            ],
+            "score": 0.4876
+          },
+          {
+            "stable_id": "increased_recycling",
+            "short_label": "T-6A1-TE-1 - Shift to recycling of solid waste",
+            "description": "Shift to recycling of solid waste. Shift tonne from solid waste disposal in landfills and open dumps, incineration and open burning of waste to recycling of solid waste in tonne to fulfill the need of waste handling. from: solid waste disposal in landfills and open dumps etc, incineration and open burning of waste, open burning of waste, solid waste disposal landfill with gas recovery. to: recycling of solid waste. Waste > Solids > Solid Waste Disposal",
+            "sector_path": "Waste > Solids > Solid Waste Disposal",
+            "acts_on_labels": [
+              "solid waste disposal in landfills and open dumps etc",
+              "incineration and open burning of waste",
+              "open burning of waste",
+              "solid waste disposal landfill with gas recovery"
+            ],
+            "shifts_to_labels": [
+              "recycling of solid waste"
+            ],
+            "score": 0.4859
+          },
+          {
+            "stable_id": "shift_to_sustainable_healthy_diet",
+            "short_label": "T-3A1-TE-1 - Shift to Sustainable Healthy Diets",
+            "description": "Shift to Sustainable Healthy Diets. This Transition Element is the shift from animal based diets to plant based diets.. from: enteric fermentation cattle, enteric fermentation sheep, enteric fermentation swine, enteric fermentation other livestock. Afolu > Livestock > Enteric Fermentation",
+            "sector_path": "Afolu > Livestock > Enteric Fermentation",
+            "acts_on_labels": [
+              "enteric fermentation cattle",
+              "enteric fermentation sheep",
+              "enteric fermentation swine",
+              "enteric fermentation other livestock"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4811
+          },
+          {
+            "stable_id": "shift_to_landfill_gas_recovery",
+            "short_label": "T-6A1-TE-4 - Shift to landfill gas recovery",
+            "description": "Shift to landfill gas recovery. Shift tonne from solid waste disposal in landfills without gas recovery to solid waste disposal in landfills with landfill gas recovery in tonne to fulfill the need of waste handling. from: solid waste disposal in landfills and open dumps etc. to: solid waste disposal landfill with gas recovery. Waste > Solids > Solid Waste Disposal",
+            "sector_path": "Waste > Solids > Solid Waste Disposal",
+            "acts_on_labels": [
+              "solid waste disposal in landfills and open dumps etc"
+            ],
+            "shifts_to_labels": [
+              "solid waste disposal landfill with gas recovery"
+            ],
+            "score": 0.4493
+          },
+          {
+            "stable_id": "shift_to_exported_composting_of_organic_waste",
+            "short_label": "T-6A1-TE-3 - Shift to exported composting of organic waste",
+            "description": "Shift to exported composting of organic waste. Shift tonne from solid waste disposal in landfills to exported composting of organic waste in tonne to fulfill the need of waste handling. from: solid waste disposal in landfills and open dumps etc, incineration and open burning of waste, open burning of waste, solid waste disposal landfill with gas recovery. to: waste exported for composting. Waste > Solids > Solid Waste Disposal",
+            "sector_path": "Waste > Solids > Solid Waste Disposal",
+            "acts_on_labels": [
+              "solid waste disposal in landfills and open dumps etc",
+              "incineration and open burning of waste",
+              "open burning of waste",
+              "solid waste disposal landfill with gas recovery"
+            ],
+            "shifts_to_labels": [
+              "waste exported for composting"
+            ],
+            "score": 0.4486
+          },
+          {
+            "stable_id": "increased_energy_recovery_from_waste",
+            "short_label": "T-5A3-TE-6 - Increased energy recovery from waste",
+            "description": "Increased energy recovery from waste. Shift tonne from solid waste disposal in landfills and open dumps, incineration and open burning of waste to CHP waste incineration in tonne to fulfill the need of warm premisses. from: incineration and open burning of waste. to: chp waste incineration. Energy > Energy Supply > Combined Heat Power",
+            "sector_path": "Energy > Energy Supply > Combined Heat Power",
+            "acts_on_labels": [
+              "incineration and open burning of waste"
+            ],
+            "shifts_to_labels": [
+              "chp waste incineration"
+            ],
+            "score": 0.4317
+          },
+          {
+            "stable_id": "shift_to_biogas_energy_in_hydrogen_refinement",
+            "short_label": "T-5B4-TE-3 - Shift to biogas energy in hydrogen refinement",
+            "description": "Shift to biogas energy in hydrogen refinement. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: natural gas usage within hydrogen refinement. to: biogas usage within hydrogen refinement. Energy > Energy Transformation > Hydrogen Refinement",
+            "sector_path": "Energy > Energy Transformation > Hydrogen Refinement",
+            "acts_on_labels": [
+              "natural gas usage within hydrogen refinement"
+            ],
+            "shifts_to_labels": [
+              "biogas usage within hydrogen refinement"
+            ],
+            "score": 0.3964
+          },
+          {
+            "stable_id": "shift_to_biomass_energy_in_hydrogen_refinement",
+            "short_label": "T-5B4-TE-4 - Shift to biomass energy in hydrogen refinement",
+            "description": "Shift to biomass energy in hydrogen refinement. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: coal usage within hydrogen refinement. to: biomass usage within hydrogen refinement. Energy > Energy Transformation > Hydrogen Refinement",
+            "sector_path": "Energy > Energy Transformation > Hydrogen Refinement",
+            "acts_on_labels": [
+              "coal usage within hydrogen refinement"
+            ],
+            "shifts_to_labels": [
+              "biomass usage within hydrogen refinement"
+            ],
+            "score": 0.3897
+          },
+          {
+            "stable_id": "shift_to_biogas_energy_in_other_industries",
+            "short_label": "T-2D5-TE-2 - Shift to biogas energy in other industries",
+            "description": "Shift to biogas energy in other industries. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: industrial unregulated gas use. to: industrial unregulated biogas use. Industry > Other > Other",
+            "sector_path": "Industry > Other > Other",
+            "acts_on_labels": [
+              "industrial unregulated gas use"
+            ],
+            "shifts_to_labels": [
+              "industrial unregulated biogas use"
+            ],
+            "score": 0.3783
+          },
+          {
+            "stable_id": "shift_to_residential_electric_cooking_stoves",
+            "short_label": "T-4A2d-TE-2 - Shift to residential electric cooking stoves",
+            "description": "Shift to residential electric cooking stoves. Shift kWh from residential cooking gas stoves to residential electric cooking stoves in kWh to fullfill the need for cooking. from: residential gas cooking stoves. to: residential electric cooking stoves. Buildings > Residential > Other Energy Usage > Unregulated",
+            "sector_path": "Buildings > Residential > Other Energy Usage > Unregulated",
+            "acts_on_labels": [
+              "residential gas cooking stoves"
+            ],
+            "shifts_to_labels": [
+              "residential electric cooking stoves"
+            ],
+            "score": 0.3774
+          },
+          {
+            "stable_id": "chp_waste_incineration",
+            "short_label": "T-5A3-TE-4 - CHP from waste incineration",
+            "description": "CHP from waste incineration. Alter the amount of district heat and electricity produced by CHP waste incineration. from: chp waste incineration. Energy > Energy Supply > Combined Heat Power",
+            "sector_path": "Energy > Energy Supply > Combined Heat Power",
+            "acts_on_labels": [
+              "chp waste incineration"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2874
+          },
+          {
+            "stable_id": "biofuel_for_diesel_rail_passenger",
+            "short_label": "T-1A2-TE-1 - Biofuel for rail passenger transport",
+            "description": "Biofuel for rail passenger transport. Increase the proportion of HVO biodiesel in diesel. from: diesel passenger rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2706
+          },
+          {
+            "stable_id": "biofuel_for_gas_buses",
+            "short_label": "T-1A1c-TE-2 - Biofuel for gas buses",
+            "description": "Biofuel for gas buses. Increase the proportion of biogas in gas mix. from: gas buses. Transport > Mobility > Road > Buses",
+            "sector_path": "Transport > Mobility > Road > Buses",
+            "acts_on_labels": [
+              "gas buses"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2653
+          },
+          {
+            "stable_id": "shift_to_biofuel_in_district_heating",
+            "short_label": "T-5A3-TE-7 - Shift to biofuel in district heating",
+            "description": "Shift to biofuel in district heating. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: chp coal, chp natural gas, chp oil. to: chp biofuels. Energy > Energy Supply > Combined Heat Power",
+            "sector_path": "Energy > Energy Supply > Combined Heat Power",
+            "acts_on_labels": [
+              "chp coal",
+              "chp natural gas",
+              "chp oil"
+            ],
+            "shifts_to_labels": [
+              "chp biofuels"
+            ],
+            "score": 0.2614
+          },
+          {
+            "stable_id": "energy_efficient_other_institutional_electric_appliances",
+            "short_label": "T-4B2c-TE-3 - Energy efficient public electrical appliances",
+            "description": "Energy efficient public electrical appliances. Reduce the amount of energy required to operate institutional electrical appliances. from: institutional unregulated electricity use. Buildings > Non Residential > Other Energy Usage > Other",
+            "sector_path": "Buildings > Non Residential > Other Energy Usage > Other",
+            "acts_on_labels": [
+              "institutional unregulated electricity use"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2575
+          },
+          {
+            "stable_id": "shift_to_biogas_energy_in_glass_industries",
+            "short_label": "T-2A3-TE-1 - Shift to biogas energy in glass industries",
+            "description": "Shift to biogas energy in glass industries. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: natural gas usage within glass industries. to: biogas usage within glass industries. Industry > Minerals > Glass Production",
+            "sector_path": "Industry > Minerals > Glass Production",
+            "acts_on_labels": [
+              "natural gas usage within glass industries"
+            ],
+            "shifts_to_labels": [
+              "biogas usage within glass industries"
+            ],
+            "score": 0.2472
+          },
+          {
+            "stable_id": "shift_to_biogas_energy_in_pulp_paper_and_print_industries",
+            "short_label": "T-2D1b-TE-1 - Shift to biogas energy in pulp, paper and print industries",
+            "description": "Shift to biogas energy in pulp, paper and print industries. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: natural gas usage within pulp paper and print industries. to: biogas usage within pulp paper and print industries. Industry > Other > Manufacturing > Pulp Paper Print",
+            "sector_path": "Industry > Other > Manufacturing > Pulp Paper Print",
+            "acts_on_labels": [
+              "natural gas usage within pulp paper and print industries"
+            ],
+            "shifts_to_labels": [
+              "biogas usage within pulp paper and print industries"
+            ],
+            "score": 0.2465
+          },
+          {
+            "stable_id": "energy_efficient_other_agriculture_forestry_fishing_electric_appliances",
+            "short_label": "T-3C6-TE-1 - Energy efficient agriculture, forestry and fishing electrical appliances",
+            "description": "Energy efficient agriculture, forestry and fishing electrical appliances. Reduce the amount of energy required to operate agriculture, forestry and fishing electrical appliances. from: agriculture forestry fishing unregulated electricity use. Afolu > Aggregate Sources Other > Other",
+            "sector_path": "Afolu > Aggregate Sources Other > Other",
+            "acts_on_labels": [
+              "agriculture forestry fishing unregulated electricity use"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2433
+          },
+          {
+            "stable_id": "biofuel_for_heavy_trucks",
+            "short_label": "T-1B1b-TE-2 - Biofuel for diesel heavy trucks",
+            "description": "Biofuel for diesel heavy trucks. Increase the proportion of HVO biodiesel in diesel. from: diesel heavy trucks. Transport > Freight > Road > Heavy Duty Trucks",
+            "sector_path": "Transport > Freight > Road > Heavy Duty Trucks",
+            "acts_on_labels": [
+              "diesel heavy trucks"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2428
+          }
+        ]
+      }
+    ],
+    "intervention_who": "none",
+    "intervention_when": "none",
+    "intervention_what": "reducing food waste",
+    "intervention_how": "according to meal policy",
+    "intervention_score": 3,
+    "intervention_reasoning": "The measure specifies what (reducing food waste) and how (according to meal policy), but lacks a responsible actor and timeline.",
+    "intervention_type": "direct"
+  },
+  {
+    "measure_text": "Förenkla återanvändningen av varor.",
+    "activity": "none",
+    "activity_shift_score": 2,
+    "activity_shifts": [
+      {
+        "activity": "using goods",
+        "shift_from": "disposing of goods",
+        "shift_to": "reusing goods",
+        "need": "consumption",
+        "type": "Utilisation Shift",
+        "type_reasoning": "The measure suggests a shift towards reusing goods, which is a change in utilisation pattern.",
+        "score": 2,
+        "reasoning": "The shift to reusing goods is faintly implied, but neither the current state nor the need is clearly identifiable.",
+        "transition_element_matches": [],
+        "transition_element_suggested_new": {
+          "short_label": "Simplify Reuse of Goods",
+          "description": "Encourage the reuse of items instead of disposal to promote sustainability."
+        },
+        "transition_element_candidates": [
+          {
+            "stable_id": "increased_recycling",
+            "short_label": "T-6A1-TE-1 - Shift to recycling of solid waste",
+            "description": "Shift to recycling of solid waste. Shift tonne from solid waste disposal in landfills and open dumps, incineration and open burning of waste to recycling of solid waste in tonne to fulfill the need of waste handling. from: solid waste disposal in landfills and open dumps etc, incineration and open burning of waste, open burning of waste, solid waste disposal landfill with gas recovery. to: recycling of solid waste. Waste > Solids > Solid Waste Disposal",
+            "sector_path": "Waste > Solids > Solid Waste Disposal",
+            "acts_on_labels": [
+              "solid waste disposal in landfills and open dumps etc",
+              "incineration and open burning of waste",
+              "open burning of waste",
+              "solid waste disposal landfill with gas recovery"
+            ],
+            "shifts_to_labels": [
+              "recycling of solid waste"
+            ],
+            "score": 0.4571
+          },
+          {
+            "stable_id": "shift_to_landfill_gas_recovery",
+            "short_label": "T-6A1-TE-4 - Shift to landfill gas recovery",
+            "description": "Shift to landfill gas recovery. Shift tonne from solid waste disposal in landfills without gas recovery to solid waste disposal in landfills with landfill gas recovery in tonne to fulfill the need of waste handling. from: solid waste disposal in landfills and open dumps etc. to: solid waste disposal landfill with gas recovery. Waste > Solids > Solid Waste Disposal",
+            "sector_path": "Waste > Solids > Solid Waste Disposal",
+            "acts_on_labels": [
+              "solid waste disposal in landfills and open dumps etc"
+            ],
+            "shifts_to_labels": [
+              "solid waste disposal landfill with gas recovery"
+            ],
+            "score": 0.3984
+          },
+          {
+            "stable_id": "shift_to_composting_of_organic_waste",
+            "short_label": "T-6A1-TE-2 - Shift to composting of organic waste",
+            "description": "Shift to composting of organic waste. Shift tonne from solid waste disposal in landfills to composting of organic waste in tonne to fulfill the need of waste handling. from: solid waste disposal in landfills and open dumps etc, incineration and open burning of waste, open burning of waste, solid waste disposal landfill with gas recovery. to: composting of organic waste. Waste > Solids > Solid Waste Disposal",
+            "sector_path": "Waste > Solids > Solid Waste Disposal",
+            "acts_on_labels": [
+              "solid waste disposal in landfills and open dumps etc",
+              "incineration and open burning of waste",
+              "open burning of waste",
+              "solid waste disposal landfill with gas recovery"
+            ],
+            "shifts_to_labels": [
+              "composting of organic waste"
+            ],
+            "score": 0.3944
+          },
+          {
+            "stable_id": "shift_to_electric_cargo_bikes",
+            "short_label": "T-1B1a-TE-10 - Shift to electric cargo bikes",
+            "description": "Shift to electric cargo bikes. Shift vehicle kilometer from diesel and petrol light truck to electric carg bikes in vehicle kilometer to fulfill the need of logistics. from: diesel light trucks, petrol light trucks. to: electric cargo bikes. Transport > Freight > Road > Light Duty Trucks",
+            "sector_path": "Transport > Freight > Road > Light Duty Trucks",
+            "acts_on_labels": [
+              "diesel light trucks",
+              "petrol light trucks"
+            ],
+            "shifts_to_labels": [
+              "electric cargo bikes"
+            ],
+            "score": 0.3886
+          },
+          {
+            "stable_id": "shift_to_electric_bikes",
+            "short_label": "T-1A1a-TE-11 - Shift to electric bikes",
+            "description": "Shift to electric bikes. Shift vehicle kilometer from petrol,diesel and LPG vehicles to electric bike in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles. to: electric bikes. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bikes"
+            ],
+            "score": 0.3879
+          },
+          {
+            "stable_id": "increased_proportion_of_non_travel_meetings_and_services",
+            "short_label": "T-1A1a-TE-7 - Shift to online meetings and services",
+            "description": "Shift to online meetings and services. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to e-meetings in hours to fulfill the need of business trips. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: e meetings. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "e meetings"
+            ],
+            "score": 0.3787
+          },
+          {
+            "stable_id": "shift_to_sustainable_healthy_diet",
+            "short_label": "T-3A1-TE-1 - Shift to Sustainable Healthy Diets",
+            "description": "Shift to Sustainable Healthy Diets. This Transition Element is the shift from animal based diets to plant based diets.. from: enteric fermentation cattle, enteric fermentation sheep, enteric fermentation swine, enteric fermentation other livestock. Afolu > Livestock > Enteric Fermentation",
+            "sector_path": "Afolu > Livestock > Enteric Fermentation",
+            "acts_on_labels": [
+              "enteric fermentation cattle",
+              "enteric fermentation sheep",
+              "enteric fermentation swine",
+              "enteric fermentation other livestock"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.3771
+          },
+          {
+            "stable_id": "increased_proportion_of_walking_and_cycling",
+            "short_label": "T-1A1a-TE-10 - Shift to walking and cycling",
+            "description": "Shift to walking and cycling. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to walking cycling. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: walking cycling. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "walking cycling"
+            ],
+            "score": 0.3764
+          },
+          {
+            "stable_id": "shift_to_gas_vehicles",
+            "short_label": "T-1A1a-TE-19 - Shift to gas cars",
+            "description": "Shift to gas cars. Shift vehicle kilometer from petrol and diesel vehicles to gas vehicles in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles. to: gas vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas vehicles"
+            ],
+            "score": 0.3764
+          },
+          {
+            "stable_id": "shift_to_electric_motorcycles",
+            "short_label": "T-1A1b-TE-2 - Shift to electric motorcycles",
+            "description": "Shift to electric motorcycles. Shift vehicle kilometer from petrol motorcycles to electric motorcycles in vehicle kilometer to fulfill the need of mobility. from: petrol motorcycles. to: electric motorcycles. Transport > Mobility > Road > 2 3 Wheel Vehicles",
+            "sector_path": "Transport > Mobility > Road > 2 3 Wheel Vehicles",
+            "acts_on_labels": [
+              "petrol motorcycles"
+            ],
+            "shifts_to_labels": [
+              "electric motorcycles"
+            ],
+            "score": 0.3744
+          },
+          {
+            "stable_id": "increased_energy_recovery_from_waste",
+            "short_label": "T-5A3-TE-6 - Increased energy recovery from waste",
+            "description": "Increased energy recovery from waste. Shift tonne from solid waste disposal in landfills and open dumps, incineration and open burning of waste to CHP waste incineration in tonne to fulfill the need of warm premisses. from: incineration and open burning of waste. to: chp waste incineration. Energy > Energy Supply > Combined Heat Power",
+            "sector_path": "Energy > Energy Supply > Combined Heat Power",
+            "acts_on_labels": [
+              "incineration and open burning of waste"
+            ],
+            "shifts_to_labels": [
+              "chp waste incineration"
+            ],
+            "score": 0.3509
+          },
+          {
+            "stable_id": "shift_to_exported_composting_of_organic_waste",
+            "short_label": "T-6A1-TE-3 - Shift to exported composting of organic waste",
+            "description": "Shift to exported composting of organic waste. Shift tonne from solid waste disposal in landfills to exported composting of organic waste in tonne to fulfill the need of waste handling. from: solid waste disposal in landfills and open dumps etc, incineration and open burning of waste, open burning of waste, solid waste disposal landfill with gas recovery. to: waste exported for composting. Waste > Solids > Solid Waste Disposal",
+            "sector_path": "Waste > Solids > Solid Waste Disposal",
+            "acts_on_labels": [
+              "solid waste disposal in landfills and open dumps etc",
+              "incineration and open burning of waste",
+              "open burning of waste",
+              "solid waste disposal landfill with gas recovery"
+            ],
+            "shifts_to_labels": [
+              "waste exported for composting"
+            ],
+            "score": 0.3165
+          },
+          {
+            "stable_id": "district_heating_residual_heat",
+            "short_label": "T-5A2-TE-3 - District heating by residual heat",
+            "description": "District heating by residual heat. Alter the amount of district heat produced by residual heat. from: district heating residual heat. Energy > Energy Supply > Heat",
+            "sector_path": "Energy > Energy Supply > Heat",
+            "acts_on_labels": [
+              "district heating residual heat"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2793
+          },
+          {
+            "stable_id": "biofuels_for_sea_freight_transport",
+            "short_label": "T-1B4b-TE-4 - Biofuel for marine freight transport",
+            "description": "Biofuel for marine freight transport. Increase the proportion of marine biodiesel in marine diesel. from: ship freight. Transport > Freight > Shipping > Navigation",
+            "sector_path": "Transport > Freight > Shipping > Navigation",
+            "acts_on_labels": [
+              "ship freight"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2651
+          },
+          {
+            "stable_id": "chp_waste_incineration",
+            "short_label": "T-5A3-TE-4 - CHP from waste incineration",
+            "description": "CHP from waste incineration. Alter the amount of district heat and electricity produced by CHP waste incineration. from: chp waste incineration. Energy > Energy Supply > Combined Heat Power",
+            "sector_path": "Energy > Energy Supply > Combined Heat Power",
+            "acts_on_labels": [
+              "chp waste incineration"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2643
+          },
+          {
+            "stable_id": "biofuel_for_diesel_rail_freight",
+            "short_label": "T-1B2-TE-1 - Biofuel for rail freight transport",
+            "description": "Biofuel for rail freight transport. Increase the proportion of HVO biodiesel in diesel. from: diesel rail freight. Transport > Freight > Rail",
+            "sector_path": "Transport > Freight > Rail",
+            "acts_on_labels": [
+              "diesel rail freight"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2642
+          },
+          {
+            "stable_id": "biofuel_for_heavy_trucks",
+            "short_label": "T-1B1b-TE-2 - Biofuel for diesel heavy trucks",
+            "description": "Biofuel for diesel heavy trucks. Increase the proportion of HVO biodiesel in diesel. from: diesel heavy trucks. Transport > Freight > Road > Heavy Duty Trucks",
+            "sector_path": "Transport > Freight > Road > Heavy Duty Trucks",
+            "acts_on_labels": [
+              "diesel heavy trucks"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.263
+          },
+          {
+            "stable_id": "more_efficient_freight_airplanes",
+            "short_label": "T-1B3-TE-3 - More efficient air freight transport",
+            "description": "More efficient air freight transport. Reduce the amount of energy required to operate freight transportation by air through more efficient freight airplanes. from: freight transportation by air. Transport > Freight > Aviation",
+            "sector_path": "Transport > Freight > Aviation",
+            "acts_on_labels": [
+              "freight transportation by air"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2629
+          },
+          {
+            "stable_id": "biofuel_for_diesel_rail_passenger",
+            "short_label": "T-1A2-TE-1 - Biofuel for rail passenger transport",
+            "description": "Biofuel for rail passenger transport. Increase the proportion of HVO biodiesel in diesel. from: diesel passenger rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2622
+          },
+          {
+            "stable_id": "biofuel_for_gas_buses",
+            "short_label": "T-1A1c-TE-2 - Biofuel for gas buses",
+            "description": "Biofuel for gas buses. Increase the proportion of biogas in gas mix. from: gas buses. Transport > Mobility > Road > Buses",
+            "sector_path": "Transport > Mobility > Road > Buses",
+            "acts_on_labels": [
+              "gas buses"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2615
+          },
+          {
+            "stable_id": "energy_efficient_other_industrial_electric_appliances",
+            "short_label": "T-4B2c-TE-2 - Energy efficient industrial electrical appliances",
+            "description": "Energy efficient industrial electrical appliances. Reduce the amount of energy required to operate industrial electrical appliances. from: industrial unregulated electricity use. Buildings > Non Residential > Other Energy Usage > Other",
+            "sector_path": "Buildings > Non Residential > Other Energy Usage > Other",
+            "acts_on_labels": [
+              "industrial unregulated electricity use"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2609
+          },
+          {
+            "stable_id": "biofuel_for_gas_vehicles",
+            "short_label": "T-1A1a-TE-20 - Biofuel for gas cars",
+            "description": "Biofuel for gas cars. Increase the proportion of biogas in gas mix. from: gas vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.2602
+          }
+        ]
+      }
+    ],
+    "intervention_who": "none",
+    "intervention_when": "none",
+    "intervention_what": "simplifying reuse",
+    "intervention_how": "none",
+    "intervention_score": 2,
+    "intervention_reasoning": "The measure weakly presents what (simplifying reuse) but lacks a responsible actor, timeline, and mechanism.",
+    "intervention_type": "indirect"
+  },
+  {
+    "measure_text": "NAV ska arbeta för ökat utnyttjande av spillvärme och restvärme i fjärrvärmenätet.",
+    "activity": "district heating",
+    "activity_shift_score": 4,
+    "activity_shifts": [
+      {
+        "activity": "providing district heating",
+        "shift_from": "using primary energy sources",
+        "shift_to": "using waste heat",
+        "need": "space heating",
+        "type": "Resource Shift",
+        "type_reasoning": "The measure involves using waste heat instead of primary energy sources, which is a change in the resource used.",
+        "score": 4,
+        "reasoning": "The shift to using waste heat is implied, but the current state is not explicitly stated. The need for space heating is clear.",
+        "transition_element_matches": [
+          {
+            "stable_id": "shift_to_residual_heat_in_district_heating",
+            "short_label": "T-5A2-TE-6 - Shift to Residual Heat in district heating",
+            "description": "Shift to Residual Heat in district heating. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: chp coal, chp natural gas, chp oil. to: district heating residual heat. Energy > Energy Supply > Heat",
+            "sector_path": "Energy > Energy Supply > Heat",
+            "acts_on_labels": [
+              "chp coal",
+              "chp natural gas",
+              "chp oil"
+            ],
+            "shifts_to_labels": [
+              "district heating residual heat"
+            ],
+            "score": 0.6065,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "shift_to_heat_pumps_in_district_heating",
+            "short_label": "T-5A2-TE-5 - Shift to heat pumps in district heating",
+            "description": "Shift to heat pumps in district heating. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: chp coal, chp natural gas, chp oil. to: district heating heat pumps. Energy > Energy Supply > Heat",
+            "sector_path": "Energy > Energy Supply > Heat",
+            "acts_on_labels": [
+              "chp coal",
+              "chp natural gas",
+              "chp oil"
+            ],
+            "shifts_to_labels": [
+              "district heating heat pumps"
+            ],
+            "score": 0.6033,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "shift_to_district_heating_in_public_buildings",
+            "short_label": "T-4B1b-TE-1 - Shift to district heating in public buildings",
+            "description": "Shift to district heating in public buildings. Shift square meter from public building heated with oil, gas, direct. from: public building heating with oil, public building heating with gas, public building heating with propane, public building heating with direct electric heaters, public building heating with coal, public building heating with lpg, public building heating with gas oil. to: public building heating with district heating. Buildings > Non Residential > Hvac > Institutional Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Institutional Hvac",
+            "acts_on_labels": [
+              "public building heating with oil",
+              "public building heating with gas",
+              "public building heating with propane",
+              "public building heating with direct electric heaters",
+              "public building heating with coal",
+              "public building heating with lpg",
+              "public building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "public building heating with district heating"
+            ],
+            "score": 0.5946,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "shift_to_district_heating_in_industrial_buildings",
+            "short_label": "T-4B1c-TE-1 - Shift to district heating in industrial buildings",
+            "description": "Shift to district heating in industrial buildings. Shift square meter from industrial building heated with gas, oil and. from: industrial building heating with gas, industrial building heating with oil, industrial building heating with direct electric heaters, industrial building heating with lpg, industrial building heating with coal, industrial building heating with gas oil. to: industrial building heating with district heating. Buildings > Non Residential > Hvac > Other Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Other Hvac",
+            "acts_on_labels": [
+              "industrial building heating with gas",
+              "industrial building heating with oil",
+              "industrial building heating with direct electric heaters",
+              "industrial building heating with lpg",
+              "industrial building heating with coal",
+              "industrial building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "industrial building heating with district heating"
+            ],
+            "score": 0.5914,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "heat_pumps_in_non_residential_public_buildings",
+            "short_label": "T-4B1b-TE-3 - Shift to heat pumps in public buildings",
+            "description": "Shift to heat pumps in public buildings. Shift square meter from public buildings heated with oil, gas, direct. from: public building heating with oil, public building heating with gas, public building heating with propane, public building heating with direct electric heaters, public building heating with coal, public building heating with lpg, public building heating with gas oil. to: public building heating with heatpump. Buildings > Non Residential > Hvac > Institutional Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Institutional Hvac",
+            "acts_on_labels": [
+              "public building heating with oil",
+              "public building heating with gas",
+              "public building heating with propane",
+              "public building heating with direct electric heaters",
+              "public building heating with coal",
+              "public building heating with lpg",
+              "public building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "public building heating with heatpump"
+            ],
+            "score": 0.5893,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "shift_to_solar_thermal_in_industrial_buildings",
+            "short_label": "T-4B1c-TE-5 - Shift to solar thermal in industrial buildings",
+            "description": "Shift to solar thermal in industrial buildings. Shift square meter from industrial building heated with gas, oil, direct. from: industrial building heating with gas, industrial building heating with oil, industrial building heating with direct electric heaters, industrial building heating with lpg, industrial building heating with coal, industrial building heating with gas oil. to: industrial building heating with solar thermal. Buildings > Non Residential > Hvac > Other Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Other Hvac",
+            "acts_on_labels": [
+              "industrial building heating with gas",
+              "industrial building heating with oil",
+              "industrial building heating with direct electric heaters",
+              "industrial building heating with lpg",
+              "industrial building heating with coal",
+              "industrial building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "industrial building heating with solar thermal"
+            ],
+            "score": 0.5891,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "shift_to_district_heating_in_commercial_buildings",
+            "short_label": "T-4B1a-TE-1 - Shift to district heating in commercial buildings",
+            "description": "Shift to district heating in commercial buildings. Shift square meter from commercial building heated with gas, oil, direct. from: commercial building heating with gas, commercial building heating with propane, commercial building heating with oil, commercial building heating with direct electric heaters, commercial building heating with coal, commercial building heating with lpg, commercial building heating with gas oil. to: commercial building heating with district heating. Buildings > Non Residential > Hvac > Commercial Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Commercial Hvac",
+            "acts_on_labels": [
+              "commercial building heating with gas",
+              "commercial building heating with propane",
+              "commercial building heating with oil",
+              "commercial building heating with direct electric heaters",
+              "commercial building heating with coal",
+              "commercial building heating with lpg",
+              "commercial building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "commercial building heating with district heating"
+            ],
+            "score": 0.5872,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "shift_to_solar_thermal_in_public_buildings",
+            "short_label": "T-4B1b-TE-5 - Shift to solar thermal in public buildings",
+            "description": "Shift to solar thermal in public buildings. Shift square meter from public building heated with oil, gas, direct. from: public building heating with oil, public building heating with gas, public building heating with propane, public building heating with direct electric heaters, public building heating with coal, public building heating with lpg, public building heating with gas oil. to: public building heating with solar thermal. Buildings > Non Residential > Hvac > Institutional Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Institutional Hvac",
+            "acts_on_labels": [
+              "public building heating with oil",
+              "public building heating with gas",
+              "public building heating with propane",
+              "public building heating with direct electric heaters",
+              "public building heating with coal",
+              "public building heating with lpg",
+              "public building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "public building heating with solar thermal"
+            ],
+            "score": 0.5768,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "heat_pumps_in_non_residential_commercial_buildings",
+            "short_label": "T-4B1a-TE-3 - Shift to heat pumps in commerical buildings",
+            "description": "Shift to heat pumps in commerical buildings. Shift square meter from commercial buildings heated with gas, oil, direct. from: commercial building heating with gas, commercial building heating with propane, commercial building heating with oil, commercial building heating with direct electric heaters, commercial building heating with coal, commercial building heating with lpg, commercial building heating with gas oil. to: commercial building heating with heatpump. Buildings > Non Residential > Hvac > Commercial Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Commercial Hvac",
+            "acts_on_labels": [
+              "commercial building heating with gas",
+              "commercial building heating with propane",
+              "commercial building heating with oil",
+              "commercial building heating with direct electric heaters",
+              "commercial building heating with coal",
+              "commercial building heating with lpg",
+              "commercial building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "commercial building heating with heatpump"
+            ],
+            "score": 0.5735,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "shift_to_solar_thermal_in_commercial_buildings",
+            "short_label": "T-4B1a-TE-5 - Shift to solar thermal in commercial buildings",
+            "description": "Shift to solar thermal in commercial buildings. Shift square meter from commercial building heated with gas, oil, direct. from: commercial building heating with gas, commercial building heating with propane, commercial building heating with oil, commercial building heating with direct electric heaters, commercial building heating with coal, commercial building heating with lpg, commercial building heating with gas oil. to: commercial building heating with solar thermal. Buildings > Non Residential > Hvac > Commercial Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Commercial Hvac",
+            "acts_on_labels": [
+              "commercial building heating with gas",
+              "commercial building heating with propane",
+              "commercial building heating with oil",
+              "commercial building heating with direct electric heaters",
+              "commercial building heating with coal",
+              "commercial building heating with lpg",
+              "commercial building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "commercial building heating with solar thermal"
+            ],
+            "score": 0.572,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "shift_to_biofuel_in_district_heating",
+            "short_label": "T-5A3-TE-7 - Shift to biofuel in district heating",
+            "description": "Shift to biofuel in district heating. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: chp coal, chp natural gas, chp oil. to: chp biofuels. Energy > Energy Supply > Combined Heat Power",
+            "sector_path": "Energy > Energy Supply > Combined Heat Power",
+            "acts_on_labels": [
+              "chp coal",
+              "chp natural gas",
+              "chp oil"
+            ],
+            "shifts_to_labels": [
+              "chp biofuels"
+            ],
+            "score": 0.4557,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "shift_to_district_heating_in_single_family_houses",
+            "short_label": "T-4A1b-TE-2 - Shift to district heating in single-family buildings",
+            "description": "Shift to district heating in single-family buildings. Shift square meter from single family building heated with gas, oil,. from: single family building heating with gas, single family building heating with propane, single family building heating with oil, single family building heating with direct electric heaters, single family building heating with coal, single family building heating with lpg. to: single family building heating with district heating. Buildings > Residential > Hvac > Single Family Hvac",
+            "sector_path": "Buildings > Residential > Hvac > Single Family Hvac",
+            "acts_on_labels": [
+              "single family building heating with gas",
+              "single family building heating with propane",
+              "single family building heating with oil",
+              "single family building heating with direct electric heaters",
+              "single family building heating with coal",
+              "single family building heating with lpg"
+            ],
+            "shifts_to_labels": [
+              "single family building heating with district heating"
+            ],
+            "score": 0.4101,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "shift_to_district_heating_in_multi_family_buildings",
+            "short_label": "T-4A1a-TE-2 - Shift to district heating in multi-family buildings",
+            "description": "Shift to district heating in multi-family buildings. Shift square meter from multi family building heated with gas, oil, direct. from: multi family building heating with gas, multi family building heating with propane, multi family building heating with oil, multi family building heating with direct electric, multi family building heating with coal, multi family building heating with lpg. to: multi family building heating with district heating. Buildings > Residential > Hvac > Multi Family Hvac",
+            "sector_path": "Buildings > Residential > Hvac > Multi Family Hvac",
+            "acts_on_labels": [
+              "multi family building heating with gas",
+              "multi family building heating with propane",
+              "multi family building heating with oil",
+              "multi family building heating with direct electric",
+              "multi family building heating with coal",
+              "multi family building heating with lpg"
+            ],
+            "shifts_to_labels": [
+              "multi family building heating with district heating"
+            ],
+            "score": 0.4027,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          }
+        ],
+        "transition_element_suggested_new": {
+          "short_label": "Shift to Waste Heat Utilization",
+          "description": "This measure focuses on increasing the use of waste heat in district heating systems, transitioning from primary energy sources to more sustainable waste heat sources."
+        },
+        "transition_element_candidates": [
+          {
+            "stable_id": "shift_to_residual_heat_in_district_heating",
+            "short_label": "T-5A2-TE-6 - Shift to Residual Heat in district heating",
+            "description": "Shift to Residual Heat in district heating. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: chp coal, chp natural gas, chp oil. to: district heating residual heat. Energy > Energy Supply > Heat",
+            "sector_path": "Energy > Energy Supply > Heat",
+            "acts_on_labels": [
+              "chp coal",
+              "chp natural gas",
+              "chp oil"
+            ],
+            "shifts_to_labels": [
+              "district heating residual heat"
+            ],
+            "score": 0.6065
+          },
+          {
+            "stable_id": "shift_to_heat_pumps_in_district_heating",
+            "short_label": "T-5A2-TE-5 - Shift to heat pumps in district heating",
+            "description": "Shift to heat pumps in district heating. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: chp coal, chp natural gas, chp oil. to: district heating heat pumps. Energy > Energy Supply > Heat",
+            "sector_path": "Energy > Energy Supply > Heat",
+            "acts_on_labels": [
+              "chp coal",
+              "chp natural gas",
+              "chp oil"
+            ],
+            "shifts_to_labels": [
+              "district heating heat pumps"
+            ],
+            "score": 0.6033
+          },
+          {
+            "stable_id": "shift_to_district_heating_in_public_buildings",
+            "short_label": "T-4B1b-TE-1 - Shift to district heating in public buildings",
+            "description": "Shift to district heating in public buildings. Shift square meter from public building heated with oil, gas, direct. from: public building heating with oil, public building heating with gas, public building heating with propane, public building heating with direct electric heaters, public building heating with coal, public building heating with lpg, public building heating with gas oil. to: public building heating with district heating. Buildings > Non Residential > Hvac > Institutional Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Institutional Hvac",
+            "acts_on_labels": [
+              "public building heating with oil",
+              "public building heating with gas",
+              "public building heating with propane",
+              "public building heating with direct electric heaters",
+              "public building heating with coal",
+              "public building heating with lpg",
+              "public building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "public building heating with district heating"
+            ],
+            "score": 0.5946
+          },
+          {
+            "stable_id": "shift_to_district_heating_in_industrial_buildings",
+            "short_label": "T-4B1c-TE-1 - Shift to district heating in industrial buildings",
+            "description": "Shift to district heating in industrial buildings. Shift square meter from industrial building heated with gas, oil and. from: industrial building heating with gas, industrial building heating with oil, industrial building heating with direct electric heaters, industrial building heating with lpg, industrial building heating with coal, industrial building heating with gas oil. to: industrial building heating with district heating. Buildings > Non Residential > Hvac > Other Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Other Hvac",
+            "acts_on_labels": [
+              "industrial building heating with gas",
+              "industrial building heating with oil",
+              "industrial building heating with direct electric heaters",
+              "industrial building heating with lpg",
+              "industrial building heating with coal",
+              "industrial building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "industrial building heating with district heating"
+            ],
+            "score": 0.5914
+          },
+          {
+            "stable_id": "heat_pumps_in_non_residential_public_buildings",
+            "short_label": "T-4B1b-TE-3 - Shift to heat pumps in public buildings",
+            "description": "Shift to heat pumps in public buildings. Shift square meter from public buildings heated with oil, gas, direct. from: public building heating with oil, public building heating with gas, public building heating with propane, public building heating with direct electric heaters, public building heating with coal, public building heating with lpg, public building heating with gas oil. to: public building heating with heatpump. Buildings > Non Residential > Hvac > Institutional Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Institutional Hvac",
+            "acts_on_labels": [
+              "public building heating with oil",
+              "public building heating with gas",
+              "public building heating with propane",
+              "public building heating with direct electric heaters",
+              "public building heating with coal",
+              "public building heating with lpg",
+              "public building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "public building heating with heatpump"
+            ],
+            "score": 0.5893
+          },
+          {
+            "stable_id": "shift_to_solar_thermal_in_industrial_buildings",
+            "short_label": "T-4B1c-TE-5 - Shift to solar thermal in industrial buildings",
+            "description": "Shift to solar thermal in industrial buildings. Shift square meter from industrial building heated with gas, oil, direct. from: industrial building heating with gas, industrial building heating with oil, industrial building heating with direct electric heaters, industrial building heating with lpg, industrial building heating with coal, industrial building heating with gas oil. to: industrial building heating with solar thermal. Buildings > Non Residential > Hvac > Other Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Other Hvac",
+            "acts_on_labels": [
+              "industrial building heating with gas",
+              "industrial building heating with oil",
+              "industrial building heating with direct electric heaters",
+              "industrial building heating with lpg",
+              "industrial building heating with coal",
+              "industrial building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "industrial building heating with solar thermal"
+            ],
+            "score": 0.5891
+          },
+          {
+            "stable_id": "shift_to_district_heating_in_commercial_buildings",
+            "short_label": "T-4B1a-TE-1 - Shift to district heating in commercial buildings",
+            "description": "Shift to district heating in commercial buildings. Shift square meter from commercial building heated with gas, oil, direct. from: commercial building heating with gas, commercial building heating with propane, commercial building heating with oil, commercial building heating with direct electric heaters, commercial building heating with coal, commercial building heating with lpg, commercial building heating with gas oil. to: commercial building heating with district heating. Buildings > Non Residential > Hvac > Commercial Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Commercial Hvac",
+            "acts_on_labels": [
+              "commercial building heating with gas",
+              "commercial building heating with propane",
+              "commercial building heating with oil",
+              "commercial building heating with direct electric heaters",
+              "commercial building heating with coal",
+              "commercial building heating with lpg",
+              "commercial building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "commercial building heating with district heating"
+            ],
+            "score": 0.5872
+          },
+          {
+            "stable_id": "shift_to_solar_thermal_in_public_buildings",
+            "short_label": "T-4B1b-TE-5 - Shift to solar thermal in public buildings",
+            "description": "Shift to solar thermal in public buildings. Shift square meter from public building heated with oil, gas, direct. from: public building heating with oil, public building heating with gas, public building heating with propane, public building heating with direct electric heaters, public building heating with coal, public building heating with lpg, public building heating with gas oil. to: public building heating with solar thermal. Buildings > Non Residential > Hvac > Institutional Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Institutional Hvac",
+            "acts_on_labels": [
+              "public building heating with oil",
+              "public building heating with gas",
+              "public building heating with propane",
+              "public building heating with direct electric heaters",
+              "public building heating with coal",
+              "public building heating with lpg",
+              "public building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "public building heating with solar thermal"
+            ],
+            "score": 0.5768
+          },
+          {
+            "stable_id": "heat_pumps_in_non_residential_commercial_buildings",
+            "short_label": "T-4B1a-TE-3 - Shift to heat pumps in commerical buildings",
+            "description": "Shift to heat pumps in commerical buildings. Shift square meter from commercial buildings heated with gas, oil, direct. from: commercial building heating with gas, commercial building heating with propane, commercial building heating with oil, commercial building heating with direct electric heaters, commercial building heating with coal, commercial building heating with lpg, commercial building heating with gas oil. to: commercial building heating with heatpump. Buildings > Non Residential > Hvac > Commercial Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Commercial Hvac",
+            "acts_on_labels": [
+              "commercial building heating with gas",
+              "commercial building heating with propane",
+              "commercial building heating with oil",
+              "commercial building heating with direct electric heaters",
+              "commercial building heating with coal",
+              "commercial building heating with lpg",
+              "commercial building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "commercial building heating with heatpump"
+            ],
+            "score": 0.5735
+          },
+          {
+            "stable_id": "shift_to_solar_thermal_in_commercial_buildings",
+            "short_label": "T-4B1a-TE-5 - Shift to solar thermal in commercial buildings",
+            "description": "Shift to solar thermal in commercial buildings. Shift square meter from commercial building heated with gas, oil, direct. from: commercial building heating with gas, commercial building heating with propane, commercial building heating with oil, commercial building heating with direct electric heaters, commercial building heating with coal, commercial building heating with lpg, commercial building heating with gas oil. to: commercial building heating with solar thermal. Buildings > Non Residential > Hvac > Commercial Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Commercial Hvac",
+            "acts_on_labels": [
+              "commercial building heating with gas",
+              "commercial building heating with propane",
+              "commercial building heating with oil",
+              "commercial building heating with direct electric heaters",
+              "commercial building heating with coal",
+              "commercial building heating with lpg",
+              "commercial building heating with gas oil"
+            ],
+            "shifts_to_labels": [
+              "commercial building heating with solar thermal"
+            ],
+            "score": 0.572
+          },
+          {
+            "stable_id": "district_heating_residual_heat",
+            "short_label": "T-5A2-TE-3 - District heating by residual heat",
+            "description": "District heating by residual heat. Alter the amount of district heat produced by residual heat. from: district heating residual heat. Energy > Energy Supply > Heat",
+            "sector_path": "Energy > Energy Supply > Heat",
+            "acts_on_labels": [
+              "district heating residual heat"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.5633
+          },
+          {
+            "stable_id": "district_heating_heat_pumps",
+            "short_label": "T-5A2-TE-4 - District heating by heat pump",
+            "description": "District heating by heat pump. Alter the amount of district heat produced by heat pumps. from: district heating heat pumps. Energy > Energy Supply > Heat",
+            "sector_path": "Energy > Energy Supply > Heat",
+            "acts_on_labels": [
+              "district heating heat pumps"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.5113
+          },
+          {
+            "stable_id": "chp_waste_incineration",
+            "short_label": "T-5A3-TE-4 - CHP from waste incineration",
+            "description": "CHP from waste incineration. Alter the amount of district heat and electricity produced by CHP waste incineration. from: chp waste incineration. Energy > Energy Supply > Combined Heat Power",
+            "sector_path": "Energy > Energy Supply > Combined Heat Power",
+            "acts_on_labels": [
+              "chp waste incineration"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4825
+          },
+          {
+            "stable_id": "increased_energy_recovery_from_waste",
+            "short_label": "T-5A3-TE-6 - Increased energy recovery from waste",
+            "description": "Increased energy recovery from waste. Shift tonne from solid waste disposal in landfills and open dumps, incineration and open burning of waste to CHP waste incineration in tonne to fulfill the need of warm premisses. from: incineration and open burning of waste. to: chp waste incineration. Energy > Energy Supply > Combined Heat Power",
+            "sector_path": "Energy > Energy Supply > Combined Heat Power",
+            "acts_on_labels": [
+              "incineration and open burning of waste"
+            ],
+            "shifts_to_labels": [
+              "chp waste incineration"
+            ],
+            "score": 0.4767
+          },
+          {
+            "stable_id": "shift_to_biofuel_in_district_heating",
+            "short_label": "T-5A3-TE-7 - Shift to biofuel in district heating",
+            "description": "Shift to biofuel in district heating. IPCC WG3 definition: {{ ipcc_mitigation_link() }}.. from: chp coal, chp natural gas, chp oil. to: chp biofuels. Energy > Energy Supply > Combined Heat Power",
+            "sector_path": "Energy > Energy Supply > Combined Heat Power",
+            "acts_on_labels": [
+              "chp coal",
+              "chp natural gas",
+              "chp oil"
+            ],
+            "shifts_to_labels": [
+              "chp biofuels"
+            ],
+            "score": 0.4557
+          },
+          {
+            "stable_id": "imported_grid_district_heat",
+            "short_label": "T-5A2-TE-1 - District heat from imported grid",
+            "description": "District heat from imported grid. Alter the amount of district heat produced by imported grid district heat. from: imported grid district heat. Energy > Energy Supply > Heat",
+            "sector_path": "Energy > Energy Supply > Heat",
+            "acts_on_labels": [
+              "imported grid district heat"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4347
+          },
+          {
+            "stable_id": "energy_efficient_non_residential_public_buildings_retrofitting",
+            "short_label": "T-4B1b-TE-6 - Retrofitting public buildings for efficient heating",
+            "description": "Retrofitting public buildings for efficient heating. Reduce the amount of energy required to heat public building heating. from: public building heating with solid biofuels, public building heating with direct electric heaters, public building heating with gas, public building heating with propane, public building heating with oil, public building heating with heatpump, public building heating with district heating, public building heating with coal, public building heating with solar thermal, public building heating with lpg, public building heating with hydrogen, public building heating with gas oil. Buildings > Non Residential > Hvac > Institutional Hvac",
+            "sector_path": "Buildings > Non Residential > Hvac > Institutional Hvac",
+            "acts_on_labels": [
+              "public building heating with solid biofuels",
+              "public building heating with direct electric heaters",
+              "public building heating with gas",
+              "public building heating with propane",
+              "public building heating with oil",
+              "public building heating with heatpump",
+              "public building heating with district heating",
+              "public building heating with coal",
+              "public building heating with solar thermal",
+              "public building heating with lpg",
+              "public building heating with hydrogen",
+              "public building heating with gas oil"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4341
+          },
+          {
+            "stable_id": "chp_biofuels",
+            "short_label": "T-5A3-TE-5 - CHP from biomass",
+            "description": "CHP from biomass. Alter the amount of district heat and electricity produced by CHP biofuels. from: chp biofuels. Energy > Energy Supply > Combined Heat Power",
+            "sector_path": "Energy > Energy Supply > Combined Heat Power",
+            "acts_on_labels": [
+              "chp biofuels"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4202
+          },
+          {
+            "stable_id": "chp_natural_gas",
+            "short_label": "T-5A3-TE-3 - CHP from natural gas",
+            "description": "CHP from natural gas. Alter the amount of district heat and electricity produced by CHP natural. from: chp natural gas. Energy > Energy Supply > Combined Heat Power",
+            "sector_path": "Energy > Energy Supply > Combined Heat Power",
+            "acts_on_labels": [
+              "chp natural gas"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.4112
+          },
+          {
+            "stable_id": "shift_to_district_heating_in_single_family_houses",
+            "short_label": "T-4A1b-TE-2 - Shift to district heating in single-family buildings",
+            "description": "Shift to district heating in single-family buildings. Shift square meter from single family building heated with gas, oil,. from: single family building heating with gas, single family building heating with propane, single family building heating with oil, single family building heating with direct electric heaters, single family building heating with coal, single family building heating with lpg. to: single family building heating with district heating. Buildings > Residential > Hvac > Single Family Hvac",
+            "sector_path": "Buildings > Residential > Hvac > Single Family Hvac",
+            "acts_on_labels": [
+              "single family building heating with gas",
+              "single family building heating with propane",
+              "single family building heating with oil",
+              "single family building heating with direct electric heaters",
+              "single family building heating with coal",
+              "single family building heating with lpg"
+            ],
+            "shifts_to_labels": [
+              "single family building heating with district heating"
+            ],
+            "score": 0.4101
+          },
+          {
+            "stable_id": "shift_to_district_heating_in_multi_family_buildings",
+            "short_label": "T-4A1a-TE-2 - Shift to district heating in multi-family buildings",
+            "description": "Shift to district heating in multi-family buildings. Shift square meter from multi family building heated with gas, oil, direct. from: multi family building heating with gas, multi family building heating with propane, multi family building heating with oil, multi family building heating with direct electric, multi family building heating with coal, multi family building heating with lpg. to: multi family building heating with district heating. Buildings > Residential > Hvac > Multi Family Hvac",
+            "sector_path": "Buildings > Residential > Hvac > Multi Family Hvac",
+            "acts_on_labels": [
+              "multi family building heating with gas",
+              "multi family building heating with propane",
+              "multi family building heating with oil",
+              "multi family building heating with direct electric",
+              "multi family building heating with coal",
+              "multi family building heating with lpg"
+            ],
+            "shifts_to_labels": [
+              "multi family building heating with district heating"
+            ],
+            "score": 0.4027
+          }
+        ]
+      }
+    ],
+    "intervention_who": "NAV",
+    "intervention_when": "none",
+    "intervention_what": "increasing use of waste heat",
+    "intervention_how": "none",
+    "intervention_score": 3,
+    "intervention_reasoning": "The measure specifies who (NAV) and what (increasing use of waste heat), but lacks a timeline and mechanism.",
+    "intervention_type": "direct"
+  },
+  {
+    "measure_text": "Utveckla och etablera ett systemtänk i tidiga planskeden för attraktiv gång-, cykel- och kollektivtrafik.",
+    "activity": "mobility planning",
+    "activity_shift_score": 3,
+    "activity_shifts": [
+      {
+        "activity": "planning transport systems",
+        "shift_from": "car-centric planning",
+        "shift_to": "integrated planning for walking, cycling, and public transport",
+        "need": "mobility",
+        "type": "Type Shift",
+        "type_reasoning": "The measure suggests a shift in planning approach from car-centric to integrated transport systems, which is a change in the planning activity.",
+        "score": 3,
+        "reasoning": "The shift to integrated planning is implied, but the current state of car-centric planning is not explicitly stated. The need for mobility is clear.",
+        "transition_element_matches": [
+          {
+            "stable_id": "increased_proportion_of_walking_and_cycling",
+            "short_label": "T-1A1a-TE-10 - Shift to walking and cycling",
+            "description": "Shift to walking and cycling. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to walking cycling. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: walking cycling. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "walking cycling"
+            ],
+            "score": 0.6147,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "shift_to_electric_bikes",
+            "short_label": "T-1A1a-TE-11 - Shift to electric bikes",
+            "description": "Shift to electric bikes. Shift vehicle kilometer from petrol,diesel and LPG vehicles to electric bike in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles. to: electric bikes. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bikes"
+            ],
+            "score": 0.5363,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "transfer_from_car_to_railway",
+            "short_label": "T-1A1a-TE-6 - Shift from car to railway",
+            "description": "Shift from car to railway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric rail in person kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.4979,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_trams_and_light_rail",
+            "short_label": "T-1A1a-TE-18 - Shift to trams, light rail and subway",
+            "description": "Shift to trams, light rail and subway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to tram and light rail. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: tram and light rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "tram and light rail"
+            ],
+            "score": 0.4927,
+            "match_reasoning": "acts_on=yes, shifts_to=yes"
+          }
+        ],
+        "transition_element_suggested_new": {
+          "short_label": "Integrated Transport Planning",
+          "description": "Develop and establish a systems approach in early planning stages for attractive walking, cycling, and public transport options."
+        },
+        "transition_element_candidates": [
+          {
+            "stable_id": "increased_proportion_of_walking_and_cycling",
+            "short_label": "T-1A1a-TE-10 - Shift to walking and cycling",
+            "description": "Shift to walking and cycling. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to walking cycling. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: walking cycling. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "walking cycling"
+            ],
+            "score": 0.6147
+          },
+          {
+            "stable_id": "improved_urban_planning",
+            "short_label": "T-1A1a-TE-22 - Improved urban planning",
+            "description": "Improved urban planning. Reduce the amount of vehicle kilometer from cars to fulfill the need of mobility through improved urban planning. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, lng vehicles, hydrogen vehicles, battery electric vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "lng vehicles",
+              "hydrogen vehicles",
+              "battery electric vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.5374
+          },
+          {
+            "stable_id": "shift_to_electric_bikes",
+            "short_label": "T-1A1a-TE-11 - Shift to electric bikes",
+            "description": "Shift to electric bikes. Shift vehicle kilometer from petrol,diesel and LPG vehicles to electric bike in vehicle kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles. to: electric bikes. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric bikes"
+            ],
+            "score": 0.5363
+          },
+          {
+            "stable_id": "shift_from_passenger_air_transport_to_railway",
+            "short_label": "T-1A3-TE-4 - Shift from air travel to railway",
+            "description": "Shift from air travel to railway. Shift person kilometer from passenger transportation by air to electric rail in person kilometer to fulfill the need of mobility. from: passenger transportation by air. to: electric rail. Transport > Mobility > Aviation",
+            "sector_path": "Transport > Mobility > Aviation",
+            "acts_on_labels": [
+              "passenger transportation by air"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.5341
+          },
+          {
+            "stable_id": "shift_to_electric_passenger_rail",
+            "short_label": "T-1A2-TE-2 - Shift to travel by electric rail",
+            "description": "Shift to travel by electric rail. Shift person kilometer from diesel passenger rail to electric passenger rail in person kilometer to fulfill the need of mobility. from: diesel passenger rail. to: electric rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.5056
+          },
+          {
+            "stable_id": "electrification_of_domestic_sea_passenger_transport",
+            "short_label": "T-1A4-TE-5 - Shift to electric marine passenger transportion",
+            "description": "Shift to electric marine passenger transportion. Shift person kilometer from ship passenger to electric shipping passenger in person kilometer to fulfill the need of mobility. from: ship passenger, gas oil shipping passenger. to: electric shipping passenger. Transport > Mobility > Waterborne",
+            "sector_path": "Transport > Mobility > Waterborne",
+            "acts_on_labels": [
+              "ship passenger",
+              "gas oil shipping passenger"
+            ],
+            "shifts_to_labels": [
+              "electric shipping passenger"
+            ],
+            "score": 0.504
+          },
+          {
+            "stable_id": "transfer_from_car_to_railway",
+            "short_label": "T-1A1a-TE-6 - Shift from car to railway",
+            "description": "Shift from car to railway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to electric rail in person kilometer to fulfill the need of mobility. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: electric rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "electric rail"
+            ],
+            "score": 0.4979
+          },
+          {
+            "stable_id": "electric_passenger_airplanes",
+            "short_label": "T-1A3-TE-3 - Shift to electric air passenger transport",
+            "description": "Shift to electric air passenger transport. Shift person kilometer from passenger transportation by air to electric passenger transportation by air in person kilometer to fulfill the need of mobility. from: passenger transportation by air. to: electric passenger transportation by air. Transport > Mobility > Aviation",
+            "sector_path": "Transport > Mobility > Aviation",
+            "acts_on_labels": [
+              "passenger transportation by air"
+            ],
+            "shifts_to_labels": [
+              "electric passenger transportation by air"
+            ],
+            "score": 0.4978
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_petrol_bus",
+            "short_label": "T-1A1a-TE-16 - Shift to travel by petrol bus",
+            "description": "Shift to travel by petrol bus. Shift vehicle kilometer from petrol and diesel vehicles to petrol buses. from: petrol vehicles, diesel vehicles. to: petrol buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "petrol buses"
+            ],
+            "score": 0.4956
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_trams_and_light_rail",
+            "short_label": "T-1A1a-TE-18 - Shift to trams, light rail and subway",
+            "description": "Shift to trams, light rail and subway. Shift vehicle kilometer from petrol, diesel, LPG and gas vehicles to tram and light rail. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles. to: tram and light rail. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles"
+            ],
+            "shifts_to_labels": [
+              "tram and light rail"
+            ],
+            "score": 0.4927
+          },
+          {
+            "stable_id": "biofuel_for_diesel_rail_passenger",
+            "short_label": "T-1A2-TE-1 - Biofuel for rail passenger transport",
+            "description": "Biofuel for rail passenger transport. Increase the proportion of HVO biodiesel in diesel. from: diesel passenger rail. Transport > Mobility > Rail",
+            "sector_path": "Transport > Mobility > Rail",
+            "acts_on_labels": [
+              "diesel passenger rail"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.3702
+          },
+          {
+            "stable_id": "biofuel_for_gas_buses",
+            "short_label": "T-1A1c-TE-2 - Biofuel for gas buses",
+            "description": "Biofuel for gas buses. Increase the proportion of biogas in gas mix. from: gas buses. Transport > Mobility > Road > Buses",
+            "sector_path": "Transport > Mobility > Road > Buses",
+            "acts_on_labels": [
+              "gas buses"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.3598
+          },
+          {
+            "stable_id": "biofuels_for_sea_passenger_transport",
+            "short_label": "T-1A4-TE-4 - Biofuel for marine passenger transport",
+            "description": "Biofuel for marine passenger transport. Increase the proportion of marine biodiesel in marine diesel. from: ship passenger. Transport > Mobility > Waterborne",
+            "sector_path": "Transport > Mobility > Waterborne",
+            "acts_on_labels": [
+              "ship passenger"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.3442
+          },
+          {
+            "stable_id": "more_efficient_commuting_by_car",
+            "short_label": "T-1A1a-TE-5 - Increase journey sharing",
+            "description": "Increase journey sharing. Reduce the number of vehicle kilometers from petrol, diesel, lpg and natural gas vehicles to fulfill the need of commuting through more efficient commuting by car. from: petrol vehicles, diesel vehicles, lpg vehicles, gas vehicles, battery electric vehicles, hydrogen vehicles. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles",
+              "lpg vehicles",
+              "gas vehicles",
+              "battery electric vehicles",
+              "hydrogen vehicles"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.3408
+          },
+          {
+            "stable_id": "increased_proportion_of_public_transport_by_gas_bus",
+            "short_label": "T-1A1a-TE-15 - Shift to travel by gas bus",
+            "description": "Shift to travel by gas bus. Shift vehicle kilometer from petrol and diesel vehicles to gas buses. from: petrol vehicles, diesel vehicles. to: gas buses. Transport > Mobility > Road > Light Duty Vehicles",
+            "sector_path": "Transport > Mobility > Road > Light Duty Vehicles",
+            "acts_on_labels": [
+              "petrol vehicles",
+              "diesel vehicles"
+            ],
+            "shifts_to_labels": [
+              "gas buses"
+            ],
+            "score": 0.3399
+          },
+          {
+            "stable_id": "biofuels_for_air_transport",
+            "short_label": "T-1A3-TE-1 - Biofuel for air passenger transport",
+            "description": "Biofuel for air passenger transport. Increase the proportion of aviation biofuel in aviation turbine fuel. from: passenger transportation by air. Transport > Mobility > Aviation",
+            "sector_path": "Transport > Mobility > Aviation",
+            "acts_on_labels": [
+              "passenger transportation by air"
+            ],
+            "shifts_to_labels": [],
+            "score": 0.3355
+          }
+        ]
+      }
+    ],
+    "intervention_who": "none",
+    "intervention_when": "none",
+    "intervention_what": "developing and establishing system thinking",
+    "intervention_how": "none",
+    "intervention_score": 2,
+    "intervention_reasoning": "The measure weakly presents what (developing and establishing system thinking) but lacks a responsible actor, timeline, and mechanism.",
+    "intervention_type": "indirect"
+  }
+]

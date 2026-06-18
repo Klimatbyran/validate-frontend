@@ -6,6 +6,16 @@ export interface TransitionElementCandidate {
   score: number
 }
 
+export type MatchConfidence = "high" | "mid" | "low"
+
+export interface TransitionElementMatch {
+  stable_id: string
+  short_label: string
+  description: string
+  sector_path: string
+  match_confidence: MatchConfidence
+}
+
 export interface TransitionElementSuggestedNew {
   short_label: string
   description: string
@@ -20,7 +30,7 @@ export interface ActivityShift {
   type_reasoning: string
   score: number
   reasoning: string
-  transition_element_matches: TransitionElementCandidate[]
+  transition_element_matches: TransitionElementMatch[]
   transition_element_candidates: TransitionElementCandidate[]
   transition_element_suggested_new?: TransitionElementSuggestedNew
 }
