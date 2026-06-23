@@ -3,11 +3,14 @@ import type {
   OverviewFilters,
   OverviewRow,
   OverviewStats,
+  OverviewWarning,
   ProdToStageFilters,
   ProdToStageRow,
 } from "@/tabs/overview/lib/overview-types";
 
 const OVERVIEW_PAGE_SIZE = 50;
+
+export type { OverviewWarning };
 
 export type OverviewPageMeta = {
   total: number;
@@ -20,6 +23,8 @@ export type CompanyYearsOverviewResponse = OverviewPageMeta & {
   rows: OverviewRow[];
   stats: OverviewStats;
   reportYears: string[];
+  warnings?: OverviewWarning[];
+  localEnv?: "stage" | "prod";
 };
 
 export type RegistryReportsOverviewResponse = CompanyYearsOverviewResponse;
@@ -39,6 +44,8 @@ export type ProdToStageOverviewResponse = OverviewPageMeta & {
   stageCompanyCount: number;
   prodCompanyCount: number;
   reportYears: string[];
+  warnings?: OverviewWarning[];
+  localEnv?: "stage" | "prod";
 };
 
 function overviewBaseUrl(): string {

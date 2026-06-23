@@ -1055,6 +1055,9 @@
     },
     "gapFiltersHintCompanyYears": "Combine checkboxes to narrow down company × year rows that need a saved report, a Garbo CompanyReport, or a pipeline run.",
     "gapFiltersHintRegistryReports": "Use these to find registry PDFs that have not been pipelined yet or are not linked to a CompanyReport in Garbo.",
+    "apiErrorTitle": "Overview request failed",
+    "apiWarningsTitle": "Notes from the overview API",
+    "apiWarningsEnv": "Unearth API instance: {{env}}",
     "prodToStage": {
       "bannerTitle": "Prod data in, stage pipeline out",
       "bannerReadProd": "Rows are built from prod Garbo: linked CompanyReports with at least one fully verified reporting period, where the matching stage report (by URL or shell) has no linked CompanyReport with emissions data yet.",

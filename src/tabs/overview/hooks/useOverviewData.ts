@@ -18,6 +18,7 @@ import {
   type OverviewFilters,
   type OverviewRow,
   type OverviewStats,
+  type OverviewWarning,
   type OverviewViewMode,
   type ProdToStageFilters,
   type ProdToStageRow,
@@ -74,6 +75,8 @@ export function useOverviewData() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<OverviewWarning[]>([]);
+  const [localEnv, setLocalEnv] = useState<"stage" | "prod" | null>(null);
   const [filters, setFilters] = useState<OverviewFilters>(() =>
     defaultFiltersForView(overviewViewFromSearchParams(searchParams)),
   );
@@ -107,6 +110,8 @@ export function useOverviewData() {
       else setIsLoading(true);
 
       setError(null);
+      setWarnings([]);
+      setLocalEnv(null);
 
       try {
         const requestPage = showAll ? 1 : page;
@@ -132,6 +137,8 @@ export function useOverviewData() {
           setTotalPages(
             showAll ? 1 : Math.max(1, Math.ceil(response.total / pageSize)),
           );
+          setWarnings(response.warnings ?? []);
+          setLocalEnv(response.localEnv ?? null);
         } else if (viewMode === "registryReports") {
           const response = await fetchRegistryReportsOverview(
             filters,
@@ -145,6 +152,8 @@ export function useOverviewData() {
           setTotalPages(
             showAll ? 1 : Math.max(1, Math.ceil(response.total / pageSize)),
           );
+          setWarnings(response.warnings ?? []);
+          setLocalEnv(response.localEnv ?? null);
         } else {
           const response = await fetchCompanyYearsOverview(
             filters,
@@ -158,12 +167,16 @@ export function useOverviewData() {
           setTotalPages(
             showAll ? 1 : Math.max(1, Math.ceil(response.total / pageSize)),
           );
+          setWarnings(response.warnings ?? []);
+          setLocalEnv(response.localEnv ?? null);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
         setRows([]);
         setProdToStageRows([]);
         setStats(EMPTY_STATS);
+        setWarnings([]);
+        setLocalEnv(null);
         setTotalRows(0);
         setTotalPages(1);
       } finally {
@@ -178,6 +191,7 @@ export function useOverviewData() {
     void loadData(false);
   }, [loadData]);
 
+  // TODO: merging page reset into the load effect avoids a double fetch when filters change off page 1.
   useEffect(() => {
     setPage(1);
     setShowAll(false);
@@ -229,8 +243,9 @@ export function useOverviewData() {
     viewMode,
     setViewMode,
     rows,
-    allRows: rows,
     prodToStageRows,
+    warnings,
+    localEnv,
     prodToStageDiagnostics,
     stageCompanyCount,
     prodCompanyCount,
@@ -272,4 +287,5 @@ export type {
   OverviewViewMode,
   ProdToStageFilters,
   ProdToStageRow,
+  OverviewWarning,
 };

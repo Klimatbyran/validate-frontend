@@ -227,7 +227,8 @@ export function OverviewTab() {
                 </p>
                 <p>
                   {t("overview.prodToStage.emptyDiagnosticsSkippedUnverified", {
-                    count: data.prodToStageDiagnostics.skippedNoFullyVerifiedOnProd,
+                    count:
+                      data.prodToStageDiagnostics.skippedNoFullyVerifiedOnProd,
                   })}
                 </p>
                 <p>
@@ -278,13 +279,41 @@ export function OverviewTab() {
           <OverviewFilters data={data} />
         )}
 
+        {data.error ? (
+          <Callout variant="error" title={t("overview.apiErrorTitle")}>
+            <p className="text-sm">{data.error}</p>
+          </Callout>
+        ) : null}
+
+        {!data.error && data.warnings.length > 0 ? (
+          <Callout
+            variant="warning"
+            title={t("overview.apiWarningsTitle")}
+            description={
+              data.localEnv
+                ? t("overview.apiWarningsEnv", { env: data.localEnv })
+                : undefined
+            }
+          >
+            <ul className="list-disc pl-5 space-y-1 text-sm">
+              {data.warnings.map((warning) => (
+                <li key={warning.code}>
+                  <span className="font-mono text-xs text-gray-02">
+                    {warning.code}
+                  </span>
+                  {": "}
+                  {warning.message}
+                </li>
+              ))}
+            </ul>
+          </Callout>
+        ) : null}
+
         {data.isLoading ? (
           <div className="py-16 flex justify-center">
             <LoadingSpinner />
           </div>
-        ) : data.error ? (
-          <p className="text-sm text-red-01">{data.error}</p>
-        ) : isProdToStage ? (
+        ) : data.error ? null : isProdToStage ? (
           <ProdToStageTable
             data={data}
             selectedKeys={selectedKeys}

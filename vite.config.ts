@@ -157,6 +157,8 @@ function climatePlansManifest(): Plugin {
 }
 
 const PROXY_TIMEOUT_MS = 30000;
+/** Overview / internal Unearth routes — aggregation can be slow until SQL pagination lands. */
+const UNEARTH_PROXY_TIMEOUT_MS = 120000;
 
 function pipelineProxyConfigure(targetUrl: string) {
   return (proxy: any, _options: any) => {
@@ -356,8 +358,8 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: !urls.unearthStage.startsWith("http://"),
           rewrite: (path) => path.replace(/^\/unearth-stage/, ""),
-          timeout: PROXY_TIMEOUT_MS,
-          proxyTimeout: PROXY_TIMEOUT_MS,
+          timeout: UNEARTH_PROXY_TIMEOUT_MS,
+          proxyTimeout: UNEARTH_PROXY_TIMEOUT_MS,
           configure: (proxy) => {
             proxy.on("proxyReq", (proxyReq) => {
               setProxyApiKey(proxyReq, env.GARBO_STAGE_ALL_ACCESS_API_KEY);
@@ -369,16 +371,16 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: !urls.apiBackendLocal.startsWith("http://"),
           rewrite: (path) => path.replace(/^\/unearth-local/, ""),
-          timeout: PROXY_TIMEOUT_MS,
-          proxyTimeout: PROXY_TIMEOUT_MS,
+          timeout: UNEARTH_PROXY_TIMEOUT_MS,
+          proxyTimeout: UNEARTH_PROXY_TIMEOUT_MS,
         },
         "/unearth": {
           target: urls.unearthProd,
           changeOrigin: true,
           secure: !urls.unearthProd.startsWith("http://"),
           rewrite: (path) => path.replace(/^\/unearth/, ""),
-          timeout: PROXY_TIMEOUT_MS,
-          proxyTimeout: PROXY_TIMEOUT_MS,
+          timeout: UNEARTH_PROXY_TIMEOUT_MS,
+          proxyTimeout: UNEARTH_PROXY_TIMEOUT_MS,
           configure: (proxy) => {
             proxy.on("proxyReq", (proxyReq) => {
               setProxyApiKey(proxyReq, env.GARBO_PROD_ALL_ACCESS_API_KEY);

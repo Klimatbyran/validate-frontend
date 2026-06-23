@@ -114,7 +114,9 @@ export function defaultRegistryOverviewFilters(): OverviewFilters {
   };
 }
 
-export function defaultFiltersForView(viewMode: OverviewViewMode): OverviewFilters {
+export function defaultFiltersForView(
+  viewMode: OverviewViewMode,
+): OverviewFilters {
   if (viewMode === "registryReports") return defaultRegistryOverviewFilters();
   return defaultOverviewFilters();
 }
@@ -135,6 +137,11 @@ export function defaultProdToStageFilters(): ProdToStageFilters {
     runnableOnly: false,
   };
 }
+
+export type OverviewWarning = {
+  code: string;
+  message: string;
+};
 
 export type OverviewStats = {
   totalRows: number;

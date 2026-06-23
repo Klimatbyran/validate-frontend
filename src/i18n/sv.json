@@ -1055,6 +1055,9 @@
     },
     "gapFiltersHintCompanyYears": "Kombinera kryssrutor för att hitta företag × år som saknar sparad rapport, Garbo CompanyReport eller pipeline-körning.",
     "gapFiltersHintRegistryReports": "Använd dessa för att hitta register-PDF:er som ännu inte körts i pipeline eller saknar CompanyReport-länk i Garbo.",
+    "apiErrorTitle": "Översiktsanrop misslyckades",
+    "apiWarningsTitle": "Meddelanden från översikts-API:t",
+    "apiWarningsEnv": "Unearth API-instans: {{env}}",
     "prodToStage": {
       "bannerTitle": "Prod-data in, stage-pipeline ut",
       "bannerReadProd": "Rader byggs från prod Garbo: länkade CompanyReports med minst en fullt verifierad rapporteringsperiod, där motsvarande stage-rapport (via URL eller shell) ännu saknar länkad CompanyReport med utsläppsdata.",
