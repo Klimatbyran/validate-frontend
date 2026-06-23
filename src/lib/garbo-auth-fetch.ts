@@ -33,12 +33,11 @@ export class ApiAuthError extends Error {
 }
 
 /**
- * Call inside a non-ok branch to throw ApiAuthError for auth-related status codes.
- * 500 is included because garbo's authenticated routes return 500 (not 401) when
- * the JWT is missing or invalid. If that garbo behaviour changes, remove 500 here.
+ * Call inside a non-ok branch to throw ApiAuthError for staff JWT auth failures.
+ * Unearth staff routes return 401/403 for auth problems; 500 means a server error.
  */
 export function throwIfAuthError(status: number): void {
-  if (status === 401 || status === 403 || status === 500) {
+  if (status === 401 || status === 403) {
     throw new ApiAuthError();
   }
 }
