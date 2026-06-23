@@ -8,12 +8,14 @@ import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { buildTagLabelBySlug } from "@/tabs/editor/lib/editor-tag-and-payload-utils";
 import type { TagOption } from "@/tabs/editor/lib/types";
 import type {
+  RegistryBatchFilterValue,
   RegistrySortKey,
   RegistryTagFilterMode,
   RegistryViewFilters,
   ReportYearFilterValue,
   WikidataPresenceFilter,
 } from "../lib/registry-table-utils";
+import type { GarboBatchOption } from "@/lib/garbo-batch-types";
 
 const WIKIDATA_OPTIONS: WikidataPresenceFilter[] = [
   "all",
@@ -41,6 +43,8 @@ interface RegistryFiltersAndSortProps {
   filters: RegistryViewFilters;
   onFiltersChange: (patch: Partial<RegistryViewFilters>) => void;
   distinctYears: string[];
+  batchOptions: GarboBatchOption[];
+  batchesLoading: boolean;
   tagOptions: TagOption[];
   tagsOptionsLoading: boolean;
   companyTagsLoading: boolean;
@@ -66,6 +70,8 @@ const RegistryFiltersAndSort = ({
   filters,
   onFiltersChange,
   distinctYears,
+  batchOptions,
+  batchesLoading,
   tagOptions,
   tagsOptionsLoading,
   companyTagsLoading,
@@ -81,6 +87,16 @@ const RegistryFiltersAndSort = ({
     [distinctYears],
   );
 
+  const batchOptionList = useMemo(
+    () => ["all", "missing", ...batchOptions.map((b) => b.id)],
+    [batchOptions],
+  );
+
+  const batchLabelById = useMemo(
+    () => Object.fromEntries(batchOptions.map((b) => [b.id, b.batchName])),
+    [batchOptions],
+  );
+
   const tagSlugOptions = useMemo(
     () => tagOptions.map((o) => o.slug),
     [tagOptions],
@@ -94,6 +110,12 @@ const RegistryFiltersAndSort = ({
     if (v === "all") return t("registry.filterYearAll");
     if (v === "missing") return t("registry.filterYearMissing");
     return v;
+  };
+
+  const labelBatch = (v: string) => {
+    if (v === "all") return t("registry.filterBatchAll");
+    if (v === "missing") return t("registry.filterBatchMissing");
+    return batchLabelById[v] ?? v;
   };
 
   const labelWikidata = (v: string) => {
@@ -151,6 +173,27 @@ const RegistryFiltersAndSort = ({
                 getOptionLabel={labelYear}
                 ariaLabel={t("registry.filterReportYear")}
                 triggerClassName="min-w-[140px]"
+              />
+            </DisableWrap>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-02 mb-1">
+              {t("registry.filterBatch")}
+            </label>
+            <DisableWrap disabled={disabled}>
+              <SingleSelectDropdown
+                options={batchOptionList}
+                value={filters.batch}
+                onChange={(v) =>
+                  onFiltersChange({ batch: v as RegistryBatchFilterValue })
+                }
+                placeholder={t("registry.filterBatchAll")}
+                getOptionLabel={labelBatch}
+                ariaLabel={t("registry.filterBatch")}
+                loading={batchesLoading}
+                loadingLabel={t("registry.filterBatchLoading")}
+                triggerClassName="min-w-[160px]"
               />
             </DisableWrap>
           </div>

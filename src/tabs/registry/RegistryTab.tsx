@@ -18,16 +18,22 @@ import {
   type RegistryViewFilters,
 } from "./lib/registry-table-utils";
 import { useGarboCompanyTagsMap } from "./hooks/useGarboCompanyTagsMap";
+import { useRegistryBatches } from "./hooks/useRegistryBatches";
 import { useRegistryDisplayedView } from "./hooks/useRegistryDisplayedView";
 import {
   addRegistryEntry,
+  addRegistryEntries,
+  addRegistryEntriesFromFiles,
   deleteReportFromRegistry,
   editRegistryEntry,
   fetchRegistryList,
 } from "./lib/registry-api";
 import RegistryFiltersAndSort from "./components/RegistryFiltersAndSort";
 import RegistryAddModal from "./components/RegistryAddModal";
-import type { RegistryNewEntry } from "./lib/registry-types";
+import type {
+  RegistryBulkFileAddInput,
+  RegistryNewEntry,
+} from "./lib/registry-types";
 
 export function RegistryTab() {
   const { t } = useI18n();
@@ -60,6 +66,27 @@ export function RegistryTab() {
     tagOptions,
     tagsLoading,
   } = useRunReportsPipeline();
+  const {
+    batches: registryBatches,
+    isLoading: registryBatchesLoading,
+    refetch: refetchRegistryBatches,
+  } = useRegistryBatches();
+
+  const batchFilterOptions = useMemo(() => {
+    const byId = new Map(registryBatches.map((b) => [b.id, b.batchName]));
+    for (const entry of registry) {
+      const id = entry.batchId?.trim();
+      if (!id) continue;
+      if (!byId.has(id)) {
+        byId.set(id, entry.batchName?.trim() || id);
+      }
+    }
+    return [...byId.entries()]
+      .sort((a, b) =>
+        a[1].localeCompare(b[1], undefined, { sensitivity: "base" }),
+      )
+      .map(([id, batchName]) => ({ id, batchName }));
+  }, [registryBatches, registry]);
 
   const {
     displayedRegistry,
@@ -168,10 +195,69 @@ export function RegistryTab() {
   const handleAddEntry = async (entry: RegistryNewEntry) => {
     setIsAddingEntry(true);
     try {
-      const newEntry = await addRegistryEntry(entry);
-      setRegistry((current) => [newEntry, ...current]);
+      await addRegistryEntry(entry);
+      await loadRegistry();
+      refetchRegistryBatches();
       toast.success(t("registry.addEntrySuccess"));
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(t("registry.addEntryError", { message }));
+      throw error;
+    } finally {
+      setIsAddingEntry(false);
+    }
+  };
+
+  const handleAddMany = async (entries: RegistryNewEntry[]) => {
+    setIsAddingEntry(true);
+    try {
+      const saved = await addRegistryEntries(entries);
+      await loadRegistry();
+      refetchRegistryBatches();
+      toast.success(t("registry.addEntriesSuccess", { count: saved.length }));
+    } catch (error) {
+      const partial = error as Error & { partialSuccess?: RegistryEntry[] };
+      if (partial.partialSuccess?.length) {
+        await loadRegistry();
+        refetchRegistryBatches();
+        toast.warning(
+          t("registry.addEntriesPartial", {
+            saved: partial.partialSuccess.length,
+            message: error instanceof Error ? error.message : String(error),
+          }),
+        );
+        return;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(t("registry.addEntryError", { message }));
+      throw error;
+    } finally {
+      setIsAddingEntry(false);
+    }
+  };
+
+  const handleAddFiles = async (input: RegistryBulkFileAddInput) => {
+    setIsAddingEntry(true);
+    try {
+      const newEntries = await addRegistryEntriesFromFiles(input);
+      await loadRegistry();
+      refetchRegistryBatches();
+      toast.success(
+        t("registry.addEntriesSuccess", { count: newEntries.length }),
+      );
+    } catch (error) {
+      const partial = error as Error & { partialSuccess?: RegistryEntry[] };
+      if (partial.partialSuccess?.length) {
+        await loadRegistry();
+        refetchRegistryBatches();
+        toast.warning(
+          t("registry.addEntriesPartial", {
+            saved: partial.partialSuccess.length,
+            message: error instanceof Error ? error.message : String(error),
+          }),
+        );
+        return;
+      }
       const message = error instanceof Error ? error.message : String(error);
       toast.error(t("registry.addEntryError", { message }));
       throw error;
@@ -200,6 +286,7 @@ export function RegistryTab() {
         ),
       );
       toast.success(t("registry.editReportSuccess"));
+      refetchRegistryBatches();
     } catch (error) {
       console.error("Failed to edit registry entry", error);
       const message = error instanceof Error ? error.message : String(error);
@@ -248,6 +335,8 @@ export function RegistryTab() {
           open={isAddEntryOpen}
           onOpenChange={setIsAddEntryOpen}
           onAdd={handleAddEntry}
+          onAddMany={handleAddMany}
+          onAddFiles={handleAddFiles}
           isAdding={isAddingEntry}
         />
 
@@ -256,6 +345,8 @@ export function RegistryTab() {
           filters={filters}
           onFiltersChange={patchFilters}
           distinctYears={distinctReportYears}
+          batchOptions={batchFilterOptions}
+          batchesLoading={registryBatchesLoading}
           tagOptions={tagOptions}
           tagsOptionsLoading={tagsLoading}
           companyTagsLoading={companyTagsLoading}

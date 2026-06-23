@@ -11,6 +11,7 @@ import { UrlUploadForm } from "./components/UrlUploadForm";
 import { UploadList } from "./components/UploadList";
 import { UploadRunOptions } from "./components/UploadRunOptions";
 import { UploadedFile, UrlInput } from "./types";
+import { collectPdfFilesFromDataTransfer } from "@/lib/drag-drop-pdf-files";
 import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
 import { NEW_BATCH_DROPDOWN_VALUE } from "@/lib/garbo-batch-types";
@@ -155,25 +156,8 @@ export function UploadTab() {
     refetchBatches,
   ]);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragging(false);
-
-      const files = Array.from(e.dataTransfer.files).filter(
-        (file) => file.type === "application/pdf",
-      );
-
+  const addUploadedPdfFiles = useCallback(
+    (files: File[]) => {
       if (files.length === 0) {
         toast.error(t("upload.onlyPdfAllowed"));
         return;
@@ -185,13 +169,43 @@ export function UploadTab() {
         company: file.name.split("_")[0],
       }));
 
-      setUploadedFiles((prev) => {
-        const updatedFiles = [...prev, ...newFiles];
-        toast.success(t("upload.filesUploaded", { count: files.length }));
-        return updatedFiles;
-      });
+      setUploadedFiles((prev) => [...prev, ...newFiles]);
+      toast.success(t("upload.filesUploaded", { count: files.length }));
     },
     [t],
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const files = await collectPdfFilesFromDataTransfer(e.dataTransfer);
+      addUploadedPdfFiles(files);
+    },
+    [addUploadedPdfFiles],
+  );
+
+  const handleFileInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files ?? []).filter(
+        (file) =>
+          file.type === "application/pdf" ||
+          file.name.toLowerCase().endsWith(".pdf"),
+      );
+      e.target.value = "";
+      addUploadedPdfFiles(files);
+    },
+    [addUploadedPdfFiles],
   );
 
   const handleUrlSubmit = useCallback(async () => {
@@ -443,6 +457,7 @@ export function UploadTab() {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
+            onInputChange={handleFileInputChange}
             uploadedFiles={uploadedFiles}
             autoApprove={autoApprove}
             onAutoApproveChange={setAutoApprove}
