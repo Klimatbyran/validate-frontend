@@ -3,7 +3,10 @@ import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { useBatches } from "@/hooks/useBatches";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
-import { NEW_BATCH_DROPDOWN_VALUE, type GarboBatchOption } from "@/lib/garbo-batch-types";
+import {
+  NEW_BATCH_DROPDOWN_VALUE,
+  type GarboBatchOption,
+} from "@/lib/garbo-batch-types";
 import { resolvePipelineBatchId } from "@/lib/resolve-pipeline-batch-id";
 import { useTagOptions } from "@/tabs/upload/hooks/useTagOptions";
 import {
@@ -64,12 +67,10 @@ export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
     batchesOverride ? undefined : config?.batchesListUrl,
     { enabled: !batchesOverride },
   );
-  const existingBatches =
-    batchesOverride?.batches ?? internalBatches.batches;
+  const existingBatches = batchesOverride?.batches ?? internalBatches.batches;
   const batchesLoading =
     batchesOverride?.isLoading ?? internalBatches.isLoading;
-  const refetchBatches =
-    batchesOverride?.refetch ?? internalBatches.refetch;
+  const refetchBatches = batchesOverride?.refetch ?? internalBatches.refetch;
   const {
     tagOptions,
     loading: tagsLoading,
