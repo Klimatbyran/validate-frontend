@@ -30,13 +30,9 @@ export function usePdfFileDrop() {
 
   const appendFiles = useCallback((files: File[]) => {
     if (files.length === 0) return 0;
-    let added = 0;
-    setDroppedFiles((prev) => {
-      const merged = mergeDroppedPdfFiles(prev, files);
-      added = merged.added;
-      return merged.next;
-    });
-    return added;
+
+    setDroppedFiles((prev) => mergeDroppedPdfFiles(prev, files).next);
+    return files.length;
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
