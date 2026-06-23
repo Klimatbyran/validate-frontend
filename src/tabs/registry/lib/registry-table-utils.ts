@@ -156,9 +156,9 @@ export function applyRegistryTableFilters(
     }
 
     if (opts.batch === "missing") {
-      if ((e.batchDbId ?? "").trim()) return false;
+      if ((e.batchId ?? "").trim()) return false;
     } else if (opts.batch !== "all") {
-      if ((e.batchDbId ?? "").trim() !== opts.batch) return false;
+      if ((e.batchId ?? "").trim() !== opts.batch) return false;
     }
 
     if (opts.wikidata === "present" && !isWikidataIdPresent(e.wikidataId)) {

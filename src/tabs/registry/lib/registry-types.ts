@@ -9,7 +9,7 @@ export interface RegistryEntry {
   s3Key?: string | null;
   s3Bucket?: string | null;
   sha256?: string | null;
-  batchDbId?: string | null;
+  batchId?: string | null;
   batchName?: string | null;
 }
 
@@ -24,7 +24,7 @@ export interface RegistryEntryUpdate {
   s3Key?: string | null;
   s3Bucket?: string | null;
   sha256?: string | null;
-  batchDbId?: string | null;
+  batchId?: string | null;
 }
 
 export interface RegistryNewEntry {
@@ -38,7 +38,7 @@ export interface RegistryNewEntry {
   s3Bucket?: string;
   sha256?: string;
   /** Garbo Batch.id stored on the registry report row. */
-  batchDbId?: string;
+  batchId?: string;
 }
 
 /** Bulk add from dropped PDF files; metadata is optional (fill in later via edit). */
@@ -48,7 +48,7 @@ export interface RegistryBulkFileAddInput {
   reportYear?: string;
   sourceUrl?: string;
   files: File[];
-  batchDbId?: string;
+  batchId?: string;
 }
 
 export interface RegistryStats {

@@ -75,7 +75,7 @@ export function RegistryTab() {
   const batchFilterOptions = useMemo(() => {
     const byId = new Map(registryBatches.map((b) => [b.id, b.batchName]));
     for (const entry of registry) {
-      const id = entry.batchDbId?.trim();
+      const id = entry.batchId?.trim();
       if (!id) continue;
       if (!byId.has(id)) {
         byId.set(id, entry.batchName?.trim() || id);

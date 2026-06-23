@@ -130,14 +130,14 @@ const RegistryAddModal = ({
     if (!batchDropdownChoice) return undefined;
 
     try {
-      const batchDbId = await resolveRegistryBatchId({
+      const batchId = await resolveRegistryBatchId({
         batchDropdownChoice,
         customBatchName,
       });
       if (batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE) {
         refetchBatches();
       }
-      return batchDbId;
+      return batchId;
     } catch (error) {
       toast.error(
         t("registry.addEntryError", {
@@ -220,14 +220,14 @@ const RegistryAddModal = ({
   };
 
   const handleAdd = async () => {
-    const batchDbId = await resolveBatchForSave();
-    if (batchDbId === undefined && batchDropdownChoice) return;
+    const batchId = await resolveBatchForSave();
+    if (batchId === undefined && batchDropdownChoice) return;
 
     if (addMode === "multi" && multiInputMode === "files") {
       if (droppedFiles.length === 0) return;
       await onAddFiles({
         files: droppedFiles.map((f) => f.file),
-        ...(batchDbId ? { batchDbId } : {}),
+        ...(batchId ? { batchId } : {}),
       });
       resetForm();
       onOpenChange(false);
@@ -262,7 +262,7 @@ const RegistryAddModal = ({
         urls.map((entryUrl) => ({
           url: entryUrl,
           companyName: "Unknown",
-          ...(batchDbId ? { batchDbId } : {}),
+          ...(batchId ? { batchId } : {}),
         })),
       );
       resetForm();
@@ -288,7 +288,7 @@ const RegistryAddModal = ({
       reportYear: trimmedYear,
       url: trimmedUrl,
       sourceUrl: trimmedSource || undefined,
-      ...(batchDbId ? { batchDbId } : {}),
+      ...(batchId ? { batchId } : {}),
     });
 
     resetForm();

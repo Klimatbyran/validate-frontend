@@ -70,7 +70,7 @@ const RegistryEditModal = ({
     setSourceUrlError(null);
     setS3UrlError(null);
     setSha256Error(null);
-    setBatchDropdownChoice(entry.batchDbId?.trim() ?? "");
+    setBatchDropdownChoice(entry.batchId?.trim() ?? "");
     setCustomBatchName("");
   }, [
     entry.companyName,
@@ -82,7 +82,7 @@ const RegistryEditModal = ({
     entry.s3Key,
     entry.s3Bucket,
     entry.sha256,
-    entry.batchDbId,
+    entry.batchId,
   ]);
 
   const handleSaveEdit = async () => {
@@ -190,7 +190,7 @@ const RegistryEditModal = ({
       updates.sha256 = trimmedSha ? trimmedSha : null;
     }
 
-    let nextBatchDbId: string | null | undefined = undefined;
+    let nextBatchId: string | null | undefined = undefined;
     if (
       batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE &&
       !customBatchName.trim()
@@ -207,7 +207,7 @@ const RegistryEditModal = ({
         if (batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE) {
           refetchBatches();
         }
-        nextBatchDbId = resolved ?? null;
+        nextBatchId = resolved ?? null;
       } catch (error) {
         toast.error(
           t("registry.editReportError", {
@@ -218,13 +218,13 @@ const RegistryEditModal = ({
         return;
       }
     } else {
-      nextBatchDbId = null;
+      nextBatchId = null;
     }
 
-    const prevBatch = entry.batchDbId?.trim() ?? "";
-    const resolvedBatch = nextBatchDbId?.trim() ?? "";
+    const prevBatch = entry.batchId?.trim() ?? "";
+    const resolvedBatch = nextBatchId?.trim() ?? "";
     if (resolvedBatch !== prevBatch) {
-      updates.batchDbId = nextBatchDbId;
+      updates.batchId = nextBatchId;
     }
 
     if (Object.keys(updates).length === 1) {

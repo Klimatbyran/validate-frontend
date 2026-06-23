@@ -244,7 +244,7 @@ export const addRegistryEntriesFromFiles = async (
       ? { reportYear: input.reportYear.trim() }
       : {}),
     ...(input.sourceUrl?.trim() ? { sourceUrl: input.sourceUrl.trim() } : {}),
-    ...(input.batchDbId ? { batchDbId: input.batchDbId } : {}),
+    ...(input.batchId ? { batchId: input.batchId } : {}),
   }));
 
   return addRegistryEntries(entries);
