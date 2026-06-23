@@ -208,7 +208,9 @@ const RegistryAddModal = ({
     toast.success(t("upload.filesUploaded", { count }));
   };
 
-  const handleInputChangeWithToast = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChangeWithToast = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const count = handleInputChange(e);
     if (count === 0) {
       toast.error(t("upload.onlyPdfAllowed"));
@@ -309,10 +311,7 @@ const RegistryAddModal = ({
   const submitDisabled =
     isAdding ||
     (addMode === "single"
-      ? !!companyNameError ||
-        !!yearError ||
-        !!urlError ||
-        !!sourceUrlError
+      ? !!companyNameError || !!yearError || !!urlError || !!sourceUrlError
       : multiInputMode === "files"
         ? droppedFiles.length === 0
         : multiUrlLineCount === 0);

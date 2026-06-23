@@ -82,7 +82,9 @@ export function RegistryTab() {
       }
     }
     return [...byId.entries()]
-      .sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: "base" }))
+      .sort((a, b) =>
+        a[1].localeCompare(b[1], undefined, { sensitivity: "base" }),
+      )
       .map(([id, batchName]) => ({ id, batchName }));
   }, [registryBatches, registry]);
 
@@ -212,9 +214,7 @@ export function RegistryTab() {
       const saved = await addRegistryEntries(entries);
       await loadRegistry();
       refetchRegistryBatches();
-      toast.success(
-        t("registry.addEntriesSuccess", { count: saved.length }),
-      );
+      toast.success(t("registry.addEntriesSuccess", { count: saved.length }));
     } catch (error) {
       const partial = error as Error & { partialSuccess?: RegistryEntry[] };
       if (partial.partialSuccess?.length) {

@@ -23,7 +23,10 @@ function isUploadPdfsResponse(body: unknown): body is UploadPdfsResponse {
 function parseUploadError(errorText: string): string {
   let message = errorText;
   try {
-    const parsed = JSON.parse(errorText) as { error?: string; message?: string };
+    const parsed = JSON.parse(errorText) as {
+      error?: string;
+      message?: string;
+    };
     if (typeof parsed?.error === "string" && parsed.error.trim()) {
       message = parsed.error;
     } else if (typeof parsed?.message === "string" && parsed.message.trim()) {

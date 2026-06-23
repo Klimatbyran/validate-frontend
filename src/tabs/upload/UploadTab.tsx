@@ -198,7 +198,9 @@ export function UploadTab() {
   const handleFileInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files ?? []).filter(
-        (file) => file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"),
+        (file) =>
+          file.type === "application/pdf" ||
+          file.name.toLowerCase().endsWith(".pdf"),
       );
       e.target.value = "";
       addUploadedPdfFiles(files);

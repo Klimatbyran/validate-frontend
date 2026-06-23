@@ -47,7 +47,9 @@ export async function fetchRegistryBatches() {
     throwIfAuthError(response.status);
     throw new Error(`Failed to fetch registry batches: ${response.status}`);
   }
-  const data = (await response.json()) as { batches?: { id: string; batchName: string }[] };
+  const data = (await response.json()) as {
+    batches?: { id: string; batchName: string }[];
+  };
   return Array.isArray(data.batches) ? data.batches : [];
 }
 
@@ -184,9 +186,7 @@ export const addRegistryEntries = async (
 
   const payloads = await Promise.all(
     entries.map(async (entry) => {
-      const cache = entry.s3Url
-        ? null
-        : await cachePdfToS3(entry.url);
+      const cache = entry.s3Url ? null : await cachePdfToS3(entry.url);
       return {
         ...entry,
         ...(cache && {
@@ -237,13 +237,13 @@ export const addRegistryEntriesFromFiles = async (
     s3Bucket: upload.bucket,
     sha256: upload.sha256,
     companyName: input.companyName?.trim() || "Unknown",
-    ...(input.wikidataId?.trim() ? { wikidataId: input.wikidataId.trim() } : {}),
+    ...(input.wikidataId?.trim()
+      ? { wikidataId: input.wikidataId.trim() }
+      : {}),
     ...(input.reportYear?.trim()
       ? { reportYear: input.reportYear.trim() }
       : {}),
-    ...(input.sourceUrl?.trim()
-      ? { sourceUrl: input.sourceUrl.trim() }
-      : {}),
+    ...(input.sourceUrl?.trim() ? { sourceUrl: input.sourceUrl.trim() } : {}),
     ...(input.batchDbId ? { batchDbId: input.batchDbId } : {}),
   }));
 
