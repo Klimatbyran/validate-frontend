@@ -10,12 +10,24 @@ import type {
 import { filterRegistryEntries } from "./registry-utils";
 import { uploadRegistryPdfs } from "./registry-upload-api";
 
+import type { RunReportsPipelineConfig } from "@/hooks/useRunReportsPipeline";
+
 const REGISTRY_BATCHES_LIMIT = 500;
 
 function registryUrl(path: string): string {
   const base = getUnearthApiBaseUrl().replace(/\/+$/, "");
   const segment = path.replace(/^\//, "");
   return `${base}/${segment}`;
+}
+
+/** Run-reports modal uses Unearth registry batches (not Garbo queue-archive). */
+export function getRegistryRunReportsPipelineConfig(): RunReportsPipelineConfig {
+  return {
+    batchesListUrl: registryUrl(
+      `reports/registry/batches?limit=${REGISTRY_BATCHES_LIMIT}`,
+    ),
+    batchesApiUrl: registryUrl("reports/registry/batches"),
+  };
 }
 
 export const fetchRegistryList = async () => {

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { FileDropZone } from "@/components/FileDropZone";
 import { usePdfFileDrop } from "@/hooks/usePdfFileDrop";
-import { useRegistryBatches } from "@/tabs/registry/hooks/useRegistryBatches";
+import { useRegistryBatchesContext } from "@/tabs/registry/contexts/RegistryBatchesContext";
 import { NEW_BATCH_DROPDOWN_VALUE } from "@/lib/garbo-batch-types";
 import { validateUrls } from "@/lib/utils";
 import { resolveRegistryBatchId } from "../lib/resolve-registry-batch-id";
@@ -85,7 +85,7 @@ const RegistryAddModal = ({
     batches: existingBatches,
     isLoading: batchesLoading,
     refetch: refetchBatches,
-  } = useRegistryBatches();
+  } = useRegistryBatchesContext();
 
   const multiUrlLineCount = urlInput
     .split("\n")

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { NEW_BATCH_DROPDOWN_VALUE } from "@/lib/garbo-batch-types";
-import { useRegistryBatches } from "@/tabs/registry/hooks/useRegistryBatches";
+import { useRegistryBatchesContext } from "@/tabs/registry/contexts/RegistryBatchesContext";
 import { resolveRegistryBatchId } from "@/tabs/registry/lib/resolve-registry-batch-id";
 import { Button } from "@/ui/button";
 import {
@@ -53,7 +53,7 @@ const RegistryEditModal = ({
     batches: existingBatches,
     isLoading: batchesLoading,
     refetch: refetchBatches,
-  } = useRegistryBatches();
+  } = useRegistryBatchesContext();
 
   useEffect(() => {
     setCompanyName(entry.companyName ?? "");

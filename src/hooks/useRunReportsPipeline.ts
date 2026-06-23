@@ -3,7 +3,10 @@ import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { useBatches } from "@/hooks/useBatches";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
-import { NEW_BATCH_DROPDOWN_VALUE } from "@/lib/garbo-batch-types";
+import {
+  NEW_BATCH_DROPDOWN_VALUE,
+  type GarboBatchOption,
+} from "@/lib/garbo-batch-types";
 import { resolvePipelineBatchId } from "@/lib/resolve-pipeline-batch-id";
 import { useTagOptions } from "@/tabs/upload/hooks/useTagOptions";
 import {
@@ -31,6 +34,12 @@ export type RunReportsPipelineConfig = {
   batchesListUrl?: string;
   parsePdfEndpoint?: string;
   toastKeys?: Partial<RunReportsPipelineToastKeys>;
+  /** Reuse registry tab batch list instead of fetching again. */
+  batchesOverride?: {
+    batches: GarboBatchOption[];
+    isLoading: boolean;
+    refetch: () => void;
+  };
 };
 
 const DEFAULT_TOAST_KEYS: RunReportsPipelineToastKeys = {
@@ -53,11 +62,15 @@ export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
   const [customBatchName, setCustomBatchName] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  const {
-    batches: existingBatches,
-    isLoading: batchesLoading,
-    refetch: refetchBatches,
-  } = useBatches(config?.batchesListUrl);
+  const batchesOverride = config?.batchesOverride;
+  const internalBatches = useBatches(
+    batchesOverride ? undefined : config?.batchesListUrl,
+    { enabled: !batchesOverride },
+  );
+  const existingBatches = batchesOverride?.batches ?? internalBatches.batches;
+  const batchesLoading =
+    batchesOverride?.isLoading ?? internalBatches.isLoading;
+  const refetchBatches = batchesOverride?.refetch ?? internalBatches.refetch;
   const {
     tagOptions,
     loading: tagsLoading,
