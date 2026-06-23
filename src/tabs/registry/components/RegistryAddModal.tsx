@@ -140,7 +140,7 @@ const RegistryAddModal = ({
       return batchDbId;
     } catch (error) {
       toast.error(
-        t("upload.couldNotAddJobs", {
+        t("registry.addEntryError", {
           message:
             error instanceof Error ? error.message : t("upload.unknownError"),
         }),
