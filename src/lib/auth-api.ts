@@ -5,13 +5,21 @@
 import axios from "axios";
 import { getUnearthApiBaseUrl } from "@/config/api-env";
 
+export function getAuthApiBaseUrl(): string {
+  return `${getUnearthApiBaseUrl()}/auth`.replace(/\/+/g, "/");
+}
+
 export const authApi = axios.create({
-  baseURL: getUnearthApiBaseUrl() + "/auth",
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
   },
   timeout: 30000,
+});
+
+authApi.interceptors.request.use((config) => {
+  config.baseURL = getAuthApiBaseUrl();
+  return config;
 });
 
 /**
@@ -44,6 +52,5 @@ function getCallbackUrl(): string {
 export function getGithubAuthUrl(): string {
   const callbackUrl = getCallbackUrl();
   const redirectUri = encodeURIComponent(callbackUrl);
-  const base = getUnearthApiBaseUrl() + "/auth";
-  return `${base}/github?redirect_uri=${redirectUri}`;
+  return `${getAuthApiBaseUrl()}/github?redirect_uri=${redirectUri}`;
 }
