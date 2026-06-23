@@ -57,7 +57,11 @@ export function usePdfFileDrop() {
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files ?? []);
+      const files = Array.from(e.target.files ?? []).filter(
+        (file) =>
+          file.type === "application/pdf" ||
+          file.name.toLowerCase().endsWith(".pdf"),
+      );
       e.target.value = "";
       return appendFiles(files);
     },
