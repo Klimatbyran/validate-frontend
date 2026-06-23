@@ -210,7 +210,7 @@ const RegistryEditModal = ({
         nextBatchDbId = resolved ?? null;
       } catch (error) {
         toast.error(
-          t("upload.couldNotAddJobs", {
+          t("registry.editReportError", {
             message:
               error instanceof Error ? error.message : t("upload.unknownError"),
           }),
