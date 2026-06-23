@@ -11,6 +11,8 @@ export type RegistrySortKey =
 
 export type ReportYearFilterValue = "all" | "missing" | string;
 
+export type RegistryBatchFilterValue = "all" | "missing" | string;
+
 export type WikidataPresenceFilter = "all" | "present" | "missing";
 
 /** Tag filters use Garbo company list (`wikidataId` → `tags`). */
@@ -22,6 +24,7 @@ export type RegistryTagFilterMode =
 /** Single object for registry table filters + sort (keeps tab state readable). */
 export interface RegistryViewFilters {
   year: ReportYearFilterValue;
+  batch: RegistryBatchFilterValue;
   wikidata: WikidataPresenceFilter;
   tagMode: RegistryTagFilterMode;
   tagSlugs: string[];
@@ -31,6 +34,7 @@ export interface RegistryViewFilters {
 export function defaultRegistryViewFilters(): RegistryViewFilters {
   return {
     year: "all",
+    batch: "all",
     wikidata: "all",
     tagMode: "ignore",
     tagSlugs: [],
@@ -137,6 +141,7 @@ export function applyRegistryTableFilters(
   entries: RegistryEntry[],
   opts: {
     reportYear: ReportYearFilterValue;
+    batch: RegistryBatchFilterValue;
     wikidata: WikidataPresenceFilter;
     tagMode: RegistryTagFilterMode;
     tagSlugs: string[];
@@ -148,6 +153,12 @@ export function applyRegistryTableFilters(
       if ((e.reportYear ?? "").trim()) return false;
     } else if (opts.reportYear !== "all") {
       if ((e.reportYear ?? "").trim() !== opts.reportYear) return false;
+    }
+
+    if (opts.batch === "missing") {
+      if ((e.batchDbId ?? "").trim()) return false;
+    } else if (opts.batch !== "all") {
+      if ((e.batchDbId ?? "").trim() !== opts.batch) return false;
     }
 
     if (opts.wikidata === "present" && !isWikidataIdPresent(e.wikidataId)) {

@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
+import { NEW_BATCH_DROPDOWN_VALUE } from "@/lib/garbo-batch-types";
+import { useRegistryBatches } from "@/tabs/registry/hooks/useRegistryBatches";
+import { resolveRegistryBatchId } from "@/tabs/registry/lib/resolve-registry-batch-id";
 import { Button } from "@/ui/button";
 import {
   Dialog,
@@ -11,6 +15,7 @@ import {
 } from "@/ui/dialog";
 import type { RegistryEntry, RegistryEntryUpdate } from "../lib/registry-types";
 import { isValidOptionalHttpUrl } from "../lib/registry-utils";
+import { RegistryAddBatchOptions } from "./RegistryAddBatchOptions";
 
 interface RegistryEditModalProps {
   entry: RegistryEntry;
@@ -42,6 +47,13 @@ const RegistryEditModal = ({
   const [sourceUrlError, setSourceUrlError] = useState<string | null>(null);
   const [s3UrlError, setS3UrlError] = useState<string | null>(null);
   const [sha256Error, setSha256Error] = useState<string | null>(null);
+  const [batchDropdownChoice, setBatchDropdownChoice] = useState("");
+  const [customBatchName, setCustomBatchName] = useState("");
+  const {
+    batches: existingBatches,
+    isLoading: batchesLoading,
+    refetch: refetchBatches,
+  } = useRegistryBatches();
 
   useEffect(() => {
     setCompanyName(entry.companyName ?? "");
@@ -58,6 +70,8 @@ const RegistryEditModal = ({
     setSourceUrlError(null);
     setS3UrlError(null);
     setSha256Error(null);
+    setBatchDropdownChoice(entry.batchDbId?.trim() ?? "");
+    setCustomBatchName("");
   }, [
     entry.companyName,
     entry.reportYear,
@@ -68,6 +82,7 @@ const RegistryEditModal = ({
     entry.s3Key,
     entry.s3Bucket,
     entry.sha256,
+    entry.batchDbId,
   ]);
 
   const handleSaveEdit = async () => {
@@ -175,6 +190,43 @@ const RegistryEditModal = ({
       updates.sha256 = trimmedSha ? trimmedSha : null;
     }
 
+    let nextBatchDbId: string | null | undefined = undefined;
+    if (
+      batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE &&
+      !customBatchName.trim()
+    ) {
+      toast.error(t("upload.batchNameRequired"));
+      return;
+    }
+    if (batchDropdownChoice) {
+      try {
+        const resolved = await resolveRegistryBatchId({
+          batchDropdownChoice,
+          customBatchName,
+        });
+        if (batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE) {
+          refetchBatches();
+        }
+        nextBatchDbId = resolved ?? null;
+      } catch (error) {
+        toast.error(
+          t("upload.couldNotAddJobs", {
+            message:
+              error instanceof Error ? error.message : t("upload.unknownError"),
+          }),
+        );
+        return;
+      }
+    } else {
+      nextBatchDbId = null;
+    }
+
+    const prevBatch = entry.batchDbId?.trim() ?? "";
+    const resolvedBatch = nextBatchDbId?.trim() ?? "";
+    if (resolvedBatch !== prevBatch) {
+      updates.batchDbId = nextBatchDbId;
+    }
+
     if (Object.keys(updates).length === 1) {
       onOpenChange(false);
       return;
@@ -195,6 +247,17 @@ const RegistryEditModal = ({
         </DialogHeader>
 
         <div className="grid gap-3">
+          <RegistryAddBatchOptions
+            batch={{
+              existingBatches,
+              batchesLoading,
+              batchDropdownChoice,
+              onBatchDropdownChoiceChange: setBatchDropdownChoice,
+              customBatchName,
+              onCustomBatchNameChange: setCustomBatchName,
+            }}
+          />
+
           <label className="text-sm text-gray-02">
             {t("registry.companyName")}
             <input

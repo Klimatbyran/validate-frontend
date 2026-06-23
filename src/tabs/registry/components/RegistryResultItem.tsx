@@ -71,6 +71,9 @@ const RegistryResultItem = ({
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-gray-02">{entry.reportYear}</td>
+      <td className="px-4 py-3 text-sm text-gray-02">
+        {entry.batchName?.trim() || "—"}
+      </td>
       <td className="px-4 py-3 text-sm text-gray-02 max-w-[22rem]">
         <div className="flex flex-wrap gap-2">
           {linkItems.length ? (

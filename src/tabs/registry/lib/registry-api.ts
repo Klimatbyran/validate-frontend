@@ -5,8 +5,12 @@ import type {
   RegistryEntry,
   RegistryEntryUpdate,
   RegistryNewEntry,
+  RegistryBulkFileAddInput,
 } from "./registry-types";
 import { filterRegistryEntries } from "./registry-utils";
+import { uploadRegistryPdfs } from "./registry-upload-api";
+
+const REGISTRY_BATCHES_LIMIT = 500;
 
 function registryUrl(path: string): string {
   const base = getUnearthApiBaseUrl().replace(/\/+$/, "");
@@ -17,7 +21,7 @@ function registryUrl(path: string): string {
 export const fetchRegistryList = async () => {
   const url = registryUrl("reports/registry");
   try {
-    const response = await garboAuthFetch(url);
+    const response = await garboAuthFetch(url, { cache: "no-store" });
     if (response.ok) {
       const data = await response.json();
       return data;
@@ -33,6 +37,19 @@ export const fetchRegistryList = async () => {
     throw error instanceof Error ? error : new Error(msg);
   }
 };
+
+export async function fetchRegistryBatches() {
+  const url = registryUrl(
+    `reports/registry/batches?limit=${REGISTRY_BATCHES_LIMIT}`,
+  );
+  const response = await garboAuthFetch(url, { cache: "no-store" });
+  if (!response.ok) {
+    throwIfAuthError(response.status);
+    throw new Error(`Failed to fetch registry batches: ${response.status}`);
+  }
+  const data = (await response.json()) as { batches?: { id: string; batchName: string }[] };
+  return Array.isArray(data.batches) ? data.batches : [];
+}
 
 export async function searchRegistryEntries(
   query: string,
@@ -111,54 +128,126 @@ async function cachePdfToS3(sourceUrl: string): Promise<PdfCacheResult | null> {
   }
 }
 
+async function saveRegistryPayloads(
+  payloads: RegistryNewEntry[],
+): Promise<{ saved: RegistryEntry[]; partialFailure?: string }> {
+  const url = registryUrl("internal-companies/reports/save-reports");
+  const response = await garboAuthFetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(payloads),
+  });
+
+  let body: {
+    successes?: RegistryEntry[];
+    failed?: unknown[];
+    message?: string;
+  } | null = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+
+  const saved = body?.successes ?? [];
+
+  if (!response.ok) {
+    if (saved.length > 0) {
+      return {
+        saved,
+        partialFailure:
+          body?.message ??
+          `Some registry entries could not be saved (${body?.failed?.length ?? 0} failed).`,
+      };
+    }
+    const errorMsg =
+      body?.message ??
+      `Failed to add registry entries: ${response.status} ${response.statusText}`;
+    throw new Error(errorMsg);
+  }
+
+  if (saved.length === 0) {
+    throw new Error("No entries returned from server");
+  }
+  return { saved };
+}
+
+export const addRegistryEntries = async (
+  entries: RegistryNewEntry[],
+): Promise<RegistryEntry[]> => {
+  if (entries.length === 0) {
+    throw new Error("At least one registry entry is required");
+  }
+
+  const payloads = await Promise.all(
+    entries.map(async (entry) => {
+      const cache = entry.s3Url
+        ? null
+        : await cachePdfToS3(entry.url);
+      return {
+        ...entry,
+        ...(cache && {
+          s3Url: cache.publicUrl,
+          s3Key: cache.key,
+          s3Bucket: cache.bucket,
+          sha256: cache.sha256,
+        }),
+      };
+    }),
+  );
+
+  try {
+    const { saved, partialFailure } = await saveRegistryPayloads(payloads);
+    if (partialFailure) {
+      const err = new Error(partialFailure) as Error & {
+        partialSuccess?: RegistryEntry[];
+      };
+      err.partialSuccess = saved;
+      throw err;
+    }
+    return saved;
+  } catch (error) {
+    console.error("Failed to add registry entries", error);
+    throw error instanceof Error ? error : new Error(String(error));
+  }
+};
+
 export const addRegistryEntry = async (
   entry: RegistryNewEntry,
 ): Promise<RegistryEntry> => {
-  const cache = await cachePdfToS3(entry.url);
+  const [saved] = await addRegistryEntries([entry]);
+  return saved;
+};
 
-  const payload: RegistryNewEntry = {
-    ...entry,
-    ...(cache && {
-      s3Url: cache.publicUrl,
-      s3Key: cache.key,
-      s3Bucket: cache.bucket,
-      sha256: cache.sha256,
-    }),
-  };
-
-  const url = registryUrl("internal-companies/reports/save-reports");
-  try {
-    const response = await garboAuthFetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify([payload]),
-    });
-
-    let body: { successes?: RegistryEntry[]; message?: string } | null = null;
-    try {
-      body = await response.json();
-    } catch {
-      body = null;
-    }
-
-    if (!response.ok) {
-      const errorMsg =
-        body?.message ??
-        `Failed to add registry entry: ${response.status} ${response.statusText}`;
-      throw new Error(errorMsg);
-    }
-
-    const saved = body?.successes?.[0];
-    if (!saved) throw new Error("No entry returned from server");
-    return saved;
-  } catch (error) {
-    const msg = `Failed to add registry entry for URL ${entry.url}`;
-    console.error(msg, error);
-    throw error instanceof Error ? error : new Error(msg);
+export const addRegistryEntriesFromFiles = async (
+  input: RegistryBulkFileAddInput,
+): Promise<RegistryEntry[]> => {
+  const uploads = await uploadRegistryPdfs(input.files);
+  if (uploads.length === 0) {
+    throw new Error("No PDF files to add");
   }
+
+  const entries: RegistryNewEntry[] = uploads.map((upload) => ({
+    url: upload.publicUrl,
+    s3Url: upload.publicUrl,
+    s3Key: upload.key,
+    s3Bucket: upload.bucket,
+    sha256: upload.sha256,
+    companyName: input.companyName?.trim() || "Unknown",
+    ...(input.wikidataId?.trim() ? { wikidataId: input.wikidataId.trim() } : {}),
+    ...(input.reportYear?.trim()
+      ? { reportYear: input.reportYear.trim() }
+      : {}),
+    ...(input.sourceUrl?.trim()
+      ? { sourceUrl: input.sourceUrl.trim() }
+      : {}),
+    ...(input.batchDbId ? { batchDbId: input.batchDbId } : {}),
+  }));
+
+  return addRegistryEntries(entries);
 };
 
 export const editRegistryEntry = async (entry: RegistryEntryUpdate) => {

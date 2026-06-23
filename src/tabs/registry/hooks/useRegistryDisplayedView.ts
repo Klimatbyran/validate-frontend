@@ -27,6 +27,7 @@ export function useRegistryDisplayedView(
     const distinctReportYears = collectDistinctReportYears(registry);
     const tableFiltered = applyRegistryTableFilters(textFiltered, {
       reportYear: filters.year,
+      batch: filters.batch,
       wikidata: filters.wikidata,
       tagMode: filters.tagMode,
       tagSlugs: filters.tagSlugs,
@@ -35,6 +36,7 @@ export function useRegistryDisplayedView(
     const displayedRegistry = sortRegistryEntries(tableFiltered, filters.sort);
     const hasStructuredFilters =
       filters.year !== "all" ||
+      filters.batch !== "all" ||
       filters.wikidata !== "all" ||
       filters.tagMode !== "ignore";
     const stats = buildRegistryStats(displayedRegistry);
