@@ -20,11 +20,29 @@ export type RunReportsPipelineRunOptions = {
   workers: UploadWorkerRunOptionsProps;
 };
 
-/**
- * Shared pipeline run state + `createJobsFromUrls` flow for Registry and Crawler “run reports” modals.
- */
-export function useRunReportsPipeline() {
+export type RunReportsPipelineToastKeys = {
+  partial: string;
+  success: string;
+  error: string;
+};
+
+export type RunReportsPipelineConfig = {
+  batchesApiUrl?: string;
+  batchesListUrl?: string;
+  parsePdfEndpoint?: string;
+  toastKeys?: Partial<RunReportsPipelineToastKeys>;
+};
+
+const DEFAULT_TOAST_KEYS: RunReportsPipelineToastKeys = {
+  partial: "registry.runReportsPartial",
+  success: "registry.runReportsSuccess",
+  error: "registry.runReportsError",
+};
+
+/** Shared run-reports flow for Registry, Crawler, and Overview. Optional config for fixed stage endpoints. */
+export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
   const { t } = useI18n();
+  const toastKeys = { ...DEFAULT_TOAST_KEYS, ...config?.toastKeys };
   const [isRunningReports, setIsRunningReports] = useState(false);
   const [autoApprove, setAutoApprove] = useState(true);
   const [runAllWorkers, setRunAllWorkers] = useState(false);
@@ -39,7 +57,7 @@ export function useRunReportsPipeline() {
     batches: existingBatches,
     isLoading: batchesLoading,
     refetch: refetchBatches,
-  } = useBatches();
+  } = useBatches(config?.batchesListUrl);
   const {
     tagOptions,
     loading: tagsLoading,
@@ -89,6 +107,7 @@ export function useRunReportsPipeline() {
         pipelineBatchId = await resolvePipelineBatchId({
           batchDropdownChoice,
           customBatchName,
+          batchesApiUrl: config?.batchesApiUrl,
         });
       } catch (e) {
         toast.error(
@@ -108,6 +127,7 @@ export function useRunReportsPipeline() {
           batchId: pipelineBatchId,
           runOnly,
           tags,
+          parsePdfEndpoint: config?.parsePdfEndpoint,
         });
 
         const envelope =
@@ -119,16 +139,14 @@ export function useRunReportsPipeline() {
 
         if (cacheErrors.length > 0) {
           toast.warning(
-            t("registry.runReportsPartial", {
+            t(toastKeys.partial, {
               failed: cacheErrors.length,
               total: urls.length,
               succeeded: urls.length - cacheErrors.length,
             }),
           );
         } else {
-          toast.success(
-            t("registry.runReportsSuccess", { count: urls.length }),
-          );
+          toast.success(t(toastKeys.success, { count: urls.length }));
         }
 
         if (batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE) {
@@ -142,13 +160,14 @@ export function useRunReportsPipeline() {
           error instanceof UploadApiError || error instanceof Error
             ? error.message
             : t("upload.unknownError");
-        toast.error(t("registry.runReportsError", { message: errorMessage }));
+        toast.error(t(toastKeys.error, { message: errorMessage }));
       } finally {
         setIsRunningReports(false);
       }
     },
     [
       t,
+      toastKeys,
       runAllWorkers,
       selectedWorkers,
       batchDropdownChoice,
@@ -157,6 +176,8 @@ export function useRunReportsPipeline() {
       forceReindex,
       runOnly,
       tags,
+      config?.batchesApiUrl,
+      config?.parsePdfEndpoint,
       refetchBatches,
     ],
   );
@@ -209,7 +230,6 @@ export function useRunReportsPipeline() {
     setAutoApprove,
     runOptions,
     runForUrls,
-    /** Same `useTagOptions` data used in the run modal; reuse for tab filters (e.g. Registry). */
     tagOptions,
     tagsLoading,
     tagsError,

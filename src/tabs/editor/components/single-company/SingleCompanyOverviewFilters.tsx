@@ -73,7 +73,7 @@ export function SingleCompanyOverviewFilters({ list, afterSlot }: Props) {
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-02 mb-1">
-            {t("editor.companies.dataYear")}
+            {t("yearLabels.dataYear")}
           </label>
           <MultiSelectDropdown
             options={list.dataYears}
@@ -86,7 +86,7 @@ export function SingleCompanyOverviewFilters({ list, afterSlot }: Props) {
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-02 mb-1">
-            {t("editor.companies.reportYear")}
+            {t("yearLabels.companyReportYear")}
           </label>
           <MultiSelectDropdown
             options={list.reportYears}

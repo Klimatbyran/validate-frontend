@@ -1,5 +1,5 @@
 import type { GarboReportingPeriodSummary } from "./types";
-import { getPeriodReportYear } from "./reporting-period-ui";
+import { getPersistedCompanyReportYearFromPeriod } from "./reporting-period-ui";
 
 export const UNLINKED_REPORT_SHELL_KEY = "__unlinked__";
 
@@ -51,8 +51,9 @@ export function groupPeriodsByReportShell(
 
   for (const [shellKey, shellPeriods] of byShell) {
     const reportYear =
-      shellPeriods.map((p) => getPeriodReportYear(p)).find((y) => y != null) ??
-      null;
+      shellPeriods
+        .map((p) => getPersistedCompanyReportYearFromPeriod(p))
+        .find((y) => y != null) ?? null;
 
     groups.push({
       shellKey,

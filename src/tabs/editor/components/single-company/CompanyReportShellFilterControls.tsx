@@ -50,7 +50,7 @@ export function CompanyReportShellFilterControls({
           const shell = shellByKey.get(shellKey);
           if (!shell) return shellKey;
           return formatReportShellOptionLabel(shell, {
-            reportYear: t("editor.companies.reportYear"),
+            reportYear: t("yearLabels.companyReportYear"),
             noReportYear: t("editor.singleCompanyView.noReportYear"),
             unlinkedShell: t("editor.periodEditor.unlinkedReportShell"),
             companyReportId: t("editor.singleCompanyView.companyReportId"),

@@ -2,7 +2,10 @@ import type {
   GarboCompanyListItem,
   GarboReportingPeriodSummary,
 } from "./types";
-import { getPeriodDataYear, getPeriodReportYear } from "./reporting-period-ui";
+import {
+  getPeriodDataYear,
+  getPersistedCompanyReportYearFromPeriod,
+} from "./reporting-period-ui";
 import {
   getPeriodShellKey,
   UNLINKED_REPORT_SHELL_KEY,
@@ -55,7 +58,7 @@ export function expandCompaniesToReportRows(
     for (const [reportKey, reportPeriods] of byReport) {
       const reportYear =
         reportPeriods
-          .map((p) => getPeriodReportYear(p))
+          .map((p) => getPersistedCompanyReportYearFromPeriod(p))
           .find((y) => y != null) ?? null;
 
       rows.push({
@@ -114,7 +117,7 @@ export function collectReportYearsFromCompanies(
   const years = new Set<string>();
   for (const company of companies) {
     for (const period of company.reportingPeriods ?? []) {
-      const y = getPeriodReportYear(period);
+      const y = getPersistedCompanyReportYearFromPeriod(period);
       if (y) years.add(y);
     }
   }

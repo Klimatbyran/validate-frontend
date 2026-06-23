@@ -36,6 +36,7 @@ export function MainLayout() {
             <TabsList className="bg-gray-04/50 backdrop-blur-sm">
               <TabsTrigger value="crawler">{t("nav.crawler")}</TabsTrigger>
               <TabsTrigger value="registry">{t("nav.registry")}</TabsTrigger>
+              <TabsTrigger value="overview">{t("nav.overview")}</TabsTrigger>
               <TabsTrigger value="upload">{t("nav.upload")}</TabsTrigger>
               {isAuthenticated && (
                 <TabsTrigger value="access">{t("nav.apiAccess")}</TabsTrigger>
@@ -60,6 +61,7 @@ export function MainLayout() {
                     tab === "jobbstatus" ||
                     tab === "crawler" ||
                     tab === "registry" ||
+                    tab === "overview" ||
                     tab === "editor"
                       ? "space-y-6"
                       : undefined

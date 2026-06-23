@@ -1,10 +1,5 @@
 import React from "react";
 import {
-  ApiAuthError,
-  garboAuthFetch,
-  throwIfAuthError,
-} from "@/lib/garbo-auth-fetch";
-import {
   Company,
   CompanyRow,
   DataPointMetric,
@@ -12,14 +7,14 @@ import {
   DiscrepancyType,
   DATA_POINTS,
 } from "../types";
+import { fetchStageAndProdPipelineCompanies } from "@/lib/pipeline-companies-cross-env";
 import {
-  getStagePipelineCompaniesListUrl,
-  getProdPipelineCompaniesListUrl,
   getDataPointValue,
   getDataPointVerified,
   classifyDiscrepancy,
   getUnitErrorFactor,
   companiesToMapById,
+  companyCrossEnvKey,
   reclassifyDiscrepancyForCategoryError,
   applyCategoryErrorToRows,
   isProdCompanyFullyVerifiedForYear,
@@ -38,62 +33,29 @@ export function useErrorBrowserData(
   verifiedOnly: boolean,
 ) {
   const [isLoading, setIsLoading] = React.useState(false);
-  const [isAuthError, setIsAuthError] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [stageCompanies, setStageCompanies] = React.useState<Company[]>([]);
   const [prodCompanies, setProdCompanies] = React.useState<Company[]>([]);
 
-  const fetchPipelineCompanies = React.useCallback(
-    async (label: "Stage" | "Prod", url: string): Promise<Company[]> => {
-      const response = await garboAuthFetch(url, {
-        headers: { Accept: "application/json" },
-      });
-
-      if (response.ok) {
-        return response.json() as Promise<Company[]>;
-      }
-
-      throwIfAuthError(response.status);
-
-      const body = await response.text().catch(() => "");
-      throw new Error(
-        `Failed to fetch ${label} pipeline companies (${response.status}) from ${url}${body ? `: ${body.slice(0, 200)}` : ""}`,
-      );
-    },
-    [],
-  );
-
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    setIsAuthError(false);
-
-    const stageUrl = getStagePipelineCompaniesListUrl();
-    const prodUrl = getProdPipelineCompaniesListUrl();
 
     try {
-      const [stage, prod] = await Promise.all([
-        fetchPipelineCompanies("Stage", stageUrl),
-        fetchPipelineCompanies("Prod", prodUrl),
-      ]);
+      const { stageCompanies: stage, prodCompanies: prod } =
+        await fetchStageAndProdPipelineCompanies();
 
       setStageCompanies(stage);
       setProdCompanies(prod);
     } catch (err) {
-      if (err instanceof ApiAuthError) {
-        setIsAuthError(true);
-        setStageCompanies([]);
-        setProdCompanies([]);
-      } else {
-        const message = err instanceof Error ? err.message : "Unknown error";
-        setError(message);
-        if (import.meta.env.DEV)
-          console.error("useErrorBrowserData fetch error:", err);
-      }
+      const message = err instanceof Error ? err.message : "Unknown error";
+      setError(message);
+      if (import.meta.env.DEV)
+        console.error("useErrorBrowserData fetch error:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [fetchPipelineCompanies]);
+  }, []);
 
   React.useEffect(() => {
     fetchData();
@@ -109,15 +71,19 @@ export function useErrorBrowserData(
       (tags ?? []).some((t) => selectedTags.includes(t));
 
     stageCompanies.forEach((c) => {
-      if (matches(c.tags)) idsWithSelectedTag.add(c.id);
+      if (matches(c.tags)) idsWithSelectedTag.add(companyCrossEnvKey(c));
     });
     prodCompanies.forEach((c) => {
-      if (matches(c.tags)) idsWithSelectedTag.add(c.id);
+      if (matches(c.tags)) idsWithSelectedTag.add(companyCrossEnvKey(c));
     });
 
     return {
-      stage: stageCompanies.filter((c) => idsWithSelectedTag.has(c.id)),
-      prod: prodCompanies.filter((c) => idsWithSelectedTag.has(c.id)),
+      stage: stageCompanies.filter((c) =>
+        idsWithSelectedTag.has(companyCrossEnvKey(c)),
+      ),
+      prod: prodCompanies.filter((c) =>
+        idsWithSelectedTag.has(companyCrossEnvKey(c)),
+      ),
     };
   }, [stageCompanies, prodCompanies, selectedTags]);
 
@@ -128,11 +94,11 @@ export function useErrorBrowserData(
     const allIds = new Set([...stageMap.keys(), ...prodMap.keys()]);
     const rows: CompanyRow[] = [];
 
-    for (const companyId of allIds) {
-      const stageCompany = stageMap.get(companyId);
-      const prodCompany = prodMap.get(companyId);
+    for (const crossEnvKey of allIds) {
+      const stageCompany = stageMap.get(crossEnvKey);
+      const prodCompany = prodMap.get(crossEnvKey);
 
-      const name = stageCompany?.name || prodCompany?.name || companyId;
+      const name = stageCompany?.name || prodCompany?.name || crossEnvKey;
       const tags = Array.from(
         new Set([...(stageCompany?.tags ?? []), ...(prodCompany?.tags ?? [])]),
       );
@@ -178,12 +144,12 @@ export function useErrorBrowserData(
           selectedDataPoint,
         );
         const rowKey = slot.shellKey
-          ? `${companyId}:${slot.shellKey}`
-          : companyId;
+          ? `${crossEnvKey}:${slot.shellKey}`
+          : crossEnvKey;
 
         rows.push({
           rowKey,
-          id: companyId,
+          id: stageCompany?.id ?? prodCompany?.id ?? crossEnvKey,
           wikidataId:
             stageCompany?.wikidataId ?? prodCompany?.wikidataId ?? null,
           name,
@@ -512,9 +478,9 @@ export function useErrorBrowserData(
     const allIds = Array.from(new Set([...stageMap.keys(), ...prodMap.keys()]));
     const companyErrors: WorstCompany[] = [];
 
-    for (const companyId of allIds) {
-      const stageCompany = stageMap.get(companyId);
-      const prodCompany = prodMap.get(companyId);
+    for (const crossEnvKey of allIds) {
+      const stageCompany = stageMap.get(crossEnvKey);
+      const prodCompany = prodMap.get(crossEnvKey);
 
       if (!stageCompany || !prodCompany) continue;
 
@@ -525,7 +491,7 @@ export function useErrorBrowserData(
         selectedReportYear,
       );
 
-      const name = stageCompany.name || prodCompany.name || companyId;
+      const name = stageCompany.name || prodCompany.name || crossEnvKey;
       let errorCount = 0;
       let totalDataPoints = 0;
       const breakdown: Record<string, number> = {};
@@ -583,7 +549,7 @@ export function useErrorBrowserData(
 
       if (errorCount > 0) {
         companyErrors.push({
-          id: companyId,
+          id: stageCompany.id ?? prodCompany.id ?? crossEnvKey,
           wikidataId: stageCompany.wikidataId ?? prodCompany.wikidataId ?? null,
           name,
           errorCount,
@@ -605,7 +571,12 @@ export function useErrorBrowserData(
   const difficultCompanyIds = React.useMemo(() => {
     const ids = new Map<string, number>();
     for (const c of worstCompanies) {
-      if (c.errorCount >= 5) ids.set(c.id, c.errorCount);
+      if (c.errorCount >= 5) {
+        ids.set(
+          c.wikidataId?.trim() ? c.wikidataId.trim() : `local:${c.id}`,
+          c.errorCount,
+        );
+      }
     }
     return ids;
   }, [worstCompanies]);
@@ -636,7 +607,6 @@ export function useErrorBrowserData(
 
   return {
     isLoading,
-    isAuthError,
     error,
     fetchData,
     comparisonRows,

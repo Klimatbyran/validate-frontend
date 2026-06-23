@@ -8,15 +8,31 @@ import {
 import { getDataPointValue } from "./emissions";
 import { findReportingPeriodForShell } from "./reporting-period-comparison";
 
-/** Build a map of companies by internal id for quick lookup. */
+/** Stable key for pairing the same company across stage and prod (wikidataId when present). */
+export function companyCrossEnvKey(company: Company): string {
+  const wikidataId = company.wikidataId?.trim();
+  if (wikidataId) return wikidataId;
+  return `local:${company.id}`;
+}
+
+export function crossEnvKeyFromRow(
+  row: Pick<CompanyRow, "wikidataId" | "id">,
+): string {
+  const wikidataId = row.wikidataId?.trim();
+  if (wikidataId) return wikidataId;
+  return `local:${row.id}`;
+}
+
+/** Build a map of companies by cross-environment key for stage/prod comparison. */
 export function companiesToMapById(companies: Company[]): Map<string, Company> {
   const map = new Map<string, Company>();
-  companies.forEach((c) => map.set(c.id, c));
+  companies.forEach((c) => map.set(companyCrossEnvKey(c), c));
   return map;
 }
 
+/** @deprecated Use companyCrossEnvKey — internal id does not match across environments. */
 export function companyUnionKey(company: Company): string {
-  return company.id;
+  return companyCrossEnvKey(company);
 }
 
 const UNIT_ERROR_POWERS = [10, 100, 1000, 10000, 100000, 1000000] as const;
@@ -141,8 +157,8 @@ export function applyCategoryErrorToRows(
     )
       continue;
 
-    const stageCompany = stageMap.get(row.id);
-    const prodCompany = prodMap.get(row.id);
+    const stageCompany = stageMap.get(crossEnvKeyFromRow(row));
+    const prodCompany = prodMap.get(crossEnvKeyFromRow(row));
 
     if (
       (row.discrepancy === "error" ||

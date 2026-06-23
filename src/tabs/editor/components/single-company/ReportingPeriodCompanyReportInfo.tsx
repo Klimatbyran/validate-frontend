@@ -2,7 +2,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import type { GarboReportingPeriodSummary } from "../../lib/types";
 import {
   editorSecondaryIdTextClass,
-  getPeriodReportYear,
+  resolveCompanyReportYearFromPeriod,
 } from "../../lib/reporting-period-ui";
 
 export function ReportingPeriodCompanyReportInfo({
@@ -11,30 +11,34 @@ export function ReportingPeriodCompanyReportInfo({
   period: GarboReportingPeriodSummary;
 }) {
   const { t } = useI18n();
-  const reportYear = getPeriodReportYear(period);
+  const { year: companyReportYear, source } =
+    resolveCompanyReportYearFromPeriod(period);
   const companyReportId =
     period.companyReportId?.trim() || period.companyReport?.id?.trim();
 
-  if (!reportYear && !companyReportId) return null;
+  if (!companyReportYear && !companyReportId) return null;
 
-  const reportYearLabel = t("editor.singleCompanyView.pdfCatalogYearShort");
+  const yearLabel =
+    source === "urlEstimate"
+      ? t("yearLabels.companyReportYearFromUrl")
+      : t("yearLabels.companyReportYearShort");
   const companyReportIdLabel = t(
     "editor.singleCompanyView.companyReportIdShort",
   );
-  const noReportYearLabel = t("editor.singleCompanyView.noReportYear");
+  const noCompanyReportYearLabel = t("yearLabels.noCompanyReportYear");
 
   return (
     <div className="mt-0.5 leading-tight min-w-0">
-      {reportYear ? (
+      {companyReportYear ? (
         <div className="text-[10px] text-gray-02">
-          {reportYearLabel} {reportYear}
+          {yearLabel} {companyReportYear}
         </div>
       ) : null}
       {companyReportId ? (
         <div className={editorSecondaryIdTextClass}>{companyReportId}</div>
-      ) : reportYear ? null : (
+      ) : companyReportYear ? null : (
         <div className="text-[10px] text-gray-02">
-          {companyReportIdLabel} · {noReportYearLabel}
+          {companyReportIdLabel} · {noCompanyReportYearLabel}
         </div>
       )}
     </div>

@@ -1,8 +1,3 @@
-/**
- * Garbo Postgres `Batch` rows for upload / jobstatus / archive (same source of truth).
- * Requires auth; returns empty list if unauthenticated or request fails.
- */
-
 import { useState, useEffect, useCallback } from "react";
 import { getGarboQueueArchiveUrl } from "@/config/api-env";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
@@ -10,7 +5,7 @@ import type { GarboBatchOption } from "@/lib/garbo-batch-types";
 
 const BATCHES_LIMIT = 500;
 
-export function useBatches(): {
+export function useBatches(batchesListUrl?: string): {
   batches: GarboBatchOption[];
   isLoading: boolean;
   refetch: () => void;
@@ -18,6 +13,9 @@ export function useBatches(): {
   const [batches, setBatches] = useState<GarboBatchOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [version, setVersion] = useState(0);
+  const listUrl =
+    batchesListUrl ??
+    getGarboQueueArchiveUrl(`/batches?limit=${BATCHES_LIMIT}`);
 
   const refetch = useCallback(() => {
     setVersion((v) => v + 1);
@@ -28,9 +26,7 @@ export function useBatches(): {
     setIsLoading(true);
     (async () => {
       try {
-        const res = await garboAuthFetch(
-          getGarboQueueArchiveUrl(`/batches?limit=${BATCHES_LIMIT}`),
-        );
+        const res = await garboAuthFetch(listUrl);
         if (!res.ok || cancelled) return;
         const data = (await res.json()) as {
           batches?: GarboBatchOption[];
@@ -48,7 +44,7 @@ export function useBatches(): {
     return () => {
       cancelled = true;
     };
-  }, [version]);
+  }, [version, listUrl]);
 
   return { batches, isLoading, refetch };
 }

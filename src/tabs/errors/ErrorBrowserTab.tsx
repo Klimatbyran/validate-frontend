@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { RefreshCw } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { ViewModePills } from "@/ui/view-mode-pills";
-import { Callout } from "@/ui/callout";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
@@ -42,7 +41,6 @@ export function ErrorBrowserTab() {
 
   const {
     isLoading,
-    isAuthError,
     error,
     fetchData,
     comparisonRows,
@@ -120,7 +118,7 @@ export function ErrorBrowserTab() {
 
           <div className="flex flex-col gap-1">
             <label className="text-xs text-gray-02 uppercase tracking-wide">
-              {t("errors.reportYear")}
+              {t("yearLabels.companyReportYear")}
             </label>
             <SingleSelectDropdown
               options={[
@@ -131,9 +129,11 @@ export function ErrorBrowserTab() {
               ]}
               value={selectedReportYear}
               onChange={setSelectedReportYear}
-              placeholder={t("errors.allReportYears")}
-              getOptionLabel={(v) => (v ? v : t("errors.allReportYears"))}
-              ariaLabel={t("errors.reportYear")}
+              placeholder={t("errors.allCompanyReportYears")}
+              getOptionLabel={(v) =>
+                v ? v : t("errors.allCompanyReportYears")
+              }
+              ariaLabel={t("yearLabels.companyReportYear")}
               panelMinWidth={120}
             />
           </div>
@@ -173,19 +173,11 @@ export function ErrorBrowserTab() {
         </div>
       </div>
 
-      {!isLoading && isAuthError && (
-        <Callout variant="info">
-          <p className="text-sm text-blue-03/90">
-            {t("auth.loginRequiredTab")}
-          </p>
-        </Callout>
-      )}
-
       {/* View content */}
       {viewMode === "browser" && (
         <BrowserView
           isLoading={isLoading}
-          error={isAuthError ? null : error}
+          error={error}
           comparisonRows={comparisonRows}
           difficultCompanyIds={difficultCompanyIds}
           selectedDataPoint={selectedDataPoint}
@@ -197,7 +189,6 @@ export function ErrorBrowserTab() {
       )}
 
       {viewMode === "overview" &&
-        !isAuthError &&
         (isLoading ? (
           <div className="flex justify-center items-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
             <LoadingSpinner label={t("errors.loadingOverview")} />
@@ -211,7 +202,7 @@ export function ErrorBrowserTab() {
           />
         ))}
 
-      {viewMode === "worst" && !isAuthError && (
+      {viewMode === "worst" && (
         <HardestReportsView
           isLoading={isLoading}
           worstCompanies={worstCompanies}

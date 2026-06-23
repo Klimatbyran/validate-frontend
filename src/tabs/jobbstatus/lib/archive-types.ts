@@ -1,5 +1,3 @@
-/** Garbo queue-archive API shapes (Jobbstatus Archive). */
-
 export type ArchiveRunJobRow = {
   jobId: string;
   queueName: string;
@@ -17,6 +15,7 @@ export type ArchiveRunSummary = {
   pdfUrl: string;
   companyName: string | null;
   wikidataId: string | null;
+  companyReportId?: string | null;
   batch?: { id: string; batchName: string } | null;
   status: string;
   startedAt: string;
@@ -24,7 +23,6 @@ export type ArchiveRunSummary = {
   jobs: ArchiveRunJobRow[];
 };
 
-/** GET /runs/:threadId — full job rows include `id`. */
 export type ArchiveRunDetail = Omit<ArchiveRunSummary, "jobs"> & {
   jobs: ArchiveRunJob[];
 };
@@ -36,5 +34,4 @@ export type ArchiveRunsListResponse = {
   runs: ArchiveRunSummary[];
 };
 
-/** Alias: expandable list card uses the same shape as a list API run. */
 export type ArchiveRunCardModel = ArchiveRunSummary;

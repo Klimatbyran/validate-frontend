@@ -2,20 +2,19 @@ import { getGarboQueueArchiveUrl } from "@/config/api-env";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import { NEW_BATCH_DROPDOWN_VALUE } from "@/lib/garbo-batch-types";
 
-/**
- * Resolves Upload/Registry batch UI state to a **Garbo `Batch.id`** for `job.data.batchId`
- * on the pipeline (opaque string; workers/archive resolve by id or legacy name).
- */
+/** Maps batch UI state to Garbo `Batch.id` for `job.data.batchId`. */
 export async function resolvePipelineBatchId(opts: {
   batchDropdownChoice: string;
   customBatchName: string;
+  batchesApiUrl?: string;
 }): Promise<string | undefined> {
-  const { batchDropdownChoice, customBatchName } = opts;
+  const { batchDropdownChoice, customBatchName, batchesApiUrl } = opts;
+  const batchesUrl = batchesApiUrl ?? getGarboQueueArchiveUrl("/batches");
   if (!batchDropdownChoice) return undefined;
   if (batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE) {
     const name = customBatchName.trim();
     if (!name) return undefined;
-    const res = await garboAuthFetch(getGarboQueueArchiveUrl("/batches"), {
+    const res = await garboAuthFetch(batchesUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ batchName: name }),

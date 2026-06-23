@@ -24,6 +24,8 @@ export {
 } from "./emissions";
 export {
   companiesToMapById,
+  companyCrossEnvKey,
+  crossEnvKeyFromRow,
   classifyDiscrepancy,
   getUnitErrorFactor,
   reclassifyDiscrepancyForCategoryError,

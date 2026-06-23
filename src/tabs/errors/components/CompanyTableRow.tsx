@@ -4,6 +4,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
 import { getCompanyUrlSegment } from "@/lib/company-routing";
 import { CompanyRow } from "../types";
+import { crossEnvKeyFromRow } from "../lib";
 import { DiscrepancyBadge } from "./DiscrepancyBadge";
 
 interface CompanyTableRowProps {
@@ -31,11 +32,11 @@ export function CompanyTableRow({
       <td className="px-4 py-3">
         <div className="flex items-center gap-1.5 font-medium text-gray-01 text-sm">
           {row.name}
-          {difficultCompanyIds.has(row.id) && (
+          {difficultCompanyIds.has(crossEnvKeyFromRow(row)) && (
             <span
               className="text-red-400 cursor-help"
               title={t("errors.difficultReportTooltip", {
-                count: difficultCompanyIds.get(row.id) ?? 0,
+                count: difficultCompanyIds.get(crossEnvKeyFromRow(row)) ?? 0,
               })}
             >
               <AlertTriangle className="w-3.5 h-3.5" />
@@ -46,7 +47,7 @@ export function CompanyTableRow({
           <span className="text-xs text-gray-02">{displayId}</span>
           {row.reportYear != null ? (
             <span className="text-xs text-gray-02">
-              {t("errors.reportYearShort", { year: row.reportYear })}
+              {t("errors.companyReportYearShort", { year: row.reportYear })}
             </span>
           ) : null}
           {isMissingCompany && (
