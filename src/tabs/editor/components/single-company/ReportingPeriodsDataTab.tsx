@@ -9,11 +9,13 @@ import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import type {
   GarboCompanyDetail,
   GarboReportingPeriodSummary,
+  ReportingPeriodWritePayload,
 } from "../../lib/types";
 import {
   deleteReportingPeriod,
   updateReportingPeriods,
 } from "../../lib/companies-api";
+import { attachCompanyReportIdToPeriodPatch } from "../../lib/company-report-shells";
 import { inputClassName } from "../../lib/company-edit-utils";
 import {
   editorDenseMultiSelectTriggerClass,
@@ -188,13 +190,13 @@ export function ReportingPeriodsDataTab({
 
         if (!startChanged && !endChanged && !urlChanged) return null;
 
-        return { startDate, endDate, reportURL };
+        return attachCompanyReportIdToPeriodPatch(rp, {
+          startDate,
+          endDate,
+          reportURL,
+        });
       })
-      .filter(Boolean) as Array<{
-      startDate: string;
-      endDate: string;
-      reportURL?: string;
-    }>;
+      .filter(Boolean) as ReportingPeriodWritePayload[];
 
     if (!payloadPeriods.length) {
       toast.message(t("editor.periodEditor.nothingToSave"));

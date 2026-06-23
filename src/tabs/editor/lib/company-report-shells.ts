@@ -3,6 +3,25 @@ import { getPersistedCompanyReportYearFromPeriod } from "./reporting-period-ui";
 
 export const UNLINKED_REPORT_SHELL_KEY = "__unlinked__";
 
+/** Add-period flow: create a new CompanyReport instead of attaching to an existing shell. */
+export const NEW_REPORT_SHELL_KEY = "__new__";
+
+export function resolveCompanyReportId(
+  period: GarboReportingPeriodSummary,
+): string | undefined {
+  const id =
+    period.companyReportId?.trim() || period.companyReport?.id?.trim() || "";
+  return id || undefined;
+}
+
+export function attachCompanyReportIdToPeriodPatch<T extends object>(
+  period: GarboReportingPeriodSummary,
+  patch: T,
+): T & { companyReportId?: string } {
+  const companyReportId = resolveCompanyReportId(period);
+  return companyReportId ? { ...patch, companyReportId } : patch;
+}
+
 export type CompanyReportShellGroup = {
   shellKey: string;
   companyReportId: string;

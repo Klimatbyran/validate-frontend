@@ -83,6 +83,18 @@ export interface GarboReportingPeriodSummary {
   economy?: GarboEconomySummary;
 }
 
+/** One period in POST /api/companies/:id/reporting-periods. */
+export type ReportingPeriodWritePayload = {
+  startDate: string;
+  endDate: string;
+  companyReportId?: string;
+  reportURL?: string | null;
+  reportS3Url?: string | null;
+  reportSha256?: string | null;
+  emissions?: Record<string, unknown>;
+  economy?: Record<string, unknown>;
+};
+
 export interface GarboMinimalMetadata {
   user?: { name?: string | null } | null;
   verifiedBy?: { name: string } | null;
@@ -186,5 +198,6 @@ export type EditState = {
   year?: number;
   startDate?: string;
   endDate?: string;
+  companyReportId?: string;
   currentValue: string | number | null;
 };
