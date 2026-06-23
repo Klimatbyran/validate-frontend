@@ -18,7 +18,10 @@ import {
   type RegistryViewFilters,
 } from "./lib/registry-table-utils";
 import { useGarboCompanyTagsMap } from "./hooks/useGarboCompanyTagsMap";
-import { useRegistryBatches } from "./hooks/useRegistryBatches";
+import {
+  RegistryBatchesProvider,
+  useRegistryBatchesContext,
+} from "./contexts/RegistryBatchesContext";
 import { useRegistryDisplayedView } from "./hooks/useRegistryDisplayedView";
 import {
   addRegistryEntry,
@@ -27,6 +30,7 @@ import {
   deleteReportFromRegistry,
   editRegistryEntry,
   fetchRegistryList,
+  getRegistryRunReportsPipelineConfig,
 } from "./lib/registry-api";
 import RegistryFiltersAndSort from "./components/RegistryFiltersAndSort";
 import RegistryAddModal from "./components/RegistryAddModal";
@@ -36,6 +40,14 @@ import type {
 } from "./lib/registry-types";
 
 export function RegistryTab() {
+  return (
+    <RegistryBatchesProvider>
+      <RegistryTabContent />
+    </RegistryBatchesProvider>
+  );
+}
+
+function RegistryTabContent() {
   const { t } = useI18n();
   const [query, setQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -58,6 +70,11 @@ export function RegistryTab() {
     error: companyTagsError,
   } = useGarboCompanyTagsMap();
   const {
+    batches: registryBatches,
+    isLoading: registryBatchesLoading,
+    refetch: refetchRegistryBatches,
+  } = useRegistryBatchesContext();
+  const {
     runForUrls,
     isRunningReports,
     autoApprove,
@@ -65,12 +82,14 @@ export function RegistryTab() {
     runOptions,
     tagOptions,
     tagsLoading,
-  } = useRunReportsPipeline();
-  const {
-    batches: registryBatches,
-    isLoading: registryBatchesLoading,
-    refetch: refetchRegistryBatches,
-  } = useRegistryBatches();
+  } = useRunReportsPipeline({
+    ...getRegistryRunReportsPipelineConfig(),
+    batchesOverride: {
+      batches: registryBatches,
+      isLoading: registryBatchesLoading,
+      refetch: refetchRegistryBatches,
+    },
+  });
 
   const batchFilterOptions = useMemo(() => {
     const byId = new Map(registryBatches.map((b) => [b.id, b.batchName]));

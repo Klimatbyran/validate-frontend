@@ -5,11 +5,15 @@ import type { GarboBatchOption } from "@/lib/garbo-batch-types";
 
 const BATCHES_LIMIT = 500;
 
-export function useBatches(batchesListUrl?: string): {
+export function useBatches(
+  batchesListUrl?: string,
+  options?: { enabled?: boolean },
+): {
   batches: GarboBatchOption[];
   isLoading: boolean;
   refetch: () => void;
 } {
+  const enabled = options?.enabled !== false;
   const [batches, setBatches] = useState<GarboBatchOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [version, setVersion] = useState(0);
@@ -18,10 +22,15 @@ export function useBatches(batchesListUrl?: string): {
     getGarboQueueArchiveUrl(`/batches?limit=${BATCHES_LIMIT}`);
 
   const refetch = useCallback(() => {
+    if (!enabled) return;
     setVersion((v) => v + 1);
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false);
+      return;
+    }
     let cancelled = false;
     setIsLoading(true);
     (async () => {
@@ -44,7 +53,11 @@ export function useBatches(batchesListUrl?: string): {
     return () => {
       cancelled = true;
     };
-  }, [version, listUrl]);
+  }, [version, listUrl, enabled]);
 
-  return { batches, isLoading, refetch };
+  return {
+    batches: enabled ? batches : [],
+    isLoading: enabled ? isLoading : false,
+    refetch,
+  };
 }
