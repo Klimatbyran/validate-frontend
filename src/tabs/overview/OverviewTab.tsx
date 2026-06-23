@@ -227,7 +227,7 @@ export function OverviewTab() {
                 </p>
                 <p>
                   {t("overview.prodToStage.emptyDiagnosticsSkippedUnverified", {
-                    count: data.prodToStageDiagnostics.skippedNoVerifiedOnProd,
+                    count: data.prodToStageDiagnostics.skippedNoFullyVerifiedOnProd,
                   })}
                 </p>
                 <p>

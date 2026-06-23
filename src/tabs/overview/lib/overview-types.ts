@@ -101,6 +101,24 @@ export function defaultOverviewFilters(): OverviewFilters {
   };
 }
 
+/** Registry-reports view: all Report rows, default to gaps missing a CompanyReport link. */
+export function defaultRegistryOverviewFilters(): OverviewFilters {
+  return {
+    searchQuery: "",
+    reportYears: [],
+    tagSlugs: [],
+    statusFilters: [],
+    missingRegistryOnly: false,
+    missingCompanyReportOnly: true,
+    notRunInPipelineOnly: false,
+  };
+}
+
+export function defaultFiltersForView(viewMode: OverviewViewMode): OverviewFilters {
+  if (viewMode === "registryReports") return defaultRegistryOverviewFilters();
+  return defaultOverviewFilters();
+}
+
 export type ProdToStageFilters = {
   searchQuery: string;
   reportYears: string[];
@@ -152,10 +170,11 @@ export type ProdToStageRow = {
   companyName: string;
   wikidataId: string | null;
   prodCompanyId: string;
-  prodCompanyReportId: string;
+  prodCompanyReportId: string | null;
+  prodReportLinked: boolean;
   reportYear: string | null;
   reportUrl: string | null;
-  validatedDataPointLabels: string[];
+  fullyVerifiedPeriodCount: number;
   stageCompanyId: string | null;
   tags: string[];
 };
@@ -170,6 +189,20 @@ export function overviewFiltersAreActive(filters: OverviewFilters): boolean {
     filters.statusFilters.length > 0 ||
     filters.missingRegistryOnly ||
     filters.missingCompanyReportOnly ||
+    filters.notRunInPipelineOnly
+  );
+}
+
+export function registryOverviewFiltersAreActive(
+  filters: OverviewFilters,
+): boolean {
+  return (
+    Boolean(filters.searchQuery.trim()) ||
+    filters.reportYears.length > 0 ||
+    filters.tagSlugs.length > 0 ||
+    filters.statusFilters.length > 0 ||
+    filters.missingRegistryOnly ||
+    !filters.missingCompanyReportOnly ||
     filters.notRunInPipelineOnly
   );
 }

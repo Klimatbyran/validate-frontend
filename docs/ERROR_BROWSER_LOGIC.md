@@ -4,10 +4,10 @@ This document explains how the Error Browser tab computes comparisons and metric
 
 ### Data sources
 
-- **Stage**: `getStagePipelineCompaniesListUrl()` → Unearth `stage-api.unearthdata.ai/api/pipeline/companies`
-- **Prod**: `getProdPipelineCompaniesListUrl()` → Unearth `api.unearthdata.ai/api/pipeline/companies`
+- **Stage**: `getStagePipelineCompaniesListUrl()` → Unearth `GET /api/internal-pipeline/companies` (X-API-Key via validate proxy)
+- **Prod**: `getProdPipelineCompaniesListUrl()` → Unearth `GET /api/internal-pipeline/companies` on prod host
 - Pipeline endpoints return **all** reporting period rows per company (not the public one-period-per-data-year view).
-- **Deployment**: both stage and prod **Unearth API** must expose staff `GET /api/pipeline/companies`.
+- **Deployment**: both stage and prod **Unearth API** must expose `GET /api/internal-pipeline/companies`.
 - The UI always fetches _both_ and compares them client-side.
 
 Key implementation: `src/tabs/errors/hooks/useErrorBrowserData.ts`.

@@ -1039,7 +1039,7 @@
       "registryReports": "Registry reports",
       "prodToStage": "Prod → Stage"
     },
-    "subtitleProdToStage": "Prod CompanyReports with at least one verified emissions value where the matching stage report has no emissions data yet. Run selected re-uploads the prod report URL through the stage pipeline only.",
+    "subtitleProdToStage": "Prod CompanyReports with at least one fully verified reporting period where the matching stage report has no emissions data yet. Run selected re-uploads the prod report URL through the stage pipeline only.",
     "filtersTitle": "Search and filters",
     "searchLabel": "Company name or ID",
     "searchPlaceholder": "Search company, Wikidata ID, CompanyReport ID, or URL",
@@ -1057,7 +1057,7 @@
     "gapFiltersHintRegistryReports": "Use these to find registry PDFs that have not been pipelined yet or are not linked to a CompanyReport in Garbo.",
     "prodToStage": {
       "bannerTitle": "Prod data in, stage pipeline out",
-      "bannerReadProd": "Rows are built from prod Garbo: linked CompanyReports with at least one verified emissions value, where the matching stage report (by URL or shell) has no linked CompanyReport with emissions data yet.",
+      "bannerReadProd": "Rows are built from prod Garbo: linked CompanyReports with at least one fully verified reporting period, where the matching stage report (by URL or shell) has no linked CompanyReport with emissions data yet.",
       "bannerRunStage": "Run selected queues jobs on the stage Pipeline API using the prod report URL (new upload to stage).",
       "bannerNeverProd": "This tab never runs the prod pipeline — only stage.",
       "runOnStage": "Run on stage ({{count}})",
@@ -1066,19 +1066,15 @@
       "runError": "Could not queue on stage pipeline: {{message}}",
       "prodCompanyReport": "Prod CompanyReport",
       "validatedOnProd": "Verified on prod",
-      "stageStatus": "Stage status",
       "prodReportUrl": "Prod report URL",
-      "verifiedCount": "{{count}} verified value(s)",
-      "stageHasVerified": "Has verified emissions (not shown here)",
-      "stageUnverified": "Period exists, no verified emissions",
-      "stageMissing": "No matching period on stage",
+      "fullyVerifiedPeriods": "{{count}} fully verified period(s)",
       "noRunnableUrl": "No HTTP URL to run",
       "runnableOnly": "Runnable only (has URL)",
       "emptyDiagnosticsTitle": "No rows matched — build breakdown",
       "emptyDiagnosticsCompanies": "{{prod}} prod companies, {{stage}} stage companies loaded",
       "emptyDiagnosticsShells": "{{count}} linked prod CompanyReport shells scanned",
       "emptyDiagnosticsSkippedUnlinked": "{{count}} skipped (no CompanyReport id on prod)",
-      "emptyDiagnosticsSkippedUnverified": "{{count}} skipped (no verified emissions on prod)",
+      "emptyDiagnosticsSkippedUnverified": "{{count}} skipped (no fully verified reporting period on prod)",
       "emptyDiagnosticsSkippedStage": "{{count}} skipped (matching stage report already has emissions data)",
       "emptyDiagnosticsIncluded": "{{count}} would be shown before filters",
       "stats": {
@@ -1114,7 +1110,7 @@
         "pipelineErrors": "Job outcomes from that archived run. Green only when the run has jobs and all completed successfully. Missing when there is no run, the run is still in progress, or there are no jobs to assess.",
         "stageData": "Whether stage Garbo has reporting periods for this PDF report year.",
         "prodData": "Whether prod Garbo has reporting periods for this PDF report year.",
-        "prodVerified": "Whether prod emissions for this report year are fully verified (every populated data point has verifiedBy metadata)."
+        "prodVerified": "Whether prod emissions for this report year are fully verified (every populated emissions field has verifiedBy metadata)."
       },
       "registryReports": {
         "company": "Company name from the registry entry.",

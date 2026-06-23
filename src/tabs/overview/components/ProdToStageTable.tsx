@@ -109,20 +109,12 @@ export function ProdToStageTable({
                   {row.reportYear ?? dash}
                 </td>
                 <td className="px-4 py-3 text-xs font-mono text-gray-02 break-all">
-                  {row.prodCompanyReportId}
+                  {row.prodReportLinked ? row.prodCompanyReportId : dash}
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-02">
-                  <p className="font-medium text-gray-01 mb-1">
-                    {t("overview.prodToStage.verifiedCount", {
-                      count: row.validatedDataPointLabels.length,
-                    })}
-                  </p>
-                  <p className="line-clamp-3">
-                    {row.validatedDataPointLabels.slice(0, 4).join(", ")}
-                    {row.validatedDataPointLabels.length > 4
-                      ? ` +${row.validatedDataPointLabels.length - 4}`
-                      : ""}
-                  </p>
+                  {t("overview.prodToStage.fullyVerifiedPeriods", {
+                    count: row.fullyVerifiedPeriodCount,
+                  })}
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-02">
                   {row.reportUrl ? (

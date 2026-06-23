@@ -1039,7 +1039,7 @@
       "registryReports": "Register-rapporter",
       "prodToStage": "Prod → Stage"
     },
-    "subtitleProdToStage": "Prod CompanyReports med minst ett verifierat utsläppsvärde där motsvarande stage-rapport ännu saknar utsläppsdata. Kör valda laddar upp prod-rapportens URL via stage-pipeline endast.",
+    "subtitleProdToStage": "Prod CompanyReports med minst en fullt verifierad rapporteringsperiod där motsvarande stage-rapport ännu saknar utsläppsdata. Kör valda laddar upp prod-rapportens URL via stage-pipeline endast.",
     "filtersTitle": "Sök och filter",
     "searchLabel": "Företagsnamn eller ID",
     "searchPlaceholder": "Sök företag, Wikidata-ID, CompanyReport-ID eller URL",
@@ -1057,7 +1057,7 @@
     "gapFiltersHintRegistryReports": "Använd dessa för att hitta register-PDF:er som ännu inte körts i pipeline eller saknar CompanyReport-länk i Garbo.",
     "prodToStage": {
       "bannerTitle": "Prod-data in, stage-pipeline ut",
-      "bannerReadProd": "Rader byggs från prod Garbo: länkade CompanyReports med minst ett verifierat utsläppsvärde, där motsvarande stage-rapport (via URL eller shell) ännu saknar länkad CompanyReport med utsläppsdata.",
+      "bannerReadProd": "Rader byggs från prod Garbo: länkade CompanyReports med minst en fullt verifierad rapporteringsperiod, där motsvarande stage-rapport (via URL eller shell) ännu saknar länkad CompanyReport med utsläppsdata.",
       "bannerRunStage": "Kör valda köar jobb på stage Pipeline API med prod-rapportens URL (ny uppladdning till stage).",
       "bannerNeverProd": "Denna flik kör aldrig prod-pipeline — endast stage.",
       "runOnStage": "Kör på stage ({{count}})",
@@ -1066,19 +1066,15 @@
       "runError": "Kunde inte köa på stage-pipeline: {{message}}",
       "prodCompanyReport": "Prod CompanyReport",
       "validatedOnProd": "Verifierad i prod",
-      "stageStatus": "Stage-status",
       "prodReportUrl": "Prod rapport-URL",
-      "verifiedCount": "{{count}} verifierade värden",
-      "stageHasVerified": "Har verifierade utsläpp (visas inte här)",
-      "stageUnverified": "Period finns, inga verifierade utsläpp",
-      "stageMissing": "Ingen matchande period i stage",
+      "fullyVerifiedPeriods": "{{count}} fullt verifierade period(er)",
       "noRunnableUrl": "Ingen HTTP-URL att köra",
       "runnableOnly": "Endast körbara (har URL)",
       "emptyDiagnosticsTitle": "Inga rader matchade — uppdelning",
       "emptyDiagnosticsCompanies": "{{prod}} prod-bolag, {{stage}} stage-bolag inlästa",
       "emptyDiagnosticsShells": "{{count}} länkade prod CompanyReport-shells granskade",
       "emptyDiagnosticsSkippedUnlinked": "{{count}} hoppades över (saknar CompanyReport-id på prod)",
-      "emptyDiagnosticsSkippedUnverified": "{{count}} hoppades över (inga verifierade utsläpp på prod)",
+      "emptyDiagnosticsSkippedUnverified": "{{count}} hoppades över (ingen fullt verifierad rapporteringsperiod på prod)",
       "emptyDiagnosticsSkippedStage": "{{count}} hoppades över (matchande stage-rapport har redan utsläppsdata)",
       "emptyDiagnosticsIncluded": "{{count}} skulle visas före filter",
       "stats": {
@@ -1114,7 +1110,7 @@
         "pipelineErrors": "Jobbresultat från den arkiverade körningen. Grön endast när körningen har jobb och alla slutfördes utan fel. Saknas när det inte finns någon körning, körningen pågår eller det saknas jobb att bedöma.",
         "stageData": "Om stage-Garbo har rapporteringsperioder för detta PDF-dokumentår.",
         "prodData": "Om prod-Garbo har rapporteringsperioder för detta PDF-dokumentår.",
-        "prodVerified": "Om prod-utsläpp för detta dokumentår är fullt verifierade (varje ifyllt datapunkt har verifiedBy-metadata)."
+        "prodVerified": "Om prod-utsläpp för detta dokumentår är fullt verifierade (varje ifyllt utsläppsfält har verifiedBy-metadata)."
       },
       "registryReports": {
         "company": "Bolagsnamn från registerposten.",

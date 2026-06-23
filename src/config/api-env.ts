@@ -119,7 +119,8 @@ export function getProdUnearthUrl(path: string): string {
   return `/unearth-prod-api${p}`;
 }
 
-export const PIPELINE_COMPANIES_LIST_PATH = "/pipeline/companies";
+/** X-API-Key twin of staff GET /api/pipeline/companies — proxy injects the key. */
+export const PIPELINE_COMPANIES_LIST_PATH = "/internal-pipeline/companies";
 
 function joinApiPath(base: string, segment: string): string {
   const normalizedBase = base.replace(/\/+$/, "");

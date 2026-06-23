@@ -27,7 +27,7 @@ export type RegistryReportsOverviewResponse = CompanyYearsOverviewResponse;
 export type ProdToStageBuildDiagnostics = {
   prodShells: number;
   skippedUnlinked: number;
-  skippedNoVerifiedOnProd: number;
+  skippedNoFullyVerifiedOnProd: number;
   skippedStageHasEmissions: number;
   included: number;
 };

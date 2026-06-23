@@ -44,7 +44,7 @@ Fetches **both** stage and prod **Unearth API** via staff pipeline company lists
 - Stage: `getStagePipelineCompaniesListUrl()` → `/unearth-stage/api/pipeline/companies` (dev) or `/unearth-stage-api/api/pipeline/companies` (deployed)
 - Prod: `getProdPipelineCompaniesListUrl()` → `/unearth/api/pipeline/companies` (dev) or `/unearth-prod-api/api/pipeline/companies` (deployed)
 
-Requires login (Bearer JWT). Both stage and prod **Unearth API** must expose staff `GET /api/pipeline/companies`.
+Requires X-API-Key (injected by validate proxy). Both stage and prod **Unearth API** must expose `GET /api/internal-pipeline/companies`.
 
 ### 2. Unearth API – auth, crawler, registry
 

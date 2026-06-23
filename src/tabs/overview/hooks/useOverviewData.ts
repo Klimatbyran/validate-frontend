@@ -10,9 +10,10 @@ import {
   type ProdToStageBuildDiagnostics,
 } from "../lib/overview-api";
 import {
-  defaultOverviewFilters,
+  defaultFiltersForView,
   defaultProdToStageFilters,
   overviewFiltersAreActive,
+  registryOverviewFiltersAreActive,
   overviewYearRange,
   type OverviewFilters,
   type OverviewRow,
@@ -48,7 +49,7 @@ const EMPTY_STATS: OverviewStats = {
 const EMPTY_DIAGNOSTICS: ProdToStageBuildDiagnostics = {
   prodShells: 0,
   skippedUnlinked: 0,
-  skippedNoVerifiedOnProd: 0,
+  skippedNoFullyVerifiedOnProd: 0,
   skippedStageHasEmissions: 0,
   included: 0,
 };
@@ -73,8 +74,8 @@ export function useOverviewData() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<OverviewFilters>(
-    defaultOverviewFilters(),
+  const [filters, setFilters] = useState<OverviewFilters>(() =>
+    defaultFiltersForView(overviewViewFromSearchParams(searchParams)),
   );
   const [prodToStageFilters, setProdToStageFilters] = useState(
     defaultProdToStageFilters(),
@@ -82,7 +83,7 @@ export function useOverviewData() {
 
   const setViewMode = useCallback(
     (mode: OverviewViewMode) => {
-      setFilters(defaultOverviewFilters());
+      setFilters(defaultFiltersForView(mode));
       setProdToStageFilters(defaultProdToStageFilters());
       setPage(1);
       setShowAll(false);
@@ -202,9 +203,9 @@ export function useOverviewData() {
   );
 
   const clearFilters = useCallback(() => {
-    setFilters(defaultOverviewFilters());
+    setFilters(defaultFiltersForView(viewMode));
     setProdToStageFilters(defaultProdToStageFilters());
-  }, []);
+  }, [viewMode]);
 
   const filtersAreActive =
     viewMode === "prodToStage"
@@ -214,7 +215,9 @@ export function useOverviewData() {
           String(new Date().getFullYear()) ||
         prodToStageFilters.tagSlugs.length > 0 ||
         prodToStageFilters.runnableOnly
-      : overviewFiltersAreActive(filters);
+      : viewMode === "registryReports"
+        ? registryOverviewFiltersAreActive(filters)
+        : overviewFiltersAreActive(filters);
 
   const paginationFrom =
     totalRows === 0 ? 0 : showAll ? 1 : (page - 1) * OVERVIEW_PAGE_SIZE + 1;
@@ -228,7 +231,6 @@ export function useOverviewData() {
     rows,
     allRows: rows,
     prodToStageRows,
-    allProdToStageRows: prodToStageRows,
     prodToStageDiagnostics,
     stageCompanyCount,
     prodCompanyCount,
