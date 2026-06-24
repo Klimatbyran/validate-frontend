@@ -13,6 +13,8 @@ export interface FileDropZoneProps {
   subtitle?: string;
   compact?: boolean;
   className?: string;
+  multiple?: boolean;
+  disabled?: boolean;
 }
 
 export function FileDropZone({
@@ -25,32 +27,42 @@ export function FileDropZone({
   subtitle,
   compact = false,
   className,
+  multiple = true,
+  disabled = false,
 }: FileDropZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div
       role="button"
-      tabIndex={0}
-      onClick={() => inputRef.current?.click()}
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
+      onClick={() => {
+        if (!disabled) inputRef.current?.click();
+      }}
       onKeyDown={(e) => {
+        if (disabled) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           inputRef.current?.click();
         }
       }}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
+      onDragOver={disabled ? undefined : onDragOver}
+      onDragLeave={disabled ? undefined : onDragLeave}
+      onDrop={disabled ? undefined : onDrop}
       className={cn(
-        "border-2 border-dashed rounded-lg cursor-pointer",
+        "border-2 border-dashed rounded-lg",
         "flex flex-col items-center justify-center",
         "transition-all duration-200",
         "bg-gray-04/50 backdrop-blur-sm",
         compact ? "p-6" : "p-12",
-        isDragging
-          ? "border-orange-03 bg-orange-05/10"
-          : "border-gray-03 hover:border-gray-02",
+        disabled
+          ? "cursor-not-allowed opacity-60 border-gray-03"
+          : "cursor-pointer",
+        !disabled &&
+          (isDragging
+            ? "border-orange-03 bg-orange-05/10"
+            : "border-gray-03 hover:border-gray-02"),
         className,
       )}
     >
@@ -58,7 +70,8 @@ export function FileDropZone({
         ref={inputRef}
         type="file"
         accept="application/pdf,.pdf"
-        multiple
+        multiple={multiple}
+        disabled={disabled}
         className="hidden"
         onChange={onInputChange}
         onClick={(e) => e.stopPropagation()}

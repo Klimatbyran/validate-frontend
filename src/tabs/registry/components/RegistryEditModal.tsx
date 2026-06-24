@@ -1,9 +1,19 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
+import { FileDropZone } from "@/components/FileDropZone";
+import { collectPdfFilesFromDataTransfer } from "@/lib/drag-drop-pdf-files";
 import { NEW_BATCH_DROPDOWN_VALUE } from "@/lib/garbo-batch-types";
 import { useRegistryBatchesContext } from "@/tabs/registry/contexts/RegistryBatchesContext";
 import { resolveRegistryBatchId } from "@/tabs/registry/lib/resolve-registry-batch-id";
+import {
+  REGISTRY_PDF_MAX_BYTES,
+  REGISTRY_PDF_MAX_MB,
+} from "@/tabs/registry/lib/registry-bulk-limits";
+import {
+  applyRegistryPdfUploadToForm,
+  uploadRegistryPdf,
+} from "@/tabs/registry/lib/registry-upload-api";
 import { Button } from "@/ui/button";
 import {
   Dialog,
@@ -47,6 +57,8 @@ const RegistryEditModal = ({
   const [sourceUrlError, setSourceUrlError] = useState<string | null>(null);
   const [s3UrlError, setS3UrlError] = useState<string | null>(null);
   const [sha256Error, setSha256Error] = useState<string | null>(null);
+  const [isDraggingPdf, setIsDraggingPdf] = useState(false);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [batchDropdownChoice, setBatchDropdownChoice] = useState("");
   const [customBatchName, setCustomBatchName] = useState("");
   const {
@@ -70,6 +82,8 @@ const RegistryEditModal = ({
     setSourceUrlError(null);
     setS3UrlError(null);
     setSha256Error(null);
+    setIsDraggingPdf(false);
+    setIsUploadingPdf(false);
     setBatchDropdownChoice(entry.batchId?.trim() ?? "");
     setCustomBatchName("");
   }, [
@@ -84,6 +98,87 @@ const RegistryEditModal = ({
     entry.sha256,
     entry.batchId,
   ]);
+
+  const uploadPdfAndApplyFields = useCallback(
+    async (file: File) => {
+      if (file.size > REGISTRY_PDF_MAX_BYTES) {
+        toast.error(
+          t("registry.fileTooLarge", {
+            maxMb: REGISTRY_PDF_MAX_MB,
+            count: 1,
+          }),
+        );
+        return;
+      }
+
+      setIsUploadingPdf(true);
+      try {
+        const upload = await uploadRegistryPdf(file);
+        const fields = applyRegistryPdfUploadToForm(upload, url);
+        setS3Url(fields.s3Url);
+        setS3Key(fields.s3Key);
+        setS3Bucket(fields.s3Bucket);
+        setSha256(fields.sha256);
+        setS3UrlError(null);
+        setSha256Error(null);
+        if (!url.trim()) {
+          setUrl(fields.url);
+          setUrlError(null);
+        }
+        toast.success(t("registry.editPdfUploaded", { name: file.name }));
+      } catch (error) {
+        toast.error(
+          t("registry.editPdfUploadError", {
+            message:
+              error instanceof Error ? error.message : t("upload.unknownError"),
+          }),
+        );
+      } finally {
+        setIsUploadingPdf(false);
+      }
+    },
+    [t, url],
+  );
+
+  const handlePdfFile = useCallback(
+    (files: File[]) => {
+      const pdfs = files.filter(
+        (file) =>
+          file.type === "application/pdf" ||
+          file.name.toLowerCase().endsWith(".pdf"),
+      );
+      if (pdfs.length === 0) {
+        toast.error(t("upload.onlyPdfAllowed"));
+        return;
+      }
+      if (pdfs.length > 1) {
+        toast.warning(t("registry.editPdfMultipleIgnored", { count: pdfs.length - 1 }));
+      }
+      void uploadPdfAndApplyFields(pdfs[0]);
+    },
+    [t, uploadPdfAndApplyFields],
+  );
+
+  const handlePdfDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDraggingPdf(false);
+      if (isUploadingPdf || isEditing) return;
+      const files = await collectPdfFilesFromDataTransfer(e.dataTransfer);
+      handlePdfFile(files);
+    },
+    [handlePdfFile, isEditing, isUploadingPdf],
+  );
+
+  const handlePdfInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files ?? []);
+      e.target.value = "";
+      if (isUploadingPdf || isEditing) return;
+      handlePdfFile(files);
+    },
+    [handlePdfFile, isEditing, isUploadingPdf],
+  );
 
   const handleSaveEdit = async () => {
     if (!entry.id) return;
@@ -329,6 +424,30 @@ const RegistryEditModal = ({
               </span>
             )}
           </label>
+
+          <FileDropZone
+            isDragging={isDraggingPdf}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (!isUploadingPdf && !isEditing) setIsDraggingPdf(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setIsDraggingPdf(false);
+            }}
+            onDrop={(e) => void handlePdfDrop(e)}
+            onInputChange={handlePdfInputChange}
+            title={
+              isUploadingPdf
+                ? t("registry.editPdfUploading")
+                : t("registry.editDropPdf")
+            }
+            subtitle={t("registry.editDropPdfHint")}
+            compact
+            multiple={false}
+            disabled={isUploadingPdf || isEditing}
+          />
+
           <label className="text-sm text-gray-02">
             {t("registry.s3Url")}
             <input
@@ -398,7 +517,7 @@ const RegistryEditModal = ({
             variant="secondary"
             size="sm"
             onClick={() => onOpenChange(false)}
-            disabled={isEditing}
+            disabled={isEditing || isUploadingPdf}
           >
             {t("registry.cancel")}
           </Button>
@@ -407,6 +526,7 @@ const RegistryEditModal = ({
             onClick={() => void handleSaveEdit()}
             disabled={
               isEditing ||
+              isUploadingPdf ||
               !!yearError ||
               !!urlError ||
               !!sourceUrlError ||
@@ -414,7 +534,7 @@ const RegistryEditModal = ({
               !!sha256Error
             }
           >
-            {t("registry.save")}
+            {isUploadingPdf ? t("registry.editPdfUploading") : t("registry.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

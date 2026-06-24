@@ -111,3 +111,37 @@ export async function uploadRegistryPdfs(
 
   return chunkResults.flat();
 }
+
+/** Upload a single PDF to object storage (registry edit, etc.). */
+export async function uploadRegistryPdf(
+  file: File,
+): Promise<UploadPdfUploadMeta> {
+  const [upload] = await uploadRegistryPdfs([file]);
+  if (!upload) {
+    throw new Error("No upload returned from server");
+  }
+  return upload;
+}
+
+export type RegistryPdfUploadFormFields = {
+  url: string;
+  s3Url: string;
+  s3Key: string;
+  s3Bucket: string;
+  sha256: string;
+};
+
+/** Map upload response onto registry edit form fields. */
+export function applyRegistryPdfUploadToForm(
+  upload: UploadPdfUploadMeta,
+  currentUrl: string,
+): RegistryPdfUploadFormFields {
+  const s3Url = upload.publicUrl;
+  return {
+    s3Url,
+    s3Key: upload.key,
+    s3Bucket: upload.bucket,
+    sha256: upload.sha256,
+    url: currentUrl.trim() ? currentUrl : s3Url,
+  };
+}
