@@ -1,10 +1,11 @@
-import { chunkArray, mapWithConcurrency } from "@/lib/chunk-array";
+import { chunkFilesBySize, mapWithConcurrency } from "@/lib/chunk-array";
 import { getUnearthApiBaseUrl } from "@/config/api-env";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import type { UploadPdfUploadMeta } from "@/tabs/upload/lib/upload-api";
 import {
   REGISTRY_UPLOAD_CHUNK_SIZE,
   REGISTRY_UPLOAD_CONCURRENCY,
+  REGISTRY_UPLOAD_MAX_CHUNK_BYTES,
 } from "./registry-bulk-limits";
 import type { RegistryBulkProgress } from "./registry-types";
 
@@ -83,7 +84,11 @@ export async function uploadRegistryPdfs(
 ): Promise<UploadPdfUploadMeta[]> {
   if (files.length === 0) return [];
 
-  const chunks = chunkArray(files, REGISTRY_UPLOAD_CHUNK_SIZE);
+  const chunks = chunkFilesBySize(
+    files,
+    REGISTRY_UPLOAD_CHUNK_SIZE,
+    REGISTRY_UPLOAD_MAX_CHUNK_BYTES,
+  );
   let uploadedCount = 0;
 
   const chunkResults = await mapWithConcurrency(

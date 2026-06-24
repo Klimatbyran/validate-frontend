@@ -1252,6 +1252,7 @@
     "addEntriesCount": "Lägg till {{count}} poster",
     "bulkUploadProgressUpload": "Laddar upp PDF:er {{completed}} / {{total}}…",
     "bulkUploadProgressSave": "Sparar registerposter {{completed}} / {{total}}…",
+    "fileTooLarge": "{{count}} fil(er) överskred gränsen {{maxMb}} MB och hoppades över.",
     "dragDropPdf": "Dra och släpp PDF-filer eller mappar här",
     "dragDropPdfHint": "Eller klicka för att välja PDF-filer",
     "droppedFilesHeading": "Filer att lägga till ({{count}})",

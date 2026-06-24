@@ -8,6 +8,10 @@ import { useRegistryBatchesContext } from "@/tabs/registry/contexts/RegistryBatc
 import { NEW_BATCH_DROPDOWN_VALUE } from "@/lib/garbo-batch-types";
 import { validateUrls } from "@/lib/utils";
 import { resolveRegistryBatchId } from "../lib/resolve-registry-batch-id";
+import {
+  REGISTRY_PDF_MAX_BYTES,
+  REGISTRY_PDF_MAX_MB,
+} from "../lib/registry-bulk-limits";
 import { Button } from "@/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
 import {
@@ -64,7 +68,7 @@ const RegistryAddModal = ({
     handleInputChange,
     removeFile,
     clearFiles,
-  } = usePdfFileDrop();
+  } = usePdfFileDrop({ maxFileBytes: REGISTRY_PDF_MAX_BYTES });
 
   const [addMode, setAddMode] = useState<AddMode>("single");
   const [multiInputMode, setMultiInputMode] = useState<MultiInputMode>("files");
@@ -203,23 +207,43 @@ const RegistryAddModal = ({
   };
 
   const handleDropWithToast = async (e: React.DragEvent) => {
-    const count = await handleDrop(e);
-    if (count === 0) {
-      toast.error(t("upload.onlyPdfAllowed"));
+    const { added, rejectedTooLarge } = await handleDrop(e);
+    if (rejectedTooLarge > 0) {
+      toast.error(
+        t("registry.fileTooLarge", {
+          maxMb: REGISTRY_PDF_MAX_MB,
+          count: rejectedTooLarge,
+        }),
+      );
+    }
+    if (added === 0) {
+      if (rejectedTooLarge === 0) {
+        toast.error(t("upload.onlyPdfAllowed"));
+      }
       return;
     }
-    toast.success(t("upload.filesUploaded", { count }));
+    toast.success(t("upload.filesUploaded", { count: added }));
   };
 
   const handleInputChangeWithToast = (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const count = handleInputChange(e);
-    if (count === 0) {
-      toast.error(t("upload.onlyPdfAllowed"));
+    const { added, rejectedTooLarge } = handleInputChange(e);
+    if (rejectedTooLarge > 0) {
+      toast.error(
+        t("registry.fileTooLarge", {
+          maxMb: REGISTRY_PDF_MAX_MB,
+          count: rejectedTooLarge,
+        }),
+      );
+    }
+    if (added === 0) {
+      if (rejectedTooLarge === 0) {
+        toast.error(t("upload.onlyPdfAllowed"));
+      }
       return;
     }
-    toast.success(t("upload.filesUploaded", { count }));
+    toast.success(t("upload.filesUploaded", { count: added }));
   };
 
   const handleAdd = async () => {
