@@ -152,7 +152,9 @@ const RegistryEditModal = ({
         return;
       }
       if (pdfs.length > 1) {
-        toast.warning(t("registry.editPdfMultipleIgnored", { count: pdfs.length - 1 }));
+        toast.warning(
+          t("registry.editPdfMultipleIgnored", { count: pdfs.length - 1 }),
+        );
       }
       void uploadPdfAndApplyFields(pdfs[0]);
     },
@@ -534,7 +536,9 @@ const RegistryEditModal = ({
               !!sha256Error
             }
           >
-            {isUploadingPdf ? t("registry.editPdfUploading") : t("registry.save")}
+            {isUploadingPdf
+              ? t("registry.editPdfUploading")
+              : t("registry.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
