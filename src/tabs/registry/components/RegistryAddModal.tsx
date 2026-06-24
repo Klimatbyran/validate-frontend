@@ -540,9 +540,7 @@ const RegistryAddModal = ({
           </TabsContent>
         </Tabs>
 
-        {bulkProgress && (
-          <RegistryBulkUploadProgress progress={bulkProgress} />
-        )}
+        {bulkProgress && <RegistryBulkUploadProgress progress={bulkProgress} />}
 
         <DialogFooter>
           <Button
