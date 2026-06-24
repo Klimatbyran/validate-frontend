@@ -30,6 +30,7 @@ import type {
 import { isValidHttpUrl, isValidOptionalHttpUrl } from "../lib/registry-utils";
 import { RegistryDroppedFilesList } from "./RegistryDroppedFilesList";
 import { RegistryAddBatchOptions } from "./RegistryAddBatchOptions";
+import { RegistryBulkUploadProgress } from "./RegistryBulkUploadProgress";
 
 type AddMode = "single" | "multi";
 type MultiInputMode = "files" | "urls";
@@ -348,19 +349,9 @@ const RegistryAddModal = ({
       ? isAdding
         ? t("registry.addEntryAdding")
         : t("registry.addEntry")
-      : isAdding && bulkProgress
-        ? bulkProgress.phase === "upload"
-          ? t("registry.bulkUploadProgressUpload", {
-              completed: bulkProgress.completed,
-              total: bulkProgress.total,
-            })
-          : t("registry.bulkUploadProgressSave", {
-              completed: bulkProgress.completed,
-              total: bulkProgress.total,
-            })
-        : isAdding
-          ? t("registry.addEntryAdding")
-          : t("registry.addEntriesCount", { count: submitCount });
+      : isAdding
+        ? t("registry.addEntryAdding")
+        : t("registry.addEntriesCount", { count: submitCount });
 
   const batchOptions = (
     <RegistryAddBatchOptions
@@ -550,17 +541,7 @@ const RegistryAddModal = ({
         </Tabs>
 
         {bulkProgress && (
-          <p className="text-sm text-gray-02" role="status">
-            {bulkProgress.phase === "upload"
-              ? t("registry.bulkUploadProgressUpload", {
-                  completed: bulkProgress.completed,
-                  total: bulkProgress.total,
-                })
-              : t("registry.bulkUploadProgressSave", {
-                  completed: bulkProgress.completed,
-                  total: bulkProgress.total,
-                })}
-          </p>
+          <RegistryBulkUploadProgress progress={bulkProgress} />
         )}
 
         <DialogFooter>

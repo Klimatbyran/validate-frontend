@@ -15,6 +15,7 @@ import type {
   RegistryBulkProgress,
   RegistryEntry,
   RegistryEntryUpdate,
+  RegistryNewEntry,
 } from "./lib/registry-types";
 import { writeRegistryEntriesToCsv } from "./lib/registry-utils";
 import {
@@ -39,10 +40,6 @@ import {
 } from "./lib/registry-api";
 import RegistryFiltersAndSort from "./components/RegistryFiltersAndSort";
 import RegistryAddModal from "./components/RegistryAddModal";
-import type {
-  RegistryBulkFileAddInput,
-  RegistryNewEntry,
-} from "./lib/registry-types";
 
 export function RegistryTab() {
   return (
@@ -264,7 +261,11 @@ function RegistryTabContent() {
 
   const handleAddFiles = async (input: RegistryBulkFileAddInput) => {
     setIsAddingEntry(true);
-    setBulkAddProgress(null);
+    setBulkAddProgress({
+      phase: "upload",
+      completed: 0,
+      total: input.files.length,
+    });
     try {
       const newEntries = await addRegistryEntriesFromFiles({
         ...input,

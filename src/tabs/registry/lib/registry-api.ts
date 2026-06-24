@@ -202,6 +202,8 @@ async function saveRegistryPayloadsInChunks(
   payloads: RegistryNewEntry[],
   onProgress?: (progress: RegistryBulkProgress) => void,
 ): Promise<{ saved: RegistryEntry[]; partialFailure?: string }> {
+  onProgress?.({ phase: "save", completed: 0, total: payloads.length });
+
   if (payloads.length <= REGISTRY_SAVE_CHUNK_SIZE) {
     return saveRegistryPayloads(payloads, onProgress);
   }

@@ -89,6 +89,9 @@ export async function uploadRegistryPdfs(
     REGISTRY_UPLOAD_CHUNK_SIZE,
     REGISTRY_UPLOAD_MAX_CHUNK_BYTES,
   );
+
+  onProgress?.({ phase: "upload", completed: 0, total: files.length });
+
   let uploadedCount = 0;
 
   const chunkResults = await mapWithConcurrency(
