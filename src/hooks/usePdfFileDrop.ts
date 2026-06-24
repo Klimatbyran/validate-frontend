@@ -6,6 +6,15 @@ export interface DroppedPdfFile {
   file: File;
 }
 
+export type PdfFileDropResult = {
+  added: number;
+  rejectedTooLarge: number;
+};
+
+type UsePdfFileDropOptions = {
+  maxFileBytes?: number;
+};
+
 function mergeDroppedPdfFiles(
   prev: DroppedPdfFile[],
   files: File[],
@@ -24,16 +33,54 @@ function mergeDroppedPdfFiles(
   return { next: [...prev, ...toAdd], added: toAdd.length };
 }
 
-export function usePdfFileDrop() {
+function partitionByMaxSize(
+  files: File[],
+  maxFileBytes?: number,
+): { accepted: File[]; rejectedTooLarge: number } {
+  if (maxFileBytes == null) {
+    return { accepted: files, rejectedTooLarge: 0 };
+  }
+  const accepted: File[] = [];
+  let rejectedTooLarge = 0;
+  for (const file of files) {
+    if (file.size > maxFileBytes) {
+      rejectedTooLarge += 1;
+      continue;
+    }
+    accepted.push(file);
+  }
+  return { accepted, rejectedTooLarge };
+}
+
+export function usePdfFileDrop(options: UsePdfFileDropOptions = {}) {
+  const { maxFileBytes } = options;
   const [isDragging, setIsDragging] = useState(false);
   const [droppedFiles, setDroppedFiles] = useState<DroppedPdfFile[]>([]);
 
-  const appendFiles = useCallback((files: File[]) => {
-    if (files.length === 0) return 0;
+  const appendFiles = useCallback(
+    (files: File[]): PdfFileDropResult => {
+      if (files.length === 0) {
+        return { added: 0, rejectedTooLarge: 0 };
+      }
 
-    setDroppedFiles((prev) => mergeDroppedPdfFiles(prev, files).next);
-    return files.length;
-  }, []);
+      const { accepted, rejectedTooLarge } = partitionByMaxSize(
+        files,
+        maxFileBytes,
+      );
+      if (accepted.length === 0) {
+        return { added: 0, rejectedTooLarge };
+      }
+
+      let added = 0;
+      setDroppedFiles((prev) => {
+        const merged = mergeDroppedPdfFiles(prev, accepted);
+        added = merged.added;
+        return merged.next;
+      });
+      return { added, rejectedTooLarge };
+    },
+    [maxFileBytes],
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -46,7 +93,7 @@ export function usePdfFileDrop() {
   }, []);
 
   const handleDrop = useCallback(
-    async (e: React.DragEvent) => {
+    async (e: React.DragEvent): Promise<PdfFileDropResult> => {
       e.preventDefault();
       setIsDragging(false);
       const files = await collectPdfFilesFromDataTransfer(e.dataTransfer);
@@ -56,7 +103,7 @@ export function usePdfFileDrop() {
   );
 
   const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: React.ChangeEvent<HTMLInputElement>): PdfFileDropResult => {
       const files = Array.from(e.target.files ?? []).filter(
         (file) =>
           file.type === "application/pdf" ||

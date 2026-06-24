@@ -8,7 +8,10 @@ import type {
   RegistryBulkFileAddInput,
 } from "./registry-types";
 import { filterRegistryEntries } from "./registry-utils";
+import { chunkArray } from "@/lib/chunk-array";
+import { REGISTRY_SAVE_CHUNK_SIZE } from "./registry-bulk-limits";
 import { uploadRegistryPdfs } from "./registry-upload-api";
+import type { RegistryBulkProgress } from "./registry-types";
 
 import type { RunReportsPipelineConfig } from "@/hooks/useRunReportsPipeline";
 
@@ -144,6 +147,7 @@ async function cachePdfToS3(sourceUrl: string): Promise<PdfCacheResult | null> {
 
 async function saveRegistryPayloads(
   payloads: RegistryNewEntry[],
+  onProgress?: (progress: RegistryBulkProgress) => void,
 ): Promise<{ saved: RegistryEntry[]; partialFailure?: string }> {
   const url = registryUrl("internal-companies/reports/save-reports");
   const response = await garboAuthFetch(url, {
@@ -186,11 +190,48 @@ async function saveRegistryPayloads(
   if (saved.length === 0) {
     throw new Error("No entries returned from server");
   }
+  onProgress?.({
+    phase: "save",
+    completed: saved.length,
+    total: payloads.length,
+  });
   return { saved };
+}
+
+async function saveRegistryPayloadsInChunks(
+  payloads: RegistryNewEntry[],
+  onProgress?: (progress: RegistryBulkProgress) => void,
+): Promise<{ saved: RegistryEntry[]; partialFailure?: string }> {
+  if (payloads.length <= REGISTRY_SAVE_CHUNK_SIZE) {
+    return saveRegistryPayloads(payloads, onProgress);
+  }
+
+  const chunks = chunkArray(payloads, REGISTRY_SAVE_CHUNK_SIZE);
+  const allSaved: RegistryEntry[] = [];
+
+  for (const chunk of chunks) {
+    const { saved, partialFailure } = await saveRegistryPayloads(
+      chunk,
+      (chunkProgress) => {
+        onProgress?.({
+          phase: "save",
+          completed: allSaved.length + chunkProgress.completed,
+          total: payloads.length,
+        });
+      },
+    );
+    allSaved.push(...saved);
+    if (partialFailure) {
+      return { saved: allSaved, partialFailure };
+    }
+  }
+
+  return { saved: allSaved };
 }
 
 export const addRegistryEntries = async (
   entries: RegistryNewEntry[],
+  onProgress?: (progress: RegistryBulkProgress) => void,
 ): Promise<RegistryEntry[]> => {
   if (entries.length === 0) {
     throw new Error("At least one registry entry is required");
@@ -212,7 +253,10 @@ export const addRegistryEntries = async (
   );
 
   try {
-    const { saved, partialFailure } = await saveRegistryPayloads(payloads);
+    const { saved, partialFailure } = await saveRegistryPayloadsInChunks(
+      payloads,
+      onProgress,
+    );
     if (partialFailure) {
       const err = new Error(partialFailure) as Error & {
         partialSuccess?: RegistryEntry[];
@@ -237,7 +281,9 @@ export const addRegistryEntry = async (
 export const addRegistryEntriesFromFiles = async (
   input: RegistryBulkFileAddInput,
 ): Promise<RegistryEntry[]> => {
-  const uploads = await uploadRegistryPdfs(input.files);
+  const uploads = await uploadRegistryPdfs(input.files, (progress) => {
+    input.onProgress?.(progress);
+  });
   if (uploads.length === 0) {
     throw new Error("No PDF files to add");
   }
@@ -259,7 +305,9 @@ export const addRegistryEntriesFromFiles = async (
     ...(input.batchId ? { batchId: input.batchId } : {}),
   }));
 
-  return addRegistryEntries(entries);
+  return addRegistryEntries(entries, (progress) => {
+    input.onProgress?.(progress);
+  });
 };
 
 export const editRegistryEntry = async (entry: RegistryEntryUpdate) => {

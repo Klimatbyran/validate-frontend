@@ -158,7 +158,7 @@ function climatePlansManifest(): Plugin {
 
 const PROXY_TIMEOUT_MS = 30000;
 /** Overview / internal Unearth routes — aggregation can be slow until SQL pagination lands. */
-const UNEARTH_PROXY_TIMEOUT_MS = 120000;
+const UNEARTH_PROXY_TIMEOUT_MS = 600000;
 
 function pipelineProxyConfigure(targetUrl: string) {
   return (proxy: any, _options: any) => {
