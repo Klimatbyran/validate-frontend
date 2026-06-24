@@ -20,6 +20,7 @@ import {
 } from "@/ui/dialog";
 import type {
   RegistryBulkFileAddInput,
+  RegistryBulkProgress,
   RegistryNewEntry,
 } from "../lib/registry-types";
 import { isValidHttpUrl, isValidOptionalHttpUrl } from "../lib/registry-utils";
@@ -36,6 +37,7 @@ interface RegistryAddModalProps {
   onAddMany: (entries: RegistryNewEntry[]) => Promise<void>;
   onAddFiles: (input: RegistryBulkFileAddInput) => Promise<void>;
   isAdding: boolean;
+  bulkProgress?: RegistryBulkProgress | null;
 }
 
 const inputClass = (hasError: boolean) =>
@@ -50,6 +52,7 @@ const RegistryAddModal = ({
   onAddMany,
   onAddFiles,
   isAdding,
+  bulkProgress = null,
 }: RegistryAddModalProps) => {
   const { t } = useI18n();
   const {
@@ -321,9 +324,19 @@ const RegistryAddModal = ({
       ? isAdding
         ? t("registry.addEntryAdding")
         : t("registry.addEntry")
-      : isAdding
-        ? t("registry.addEntryAdding")
-        : t("registry.addEntriesCount", { count: submitCount });
+      : isAdding && bulkProgress
+        ? bulkProgress.phase === "upload"
+          ? t("registry.bulkUploadProgressUpload", {
+              completed: bulkProgress.completed,
+              total: bulkProgress.total,
+            })
+          : t("registry.bulkUploadProgressSave", {
+              completed: bulkProgress.completed,
+              total: bulkProgress.total,
+            })
+        : isAdding
+          ? t("registry.addEntryAdding")
+          : t("registry.addEntriesCount", { count: submitCount });
 
   const batchOptions = (
     <RegistryAddBatchOptions
@@ -511,6 +524,20 @@ const RegistryAddModal = ({
             </div>
           </TabsContent>
         </Tabs>
+
+        {bulkProgress && (
+          <p className="text-sm text-gray-02" role="status">
+            {bulkProgress.phase === "upload"
+              ? t("registry.bulkUploadProgressUpload", {
+                  completed: bulkProgress.completed,
+                  total: bulkProgress.total,
+                })
+              : t("registry.bulkUploadProgressSave", {
+                  completed: bulkProgress.completed,
+                  total: bulkProgress.total,
+                })}
+          </p>
+        )}
 
         <DialogFooter>
           <Button

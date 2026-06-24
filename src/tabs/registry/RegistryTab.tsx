@@ -10,7 +10,12 @@ import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
 import RegistryControls from "./components/RegistryControls";
 import RegistryStats from "./components/RegistryStats";
 import RegistryResultsList from "./components/RegistryResultsList";
-import type { RegistryEntry, RegistryEntryUpdate } from "./lib/registry-types";
+import type {
+  RegistryBulkFileAddInput,
+  RegistryBulkProgress,
+  RegistryEntry,
+  RegistryEntryUpdate,
+} from "./lib/registry-types";
 import { writeRegistryEntriesToCsv } from "./lib/registry-utils";
 import {
   defaultRegistryViewFilters,
@@ -60,6 +65,8 @@ function RegistryTabContent() {
   const [isRunReportsOpen, setIsRunReportsOpen] = useState<boolean>(false);
   const [isAddEntryOpen, setIsAddEntryOpen] = useState<boolean>(false);
   const [isAddingEntry, setIsAddingEntry] = useState<boolean>(false);
+  const [bulkAddProgress, setBulkAddProgress] =
+    useState<RegistryBulkProgress | null>(null);
   const [filters, setFilters] = useState(defaultRegistryViewFilters);
   const patchFilters = useCallback((patch: Partial<RegistryViewFilters>) => {
     setFilters((f) => mergeRegistryViewFilters(f, patch));
@@ -257,8 +264,12 @@ function RegistryTabContent() {
 
   const handleAddFiles = async (input: RegistryBulkFileAddInput) => {
     setIsAddingEntry(true);
+    setBulkAddProgress(null);
     try {
-      const newEntries = await addRegistryEntriesFromFiles(input);
+      const newEntries = await addRegistryEntriesFromFiles({
+        ...input,
+        onProgress: setBulkAddProgress,
+      });
       await loadRegistry();
       refetchRegistryBatches();
       toast.success(
@@ -282,6 +293,7 @@ function RegistryTabContent() {
       throw error;
     } finally {
       setIsAddingEntry(false);
+      setBulkAddProgress(null);
     }
   };
 
@@ -357,6 +369,7 @@ function RegistryTabContent() {
           onAddMany={handleAddMany}
           onAddFiles={handleAddFiles}
           isAdding={isAddingEntry}
+          bulkProgress={bulkAddProgress}
         />
 
         <RegistryFiltersAndSort

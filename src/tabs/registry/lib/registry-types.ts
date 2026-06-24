@@ -41,6 +41,12 @@ export interface RegistryNewEntry {
   batchId?: string;
 }
 
+export type RegistryBulkProgress = {
+  phase: "upload" | "save";
+  completed: number;
+  total: number;
+};
+
 /** Bulk add from dropped PDF files; metadata is optional (fill in later via edit). */
 export interface RegistryBulkFileAddInput {
   companyName?: string;
@@ -49,6 +55,7 @@ export interface RegistryBulkFileAddInput {
   sourceUrl?: string;
   files: File[];
   batchId?: string;
+  onProgress?: (progress: RegistryBulkProgress) => void;
 }
 
 export interface RegistryStats {

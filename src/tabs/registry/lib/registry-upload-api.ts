@@ -1,6 +1,12 @@
+import { chunkArray, mapWithConcurrency } from "@/lib/chunk-array";
 import { getUnearthApiBaseUrl } from "@/config/api-env";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import type { UploadPdfUploadMeta } from "@/tabs/upload/lib/upload-api";
+import {
+  REGISTRY_UPLOAD_CHUNK_SIZE,
+  REGISTRY_UPLOAD_CONCURRENCY,
+} from "./registry-bulk-limits";
+import type { RegistryBulkProgress } from "./registry-types";
 
 function registryUploadUrl(path: string): string {
   const base = getUnearthApiBaseUrl().replace(/\/+$/, "");
@@ -38,14 +44,9 @@ function parseUploadError(errorText: string): string {
   return message;
 }
 
-/**
- * Upload PDFs to object storage via Unearth API (storage only, no pipeline jobs).
- */
-export async function uploadRegistryPdfs(
+async function uploadRegistryPdfChunk(
   files: File[],
 ): Promise<UploadPdfUploadMeta[]> {
-  if (files.length === 0) return [];
-
   const formData = new FormData();
   for (const file of files) {
     formData.append("files", file);
@@ -70,4 +71,35 @@ export async function uploadRegistryPdfs(
   }
 
   return body.uploads;
+}
+
+/**
+ * Upload PDFs to object storage via Unearth API (storage only, no pipeline jobs).
+ * Large drops are split into multipart chunks with limited parallel requests.
+ */
+export async function uploadRegistryPdfs(
+  files: File[],
+  onProgress?: (progress: RegistryBulkProgress) => void,
+): Promise<UploadPdfUploadMeta[]> {
+  if (files.length === 0) return [];
+
+  const chunks = chunkArray(files, REGISTRY_UPLOAD_CHUNK_SIZE);
+  let uploadedCount = 0;
+
+  const chunkResults = await mapWithConcurrency(
+    chunks,
+    REGISTRY_UPLOAD_CONCURRENCY,
+    async (chunk) => {
+      const uploads = await uploadRegistryPdfChunk(chunk);
+      uploadedCount += chunk.length;
+      onProgress?.({
+        phase: "upload",
+        completed: uploadedCount,
+        total: files.length,
+      });
+      return uploads;
+    },
+  );
+
+  return chunkResults.flat();
 }
