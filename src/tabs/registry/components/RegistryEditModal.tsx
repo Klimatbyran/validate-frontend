@@ -121,10 +121,11 @@ const RegistryEditModal = ({
         setSha256(fields.sha256);
         setS3UrlError(null);
         setSha256Error(null);
-        if (!url.trim()) {
-          setUrl(fields.url);
+        setUrl((prev) => {
+          if (prev.trim()) return prev;
           setUrlError(null);
-        }
+          return fields.s3Url;
+        });
         toast.success(t("registry.editPdfUploaded", { name: file.name }));
       } catch (error) {
         toast.error(
