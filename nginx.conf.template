@@ -5,7 +5,7 @@ server {
     index index.html;
 
     # Allow large file uploads (match ingress proxy-body-size)
-    client_max_body_size 450m;
+    client_max_body_size 550m;
 
     # Gzip compression
     gzip on;
