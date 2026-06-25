@@ -1063,7 +1063,7 @@
     "apiWarningsEnv": "Unearth API instance: {{env}}",
     "prodToStage": {
       "bannerTitle": "Prod data in, stage pipeline out",
-      "bannerReadProd": "Rows are built from prod Garbo: linked CompanyReports with at least one fully verified reporting period, where the matching stage report (by URL or shell) has no linked CompanyReport with emissions data yet.",
+      "bannerReadProd": "Rows come from prod Garbo: linked CompanyReports with at least one fully verified reporting period, where stage does not already have emissions for that same prod report URL. Stage does not need the report in its registry yet.",
       "bannerRunStage": "Run selected queues jobs on the stage Pipeline API using the prod report URL (new upload to stage).",
       "bannerNeverProd": "This tab never runs the prod pipeline — only stage.",
       "runOnStage": "Run on stage ({{count}})",
@@ -1081,7 +1081,8 @@
       "emptyDiagnosticsShells": "{{count}} linked prod CompanyReport shells scanned",
       "emptyDiagnosticsSkippedUnlinked": "{{count}} skipped (no CompanyReport id on prod)",
       "emptyDiagnosticsSkippedUnverified": "{{count}} skipped (no fully verified reporting period on prod)",
-      "emptyDiagnosticsSkippedStage": "{{count}} skipped (matching stage report already has emissions data)",
+      "emptyDiagnosticsSkippedStage": "{{count}} skipped (stage already has emissions for this prod report URL)",
+      "emptyDiagnosticsIncludedWithoutUrl": "{{count}} included but missing a fetchable prod report URL",
       "emptyDiagnosticsIncluded": "{{count}} would be shown before filters",
       "stats": {
         "total": "Shown",
@@ -1121,6 +1122,8 @@
       "registryReports": {
         "company": "Company name from the registry entry.",
         "reportYear": "Report year from the registry (Report table).",
+        "reportUrl": "Link to the report PDF or source page (url, then sourceUrl, then s3Url).",
+        "registryReportId": "Primary key of the Report row in the registry — every row in this view must have one.",
         "companyReportId": "Linked Garbo CompanyReport ID when a stage or prod reporting period matches this registry report.",
         "wikidata": "Whether the registry entry has a Wikidata ID for matching to Garbo companies.",
         "registryFile": "Whether the registry entry has a source URL and/or cached S3 file.",
@@ -1144,7 +1147,9 @@
     "table": {
       "company": "Company",
       "reportYear": "Report year",
+      "reportUrl": "Report URL",
       "companyReportYear": "CompanyReport year",
+      "registryReportId": "Registry report ID",
       "companyReportId": "CompanyReport ID",
       "tags": "Tags",
       "footer": "Showing {{shown}} of {{total}} rows",

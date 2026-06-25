@@ -1063,7 +1063,7 @@
     "apiWarningsEnv": "Unearth API-instans: {{env}}",
     "prodToStage": {
       "bannerTitle": "Prod-data in, stage-pipeline ut",
-      "bannerReadProd": "Rader byggs från prod Garbo: länkade CompanyReports med minst en fullt verifierad rapporteringsperiod, där motsvarande stage-rapport (via URL eller shell) ännu saknar länkad CompanyReport med utsläppsdata.",
+      "bannerReadProd": "Rader kommer från prod Garbo: länkade CompanyReports med minst en fullt verifierad rapporteringsperiod, där stage ännu inte har utsläppsdata för samma prod-rapport-URL. Rapporten behöver inte finnas i stage-registret ännu.",
       "bannerRunStage": "Kör valda köar jobb på stage Pipeline API med prod-rapportens URL (ny uppladdning till stage).",
       "bannerNeverProd": "Denna flik kör aldrig prod-pipeline — endast stage.",
       "runOnStage": "Kör på stage ({{count}})",
@@ -1081,7 +1081,8 @@
       "emptyDiagnosticsShells": "{{count}} länkade prod CompanyReport-shells granskade",
       "emptyDiagnosticsSkippedUnlinked": "{{count}} hoppades över (saknar CompanyReport-id på prod)",
       "emptyDiagnosticsSkippedUnverified": "{{count}} hoppades över (ingen fullt verifierad rapporteringsperiod på prod)",
-      "emptyDiagnosticsSkippedStage": "{{count}} hoppades över (matchande stage-rapport har redan utsläppsdata)",
+      "emptyDiagnosticsSkippedStage": "{{count}} hoppades över (stage har redan utsläppsdata för denna prod-rapport-URL)",
+      "emptyDiagnosticsIncludedWithoutUrl": "{{count}} inkluderade men saknar en hämtbar prod-rapport-URL",
       "emptyDiagnosticsIncluded": "{{count}} skulle visas före filter",
       "stats": {
         "total": "Visas",
@@ -1121,6 +1122,8 @@
       "registryReports": {
         "company": "Bolagsnamn från registerposten.",
         "reportYear": "Dokumentår på registerposten.",
+        "reportUrl": "Länk till rapport-PDF eller källsida (url, sedan sourceUrl, sedan s3Url).",
+        "registryReportId": "Primärnyckel för Report-raden i registret — varje rad i denna vy måste ha ett ID.",
         "companyReportId": "Länkat Garbo CompanyReport-ID när en stage- eller prod-period matchar denna register-rapport.",
         "wikidata": "Om registerposten har Wikidata-ID för matchning mot Garbo-bolag.",
         "registryFile": "Om registerposten har käll-URL och/eller cachad S3-fil.",
@@ -1144,7 +1147,9 @@
     "table": {
       "company": "Företag",
       "reportYear": "Reportår",
+      "reportUrl": "Rapport-URL",
       "companyReportYear": "CompanyReport-år",
+      "registryReportId": "Register-rapport-ID",
       "companyReportId": "CompanyReport-ID",
       "tags": "Taggar",
       "footer": "Visar {{shown}} av {{total}} rader",

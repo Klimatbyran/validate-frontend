@@ -105,6 +105,22 @@ export function OverviewTable({
               </th>
               {data.viewMode === "registryReports" ? (
                 <th
+                  className="px-4 py-3 font-medium w-[14%] cursor-help"
+                  title={headerHint("reportUrl")}
+                >
+                  {t("overview.table.reportUrl")}
+                </th>
+              ) : null}
+              {data.viewMode === "registryReports" ? (
+                <th
+                  className="px-4 py-3 font-medium w-[10%] cursor-help"
+                  title={headerHint("registryReportId")}
+                >
+                  {t("overview.table.registryReportId")}
+                </th>
+              ) : null}
+              {data.viewMode === "registryReports" ? (
+                <th
                   className="px-4 py-3 font-medium w-[12%] cursor-help"
                   title={headerHint("companyReportId")}
                 >
@@ -168,6 +184,28 @@ export function OverviewTable({
                 <td className="px-4 py-3 font-medium text-gray-02">
                   {row.reportYear ?? dash}
                 </td>
+                {data.viewMode === "registryReports" ? (
+                  <td className="px-4 py-3 text-xs text-gray-02 max-w-[200px]">
+                    {row.reportDisplayUrl ? (
+                      <a
+                        href={row.reportDisplayUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-03 hover:underline break-all line-clamp-2"
+                        title={row.reportDisplayUrl}
+                      >
+                        {row.reportDisplayUrl}
+                      </a>
+                    ) : (
+                      dash
+                    )}
+                  </td>
+                ) : null}
+                {data.viewMode === "registryReports" ? (
+                  <td className="px-4 py-3 text-xs text-gray-02 font-mono">
+                    {row.registryEntry?.id ?? dash}
+                  </td>
+                ) : null}
                 {data.viewMode === "registryReports" ? (
                   <td className="px-4 py-3 text-xs text-gray-02 font-mono">
                     {row.companyReportId ?? dash}
