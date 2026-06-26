@@ -16,25 +16,65 @@ export function isValidOptionalHttpUrl(raw: string): boolean {
   return isValidHttpUrl(raw);
 }
 
+/** Split pasted Excel lists (one company per line or tab-separated). */
+export function parseRegistrySearchTerms(query: string): string[] {
+  const seen = new Set<string>();
+  const terms: string[] = [];
+  for (const part of query.split(/[\r\n\t]+/)) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    terms.push(trimmed);
+  }
+  return terms;
+}
+
+function registryEntryKey(entry: RegistryEntry): string {
+  return entry.id ?? entry.wikidataId ?? entry.url;
+}
+
+export function registryEntryMatchesSearchTerm(
+  entry: RegistryEntry,
+  term: string,
+): boolean {
+  const normalizedTerm = term.trim().toLowerCase();
+  if (!normalizedTerm) return false;
+  return (
+    entry.companyName?.toLowerCase().includes(normalizedTerm) ||
+    (entry.wikidataId?.toLowerCase().includes(normalizedTerm) ?? false) ||
+    (entry.reportYear?.includes(normalizedTerm) ?? false) ||
+    entry.url.toLowerCase().includes(normalizedTerm) ||
+    (entry.sourceUrl?.toLowerCase().includes(normalizedTerm) ?? false) ||
+    (entry.s3Url?.toLowerCase().includes(normalizedTerm) ?? false)
+  );
+}
+
 export function filterRegistryEntries(
   entries: RegistryEntry[],
   query: string,
 ): RegistryEntry[] {
-  const normalizedQuery = query.trim().toLowerCase();
-  if (!normalizedQuery) {
+  const terms = parseRegistrySearchTerms(query);
+  if (terms.length === 0) {
     return entries;
   }
 
-  return entries.filter((entry) => {
-    return (
-      entry.companyName?.toLowerCase().includes(normalizedQuery) ||
-      (entry.wikidataId?.toLowerCase().includes(normalizedQuery) ?? false) ||
-      entry.reportYear?.includes(normalizedQuery) ||
-      entry.url.toLowerCase().includes(normalizedQuery) ||
-      (entry.sourceUrl?.toLowerCase().includes(normalizedQuery) ?? false) ||
-      (entry.s3Url?.toLowerCase().includes(normalizedQuery) ?? false)
+  if (terms.length === 1) {
+    return entries.filter((entry) =>
+      registryEntryMatchesSearchTerm(entry, terms[0]!),
     );
-  });
+  }
+
+  const matched = new Map<string, RegistryEntry>();
+  for (const term of terms) {
+    for (const entry of entries) {
+      if (registryEntryMatchesSearchTerm(entry, term)) {
+        matched.set(registryEntryKey(entry), entry);
+      }
+    }
+  }
+  return [...matched.values()];
 }
 
 export function buildRegistryStats(entries: RegistryEntry[]): RegistryStats {

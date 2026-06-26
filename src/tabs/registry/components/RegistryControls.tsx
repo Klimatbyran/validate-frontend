@@ -38,11 +38,12 @@ const RegistryControls = ({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col md:flex-row gap-3 md:items-center">
-        <input
+        <textarea
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder={t("registry.searchPlaceholder")}
-          className="bg-gray-03/20 w-full border p-2 flex items-center justify-center border-gray-03 rounded-lg text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
+          rows={2}
+          className="bg-gray-03/20 w-full min-h-[2.75rem] border p-2 border-gray-03 rounded-lg text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03 resize-y"
         />
       </div>
       <div className="flex gap-2">

@@ -6,8 +6,18 @@ import {
   DataTableHead,
   DataTableShell,
 } from "@/ui/data-table";
+import { ClientTablePagination } from "@/ui/client-table-pagination";
 import type { RegistryEntry, RegistryEntryUpdate } from "../lib/registry-types";
 import RegistryResultItem from "./RegistryResultItem";
+
+type RegistryPagination = {
+  from: number;
+  to: number;
+  total: number;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+};
 
 interface RegistryResultsListProps {
   registry: RegistryEntry[];
@@ -17,6 +27,7 @@ interface RegistryResultsListProps {
   onToggleSelect: (entry: RegistryEntry) => void;
   onEdit: (entry: RegistryEntryUpdate) => Promise<void>;
   editingReportIds: string[];
+  pagination: RegistryPagination;
 }
 
 const RegistryResultsList = ({
@@ -27,6 +38,7 @@ const RegistryResultsList = ({
   onToggleSelect,
   onEdit,
   editingReportIds,
+  pagination,
 }: RegistryResultsListProps) => {
   const { t } = useI18n();
 
@@ -99,6 +111,17 @@ const RegistryResultsList = ({
             })}
           </DataTableBody>
         </DataTable>
+        <ClientTablePagination
+          from={pagination.from}
+          to={pagination.to}
+          filteredTotal={pagination.total}
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          showAll={false}
+          canPaginate={pagination.totalPages > 1}
+          onPageChange={pagination.onPageChange}
+          onShowAllChange={() => undefined}
+        />
       </DataTableShell>
     </motion.div>
   );

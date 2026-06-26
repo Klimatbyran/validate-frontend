@@ -1164,7 +1164,7 @@
   "registry": {
     "title": "Registry",
     "subtitle": "Search and inspect registry entries before wiring full workflows.",
-    "searchPlaceholder": "Search company name or Wikidata ID (e.g. Q12345)",
+    "searchPlaceholder": "Search company name, Wikidata ID, or URL — paste one company per line from Excel",
     "runReports": "Run Reports",
     "runningReports": "Running Reports...",
     "runReportsDescription": "Run selected reports with upload options ({{count}} selected).",
@@ -1175,7 +1175,7 @@
     "noReportUrls": "No valid report URLs found in selection.",
     "exportCsv": "Export CSV",
     "deleteSelected": "Delete Selected",
-    "loading": "Searching registry...",
+    "loading": "Loading registry…",
     "empty": "Registry is empty.",
     "fetchError": "Failed to fetch registry.",
     "noResults": "No registry entries matched your search.",
