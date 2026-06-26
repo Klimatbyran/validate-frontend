@@ -33,7 +33,9 @@ const sampleEntries: RegistryEntry[] = [
 describe("parseRegistrySearchTerms", () => {
   it("splits newline-separated company names", () => {
     expect(
-      parseRegistrySearchTerms("Skue Sparebank\nMagnora ASA\nTekna Holding ASA"),
+      parseRegistrySearchTerms(
+        "Skue Sparebank\nMagnora ASA\nTekna Holding ASA",
+      ),
     ).toEqual(["Skue Sparebank", "Magnora ASA", "Tekna Holding ASA"]);
   });
 
@@ -74,8 +76,12 @@ describe("filterRegistryEntries", () => {
 
 describe("registryEntryMatchesSearchTerm", () => {
   it("matches company name and wikidata id", () => {
-    expect(registryEntryMatchesSearchTerm(sampleEntries[0]!, "skue")).toBe(true);
-    expect(registryEntryMatchesSearchTerm(sampleEntries[0]!, "Q111")).toBe(true);
+    expect(registryEntryMatchesSearchTerm(sampleEntries[0]!, "skue")).toBe(
+      true,
+    );
+    expect(registryEntryMatchesSearchTerm(sampleEntries[0]!, "Q111")).toBe(
+      true,
+    );
     expect(registryEntryMatchesSearchTerm(sampleEntries[0]!, "Q999")).toBe(
       false,
     );
