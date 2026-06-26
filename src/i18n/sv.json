@@ -1164,7 +1164,7 @@
   "registry": {
     "title": "Register",
     "subtitle": "Sök och granska registerposter innan fulla flöden kopplas in.",
-    "searchPlaceholder": "Sök företagsnamn eller Wikidata-ID (t.ex. Q12345)",
+    "searchPlaceholder": "Sök företagsnamn, Wikidata-ID eller URL — klistra in ett företag per rad från Excel",
     "runReports": "Kör rapporter",
     "runningReports": "Kör rapporter...",
     "runReportsDescription": "Kör valda rapporter med uppladdningsalternativ ({{count}} valda).",
@@ -1175,7 +1175,7 @@
     "noReportUrls": "Inga giltiga rapport-URL:er hittades i urvalet.",
     "exportCsv": "Exportera CSV",
     "deleteSelected": "Ta bort valda",
-    "loading": "Söker i registret...",
+    "loading": "Laddar register…",
     "empty": "Registret är tomt.",
     "fetchError": "Kunde inte hämta registret.",
     "noResults": "Inga registerposter matchade din sökning.",

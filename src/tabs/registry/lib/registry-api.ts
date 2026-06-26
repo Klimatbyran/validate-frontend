@@ -7,15 +7,37 @@ import type {
   RegistryNewEntry,
   RegistryBulkFileAddInput,
 } from "./registry-types";
-import { filterRegistryEntries } from "./registry-utils";
 import { chunkArray } from "@/lib/chunk-array";
 import { REGISTRY_SAVE_CHUNK_SIZE } from "./registry-bulk-limits";
 import { uploadRegistryPdfs } from "./registry-upload-api";
 import type { RegistryBulkProgress } from "./registry-types";
+import type { RegistrySortKey } from "./registry-table-utils";
 
 import type { RunReportsPipelineConfig } from "@/hooks/useRunReportsPipeline";
 
 const REGISTRY_BATCHES_LIMIT = 500;
+export const REGISTRY_PAGE_SIZE = 75;
+
+export type RegistryBrowseParams = {
+  reportYear?: string;
+  batchId?: string;
+  wikidata?: "all" | "present" | "missing";
+  wikidataIds?: string[];
+  sort?: RegistrySortKey;
+};
+
+export type RegistryPageResponse = {
+  rows: RegistryEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  reportYears: string[];
+  stats: {
+    totalReports: number;
+    uniqueCompanies: number | null;
+  };
+};
 
 function registryUrl(path: string): string {
   const base = getUnearthApiBaseUrl().replace(/\/+$/, "");
@@ -33,24 +55,102 @@ export function getRegistryRunReportsPipelineConfig(): RunReportsPipelineConfig 
   };
 }
 
-export const fetchRegistryList = async () => {
-  const url = registryUrl("reports/registry");
+function appendBrowseParams(
+  params: URLSearchParams,
+  browse: RegistryBrowseParams | undefined,
+): void {
+  if (!browse) return;
+  if (browse.reportYear && browse.reportYear !== "all") {
+    params.set("reportYear", browse.reportYear);
+  }
+  if (browse.batchId && browse.batchId !== "all") {
+    params.set("batchId", browse.batchId);
+  }
+  if (browse.wikidata && browse.wikidata !== "all") {
+    params.set("wikidata", browse.wikidata);
+  }
+  if (browse.sort) {
+    params.set("sort", browse.sort);
+  }
+  if (browse.wikidataIds?.length) {
+    params.set("wikidataIds", browse.wikidataIds.join(","));
+  }
+}
+
+async function parseRegistryPageResponse(
+  response: Response,
+  url: string,
+): Promise<RegistryPageResponse> {
+  if (!response.ok) {
+    throwIfAuthError(response.status);
+    const msg = `Failed to fetch registry: ${response.status} ${response.statusText} (${url})`;
+    console.error(msg);
+    throw new Error(msg);
+  }
+  return (await response.json()) as RegistryPageResponse;
+}
+
+export async function fetchRegistryPage(
+  page: number,
+  pageSize = REGISTRY_PAGE_SIZE,
+  browse?: RegistryBrowseParams,
+): Promise<RegistryPageResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  appendBrowseParams(params, browse);
+  const url = registryUrl(`reports/registry?${params.toString()}`);
   try {
     const response = await garboAuthFetch(url, { cache: "no-store" });
-    if (response.ok) {
-      const data = await response.json();
-      return data;
-    } else {
-      throwIfAuthError(response.status);
-      const msg = `Failed to fetch registry: ${response.status} ${response.statusText} (${url})`;
-      console.error(msg);
-      throw new Error(msg);
-    }
+    return parseRegistryPageResponse(response, url);
   } catch (error) {
-    const msg = `Failed to fetch company names (${url})`;
+    const msg = `Failed to fetch registry page (${url})`;
     console.error(msg, error);
     throw error instanceof Error ? error : new Error(msg);
   }
+}
+
+export async function searchRegistryPage(
+  terms: string[],
+  page: number,
+  pageSize = REGISTRY_PAGE_SIZE,
+  browse?: RegistryBrowseParams,
+): Promise<RegistryPageResponse> {
+  const normalized = terms.map((term) => term.trim()).filter(Boolean);
+  if (normalized.length === 0) {
+    return fetchRegistryPage(page, pageSize, browse);
+  }
+
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  appendBrowseParams(params, browse);
+
+  if (normalized.length === 1) {
+    params.set("q", normalized[0]!);
+  } else {
+    for (const term of normalized) {
+      params.append("term", term);
+    }
+  }
+
+  const url = registryUrl(`reports/registry/search?${params.toString()}`);
+  try {
+    const response = await garboAuthFetch(url, { cache: "no-store" });
+    return parseRegistryPageResponse(response, url);
+  } catch (error) {
+    const msg = `Failed to search registry (${url})`;
+    console.error(msg, error);
+    throw error instanceof Error ? error : new Error(msg);
+  }
+}
+
+/** @deprecated Use fetchRegistryPage — kept for callers not yet migrated. */
+export const fetchRegistryList = async () => {
+  const page = await fetchRegistryPage(1, REGISTRY_PAGE_SIZE);
+  return page.rows;
 };
 
 export async function fetchRegistryBatches() {
@@ -66,33 +166,6 @@ export async function fetchRegistryBatches() {
     batches?: { id: string; batchName: string }[];
   };
   return Array.isArray(data.batches) ? data.batches : [];
-}
-
-export async function searchRegistryEntries(
-  query: string,
-): Promise<RegistryEntry[]> {
-  const trimmedQuery = query.trim();
-  if (!trimmedQuery) {
-    return [];
-  }
-
-  //Swap to actual API call when available.
-  const url = registryUrl(
-    `registry/search?query=${encodeURIComponent(trimmedQuery)}`,
-  );
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Registry search failed with status ${response.status}`);
-    }
-
-    const entries = (await response.json()) as RegistryEntry[];
-    return filterRegistryEntries(entries, trimmedQuery);
-  } catch (error) {
-    console.warn("Registry API unavailable. ", error);
-    return [];
-  }
 }
 
 export const deleteReportFromRegistry = async (reportIds: string[]) => {

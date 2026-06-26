@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Callout } from "@/ui/callout";
-import { ApiAuthError } from "@/lib/garbo-auth-fetch";
 import { RunReportsModal } from "@/components/RunReportsModal";
 import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
 import RegistryControls from "./components/RegistryControls";
@@ -28,14 +27,13 @@ import {
   RegistryBatchesProvider,
   useRegistryBatchesContext,
 } from "./contexts/RegistryBatchesContext";
-import { useRegistryDisplayedView } from "./hooks/useRegistryDisplayedView";
+import { useRegistryData } from "./hooks/useRegistryData";
 import {
   addRegistryEntry,
   addRegistryEntries,
   addRegistryEntriesFromFiles,
   deleteReportFromRegistry,
   editRegistryEntry,
-  fetchRegistryList,
   getRegistryRunReportsPipelineConfig,
 } from "./lib/registry-api";
 import RegistryFiltersAndSort from "./components/RegistryFiltersAndSort";
@@ -52,11 +50,8 @@ export function RegistryTab() {
 function RegistryTabContent() {
   const { t } = useI18n();
   const [query, setQuery] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [isAuthError, setIsAuthError] = useState(false);
+  const [page, setPage] = useState(1);
   const [selectedReports, setSelectedReports] = useState<RegistryEntry[]>([]);
-  const [registry, setRegistry] = useState<RegistryEntry[]>([]);
   const [isDeletingSelected, setIsDeletingSelected] = useState<boolean>(false);
   const [editingReportIds, setEditingReportIds] = useState<string[]>([]);
   const [isRunReportsOpen, setIsRunReportsOpen] = useState<boolean>(false);
@@ -65,9 +60,17 @@ function RegistryTabContent() {
   const [bulkAddProgress, setBulkAddProgress] =
     useState<RegistryBulkProgress | null>(null);
   const [filters, setFilters] = useState(defaultRegistryViewFilters);
-  const patchFilters = useCallback((patch: Partial<RegistryViewFilters>) => {
-    setFilters((f) => mergeRegistryViewFilters(f, patch));
+  const resetListView = useCallback(() => {
+    setPage(1);
+    setSelectedReports([]);
   }, []);
+  const patchFilters = useCallback(
+    (patch: Partial<RegistryViewFilters>) => {
+      setFilters((f) => mergeRegistryViewFilters(f, patch));
+      resetListView();
+    },
+    [resetListView],
+  );
   const {
     wikidataToTags,
     loading: companyTagsLoading,
@@ -95,57 +98,38 @@ function RegistryTabContent() {
     },
   });
 
-  const batchFilterOptions = useMemo(() => {
-    const byId = new Map(registryBatches.map((b) => [b.id, b.batchName]));
-    for (const entry of registry) {
-      const id = entry.batchId?.trim();
-      if (!id) continue;
-      if (!byId.has(id)) {
-        byId.set(id, entry.batchName?.trim() || id);
-      }
-    }
-    return [...byId.entries()]
-      .sort((a, b) =>
-        a[1].localeCompare(b[1], undefined, { sensitivity: "base" }),
-      )
-      .map(([id, batchName]) => ({ id, batchName }));
-  }, [registryBatches, registry]);
+  const batchFilterOptions = useMemo(
+    () =>
+      [...registryBatches]
+        .sort((a, b) =>
+          a.batchName.localeCompare(b.batchName, undefined, {
+            sensitivity: "base",
+          }),
+        )
+        .map(({ id, batchName }) => ({ id, batchName })),
+    [registryBatches],
+  );
 
   const {
-    displayedRegistry,
-    distinctReportYears,
-    hasStructuredFilters,
+    rows: displayedRegistry,
+    meta,
+    reportYears: distinctReportYears,
     stats,
-  } = useRegistryDisplayedView(registry, query, filters, wikidataToTags);
-
-  const loadRegistry = useCallback(async () => {
-    setIsLoading(true);
-    setLoadError(null);
-    setIsAuthError(false);
-    try {
-      const data = await fetchRegistryList();
-      setRegistry(Array.isArray(data) ? data : []);
-      setSelectedReports([]);
-    } catch (error) {
-      console.error("Failed to load registry", error);
-      setRegistry([]);
-      setSelectedReports([]);
-      if (error instanceof ApiAuthError) {
-        setIsAuthError(true);
-      } else {
-        setLoadError(error instanceof Error ? error.message : "Unknown error");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadRegistry();
-  }, [loadRegistry]);
+    isLoading,
+    loadError,
+    isAuthError,
+    hasStructuredFilters,
+    refresh,
+  } = useRegistryData({
+    page,
+    query,
+    filters,
+    wikidataToTags,
+    companyTagsLoading,
+  });
 
   const handleRefresh = () => {
-    void loadRegistry();
+    void refresh();
   };
 
   const handleExport = () => {
@@ -195,12 +179,10 @@ function RegistryTabContent() {
     try {
       await deleteReportFromRegistry(selectedReportIds);
       const deletedIds = new Set(selectedReportIds);
-      setRegistry((current) =>
-        current.filter((item) => !item.id || !deletedIds.has(item.id)),
-      );
       setSelectedReports((current) =>
         current.filter((item) => !item.id || !deletedIds.has(item.id)),
       );
+      await refresh();
     } catch (error) {
       console.error("Failed to delete selected reports", error);
     } finally {
@@ -219,7 +201,7 @@ function RegistryTabContent() {
     setIsAddingEntry(true);
     try {
       await addRegistryEntry(entry);
-      await loadRegistry();
+      await refresh();
       refetchRegistryBatches();
       toast.success(t("registry.addEntrySuccess"));
     } catch (error) {
@@ -235,13 +217,13 @@ function RegistryTabContent() {
     setIsAddingEntry(true);
     try {
       const saved = await addRegistryEntries(entries);
-      await loadRegistry();
+      await refresh();
       refetchRegistryBatches();
       toast.success(t("registry.addEntriesSuccess", { count: saved.length }));
     } catch (error) {
       const partial = error as Error & { partialSuccess?: RegistryEntry[] };
       if (partial.partialSuccess?.length) {
-        await loadRegistry();
+        await refresh();
         refetchRegistryBatches();
         toast.warning(
           t("registry.addEntriesPartial", {
@@ -271,7 +253,7 @@ function RegistryTabContent() {
         ...input,
         onProgress: setBulkAddProgress,
       });
-      await loadRegistry();
+      await refresh();
       refetchRegistryBatches();
       toast.success(
         t("registry.addEntriesSuccess", { count: newEntries.length }),
@@ -279,7 +261,7 @@ function RegistryTabContent() {
     } catch (error) {
       const partial = error as Error & { partialSuccess?: RegistryEntry[] };
       if (partial.partialSuccess?.length) {
-        await loadRegistry();
+        await refresh();
         refetchRegistryBatches();
         toast.warning(
           t("registry.addEntriesPartial", {
@@ -307,11 +289,6 @@ function RegistryTabContent() {
 
     try {
       const updatedEntry = await editRegistryEntry(entry);
-      setRegistry((current) =>
-        current.map((item) =>
-          item.id === updatedEntry.id ? updatedEntry : item,
-        ),
-      );
       setSelectedReports((current) =>
         current.map((item) =>
           item.id === updatedEntry.id ? updatedEntry : item,
@@ -319,6 +296,7 @@ function RegistryTabContent() {
       );
       toast.success(t("registry.editReportSuccess"));
       refetchRegistryBatches();
+      await refresh();
     } catch (error) {
       console.error("Failed to edit registry entry", error);
       const message = error instanceof Error ? error.message : String(error);
@@ -327,6 +305,10 @@ function RegistryTabContent() {
       setEditingReportIds((current) => current.filter((id) => id !== reportId));
     }
   };
+
+  const paginationFrom =
+    meta.total === 0 ? 0 : (meta.page - 1) * meta.pageSize + 1;
+  const paginationTo = Math.min(meta.page * meta.pageSize, meta.total);
 
   return (
     <div className="flex flex-col gap-6">
@@ -346,7 +328,7 @@ function RegistryTabContent() {
           query={query}
           onQueryChange={(value) => {
             setQuery(value);
-            setSelectedReports([]);
+            resetListView();
           }}
           onRefresh={handleRefresh}
           isRefreshing={isLoading}
@@ -374,7 +356,7 @@ function RegistryTabContent() {
         />
 
         <RegistryFiltersAndSort
-          disabled={isLoading || registry.length === 0}
+          disabled={isLoading && displayedRegistry.length === 0}
           filters={filters}
           onFiltersChange={patchFilters}
           distinctYears={distinctReportYears}
@@ -419,15 +401,19 @@ function RegistryTabContent() {
         <p className="text-sm text-red-01">{t("registry.fetchError")}</p>
       )}
 
-      {!isLoading && !isAuthError && !loadError && registry.length === 0 && (
-        <p className="text-sm text-gray-02">{t("registry.empty")}</p>
-      )}
+      {!isLoading &&
+        !isAuthError &&
+        !loadError &&
+        meta.total === 0 &&
+        !query.trim() &&
+        !hasStructuredFilters && (
+          <p className="text-sm text-gray-02">{t("registry.empty")}</p>
+        )}
 
       {!isLoading &&
         !isAuthError &&
         !loadError &&
-        registry.length > 0 &&
-        displayedRegistry.length === 0 &&
+        meta.total === 0 &&
         (query.trim().length > 0 || hasStructuredFilters) && (
           <p className="text-sm text-gray-02">{t("registry.noResults")}</p>
         )}
@@ -446,6 +432,14 @@ function RegistryTabContent() {
               onToggleSelect={handleToggleSelect}
               onEdit={handleEditEntry}
               editingReportIds={editingReportIds}
+              pagination={{
+                from: paginationFrom,
+                to: paginationTo,
+                total: meta.total,
+                page: meta.page,
+                totalPages: meta.totalPages,
+                onPageChange: setPage,
+              }}
             />
           </>
         )}
