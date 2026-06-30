@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { useBatches } from "@/hooks/useBatches";
+import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { FileUploadZone } from "./components/FileUploadZone";
 import { UrlUploadForm } from "./components/UrlUploadForm";
 import { UploadList } from "./components/UploadList";
@@ -14,6 +15,15 @@ import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
 import { NEW_BATCH_DROPDOWN_VALUE } from "./lib/utils";
 import { UploadApiError, createJobsFromUrls, uploadPdfsToParsePdf } from "./lib/upload-api";
 import { useTagOptions } from "./hooks/useTagOptions";
+
+const UPLOADED_PREFIX = "uploaded:";
+
+type RemoveConfirmTarget = {
+  id: string;
+  name: string;
+  source: "uploaded" | "processed";
+  submitted?: boolean;
+};
 
 export function UploadTab() {
   const { t } = useI18n();
@@ -33,6 +43,7 @@ export function UploadTab() {
   const { batches: existingBatches, isLoading: batchesLoading } = useBatches();
   const { tagOptions, loading: tagsLoading, error: tagsError } = useTagOptions();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [removeConfirm, setRemoveConfirm] = useState<RemoveConfirmTarget | null>(null);
 
   const effectiveBatchId =
     !batchDropdownChoice ? "" : batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE ? customBatchName.trim() : batchDropdownChoice;
@@ -191,6 +202,53 @@ export function UploadTab() {
     );
   }, []);
 
+  const handleRemoveUploadedFile = useCallback((id: string) => {
+    const file = uploadedFiles.find((item) => item.id === id);
+    if (!file) return;
+    setRemoveConfirm({
+      id,
+      name: file.file.name,
+      source: "uploaded",
+    });
+  }, [uploadedFiles]);
+
+  const handleRemoveProcessedItem = useCallback((id: string) => {
+    const item = processedUrls.find((entry) => entry.id === id);
+    if (!item) return;
+    const name = item.url.startsWith(UPLOADED_PREFIX)
+      ? item.url.slice(UPLOADED_PREFIX.length)
+      : item.url;
+    setRemoveConfirm({
+      id,
+      name,
+      source: "processed",
+      submitted: item.url.startsWith(UPLOADED_PREFIX),
+    });
+  }, [processedUrls]);
+
+  const closeRemoveConfirm = useCallback(() => {
+    setRemoveConfirm(null);
+  }, []);
+
+  const handleConfirmRemove = useCallback(() => {
+    if (!removeConfirm) return;
+
+    if (removeConfirm.source === "uploaded") {
+      setUploadedFiles((prev) => prev.filter((file) => file.id !== removeConfirm.id));
+    } else {
+      setProcessedUrls((prev) => prev.filter((item) => item.id !== removeConfirm.id));
+    }
+    closeRemoveConfirm();
+  }, [removeConfirm, closeRemoveConfirm]);
+
+  const removeConfirmDescription = removeConfirm
+    ? removeConfirm.source === "uploaded"
+      ? t("upload.confirmRemovePendingFile", { name: removeConfirm.name })
+      : removeConfirm.submitted
+        ? t("upload.confirmRemoveSubmittedFile", { name: removeConfirm.name })
+        : t("upload.confirmRemoveLink", { name: removeConfirm.name })
+    : "";
+
   return (
     <div className="space-y-6">
       {/* Upload Mode Tabs */}
@@ -287,6 +345,19 @@ export function UploadTab() {
         uploadMode={uploadMode}
         uploadedFiles={uploadedFiles}
         processedUrls={processedUrls}
+        onRemoveUploadedFile={handleRemoveUploadedFile}
+        onRemoveProcessedItem={handleRemoveProcessedItem}
+      />
+
+      <ConfirmDialog
+        open={!!removeConfirm}
+        onOpenChange={(open) => !open && closeRemoveConfirm()}
+        title={t("upload.removeFileTitle")}
+        description={removeConfirmDescription}
+        cancelLabel={t("upload.cancel")}
+        confirmLabel={t("upload.removeFile")}
+        confirmVariant="danger"
+        onConfirm={handleConfirmRemove}
       />
     </div>
   );

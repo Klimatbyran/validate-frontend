@@ -7,12 +7,16 @@ interface UploadListProps {
   uploadMode: "file" | "url";
   uploadedFiles: UploadedFile[];
   processedUrls: UrlInput[];
+  onRemoveUploadedFile?: (id: string) => void;
+  onRemoveProcessedItem?: (id: string) => void;
 }
 
 export function UploadList({
   uploadMode,
   uploadedFiles,
   processedUrls,
+  onRemoveUploadedFile,
+  onRemoveProcessedItem,
 }: UploadListProps) {
   const { t } = useI18n();
   const fileCount = uploadedFiles?.length ?? 0;
@@ -42,15 +46,15 @@ export function UploadList({
           ? (
               <>
                 {(uploadedFiles ?? []).filter(Boolean).map((file) => (
-                  <FileListItem key={file.id} file={file} />
+                  <FileListItem key={file.id} file={file} onRemove={onRemoveUploadedFile} />
                 ))}
                 {submittedFileUrls.map((url) => (
-                  <SubmittedFileListItem key={url.id} url={url} />
+                  <SubmittedFileListItem key={url.id} url={url} onRemove={onRemoveProcessedItem} />
                 ))}
               </>
             )
           : (processedUrls ?? []).filter(Boolean).map((url) => (
-              <UrlListItem key={url.id} url={url} />
+              <UrlListItem key={url.id} url={url} onRemove={onRemoveProcessedItem} />
             ))}
       </ul>
     </motion.div>
