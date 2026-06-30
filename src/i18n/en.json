@@ -8,6 +8,8 @@
     "clearFilters": "Clear filters",
     "refresh": "Refresh",
     "search": "Search",
+    "cancel": "Cancel",
+    "save": "Save",
     "scrollToTop": "Scroll to top",
     "yes": "Yes",
     "no": "No",
@@ -1040,8 +1042,16 @@
     "views": {
       "companyYears": "Company years",
       "registryReports": "Registry reports",
-      "prodToStage": "Prod → Stage"
+      "prodToStage": "Prod → Stage",
+      "coverage": "Coverage",
+      "inRegistry": "In registry"
     },
+    "registry": {
+      "present": "In registry",
+      "missing": "Not in registry",
+      "ambiguous": "Ambiguous"
+    },
+    "subtitleCoverage": "Track index constituent lists by year and see how many company names already exist in Garbo.",
     "subtitleProdToStage": "Prod CompanyReports with at least one fully verified reporting period where the matching stage report has no emissions data yet. Run selected re-uploads the prod report URL through the stage pipeline only.",
     "filtersTitle": "Search and filters",
     "searchLabel": "Company name or ID",
@@ -1088,6 +1098,55 @@
         "runnable": "Runnable",
         "selected": "Selected",
         "allCandidates": "All candidates"
+      }
+    },
+    "coverage": {
+      "errorTitle": "Coverage request failed",
+      "addList": "Add list",
+      "addYear": "Add year",
+      "editYear": "Edit names",
+      "deleteList": "Delete list",
+      "deleteYear": "Delete year",
+      "backToLists": "Back to lists",
+      "noLists": "No coverage lists yet.",
+      "noYears": "No year editions yet. Add a year to paste company names.",
+      "noEntries": "No entries match the current filter.",
+      "createListTitle": "Create coverage list",
+      "addYearTitle": "Add year edition",
+      "editYearTitle": "Edit year names",
+      "formHint": "Paste one company name per line. Coverage is computed live against Garbo company names.",
+      "listNameLabel": "List name",
+      "listNamePlaceholder": "e.g. MSCI World Index",
+      "yearLabel": "Year",
+      "namesLabel": "Company names",
+      "namesPlaceholder": "Apple Inc.\nMicrosoft Corporation\n…",
+      "namesCount": "{{count}} names",
+      "yearPill": "{{year}} · {{percent}}%",
+      "yearStatsLine": "{{total}} names · {{matched}} matched · {{missing}} missing · {{ambiguous}} ambiguous · {{percent}}% coverage",
+      "latestCoverageCell": "{{year}}: {{percent}}% ({{matched}}/{{total}})",
+      "entryFilterLabel": "Entry filter",
+      "searchPlaceholder": "Search names or matches…",
+      "filters": {
+        "all": "All",
+        "matched": "Matched",
+        "missing": "Missing",
+        "ambiguous": "Ambiguous"
+      },
+      "columns": {
+        "list": "List",
+        "years": "Years",
+        "latestCoverage": "Latest coverage",
+        "updated": "Updated",
+        "listName": "List name",
+        "status": "Status",
+        "dbMatch": "DB match"
+      },
+      "stats": {
+        "total": "Total names",
+        "matched": "Matched",
+        "missing": "Missing",
+        "ambiguous": "Ambiguous",
+        "coverage": "Coverage"
       }
     },
     "fetchError": "Could not load overview data.",

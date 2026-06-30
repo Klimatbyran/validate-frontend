@@ -32,12 +32,14 @@ function overviewViewFromSearchParams(
   const view = searchParams.get(OVERVIEW_VIEW_QUERY);
   if (view === "registry") return "registryReports";
   if (view === "prod-to-stage") return "prodToStage";
+  if (view === "coverage") return "coverage";
   return "companyYears";
 }
 
 function viewModeToQuery(mode: OverviewViewMode): string | null {
   if (mode === "registryReports") return "registry";
   if (mode === "prodToStage") return "prod-to-stage";
+  if (mode === "coverage") return "coverage";
   return null;
 }
 
@@ -106,6 +108,12 @@ export function useOverviewData() {
 
   const loadData = useCallback(
     async (isManualRefresh = false) => {
+      if (viewMode === "coverage") {
+        setIsLoading(false);
+        setIsRefreshing(false);
+        return;
+      }
+
       if (isManualRefresh) setIsRefreshing(true);
       else setIsLoading(true);
 
