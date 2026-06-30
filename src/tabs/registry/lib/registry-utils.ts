@@ -35,6 +35,18 @@ function registryEntryKey(entry: RegistryEntry): string {
   return entry.id ?? entry.wikidataId ?? entry.url;
 }
 
+/** One key per registry row — use for checkbox selection, not wikidataId. */
+export function registryEntrySelectionKey(entry: RegistryEntry): string {
+  return entry.id ?? entry.url;
+}
+
+export function isSameRegistryEntrySelection(
+  a: RegistryEntry,
+  b: RegistryEntry,
+): boolean {
+  return registryEntrySelectionKey(a) === registryEntrySelectionKey(b);
+}
+
 export function registryEntryMatchesSearchTerm(
   entry: RegistryEntry,
   term: string,

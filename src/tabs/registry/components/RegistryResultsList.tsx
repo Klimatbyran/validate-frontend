@@ -8,6 +8,10 @@ import {
 } from "@/ui/data-table";
 import { ClientTablePagination } from "@/ui/client-table-pagination";
 import type { RegistryEntry, RegistryEntryUpdate } from "../lib/registry-types";
+import {
+  isSameRegistryEntrySelection,
+  registryEntrySelectionKey,
+} from "../lib/registry-utils";
 import RegistryResultItem from "./RegistryResultItem";
 
 type RegistryPagination = {
@@ -91,10 +95,9 @@ const RegistryResultsList = ({
 
           <DataTableBody>
             {registry.map((entry) => {
-              const entryId = entry.wikidataId ?? entry.url;
-              const rowKey = entry.id ?? entryId;
-              const isSelected = selectedReports.some(
-                (r) => (r.wikidataId ?? r.url) === entryId,
+              const rowKey = registryEntrySelectionKey(entry);
+              const isSelected = selectedReports.some((r) =>
+                isSameRegistryEntrySelection(r, entry),
               );
               return (
                 <RegistryResultItem
