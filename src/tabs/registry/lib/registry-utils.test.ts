@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   filterRegistryEntries,
+  isSameRegistryEntrySelection,
   parseRegistrySearchTerms,
   registryEntryMatchesSearchTerm,
+  registryEntrySelectionKey,
 } from "./registry-utils";
 import type { RegistryEntry } from "./registry-types";
 
@@ -70,6 +72,41 @@ describe("filterRegistryEntries", () => {
     expect(filterRegistryEntries(sampleEntries, "")).toEqual(sampleEntries);
     expect(filterRegistryEntries(sampleEntries, "   \n  ")).toEqual(
       sampleEntries,
+    );
+  });
+});
+
+describe("registryEntrySelectionKey", () => {
+  it("uses id when present so same wikidataId rows stay distinct", () => {
+    const abb2023: RegistryEntry = {
+      id: "report-2023",
+      companyName: "ABB",
+      wikidataId: "Q52846",
+      reportYear: "2023",
+      url: "https://example.com/abb-2023.pdf",
+    };
+    const abb2024: RegistryEntry = {
+      id: "report-2024",
+      companyName: "ABB",
+      wikidataId: "Q52846",
+      reportYear: "2024",
+      url: "https://example.com/abb-2024.pdf",
+    };
+
+    expect(registryEntrySelectionKey(abb2023)).not.toBe(
+      registryEntrySelectionKey(abb2024),
+    );
+    expect(isSameRegistryEntrySelection(abb2023, abb2024)).toBe(false);
+  });
+
+  it("falls back to url when id is missing", () => {
+    const entry: RegistryEntry = {
+      companyName: "ABB",
+      wikidataId: "Q52846",
+      url: "https://example.com/abb.pdf",
+    };
+    expect(registryEntrySelectionKey(entry)).toBe(
+      "https://example.com/abb.pdf",
     );
   });
 });

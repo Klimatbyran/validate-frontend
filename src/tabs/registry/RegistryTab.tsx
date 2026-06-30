@@ -16,7 +16,11 @@ import type {
   RegistryEntryUpdate,
   RegistryNewEntry,
 } from "./lib/registry-types";
-import { writeRegistryEntriesToCsv } from "./lib/registry-utils";
+import {
+  isSameRegistryEntrySelection,
+  registryEntrySelectionKey,
+  writeRegistryEntriesToCsv,
+} from "./lib/registry-utils";
 import {
   defaultRegistryViewFilters,
   mergeRegistryViewFilters,
@@ -141,16 +145,15 @@ function RegistryTabContent() {
   };
 
   const handleToggleSelect = (entry: RegistryEntry) => {
-    const entryId = entry.wikidataId ?? entry.url;
     setSelectedReports((current) => {
-      const isSelected = current.some(
-        (r) => (r.wikidataId ?? r.url) === entryId,
+      const isSelected = current.some((r) =>
+        isSameRegistryEntrySelection(r, entry),
       );
       if (isSelected) {
-        return current.filter((r) => (r.wikidataId ?? r.url) !== entryId);
-      } else {
-        return [...current, entry];
+        const key = registryEntrySelectionKey(entry);
+        return current.filter((r) => registryEntrySelectionKey(r) !== key);
       }
+      return [...current, entry];
     });
   };
 
