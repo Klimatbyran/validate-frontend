@@ -1,22 +1,26 @@
+/// <reference types="vitest/config" />
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { GARBO_PROD_API, GARBO_STAGE_API } from "./src/config/api-env";
+import {
+  GARBO_PROD_API,
+  GARBO_STAGE_API,
+  UNEARTH_PROD_API,
+  UNEARTH_STAGE_API,
+} from "./src/config/api-env";
 
 // https://vitejs.dev/config/
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Pipeline URLs and garbo "on this machine" backend. Garbo stage/prod from api-env. */
 const URLS_BY_TARGET = {
   pipeline: {
     local: "http://localhost:3001",
     stage: "https://stage-pipeline-api.klimatkollen.se",
     prod: "https://pipeline-api.klimatkollen.se",
   },
-  /** Garbo backend when target is local (garbo running on this machine, e.g. localhost:3000). */
-  garboBackendLocal: "http://localhost:3000",
+  apiBackendLocal: "http://localhost:3000",
 } as const;
 
 function normalizeUrl(url: string): string {
@@ -32,15 +36,27 @@ function targetFromEnv(
   return v === "local" || v === "prod" ? v : "stage";
 }
 
-/** Resolve proxy targets from pipeline target and garbo target (joint or overrides). */
+function unearthTargetFromEnv(
+  env: Record<string, string>,
+  joint: string,
+): "local" | "stage" | "prod" {
+  const v =
+    env.VITE_UNEARTH_TARGET ||
+    env.VITE_GARBO_TARGET ||
+    env.VITE_API_MODE ||
+    joint;
+  return v === "local" || v === "prod" ? v : "stage";
+}
+
+/** Resolve proxy targets from env (joint mode or per-service overrides). */
 function getProxyTargets(env: Record<string, string>) {
   const joint = env.VITE_API_MODE || "stage";
   const pipelineTarget = targetFromEnv(env, "VITE_PIPELINE_TARGET", joint);
-  const garboTarget = targetFromEnv(env, "VITE_GARBO_TARGET", joint);
+  const unearthTarget = unearthTargetFromEnv(env, joint);
 
   return {
     pipelineTarget,
-    garboTarget,
+    unearthTarget,
     pipelineLocal: normalizeUrl(
       env.VITE_PIPELINE_API_URL ?? URLS_BY_TARGET.pipeline.local,
     ),
@@ -53,10 +69,14 @@ function getProxyTargets(env: Record<string, string>) {
     screenshots: normalizeUrl(
       env.VITE_SCREENSHOTS_API_URL ?? "http://localhost:3000",
     ),
-    garboProd: normalizeUrl(env.VITE_GARBO_PROD_URL ?? GARBO_PROD_API),
+    unearthStage: normalizeUrl(env.VITE_UNEARTH_STAGE_URL ?? UNEARTH_STAGE_API),
+    unearthProd: normalizeUrl(env.VITE_UNEARTH_PROD_URL ?? UNEARTH_PROD_API),
     garboStage: normalizeUrl(env.VITE_GARBO_STAGE_URL ?? GARBO_STAGE_API),
-    garboBackendLocal: normalizeUrl(
-      env.VITE_GARBO_LOCAL_URL ?? URLS_BY_TARGET.garboBackendLocal,
+    garboProd: normalizeUrl(env.VITE_GARBO_PROD_URL ?? GARBO_PROD_API),
+    apiBackendLocal: normalizeUrl(
+      env.VITE_UNEARTH_LOCAL_URL ??
+        env.VITE_GARBO_LOCAL_URL ??
+        URLS_BY_TARGET.apiBackendLocal,
     ),
   };
 }
@@ -137,6 +157,8 @@ function climatePlansManifest(): Plugin {
 }
 
 const PROXY_TIMEOUT_MS = 30000;
+/** Overview / internal Unearth routes — aggregation can be slow until SQL pagination lands. */
+const UNEARTH_PROXY_TIMEOUT_MS = 600000;
 
 function pipelineProxyConfigure(targetUrl: string) {
   return (proxy: any, _options: any) => {
@@ -167,6 +189,15 @@ function pipelineProxyConfigure(targetUrl: string) {
 
 // Proxy targets: .env.development or .env.development.example.
 
+function setProxyApiKey(
+  proxyReq: { setHeader: (n: string, v: string) => void },
+  key: string | undefined,
+) {
+  if (key) {
+    proxyReq.setHeader("X-API-Key", key);
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const urls = getProxyTargets(env);
@@ -184,17 +215,29 @@ export default defineConfig(({ mode }) => {
       pipelineUrl,
     );
     console.log(
-      "[vite] garbo target:",
-      urls.garboTarget,
+      "[vite] unearth target:",
+      urls.unearthTarget,
+      "->",
+      urls.unearthStage,
+      urls.unearthProd,
+    );
+    console.log(
+      "[vite] garbo (queue-archive) target:",
+      urls.unearthTarget,
       "->",
       urls.garboStage,
       urls.garboProd,
-      urls.garboBackendLocal,
+      urls.apiBackendLocal,
     );
   }
 
   return {
     plugins: [react(), climatePlansManifest()],
+    test: {
+      environment: "jsdom",
+      setupFiles: ["./src/test/setup.ts"],
+      globals: true,
+    },
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
@@ -226,7 +269,7 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
-        // More specific first: pipeline paths so network tab shows which backend (local, stage, prod)
+        // Pipeline proxies (most specific paths first)
         "/pipeline-local": {
           target: urls.pipelineLocal,
           changeOrigin: true,
@@ -245,6 +288,15 @@ export default defineConfig(({ mode }) => {
           proxyTimeout: PROXY_TIMEOUT_MS,
           configure: pipelineProxyConfigure(urls.pipelineStage),
         },
+        "/pipeline-stage-api": {
+          target: urls.pipelineStage,
+          changeOrigin: true,
+          secure: !urls.pipelineStage.startsWith("http://"),
+          rewrite: (path) => "/api" + path.replace(/^\/pipeline-stage-api/, ""),
+          timeout: PROXY_TIMEOUT_MS,
+          proxyTimeout: PROXY_TIMEOUT_MS,
+          configure: pipelineProxyConfigure(urls.pipelineStage),
+        },
         "/pipeline": {
           target: urls.pipelineProd,
           changeOrigin: true,
@@ -254,30 +306,86 @@ export default defineConfig(({ mode }) => {
           proxyTimeout: PROXY_TIMEOUT_MS,
           configure: pipelineProxyConfigure(urls.pipelineProd),
         },
-        // More specific first: /garbo-stage and /garbo-local (this machine) then /garbo (prod)
-        "/garbo-stage": {
+        "/garbo-stage/api/queue-archive": {
           target: urls.garboStage,
           changeOrigin: true,
-          secure: !urls.garboStage.startsWith("http://"),
+          secure: true,
           rewrite: (path) => path.replace(/^\/garbo-stage/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              setProxyApiKey(proxyReq, env.GARBO_STAGE_ALL_ACCESS_API_KEY);
+            });
+          },
         },
-        "/garbo-local": {
-          target: urls.garboBackendLocal,
+        "/garbo-stage-api/queue-archive": {
+          target: urls.garboStage,
           changeOrigin: true,
-          secure: !urls.garboBackendLocal.startsWith("http://"),
+          secure: true,
+          rewrite: (path) => path.replace(/^\/garbo-stage-api/, "/api"),
+          timeout: PROXY_TIMEOUT_MS,
+          proxyTimeout: PROXY_TIMEOUT_MS,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              setProxyApiKey(proxyReq, env.GARBO_STAGE_ALL_ACCESS_API_KEY);
+            });
+          },
+        },
+        "/garbo/api/queue-archive": {
+          target: urls.garboProd,
+          changeOrigin: true,
+          secure: true,
+          rewrite: (path) => path.replace(/^\/garbo/, ""),
+          timeout: PROXY_TIMEOUT_MS,
+          proxyTimeout: PROXY_TIMEOUT_MS,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              setProxyApiKey(proxyReq, env.GARBO_PROD_ALL_ACCESS_API_KEY);
+            });
+          },
+        },
+        "/garbo-local/api/queue-archive": {
+          target: urls.apiBackendLocal,
+          changeOrigin: true,
+          secure: !urls.apiBackendLocal.startsWith("http://"),
           rewrite: (path) => path.replace(/^\/garbo-local/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
         },
-        "/garbo": {
-          target: urls.garboProd,
+        "/unearth-stage": {
+          target: urls.unearthStage,
           changeOrigin: true,
-          secure: !urls.garboProd.startsWith("http://"),
-          rewrite: (path) => path.replace(/^\/garbo/, ""),
-          timeout: PROXY_TIMEOUT_MS,
-          proxyTimeout: PROXY_TIMEOUT_MS,
+          secure: !urls.unearthStage.startsWith("http://"),
+          rewrite: (path) => path.replace(/^\/unearth-stage/, ""),
+          timeout: UNEARTH_PROXY_TIMEOUT_MS,
+          proxyTimeout: UNEARTH_PROXY_TIMEOUT_MS,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              setProxyApiKey(proxyReq, env.GARBO_STAGE_ALL_ACCESS_API_KEY);
+            });
+          },
+        },
+        "/unearth-local": {
+          target: urls.apiBackendLocal,
+          changeOrigin: true,
+          secure: !urls.apiBackendLocal.startsWith("http://"),
+          rewrite: (path) => path.replace(/^\/unearth-local/, ""),
+          timeout: UNEARTH_PROXY_TIMEOUT_MS,
+          proxyTimeout: UNEARTH_PROXY_TIMEOUT_MS,
+        },
+        "/unearth": {
+          target: urls.unearthProd,
+          changeOrigin: true,
+          secure: !urls.unearthProd.startsWith("http://"),
+          rewrite: (path) => path.replace(/^\/unearth/, ""),
+          timeout: UNEARTH_PROXY_TIMEOUT_MS,
+          proxyTimeout: UNEARTH_PROXY_TIMEOUT_MS,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              setProxyApiKey(proxyReq, env.GARBO_PROD_ALL_ACCESS_API_KEY);
+            });
+          },
         },
       },
     },

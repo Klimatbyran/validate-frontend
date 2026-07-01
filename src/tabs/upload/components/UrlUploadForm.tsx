@@ -1,7 +1,7 @@
 import { Link2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
-import { cn } from "@/lib/utils";
+import { AutoApproveToggle } from "./AutoApproveToggle";
 
 interface UrlUploadFormProps {
   urlInput: string;
@@ -26,27 +26,10 @@ export function UrlUploadForm({
           <label className="block text-sm font-medium text-gray-01">
             {t("upload.pastePdfLinks")}
           </label>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-02">{t("upload.autoApprove")}</span>
-            <button
-              onClick={() => onAutoApproveChange(!autoApprove)}
-              className={cn(
-                "relative inline-flex h-6 w-11 items-center rounded-full",
-                "transition-colors focus-visible:outline-none",
-                "focus-visible:ring-2 focus-visible:ring-ring",
-                "focus-visible:ring-offset-2",
-                autoApprove ? "bg-green-03" : "bg-gray-03",
-              )}
-            >
-              <span
-                className={cn(
-                  "inline-block h-4 w-4 transform rounded-full",
-                  "bg-white transition-transform",
-                  autoApprove ? "translate-x-6" : "translate-x-1",
-                )}
-              />
-            </button>
-          </div>
+          <AutoApproveToggle
+            value={autoApprove}
+            onChange={onAutoApproveChange}
+          />
         </div>
         <textarea
           value={urlInput}

@@ -37,7 +37,8 @@ export function FileListItem({ file, onRemove }: FileListItemProps) {
       <div className="flex-1">
         <p className="text-sm text-gray-01">{name}</p>
         <p className="text-sm text-gray-02">
-          {t("upload.companyWithName", { name: company })} • {t("upload.fileSizeMb", { size: sizeMb })}
+          {t("upload.companyWithName", { name: company })} •{" "}
+          {t("upload.fileSizeMb", { size: sizeMb })}
         </p>
       </div>
       {onRemove && (
@@ -68,7 +69,9 @@ export function UrlListItem({ url, onRemove }: UrlListItemProps) {
       <Link2 className="w-6 h-6 text-orange-03" />
       <div className="flex-1">
         <p className="text-sm text-gray-01 break-all">{urlStr}</p>
-        <p className="text-sm text-gray-02">{t("upload.companyWithName", { name: company })}</p>
+        <p className="text-sm text-gray-02">
+          {t("upload.companyWithName", { name: company })}
+        </p>
       </div>
       {onRemove && (
         <button
@@ -86,7 +89,9 @@ export function UrlListItem({ url, onRemove }: UrlListItemProps) {
 
 export function SubmittedFileListItem({ url, onRemove }: SubmittedFileListItemProps) {
   const { t } = useI18n();
-  const name = url?.url?.startsWith(UPLOADED_PREFIX) ? url.url.slice(UPLOADED_PREFIX.length) : url?.url ?? "—";
+  const name = url?.url?.startsWith(UPLOADED_PREFIX)
+    ? url.url.slice(UPLOADED_PREFIX.length)
+    : (url?.url ?? "—");
   const company = url?.company ?? "";
   return (
     <motion.li
@@ -98,7 +103,9 @@ export function SubmittedFileListItem({ url, onRemove }: SubmittedFileListItemPr
       <CheckCircle2 className="w-6 h-6 text-green-03" />
       <div className="flex-1">
         <p className="text-sm text-gray-01">{name}</p>
-        <p className="text-sm text-gray-02">{t("upload.companyWithName", { name: company })}</p>
+        <p className="text-sm text-gray-02">
+          {t("upload.companyWithName", { name: company })}
+        </p>
       </div>
       {onRemove && (
         <button

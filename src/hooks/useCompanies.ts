@@ -19,7 +19,9 @@ export function useCompanies() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isFetchingRef = useRef(false);
   const userRefreshRequestedRef = useRef(false);
-  const fetchAndEnhanceRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const fetchAndEnhanceRef = useRef<() => Promise<void>>(() =>
+    Promise.resolve(),
+  );
   const processPollersRef = useRef<
     Map<
       string,
@@ -54,7 +56,7 @@ export function useCompanies() {
       } catch (err) {
         console.error("useCompanies - fetch error:", err);
         setError(
-          err instanceof Error ? err.message : "Failed to fetch companies"
+          err instanceof Error ? err.message : "Failed to fetch companies",
         );
       } finally {
         setIsLoading(false);
@@ -97,7 +99,7 @@ export function useCompanies() {
             const newCompanies = prev.map((c) => ({
               ...c,
               processes: c.processes.map((p) =>
-                p.id === updated.id ? { ...p, ...updated } : p
+                p.id === updated.id ? { ...p, ...updated } : p,
               ),
             }));
             return newCompanies;
@@ -195,7 +197,7 @@ export function useCompanies() {
       if (nextPageCompanies.length < PAGE_SIZE) setHasMorePages(false);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load more companies"
+        err instanceof Error ? err.message : "Failed to load more companies",
       );
     } finally {
       setIsLoadingMore(false);

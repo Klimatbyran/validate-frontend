@@ -4,6 +4,9 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Allow large file uploads (match ingress proxy-body-size)
+    client_max_body_size 550m;
+
     # Gzip compression
     gzip on;
     gzip_vary on;
@@ -27,19 +30,61 @@ server {
         proxy_read_timeout 30s;
     }
 
-    # Safety: ensure /garbo-api (no trailing slash) doesn't fall through to the SPA.
-    # Client code should normally call /garbo-api/<endpoint>, which hits location /garbo-api/.
     location = /garbo-api {
         return 308 /garbo-api/;
     }
 
-    # Garbo API proxy - /garbo-api -> Garbo backend (auth, companies, tag-options, etc.)
-    location /garbo-api/ {
-        proxy_pass ${GARBO_API_URL}/;
+    # Garbo API: queue-archive only
+    location /garbo-api/queue-archive/ {
+        proxy_pass ${GARBO_API_URL}/queue-archive/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host ${GARBO_HOST};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-API-Key ${GARBO_ALL_ACCESS_API_KEY};
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+    }
+
+    location = /unearth-api {
+        return 308 /unearth-api/;
+    }
+
+    # Unearth HTTP API: auth, companies, registry, tag-options, etc.
+    location /unearth-api/ {
+        proxy_pass ${UNEARTH_API_URL}/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host ${UNEARTH_HOST};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-API-Key ${GARBO_ALL_ACCESS_API_KEY};
+        proxy_cache_bypass $http_upgrade;
+
+        # Overview aggregation and bulk PDF uploads can exceed default gateway timeouts
+        proxy_connect_timeout 120s;
+        proxy_send_timeout 600s;
+        proxy_read_timeout 600s;
+    }
+
+    # Overview prod→stage tab: fixed stage Pipeline API (not env-controlled)
+    location = /pipeline-stage-api {
+        return 308 /pipeline-stage-api/;
+    }
+    location /pipeline-stage-api/ {
+        proxy_pass https://stage-pipeline-api.klimatkollen.se/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host stage-pipeline-api.klimatkollen.se;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
@@ -50,13 +95,73 @@ server {
         proxy_read_timeout 30s;
     }
 
+    location = /garbo-stage-api {
+        return 308 /garbo-stage-api/;
+    }
+    location /garbo-stage-api/queue-archive/ {
+        proxy_pass https://stage-api.klimatkollen.se/api/queue-archive/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host stage-api.klimatkollen.se;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-API-Key ${GARBO_STAGE_ALL_ACCESS_API_KEY};
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+    }
+
+    # Errors tab: fixed Unearth stage + prod (not env-controlled)
+    location = /unearth-stage-api {
+        return 308 /unearth-stage-api/;
+    }
+    location /unearth-stage-api/ {
+        proxy_pass https://stage-api.unearthdata.ai/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host stage-api.unearthdata.ai;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-API-Key ${GARBO_STAGE_ALL_ACCESS_API_KEY};
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 120s;
+        proxy_send_timeout 600s;
+        proxy_read_timeout 600s;
+    }
+
+    location = /unearth-prod-api {
+        return 308 /unearth-prod-api/;
+    }
+    location /unearth-prod-api/ {
+        proxy_pass https://api.unearthdata.ai/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host api.unearthdata.ai;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-API-Key ${GARBO_PROD_ALL_ACCESS_API_KEY};
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 120s;
+        proxy_send_timeout 600s;
+        proxy_read_timeout 600s;
+    }
+
     # Proxy /api/screenshots to screenshots service (if different)
     location /api/screenshots {
         proxy_pass ${BACKEND_API_URL};
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
-        # Set Host header to backend hostname (required when using variable in proxy_pass)
         proxy_set_header Host ${BACKEND_HOST};
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -72,14 +177,12 @@ server {
     location / {
         try_files $uri $uri/ /index.html;
         
-        # Cache static assets
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
             expires 1y;
             add_header Cache-Control "public, immutable";
         }
     }
 
-    # Health check endpoint
     location /health {
         access_log off;
         return 200 "healthy\n";

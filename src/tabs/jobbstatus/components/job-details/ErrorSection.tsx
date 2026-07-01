@@ -30,7 +30,11 @@ export function ErrorSection({
   return (
     <Callout
       variant="error"
-      title={isFullError ? t("jobstatus.jobdetails.fullErrorMessage") : t("jobstatus.jobdetails.lastJobFailed")}
+      title={
+        isFullError
+          ? t("jobstatus.jobdetails.fullErrorMessage")
+          : t("jobstatus.jobdetails.lastJobFailed")
+      }
       icon={<AlertCircle className="w-5 h-5" />}
     >
       {failedReason && (
@@ -47,7 +51,9 @@ export function ErrorSection({
       {stacktrace.length > 0 && (
         <>
           <div className="text-xs font-medium text-pink-03/80 uppercase tracking-wide mb-1">
-            {isFullError ? t("jobstatus.jobdetails.stackTrace") : t("jobstatus.jobdetails.errorMessageOrStack")}
+            {isFullError
+              ? t("jobstatus.jobdetails.stackTrace")
+              : t("jobstatus.jobdetails.errorMessageOrStack")}
           </div>
           {isFullError ? (
             <pre className="text-pink-03 text-sm overflow-x-auto bg-gray-04 rounded p-3 border border-gray-03">

@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/contexts/I18nContext";
+import { RunReportsModal } from "@/components/RunReportsModal";
+import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
+import type { RunReportListItem } from "@/lib/run-reports-types";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { searchCompanyReports } from "./lib/crawler-utils";
 import { Loader2 } from "lucide-react";
@@ -10,6 +13,8 @@ import type {
   CrawlerViewMode,
   SaveReportsListResponse,
 } from "./lib/crawler-types";
+
+type CompanySelection = { name: string; wikidataId?: string };
 import SearchResultsList from "./components/SearchResultsList";
 import CompaniesNamesList from "./components/CompaniesNamesList";
 import ManualSearchControls from "./components/ManualSearchControls";
@@ -36,13 +41,44 @@ export function CrawlerTab() {
   >(null);
   const [companyNameInput, setCompanyNameInput] = useState<string>("");
   const [reportYearInput, setReportYearInput] = useState<string>("");
+  const [countryInput, setCountryInput] = useState<string>("");
   const [filterEnabled, setFilterEnabled] = useState<boolean>(false);
   const [filterYear, setFilterYear] = useState<number | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagOptions, setTagOptions] = useState<string[]>([]);
   const [selectedReports, setSelectedReports] = useState<SelectedReport[]>([]);
-  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const [selectedCompanies, setSelectedCompanies] = useState<
+    CompanySelection[]
+  >([]);
   const [isLoading, setIsLoading] = useState<boolean | null>(null);
   const [registryResponse, setRegistryResponse] =
     useState<SaveReportsListResponse | null>(null);
+
+  const [isRunReportsOpen, setIsRunReportsOpen] = useState(false);
+
+  const {
+    runForUrls,
+    isRunningReports,
+    autoApprove,
+    setAutoApprove,
+    runOptions,
+  } = useRunReportsPipeline();
+
+  const runModalItems = useMemo((): RunReportListItem[] => {
+    return selectedReports.map((r) => ({
+      url: r.url,
+      companyName: r.companyName,
+      reportYear: r.reportYear,
+      wikidataId: r.wikidataId ?? null,
+    }));
+  }, [selectedReports]);
+
+  const handleModalRun = useCallback(() => {
+    const urls = selectedReports
+      .map((r) => r.url?.trim())
+      .filter((url): url is string => Boolean(url));
+    void runForUrls(urls, { onSuccess: () => setIsRunReportsOpen(false) });
+  }, [runForUrls, selectedReports]);
 
   const viewModeOptions = [
     { value: "manual" as const, label: t("crawler.crawlerMode") },
@@ -75,6 +111,7 @@ export function CrawlerTab() {
       const transformedData = await searchCompanyReports({
         companyNames,
         reportYear: reportYearInput,
+        country: countryInput,
       });
 
       setManualReports(transformedData);
@@ -141,10 +178,17 @@ export function CrawlerTab() {
     setReportYearInput(e.target.value);
   };
 
+  const handleCountryInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCountryInput(e.target.value);
+  };
+
   const handleDatabaseSearchClick = async () => {
     if (!selectedCompanies.length || !reportYearInput) return;
 
-    const companyNames = selectedCompanies;
+    const companyNames = selectedCompanies.map((c) => c.name);
+    const wikidataIdMap = Object.fromEntries(
+      selectedCompanies.map((c) => [c.name, c.wikidataId]),
+    );
     resetSearchSlate();
     setIsLoading(true);
 
@@ -154,7 +198,12 @@ export function CrawlerTab() {
         reportYear: reportYearInput,
       });
 
-      setDatabaseReports(transformedData);
+      setDatabaseReports(
+        transformedData.map((r) => ({
+          ...r,
+          wikidataId: wikidataIdMap[r.companyName],
+        })),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -257,11 +306,13 @@ export function CrawlerTab() {
               <ManualSearchControls
                 onCompanyNamesChange={handleSearchInputChange}
                 onReportYearChange={handleReportYearInputChange}
+                onCountryChange={handleCountryInputChange}
                 onSearch={handleManualSearchClick}
                 onExport={handleExportClick}
                 isSearchDisabled={!companyNameInput || !reportYearInput}
                 selectedReports={selectedReports}
                 handleAddToRegistryClick={handleAddToRegistryClick}
+                onRunSelectedReports={() => setIsRunReportsOpen(true)}
               />
               {(!companyNameInput || !reportYearInput) && (
                 <p className="text-sm text-gray-02 mt-4">
@@ -285,6 +336,10 @@ export function CrawlerTab() {
                 setFilterYear={setFilterYear}
                 searchYear={reportYearInput}
                 handleAddToRegistryClick={handleAddToRegistryClick}
+                onRunSelectedReports={() => setIsRunReportsOpen(true)}
+                tagOptions={tagOptions}
+                selectedTags={selectedTags}
+                onTagsChange={setSelectedTags}
               />
               {(!reportYearInput || !selectedCompanies.length) && (
                 <p className="text-sm text-gray-02 mt-4">
@@ -294,6 +349,17 @@ export function CrawlerTab() {
             </>
           )}
         </div>
+
+        <RunReportsModal
+          open={isRunReportsOpen}
+          onOpenChange={setIsRunReportsOpen}
+          items={runModalItems}
+          autoApprove={autoApprove}
+          onAutoApproveChange={setAutoApprove}
+          runOptions={runOptions}
+          onRunReports={handleModalRun}
+          isRunning={isRunningReports}
+        />
       </motion.div>
 
       {isLoading && (
@@ -336,6 +402,8 @@ export function CrawlerTab() {
           onSelectionChange={setSelectedCompanies}
           filterYear={filterYear}
           filterEnabled={filterEnabled}
+          selectedTags={selectedTags}
+          onTagOptionsLoaded={setTagOptions}
         />
       )}
     </div>

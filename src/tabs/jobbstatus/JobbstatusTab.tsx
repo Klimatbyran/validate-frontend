@@ -3,9 +3,12 @@
  * Orchestrates data fetching, filtering, and component rendering
  */
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Loader2, ArrowUp } from "lucide-react";
 import { Button } from "@/ui/button";
+import { motion } from "framer-motion";
+import { ViewModePills } from "@/ui/view-mode-pills";
 import { useCompaniesContext } from "@/contexts/CompaniesContext";
 import { useBatches } from "@/hooks/useBatches";
 import { convertCompaniesToSwimlaneFormat } from "./lib/swimlane-transform";
@@ -24,9 +27,47 @@ import { useRerunByWorker } from "./hooks/useRerunByWorker";
 import { OverviewStats } from "./components/OverviewStats";
 import { FilterBar } from "./components/FilterBar";
 import { CompanyCard } from "./components/CompanyCard";
+import { JobbstatusArchivePanel } from "./components/JobbstatusArchivePanel";
+
+export type JobbstatusViewMode = "live" | "archive";
+
+const VIEW_MODES: { value: JobbstatusViewMode; labelKey: string }[] = [
+  { value: "live", labelKey: "jobstatus.sourceLive" },
+  { value: "archive", labelKey: "jobstatus.sourceArchive" },
+];
+
+const JOBSTATUS_SOURCE_QUERY = "source";
+
+function jobbstatusSubtabFromSearchParams(
+  searchParams: URLSearchParams,
+): JobbstatusViewMode {
+  return searchParams.get(JOBSTATUS_SOURCE_QUERY) === "archive"
+    ? "archive"
+    : "live";
+}
 
 export function JobbstatusTab() {
   const { t } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const jobbstatusSubtab = jobbstatusSubtabFromSearchParams(searchParams);
+
+  const setJobbstatusSubtab = useCallback(
+    (value: JobbstatusViewMode) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (value === "live") {
+            next.delete(JOBSTATUS_SOURCE_QUERY);
+          } else {
+            next.set(JOBSTATUS_SOURCE_QUERY, "archive");
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
   const {
     companies,
     isLoading,
@@ -38,7 +79,7 @@ export function JobbstatusTab() {
     isRefreshing,
   } = useCompaniesContext();
   const [activeFilters, setActiveFilters] = useState<Set<FilterType>>(
-    new Set()
+    new Set(),
   );
   const [runScope, setRunScope] = useState<RunScope>("latest");
   const [companySearchQuery, setCompanySearchQuery] = useState("");
@@ -46,40 +87,38 @@ export function JobbstatusTab() {
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const { batches: existingBatches, isLoading: batchesLoading } = useBatches();
 
-  // Convert CustomAPICompany to SwimlaneCompany format
-  const swimlaneCompanies = useMemo(() => {
-    return convertCompaniesToSwimlaneFormat(companies);
-  }, [companies]);
+  const swimlaneCompanies = useMemo(
+    () => convertCompaniesToSwimlaneFormat(companies),
+    [companies],
+  );
 
-  // Calculate filter counts
   const filterCounts = useMemo(() => {
     return {
       pending_approval: swimlaneCompanies.filter((c) =>
-        hasPendingApproval(c, runScope)
+        hasPendingApproval(c, runScope),
       ).length,
       has_failed: swimlaneCompanies.filter((c) => hasFailedJobs(c, runScope))
         .length,
       has_processing: swimlaneCompanies.filter((c) =>
-        hasProcessingJobs(c, runScope)
+        hasProcessingJobs(c, runScope),
       ).length,
       fully_completed: swimlaneCompanies.filter((c) =>
-        isFullyCompleted(c, runScope)
+        isFullyCompleted(c, runScope),
       ).length,
       has_issues: swimlaneCompanies.filter((c) => hasIssues(c, runScope))
         .length,
       preprocessing_issues: swimlaneCompanies.filter((c) =>
-        hasPipelineStepIssues(c, "preprocessing", runScope)
+        hasPipelineStepIssues(c, "preprocessing", runScope),
       ).length,
       data_extraction_issues: swimlaneCompanies.filter((c) =>
-        hasPipelineStepIssues(c, "data-extraction", runScope)
+        hasPipelineStepIssues(c, "data-extraction", runScope),
       ).length,
       finalize_issues: swimlaneCompanies.filter((c) =>
-        hasPipelineStepIssues(c, "finalize", runScope)
+        hasPipelineStepIssues(c, "finalize", runScope),
       ).length,
     };
   }, [swimlaneCompanies, runScope]);
 
-  // Filter companies based on active filters (AND logic), batch filter, and company name search
   const filteredCompanies = useMemo(() => {
     const searchTrimmed = companySearchQuery.trim().toLowerCase();
     const statusFiltered =
@@ -99,12 +138,16 @@ export function JobbstatusTab() {
                 case "has_issues":
                   return hasIssues(company, runScope);
                 case "preprocessing_issues":
-                  return hasPipelineStepIssues(company, "preprocessing", runScope);
+                  return hasPipelineStepIssues(
+                    company,
+                    "preprocessing",
+                    runScope,
+                  );
                 case "data_extraction_issues":
                   return hasPipelineStepIssues(
                     company,
                     "data-extraction",
-                    runScope
+                    runScope,
                   );
                 case "finalize_issues":
                   return hasPipelineStepIssues(company, "finalize", runScope);
@@ -119,16 +162,26 @@ export function JobbstatusTab() {
         ? statusFiltered
         : statusFiltered.filter((company) => {
             const companyBatchIds = company.batchIds ?? [];
-            return selectedBatchIds.some((id) => companyBatchIds.includes(id));
+            return selectedBatchIds.some((sel) => {
+              if (companyBatchIds.includes(sel)) return true;
+              const name = existingBatches.find((b) => b.id === sel)?.batchName;
+              return Boolean(name && companyBatchIds.includes(name));
+            });
           });
 
     if (!searchTrimmed) return batchFiltered;
     return batchFiltered.filter((company) =>
-      company.name.toLowerCase().includes(searchTrimmed)
+      company.name.toLowerCase().includes(searchTrimmed),
     );
-  }, [swimlaneCompanies, activeFilters, runScope, companySearchQuery, selectedBatchIds]);
+  }, [
+    swimlaneCompanies,
+    activeFilters,
+    runScope,
+    companySearchQuery,
+    selectedBatchIds,
+    existingBatches,
+  ]);
 
-  // Toggle filter
   const toggleFilter = (filter: FilterType) => {
     setActiveFilters((prev) => {
       const next = new Set(prev);
@@ -141,7 +194,6 @@ export function JobbstatusTab() {
     });
   };
 
-  // Clear all filters, batch filter, and company search
   const clearFilters = () => {
     setActiveFilters(new Set());
     setCompanySearchQuery("");
@@ -152,7 +204,6 @@ export function JobbstatusTab() {
     const handleScroll = () => {
       setShowScrollToTop(window.scrollY > 300);
     };
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -161,122 +212,159 @@ export function JobbstatusTab() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleRerunByWorker = useRerunByWorker(swimlaneCompanies);
+  const pillOptions = useMemo(
+    () => VIEW_MODES.map((m) => ({ value: m.value, label: t(m.labelKey) })),
+    [t],
+  );
 
-  // Show loading whenever initial/preload fetch is in progress (so immediate tab switch still shows loading)
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-8 h-8 text-blue-03 animate-spin mx-auto" />
-          <div>
-            <p className="text-lg text-gray-01 font-medium">
-              {t("jobstatus.loadingCompanies")}
-            </p>
-            <p className="text-sm text-gray-02 mt-2">
-              {t("jobstatus.fetchingCompanies")}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-red-03">{t("jobstatus.errorLoadingCompanies", { error: String(error) })}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!companies || companies.length === 0) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-gray-02">{t("jobstatus.noCompaniesFound")}</p>
-        </div>
-      </div>
-    );
-  }
+  const handleRerunByWorker = useRerunByWorker(filteredCompanies);
 
   return (
-    <div className="space-y-6">
-      <OverviewStats
-        companies={filteredCompanies}
-        onFilterToggle={toggleFilter}
-      />
-
-      <div className="sticky top-0 z-40 bg-gray-05 pb-4 -mb-4">
-        <FilterBar
-          activeFilters={activeFilters}
-          runScope={runScope}
-          filterCounts={filterCounts}
-          onToggleFilter={toggleFilter}
-          onClearFilters={clearFilters}
-          onRunScopeChange={setRunScope}
-          filteredCount={filteredCompanies.length}
-          totalCount={swimlaneCompanies.length}
-          onRerunByWorker={handleRerunByWorker}
-          companySearchQuery={companySearchQuery}
-          onCompanySearchChange={setCompanySearchQuery}
-          existingBatches={existingBatches}
-          batchesLoading={batchesLoading}
-          selectedBatchIds={selectedBatchIds}
-          onBatchFilterChange={setSelectedBatchIds}
-          onRefresh={refresh}
-          isRefreshing={isRefreshing}
-        />
-      </div>
-
-      <div className="space-y-4">
-        {filteredCompanies.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-02">
-              {activeFilters.size > 0 || selectedBatchIds.length > 0
-                ? t("jobstatus.noCompaniesMatch")
-                : t("jobstatus.noCompaniesFound")}
+    <div className="flex flex-col gap-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6 flex flex-col gap-4"
+      >
+        <div className="flex items-center justify-between mb-2 gap-4 flex-wrap">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-01">
+              {t("jobstatus.title")}
+            </h2>
+            <p className="text-sm text-gray-02 mt-1">
+              {t("jobstatus.subtitle")}
             </p>
           </div>
-        ) : (
+          <ViewModePills
+            options={pillOptions}
+            value={jobbstatusSubtab}
+            onValueChange={setJobbstatusSubtab}
+            ariaLabel={t("jobstatus.viewMode")}
+            className="shrink-0"
+          />
+        </div>
+
+        {jobbstatusSubtab === "live" ? (
           <>
-            {filteredCompanies.map((company, companyIndex) => (
-              <CompanyCard
-                key={company.id}
-                company={company}
-                positionInList={companyIndex + 1}
-              />
-            ))}
-            {hasMorePages && (
-              <div className="flex justify-center pt-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={loadMoreCompanies}
-                  disabled={isLoadingMore}
-                  className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
-                >
-                  {isLoadingMore
-                    ? t("jobstatus.loadingMore")
-                    : t("jobstatus.loadMore")}
-                </Button>
+            {isLoading ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="text-center space-y-4">
+                  <Loader2 className="w-8 h-8 text-blue-03 animate-spin mx-auto" />
+                  <div>
+                    <p className="text-lg text-gray-01 font-medium">
+                      {t("jobstatus.loadingCompanies")}
+                    </p>
+                    <p className="text-sm text-gray-02 mt-2">
+                      {t("jobstatus.fetchingCompanies")}
+                    </p>
+                  </div>
+                </div>
               </div>
+            ) : error ? (
+              <div className="flex items-center justify-center p-4">
+                <div className="text-center">
+                  <p className="text-red-03">
+                    {t("jobstatus.errorLoadingCompanies", {
+                      error: String(error),
+                    })}
+                  </p>
+                </div>
+              </div>
+            ) : !companies || companies.length === 0 ? (
+              <div className="flex items-center justify-center p-4">
+                <div className="text-center">
+                  <p className="text-gray-02">
+                    {t("jobstatus.noCompaniesFound")}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <OverviewStats
+                  companies={filteredCompanies}
+                  onFilterToggle={toggleFilter}
+                />
+                <div className="sticky top-0 z-40 bg-gray-05 pb-4 -mb-4">
+                  <FilterBar
+                    activeFilters={activeFilters}
+                    runScope={runScope}
+                    filterCounts={filterCounts}
+                    onToggleFilter={toggleFilter}
+                    onClearFilters={clearFilters}
+                    onRunScopeChange={setRunScope}
+                    filteredCount={filteredCompanies.length}
+                    totalCount={swimlaneCompanies.length}
+                    onRerunByWorker={handleRerunByWorker}
+                    companySearchQuery={companySearchQuery}
+                    onCompanySearchChange={setCompanySearchQuery}
+                    existingBatches={existingBatches}
+                    batchesLoading={batchesLoading}
+                    selectedBatchIds={selectedBatchIds}
+                    onBatchFilterChange={setSelectedBatchIds}
+                    onRefresh={refresh}
+                    isRefreshing={isRefreshing}
+                  />
+                </div>
+                <div className="space-y-4">
+                  {filteredCompanies.length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-gray-02">
+                        {activeFilters.size > 0 || selectedBatchIds.length > 0
+                          ? t("jobstatus.noCompaniesMatch")
+                          : t("jobstatus.noCompaniesFound")}
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {filteredCompanies.map((company, companyIndex) => (
+                        <CompanyCard
+                          key={company.id}
+                          company={company}
+                          positionInList={companyIndex + 1}
+                        />
+                      ))}
+                      {hasMorePages && (
+                        <div className="flex justify-center pt-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={loadMoreCompanies}
+                            disabled={isLoadingMore}
+                            className="border border-gray-03 text-gray-01 hover:bg-gray-03/40"
+                          >
+                            {isLoadingMore
+                              ? t("jobstatus.loadingMore")
+                              : t("jobstatus.loadMore")}
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </>
             )}
           </>
-        )}
-      </div>
+        ) : null}
 
-      {showScrollToTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-50 bg-gray-01 text-gray-05 rounded-full p-3 shadow-lg hover:bg-gray-02 transition-all hover:scale-110 active:scale-95"
-          aria-label={t("common.scrollToTop")}
-        >
-          <ArrowUp className="w-5 h-5" />
-        </button>
-      )}
+        {jobbstatusSubtab === "archive" && (
+          <div className="mt-4">
+            <JobbstatusArchivePanel
+              batchesFromGarbo={existingBatches}
+              batchesLoading={batchesLoading}
+            />
+          </div>
+        )}
+
+        {showScrollToTop && (
+          <button
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 z-50 bg-gray-01 text-gray-05 rounded-full p-3 shadow-lg hover:bg-gray-02 transition-all hover:scale-110 active:scale-95"
+            aria-label={t("common.scrollToTop")}
+          >
+            <ArrowUp className="w-5 h-5" />
+          </button>
+        )}
+      </motion.div>
     </div>
   );
 }

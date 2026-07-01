@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
+import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
 import type {
   FilterType,
   RunScope,
@@ -28,6 +29,7 @@ import {
 } from "@/tabs/jobbstatus/lib/filter-config";
 import { FilterBarRerunSection } from "./FilterBarRerunSection";
 import { BatchFilterDropdown } from "./BatchFilterDropdown";
+import type { GarboBatchOption } from "@/lib/garbo-batch-types";
 
 interface FilterBarProps {
   activeFilters: Set<FilterType>;
@@ -41,7 +43,7 @@ interface FilterBarProps {
   onRerunByWorker: (worker: RerunWorker, limit: number | "all") => void;
   companySearchQuery?: string;
   onCompanySearchChange?: (query: string) => void;
-  existingBatches?: string[];
+  existingBatches?: GarboBatchOption[];
   batchesLoading?: boolean;
   selectedBatchIds?: string[];
   onBatchFilterChange?: (ids: string[]) => void;
@@ -80,6 +82,7 @@ export function FilterBar({
   isRefreshing = false,
 }: FilterBarProps) {
   const { t } = useI18n();
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const hasActiveFiltersOrSearch =
     activeFilters.size > 0 ||
     selectedBatchIds.length > 0 ||
@@ -116,7 +119,12 @@ export function FilterBar({
   }, [showMoreFilters]);
 
   return (
-    <div className="bg-gray-04/50 rounded-lg p-4 border border-gray-03">
+    <SearchAndFiltersCard
+      title={t("jobstatus.filter")}
+      icon={<Filter className="w-4 h-4 text-gray-02" />}
+      open={filtersOpen}
+      onOpenChange={setFiltersOpen}
+    >
       <div className="flex flex-col gap-4">
         {/* Company search and Omfattning (scope) */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -323,6 +331,6 @@ export function FilterBar({
 
         <FilterBarRerunSection onRerunByWorker={onRerunByWorker} />
       </div>
-    </div>
+    </SearchAndFiltersCard>
   );
 }

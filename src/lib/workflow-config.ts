@@ -35,8 +35,10 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   parsePdf: "PDF Parsning",
   doclingParsePDF: "PDF Parsning docling",
   indexMarkdown: "Markdown",
+  extractDescriptions: "Extrahera beskrivningar",
 
   // AI Data Extraction
+  extractLEI: "LEI Extraktion",
   guessWikidata: "Wikidata",
   diffReportingPeriods: "Diff rapportperioder",
   extractEmissions: "Extrahera utsläpp",
@@ -48,7 +50,7 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   followUpEconomy: "Uppföljning Ekonomi",
   followUpGoals: "Uppföljning Mål",
   followUpInitiatives: "Uppföljning Initiativ",
-  followUpFiscalYear: "Uppföljning fiscal year",
+  followUpFiscalYear: "Uppföljning räkenskapsår",
   followUpCompanyTags: "Uppföljning Företagstaggar",
   followUpBaseYear: "Uppföljning Basår",
   followUpIndustryGics: "Uppföljning Bransch GICS",
@@ -56,6 +58,7 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   diffGoals: "Klimatmål",
   diffInitiatives: "Initiativ",
   diffBaseYear: "Basår",
+  diffDescriptions: "Beskrivningar",
   checkDB: "DB Kontroll",
 
   // Finalize
@@ -81,6 +84,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
       "parsePdf",
       "doclingParsePDF",
       "indexMarkdown",
+      "extractDescriptions",
       "guessWikidata",
       "extractEmissions",
       "followUpBaseYear",
@@ -104,10 +108,12 @@ export const PIPELINE_STEPS: PipelineStep[] = [
       "followUpFiscalYear",
       "followUpCompanyTags",
       "followUpIndustryGics",
+      "extractLEI",
       "diffIndustry",
       "diffGoals",
       "diffInitiatives",
       "diffBaseYear",
+      "diffDescriptions",
       "checkDB",
     ],
     order: 2,
@@ -142,7 +148,7 @@ export function getWorkflowStages(): WorkflowStage[] {
  * Get pipeline step for a given queue ID
  */
 export function getPipelineStepForQueue(
-  queueId: string
+  queueId: string,
 ): PipelineStep | undefined {
   return PIPELINE_STEPS.find((step) => step.stageIds.includes(queueId));
 }
@@ -189,4 +195,21 @@ export function getPipelineStep(stepId: string): PipelineStep | undefined {
  */
 export function getAllPipelineSteps(): PipelineStep[] {
   return [...PIPELINE_STEPS].sort((a, b) => a.order - b.order);
+}
+
+/**
+ * i18n keys for pipeline step column titles (Jobbstatus Overview + Archive run-card sections).
+ * When adding a {@link PIPELINE_STEPS} entry, add a matching `jobstatus.overview.*` key here and in en/sv.
+ */
+const PIPELINE_STEP_SECTION_TITLE_I18N_KEY: Partial<Record<string, string>> = {
+  preprocessing: "jobstatus.overview.preprocessing",
+  "data-extraction": "jobstatus.overview.aiDataExtraction",
+  finalize: "jobstatus.overview.finalize",
+};
+
+/** Returns `jobstatus.overview.*` key for known steps; otherwise `undefined` (caller falls back to `step.name`). */
+export function getPipelineStepSectionTitleI18nKey(
+  stepId: string,
+): string | undefined {
+  return PIPELINE_STEP_SECTION_TITLE_I18N_KEY[stepId];
 }

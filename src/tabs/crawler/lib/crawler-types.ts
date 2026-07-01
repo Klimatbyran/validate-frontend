@@ -18,11 +18,14 @@ export interface CompanyReport {
   companyName: string;
   reportYear: string;
   results: Report[];
+  wikidataId?: string;
 }
 
 export interface CompanyDetails {
+  id: string;
   name: string;
   wikidataId?: string;
+  tags?: string[];
   reportingPeriods: ReportingPeriod[];
 }
 
@@ -30,6 +33,7 @@ export type SelectedReport = {
   companyName: string;
   reportYear: string;
   url: string;
+  wikidataId?: string;
 };
 
 export type CrawlerViewMode = "manual" | "database";
@@ -37,6 +41,7 @@ export type CrawlerViewMode = "manual" | "database";
 export type crawlerSearchQuery = {
   name: string;
   reportYear: string;
+  country?: string;
 };
 
 export type SaveReportSuccess = {

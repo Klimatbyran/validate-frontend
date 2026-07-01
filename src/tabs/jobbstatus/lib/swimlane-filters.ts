@@ -3,12 +3,15 @@
  * Contains all filter types and predicate functions
  */
 
-import type { SwimlaneCompany, SwimlaneYearData, QueueJob } from "@/lib/types";
+import type { SwimlaneCompany, SwimlaneYearData } from "@/lib/types";
 import {
-  getJobStatus as getJobStatusFromUtils,
   calculatePipelineStepStatus,
-  getEffectiveJobs,
+  getQueueAttemptSummary,
 } from "@/lib/workflow-utils";
+import {
+  getAllPipelineSteps,
+  getQueuesForPipelineStep,
+} from "@/lib/workflow-config";
 
 export type FilterType =
   | "pending_approval"
@@ -27,7 +30,7 @@ export type RunScope = "latest" | "all";
  */
 function getYearsToCheck(
   company: SwimlaneCompany,
-  runScope: RunScope
+  runScope: RunScope,
 ): SwimlaneYearData[] {
   if (runScope === "all") {
     return company.years;
@@ -42,15 +45,23 @@ function getYearsToCheck(
  */
 export function hasPendingApproval(
   company: SwimlaneCompany,
-  runScope: RunScope = "latest"
+  runScope: RunScope = "latest",
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
-  return yearsToCheck.some((year) =>
-    getEffectiveJobs(year).some((job: QueueJob) => {
-      const status = getJobStatusFromUtils(job);
-      return status === "needs_approval";
-    })
+  const allQueueIds = getAllPipelineSteps().flatMap((s) =>
+    getQueuesForPipelineStep(s.id),
   );
+  return yearsToCheck.some((year) => {
+    const canonicalThreadId =
+      year.jobs?.[0]?.data?.threadId ||
+      (year.jobs?.[0] as any)?.threadId ||
+      (year as any).threadId ||
+      null;
+    return allQueueIds.some((queueId) => {
+      const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
+      return agg.attempts.length > 0 && agg.status === "needs_approval";
+    });
+  });
 }
 
 /**
@@ -58,15 +69,23 @@ export function hasPendingApproval(
  */
 export function hasFailedJobs(
   company: SwimlaneCompany,
-  runScope: RunScope = "latest"
+  runScope: RunScope = "latest",
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
-  return yearsToCheck.some((year) =>
-    getEffectiveJobs(year).some((job: QueueJob) => {
-      const status = getJobStatusFromUtils(job);
-      return status === "failed";
-    })
+  const allQueueIds = getAllPipelineSteps().flatMap((s) =>
+    getQueuesForPipelineStep(s.id),
   );
+  return yearsToCheck.some((year) => {
+    const canonicalThreadId =
+      year.jobs?.[0]?.data?.threadId ||
+      (year.jobs?.[0] as any)?.threadId ||
+      (year as any).threadId ||
+      null;
+    return allQueueIds.some((queueId) => {
+      const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
+      return agg.attempts.length > 0 && agg.status === "failed";
+    });
+  });
 }
 
 /**
@@ -74,15 +93,23 @@ export function hasFailedJobs(
  */
 export function hasProcessingJobs(
   company: SwimlaneCompany,
-  runScope: RunScope = "latest"
+  runScope: RunScope = "latest",
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
-  return yearsToCheck.some((year) =>
-    getEffectiveJobs(year).some((job: QueueJob) => {
-      const status = getJobStatusFromUtils(job);
-      return status === "processing";
-    })
+  const allQueueIds = getAllPipelineSteps().flatMap((s) =>
+    getQueuesForPipelineStep(s.id),
   );
+  return yearsToCheck.some((year) => {
+    const canonicalThreadId =
+      year.jobs?.[0]?.data?.threadId ||
+      (year.jobs?.[0] as any)?.threadId ||
+      (year as any).threadId ||
+      null;
+    return allQueueIds.some((queueId) => {
+      const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
+      return agg.attempts.length > 0 && agg.status === "processing";
+    });
+  });
 }
 
 /**
@@ -90,15 +117,26 @@ export function hasProcessingJobs(
  */
 export function isFullyCompleted(
   company: SwimlaneCompany,
-  runScope: RunScope = "latest"
+  runScope: RunScope = "latest",
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
+  const allQueueIds = getAllPipelineSteps().flatMap((s) =>
+    getQueuesForPipelineStep(s.id),
+  );
   return yearsToCheck.every((year) => {
-    const jobs = getEffectiveJobs(year);
-    if (jobs.length === 0) return false;
-    return jobs.every((job: QueueJob) => {
-      const status = getJobStatusFromUtils(job);
-      return status === "completed";
+    const canonicalThreadId =
+      year.jobs?.[0]?.data?.threadId ||
+      (year.jobs?.[0] as any)?.threadId ||
+      (year as any).threadId ||
+      null;
+    const attemptedQueueIds = allQueueIds.filter((queueId) => {
+      const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
+      return agg.attempts.length > 0;
+    });
+    if (attemptedQueueIds.length === 0) return false;
+    return attemptedQueueIds.every((queueId) => {
+      const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
+      return agg.status === "completed";
     });
   });
 }
@@ -108,15 +146,26 @@ export function isFullyCompleted(
  */
 export function hasIssues(
   company: SwimlaneCompany,
-  runScope: RunScope = "latest"
+  runScope: RunScope = "latest",
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
-  return yearsToCheck.some((year) =>
-    getEffectiveJobs(year).some((job: QueueJob) => {
-      const status = getJobStatusFromUtils(job);
-      return status === "failed" || status === "needs_approval";
-    })
+  const allQueueIds = getAllPipelineSteps().flatMap((s) =>
+    getQueuesForPipelineStep(s.id),
   );
+  return yearsToCheck.some((year) => {
+    const canonicalThreadId =
+      year.jobs?.[0]?.data?.threadId ||
+      (year.jobs?.[0] as any)?.threadId ||
+      (year as any).threadId ||
+      null;
+    return allQueueIds.some((queueId) => {
+      const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
+      return (
+        agg.attempts.length > 0 &&
+        (agg.status === "failed" || agg.status === "needs_approval")
+      );
+    });
+  });
 }
 
 /**
@@ -125,7 +174,7 @@ export function hasIssues(
 export function hasPipelineStepIssues(
   company: SwimlaneCompany,
   stepId: string,
-  runScope: RunScope = "latest"
+  runScope: RunScope = "latest",
 ): boolean {
   const yearsToCheck = getYearsToCheck(company, runScope);
   return yearsToCheck.some((year) => {

@@ -17,8 +17,8 @@ export interface ConfirmDialogProps {
   description: React.ReactNode;
   cancelLabel: string;
   confirmLabel: string;
-  /** "danger" for destructive actions (red outline), "primary" default. */
-  confirmVariant?: "primary" | "danger";
+  /** "danger" for destructive (red), "revoke" for pink design-system destructive, "primary" default. */
+  confirmVariant?: "primary" | "danger" | "revoke";
   onConfirm: () => void | Promise<void>;
   isLoading?: boolean;
 }
@@ -46,7 +46,11 @@ export function ConfirmDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+          >
             {cancelLabel}
           </Button>
           <Button

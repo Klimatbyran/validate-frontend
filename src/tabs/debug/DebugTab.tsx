@@ -44,7 +44,7 @@ export function DebugTab() {
             err instanceof Error ? err.message : "Failed to fetch queue jobs";
           return { name: stage.id, jobs: [], error: message };
         }
-      })
+      }),
     );
     return results;
   }, []);
@@ -78,12 +78,14 @@ export function DebugTab() {
         mergeMap((queue) => {
           if (!queue?.jobs?.length) return EMPTY;
           return from(queue.jobs).pipe(
-            map((job) => ({ ...job, queueId: queue.name }))
+            map((job) => ({ ...job, queueId: queue.name })),
           );
         }),
         toArray(),
-        map((jobs: QueueJob[]) => jobs.sort((a, b) => b.timestamp - a.timestamp)),
-        catchError(() => of([] as QueueJob[]))
+        map((jobs: QueueJob[]) =>
+          jobs.sort((a, b) => b.timestamp - a.timestamp),
+        ),
+        catchError(() => of([] as QueueJob[])),
       )
       .subscribe({
         next: setAllJobs,
@@ -104,8 +106,10 @@ export function DebugTab() {
         loading: t("debug.updatingView"),
         success: t("debug.viewUpdated"),
         error: (err: Error) =>
-          t("debug.updateDebugViewError", { message: err?.message || t("upload.unknownError") }),
-      }
+          t("debug.updateDebugViewError", {
+            message: err?.message || t("upload.unknownError"),
+          }),
+      },
     );
   };
 
@@ -162,7 +166,7 @@ export function DebugTab() {
       acc[threadId].jobs.push(job);
       acc[threadId].latestTimestamp = Math.max(
         acc[threadId].latestTimestamp,
-        job.finishedOn || job.processedOn || job.timestamp
+        job.finishedOn || job.processedOn || job.timestamp,
       );
 
       // Update thread status
@@ -185,12 +189,12 @@ export function DebugTab() {
         latestTimestamp: number;
         status: "pending" | "processing" | "completed" | "failed";
       }
-    >
+    >,
   );
 
   // Convert to array and sort by latest timestamp
   const threadList = Object.values(threads).sort(
-    (a, b) => b.latestTimestamp - a.latestTimestamp
+    (a, b) => b.latestTimestamp - a.latestTimestamp,
   );
 
   const totalJobs = allJobs.length;
@@ -208,7 +212,9 @@ export function DebugTab() {
             <AlertCircle className="w-6 h-6 mr-2" />
             <span>
               {t("debug.errorOccurred")}: {failedStages.slice(0, 5).join(", ")}
-              {failedStages.length > 5 ? ` (+${failedStages.length - 5} more)` : ""}
+              {failedStages.length > 5
+                ? ` (+${failedStages.length - 5} more)`
+                : ""}
             </span>
           </div>
         </div>
@@ -269,7 +275,7 @@ export function DebugTab() {
                   setSelectedThreadId(
                     selectedThreadId === thread.threadId
                       ? null
-                      : thread.threadId
+                      : thread.threadId,
                   )
                 }
                 className={`
@@ -310,21 +316,39 @@ export function DebugTab() {
           <h3 className="text-3xl text-gray-01">
             {selectedThreadId ? t("debug.threadJobs") : t("debug.allJobs")}
           </h3>
-          <div className="text-sm text-gray-02">{selectedJobs.length} {t("debug.jobs")}</div>
+          <div className="text-sm text-gray-02">
+            {selectedJobs.length} {t("debug.jobs")}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-03">
-                <th className="text-left p-4 text-gray-02">{t("debug.tableId")}</th>
-                <th className="text-left p-4 text-gray-02">{t("debug.tableQueue")}</th>
-                <th className="text-left p-4 text-gray-02">{t("debug.tableCompany")}</th>
-                <th className="text-left p-4 text-gray-02">{t("debug.tableThreadId")}</th>
-                <th className="text-left p-4 text-gray-02">{t("debug.tableStatus")}</th>
-                <th className="text-left p-4 text-gray-02">{t("debug.tableCreated")}</th>
-                <th className="text-left p-4 text-gray-02">{t("debug.tableStarted")}</th>
-                <th className="text-left p-4 text-gray-02">{t("debug.tableEnded")}</th>
+                <th className="text-left p-4 text-gray-02">
+                  {t("debug.tableId")}
+                </th>
+                <th className="text-left p-4 text-gray-02">
+                  {t("debug.tableQueue")}
+                </th>
+                <th className="text-left p-4 text-gray-02">
+                  {t("debug.tableCompany")}
+                </th>
+                <th className="text-left p-4 text-gray-02">
+                  {t("debug.tableThreadId")}
+                </th>
+                <th className="text-left p-4 text-gray-02">
+                  {t("debug.tableStatus")}
+                </th>
+                <th className="text-left p-4 text-gray-02">
+                  {t("debug.tableCreated")}
+                </th>
+                <th className="text-left p-4 text-gray-02">
+                  {t("debug.tableStarted")}
+                </th>
+                <th className="text-left p-4 text-gray-02">
+                  {t("debug.tableEnded")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -366,7 +390,9 @@ export function DebugTab() {
                           ?.name || job.queueId}
                       </span>
                     </td>
-                    <td className="p-4 text-gray-01">{job.data?.company ?? ""}</td>
+                    <td className="p-4 text-gray-01">
+                      {job.data?.company ?? ""}
+                    </td>
                     <td className="p-4 font-mono text-sm text-gray-02">
                       {job.data?.threadId ?? ""}
                     </td>
@@ -379,8 +405,8 @@ export function DebugTab() {
                               ? t("status.failed")
                               : t("status.completed")
                             : job.processedOn
-                            ? t("status.processing")
-                            : t("status.waiting")}
+                              ? t("status.processing")
+                              : t("status.waiting")}
                         </span>
                       </div>
                     </td>
@@ -388,14 +414,10 @@ export function DebugTab() {
                       {formatDate(job.timestamp)}
                     </td>
                     <td className="p-4 text-gray-02">
-                      {job.processedOn
-                        ? formatDate(job.processedOn)
-                        : "-"}
+                      {job.processedOn ? formatDate(job.processedOn) : "-"}
                     </td>
                     <td className="p-4 text-gray-02">
-                      {job.finishedOn
-                        ? formatDate(job.finishedOn)
-                        : "-"}
+                      {job.finishedOn ? formatDate(job.finishedOn) : "-"}
                     </td>
                   </tr>
                 );

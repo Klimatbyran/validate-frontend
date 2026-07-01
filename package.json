@@ -1,12 +1,17 @@
 {
   "name": "garbo-validation-tool",
   "private": true,
-  "version": "1.4.2-rc.15",
+  "version": "1.12.1-rc.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "i18n:audit": "node scripts/i18n-audit.mjs",
+    "i18n:fix": "node scripts/i18n-audit.mjs --fix",
+    "format": "prettier --write .",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -38,18 +43,26 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.10.1",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^5.1.2",
+    "@vitest/coverage-v8": "^4.1.8",
     "autoprefixer": "^10.4.18",
     "eslint": "^9.9.1",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",
     "globals": "^15.9.0",
+    "jsdom": "^29.1.1",
+    "jsonc-parser": "^3.3.1",
     "postcss": "^8.4.35",
+    "prettier": "3.6.2",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.5.3",
-    "typescript-eslint": "^8.57.1"
+    "typescript-eslint": "^8.57.1",
+    "vitest": "^4.1.8"
   }
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Dialog, DialogContent, DialogFooter } from "@/ui/dialog";
+import { Modal } from "@/ui/modal";
 import { Callout } from "@/ui/callout";
 import { toast } from "sonner";
 import { QueueJob, DetailedJobResponse, SwimlaneYearData } from "@/lib/types";
@@ -17,12 +17,17 @@ import { JobRelationshipsSection } from "./JobRelationshipsSection";
 import { SchemaSection } from "./SchemaSection";
 import { authenticatedFetch } from "@/lib/api-helpers";
 import { getPipelineUrl } from "@/config/api-env";
-import { buildRerunRequestData, buildRerunAndSaveBody, QUEUE_TO_FOLLOW_UP_KEY } from "@/lib/job-rerun-utils";
+import {
+  buildRerunRequestData,
+  buildRerunAndSaveBody,
+  QUEUE_TO_FOLLOW_UP_KEY,
+} from "@/lib/job-rerun-utils";
 import { getQueueDisplayName } from "@/lib/workflow-config";
 import { findJobByQueueId } from "@/lib/workflow-utils";
 import { getWikidataInfo } from "@/lib/utils";
 import { Button } from "@/ui/button";
 import { useI18n } from "@/contexts/I18nContext";
+import { JobRedisRetentionHint } from "../JobRedisRetentionHint";
 
 interface JobDetailsDialogProps {
   job: QueueJob | null;
@@ -61,7 +66,9 @@ export function JobDetailsDialog({
       if (!job.queueId || !job.id) return;
       try {
         const res = await fetch(
-          getPipelineUrl(`/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`)
+          getPipelineUrl(
+            `/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`,
+          ),
         );
         if (!res.ok) return;
         const json = await res.json();
@@ -74,11 +81,7 @@ export function JobDetailsDialog({
     return () => {
       aborted = true;
     };
-  }, [
-    job?.id,
-    job?.queueId,
-    Boolean(job?.returnvalue),
-  ]);
+  }, [job?.id, job?.queueId, Boolean(job?.returnvalue)]);
 
   // Create effectiveJob that merges detailed data (similar to job-specific-data-view)
   const effectiveJob = useMemo(() => {
@@ -86,6 +89,11 @@ export function JobDetailsDialog({
     if (!detailed) return job;
     return {
       ...job,
+      status: (detailed as any).status ?? job.status,
+      processedOn: (detailed as any).processedOn ?? job.processedOn,
+      finishedOn: (detailed as any).finishedOn ?? job.finishedOn,
+      isFailed: (detailed as any).isFailed ?? job.isFailed,
+      timestamp: (detailed as any).timestamp ?? job.timestamp,
       returnvalue: detailed.returnvalue ?? job.returnvalue,
       data: {
         ...(job.data || {}),
@@ -101,7 +109,10 @@ export function JobDetailsDialog({
   if (!job && missingQueueId && yearData) {
     const followUpKey = QUEUE_TO_FOLLOW_UP_KEY[missingQueueId];
     const queueKey = `jobstatus.queues.${missingQueueId}`;
-    const displayName = t(queueKey) !== queueKey ? t(queueKey) : getQueueDisplayName(missingQueueId);
+    const displayName =
+      t(queueKey) !== queueKey
+        ? t(queueKey)
+        : getQueueDisplayName(missingQueueId);
     const extractEmissionsJob = findJobByQueueId("extractEmissions", yearData);
     const checkDBJob = findJobByQueueId("checkDB", yearData);
     const wikidata = getWikidataInfo(checkDBJob);
@@ -114,62 +125,80 @@ export function JobDetailsDialog({
 
       try {
         const response = await authenticatedFetch(
-          getPipelineUrl(`/queues/extractEmissions/${encodeURIComponent(extractEmissionsJob.id)}/rerun-and-save`),
+          getPipelineUrl(
+            `/queues/extractEmissions/${encodeURIComponent(extractEmissionsJob.id)}/rerun-and-save`,
+          ),
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(buildRerunAndSaveBody([followUpKey], wikidata)),
-          }
+            body: JSON.stringify(
+              buildRerunAndSaveBody([followUpKey], wikidata),
+            ),
+          },
         );
 
         if (!response.ok) {
           const errorText = await response.text();
-          toast.error(t("jobstatus.jobdetails.runAndSaveError", { name: displayName, message: errorText || t("upload.unknownError") }));
+          toast.error(
+            t("jobstatus.jobdetails.runAndSaveError", {
+              name: displayName,
+              message: errorText || t("upload.unknownError"),
+            }),
+          );
           return;
         }
 
-        toast.success(t("jobstatus.jobdetails.runAndSaveSuccess", { name: displayName }));
+        toast.success(
+          t("jobstatus.jobdetails.runAndSaveSuccess", { name: displayName }),
+        );
         onOpenChange(false);
       } catch (error) {
-        toast.error(t("jobstatus.jobdetails.errorOccurred", { message: error instanceof Error ? error.message : t("upload.unknownError") }));
+        toast.error(
+          t("jobstatus.jobdetails.errorOccurred", {
+            message:
+              error instanceof Error ? error.message : t("upload.unknownError"),
+          }),
+        );
       }
     };
 
     return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
-          <div className="space-y-6 py-4">
-            <div className="text-center space-y-3">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-03/30">
-                <HelpCircle className="w-6 h-6 text-gray-02" />
-              </div>
-              <h2 className="text-lg font-semibold text-gray-01">{displayName}</h2>
-              <p className="text-sm text-gray-02">
-                {t("jobstatus.jobdetails.jobNotRunYet")}
-              </p>
+      <Modal open={isOpen} onOpenChange={onOpenChange} size="2xl" scrollable>
+        <div className="space-y-6 py-4">
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-03/30">
+              <HelpCircle className="w-6 h-6 text-gray-02" />
             </div>
-
-            {!extractEmissionsJob && (
-              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-sm text-orange-300">
-                {t("jobstatus.jobdetails.noExtractEmissionsParent")}
-              </div>
-            )}
-
-            <div className="flex justify-center pt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRunAndSave}
-                disabled={!extractEmissionsJob}
-                className="text-green-03 hover:bg-green-03/10"
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                {t("jobstatus.jobdetails.runAndSaveButton", { name: displayName })}
-              </Button>
-            </div>
+            <h2 className="text-lg font-semibold text-gray-01">
+              {displayName}
+            </h2>
+            <p className="text-sm text-gray-02">
+              {t("jobstatus.jobdetails.jobNotRunYet")}
+            </p>
           </div>
-        </DialogContent>
-      </Dialog>
+
+          {!extractEmissionsJob && (
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-sm text-orange-300">
+              {t("jobstatus.jobdetails.noExtractEmissionsParent")}
+            </div>
+          )}
+
+          <div className="flex justify-center pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRunAndSave}
+              disabled={!extractEmissionsJob}
+              className="text-green-03 hover:bg-green-03/10"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              {t("jobstatus.jobdetails.runAndSaveButton", {
+                name: displayName,
+              })}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     );
   }
 
@@ -195,7 +224,11 @@ export function JobDetailsDialog({
     if (onApprove) {
       onApprove(approved);
       onOpenChange(false);
-      toast.success(approved ? t("jobstatus.jobdetails.jobApproved") : t("jobstatus.jobdetails.jobRejected"));
+      toast.success(
+        approved
+          ? t("jobstatus.jobdetails.jobApproved")
+          : t("jobstatus.jobdetails.jobRejected"),
+      );
     }
   };
 
@@ -210,23 +243,29 @@ export function JobDetailsDialog({
       effectiveJob.queueId,
       job,
       effectiveJob,
-      detailed
+      detailed,
     );
 
     try {
       const response = await authenticatedFetch(
-        getPipelineUrl(`/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`),
+        getPipelineUrl(
+          `/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+        ),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestData),
-        }
+        },
       );
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Failed to retry job:", errorText);
-        toast.error(t("jobstatus.jobdetails.cannotRerunError", { message: errorText || t("upload.unknownError") }));
+        toast.error(
+          t("jobstatus.jobdetails.cannotRerunError", {
+            message: errorText || t("upload.unknownError"),
+          }),
+        );
         return;
       }
 
@@ -238,7 +277,9 @@ export function JobDetailsDialog({
       if (job.queueId && job.id) {
         try {
           const res = await fetch(
-            getPipelineUrl(`/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`)
+            getPipelineUrl(
+              `/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`,
+            ),
           );
           if (res.ok) {
             const json = await res.json();
@@ -259,8 +300,9 @@ export function JobDetailsDialog({
       console.error("Error retrying job:", error);
       toast.error(
         t("jobstatus.jobdetails.cannotRerunError", {
-          message: error instanceof Error ? error.message : t("upload.unknownError"),
-        })
+          message:
+            error instanceof Error ? error.message : t("upload.unknownError"),
+        }),
       );
     }
   };
@@ -275,21 +317,44 @@ export function JobDetailsDialog({
     return rest;
   };
 
-  // Simplified view for jobs that need approval
-  if (needsApproval) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-6xl">
-          <JobDialogHeader job={job} />
+  const footer = needsApproval ? (
+    <JobDialogFooter
+      needsApproval={needsApproval}
+      canRetry={false}
+      approvalOnly={true}
+      onApprove={handleApprove}
+    />
+  ) : (
+    <JobDialogFooter
+      needsApproval={needsApproval}
+      canRetry={canRetry}
+      onApprove={handleApprove}
+      onRetry={handleRetry}
+    />
+  );
 
-          <DialogTabs
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            job={job}
-          />
+  return (
+    <Modal
+      open={isOpen}
+      onOpenChange={onOpenChange}
+      size="6xl"
+      scrollable
+      footer={footer}
+    >
+      <JobDialogHeader job={job} />
 
-          <div className="space-y-6 my-6">
-            {activeTab === "user" && (
+      <JobRedisRetentionHint job={effectiveJob ?? job} />
+
+      <DialogTabs
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        job={effectiveJob ?? job}
+      />
+
+      <div className="space-y-6 my-6">
+        {activeTab === "user" && (
+          <>
+            {needsApproval ? (
               <>
                 <Callout
                   variant="info"
@@ -308,82 +373,48 @@ export function JobDetailsDialog({
                   />
                 </div>
               </>
-            )}
-            {activeTab === "technical" && <TechnicalDataSection job={job} />}
-          </div>
-
-          <DialogFooter>
-            <JobDialogFooter
-              needsApproval={needsApproval}
-              canRetry={false}
-              approvalOnly={true}
-              onApprove={handleApprove}
-            />
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  // Technical view or non-approval jobs
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto max-w-6xl">
-        <JobDialogHeader job={job} />
-
-        <DialogTabs
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          job={job}
-        />
-
-        <div className="space-y-6 my-6">
-          {activeTab === "user" && (
-            <>
-              <JobStatusSection job={job} isRerun={isRerun} />
-              <JobRelationshipsSection job={job} />
-
-              {/* Information Section */}
-              <div className="bg-gray-03/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-01 mb-4">
-                  {t("jobstatus.jobdetails.information")}
-                </h3>
-                <JobSpecificDataView
-                  data={getFilteredJobDataWithoutSchema()}
+            ) : (
+              <>
+                <JobStatusSection
                   job={job}
+                  isRerun={isRerun}
+                  yearData={yearData}
                 />
-              </div>
+                <JobRelationshipsSection job={job} />
 
-              <ErrorSection
-                job={effectiveJob ?? job}
-                setActiveTab={setActiveTab}
-              />
-            </>
-          )}
-          {activeTab === "technical" && (
-            <>
-              <SchemaSection job={job} />
-              <ReturnValueSection job={effectiveJob ?? job} />
-              <TechnicalDataSection job={job} />
-              <ErrorSection
-                job={effectiveJob ?? job}
-                setActiveTab={setActiveTab}
-                isFullError={true}
-              />
-              <JobMetadataSection job={job} />
-            </>
-          )}
-        </div>
+                {/* Information Section */}
+                <div className="bg-gray-03/20 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-gray-01 mb-4">
+                    {t("jobstatus.jobdetails.information")}
+                  </h3>
+                  <JobSpecificDataView
+                    data={getFilteredJobDataWithoutSchema()}
+                    job={job}
+                  />
+                </div>
 
-        <DialogFooter>
-          <JobDialogFooter
-            needsApproval={needsApproval}
-            canRetry={canRetry}
-            onApprove={handleApprove}
-            onRetry={handleRetry}
-          />
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+                <ErrorSection
+                  job={effectiveJob ?? job}
+                  setActiveTab={setActiveTab}
+                />
+              </>
+            )}
+          </>
+        )}
+        {activeTab === "technical" && (
+          <>
+            <SchemaSection job={job} />
+            <ReturnValueSection job={effectiveJob ?? job} />
+            <TechnicalDataSection job={job} />
+            <ErrorSection
+              job={effectiveJob ?? job}
+              setActiveTab={setActiveTab}
+              isFullError={true}
+            />
+            <JobMetadataSection job={job} />
+          </>
+        )}
+      </div>
+    </Modal>
   );
 }

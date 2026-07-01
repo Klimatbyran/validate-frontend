@@ -1,7 +1,11 @@
 import { motion } from "framer-motion";
 import { useI18n } from "@/contexts/I18nContext";
 import { UploadedFile, UrlInput } from "../types";
-import { FileListItem, UrlListItem, SubmittedFileListItem } from "./UploadListItem";
+import {
+  FileListItem,
+  UrlListItem,
+  SubmittedFileListItem,
+} from "./UploadListItem";
 
 interface UploadListProps {
   uploadMode: "file" | "url";
@@ -26,7 +30,9 @@ export function UploadList({
     return null;
   }
 
-  const submittedFileUrls = (processedUrls ?? []).filter((u) => u?.url?.startsWith("uploaded:"));
+  const submittedFileUrls = (processedUrls ?? []).filter((u) =>
+    u?.url?.startsWith("uploaded:"),
+  );
 
   return (
     <motion.div
@@ -42,20 +48,34 @@ export function UploadList({
         </h2>
       </div>
       <ul className="divide-y divide-gray-03">
-        {uploadMode === "file"
-          ? (
-              <>
-                {(uploadedFiles ?? []).filter(Boolean).map((file) => (
-                  <FileListItem key={file.id} file={file} onRemove={onRemoveUploadedFile} />
-                ))}
-                {submittedFileUrls.map((url) => (
-                  <SubmittedFileListItem key={url.id} url={url} onRemove={onRemoveProcessedItem} />
-                ))}
-              </>
-            )
-          : (processedUrls ?? []).filter(Boolean).map((url) => (
-              <UrlListItem key={url.id} url={url} onRemove={onRemoveProcessedItem} />
+        {uploadMode === "file" ? (
+          <>
+            {(uploadedFiles ?? []).filter(Boolean).map((file) => (
+              <FileListItem
+                key={file.id}
+                file={file}
+                onRemove={onRemoveUploadedFile}
+              />
             ))}
+            {submittedFileUrls.map((url) => (
+              <SubmittedFileListItem
+                key={url.id}
+                url={url}
+                onRemove={onRemoveProcessedItem}
+              />
+            ))}
+          </>
+        ) : (
+          (processedUrls ?? [])
+            .filter(Boolean)
+            .map((url) => (
+              <UrlListItem
+                key={url.id}
+                url={url}
+                onRemove={onRemoveProcessedItem}
+              />
+            ))
+        )}
       </ul>
     </motion.div>
   );

@@ -34,7 +34,9 @@ export type ReferenceSnapshot = {
   categories?: ReferenceCategory[];
 } | null;
 
-export function buildReferenceSnapshotFromScope3(scope3: any): ReferenceSnapshot {
+export function buildReferenceSnapshotFromScope3(
+  scope3: any,
+): ReferenceSnapshot {
   if (!scope3) return null;
   const categories: ReferenceCategory[] = Array.isArray(scope3.categories)
     ? scope3.categories.map((category: any) => ({
@@ -69,6 +71,7 @@ export const SCOPE3_CATEGORY_NAMES: Record<number, string> = {
   13: "Downstream leased assets",
   14: "Franchises",
   15: "Investments",
+  16: "Unknown/Other",
 };
 
 export type NormalizedCategory = {
@@ -92,8 +95,7 @@ export function normalizeYearEntry(entry: any): NormalizedYearEntry {
   const categories: NormalizedCategory[] = Array.isArray(rawCategories)
     ? rawCategories.map((rawCategory: any) => {
         const number = rawCategory.category;
-        const label =
-          SCOPE3_CATEGORY_NAMES[number] || `Category ${number}`;
+        const label = SCOPE3_CATEGORY_NAMES[number] || `Category ${number}`;
         return {
           key: rawCategory.id || `cat-${number}`,
           label,
@@ -108,15 +110,12 @@ export function normalizeYearEntry(entry: any): NormalizedYearEntry {
 
 export function buildOurNumberMapForYear(
   year: number,
-  sortedScope3ByYear: any[]
+  sortedScope3ByYear: any[],
 ): Record<number, { total: number | null; unit: string | null }> {
   const yearEntry = sortedScope3ByYear.find((e) => e.year === year);
   if (!yearEntry) return {};
   const normalized = normalizeYearEntry(yearEntry);
-  const map: Record<
-    number,
-    { total: number | null; unit: string | null }
-  > = {};
+  const map: Record<number, { total: number | null; unit: string | null }> = {};
   for (const category of normalized.categories) {
     if (typeof category.number === "number") {
       map[category.number] = {
@@ -130,12 +129,9 @@ export function buildOurNumberMapForYear(
 
 export function buildRefNumberMap(
   year: number,
-  referenceByYear: Record<number, ReferenceSnapshot>
+  referenceByYear: Record<number, ReferenceSnapshot>,
 ): Record<number, { total: number | null; unit: string | null }> {
-  const map: Record<
-    number,
-    { total: number | null; unit: string | null }
-  > = {};
+  const map: Record<number, { total: number | null; unit: string | null }> = {};
   const snapshot = referenceByYear[year];
   if (!snapshot || !Array.isArray(snapshot.categories)) return map;
   for (const c of snapshot.categories) {

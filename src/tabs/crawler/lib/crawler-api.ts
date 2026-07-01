@@ -1,14 +1,15 @@
-import { getGarboApiBaseUrl } from "@/config/api-env";
+import { getUnearthApiBaseUrl } from "@/config/api-env";
 import type {
   crawlerSearchQuery,
   SaveReportsListResponse,
   SelectedReport,
 } from "./crawler-types";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 
-/** Crawler uses garbo API only. Base follows VITE_GARBO_TARGET / VITE_API_MODE. */
+/** Crawler uses Unearth API. Base follows VITE_UNEARTH_TARGET / VITE_API_MODE. */
 
 export function reportsUrl(path: string): string {
-  const base = getGarboApiBaseUrl();
+  const base = getUnearthApiBaseUrl();
   const segment = path.replace(/^\//, "").replace(/\/+$/, "");
   const url = segment ? `${base}/${segment}` : base;
   return url.replace(/\/+$/, "");
@@ -16,13 +17,16 @@ export function reportsUrl(path: string): string {
 
 export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
   try {
-    const response = await fetch(reportsUrl("reports"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await garboAuthFetch(
+      reportsUrl("internal-companies/reports/search-reports"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([searchQuery]),
       },
-      body: JSON.stringify([searchQuery]),
-    });
+    );
 
     if (response.ok) {
       const data = await response.json();
@@ -38,7 +42,7 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
 };
 
 export const fetchCompanyNamesList = async () => {
-  const url = reportsUrl("reports/list");
+  const url = reportsUrl("internal-companies/reports/database-list");
   try {
     const response = await fetch(url);
     if (response.ok) {
@@ -60,13 +64,16 @@ export const saveToRegistry = async (
   reports: SelectedReport[],
 ): Promise<SaveReportsListResponse> => {
   try {
-    const response = await fetch(reportsUrl("reports/save-reports"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await garboAuthFetch(
+      reportsUrl("internal-companies/reports/save-reports"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reports),
       },
-      body: JSON.stringify(reports),
-    });
+    );
 
     let responseBody: SaveReportsListResponse | { message?: string } | null =
       null;

@@ -3,7 +3,10 @@ import { QueueJob } from "@/lib/types";
 import { MarkdownVectorPagesDisplay } from "@/ui/markdown-display";
 import { isMarkdown, isJsonString, getWikidataInfo } from "@/lib/utils";
 import { FiscalYearDisplay } from "@/ui/fiscal-year-display";
-import { ScopeEmissionsDisplay, Scope3EmissionsDisplay } from "../scope/ScopeEmissionsDisplay";
+import {
+  ScopeEmissionsDisplay,
+  Scope3EmissionsDisplay,
+} from "../scope/ScopeEmissionsDisplay";
 import { MetadataDisplay } from "@/ui/metadata-display";
 import { ScreenshotSlideshow } from "@/components/screenshot-slideshow";
 import { CollapsibleSection } from "@/ui/collapsible-section";
@@ -29,6 +32,40 @@ interface JobSpecificDataViewProps {
   job?: QueueJob;
 }
 
+function isHttpReportUrl(s: string) {
+  return /^https?:\/\//i.test(s.trim());
+}
+
+function JobReportUrlRow({ title, url }: { title: string; url: string }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <h4 className="text-base font-medium text-gray-01">{title}</h4>
+        <p className="text-sm text-gray-02 break-all">{url}</p>
+      </div>
+      {isHttpReportUrl(url) ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="shrink-0 self-start sm:self-center"
+        >
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center text-blue-03 hover:text-blue-04"
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            {t("editor.periodEditor.openReport")}
+          </a>
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const { t } = useI18n();
   const [detailed, setDetailed] = React.useState<any | null>(null);
@@ -41,7 +78,11 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       if (!job.queueId || !job.id) return;
       try {
         setIsLoading(true);
-        const res = await fetch(getPipelineUrl(`/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`));
+        const res = await fetch(
+          getPipelineUrl(
+            `/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`,
+          ),
+        );
         if (!res.ok) return;
         const json = await res.json();
         if (!aborted) setDetailed(json);
@@ -50,7 +91,9 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       }
     }
     loadDetails();
-    return () => { aborted = true; };
+    return () => {
+      aborted = true;
+    };
   }, [job?.id, job?.queueId, Boolean(job?.returnvalue)]);
 
   const effectiveJob = React.useMemo(() => {
@@ -92,7 +135,16 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const returnValueData = parseReturnValueData(effectiveJob);
 
   // List of technical fields to hide from the user-friendly view
-  const technicalFields = ["autoApprove", "threadId", "messageId", "url"];
+  const technicalFields = [
+    "autoApprove",
+    "threadId",
+    "messageId",
+    "url",
+    "sourceUrl",
+    "pdfCache",
+    "reportYear",
+    "documentReportYear",
+  ];
 
   function ValueList({ items }: { items: any[] }) {
     return (
@@ -122,8 +174,13 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
 
   const renderValue = (value: any): React.ReactNode => {
     if (value === null)
-      return <span className="text-gray-02">{t("jobstatus.jobdetails.noValue")}</span>;
-    if (typeof value === "boolean") return value ? t("common.yes") : t("common.no");
+      return (
+        <span className="text-gray-02">
+          {t("jobstatus.jobdetails.noValue")}
+        </span>
+      );
+    if (typeof value === "boolean")
+      return value ? t("common.yes") : t("common.no");
     if (typeof value === "string") {
       return isMarkdown(value) ? (
         <MarkdownVectorPagesDisplay value={value} />
@@ -147,39 +204,79 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob);
   const wikidataId: string | undefined = React.useMemo(() => {
     const fromJob = getWikidataInfo(effectiveJob as any)?.node;
-    const fromProcessed = (processedData as any)?.wikidataId || (processedData as any)?.wikidata?.node;
+    const fromProcessed =
+      (processedData as any)?.wikidataId ||
+      (processedData as any)?.wikidata?.node;
     const fromApproval = wikidataApprovalData?.wikidata?.node;
     const candidate = fromJob || fromProcessed || fromApproval;
     if (!candidate) return undefined;
-    const id = typeof candidate === 'string' ? candidate : String(candidate);
+    const id = typeof candidate === "string" ? candidate : String(candidate);
     const trimmed = id.trim();
     return trimmed.length > 0 ? trimmed : undefined;
   }, [effectiveJob, processedData, wikidataApprovalData]);
 
-  // Get URL from multiple possible sources
-  const jobUrl: string | undefined = React.useMemo(() => {
-    const url = 
-      effectiveJob?.data?.url || 
-      job?.data?.url || 
+  // Pipeline job URL (often S3 public URL when PDF caching was used)
+  const storedPdfUrl: string | undefined = React.useMemo(() => {
+    const url =
+      effectiveJob?.data?.url ||
+      job?.data?.url ||
       processedData?.url ||
       (effectiveJob as any)?.url ||
       (job as any)?.url;
     if (!url) return undefined;
-    const urlString = typeof url === 'string' ? url : String(url);
+    const urlString = typeof url === "string" ? url : String(url);
     return urlString.trim() || undefined;
+  }, [effectiveJob, job, processedData]);
+
+  const sourceReportUrl: string | undefined = React.useMemo(() => {
+    const raw =
+      effectiveJob?.data?.sourceUrl ??
+      job?.data?.sourceUrl ??
+      (processedData as { sourceUrl?: unknown })?.sourceUrl;
+    if (raw == null) return undefined;
+    const s = typeof raw === "string" ? raw : String(raw);
+    const t = s.trim();
+    return t.length ? t : undefined;
+  }, [effectiveJob, job, processedData]);
+
+  const showBothUrls =
+    Boolean(storedPdfUrl && sourceReportUrl) &&
+    storedPdfUrl !== sourceReportUrl;
+
+  const pipelineReportYears = React.useMemo(() => {
+    const data = (effectiveJob?.data ?? job?.data ?? processedData) as
+      | Record<string, unknown>
+      | undefined;
+    if (!data) return null;
+
+    const readYear = (value: unknown): string | undefined => {
+      if (value === undefined || value === null) return undefined;
+      const trimmed = String(value).trim();
+      return trimmed.length ? trimmed : undefined;
+    };
+
+    const reportYearHint = readYear(data.reportYear);
+    const documentReportYear =
+      readYear(data.documentReportYear) ??
+      (data.body && typeof data.body === "object" && !Array.isArray(data.body)
+        ? readYear((data.body as Record<string, unknown>).documentReportYear)
+        : undefined);
+
+    if (!reportYearHint && !documentReportYear) return null;
+    return { reportYearHint, documentReportYear };
   }, [effectiveJob, job, processedData]);
 
   // Get company name from multiple possible sources
   const companyName: string | undefined = React.useMemo(() => {
-    const name = 
-      effectiveJob?.data?.companyName || 
-      job?.data?.companyName || 
+    const name =
+      effectiveJob?.data?.companyName ||
+      job?.data?.companyName ||
       processedData?.companyName ||
       effectiveJob?.data?.company ||
       job?.data?.company ||
       processedData?.company;
     if (!name) return undefined;
-    const nameString = typeof name === 'string' ? name : String(name);
+    const nameString = typeof name === "string" ? name : String(name);
     return nameString.trim() || undefined;
   }, [effectiveJob, job, processedData]);
 
@@ -192,23 +289,33 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
 
   React.useEffect(() => {
     try {
-      console.log('[JobSpecificDataView] scope3 panel context', {
+      console.log("[JobSpecificDataView] scope3 panel context", {
         jobId: job?.id,
         queueId: job?.queueId,
         hasReturnValue: !!job?.returnvalue,
         derivedWikidataId: wikidataId,
         hasScope3Data: !!scope3Data,
       });
-      console.log('[JobSpecificDataView] threadId sources', {
+      console.log("[JobSpecificDataView] threadId sources", {
         dataThreadId: (job as any)?.data?.threadId,
         effectiveDataThreadId: (effectiveJob as any)?.data?.threadId,
         detailedKeys: detailed ? Object.keys(detailed) : [],
-        detailedDataKeys: (detailed as any)?.data ? Object.keys((detailed as any).data) : [],
+        detailedDataKeys: (detailed as any)?.data
+          ? Object.keys((detailed as any).data)
+          : [],
       });
     } catch {
       // ignore debug logging errors
     }
-  }, [job?.id, job?.queueId, Boolean(job?.returnvalue), wikidataId, Boolean(scope3Data), effectiveJob, detailed]);
+  }, [
+    job?.id,
+    job?.queueId,
+    Boolean(job?.returnvalue),
+    wikidataId,
+    Boolean(scope3Data),
+    effectiveJob,
+    detailed,
+  ]);
 
   // Helper flags for follow-up scope jobs
   const isFollowUpScope12Job =
@@ -226,40 +333,74 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
 
   return (
     <div className="space-y-3 text-sm">
-      {/* Show URL if available */}
-      {jobUrl && (
+      {/* Report / PDF URLs (source vs cached S3 when both exist) */}
+      {(storedPdfUrl || sourceReportUrl) && (
         <div className="mb-4">
           <div className="bg-gray-03/20 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-full bg-blue-03/20">
-                  <FileText className="w-5 h-5 text-blue-03" />
-                </div>
-                <div>
-                  <h4 className="text-base font-medium text-gray-01">{t("jobstatus.jobdetails.reportLabel")}</h4>
-                  <p className="text-sm text-gray-02 truncate max-w-md">{jobUrl}</p>
-                </div>
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-full bg-blue-03/20 shrink-0">
+                <FileText className="w-5 h-5 text-blue-03" />
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="flex-shrink-0"
-              >
-                <a
-                  href={jobUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center text-blue-03 hover:text-blue-04"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Öppna
-                </a>
-              </Button>
+              <div className="min-w-0 flex-1 space-y-4">
+                {showBothUrls && sourceReportUrl ? (
+                  <JobReportUrlRow
+                    title={t("registry.sourceUrl")}
+                    url={sourceReportUrl}
+                  />
+                ) : null}
+                {storedPdfUrl ? (
+                  <JobReportUrlRow
+                    title={
+                      showBothUrls
+                        ? t("jobstatus.jobdetails.cachedPdfUrl")
+                        : t("jobstatus.jobdetails.reportLabel")
+                    }
+                    url={storedPdfUrl}
+                  />
+                ) : null}
+                {!storedPdfUrl && sourceReportUrl ? (
+                  <JobReportUrlRow
+                    title={t("jobstatus.jobdetails.reportLabel")}
+                    url={sourceReportUrl}
+                  />
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {pipelineReportYears ? (
+        <div className="mb-4">
+          <div className="bg-gray-03/20 rounded-lg p-4 space-y-2">
+            <h4 className="text-base font-medium text-gray-01">
+              {t("jobstatus.jobdetails.reportYearPanelTitle")}
+            </h4>
+            {pipelineReportYears.documentReportYear ? (
+              <div className="text-sm text-gray-02">
+                <span className="font-medium text-gray-01">
+                  {t("jobstatus.jobdetails.documentReportYearLabel")}:
+                </span>{" "}
+                {pipelineReportYears.documentReportYear}
+                <span className="block text-xs text-gray-02 mt-0.5">
+                  {t("jobstatus.jobdetails.documentReportYearHint")}
+                </span>
+              </div>
+            ) : null}
+            {pipelineReportYears.reportYearHint ? (
+              <div className="text-sm text-gray-02">
+                <span className="font-medium text-gray-01">
+                  {t("jobstatus.jobdetails.reportYearHintLabel")}:
+                </span>{" "}
+                {pipelineReportYears.reportYearHint}
+                <span className="block text-xs text-gray-02 mt-0.5">
+                  {t("jobstatus.jobdetails.reportYearHintDescription")}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {/* Show Wikidata Approval Display if available (for guessWikidata step) */}
       {wikidataApprovalData && (
@@ -291,20 +432,29 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
       {/* Show Scope 1+2 emissions data if available */}
       {scopeData && (
         <div className="mb-4">
-          <ScopeEmissionsDisplay data={{ scope12: scopeData }} wikidataId={wikidataId} />
+          <ScopeEmissionsDisplay
+            data={{ scope12: scopeData }}
+            wikidataId={wikidataId}
+          />
         </div>
       )}
       {/* Combined Scope 1+2 value is now surfaced inside the Scope 1 card in the Scope 1 & 2 panel */}
       {/* Show Scope 3 emissions data if available */}
       {scope3Data && (
         <div className="mb-4">
-          <Scope3EmissionsDisplay data={{ scope3: scope3Data }} wikidataId={wikidataId} />
+          <Scope3EmissionsDisplay
+            data={{ scope3: scope3Data }}
+            wikidataId={wikidataId}
+          />
         </div>
       )}
       {/* Show Economy data if available */}
       {economyData && (
         <div className="mb-4">
-          <EconomySection data={{ economy: economyData }} wikidataId={wikidataId} />
+          <EconomySection
+            data={{ economy: economyData }}
+            wikidataId={wikidataId}
+          />
         </div>
       )}
       {/* Show Screenshot slideshow if scopeData and PDF URL exist */}
@@ -366,7 +516,13 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleRerunAndSave("followUpScope12", ["scope1", "scope2"], t("jobstatus.jobdetails.rerunAndSaveScope12"))}
+              onClick={() =>
+                handleRerunAndSave(
+                  "followUpScope12",
+                  ["scope1", "scope2"],
+                  t("jobstatus.jobdetails.rerunAndSaveScope12"),
+                )
+              }
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
@@ -377,7 +533,13 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleRerunAndSave("followUpScope1", ["scope1"], t("jobstatus.jobdetails.rerunAndSaveScope1"))}
+              onClick={() =>
+                handleRerunAndSave(
+                  "followUpScope1",
+                  ["scope1"],
+                  t("jobstatus.jobdetails.rerunAndSaveScope1"),
+                )
+              }
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
@@ -388,7 +550,13 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleRerunAndSave("followUpScope2", ["scope2"], t("jobstatus.jobdetails.rerunAndSaveScope2"))}
+              onClick={() =>
+                handleRerunAndSave(
+                  "followUpScope2",
+                  ["scope2"],
+                  t("jobstatus.jobdetails.rerunAndSaveScope2"),
+                )
+              }
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
@@ -399,7 +567,13 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleRerunAndSave("followUpScope3", ["scope3"], t("jobstatus.jobdetails.rerunAndSaveScope3"))}
+              onClick={() =>
+                handleRerunAndSave(
+                  "followUpScope3",
+                  ["scope3"],
+                  t("jobstatus.jobdetails.rerunAndSaveScope3"),
+                )
+              }
               className="text-green-03 hover:bg-green-03/10"
             >
               <RotateCcw className="w-4 h-4 mr-2" />

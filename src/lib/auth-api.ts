@@ -1,17 +1,25 @@
 /**
- * Auth API client (garbo base + /auth). Follows garbo target (VITE_GARBO_TARGET or VITE_API_MODE).
+ * Auth API client (Unearth base + /auth). Follows VITE_UNEARTH_TARGET or VITE_API_MODE.
  */
 
 import axios from "axios";
-import { getGarboApiBaseUrl } from "@/config/api-env";
+import { getUnearthApiBaseUrl } from "@/config/api-env";
+
+export function getAuthApiBaseUrl(): string {
+  return `${getUnearthApiBaseUrl()}/auth`.replace(/\/+/g, "/");
+}
 
 export const authApi = axios.create({
-  baseURL: getGarboApiBaseUrl() + "/auth",
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
   },
   timeout: 30000,
+});
+
+authApi.interceptors.request.use((config) => {
+  config.baseURL = getAuthApiBaseUrl();
+  return config;
 });
 
 /**
@@ -22,7 +30,7 @@ export const authApi = axios.create({
  */
 export async function authenticateWithGithub(
   code: string,
-  state?: string | null
+  state?: string | null,
 ): Promise<{ token: string; redirect_uri?: string }> {
   const payload: { code: string; state?: string } = { code };
   if (state) {
@@ -44,6 +52,5 @@ function getCallbackUrl(): string {
 export function getGithubAuthUrl(): string {
   const callbackUrl = getCallbackUrl();
   const redirectUri = encodeURIComponent(callbackUrl);
-  const base = getGarboApiBaseUrl() + "/auth";
-  return `${base}/github?redirect_uri=${redirectUri}`;
+  return `${getAuthApiBaseUrl()}/github?redirect_uri=${redirectUri}`;
 }

@@ -7,13 +7,19 @@ import { Activity } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
-import { RERUN_WORKERS, LIMIT_OPTIONS, type RerunWorker } from "../lib/filter-config";
+import {
+  RERUN_WORKERS,
+  LIMIT_OPTIONS,
+  type RerunWorker,
+} from "../lib/filter-config";
 
 interface FilterBarRerunSectionProps {
   onRerunByWorker: (worker: RerunWorker, limit: number | "all") => void;
 }
 
-export function FilterBarRerunSection({ onRerunByWorker }: FilterBarRerunSectionProps) {
+export function FilterBarRerunSection({
+  onRerunByWorker,
+}: FilterBarRerunSectionProps) {
   const { t } = useI18n();
   const [rerunLimit, setRerunLimit] = useState<number | "all">(5);
 
@@ -21,7 +27,14 @@ export function FilterBarRerunSection({ onRerunByWorker }: FilterBarRerunSection
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-4 border-t border-gray-03/50">
       <div className="flex items-center gap-2 shrink-0">
         <Activity className="w-4 h-4 text-gray-02" />
-        <span className="text-sm font-medium text-gray-01">{t("jobstatus.runSpecificJobs")}:</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-gray-01">
+            {t("jobstatus.runSpecificJobs")}
+          </span>
+          <span className="text-[11px] text-gray-02">
+            {t("jobstatus.runSpecificJobsHelper")}
+          </span>
+        </div>
       </div>
       <div className="flex items-center gap-3 flex-wrap">
         {RERUN_WORKERS.map((worker) => (
@@ -41,14 +54,10 @@ export function FilterBarRerunSection({ onRerunByWorker }: FilterBarRerunSection
         <SingleSelectDropdown
           options={LIMIT_OPTIONS.map((opt) => String(opt.value))}
           value={String(rerunLimit)}
-          onChange={(val) =>
-            setRerunLimit(val === "all" ? "all" : Number(val))
-          }
+          onChange={(val) => setRerunLimit(val === "all" ? "all" : Number(val))}
           placeholder={t("jobstatus.count")}
           ariaLabel={t("jobstatus.count")}
-          getOptionLabel={(v) =>
-            v === "all" ? t("jobstatus.limitAll") : v
-          }
+          getOptionLabel={(v) => (v === "all" ? t("jobstatus.limitAll") : v)}
           panelMinWidth={120}
         />
       </div>

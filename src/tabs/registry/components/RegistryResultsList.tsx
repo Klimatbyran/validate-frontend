@@ -6,8 +6,22 @@ import {
   DataTableHead,
   DataTableShell,
 } from "@/ui/data-table";
-import type { RegistryEntry } from "../lib/registry-types";
+import { ClientTablePagination } from "@/ui/client-table-pagination";
+import type { RegistryEntry, RegistryEntryUpdate } from "../lib/registry-types";
+import {
+  isSameRegistryEntrySelection,
+  registryEntrySelectionKey,
+} from "../lib/registry-utils";
 import RegistryResultItem from "./RegistryResultItem";
+
+type RegistryPagination = {
+  from: number;
+  to: number;
+  total: number;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+};
 
 interface RegistryResultsListProps {
   registry: RegistryEntry[];
@@ -15,6 +29,9 @@ interface RegistryResultsListProps {
   allSelected: boolean;
   onSelectAll: () => void;
   onToggleSelect: (entry: RegistryEntry) => void;
+  onEdit: (entry: RegistryEntryUpdate) => Promise<void>;
+  editingReportIds: string[];
+  pagination: RegistryPagination;
 }
 
 const RegistryResultsList = ({
@@ -23,6 +40,9 @@ const RegistryResultsList = ({
   allSelected,
   onSelectAll,
   onToggleSelect,
+  onEdit,
+  editingReportIds,
+  pagination,
 }: RegistryResultsListProps) => {
   const { t } = useI18n();
 
@@ -45,7 +65,13 @@ const RegistryResultsList = ({
                 {t("registry.reportYear")}
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                {t("registry.batch")}
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
                 {t("registry.reportUrl")}
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                {t("registry.edit")}
               </th>
               <th className="pl-4 py-3 flex flex-col text-xs tracking-wider">
                 <span className="font-semibold flex gap-2 text-gray-02 uppercase">
@@ -69,21 +95,36 @@ const RegistryResultsList = ({
 
           <DataTableBody>
             {registry.map((entry) => {
-              const entryId = entry.wikidataId ?? entry.url;
-              const isSelected = selectedReports.some(
-                (r) => (r.wikidataId ?? r.url) === entryId,
+              const rowKey = registryEntrySelectionKey(entry);
+              const isSelected = selectedReports.some((r) =>
+                isSameRegistryEntrySelection(r, entry),
               );
               return (
                 <RegistryResultItem
-                  key={entryId}
+                  key={rowKey}
                   entry={entry}
                   selected={isSelected}
                   onToggleSelect={onToggleSelect}
+                  onEdit={onEdit}
+                  isEditing={Boolean(
+                    entry.id && editingReportIds.includes(entry.id),
+                  )}
                 />
               );
             })}
           </DataTableBody>
         </DataTable>
+        <ClientTablePagination
+          from={pagination.from}
+          to={pagination.to}
+          filteredTotal={pagination.total}
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          showAll={false}
+          canPaginate={pagination.totalPages > 1}
+          onPageChange={pagination.onPageChange}
+          onShowAllChange={() => undefined}
+        />
       </DataTableShell>
     </motion.div>
   );

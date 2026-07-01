@@ -82,7 +82,7 @@ export function getStatusConfig(status: SwimlaneStatusType) {
  */
 export function getStatusLabel(
   status: SwimlaneStatusType,
-  isActive?: boolean
+  isActive?: boolean,
 ): string {
   if (isActive) return "Processing Now";
   return STATUS_CONFIG[status].label;
@@ -94,7 +94,7 @@ export function getStatusLabel(
 export function getStatusIcon(
   status: SwimlaneStatusType,
   variant: "compact" | "detailed",
-  isActive?: boolean
+  isActive?: boolean,
 ) {
   const config = STATUS_CONFIG[status];
   const IconComponent = config.icon;
@@ -123,7 +123,7 @@ export function getStatusIcon(
 export function getCompactStyles(
   status: SwimlaneStatusType,
   isActive?: boolean,
-  jobExists?: boolean
+  jobExists?: boolean,
 ): string {
   const config = STATUS_CONFIG[status];
 
@@ -190,7 +190,7 @@ export const STAT_CARD_COLORS = {
  * Get stat card value color
  */
 export function getStatCardValueColor(
-  color: keyof typeof STAT_CARD_COLORS
+  color: keyof typeof STAT_CARD_COLORS,
 ): string {
   return STAT_CARD_COLORS[color].value;
 }
@@ -199,7 +199,7 @@ export function getStatCardValueColor(
  * Get stat card label color
  */
 export function getStatCardLabelColor(
-  color: keyof typeof STAT_CARD_COLORS
+  color: keyof typeof STAT_CARD_COLORS,
 ): string {
   return STAT_CARD_COLORS[color].label;
 }
@@ -208,13 +208,14 @@ export function getStatCardLabelColor(
  * Get step icon for pipeline step status
  */
 export function getStepIcon(
-  status: "completed" | "processing" | "failed" | "waiting" | "needs_approval"
+  status: "completed" | "processing" | "failed" | "waiting" | "needs_approval",
 ) {
   const config = getStatusConfig(status);
   const IconComponent = config.icon;
 
   // Use gray for waiting status in step icons (user requirement)
-  const iconColor = status === "waiting" ? config.colors.text : config.colors.icon;
+  const iconColor =
+    status === "waiting" ? config.colors.text : config.colors.icon;
 
   return (
     <IconComponent

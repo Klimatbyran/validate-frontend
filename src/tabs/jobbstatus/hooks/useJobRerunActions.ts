@@ -3,18 +3,19 @@
  * refresh, approve, override wikidata/company name, general rerun, and rerun-and-save.
  */
 
-import { useCallback } from "react";
+import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
 import { authenticatedFetch } from "@/lib/api-helpers";
 import { getPipelineUrl } from "@/config/api-env";
 import { buildRerunRequestData } from "@/lib/job-rerun-utils";
 import { useI18n } from "@/contexts/I18nContext";
+import type { DetailedJobResponse, QueueJob } from "@/lib/types";
 
 interface UseJobRerunActionsArgs {
-  job: { queueId?: string; id?: string } | undefined;
-  effectiveJob: { queueId?: string; id?: string; [key: string]: any } | undefined;
-  detailed: any;
-  setDetailed: React.Dispatch<React.SetStateAction<any | null>>;
+  job: QueueJob | undefined;
+  effectiveJob: QueueJob | undefined;
+  detailed: DetailedJobResponse | null;
+  setDetailed: Dispatch<SetStateAction<DetailedJobResponse | null>>;
 }
 
 export function useJobRerunActions({
@@ -28,7 +29,9 @@ export function useJobRerunActions({
     if (!job?.queueId || !job?.id) return;
     try {
       const res = await fetch(
-        getPipelineUrl(`/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`)
+        getPipelineUrl(
+          `/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`,
+        ),
       );
       if (res.ok) {
         const json = await res.json();
@@ -46,22 +49,33 @@ export function useJobRerunActions({
     }
     try {
       const response = await authenticatedFetch(
-        getPipelineUrl(`/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`),
+        getPipelineUrl(
+          `/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+        ),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ data: { approval: { approved: true } } }),
-        }
+        },
       );
       if (!response.ok) {
         const errorText = await response.text();
-        toast.error(t("jobstatus.jobdetails.toastApproveError", { message: errorText || t("upload.unknownError") }));
+        toast.error(
+          t("jobstatus.jobdetails.toastApproveError", {
+            message: errorText || t("upload.unknownError"),
+          }),
+        );
         return;
       }
       toast.success(t("jobstatus.jobdetails.toastApproveSuccess"));
       await refreshJobData();
     } catch (error) {
-      toast.error(t("jobstatus.jobdetails.toastApproveFailed", { message: error instanceof Error ? error.message : t("upload.unknownError") }));
+      toast.error(
+        t("jobstatus.jobdetails.toastApproveFailed", {
+          message:
+            error instanceof Error ? error.message : t("upload.unknownError"),
+        }),
+      );
     }
   }, [effectiveJob?.queueId, effectiveJob?.id, refreshJobData, t]);
 
@@ -73,25 +87,36 @@ export function useJobRerunActions({
       }
       try {
         const response = await authenticatedFetch(
-          getPipelineUrl(`/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`),
+          getPipelineUrl(
+            `/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+          ),
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ data: { overrideWikidataId } }),
-          }
+          },
         );
         if (!response.ok) {
           const errorText = await response.text();
-          toast.error(t("jobstatus.jobdetails.toastRerunError", { message: errorText || t("upload.unknownError") }));
+          toast.error(
+            t("jobstatus.jobdetails.toastRerunError", {
+              message: errorText || t("upload.unknownError"),
+            }),
+          );
           return;
         }
         toast.success(t("jobstatus.jobdetails.toastRerunWikidataSuccess"));
         await refreshJobData();
       } catch (error) {
-        toast.error(t("jobstatus.jobdetails.toastRerunFailed", { message: error instanceof Error ? error.message : t("upload.unknownError") }));
+        toast.error(
+          t("jobstatus.jobdetails.toastRerunFailed", {
+            message:
+              error instanceof Error ? error.message : t("upload.unknownError"),
+          }),
+        );
       }
     },
-    [effectiveJob?.queueId, effectiveJob?.id, refreshJobData, t]
+    [effectiveJob?.queueId, effectiveJob?.id, refreshJobData, t],
   );
 
   const handleCompanyNameOverride = useCallback(
@@ -102,27 +127,41 @@ export function useJobRerunActions({
       }
       try {
         const response = await authenticatedFetch(
-          getPipelineUrl(`/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`),
+          getPipelineUrl(
+            `/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+          ),
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              data: { companyName: overrideCompanyName, waitingForCompanyName: true },
+              data: {
+                companyName: overrideCompanyName,
+                waitingForCompanyName: true,
+              },
             }),
-          }
+          },
         );
         if (!response.ok) {
           const errorText = await response.text();
-          toast.error(t("jobstatus.jobdetails.toastRerunError", { message: errorText || t("upload.unknownError") }));
+          toast.error(
+            t("jobstatus.jobdetails.toastRerunError", {
+              message: errorText || t("upload.unknownError"),
+            }),
+          );
           return;
         }
         toast.success(t("jobstatus.jobdetails.toastRerunCompanySuccess"));
         await refreshJobData();
       } catch (error) {
-        toast.error(t("jobstatus.jobdetails.toastRerunFailed", { message: error instanceof Error ? error.message : t("upload.unknownError") }));
+        toast.error(
+          t("jobstatus.jobdetails.toastRerunFailed", {
+            message:
+              error instanceof Error ? error.message : t("upload.unknownError"),
+          }),
+        );
       }
     },
-    [effectiveJob?.queueId, effectiveJob?.id, refreshJobData, t]
+    [effectiveJob?.queueId, effectiveJob?.id, refreshJobData, t],
   );
 
   const handleRerun = useCallback(async () => {
@@ -134,26 +173,37 @@ export function useJobRerunActions({
       effectiveJob.queueId,
       job,
       effectiveJob,
-      detailed
+      detailed,
     );
     try {
       const response = await authenticatedFetch(
-        getPipelineUrl(`/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`),
+        getPipelineUrl(
+          `/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+        ),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestData),
-        }
+        },
       );
       if (!response.ok) {
         const errorText = await response.text();
-        toast.error(t("jobstatus.jobdetails.toastRerunError", { message: errorText || t("upload.unknownError") }));
+        toast.error(
+          t("jobstatus.jobdetails.toastRerunError", {
+            message: errorText || t("upload.unknownError"),
+          }),
+        );
         return;
       }
       toast.success(t("jobstatus.jobdetails.toastRerunSuccess"));
       await refreshJobData();
     } catch (error) {
-      toast.error(t("jobstatus.jobdetails.toastRerunFailed", { message: error instanceof Error ? error.message : t("upload.unknownError") }));
+      toast.error(
+        t("jobstatus.jobdetails.toastRerunFailed", {
+          message:
+            error instanceof Error ? error.message : t("upload.unknownError"),
+        }),
+      );
     }
   }, [effectiveJob, job, detailed, refreshJobData, t]);
 
@@ -165,25 +215,39 @@ export function useJobRerunActions({
       }
       try {
         const response = await authenticatedFetch(
-          getPipelineUrl(`/queues/${queueName}/${encodeURIComponent(effectiveJob.id)}/rerun-and-save`),
+          getPipelineUrl(
+            `/queues/${queueName}/${encodeURIComponent(effectiveJob.id)}/rerun-and-save`,
+          ),
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ scopes }),
-          }
+          },
         );
         if (!response.ok) {
           const errorText = await response.text();
-          toast.error(t("jobstatus.jobdetails.toastRerunAndSaveError", { label, message: errorText || t("upload.unknownError") }));
+          toast.error(
+            t("jobstatus.jobdetails.toastRerunAndSaveError", {
+              label,
+              message: errorText || t("upload.unknownError"),
+            }),
+          );
           return;
         }
-        toast.success(t("jobstatus.jobdetails.toastRerunAndSaveSuccess", { label }));
+        toast.success(
+          t("jobstatus.jobdetails.toastRerunAndSaveSuccess", { label }),
+        );
         await refreshJobData();
       } catch (error) {
-        toast.error(t("jobstatus.jobdetails.toastRerunFailed", { message: error instanceof Error ? error.message : t("upload.unknownError") }));
+        toast.error(
+          t("jobstatus.jobdetails.toastRerunFailed", {
+            message:
+              error instanceof Error ? error.message : t("upload.unknownError"),
+          }),
+        );
       }
     },
-    [effectiveJob?.id, refreshJobData, t]
+    [effectiveJob?.id, refreshJobData, t],
   );
 
   return {

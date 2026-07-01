@@ -1,27 +1,103 @@
 import type { RegistryEntry, RegistryStats } from "./registry-types";
 
+export function isValidHttpUrl(raw: string): boolean {
+  const trimmed = raw.trim();
+  if (!trimmed) return false;
+  try {
+    const u = new URL(trimmed);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export function isValidOptionalHttpUrl(raw: string): boolean {
+  if (!raw.trim()) return true;
+  return isValidHttpUrl(raw);
+}
+
+/** Split pasted Excel lists (one company per line or tab-separated). */
+export function parseRegistrySearchTerms(query: string): string[] {
+  const seen = new Set<string>();
+  const terms: string[] = [];
+  for (const part of query.split(/[\r\n\t]+/)) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    terms.push(trimmed);
+  }
+  return terms;
+}
+
+function registryEntryKey(entry: RegistryEntry): string {
+  return entry.id ?? entry.wikidataId ?? entry.url;
+}
+
+/** One key per registry row — use for checkbox selection, not wikidataId. */
+export function registryEntrySelectionKey(entry: RegistryEntry): string {
+  return entry.id ?? entry.url;
+}
+
+export function isSameRegistryEntrySelection(
+  a: RegistryEntry,
+  b: RegistryEntry,
+): boolean {
+  return registryEntrySelectionKey(a) === registryEntrySelectionKey(b);
+}
+
+export function registryEntryMatchesSearchTerm(
+  entry: RegistryEntry,
+  term: string,
+): boolean {
+  const normalizedTerm = term.trim().toLowerCase();
+  if (!normalizedTerm) return false;
+  return (
+    entry.companyName?.toLowerCase().includes(normalizedTerm) ||
+    (entry.wikidataId?.toLowerCase().includes(normalizedTerm) ?? false) ||
+    (entry.reportYear?.includes(normalizedTerm) ?? false) ||
+    entry.url.toLowerCase().includes(normalizedTerm) ||
+    (entry.sourceUrl?.toLowerCase().includes(normalizedTerm) ?? false) ||
+    (entry.s3Url?.toLowerCase().includes(normalizedTerm) ?? false)
+  );
+}
+
 export function filterRegistryEntries(
   entries: RegistryEntry[],
   query: string,
 ): RegistryEntry[] {
-  const normalizedQuery = query.trim().toLowerCase();
-  if (!normalizedQuery) {
+  const terms = parseRegistrySearchTerms(query);
+  if (terms.length === 0) {
     return entries;
   }
 
-  return entries.filter((entry) => {
-    return (
-      entry.companyName?.toLowerCase().includes(normalizedQuery) ||
-      (entry.wikidataId?.toLowerCase().includes(normalizedQuery) ?? false) ||
-      entry.reportYear?.includes(normalizedQuery) ||
-      entry.url.toLowerCase().includes(normalizedQuery)
+  if (terms.length === 1) {
+    return entries.filter((entry) =>
+      registryEntryMatchesSearchTerm(entry, terms[0]!),
     );
-  });
+  }
+
+  const matched = new Map<string, RegistryEntry>();
+  for (const term of terms) {
+    for (const entry of entries) {
+      if (registryEntryMatchesSearchTerm(entry, term)) {
+        matched.set(registryEntryKey(entry), entry);
+      }
+    }
+  }
+  return [...matched.values()];
 }
 
 export function buildRegistryStats(entries: RegistryEntry[]): RegistryStats {
+  const companyKeys = new Set(
+    entries
+      .map((e) => (e.wikidataId ?? e.companyName ?? "").trim())
+      .filter(Boolean),
+  );
   return {
-    total: entries.length,
+    uniqueCompanies: companyKeys.size,
+    totalReports: entries.length,
   };
 }
 
@@ -35,7 +111,14 @@ export function writeRegistryEntriesToCsv(entries: RegistryEntry[]): void {
     return `"${escaped}"`;
   };
 
-  const header = ["companyName", "wikidataId", "reportYear", "url"]
+  const header = [
+    "companyName",
+    "wikidataId",
+    "reportYear",
+    "url",
+    "sourceUrl",
+    "s3Url",
+  ]
     .map(escapeCsvValue)
     .join(";");
 
@@ -45,6 +128,8 @@ export function writeRegistryEntriesToCsv(entries: RegistryEntry[]): void {
       escapeCsvValue(entry.wikidataId ?? ""),
       escapeCsvValue(entry.reportYear ?? ""),
       escapeCsvValue(entry.url),
+      escapeCsvValue(entry.sourceUrl ?? ""),
+      escapeCsvValue(entry.s3Url ?? ""),
     ].join(";"),
   );
 

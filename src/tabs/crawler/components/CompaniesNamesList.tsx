@@ -4,14 +4,26 @@ import CompaniesNamesResultItem from "./CompaniesNamesResultItem";
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { fetchCompanyNamesList } from "../lib/crawler-api";
 import { useI18n } from "@/contexts/I18nContext";
-import { DataTable, DataTableBody, DataTableHead, DataTableShell } from "@/ui/data-table";
+import {
+  DataTable,
+  DataTableBody,
+  DataTableHead,
+  DataTableShell,
+} from "@/ui/data-table";
+
+interface CompanySelection {
+  name: string;
+  wikidataId?: string;
+}
 
 interface CompaniesNamesListProps {
   setIsLoading: React.Dispatch<React.SetStateAction<boolean | null>>;
-  onSelectionChange: React.Dispatch<React.SetStateAction<string[]>>;
-  selectedCompanies: string[];
+  onSelectionChange: React.Dispatch<React.SetStateAction<CompanySelection[]>>;
+  selectedCompanies: CompanySelection[];
   filterYear?: number | null;
   filterEnabled?: boolean;
+  selectedTags: string[];
+  onTagOptionsLoaded: (tags: string[]) => void;
 }
 
 const CompaniesNamesList = ({
@@ -20,6 +32,8 @@ const CompaniesNamesList = ({
   onSelectionChange,
   filterYear,
   filterEnabled,
+  selectedTags,
+  onTagOptionsLoaded,
 }: CompaniesNamesListProps) => {
   const { t } = useI18n();
   const [companiesList, setcompaniesList] = useState<CompanyDetails[] | null>(
@@ -30,55 +44,84 @@ const CompaniesNamesList = ({
     const fetchData = async () => {
       setIsLoading(true);
       const data = await fetchCompanyNamesList();
-
       if (data) {
         setcompaniesList(data);
         setIsLoading(false);
+
+        const tagSet = new Set<string>();
+        for (const company of data as CompanyDetails[]) {
+          for (const tag of company.tags ?? []) tagSet.add(tag);
+        }
+        onTagOptionsLoaded(Array.from(tagSet).sort());
       }
     };
     fetchData();
   }, []);
 
   const handleToggleCompany = useCallback(
-    (companyName: string) => {
+    (companyName: string, wikidataId?: string) => {
       onSelectionChange((prev) =>
-        prev.includes(companyName)
-          ? prev.filter((name) => name !== companyName)
-          : [...prev, companyName],
+        prev.some((s) => s.name === companyName)
+          ? prev.filter((s) => s.name !== companyName)
+          : [...prev, { name: companyName, wikidataId }],
       );
     },
     [onSelectionChange],
   );
 
-  const handleSelectAllCompanies = () => {
-    if (selectedCompanies.length === companiesList?.length) {
-      onSelectionChange([]);
-    } else {
-      const allCompanyNames =
-        companiesList?.map((company) => company.name) || [];
-      onSelectionChange(allCompanyNames);
-    }
-  };
-
-  const companiesListWithSortedPeriods = useMemo(() => {
+  const companiesListFiltered = useMemo(() => {
     let filtered = companiesList;
+
     if (filterEnabled && filterYear && !isNaN(filterYear)) {
       filtered =
-        companiesList?.filter((company) => {
-          // Exclude companies that have a reporting period ending in filterYear
-          return !company.reportingPeriods.some((rp) => {
-            const endYear = new Date(rp.endDate).getFullYear();
-            return endYear === filterYear;
-          });
-        }) || null;
+        filtered?.filter(
+          (company) =>
+            !company.reportingPeriods.some(
+              (rp) => new Date(rp.endDate).getFullYear() === filterYear,
+            ),
+        ) ?? null;
     }
-    return filtered?.map((company) => ({
-      ...company,
-      reportingPeriods: [...company.reportingPeriods].sort((a, b) =>
-        b.endDate.localeCompare(a.endDate),
-      ),
-    }));
-  }, [companiesList, filterYear, filterEnabled]);
+
+    if (selectedTags.length > 0) {
+      filtered =
+        filtered?.filter((company) =>
+          selectedTags.some((tag) => company.tags?.includes(tag)),
+        ) ?? null;
+    }
+
+    return filtered
+      ?.slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((company) => ({
+        ...company,
+        reportingPeriods: [...company.reportingPeriods].sort((a, b) =>
+          b.endDate.localeCompare(a.endDate),
+        ),
+      }));
+  }, [companiesList, filterYear, filterEnabled, selectedTags]);
+
+  const handleSelectAllCompanies = () => {
+    const visibleNames = new Set(
+      companiesListFiltered?.map((c) => c.name) ?? [],
+    );
+    const allVisible =
+      visibleNames.size > 0 &&
+      companiesListFiltered?.every((c) =>
+        selectedCompanies.some((s) => s.name === c.name),
+      );
+
+    if (allVisible) {
+      onSelectionChange((prev) =>
+        prev.filter((s) => !visibleNames.has(s.name)),
+      );
+    } else {
+      const toAdd =
+        companiesListFiltered
+          ?.filter((c) => !selectedCompanies.some((s) => s.name === c.name))
+          .map((c) => ({ name: c.name, wikidataId: c.wikidataId })) ?? [];
+      onSelectionChange((prev) => [...prev, ...toAdd]);
+    }
+  };
 
   return (
     <>
@@ -98,8 +141,8 @@ const CompaniesNamesList = ({
                     </span>
                     <span className="font-medium text-gray-02">
                       {t("crawler.foundCompanies", {
-                        count: companiesListWithSortedPeriods?.length ?? 0,
-                      })}{" "}
+                        count: companiesListFiltered?.length ?? 0,
+                      })}
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
@@ -120,22 +163,23 @@ const CompaniesNamesList = ({
                     <span className="font-medium text-gray-02">
                       {t("crawler.selectedCompanies", {
                         count: selectedCompanies.length,
-                      })}{" "}
+                      })}
                     </span>
                   </th>
                 </tr>
               </DataTableHead>
 
               <DataTableBody>
-                {companiesListWithSortedPeriods &&
-                  companiesListWithSortedPeriods.map((company, index) => (
-                    <CompaniesNamesResultItem
-                      key={index}
-                      companyDetails={company}
-                      isSelected={selectedCompanies.includes(company.name)}
-                      onToggle={handleToggleCompany}
-                    />
-                  ))}
+                {companiesListFiltered?.map((company, index) => (
+                  <CompaniesNamesResultItem
+                    key={index}
+                    companyDetails={company}
+                    isSelected={selectedCompanies.some(
+                      (s) => s.name === company.name,
+                    )}
+                    onToggle={handleToggleCompany}
+                  />
+                ))}
               </DataTableBody>
             </DataTable>
           </DataTableShell>

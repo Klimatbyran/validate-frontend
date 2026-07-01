@@ -8,10 +8,7 @@ import { ChevronDown, ChevronRight, BarChart3, Activity } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { StatCard, CompactStatCard, PipelineStepCard } from "./StatCards";
 import { getAllPipelineSteps } from "@/lib/workflow-config";
-import {
-  calculateStepJobStats,
-  getJobStatus as getJobStatusFromUtils,
-} from "@/lib/workflow-utils";
+import { calculateStepJobStats } from "@/lib/workflow-utils";
 import { calculateSwimlaneOverallStats } from "../lib/calculation-utils";
 import type { SwimlaneCompany } from "@/lib/types";
 import type { FilterType } from "../lib/swimlane-filters";
@@ -29,7 +26,6 @@ export function OverviewStats({
     companies,
     getAllPipelineSteps,
     calculateStepJobStats,
-    getJobStatusFromUtils
   );
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -58,7 +54,9 @@ export function OverviewStats({
           <ChevronRight className="w-5 h-5 text-gray-02" />
         )}
         <BarChart3 className="w-5 h-5 text-gray-02" />
-        <h2 className="text-3xl text-gray-01">{t("jobstatus.overview.title")}</h2>
+        <h2 className="text-3xl text-gray-01">
+          {t("jobstatus.overview.title")}
+        </h2>
       </button>
 
       {isExpanded && (
@@ -69,7 +67,11 @@ export function OverviewStats({
               label={t("jobstatus.overview.companies")}
               color="gray"
             />
-            <StatCard value={stats.totalJobs} label={t("jobstatus.overview.reports")} color="gray" />
+            <StatCard
+              value={stats.totalJobs}
+              label={t("jobstatus.overview.reports")}
+              color="gray"
+            />
             <StatCard
               value={stats.activeJobs}
               label={t("jobstatus.overview.activeJobs")}
@@ -133,7 +135,11 @@ export function OverviewStats({
                 return (
                   <PipelineStepCard
                     key={index}
-                    name={stepNameToKey[step.name] ? t(stepNameToKey[step.name]) : step.name}
+                    name={
+                      stepNameToKey[step.name]
+                        ? t(stepNameToKey[step.name])
+                        : step.name
+                    }
                     completed={step.completed}
                     processing={step.processing}
                     failed={step.failed}

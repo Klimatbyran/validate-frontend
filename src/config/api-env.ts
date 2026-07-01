@@ -1,18 +1,13 @@
-/**
- * API config: pipeline + garbo, with env overrides.
- *
- * Dev: Vite proxy. Pipeline: /pipeline-local, /pipeline-stage, /pipeline. Garbo: /garbo-local, /garbo-stage, /garbo.
- * Prod: relative paths. Pipeline: /api. Garbo: /garbo-api. Both are proxied by nginx in the deployment (BACKEND_API_URL, GARBO_API_URL).
- * Env: VITE_API_MODE (joint), VITE_PIPELINE_TARGET, VITE_GARBO_TARGET. Default: stage.
- */
+/** API targets and browser proxy paths. See docs/API_AND_PROXY_SETUP.md. */
 
 export type ApiTarget = "local" | "stage" | "prod";
 
-// Frontend app origin (where the FE is served). Use for redirects, "back to site" links, etc.
 export const GARBO_STAGE_ORIGIN = "https://stage.klimatkollen.se";
 export const GARBO_PROD_ORIGIN = "https://klimatkollen.se";
 
-// API base origin (backend the FE calls). Used here for prod URLs; vite.config imports for dev proxy.
+export const UNEARTH_STAGE_API = "https://stage-api.unearthdata.ai";
+export const UNEARTH_PROD_API = "https://api.unearthdata.ai";
+
 export const GARBO_STAGE_API = "https://stage-api.klimatkollen.se";
 export const GARBO_PROD_API = "https://api.klimatkollen.se";
 
@@ -21,22 +16,31 @@ function jointMode(): ApiTarget {
   if (v === "local" || v === "stage" || v === "prod") return v;
   if (!import.meta.env.DEV && typeof window !== "undefined") {
     const hostname = window.location.hostname;
-    if (hostname.includes("stage") || hostname.includes("staging")) return "stage";
+    if (hostname.includes("stage") || hostname.includes("staging"))
+      return "stage";
     return "prod";
   }
   return "stage";
 }
 
-/** Pipeline target. Used for pipeline API base URL and vite proxy. */
 export function getPipelineTarget(): ApiTarget {
   const v = import.meta.env.VITE_PIPELINE_TARGET as string | undefined;
   if (v === "local" || v === "stage" || v === "prod") return v;
   return jointMode();
 }
 
-// --- Pipeline (single target: job status, upload, etc.) ---
+export function getUnearthTarget(): ApiTarget {
+  const v =
+    (import.meta.env.VITE_UNEARTH_TARGET as string | undefined) ??
+    (import.meta.env.VITE_GARBO_TARGET as string | undefined);
+  if (v === "local" || v === "stage" || v === "prod") return v;
+  return jointMode();
+}
 
-/** Pipeline API base URL. Dev: /pipeline-local (this machine), /pipeline-stage, or /pipeline (prod). Prod: /api. No trailing slash. */
+export function getGarboTarget(): ApiTarget {
+  return getUnearthTarget();
+}
+
 export function getPipelineApiBaseUrl(): string {
   const target = getPipelineTarget();
   if (import.meta.env.DEV) {
@@ -47,22 +51,35 @@ export function getPipelineApiBaseUrl(): string {
   return "/api";
 }
 
-/** Pipeline URL for a path (e.g. /processes/batches). No trailing slash on result. */
 export function getPipelineUrl(path: string): string {
   const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
   return getPipelineApiBaseUrl() + p;
 }
 
-/** Garbo target. Used for all garbo URLs (auth, crawler, etc.). */
-export function getGarboTarget(): ApiTarget {
-  const v = import.meta.env.VITE_GARBO_TARGET as string | undefined;
-  if (v === "local" || v === "stage" || v === "prod") return v;
-  return jointMode();
+/** Ignores VITE_PIPELINE_TARGET. */
+export function getStagePipelineApiBaseUrl(): string {
+  if (import.meta.env.DEV) return "/pipeline-stage-api";
+  return "/pipeline-stage-api";
 }
 
-// --- Garbo (single target: auth, crawler, etc.) ---
+export function getStagePipelineUrl(path: string): string {
+  const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
+  return getStagePipelineApiBaseUrl() + p;
+}
 
-/** Garbo base URL (auth = base + "/auth", etc.). Dev: /garbo-local, /garbo-stage, or /garbo (Vite proxy). Prod: /garbo-api (proxied by ingress/nginx). No trailing slash. */
+export function getUnearthApiBaseUrl(): string {
+  const target = getUnearthTarget();
+  let url: string;
+  if (import.meta.env.DEV) {
+    if (target === "prod") url = "/unearth/api";
+    else if (target === "local") url = "/unearth-local/api";
+    else url = "/unearth-stage/api";
+  } else {
+    url = "/unearth-api";
+  }
+  return url.replace(/\/+$/, "");
+}
+
 export function getGarboApiBaseUrl(): string {
   const target = getGarboTarget();
   let url: string;
@@ -71,24 +88,52 @@ export function getGarboApiBaseUrl(): string {
     else if (target === "local") url = "/garbo-local/api";
     else url = "/garbo-stage/api";
   } else {
-    // Production: use relative path; nginx/k8s proxies /garbo-api to Garbo (stage or prod per deployment).
     url = "/garbo-api";
   }
   return url.replace(/\/+$/, "");
 }
 
-// --- Error browser: always stage + prod (no target) ---
-
-/** Garbo stage API URL. Use for comparison only (errors tab). Path e.g. /api/companies. No trailing slash. */
-export function getStageGarboUrl(path: string): string {
+/** Staff JWT path (Jobbstatus). Garbo twin: `/api/internal-queue-archive` (X-API-Key). */
+export function getGarboQueueArchiveUrl(path: string): string {
+  const base = getGarboApiBaseUrl().replace(/\/+$/, "");
   const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
-  if (import.meta.env.DEV) return `/garbo-stage${p}`;
-  return `${GARBO_STAGE_API}${p}`;
+  return `${base}/queue-archive${p}`;
 }
 
-/** Garbo prod API URL. Use for comparison (errors tab) or prod-only (e.g. company reference). Path e.g. /api/companies. No trailing slash. */
-export function getProdGarboUrl(path: string): string {
+/** Ignores VITE_UNEARTH_TARGET. */
+export function getStageGarboQueueArchiveUrl(path: string): string {
+  const base = import.meta.env.DEV ? "/garbo-stage/api" : "/garbo-stage-api";
   const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
-  if (import.meta.env.DEV) return `/garbo${p}`;
-  return `${GARBO_PROD_API}${p}`;
+  return `${base.replace(/\/+$/, "")}/queue-archive${p}`;
+}
+
+export function getStageUnearthUrl(path: string): string {
+  const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
+  if (import.meta.env.DEV) return `/unearth-stage${p}`;
+  return `/unearth-stage-api${p}`;
+}
+
+export function getProdUnearthUrl(path: string): string {
+  const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
+  if (import.meta.env.DEV) return `/unearth${p}`;
+  return `/unearth-prod-api${p}`;
+}
+
+/** X-API-Key twin of staff GET /api/pipeline/companies — proxy injects the key. */
+export const PIPELINE_COMPANIES_LIST_PATH = "/internal-pipeline/companies";
+
+function joinApiPath(base: string, segment: string): string {
+  const normalizedBase = base.replace(/\/+$/, "");
+  const normalizedSegment = segment.startsWith("/") ? segment : `/${segment}`;
+  return `${normalizedBase}${normalizedSegment}`.replace(/\/+/g, "/");
+}
+
+/** Error Browser: staff pipeline list on fixed stage Unearth host. */
+export function getStagePipelineCompaniesListUrl(): string {
+  return joinApiPath(getStageUnearthUrl("/api"), PIPELINE_COMPANIES_LIST_PATH);
+}
+
+/** Error Browser: staff pipeline list on fixed prod Unearth host. */
+export function getProdPipelineCompaniesListUrl(): string {
+  return joinApiPath(getProdUnearthUrl("/api"), PIPELINE_COMPANIES_LIST_PATH);
 }

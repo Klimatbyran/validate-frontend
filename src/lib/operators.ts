@@ -19,11 +19,11 @@ export function groupQueues(): OperatorFunction<
       from(
         queues.flatMap(
           ({ queueId, queue }) =>
-            queue?.jobs.map((job) => ({ ...job, queueId })) || []
-        )
-      )
+            queue?.jobs.map((job) => ({ ...job, queueId })) || [],
+        ),
+      ),
     ),
-    share() // Share the stream between multiple subscribers
+    share(), // Share the stream between multiple subscribers
   );
 }
 
@@ -72,7 +72,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
             const existingJobIndex = updatedJobs.findIndex(
               (item) =>
                 item.job.id === jobData.job.id &&
-                item.job.queueId === jobData.job.queueId
+                item.job.queueId === jobData.job.queueId,
             );
 
             if (existingJobIndex >= 0) {
@@ -86,7 +86,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
               jobs: updatedJobs,
             };
           },
-          { companyName: "", jobs: [] as any[] }
+          { companyName: "", jobs: [] as any[] },
         ),
         // Emittera varje jobb separat med uppdaterad companyName
         mergeMap((threadState) =>
@@ -106,10 +106,10 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
                 };
               }
               return jobData;
-            })
-          )
+            }),
+          ),
         ),
-        share()
+        share(),
       );
     }),
     // Steg 3: Gruppera jobb efter företagsnamn med uppdaterad jobbdata
@@ -117,7 +117,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
       (job) => job.job.data.companyName || job.job.data.company || "Unknown",
       {
         element: (job) => job,
-      }
+      },
     ),
     // Steg 4: Bearbeta varje företagsgrupp
     mergeMap((group) => {
@@ -136,7 +136,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
             // Lägg till jobb i tråden, ersätt om det redan finns
             const updatedJobs = [
               ...threadJobs.filter(
-                (j) => j.id !== job.id || j.queueId !== job.queueId
+                (j) => j.id !== job.id || j.queueId !== job.queueId,
               ),
               job,
             ];
@@ -162,7 +162,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
             companyName: undefined as string | undefined,
             description: undefined as string | undefined,
             threads: new Map<string, QueueJob[]>(),
-          }
+          },
         ),
         // Konvertera företagsstate till GroupedCompany-format
         map(({ company, companyName, description, threads }) => {
@@ -171,9 +171,13 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
             ([threadId, jobs]) => {
               // Hitta det senaste jobbet i denna tråd
               const latestJob = jobs.reduce((latest, job) => {
-                const jobTs = job.finishedOn || job.processedOn || job.timestamp || 0;
+                const jobTs =
+                  job.finishedOn || job.processedOn || job.timestamp || 0;
                 const latestTs = latest
-                  ? latest.finishedOn || latest.processedOn || latest.timestamp || 0
+                  ? latest.finishedOn ||
+                    latest.processedOn ||
+                    latest.timestamp ||
+                    0
                   : -Infinity;
                 return jobTs > latestTs ? job : latest;
               }, jobs[0]);
@@ -188,7 +192,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
                       job.finishedOn || job.processedOn || job.timestamp,
                   },
                 }),
-                {}
+                {},
               );
 
               return {
@@ -200,16 +204,16 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
                 jobs, // Inkludera alla jobb för denna tråd
                 stages,
               };
-            }
+            },
           );
 
           // Sortera attempts efter timestamp (nyast först)
           const sortedAttempts = attempts.sort((a, b) => {
             const aStages = Object.values(
-              a.stages
+              a.stages,
             ) as CompanyStatus["stages"][string][];
             const bStages = Object.values(
-              b.stages
+              b.stages,
             ) as CompanyStatus["stages"][string][];
             // Use latest timestamp within an attempt
             const aTime = Math.max(...aStages.map((s) => s.timestamp));
@@ -219,25 +223,35 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
 
           // Do NOT merge jobs across different runs.
           // Instead, for each year, pick the single most recent attempt (thread) and show its jobs only.
-          const attemptsByYear = new Map<number, {
-            year: number;
-            latestTimestamp: number;
-            jobs: QueueJob[];
-            companyName?: string;
-            threadId: string;
-          }>();
+          const attemptsByYear = new Map<
+            number,
+            {
+              year: number;
+              latestTimestamp: number;
+              jobs: QueueJob[];
+              companyName?: string;
+              threadId: string;
+            }
+          >();
 
           sortedAttempts.forEach((attempt) => {
             const attemptLatestTs = Math.max(
-              ...Object.values(attempt.stages).map((s: any) => s.timestamp)
+              ...Object.values(attempt.stages).map((s: any) => s.timestamp),
             );
             // Derive year from the latest job in this attempt
-            const latestJobInAttempt = attempt.jobs.reduce((prev: any, cur: any) => {
-              const prevTs = prev ? (prev.finishedOn || prev.processedOn || prev.timestamp || 0) : -Infinity;
-              const curTs = cur.finishedOn || cur.processedOn || cur.timestamp || 0;
-              return curTs > prevTs ? cur : prev;
-            }, attempt.jobs[0]);
-            const year = latestJobInAttempt?.data?.year || new Date().getFullYear();
+            const latestJobInAttempt = attempt.jobs.reduce(
+              (prev: any, cur: any) => {
+                const prevTs = prev
+                  ? prev.finishedOn || prev.processedOn || prev.timestamp || 0
+                  : -Infinity;
+                const curTs =
+                  cur.finishedOn || cur.processedOn || cur.timestamp || 0;
+                return curTs > prevTs ? cur : prev;
+              },
+              attempt.jobs[0],
+            );
+            const year =
+              latestJobInAttempt?.data?.year || new Date().getFullYear();
 
             const existing = attemptsByYear.get(year);
             if (!existing || attemptLatestTs > existing.latestTimestamp) {
@@ -252,31 +266,39 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
           });
 
           const filteredAttempts = Array.from(attemptsByYear.values())
-            .map(({ year, latestTimestamp, jobs, companyName: cn, threadId: chosenThreadId }) => {
-              const stages = jobs.reduce(
-                (stagesAcc: CompanyStatus["stages"], job: QueueJob) => ({
-                  ...stagesAcc,
-                  [job.queueId]: {
-                    status: getJobStatus(job),
-                    timestamp:
-                      job.finishedOn || job.processedOn || job.timestamp,
-                  },
-                }),
-                {} as CompanyStatus["stages"]
-              );
-
-              return {
-                company,
-                companyName: cn || company,
-                description,
-                threadId: chosenThreadId,
+            .map(
+              ({
                 year,
-                jobs,
-                stages,
-                attemptCount: 1,
                 latestTimestamp,
-              };
-            })
+                jobs,
+                companyName: cn,
+                threadId: chosenThreadId,
+              }) => {
+                const stages = jobs.reduce(
+                  (stagesAcc: CompanyStatus["stages"], job: QueueJob) => ({
+                    ...stagesAcc,
+                    [job.queueId]: {
+                      status: getJobStatus(job),
+                      timestamp:
+                        job.finishedOn || job.processedOn || job.timestamp,
+                    },
+                  }),
+                  {} as CompanyStatus["stages"],
+                );
+
+                return {
+                  company,
+                  companyName: cn || company,
+                  description,
+                  threadId: chosenThreadId,
+                  year,
+                  jobs,
+                  stages,
+                  attemptCount: 1,
+                  latestTimestamp,
+                };
+              },
+            )
             .sort((a, b) => b.latestTimestamp - a.latestTimestamp);
 
           return {
@@ -294,21 +316,21 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
           // Kontrollera likhet baserat på antal attempts och jobb
           const prevJobCount = prev.attempts.reduce(
             (sum, attempt) => sum + (attempt.jobs?.length || 0),
-            0
+            0,
           );
           const currJobCount = curr.attempts.reduce(
             (sum, attempt) => sum + (attempt.jobs?.length || 0),
-            0
+            0,
           );
 
           // Inkludera senaste timestamp för att fånga nya körningar även om antal är lika
           const prevLatestTs = Math.max(
             0,
-            ...prev.attempts.map((a: any) => a.latestTimestamp || 0)
+            ...prev.attempts.map((a: any) => a.latestTimestamp || 0),
           );
           const currLatestTs = Math.max(
             0,
-            ...curr.attempts.map((a: any) => a.latestTimestamp || 0)
+            ...curr.attempts.map((a: any) => a.latestTimestamp || 0),
           );
 
           return (
@@ -316,7 +338,7 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
             prev.attempts.length === curr.attempts.length &&
             prevLatestTs === currLatestTs
           );
-        })
+        }),
       );
     }),
     // Steg 5: Kombinera alla företagsgrupper till en enda array
@@ -348,30 +370,30 @@ export function groupByCompany(): OperatorFunction<QueueJob, GroupedCompany[]> {
         const aLatestTimestamp = Math.max(
           ...(a.attempts || []).map(
             (attempt: CompanyStatus & { latestTimestamp?: number }) =>
-              attempt.latestTimestamp || 0
-          )
+              attempt.latestTimestamp || 0,
+          ),
         );
         const bLatestTimestamp = Math.max(
           ...(b.attempts || []).map(
             (attempt: CompanyStatus & { latestTimestamp?: number }) =>
-              attempt.latestTimestamp || 0
-          )
+              attempt.latestTimestamp || 0,
+          ),
         );
 
         // Sortera efter senaste timestamp (nyaste först)
         return bLatestTimestamp - aLatestTimestamp;
-      })
+      }),
     ),
 
     catchError(() => {
       return of([]);
     }),
-    share() // Share the stream between multiple subscribers
+    share(), // Share the stream between multiple subscribers
   );
 }
 
 function getJobStatus(
-  job: QueueJob
+  job: QueueJob,
 ): CompanyStatus["stages"][string]["status"] {
   if (job.finishedOn) return job.isFailed ? "failed" : "completed";
   if (job.processedOn) return "processing";

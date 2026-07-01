@@ -1,9 +1,9 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { FileText, Bot, LogIn, LogOut } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { useI18n } from '@/contexts/I18nContext';
-import { Button } from './button';
+import React from "react";
+import { motion } from "framer-motion";
+import { FileText, Bot, LogIn, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/contexts/I18nContext";
+import { Button } from "./button";
 
 export function Header() {
   const { isAuthenticated, user, login, logout } = useAuth();
@@ -21,10 +21,10 @@ export function Header() {
             className="relative"
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
-            transition={{ 
+            transition={{
               type: "spring",
               stiffness: 260,
-              damping: 20 
+              damping: 20,
             }}
           >
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-02 via-orange-03 to-orange-04 p-[2px]">
@@ -48,12 +48,8 @@ export function Header() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <h1 className="text-5xl text-gray-01 mb-1">
-                {t("brand.title")}
-              </h1>
-              <p className="text-gray-02">
-                {t("brand.by")}
-              </p>
+              <h1 className="text-5xl text-gray-01 mb-1">{t("brand.title")}</h1>
+              <p className="text-gray-02">{t("brand.by")}</p>
             </motion.div>
           </div>
         </div>
@@ -65,7 +61,11 @@ export function Header() {
           transition={{ delay: 0.2 }}
           className="flex items-center gap-3"
         >
-          <div className="flex items-center gap-1 rounded-full border border-gray-03 bg-gray-04/50 p-0.5" role="group" aria-label={t("ui.languageAria")}>
+          <div
+            className="flex items-center gap-1 rounded-full border border-gray-03 bg-gray-04/50 p-0.5"
+            role="group"
+            aria-label={t("ui.languageAria")}
+          >
             <button
               type="button"
               onClick={() => setLocale("en")}

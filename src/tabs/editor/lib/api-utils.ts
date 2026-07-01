@@ -1,9 +1,6 @@
-import { getGarboApiBaseUrl } from "@/config/api-env";
-
-const BASE = getGarboApiBaseUrl();
+import { getUnearthApiBaseUrl } from "@/config/api-env";
 
 export function apiUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
-  return `${BASE}${p}`.replace(/\/+/g, "/");
+  return `${getUnearthApiBaseUrl()}${p}`.replace(/\/+/g, "/");
 }
-

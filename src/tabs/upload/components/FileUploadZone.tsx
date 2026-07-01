@@ -1,16 +1,19 @@
 import { FileUp } from "lucide-react";
-import { motion } from "framer-motion";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
-import { cn } from "@/lib/utils";
+import { FileDropZone } from "@/components/FileDropZone";
 import { UploadedFile } from "../types";
+import { AutoApproveToggle } from "./AutoApproveToggle";
 
 interface FileUploadZoneProps {
   isDragging: boolean;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
+  onInputChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   uploadedFiles: UploadedFile[];
+  autoApprove: boolean;
+  onAutoApproveChange: (value: boolean) => void;
   onFileSubmit: () => void;
 }
 
@@ -19,42 +22,27 @@ export function FileUploadZone({
   onDragOver,
   onDragLeave,
   onDrop,
+  onInputChange,
   uploadedFiles,
+  autoApprove,
+  onAutoApproveChange,
   onFileSubmit,
 }: FileUploadZoneProps) {
   const { t } = useI18n();
   return (
     <>
-      <div
+      <div className="flex items-center justify-end mb-2">
+        <AutoApproveToggle value={autoApprove} onChange={onAutoApproveChange} />
+      </div>
+      <FileDropZone
+        isDragging={isDragging}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        className={cn(
-          "border-2 border-dashed rounded-lg p-12",
-          "flex flex-col items-center justify-center",
-          "transition-all duration-200",
-          "bg-gray-04/50 backdrop-blur-sm",
-          isDragging
-            ? "border-orange-03 bg-orange-05/10"
-            : "border-gray-03 hover:border-gray-02"
-        )}
-      >
-        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-          <FileUp
-            className={cn(
-              "w-12 h-12 mb-4",
-              isDragging ? "text-orange-03" : "text-gray-02"
-            )}
-          />
-        </motion.div>
-        <p className="text-lg text-gray-01 text-center">
-          {t("upload.dragDropPdf")}
-          <br />
-          <span className="text-sm text-gray-02">
-            {t("upload.orClickToSelect")}
-          </span>
-        </p>
-      </div>
+        onInputChange={onInputChange}
+        title={t("upload.dragDropPdf")}
+        subtitle={t("upload.orClickToSelect")}
+      />
       {uploadedFiles.length > 0 && (
         <div className="mt-4 flex justify-end">
           <Button onClick={onFileSubmit}>

@@ -1,0 +1,78 @@
+name: 🐛 Bug Report
+description: Report something broken or not working as expected in Validate.
+title: "[Bug]: "
+labels: ["bug"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please include enough detail to reproduce.
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: Where does this happen?
+      options:
+        - Local
+        - Staging
+        - Production
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Editor UI
+        - Validation rules / calculations
+        - Import / Export
+        - Routing / deep-links (URL state)
+        - Auth / access
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include links, company IDs, and sample data if relevant.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots / logs (optional)
+      description: Paste screenshots, console errors, network traces, or relevant logs.
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (optional)
+      description: Anything else that might help (browser, feature flags, suspected cause).
+    validations:
+      required: false

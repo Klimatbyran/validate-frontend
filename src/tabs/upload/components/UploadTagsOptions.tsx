@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import type { TagOption } from "@/tabs/editor/lib/types";
+import { buildTagLabelBySlug } from "@/tabs/editor/lib/editor-tag-and-payload-utils";
 
 export interface UploadTagsOptionsProps {
   tagOptions: TagOption[];
@@ -9,6 +10,7 @@ export interface UploadTagsOptionsProps {
   tagsError?: string | null;
   selectedTags: string[];
   onSelectedTagsChange: (tags: string[]) => void;
+  usePortal?: boolean;
 }
 
 export function UploadTagsOptions({
@@ -17,10 +19,11 @@ export function UploadTagsOptions({
   tagsError = null,
   selectedTags,
   onSelectedTagsChange,
+  usePortal = true,
 }: UploadTagsOptionsProps) {
   const { t } = useI18n();
   const tagLabelBySlug = useMemo(
-    () => new Map(tagOptions.map((o) => [o.slug, o.label])),
+    () => buildTagLabelBySlug(tagOptions),
     [tagOptions],
   );
 
@@ -36,14 +39,17 @@ export function UploadTagsOptions({
         loading={tagsLoading}
         loadingLabel={t("upload.tagsLoading")}
         emptyLabel={t("upload.tagsEmpty")}
-        getOptionLabel={(slug) => tagLabelBySlug.get(slug) ?? slug}
+        getOptionLabel={(slug) => tagLabelBySlug[slug] ?? slug}
         panelMinWidth={240}
+        usePortal={usePortal}
       />
 
       {tagsError && (
         <div className="w-full">
           <div className="rounded-lg border border-gray-03 bg-gray-04/80 p-4 mt-2">
-            <p className="text-gray-01 font-medium">{t("editor.tagOptions.loadError")}</p>
+            <p className="text-gray-01 font-medium">
+              {t("editor.tagOptions.loadError")}
+            </p>
             <p className="text-sm text-gray-02 mt-1">{tagsError}</p>
           </div>
         </div>
@@ -51,4 +57,3 @@ export function UploadTagsOptions({
     </>
   );
 }
-

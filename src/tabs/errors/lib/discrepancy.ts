@@ -4,14 +4,35 @@ import {
   type Company,
   type CompanyRow,
   type ReportingPeriod,
-} from '../types';
-import { getDataPointValue, pickReportingPeriodForYear } from './emissions';
+} from "../types";
+import { getDataPointValue } from "./emissions";
+import { findReportingPeriodForShell } from "./reporting-period-comparison";
 
-/** Build a map of companies by wikidataId for quick lookup. */
+/** Stable key for pairing the same company across stage and prod (wikidataId when present). */
+export function companyCrossEnvKey(company: Company): string {
+  const wikidataId = company.wikidataId?.trim();
+  if (wikidataId) return wikidataId;
+  return `local:${company.id}`;
+}
+
+export function crossEnvKeyFromRow(
+  row: Pick<CompanyRow, "wikidataId" | "id">,
+): string {
+  const wikidataId = row.wikidataId?.trim();
+  if (wikidataId) return wikidataId;
+  return `local:${row.id}`;
+}
+
+/** Build a map of companies by cross-environment key for stage/prod comparison. */
 export function companiesToMapById(companies: Company[]): Map<string, Company> {
   const map = new Map<string, Company>();
-  companies.forEach((c) => map.set(c.wikidataId, c));
+  companies.forEach((c) => map.set(companyCrossEnvKey(c), c));
   return map;
+}
+
+/** @deprecated Use companyCrossEnvKey — internal id does not match across environments. */
+export function companyUnionKey(company: Company): string {
+  return companyCrossEnvKey(company);
 }
 
 const UNIT_ERROR_POWERS = [10, 100, 1000, 10000, 100000, 1000000] as const;
@@ -19,7 +40,7 @@ const UNIT_ERROR_POWERS = [10, 100, 1000, 10000, 100000, 1000000] as const;
 /** Return unit-error factor (stage/prod ratio) when values differ by a power of 10; otherwise undefined. */
 export function getUnitErrorFactor(
   stageValue: number | null,
-  prodValue: number | null
+  prodValue: number | null,
 ): number | undefined {
   if (stageValue === null || prodValue === null) return undefined;
   const absS = Math.abs(stageValue);
@@ -44,25 +65,26 @@ export interface SameScopeDataPoint {
 export function classifyDiscrepancy(
   stageValue: number | null,
   prodValue: number | null,
-  roundingThreshold: number
+  roundingThreshold: number,
 ): DiscrepancyType {
   const stageHasValue = stageValue !== null && stageValue !== undefined;
   const prodHasValue = prodValue !== null && prodValue !== undefined;
 
-  if (!stageHasValue && !prodHasValue) return 'both-null';
-  if (stageHasValue && !prodHasValue) return 'hallucination';
-  if (!stageHasValue && prodHasValue) return 'missing';
+  if (!stageHasValue && !prodHasValue) return "both-null";
+  if (stageHasValue && !prodHasValue) return "hallucination";
+  if (!stageHasValue && prodHasValue) return "missing";
 
   const diff = Math.abs(stageValue! - prodValue!);
-  if (diff === 0) return 'identical';
-  if (diff <= roundingThreshold) return 'rounding';
+  if (diff === 0) return "identical";
+  if (diff <= roundingThreshold) return "rounding";
 
-  if (getUnitErrorFactor(stageValue, prodValue) !== undefined) return 'unit-error';
+  if (getUnitErrorFactor(stageValue, prodValue) !== undefined)
+    return "unit-error";
 
   const reference = Math.abs(prodValue!);
-  if (reference > 0 && (diff / reference) <= 0.05) return 'small-error';
+  if (reference > 0 && diff / reference <= 0.05) return "small-error";
 
-  return 'error';
+  return "error";
 }
 
 /**
@@ -73,36 +95,42 @@ export function reclassifyDiscrepancyForCategoryError(
   discrepancy: DiscrepancyType,
   stageValue: number | null,
   prodValue: number | null,
-  stageEmissions: ReportingPeriod['emissions'] | null | undefined,
-  prodEmissions: ReportingPeriod['emissions'] | null | undefined,
-  sameScopeDataPoints: SameScopeDataPoint[]
+  stageEmissions: ReportingPeriod["emissions"] | null | undefined,
+  prodEmissions: ReportingPeriod["emissions"] | null | undefined,
+  sameScopeDataPoints: SameScopeDataPoint[],
 ): DiscrepancyType {
   if (
-    discrepancy === 'identical' ||
-    discrepancy === 'rounding' ||
-    discrepancy === 'both-null' ||
+    discrepancy === "identical" ||
+    discrepancy === "rounding" ||
+    discrepancy === "both-null" ||
     sameScopeDataPoints.length === 0
   ) {
     return discrepancy;
   }
   if (
-    (discrepancy === 'error' ||
-      discrepancy === 'small-error' ||
-      discrepancy === 'hallucination') &&
+    (discrepancy === "error" ||
+      discrepancy === "small-error" ||
+      discrepancy === "hallucination") &&
     stageValue !== null
   ) {
     for (const otherDP of sameScopeDataPoints) {
       const otherProdValue = getDataPointValue(prodEmissions, otherDP.id);
-      if (otherProdValue !== null && Math.abs(stageValue - otherProdValue) <= 0.5) {
-        return 'category-error';
+      if (
+        otherProdValue !== null &&
+        Math.abs(stageValue - otherProdValue) <= 0.5
+      ) {
+        return "category-error";
       }
     }
   }
-  if (discrepancy === 'missing' && prodValue !== null) {
+  if (discrepancy === "missing" && prodValue !== null) {
     for (const otherDP of sameScopeDataPoints) {
       const otherStageValue = getDataPointValue(stageEmissions, otherDP.id);
-      if (otherStageValue !== null && Math.abs(prodValue - otherStageValue) <= 0.5) {
-        return 'category-error';
+      if (
+        otherStageValue !== null &&
+        Math.abs(prodValue - otherStageValue) <= 0.5
+      ) {
+        return "category-error";
       }
     }
   }
@@ -118,34 +146,49 @@ export function applyCategoryErrorToRows(
   prodMap: Map<string, Company>,
   sameScopeDataPoints: SameScopeDataPoint[],
   selectedDataPoint: string,
-  selectedYear: number
+  selectedDataYear: number,
+  selectedReportYear?: number | null,
 ): void {
   for (const row of rows) {
     if (
-      row.discrepancy === 'identical' ||
-      row.discrepancy === 'rounding' ||
-      row.discrepancy === 'both-null'
+      row.discrepancy === "identical" ||
+      row.discrepancy === "rounding" ||
+      row.discrepancy === "both-null"
     )
       continue;
 
-    const stageCompany = stageMap.get(row.wikidataId);
-    const prodCompany = prodMap.get(row.wikidataId);
+    const stageCompany = stageMap.get(crossEnvKeyFromRow(row));
+    const prodCompany = prodMap.get(crossEnvKeyFromRow(row));
 
     if (
-      (row.discrepancy === 'error' ||
-        row.discrepancy === 'small-error' ||
-        row.discrepancy === 'hallucination') &&
+      (row.discrepancy === "error" ||
+        row.discrepancy === "small-error" ||
+        row.discrepancy === "hallucination") &&
       row.stageValue !== null &&
       prodCompany
     ) {
-      const prodRP = pickReportingPeriodForYear(prodCompany.reportingPeriods, selectedYear);
+      const shellKey = row.shellKey ?? "";
+      const prodRP = findReportingPeriodForShell(
+        prodCompany.reportingPeriods,
+        selectedDataYear,
+        selectedReportYear ?? null,
+        shellKey,
+      );
       const stageRPForKind = stageCompany
-        ? pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear)
+        ? findReportingPeriodForShell(
+            stageCompany.reportingPeriods,
+            selectedDataYear,
+            selectedReportYear ?? null,
+            shellKey,
+          )
         : null;
       for (const otherDP of sameScopeDataPoints) {
         const otherProdValue = getDataPointValue(prodRP?.emissions, otherDP.id);
-        if (otherProdValue !== null && Math.abs(row.stageValue! - otherProdValue) <= 0.5) {
-          row.discrepancy = 'category-error';
+        if (
+          otherProdValue !== null &&
+          Math.abs(row.stageValue! - otherProdValue) <= 0.5
+        ) {
+          row.discrepancy = "category-error";
           row.matchedDataPoint = otherDP.label;
           const otherStageValue = stageRPForKind
             ? getDataPointValue(stageRPForKind.emissions, otherDP.id)
@@ -154,19 +197,19 @@ export function applyCategoryErrorToRows(
             otherStageValue !== null &&
             Math.abs(row.stageValue! - otherStageValue) <= 0.5
           ) {
-            row.categoryErrorKind = 'duplicating';
+            row.categoryErrorKind = "duplicating";
           } else if (
             row.prodValue !== null &&
             otherStageValue !== null &&
             Math.abs(otherStageValue - row.prodValue) <= 0.5
           ) {
-            row.categoryErrorKind = 'swap';
+            row.categoryErrorKind = "swap";
           } else if (GENERIC_DATA_POINTS.has(selectedDataPoint)) {
-            row.categoryErrorKind = 'conservative';
+            row.categoryErrorKind = "conservative";
           } else if (GENERIC_DATA_POINTS.has(otherDP.id)) {
-            row.categoryErrorKind = 'overcategorized';
+            row.categoryErrorKind = "overcategorized";
           } else {
-            row.categoryErrorKind = 'mix-up';
+            row.categoryErrorKind = "mix-up";
           }
           break;
         }
@@ -174,25 +217,33 @@ export function applyCategoryErrorToRows(
     }
 
     if (
-      row.discrepancy === 'missing' &&
+      row.discrepancy === "missing" &&
       row.prodValue !== null &&
       stageCompany
     ) {
-      const stageRP = pickReportingPeriodForYear(stageCompany.reportingPeriods, selectedYear);
+      const stageRP = findReportingPeriodForShell(
+        stageCompany.reportingPeriods,
+        selectedDataYear,
+        selectedReportYear ?? null,
+        row.shellKey ?? "",
+      );
       for (const otherDP of sameScopeDataPoints) {
-        const otherStageValue = getDataPointValue(stageRP?.emissions, otherDP.id);
+        const otherStageValue = getDataPointValue(
+          stageRP?.emissions,
+          otherDP.id,
+        );
         if (
           otherStageValue !== null &&
           Math.abs(row.prodValue - otherStageValue) <= 0.5
         ) {
-          row.discrepancy = 'category-error';
+          row.discrepancy = "category-error";
           row.matchedDataPoint = otherDP.label;
           if (GENERIC_DATA_POINTS.has(otherDP.id)) {
-            row.categoryErrorKind = 'conservative';
+            row.categoryErrorKind = "conservative";
           } else if (GENERIC_DATA_POINTS.has(selectedDataPoint)) {
-            row.categoryErrorKind = 'overcategorized';
+            row.categoryErrorKind = "overcategorized";
           } else {
-            row.categoryErrorKind = 'mix-up';
+            row.categoryErrorKind = "mix-up";
           }
           break;
         }

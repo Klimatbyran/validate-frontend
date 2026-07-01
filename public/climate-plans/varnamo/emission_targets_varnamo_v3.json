@@ -67,9 +67,7 @@
         "commitment_strength_other": "",
         "goal_type": "implementation",
         "ghg_scopes_explicit": [],
-        "ghg_scopes_implicit": [
-          "3"
-        ]
+        "ghg_scopes_implicit": ["3"]
       }
     ],
     "external_references": [
@@ -142,9 +140,7 @@
       "sectoral_targets_consistent": "not_applicable",
       "sectoral_consistency_notes": "",
       "ghg_scopes_explicit": [],
-      "ghg_scopes_implicit": [
-        "3"
-      ],
+      "ghg_scopes_implicit": ["3"],
       "ghg_scope_notes": "No mention of GHG Protocol scopes but some targets imply scope 3 coverage",
       "overall_assessment": "The plan outlines several implementation measures but lacks quantified emission reduction targets. It references Swedish national goals but does not commit to specific municipal targets."
     }

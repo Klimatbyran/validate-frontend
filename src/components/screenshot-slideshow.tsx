@@ -47,12 +47,12 @@ export const ScreenshotSlideshow: React.FC<ScreenshotSlideshowProps> = ({
         setError(null);
 
         const response = await fetch(
-          `/api/screenshots/screenshots?url=${encodeURIComponent(pdfUrl)}`
+          `/api/screenshots/screenshots?url=${encodeURIComponent(pdfUrl)}`,
         );
 
         if (!response.ok) {
           throw new Error(
-            `Failed to fetch screenshots: ${response.status} ${response.statusText}`
+            `Failed to fetch screenshots: ${response.status} ${response.statusText}`,
           );
         }
 
@@ -60,7 +60,7 @@ export const ScreenshotSlideshow: React.FC<ScreenshotSlideshowProps> = ({
 
         if (!data.screenshots || !Array.isArray(data.screenshots)) {
           throw new Error(
-            "Invalid response format: screenshots array not found"
+            "Invalid response format: screenshots array not found",
           );
         }
 
@@ -73,7 +73,7 @@ export const ScreenshotSlideshow: React.FC<ScreenshotSlideshowProps> = ({
       } catch (err) {
         console.error("Error fetching screenshots:", err);
         setError(
-          err instanceof Error ? err.message : "Failed to load screenshots"
+          err instanceof Error ? err.message : "Failed to load screenshots",
         );
       } finally {
         setIsLoading(false);
@@ -92,11 +92,11 @@ export const ScreenshotSlideshow: React.FC<ScreenshotSlideshowProps> = ({
   const handleFullscreen = () =>
     window.open(
       `/slideshow?pdfUrl=${encodeURIComponent(pdfUrl)}&index=${current}`,
-      "_blank"
+      "_blank",
     );
 
   const handleImageError = (
-    e: React.SyntheticEvent<HTMLImageElement, Event>
+    e: React.SyntheticEvent<HTMLImageElement, Event>,
   ) => {
     console.error("Image failed to load:", images[current], e);
   };
