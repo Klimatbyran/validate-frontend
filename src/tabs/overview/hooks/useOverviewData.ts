@@ -30,8 +30,7 @@ function overviewRowsForView(
 ): OverviewRow[] {
   if (viewMode === "registryReports") {
     return rows.filter(
-      (row) =>
-        row.viewMode === "registryReports" && row.registryEntry != null,
+      (row) => row.viewMode === "registryReports" && row.registryEntry != null,
     );
   }
   return rows.filter((row) => row.viewMode === "companyYears");
