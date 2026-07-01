@@ -87,7 +87,10 @@ export function UrlListItem({ url, onRemove }: UrlListItemProps) {
   );
 }
 
-export function SubmittedFileListItem({ url, onRemove }: SubmittedFileListItemProps) {
+export function SubmittedFileListItem({
+  url,
+  onRemove,
+}: SubmittedFileListItemProps) {
   const { t } = useI18n();
   const name = url?.url?.startsWith(UPLOADED_PREFIX)
     ? url.url.slice(UPLOADED_PREFIX.length)
