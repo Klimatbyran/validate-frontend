@@ -62,7 +62,8 @@ export function UploadTab() {
     error: tagsError,
   } = useTagOptions();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [removeConfirm, setRemoveConfirm] = useState<RemoveConfirmTarget | null>(null);
+  const [removeConfirm, setRemoveConfirm] =
+    useState<RemoveConfirmTarget | null>(null);
 
   // Upload is the main entrypoint and performs write operations; require auth here.
   useEffect(() => {
@@ -375,37 +376,35 @@ export function UploadTab() {
     [],
   );
 
-  if (authLoading || !isAuthenticated) {
-    return (
-      <div className="flex justify-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
-        <LoadingSpinner label={t("auth.loginRequired")} />
-      </div>
-    );
-  }
+  const handleRemoveUploadedFile = useCallback(
+    (id: string) => {
+      const file = uploadedFiles.find((item) => item.id === id);
+      if (!file) return;
+      setRemoveConfirm({
+        id,
+        name: file.file.name,
+        source: "uploaded",
+      });
+    },
+    [uploadedFiles],
+  );
 
-  const handleRemoveUploadedFile = useCallback((id: string) => {
-    const file = uploadedFiles.find((item) => item.id === id);
-    if (!file) return;
-    setRemoveConfirm({
-      id,
-      name: file.file.name,
-      source: "uploaded",
-    });
-  }, [uploadedFiles]);
-
-  const handleRemoveProcessedItem = useCallback((id: string) => {
-    const item = processedUrls.find((entry) => entry.id === id);
-    if (!item) return;
-    const name = item.url.startsWith(UPLOADED_PREFIX)
-      ? item.url.slice(UPLOADED_PREFIX.length)
-      : item.url;
-    setRemoveConfirm({
-      id,
-      name,
-      source: "processed",
-      submitted: item.url.startsWith(UPLOADED_PREFIX),
-    });
-  }, [processedUrls]);
+  const handleRemoveProcessedItem = useCallback(
+    (id: string) => {
+      const item = processedUrls.find((entry) => entry.id === id);
+      if (!item) return;
+      const name = item.url.startsWith(UPLOADED_PREFIX)
+        ? item.url.slice(UPLOADED_PREFIX.length)
+        : item.url;
+      setRemoveConfirm({
+        id,
+        name,
+        source: "processed",
+        submitted: item.url.startsWith(UPLOADED_PREFIX),
+      });
+    },
+    [processedUrls],
+  );
 
   const closeRemoveConfirm = useCallback(() => {
     setRemoveConfirm(null);
@@ -415,9 +414,13 @@ export function UploadTab() {
     if (!removeConfirm) return;
 
     if (removeConfirm.source === "uploaded") {
-      setUploadedFiles((prev) => prev.filter((file) => file.id !== removeConfirm.id));
+      setUploadedFiles((prev) =>
+        prev.filter((file) => file.id !== removeConfirm.id),
+      );
     } else {
-      setProcessedUrls((prev) => prev.filter((item) => item.id !== removeConfirm.id));
+      setProcessedUrls((prev) =>
+        prev.filter((item) => item.id !== removeConfirm.id),
+      );
     }
     closeRemoveConfirm();
   }, [removeConfirm, closeRemoveConfirm]);
@@ -429,6 +432,14 @@ export function UploadTab() {
         ? t("upload.confirmRemoveSubmittedFile", { name: removeConfirm.name })
         : t("upload.confirmRemoveLink", { name: removeConfirm.name })
     : "";
+
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="flex justify-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
+        <LoadingSpinner label={t("auth.loginRequired")} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
