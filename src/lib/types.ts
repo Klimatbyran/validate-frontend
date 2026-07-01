@@ -192,6 +192,7 @@ export interface QueueStatsState {
 export type SwimlaneStatusType =
   | "completed"
   | "needs_approval"
+  | "wikidata_unverified"
   | "processing"
   | "waiting"
   | "failed";

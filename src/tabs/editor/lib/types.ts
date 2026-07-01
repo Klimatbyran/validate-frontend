@@ -40,6 +40,7 @@ export interface GarboCompanyListItem {
   reportingPeriods?: GarboReportingPeriodSummary[];
   hasUnverifiedEmissions?: boolean;
   hasUnverifiedData?: boolean;
+  identifiers?: GarboCompanyIdentifier[];
 }
 
 export interface GarboRegistryReportSummary {
@@ -98,6 +99,21 @@ export type ReportingPeriodWritePayload = {
 export interface GarboMinimalMetadata {
   user?: { name?: string | null } | null;
   verifiedBy?: { name: string } | null;
+  source?: string | null;
+  comment?: string | null;
+}
+
+export type GarboCompanyIdentifierType =
+  | "WIKIDATA"
+  | "LEI"
+  | "ORG_NUMBER"
+  | "ISIN";
+
+export interface GarboCompanyIdentifier {
+  id: string;
+  type: GarboCompanyIdentifierType;
+  value: string;
+  metadata?: GarboMinimalMetadata | null;
 }
 
 export interface GarboFieldMetadata extends GarboMinimalMetadata {
@@ -161,6 +177,7 @@ export interface GarboCompanyDetail extends GarboCompanyListItem {
   logoUrl?: string | null;
   lei?: string | null;
   internalComment?: string | null;
+  identifiers?: GarboCompanyIdentifier[];
   descriptions?: Array<{ id?: string; language: string; text: string }>;
   industry?: { subIndustryCode?: string } | null;
   baseYear?: number | null;

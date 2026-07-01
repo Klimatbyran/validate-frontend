@@ -8,7 +8,7 @@ import {
   type GarboRegistryReportSummary,
   type ReportingPeriodWritePayload,
 } from "./types";
-import { parseGarboCompanyDetail } from "./companies-schemas";
+import { parseGarboCompanyDetail, garboCompanyIdSchema } from "./companies-schemas";
 import { apiUrl } from "./api-utils";
 
 function normalizeReportingPeriodUrls(
@@ -167,7 +167,7 @@ async function fetchPipelineCompanyByRef(
 }
 
 /**
- * Pipeline GET /:ref only accepts Wikidata IDs; other refs resolve via list lookup.
+ * Pipeline GET /:ref accepts Wikidata IDs and internal company UUIDs (Phase 3+).
  */
 export async function getCompany(
   identifier: string,
@@ -178,6 +178,19 @@ export async function getCompany(
     return fetchPipelineCompanyByRef(ref, signal);
   }
 
+  if (garboCompanyIdSchema.safeParse(ref).success) {
+    try {
+      return await fetchPipelineCompanyByRef(ref, signal);
+    } catch (error) {
+      if (
+        !(error instanceof Error) ||
+        !error.message.includes("not found")
+      ) {
+        throw error;
+      }
+    }
+  }
+
   const companies = await listCompanies(signal);
   const match = companies.find((company) =>
     companyMatchesEditorRef(company, ref),
@@ -186,11 +199,11 @@ export async function getCompany(
     throw new Error("Company not found.");
   }
 
-  if (match.wikidataId) {
-    return fetchPipelineCompanyByRef(match.wikidataId, signal);
+  try {
+    return await fetchPipelineCompanyByRef(match.id, signal);
+  } catch {
+    return match as GarboCompanyDetail;
   }
-
-  return match as GarboCompanyDetail;
 }
 
 export async function createCompany(body: {
@@ -302,9 +315,9 @@ export async function updateReportingPeriods(
   }
 }
 
-export async function deleteCompany(wikidataId: string): Promise<void> {
+export async function deleteCompany(companyId: string): Promise<void> {
   const res = await garboAuthFetch(
-    apiUrl(companiesPath(encodeURIComponent(wikidataId))),
+    apiUrl(companiesPath(encodeURIComponent(companyId))),
     {
       method: "DELETE",
       headers: { Accept: "application/json" },
