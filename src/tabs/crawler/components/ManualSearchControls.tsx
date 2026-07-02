@@ -7,6 +7,8 @@ interface ManualSearchControlsProps {
   onReportYearChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onCountryChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSearch: () => void;
+  onAutoSearch?: () => void;
+  isAutoSearchRunning?: boolean;
   onExport: () => void;
   handleAddToRegistryClick?: () => void;
   onRunSelectedReports?: () => void;
@@ -19,6 +21,8 @@ const ManualSearchControls = ({
   onReportYearChange,
   onCountryChange,
   onSearch,
+  onAutoSearch,
+  isAutoSearchRunning,
   onExport,
   isSearchDisabled,
   selectedReports,
@@ -55,12 +59,17 @@ const ManualSearchControls = ({
         </div>
         <ControlsBase
           onSearch={onSearch}
+          onAutoSearch={onAutoSearch}
+          isAutoSearchRunning={isAutoSearchRunning}
           onExport={onExport}
           isSearchDisabled={isSearchDisabled}
           selectedReports={selectedReports}
           handleAddToRegistryClick={handleAddToRegistryClick}
           onRunSelectedReports={onRunSelectedReports}
         />
+        <p className="text-xs text-gray-02 max-w-[750px]">
+          {t("crawler.autoSearchDisclaimer")}
+        </p>
       </div>
     </>
   );

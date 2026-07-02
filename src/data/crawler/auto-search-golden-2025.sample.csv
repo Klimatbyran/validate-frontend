@@ -1,0 +1,4 @@
+companyName,reportYear,country,expectedWebsite,notes
+Acrinova,2025,sweden,acrinova.se,Homonym: acrinova.com is unrelated US site
+Academedia,2025,sweden,academedia.se,JS-heavy IR page; MFN CDN PDFs
+ASSA ABLOY,2025,sweden,assaabloy.com,Group IR hub with year pages

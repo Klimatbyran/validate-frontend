@@ -1,10 +1,12 @@
 import { Button } from "@/ui/button";
-import { BookDownIcon, PlayCircle, WandIcon, Heart } from "lucide-react";
+import { BookDownIcon, PlayCircle, WandIcon, Heart, Sparkles } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { SelectedReport } from "../lib/crawler-types";
 
 interface ControlsBaseProps {
   onSearch: () => void;
+  onAutoSearch?: () => void;
+  isAutoSearchRunning?: boolean;
   onExport: () => void;
   handleAddToRegistryClick?: () => void;
   onRunSelectedReports?: () => void;
@@ -14,6 +16,8 @@ interface ControlsBaseProps {
 
 const ControlsBase = ({
   onSearch,
+  onAutoSearch,
+  isAutoSearchRunning = false,
   onExport,
   isSearchDisabled,
   selectedReports,
@@ -23,10 +27,21 @@ const ControlsBase = ({
   const { t } = useI18n();
   return (
     <div className="w-full flex justify-between">
-      <Button size={"sm"} onClick={onSearch} disabled={isSearchDisabled}>
-        {t("crawler.search")}
-        <WandIcon className="w-4 h-4 ml-4" />
-      </Button>
+      <div className="flex flex-wrap gap-3">
+        <Button size={"sm"} onClick={onSearch} disabled={isSearchDisabled}>
+          {t("crawler.search")}
+          <WandIcon className="w-4 h-4 ml-4" />
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => onAutoSearch?.()}
+          disabled={isSearchDisabled || isAutoSearchRunning || !onAutoSearch}
+        >
+          {t("crawler.autoSearch")}
+          <Sparkles className="w-4 h-4 ml-2" />
+        </Button>
+      </div>
       <div className="flex flex-wrap gap-3 justify-end">
         <Button
           size="sm"
