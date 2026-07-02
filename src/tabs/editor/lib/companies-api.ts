@@ -140,10 +140,10 @@ function companyMatchesEditorRef(
   return idPrefix.toLowerCase() === ref.toLowerCase();
 }
 
-async function fetchPipelineCompanyByRef(
+async function fetchPipelineCompanyByRefIfExists(
   pipelineRef: string,
   signal?: AbortSignal,
-): Promise<GarboCompanyDetail> {
+): Promise<GarboCompanyDetail | null> {
   const res = await garboAuthFetch(
     apiUrl(pipelineCompaniesPath(encodeURIComponent(pipelineRef))),
     {
@@ -156,7 +156,7 @@ async function fetchPipelineCompanyByRef(
     throw new Error("Please log in to view company.");
   }
   if (res.status === 404) {
-    throw new Error("Company not found.");
+    return null;
   }
   if (!res.ok) {
     const text = await res.text();
@@ -164,6 +164,17 @@ async function fetchPipelineCompanyByRef(
   }
   const data = parseGarboCompanyDetail(await res.json());
   return normalizeCompany(data as GarboCompanyDetail);
+}
+
+async function fetchPipelineCompanyByRef(
+  pipelineRef: string,
+  signal?: AbortSignal,
+): Promise<GarboCompanyDetail> {
+  const company = await fetchPipelineCompanyByRefIfExists(pipelineRef, signal);
+  if (!company) {
+    throw new Error("Company not found.");
+  }
+  return company;
 }
 
 /**
@@ -179,16 +190,8 @@ export async function getCompany(
   }
 
   if (garboCompanyIdSchema.safeParse(ref).success) {
-    try {
-      return await fetchPipelineCompanyByRef(ref, signal);
-    } catch (error) {
-      if (
-        !(error instanceof Error) ||
-        !error.message.includes("not found")
-      ) {
-        throw error;
-      }
-    }
+    const byId = await fetchPipelineCompanyByRefIfExists(ref, signal);
+    if (byId) return byId;
   }
 
   const companies = await listCompanies(signal);
@@ -199,11 +202,8 @@ export async function getCompany(
     throw new Error("Company not found.");
   }
 
-  try {
-    return await fetchPipelineCompanyByRef(match.id, signal);
-  } catch {
-    return match as GarboCompanyDetail;
-  }
+  const byMatchId = await fetchPipelineCompanyByRefIfExists(match.id, signal);
+  return byMatchId ?? (match as GarboCompanyDetail);
 }
 
 export async function createCompany(body: {

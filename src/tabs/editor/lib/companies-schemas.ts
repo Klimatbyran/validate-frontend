@@ -27,7 +27,10 @@ export const garboCompanyIdentifierSchema = z.object({
 export const garboCompanyListItemSchema = z
   .object({
     id: garboCompanyIdSchema,
-    wikidataId: z.string().regex(WIKIDATA_ID_REGEX).nullable().optional(),
+    wikidataId: z
+      .union([z.string().regex(WIKIDATA_ID_REGEX), z.literal(""), z.null()])
+      .optional()
+      .transform((value) => (value === "" ? null : value)),
     name: z.string(),
     tags: z.array(z.string()).optional(),
     baseYear: z.unknown().optional(),

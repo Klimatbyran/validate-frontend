@@ -74,22 +74,35 @@ export function getScope3Data(processedData: any, returnValueData: any): any {
   return null;
 }
 
+export interface WikidataApprovalWikidata {
+  node: string;
+  url: string;
+  label: string;
+  description?: string;
+}
+
+export interface WikidataApprovalData {
+  status: "approved" | "pending_approval" | "approved_unverified";
+  wikidata: WikidataApprovalWikidata;
+  message?: string;
+  metadata?: {
+    source?: string;
+    comment?: string;
+  };
+  autoApproved?: boolean;
+  verifiedByUserId?: string;
+}
+
+function approvalSummary(approval: Record<string, unknown>): string | undefined {
+  return typeof approval.summary === "string" && approval.summary.trim()
+    ? approval.summary
+    : undefined;
+}
+
 function wikidataApprovalFromApprovalObject(
   approval: Record<string, unknown>,
   jobData?: Record<string, unknown>,
-): {
-  status: "approved" | "pending_approval" | "approved_unverified";
-  wikidata: {
-    node: string;
-    url: string;
-    label: string;
-    description?: string;
-  };
-  message?: string;
-  metadata?: Record<string, unknown>;
-  autoApproved?: boolean;
-  verifiedByUserId?: string;
-} | null {
+): WikidataApprovalData | null {
   const wikidata = (approval.data as any)?.newValue?.wikidata;
   if (!wikidata || typeof wikidata !== "object" || !wikidata.node) {
     return null;
@@ -100,15 +113,14 @@ function wikidataApprovalFromApprovalObject(
     typeof approval.verifiedByUserId === "string"
       ? approval.verifiedByUserId
       : undefined;
+  const metadata = (approval.metadata as WikidataApprovalData["metadata"]) || {};
 
   if (approval.approved === false) {
     return {
       status: "pending_approval",
       wikidata,
-      message:
-        (typeof approval.summary === "string" && approval.summary) ||
-        "Waiting for approval",
-      metadata: (approval.metadata as Record<string, unknown>) || {},
+      message: approvalSummary(approval),
+      metadata,
       autoApproved,
       verifiedByUserId,
     };
@@ -120,12 +132,8 @@ function wikidataApprovalFromApprovalObject(
     return {
       status,
       wikidata,
-      message:
-        (typeof approval.summary === "string" && approval.summary) ||
-        (status === "approved_unverified"
-          ? "Auto-approved (identifier unverified)"
-          : "Approved"),
-      metadata: (approval.metadata as Record<string, unknown>) || {},
+      message: approvalSummary(approval),
+      metadata,
       autoApproved,
       verifiedByUserId,
     };
@@ -137,7 +145,7 @@ function wikidataApprovalFromApprovalObject(
 export function getWikidataApprovalData(
   job?: QueueJob,
   effectiveJob?: any,
-): ReturnType<typeof wikidataApprovalFromApprovalObject> {
+): WikidataApprovalData | null {
   const jobData = effectiveJob?.data || job?.data;
   const approval = jobData?.approval;
 

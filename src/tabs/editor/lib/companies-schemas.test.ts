@@ -40,4 +40,14 @@ describe("parseGarboCompanyDetail", () => {
     expect(parsed.wikidataId).toBe("Q999");
     expect(parsed.identifiers).toBeUndefined();
   });
+
+  it("parses company with empty wikidataId as null", () => {
+    const parsed = parseGarboCompanyDetail({
+      id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+      name: "Example AB",
+      wikidataId: "",
+    });
+
+    expect(parsed.wikidataId).toBeNull();
+  });
 });

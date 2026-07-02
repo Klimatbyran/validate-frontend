@@ -24,11 +24,3 @@ export function leiFromIdentifiers(company: GarboCompanyDetail): string | null {
   const row = identifierByType(company, "LEI");
   return row?.value?.trim() || company.lei?.trim() || null;
 }
-
-/** Prefer internal id for editor URLs; fall back to wikidata when present. */
-export function editorCompanyRef(company: {
-  id: string;
-  wikidataId?: string | null;
-}): string {
-  return company.id?.trim() || company.wikidataId?.trim() || "";
-}

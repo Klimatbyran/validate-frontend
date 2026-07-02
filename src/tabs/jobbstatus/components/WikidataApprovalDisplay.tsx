@@ -4,25 +4,7 @@ import { Callout } from "@/ui/callout";
 import { useI18n } from "@/contexts/I18nContext";
 import { Check, ExternalLink, AlertCircle, RotateCcw, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface WikidataData {
-  node: string;
-  url: string;
-  label: string;
-  description?: string;
-}
-
-interface WikidataApprovalData {
-  status: "approved" | "pending_approval" | "approved_unverified";
-  wikidata: WikidataData;
-  message?: string;
-  metadata?: {
-    source?: string;
-    comment?: string;
-  };
-  autoApproved?: boolean;
-  verifiedByUserId?: string;
-}
+import type { WikidataApprovalData } from "../lib/job-specific-data-parsing";
 
 interface WikidataApprovalDisplayProps {
   data: WikidataApprovalData;
@@ -106,15 +88,11 @@ export function WikidataApprovalDisplay({
       </div>
 
       {/* Message */}
-      {data.message && (
-        <Callout
-          variant={
-            isApproved ? "success" : isApprovedUnverified ? "warning" : "warning"
-          }
-        >
+      {data.message ? (
+        <Callout variant={isApproved ? "success" : "warning"}>
           {data.message}
         </Callout>
-      )}
+      ) : null}
 
       {/* Wikidata Information */}
       <div className="bg-gray-03/20 rounded-lg p-4 space-y-3">
