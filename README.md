@@ -97,6 +97,8 @@ In **staging/production**, nginx proxies `/unearth-api/` → `UNEARTH_API_URL` a
 
 For path names, env vars, and Jobbstatus live vs archive, see [API and proxy setup](./docs/API_AND_PROXY_SETUP.md).
 
+For step-by-step local setup (restored DB, which services to start, troubleshooting), see [Local development runbook](./docs/LOCAL_DEV_RUNBOOK.md).
+
 ### Company editor routing
 
 The company editor uses **full internal UUID** in paths (`/editor/company/:id`). Staff API mutations also take `company.id` in path segments. Partner/integration **read** endpoints still accept Wikidata ID, full UUID, or 8-char prefix (legacy `/editor/company/Q123` bookmarks keep working).
