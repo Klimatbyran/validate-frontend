@@ -2,6 +2,8 @@
 
 How Validate talks to **Pipeline API**, **Unearth API**, and **Garbo API** in development and production.
 
+**Step-by-step local setup:** [Local development runbook](./LOCAL_DEV_RUNBOOK.md)
+
 ## Overview
 
 | Backend          | Host (stage)                         | Browser path (deployed)           |
