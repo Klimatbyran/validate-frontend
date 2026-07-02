@@ -3,6 +3,7 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { Callout } from "@/ui/callout";
+import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import {
   useCoverageLists,
@@ -18,13 +19,22 @@ type DialogState =
   | { kind: "addYear"; listId: string }
   | { kind: "editYear"; listId: string; year: number; namesText: string };
 
+type DeleteConfirmState =
+  | { kind: "closed" }
+  | { kind: "year"; listId: string; listName: string; year: number }
+  | { kind: "list"; listId: string; listName: string };
+
 export function CoverageView() {
   const { t } = useI18n();
   const coverage = useCoverageLists();
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [dialog, setDialog] = useState<DialogState>({ kind: "closed" });
+  const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({
+    kind: "closed",
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const selectedList = useMemo(
     () => coverage.lists.find((list) => list.id === selectedListId) ?? null,
@@ -56,6 +66,27 @@ export function CoverageView() {
       setSelectedYear(input.year);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteConfirm.kind === "closed") return;
+    setIsDeleting(true);
+    try {
+      if (deleteConfirm.kind === "year") {
+        await coverage.deleteYear(deleteConfirm.listId, deleteConfirm.year);
+        const remaining =
+          selectedList?.years.filter((y) => y.year !== deleteConfirm.year) ??
+          [];
+        setSelectedYear(remaining[0]?.year ?? null);
+      } else {
+        await coverage.deleteList(deleteConfirm.listId);
+        setSelectedListId(null);
+        setSelectedYear(null);
+      }
+      setDeleteConfirm({ kind: "closed" });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -160,14 +191,12 @@ export function CoverageView() {
                   variant="danger"
                   size="sm"
                   onClick={() =>
-                    void coverage
-                      .deleteYear(selectedList.id, selectedYear)
-                      .then(() => {
-                        const remaining = selectedList.years.filter(
-                          (y) => y.year !== selectedYear,
-                        );
-                        setSelectedYear(remaining[0]?.year ?? null);
-                      })
+                    setDeleteConfirm({
+                      kind: "year",
+                      listId: selectedList.id,
+                      listName: selectedList.name,
+                      year: selectedYear,
+                    })
                   }
                 >
                   {t("overview.coverage.deleteYear")}
@@ -177,9 +206,10 @@ export function CoverageView() {
                 variant="danger"
                 size="sm"
                 onClick={() =>
-                  void coverage.deleteList(selectedList.id).then(() => {
-                    setSelectedListId(null);
-                    setSelectedYear(null);
+                  setDeleteConfirm({
+                    kind: "list",
+                    listId: selectedList.id,
+                    listName: selectedList.name,
                   })
                 }
               >
@@ -274,6 +304,39 @@ export function CoverageView() {
           }
           await handleAddOrEditYear(input);
         }}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirm.kind !== "closed"}
+        onOpenChange={(open) => {
+          if (!open) setDeleteConfirm({ kind: "closed" });
+        }}
+        title={
+          deleteConfirm.kind === "year"
+            ? t("overview.coverage.confirmDeleteYearTitle")
+            : t("overview.coverage.confirmDeleteListTitle")
+        }
+        description={
+          deleteConfirm.kind === "year"
+            ? t("overview.coverage.confirmDeleteYear", {
+                year: deleteConfirm.year,
+                name: deleteConfirm.listName,
+              })
+            : deleteConfirm.kind === "list"
+              ? t("overview.coverage.confirmDeleteList", {
+                  name: deleteConfirm.listName,
+                })
+              : ""
+        }
+        cancelLabel={t("common.cancel")}
+        confirmLabel={
+          deleteConfirm.kind === "year"
+            ? t("overview.coverage.deleteYear")
+            : t("overview.coverage.deleteList")
+        }
+        confirmVariant="danger"
+        onConfirm={handleConfirmDelete}
+        isLoading={isDeleting}
       />
     </div>
   );

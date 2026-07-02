@@ -1,6 +1,12 @@
 import { getUnearthApiBaseUrl } from "@/config/api-env";
 import { garboAuthFetch, throwIfAuthError } from "@/lib/garbo-auth-fetch";
-import type { CoverageListSummary, CoverageYearDetail } from "./coverage-types";
+import {
+  coverageListCollectionSchema,
+  coverageListSummarySchema,
+  coverageYearDetailSchema,
+  type CoverageListSummary,
+  type CoverageYearDetail,
+} from "./coverage-types";
 
 function coverageUrl(path: string): string {
   const base = getUnearthApiBaseUrl();
@@ -11,9 +17,13 @@ function coverageUrl(path: string): string {
   );
 }
 
-async function parseJson<T>(response: Response, url: string): Promise<T> {
+async function parseJson<T>(
+  response: Response,
+  url: string,
+  parse: (data: unknown) => T,
+): Promise<T> {
   if (response.ok) {
-    return response.json() as Promise<T>;
+    return parse(await response.json());
   }
   throwIfAuthError(response.status);
   const body = await response.text().catch(() => "");
@@ -27,7 +37,9 @@ export async function fetchCoverageLists(): Promise<{
 }> {
   const url = coverageUrl("");
   const response = await garboAuthFetch(url, { cache: "no-store" });
-  return parseJson(response, url);
+  return parseJson(response, url, (data) =>
+    coverageListCollectionSchema.parse(data),
+  );
 }
 
 export async function fetchCoverageList(
@@ -35,7 +47,9 @@ export async function fetchCoverageList(
 ): Promise<CoverageListSummary> {
   const url = coverageUrl(listId);
   const response = await garboAuthFetch(url, { cache: "no-store" });
-  return parseJson(response, url);
+  return parseJson(response, url, (data) =>
+    coverageListSummarySchema.parse(data),
+  );
 }
 
 export async function fetchCoverageYearDetail(
@@ -44,7 +58,9 @@ export async function fetchCoverageYearDetail(
 ): Promise<CoverageYearDetail> {
   const url = coverageUrl(`${listId}/years/${year}`);
   const response = await garboAuthFetch(url, { cache: "no-store" });
-  return parseJson(response, url);
+  return parseJson(response, url, (data) =>
+    coverageYearDetailSchema.parse(data),
+  );
 }
 
 export async function createCoverageList(input: {
@@ -58,7 +74,9 @@ export async function createCoverageList(input: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  return parseJson(response, url);
+  return parseJson(response, url, (data) =>
+    coverageListSummarySchema.parse(data),
+  );
 }
 
 export async function addCoverageListYear(
@@ -71,7 +89,9 @@ export async function addCoverageListYear(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  return parseJson(response, url);
+  return parseJson(response, url, (data) =>
+    coverageListSummarySchema.parse(data),
+  );
 }
 
 export async function renameCoverageList(
@@ -84,7 +104,9 @@ export async function renameCoverageList(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
   });
-  return parseJson(response, url);
+  return parseJson(response, url, (data) =>
+    coverageListSummarySchema.parse(data),
+  );
 }
 
 export async function replaceCoverageYearNames(
@@ -98,7 +120,9 @@ export async function replaceCoverageYearNames(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ names }),
   });
-  return parseJson(response, url);
+  return parseJson(response, url, (data) =>
+    coverageListSummarySchema.parse(data),
+  );
 }
 
 export async function deleteCoverageList(listId: string): Promise<void> {

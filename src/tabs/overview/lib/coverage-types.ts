@@ -1,36 +1,55 @@
-export type CoverageMatchedCompany = {
-  wikidataId: string;
-  name: string;
-};
+import { z } from "zod";
 
-export type CoverageYearSummary = {
-  year: number;
-  totalNames: number;
-  matchedCount: number;
-  ambiguousCount: number;
-  coveragePercent: number;
-};
+export const coverageMatchedCompanySchema = z.object({
+  wikidataId: z.string(),
+  name: z.string(),
+});
 
-export type CoverageListSummary = {
-  id: string;
-  name: string;
-  updatedAt: string;
-  years: CoverageYearSummary[];
-};
+export const coverageYearSummarySchema = z.object({
+  year: z.number(),
+  totalNames: z.number(),
+  matchedCount: z.number(),
+  ambiguousCount: z.number(),
+  coveragePercent: z.number(),
+});
 
-export type CoverageEntryStatus = "matched" | "missing" | "ambiguous";
+export const coverageListSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  updatedAt: z.string(),
+  years: z.array(coverageYearSummarySchema),
+});
 
-export type CoverageEntry = {
-  id: string;
-  name: string;
-  status: CoverageEntryStatus;
-  matchedCompany?: CoverageMatchedCompany;
-};
+export const coverageEntryStatusSchema = z.enum([
+  "matched",
+  "missing",
+  "ambiguous",
+]);
 
-export type CoverageYearDetail = CoverageYearSummary & {
-  listId: string;
-  listName: string;
-  entries: CoverageEntry[];
-};
+export const coverageEntrySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: coverageEntryStatusSchema,
+  matchedCompany: coverageMatchedCompanySchema.optional(),
+});
+
+export const coverageYearDetailSchema = coverageYearSummarySchema.extend({
+  listId: z.string(),
+  listName: z.string(),
+  entries: z.array(coverageEntrySchema),
+});
+
+export const coverageListCollectionSchema = z.object({
+  lists: z.array(coverageListSummarySchema),
+});
+
+export type CoverageMatchedCompany = z.infer<
+  typeof coverageMatchedCompanySchema
+>;
+export type CoverageYearSummary = z.infer<typeof coverageYearSummarySchema>;
+export type CoverageListSummary = z.infer<typeof coverageListSummarySchema>;
+export type CoverageEntryStatus = z.infer<typeof coverageEntryStatusSchema>;
+export type CoverageEntry = z.infer<typeof coverageEntrySchema>;
+export type CoverageYearDetail = z.infer<typeof coverageYearDetailSchema>;
 
 export type CoverageEntryFilter = "all" | CoverageEntryStatus;
