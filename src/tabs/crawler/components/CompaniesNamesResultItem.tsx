@@ -6,7 +6,7 @@ import { useI18n } from "@/contexts/I18nContext";
 
 interface CompaniesNamesResultItemProps {
   isSelected: boolean;
-  onToggle: (companyName: string, wikidataId?: string) => void;
+  onToggle: (companyName: string, wikidataId?: string, url?: string) => void;
   companyDetails: CompanyDetails;
 }
 
@@ -15,7 +15,7 @@ const CompaniesNamesResultItem = ({
   isSelected,
   onToggle,
 }: CompaniesNamesResultItemProps) => {
-  const { id, wikidataId, name, reportingPeriods } = companyDetails;
+  const { id, wikidataId, name, url, reportingPeriods } = companyDetails;
   const { t } = useI18n();
 
   const latestReportYear =
@@ -42,7 +42,7 @@ const CompaniesNamesResultItem = ({
       </td>
       <td className="px-4 py-3 text-sm text-gray-02">{latestReportYear}</td>
       <td className="px-4 py-3 text-sm text-gray-02">
-        <button onClick={() => onToggle(name, wikidataId)}>
+        <button onClick={() => onToggle(name, wikidataId, url ?? undefined)}>
           <CheckCircle2
             className={`${isSelected ? "text-green-03" : "text-gray-02"} w-6 h-6`}
           />

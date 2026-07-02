@@ -14,6 +14,7 @@ import {
 interface CompanySelection {
   name: string;
   wikidataId?: string;
+  url?: string;
 }
 
 interface CompaniesNamesListProps {
@@ -59,11 +60,11 @@ const CompaniesNamesList = ({
   }, []);
 
   const handleToggleCompany = useCallback(
-    (companyName: string, wikidataId?: string) => {
+    (companyName: string, wikidataId?: string, url?: string) => {
       onSelectionChange((prev) =>
         prev.some((s) => s.name === companyName)
           ? prev.filter((s) => s.name !== companyName)
-          : [...prev, { name: companyName, wikidataId }],
+          : [...prev, { name: companyName, wikidataId, url }],
       );
     },
     [onSelectionChange],
@@ -118,7 +119,11 @@ const CompaniesNamesList = ({
       const toAdd =
         companiesListFiltered
           ?.filter((c) => !selectedCompanies.some((s) => s.name === c.name))
-          .map((c) => ({ name: c.name, wikidataId: c.wikidataId })) ?? [];
+          .map((c) => ({
+            name: c.name,
+            wikidataId: c.wikidataId,
+            url: c.url ?? undefined,
+          })) ?? [];
       onSelectionChange((prev) => [...prev, ...toAdd]);
     }
   };
