@@ -8,7 +8,7 @@ import {
   type GarboRegistryReportSummary,
   type ReportingPeriodWritePayload,
 } from "./types";
-import { parseGarboCompanyDetail } from "./companies-schemas";
+import { parseGarboCompanyDetail, garboCompanyIdSchema } from "./companies-schemas";
 import { apiUrl } from "./api-utils";
 
 function normalizeReportingPeriodUrls(
@@ -140,10 +140,10 @@ function companyMatchesEditorRef(
   return idPrefix.toLowerCase() === ref.toLowerCase();
 }
 
-async function fetchPipelineCompanyByRef(
+async function fetchPipelineCompanyByRefIfExists(
   pipelineRef: string,
   signal?: AbortSignal,
-): Promise<GarboCompanyDetail> {
+): Promise<GarboCompanyDetail | null> {
   const res = await garboAuthFetch(
     apiUrl(pipelineCompaniesPath(encodeURIComponent(pipelineRef))),
     {
@@ -156,7 +156,7 @@ async function fetchPipelineCompanyByRef(
     throw new Error("Please log in to view company.");
   }
   if (res.status === 404) {
-    throw new Error("Company not found.");
+    return null;
   }
   if (!res.ok) {
     const text = await res.text();
@@ -166,8 +166,19 @@ async function fetchPipelineCompanyByRef(
   return normalizeCompany(data as GarboCompanyDetail);
 }
 
+async function fetchPipelineCompanyByRef(
+  pipelineRef: string,
+  signal?: AbortSignal,
+): Promise<GarboCompanyDetail> {
+  const company = await fetchPipelineCompanyByRefIfExists(pipelineRef, signal);
+  if (!company) {
+    throw new Error("Company not found.");
+  }
+  return company;
+}
+
 /**
- * Pipeline GET /:ref only accepts Wikidata IDs; other refs resolve via list lookup.
+ * Pipeline GET /:ref accepts Wikidata IDs and internal company UUIDs (Phase 3+).
  */
 export async function getCompany(
   identifier: string,
@@ -178,6 +189,11 @@ export async function getCompany(
     return fetchPipelineCompanyByRef(ref, signal);
   }
 
+  if (garboCompanyIdSchema.safeParse(ref).success) {
+    const byId = await fetchPipelineCompanyByRefIfExists(ref, signal);
+    if (byId) return byId;
+  }
+
   const companies = await listCompanies(signal);
   const match = companies.find((company) =>
     companyMatchesEditorRef(company, ref),
@@ -186,11 +202,8 @@ export async function getCompany(
     throw new Error("Company not found.");
   }
 
-  if (match.wikidataId) {
-    return fetchPipelineCompanyByRef(match.wikidataId, signal);
-  }
-
-  return match as GarboCompanyDetail;
+  const byMatchId = await fetchPipelineCompanyByRefIfExists(match.id, signal);
+  return byMatchId ?? (match as GarboCompanyDetail);
 }
 
 export async function createCompany(body: {
@@ -302,9 +315,9 @@ export async function updateReportingPeriods(
   }
 }
 
-export async function deleteCompany(wikidataId: string): Promise<void> {
+export async function deleteCompany(companyId: string): Promise<void> {
   const res = await garboAuthFetch(
-    apiUrl(companiesPath(encodeURIComponent(wikidataId))),
+    apiUrl(companiesPath(encodeURIComponent(companyId))),
     {
       method: "DELETE",
       headers: { Accept: "application/json" },
