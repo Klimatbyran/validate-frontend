@@ -2,6 +2,8 @@
 
 How Validate talks to **Pipeline API**, **Unearth API**, and **Garbo API** in development and production.
 
+**Step-by-step local setup:** [Local development runbook](./LOCAL_DEV_RUNBOOK.md)
+
 ## Overview
 
 | Backend          | Host (stage)                         | Browser path (deployed)           |
@@ -15,6 +17,8 @@ How Validate talks to **Pipeline API**, **Unearth API**, and **Garbo API** in de
 
 In **development**, Vite proxies same-origin paths (see network tab table below).
 
+**Local default ports:** Unearth API `3000`, Pipeline API `3001`, Garbo HTTP API `3002`. Override with `VITE_UNEARTH_LOCAL_URL` / `VITE_GARBO_LOCAL_URL` in `.env.development`.
+
 ---
 
 ## Network tab paths (dev)
@@ -24,10 +28,10 @@ In **development**, Vite proxies same-origin paths (see network tab table below)
 | `/pipeline-local`                | Pipeline API on this machine             |
 | `/pipeline-stage`                | Stage Pipeline API                       |
 | `/pipeline`                      | Prod Pipeline API                        |
-| `/unearth-local`                 | Local Unearth API (often localhost:3000) |
+| `/unearth-local`                 | Local Unearth API (`localhost:3000`)     |
 | `/unearth-stage`                 | Stage Unearth API                        |
 | `/unearth`                       | Prod Unearth API                         |
-| `/garbo-local/api/queue-archive` | Local Garbo API                          |
+| `/garbo-local/api/queue-archive` | Local Garbo API (`localhost:3002`)       |
 | `/garbo-stage/api/queue-archive` | Stage Garbo API                          |
 | `/garbo/api/queue-archive`       | Prod Garbo API                           |
 
@@ -48,7 +52,7 @@ Requires `X-API-Key` (injected by the Validate proxy). Both stage and prod **Une
 
 ### 2. Unearth API – auth, crawler, registry
 
-One Unearth API backend from `VITE_UNEARTH_TARGET` (legacy: `VITE_GARBO_TARGET`). Helpers: `getUnearthApiBaseUrl()`, `getUnearthTarget()`.
+One Unearth API backend from `VITE_UNEARTH_TARGET` (legacy: `VITE_GARBO_TARGET`). Queue archive from `VITE_GARBO_ARCHIVE_TARGET` or the same as Unearth if unset. Helpers: `getUnearthApiBaseUrl()`, `getUnearthTarget()`, `getGarboTarget()`.
 
 ### 3. Garbo API – queue archive
 
@@ -88,7 +92,9 @@ See `.env.development.example`.
 | Variable                         | Purpose                                                                                          |
 | -------------------------------- | ------------------------------------------------------------------------------------------------ |
 | `VITE_API_MODE`                  | Joint default for Pipeline API + Unearth/Garbo API                                               |
-| `VITE_UNEARTH_TARGET`            | Unearth API + Garbo API archive target (`local` \| `stage` \| `prod`)                            |
+| `VITE_UNEARTH_TARGET`            | Unearth API target (`local` \| `stage` \| `prod`)                            |
+| `VITE_GARBO_ARCHIVE_TARGET`      | Queue-archive only; defaults to Unearth target if unset                      |
+| `VITE_GARBO_TARGET`              | Legacy alias for `VITE_UNEARTH_TARGET` when `UNEARTH_TARGET` unset           |
 | `VITE_PIPELINE_TARGET`           | Pipeline API only                                                                                |
 | `VITE_UNEARTH_STAGE_URL`         | Override Unearth API stage host                                                                  |
 | `VITE_GARBO_STAGE_URL`           | Override Garbo API stage host                                                                    |

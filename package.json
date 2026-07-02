@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:local": "cross-env VITE_API_MODE=stage vite",
+    "dev:local-db": "cross-env VITE_UNEARTH_TARGET=local VITE_PIPELINE_TARGET=stage VITE_GARBO_ARCHIVE_TARGET=stage vite",
+    "dev:local-db-pipeline": "cross-env VITE_UNEARTH_TARGET=local VITE_PIPELINE_TARGET=local VITE_GARBO_ARCHIVE_TARGET=stage vite",
+    "dev:local-full": "cross-env VITE_API_MODE=local VITE_GARBO_ARCHIVE_TARGET=local vite",
     "build": "vite build",
     "lint": "eslint .",
     "test": "vitest run",
@@ -52,6 +56,7 @@
     "@vitejs/plugin-react": "^5.1.2",
     "@vitest/coverage-v8": "^4.1.8",
     "autoprefixer": "^10.4.18",
+    "cross-env": "^10.1.0",
     "eslint": "^9.9.1",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",

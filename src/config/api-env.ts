@@ -29,15 +29,25 @@ export function getPipelineTarget(): ApiTarget {
   return jointMode();
 }
 
+function parseApiTarget(value: string | undefined): ApiTarget | undefined {
+  if (value === "local" || value === "stage" || value === "prod") return value;
+  return undefined;
+}
+
 export function getUnearthTarget(): ApiTarget {
   const v =
-    (import.meta.env.VITE_UNEARTH_TARGET as string | undefined) ??
-    (import.meta.env.VITE_GARBO_TARGET as string | undefined);
-  if (v === "local" || v === "stage" || v === "prod") return v;
+    parseApiTarget(import.meta.env.VITE_UNEARTH_TARGET as string | undefined) ??
+    parseApiTarget(import.meta.env.VITE_GARBO_TARGET as string | undefined);
+  if (v) return v;
   return jointMode();
 }
 
+/** Queue-archive target; defaults to Unearth target unless `VITE_GARBO_ARCHIVE_TARGET` is set. */
 export function getGarboTarget(): ApiTarget {
+  const archiveTarget = parseApiTarget(
+    import.meta.env.VITE_GARBO_ARCHIVE_TARGET as string | undefined,
+  );
+  if (archiveTarget) return archiveTarget;
   return getUnearthTarget();
 }
 
