@@ -48,11 +48,18 @@ export function CoverageYearFormDialog({
         ? t("overview.coverage.addYearTitle")
         : t("overview.coverage.editYearTitle");
 
+  const trimmedListName = listName.trim();
+  const parsedYear = Number.parseInt(year, 10);
+  const isValidYear = Number.isFinite(parsedYear);
+  const canSubmit =
+    mode === "createList"
+      ? trimmedListName.length > 0 && isValidYear
+      : isValidYear;
+
   const handleSubmit = async () => {
-    const parsedYear = Number.parseInt(year, 10);
-    if (!Number.isFinite(parsedYear)) return;
+    if (!canSubmit) return;
     await onSubmit({
-      listName: mode === "createList" ? listName.trim() : undefined,
+      listName: mode === "createList" ? trimmedListName : undefined,
       year: parsedYear,
       names: namesFromTextarea(namesText),
     });
@@ -72,7 +79,10 @@ export function CoverageYearFormDialog({
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={() => void handleSubmit()} disabled={isSubmitting}>
+          <Button
+            onClick={() => void handleSubmit()}
+            disabled={!canSubmit || isSubmitting}
+          >
             {t("common.save")}
           </Button>
         </div>
