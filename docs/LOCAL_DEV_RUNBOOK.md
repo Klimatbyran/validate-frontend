@@ -6,6 +6,19 @@ For proxy paths and env vars, see [API and proxy setup](./API_AND_PROXY_SETUP.md
 
 **Local auth:** set `ALLOW_ANONYMOUS_CLIENT_API=true` in `API/.env` and you can skip API keys in Validate. You still need GitHub OAuth login for the company editor. Stage/prod targets and the Errors tab need keys — see [Authentication & API keys](#authentication--api-keys).
 
+### Dev scripts
+
+| Script | What runs locally | Backends needed |
+|--------|-------------------|-----------------|
+| `npm run dev` / `dev:local` | Validate only | None (stage Unearth, stage pipeline, stage archive) |
+| `npm run dev:local-db` | Validate + Unearth API | Unearth on :3000 |
+| `npm run dev:local-db-pipeline` | Validate + Unearth + Pipeline | Unearth :3000, pipeline-api :3001 |
+| `npm run dev:local-full` | Everything local | Unearth :3000, pipeline :3001, Garbo HTTP :3002 |
+
+Queue archive uses **stage** in `dev:local-db` and `dev:local-db-pipeline` (`VITE_GARBO_ARCHIVE_TARGET=stage`). Only `dev:local-full` points archive at local Garbo (:3002). Errors tab is always stage + prod regardless of script.
+
+Scripts use `cross-env` so the same commands work on macOS, Linux, and Windows (cmd/PowerShell).
+
 ---
 
 ## Quick answers
@@ -76,6 +89,8 @@ Validate proxies `/unearth-local` → `localhost:3000` and `/garbo-local` → `l
 - Docker (or Podman) for Postgres and Redis
 - GitHub OAuth app credentials (for staff login in Validate)
 - Optional: a `.dump` backup from the team (for realistic data)
+
+Dev scripts (`npm run dev:local-db`, etc.) work on **Windows, macOS, and Linux** via `cross-env`.
 
 ---
 
@@ -168,33 +183,29 @@ Docs: http://localhost:3000/reference
 ```bash
 cd validate
 cp .env.development.example .env.development
+npm run dev:local-db
 ```
 
-```env
-VITE_API_MODE=local
-```
-
-`npm run seed:client-api` is optional (see [Authentication & API keys](#authentication--api-keys)). The **Errors** tab is the one exception that still needs stage/prod API keys in Validate.
+Or set env manually: `VITE_UNEARTH_TARGET=local`, `VITE_PIPELINE_TARGET=stage`, `VITE_GARBO_ARCHIVE_TARGET=stage`.
 
 ```bash
 npm install
-npm run dev
 ```
 
 Open http://localhost:5173. On startup, the terminal should log:
 
 ```
 [vite] unearth target: local -> http://localhost:3000
-[vite] garbo (queue-archive) target: local -> http://localhost:3002
+[vite] garbo (queue-archive) target: stage -> https://stage-api.klimatkollen.se
 ```
 
 Log in via GitHub OAuth (redirect goes through Unearth API).
 
 ---
 
-### Optional: Garbo API (queue archive, BullMQ dashboard)
+### Optional: Garbo API (local archive or BullMQ dashboard)
 
-If you need the **Jobbstatus Archive** tab against local data, or the BullMQ dashboard:
+Only needed for `npm run dev:local-full`, or if you override `VITE_GARBO_ARCHIVE_TARGET=local`:
 
 ```bash
 cd garbo
@@ -286,28 +297,26 @@ npm run dev-board   # Garbo API + queue admin on :3002
 
 ### 5. Validate targets
 
-```env
-VITE_API_MODE=local
-VITE_PIPELINE_TARGET=local
+```bash
+npm run dev:local-db-pipeline   # local Unearth + local pipeline; archive stays on stage
+# or
+npm run dev:local-full          # all local including Garbo archive on :3002
 ```
-
-Or split: local Unearth + stage pipeline (`VITE_PIPELINE_TARGET=stage`) if you only want to watch stage jobs.
 
 ---
 
 ## Hybrid: local DB + stage services
 
-Local company data from restored Postgres; live jobs and archive from stage:
+Same as `npm run dev:local-db` (local Unearth, stage pipeline, **stage archive**):
 
-```env
-VITE_UNEARTH_TARGET=local
-VITE_PIPELINE_TARGET=stage
+```bash
+npm run dev:local-db
 ```
 
 - Company editor → local Unearth API → local Postgres
 - Jobbstatus live jobs → stage Pipeline API
-- Errors tab → always stage + prod Unearth (independent of these vars)
-- Jobbstatus **Archive** with `VITE_UNEARTH_TARGET=local` → local Garbo API on :3002 (start `garbo npm run dev-api`)
+- Jobbstatus Archive → **stage** Garbo API (not local :3002)
+- Errors tab → always stage + prod Unearth (independent of script)
 
 ---
 
@@ -320,6 +329,7 @@ VITE_PIPELINE_TARGET=stage
 | `VITE_API_MODE` | `local` \| `stage` \| `prod` — default for Unearth + Garbo archive target |
 | `VITE_UNEARTH_TARGET` | Override Unearth API target only |
 | `VITE_PIPELINE_TARGET` | Override Pipeline API target only |
+| `VITE_GARBO_ARCHIVE_TARGET` | Override queue-archive target only (defaults to Unearth target) |
 | `VITE_UNEARTH_LOCAL_URL` | Override local Unearth host (default `http://localhost:3000`) |
 | `VITE_GARBO_LOCAL_URL` | Override local Garbo host (default `http://localhost:3002`) |
 
@@ -411,7 +421,7 @@ Ensure `docker compose up` started Redis and `REDIS_HOST=localhost` / `REDIS_POR
 - [ ] Optional: **Garbo HTTP API** on :3002 for queue archive / BullMQ dashboard
 - [ ] `DATABASE_URL` points at the restored DB
 - [ ] Unearth API: `ALLOW_ANONYMOUS_CLIENT_API=true`
-- [ ] Validate: `VITE_UNEARTH_TARGET=local`, `npm run dev` (no `GARBO_*` keys unless using Errors tab)
+- [ ] Validate: `npm run dev:local-db` (or `dev:local-full` if you need local archive)
 - [ ] GitHub OAuth configured; logged in via Validate
 - [ ] **Not** required: API keys in Validate (with anonymous flag), `seed:client-api`, pipeline-api, Garbo workers
 
@@ -485,9 +495,10 @@ Requires `API_SECRET` in `.env`. For local integration routes, prefer `ALLOW_ANO
 
 | Scenario | Unearth API `.env` | Validate `.env.development` | Login |
 |----------|-------------------|----------------------------|-------|
-| **A — Local DB browse** | `ALLOW_ANONYMOUS_CLIENT_API=true` | `VITE_UNEARTH_TARGET=local`; keys only for Errors tab | GitHub OAuth |
-| **B — Stage only** | (no local API) | `GARBO_STAGE_*` + `GARBO_PROD_*` keys | GitHub OAuth |
-| **Hybrid — local DB + stage pipeline** | `ALLOW_ANONYMOUS_CLIENT_API=true` | `VITE_UNEARTH_TARGET=local`, `VITE_PIPELINE_TARGET=stage`; keys for Errors tab | GitHub OAuth |
+| **A — Local DB browse** | `ALLOW_ANONYMOUS_CLIENT_API=true` | `npm run dev:local-db` | GitHub OAuth |
+| **B — Stage only** | (no local API) | `npm run dev:local` | GitHub OAuth |
+| **Local DB + pipeline** | `ALLOW_ANONYMOUS_CLIENT_API=true` | `npm run dev:local-db-pipeline` | GitHub OAuth |
+| **Full local** | anonymous on Unearth; keys on Garbo if archive anonymous off | `npm run dev:local-full` | GitHub OAuth |
 | **Local without anonymous** | `seed:client-api`; anonymous `false` | Overview on `/unearth-local` won’t work — use anonymous or stage target | GitHub OAuth |
 
 ### Quick diagnosis

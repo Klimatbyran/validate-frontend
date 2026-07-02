@@ -49,15 +49,26 @@ function unearthTargetFromEnv(
   return v === "local" || v === "prod" ? v : "stage";
 }
 
+function garboArchiveTargetFromEnv(
+  env: Record<string, string>,
+  joint: string,
+): "local" | "stage" | "prod" {
+  const v = env.VITE_GARBO_ARCHIVE_TARGET;
+  if (v === "local" || v === "stage" || v === "prod") return v;
+  return unearthTargetFromEnv(env, joint);
+}
+
 /** Resolve proxy targets from env (joint mode or per-service overrides). */
 function getProxyTargets(env: Record<string, string>) {
   const joint = env.VITE_API_MODE || "stage";
   const pipelineTarget = targetFromEnv(env, "VITE_PIPELINE_TARGET", joint);
   const unearthTarget = unearthTargetFromEnv(env, joint);
+  const garboArchiveTarget = garboArchiveTargetFromEnv(env, joint);
 
   return {
     pipelineTarget,
     unearthTarget,
+    garboArchiveTarget,
     pipelineLocal: normalizeUrl(
       env.VITE_PIPELINE_API_URL ?? URLS_BY_TARGET.pipeline.local,
     ),
@@ -228,11 +239,11 @@ export default defineConfig(({ mode }) => {
     );
     console.log(
       "[vite] garbo (queue-archive) target:",
-      urls.unearthTarget,
+      urls.garboArchiveTarget,
       "->",
-      urls.unearthTarget === "local"
+      urls.garboArchiveTarget === "local"
         ? urls.garboLocal
-        : urls.unearthTarget === "prod"
+        : urls.garboArchiveTarget === "prod"
           ? urls.garboProd
           : urls.garboStage,
     );
