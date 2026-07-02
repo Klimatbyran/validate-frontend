@@ -52,7 +52,7 @@ Requires `X-API-Key` (injected by the Validate proxy). Both stage and prod **Une
 
 ### 2. Unearth API – auth, crawler, registry
 
-One Unearth API backend from `VITE_UNEARTH_TARGET` (legacy: `VITE_GARBO_TARGET`). Helpers: `getUnearthApiBaseUrl()`, `getUnearthTarget()`.
+One Unearth API backend from `VITE_UNEARTH_TARGET` (legacy: `VITE_GARBO_TARGET`). Queue archive from `VITE_GARBO_ARCHIVE_TARGET` or the same as Unearth if unset. Helpers: `getUnearthApiBaseUrl()`, `getUnearthTarget()`, `getGarboTarget()`.
 
 ### 3. Garbo API – queue archive
 
@@ -92,7 +92,9 @@ See `.env.development.example`.
 | Variable                         | Purpose                                                                                          |
 | -------------------------------- | ------------------------------------------------------------------------------------------------ |
 | `VITE_API_MODE`                  | Joint default for Pipeline API + Unearth/Garbo API                                               |
-| `VITE_UNEARTH_TARGET`            | Unearth API + Garbo API archive target (`local` \| `stage` \| `prod`)                            |
+| `VITE_UNEARTH_TARGET`            | Unearth API target (`local` \| `stage` \| `prod`)                            |
+| `VITE_GARBO_ARCHIVE_TARGET`      | Queue-archive only; defaults to Unearth target if unset                      |
+| `VITE_GARBO_TARGET`              | Legacy alias for `VITE_UNEARTH_TARGET` when `UNEARTH_TARGET` unset           |
 | `VITE_PIPELINE_TARGET`           | Pipeline API only                                                                                |
 | `VITE_UNEARTH_STAGE_URL`         | Override Unearth API stage host                                                                  |
 | `VITE_GARBO_STAGE_URL`           | Override Garbo API stage host                                                                    |
