@@ -15,12 +15,21 @@ For proxy paths and env vars, see [API and proxy setup](./API_AND_PROXY_SETUP.md
 | Browse/edit companies against a restored prod DB | Postgres + Redis, **Unearth API** (`API` repo), Validate |
 | Use stage/prod data without local backends | Validate only (default `VITE_API_MODE=stage`) |
 | View/trigger **live** pipeline jobs | Above + **Pipeline API** + **Garbo workers** + Redis |
-| **Jobbstatus Archive** tab against local DB | Garbo API on :3000 **or** keep archive on stage (see [hybrid setup](#hybrid-local-db--stage-services)) |
+| **Jobbstatus Archive** tab against local DB | **Garbo API** on :3002 (`garbo npm run dev-api`) alongside Unearth on :3000 |
 | Run a full report through Garbo locally | Containers (Postgres, Redis, Chroma, Docling), Garbo workers, Pipeline API, Unearth API for Validate UI |
 
-**You do not need Garbo’s HTTP API** to browse companies in Validate. Run **Unearth API** on port 3000, not `garbo npm run dev-api`, unless you specifically need queue-archive locally.
+**Unearth API** (company editor, auth) runs on port **3000**. **Garbo HTTP API** (queue archive, BullMQ dashboard) runs on port **3002**. They can run at the same time.
 
 In production, Unearth API and Garbo share the same Postgres (`garbo` database). Locally, `API/docker-compose.yaml` is a convenience copy of Postgres + Redis — not a separate database product.
+
+### Local ports
+
+| Service | Port |
+|---------|------|
+| Unearth API (`API`) | 3000 |
+| Pipeline API | 3001 |
+| Garbo HTTP API (`garbo npm run dev-api` / `dev-board`) | 3002 |
+| Validate | 5173 |
 
 ---
 
@@ -36,7 +45,7 @@ flowchart LR
     U[Unearth API :3000]
     P[Pipeline API :3001]
     G[Garbo workers]
-    GA[Garbo API :3000]
+    GA[Garbo API :3002]
   end
 
   subgraph data["Data"]
@@ -52,10 +61,11 @@ flowchart LR
   GA --> PG
   P --> R
   G --> R
+  G -->|"saveToAPI"| U
   G --> PG
 ```
 
-Only **one** HTTP API should listen on port **3000** (Unearth **or** Garbo). Validate proxies both `/unearth-local` and `/garbo-local` to `localhost:3000`.
+Validate proxies `/unearth-local` → `localhost:3000` and `/garbo-local` → `localhost:3002`. Garbo **workers** POST company data to Unearth API (`API_BASE_URL` in `garbo/.env`), not to Garbo’s HTTP port.
 
 ---
 
@@ -175,9 +185,29 @@ Open http://localhost:5173. On startup, the terminal should log:
 
 ```
 [vite] unearth target: local -> http://localhost:3000
+[vite] garbo (queue-archive) target: local -> http://localhost:3002
 ```
 
 Log in via GitHub OAuth (redirect goes through Unearth API).
+
+---
+
+### Optional: Garbo API (queue archive, BullMQ dashboard)
+
+If you need the **Jobbstatus Archive** tab against local data, or the BullMQ dashboard:
+
+```bash
+cd garbo
+cp .env.example .env
+# API_PORT=3002 — Garbo HTTP server
+# API_BASE_URL=http://localhost:3000/api — workers POST to Unearth (keep when both run)
+npm run dev-api    # or npm run dev-board for /admin/queues
+```
+
+- OpenAPI / queue archive: http://localhost:3002/api
+- BullMQ dashboard: http://localhost:3002/admin/queues
+
+Unearth API must still be running on :3000 for Validate editor and for Garbo workers (`saveToAPI`).
 
 ---
 
@@ -247,10 +277,11 @@ cd garbo
 npm run dev-workers
 ```
 
-Optional: BullMQ dashboard for debugging:
+Optional: BullMQ dashboard for debugging (runs on Garbo HTTP port, alongside Unearth):
 
 ```bash
-npm run dev-board   # API + queue admin on :3000 — conflicts with Unearth API; use workers + pipeline-api instead
+cd garbo
+npm run dev-board   # Garbo API + queue admin on :3002
 ```
 
 ### 5. Validate targets
@@ -276,7 +307,7 @@ VITE_PIPELINE_TARGET=stage
 - Company editor → local Unearth API → local Postgres
 - Jobbstatus live jobs → stage Pipeline API
 - Errors tab → always stage + prod Unearth (independent of these vars)
-- Jobbstatus **Archive** with `VITE_UNEARTH_TARGET=local` still proxies archive to `localhost:3000`, where Unearth has no `/queue-archive`. For archive against real data, use stage target or accept archive from stage paths only.
+- Jobbstatus **Archive** with `VITE_UNEARTH_TARGET=local` → local Garbo API on :3002 (start `garbo npm run dev-api`)
 
 ---
 
@@ -290,6 +321,7 @@ VITE_PIPELINE_TARGET=stage
 | `VITE_UNEARTH_TARGET` | Override Unearth API target only |
 | `VITE_PIPELINE_TARGET` | Override Pipeline API target only |
 | `VITE_UNEARTH_LOCAL_URL` | Override local Unearth host (default `http://localhost:3000`) |
+| `VITE_GARBO_LOCAL_URL` | Override local Garbo host (default `http://localhost:3002`) |
 
 API key vars (`GARBO_*_ALL_ACCESS_API_KEY`, `ALLOW_ANONYMOUS_CLIENT_API`, seeding): [Authentication & API keys](#authentication--api-keys).
 
@@ -312,9 +344,9 @@ Full proxy table: [API_AND_PROXY_SETUP.md](./API_AND_PROXY_SETUP.md).
 
 ### `Failed to fetch company: 500` with stack trace under `garbo/src/api/...`
 
-**Cause:** Port 3000 is running **Garbo API**, not **Unearth API**. Validate’s company editor calls `/unearth-local/api/pipeline/companies/...`.
+**Cause:** Validate’s company editor calls **Unearth API** (`/unearth-local` → :3000), but port 3000 is running **Garbo API** instead.
 
-**Fix:** Stop Garbo API. Start Unearth API from the `API` repo (`npm run dev`).
+**Fix:** Run Unearth API from the `API` repo on :3000. Run Garbo HTTP API on :3002 (`garbo npm run dev-api`).
 
 **Also check:** Company missing from DB (`findFirstOrThrow`):
 
@@ -323,13 +355,14 @@ docker exec -it garbo_postgres psql -U postgres -d garbo -c \
   "SELECT id, \"wikidataId\", name FROM \"Company\" WHERE \"wikidataId\" = 'Qxxxx' LIMIT 1;"
 ```
 
-### Port 3000 already in use
+### Port already in use
 
 ```bash
-lsof -i :3000
+lsof -i :3000   # Unearth API
+lsof -i :3002   # Garbo HTTP API
 ```
 
-Kill the wrong process. Only one of Unearth API or Garbo API should bind 3000.
+Unearth API → **3000**. Garbo HTTP API → **3002**. Both can run together.
 
 ### Container name / port collision
 
@@ -351,10 +384,9 @@ See [Quick diagnosis](#quick-diagnosis) under Authentication & API keys. Common 
 
 ### Jobbstatus Archive empty or 404 locally
 
-Unearth API does not implement `/api/queue-archive`. Options:
+Start Garbo HTTP API on :3002 (`garbo npm run dev-api`). Validate proxies `/garbo-local` there. Unearth API on :3000 does not implement `/api/queue-archive`.
 
-1. Use `VITE_UNEARTH_TARGET=stage` for archive (hybrid setup), or
-2. Run Garbo API on 3000 **instead of** Unearth API (you lose local Unearth editor unless you run Unearth on another port and set `VITE_UNEARTH_LOCAL_URL`).
+Alternatively, use `VITE_UNEARTH_TARGET=stage` for archive only (hybrid setup).
 
 ### `prisma://` URL errors (Unearth API)
 
@@ -375,12 +407,13 @@ Ensure `docker compose up` started Redis and `REDIS_HOST=localhost` / `REDIS_POR
 - [ ] One `docker compose up` (Postgres + Redis)
 - [ ] Backup restored into `garbo` database
 - [ ] Garbo migrations applied if needed
-- [ ] **Unearth API** running on :3000 (`API` repo, not `garbo`)
+- [ ] **Unearth API** running on :3000 (`API` repo)
+- [ ] Optional: **Garbo HTTP API** on :3002 for queue archive / BullMQ dashboard
 - [ ] `DATABASE_URL` points at the restored DB
 - [ ] Unearth API: `ALLOW_ANONYMOUS_CLIENT_API=true`
 - [ ] Validate: `VITE_UNEARTH_TARGET=local`, `npm run dev` (no `GARBO_*` keys unless using Errors tab)
 - [ ] GitHub OAuth configured; logged in via Validate
-- [ ] **Not** required: API keys in Validate, `seed:client-api`, Garbo API, pipeline-api, Garbo workers
+- [ ] **Not** required: API keys in Validate (with anonymous flag), `seed:client-api`, pipeline-api, Garbo workers
 
 ---
 
@@ -419,7 +452,7 @@ ALLOW_ANONYMOUS_CLIENT_API=true
 | `/unearth-local` | **No** | — (use `ALLOW_ANONYMOUS_CLIENT_API` on API) |
 | `/unearth-stage` | Yes | `GARBO_STAGE_ALL_ACCESS_API_KEY` |
 | `/unearth` (prod) | Yes | `GARBO_PROD_ALL_ACCESS_API_KEY` |
-| `/garbo-local/api/queue-archive` | **No** | — |
+| `/garbo-local/api/queue-archive` | **No** | — (Garbo on :3002; staff JWT or `ALLOW_ANONYMOUS` on Garbo API) |
 | `/garbo-stage/api/queue-archive` | Yes | `GARBO_STAGE_ALL_ACCESS_API_KEY` |
 | `/pipeline-local` | No | Pipeline uses JWT for writes, not API keys |
 

@@ -17,6 +17,8 @@ How Validate talks to **Pipeline API**, **Unearth API**, and **Garbo API** in de
 
 In **development**, Vite proxies same-origin paths (see network tab table below).
 
+**Local default ports:** Unearth API `3000`, Pipeline API `3001`, Garbo HTTP API `3002`. Override with `VITE_UNEARTH_LOCAL_URL` / `VITE_GARBO_LOCAL_URL` in `.env.development`.
+
 ---
 
 ## Network tab paths (dev)
@@ -26,10 +28,10 @@ In **development**, Vite proxies same-origin paths (see network tab table below)
 | `/pipeline-local`                | Pipeline API on this machine             |
 | `/pipeline-stage`                | Stage Pipeline API                       |
 | `/pipeline`                      | Prod Pipeline API                        |
-| `/unearth-local`                 | Local Unearth API (often localhost:3000) |
+| `/unearth-local`                 | Local Unearth API (`localhost:3000`)     |
 | `/unearth-stage`                 | Stage Unearth API                        |
 | `/unearth`                       | Prod Unearth API                         |
-| `/garbo-local/api/queue-archive` | Local Garbo API                          |
+| `/garbo-local/api/queue-archive` | Local Garbo API (`localhost:3002`)       |
 | `/garbo-stage/api/queue-archive` | Stage Garbo API                          |
 | `/garbo/api/queue-archive`       | Prod Garbo API                           |
 

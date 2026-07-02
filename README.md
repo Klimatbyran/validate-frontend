@@ -91,7 +91,9 @@ The app talks to three backends:
 | **Garbo API**   | Queue archive (Jobbstatus Archive, batch pickers) | `stage-api.klimatkollen.se`          |
 | **Pipeline**    | Live job status, upload, reruns                   | `stage-pipeline-api.klimatkollen.se` |
 
-In **local dev**, Unearth uses `/unearth-stage/api/...` and Garbo archive uses `/garbo-stage/api/queue-archive/...`.
+In **local dev** with `VITE_API_MODE=local`: Unearth → `localhost:3000`, Garbo archive → `localhost:3002`, Pipeline → `localhost:3001`. See [Local development runbook](./docs/LOCAL_DEV_RUNBOOK.md).
+
+In **local dev** against stage (default): Unearth uses `/unearth-stage/api/...` and Garbo archive uses `/garbo-stage/api/queue-archive/...`.
 
 In **staging/production**, nginx proxies `/unearth-api/` → `UNEARTH_API_URL` and `/garbo-api/queue-archive/` → `GARBO_API_URL`. Pipeline uses `BACKEND_API_URL`.
 
