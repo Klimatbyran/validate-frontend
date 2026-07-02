@@ -236,6 +236,17 @@ export function OverviewTab() {
                     count: data.prodToStageDiagnostics.skippedStageHasEmissions,
                   })}
                 </p>
+                {data.prodToStageDiagnostics.includedWithoutReportUrl > 0 ? (
+                  <p>
+                    {t(
+                      "overview.prodToStage.emptyDiagnosticsIncludedWithoutUrl",
+                      {
+                        count:
+                          data.prodToStageDiagnostics.includedWithoutReportUrl,
+                      },
+                    )}
+                  </p>
+                ) : null}
                 <p className="font-medium text-gray-01">
                   {t("overview.prodToStage.emptyDiagnosticsIncluded", {
                     count: data.prodToStageDiagnostics.included,

@@ -24,6 +24,18 @@ import {
   type ProdToStageRow,
 } from "../lib/overview-types";
 
+function overviewRowsForView(
+  rows: OverviewRow[],
+  viewMode: "companyYears" | "registryReports",
+): OverviewRow[] {
+  if (viewMode === "registryReports") {
+    return rows.filter(
+      (row) => row.viewMode === "registryReports" && row.registryEntry != null,
+    );
+  }
+  return rows.filter((row) => row.viewMode === "companyYears");
+}
+
 const OVERVIEW_VIEW_QUERY = "view";
 
 function overviewViewFromSearchParams(
@@ -52,6 +64,7 @@ const EMPTY_DIAGNOSTICS: ProdToStageBuildDiagnostics = {
   skippedUnlinked: 0,
   skippedNoFullyVerifiedOnProd: 0,
   skippedStageHasEmissions: 0,
+  includedWithoutReportUrl: 0,
   included: 0,
 };
 
@@ -145,7 +158,12 @@ export function useOverviewData() {
             requestPage,
             pageSize,
           );
-          setRows(response.rows);
+          if (response.viewMode !== "registryReports") {
+            throw new Error(
+              "Registry overview returned the wrong viewMode — expected registryReports.",
+            );
+          }
+          setRows(overviewRowsForView(response.rows, "registryReports"));
           setProdToStageRows([]);
           setStats(response.stats);
           setTotalRows(response.total);
@@ -160,7 +178,12 @@ export function useOverviewData() {
             requestPage,
             pageSize,
           );
-          setRows(response.rows);
+          if (response.viewMode !== "companyYears") {
+            throw new Error(
+              "Company years overview returned the wrong viewMode — expected companyYears.",
+            );
+          }
+          setRows(overviewRowsForView(response.rows, "companyYears"));
           setProdToStageRows([]);
           setStats(response.stats);
           setTotalRows(response.total);
@@ -224,9 +247,7 @@ export function useOverviewData() {
   const filtersAreActive =
     viewMode === "prodToStage"
       ? Boolean(prodToStageFilters.searchQuery.trim()) ||
-        prodToStageFilters.reportYears.length !== 1 ||
-        prodToStageFilters.reportYears[0] !==
-          String(new Date().getFullYear()) ||
+        prodToStageFilters.reportYears.length > 0 ||
         prodToStageFilters.tagSlugs.length > 0 ||
         prodToStageFilters.runnableOnly
       : viewMode === "registryReports"

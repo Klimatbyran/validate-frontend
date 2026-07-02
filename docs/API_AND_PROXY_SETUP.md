@@ -64,9 +64,9 @@ Requires JWT from Unearth login (`garboAuthFetch`). Garbo also exposes the **sam
 
 `getUnearthApiBaseUrl()` + `/internal-validate-overview/{company-years|registry-reports|prod-to-stage}` (X-API-Key via proxy). Overview aggregation is internal-only (no staff JWT route). Requires `reportYears` or `allYears`; default page size 50. Prod → Stage runs use `STAGE_RUN_REPORTS_PIPELINE_CONFIG` (stage pipeline + Garbo batches only).
 
-The API may return `warnings` (non-fatal: peer env missing, inferred deployment env, etc.) alongside `rows` — the Overview tab surfaces these in a callout.
+The Unearth API loads companies via `GET /internal-pipeline/companies-overview` (local + peer). Deploy **stage and prod Unearth API together** so peer fetch does not 404. Registry-reports uses SQL pagination by default on the API; set `OVERVIEW_SQL_REGISTRY=0` on the Unearth pod to force the in-memory path.
 
-**Scaling follow-up:** see [Unearth API overview scaling plan](https://github.com/UnearthData/api/blob/main/doc/OVERVIEW_SCALING_PLAN.md) (`API/doc/OVERVIEW_SCALING_PLAN.md` in the API repo).
+The API may return `warnings` (non-fatal: peer env missing, inferred deployment env, etc.) alongside `rows` — the Overview tab surfaces these in a callout.
 
 ---
 
