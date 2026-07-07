@@ -88,6 +88,43 @@ export function classifyDiscrepancy(
 }
 
 /**
+ * Classify a stage/prod slot, separating report coverage gaps from extraction diffs.
+ * - report-absent: prod has the report shell, stage does not (run report on stage).
+ * - report-extra: stage has the report shell, prod does not.
+ * - missing / hallucination: both shells exist; value present on one side only.
+ */
+export function classifySlotDiscrepancy(
+  stageValue: number | null,
+  prodValue: number | null,
+  hasStagePeriod: boolean,
+  hasProdPeriod: boolean,
+  roundingThreshold: number,
+): DiscrepancyType {
+  if (!hasStagePeriod && hasProdPeriod) return "report-absent";
+  if (hasStagePeriod && !hasProdPeriod) return "report-extra";
+  return classifyDiscrepancy(stageValue, prodValue, roundingThreshold);
+}
+
+/** Discrepancies that compare extracted values on both sides (accuracy metrics). */
+export function isExtractionComparisonDiscrepancy(
+  discrepancy: DiscrepancyType,
+): boolean {
+  return discrepancy !== "report-absent" && discrepancy !== "report-extra";
+}
+
+/** Pipeline extraction issues counted in hardest-reports ranking. */
+export function isPipelineExtractionDiscrepancy(
+  discrepancy: DiscrepancyType,
+): boolean {
+  return (
+    isExtractionComparisonDiscrepancy(discrepancy) &&
+    discrepancy !== "identical" &&
+    discrepancy !== "rounding" &&
+    discrepancy !== "both-null"
+  );
+}
+
+/**
  * Reclassify discrepancy to 'category-error' when stage/prod value appears in another same-scope data point.
  * Used by overview and worst-companies metrics (no row mutation).
  */
@@ -103,6 +140,8 @@ export function reclassifyDiscrepancyForCategoryError(
     discrepancy === "identical" ||
     discrepancy === "rounding" ||
     discrepancy === "both-null" ||
+    discrepancy === "report-absent" ||
+    discrepancy === "report-extra" ||
     sameScopeDataPoints.length === 0
   ) {
     return discrepancy;
@@ -153,7 +192,9 @@ export function applyCategoryErrorToRows(
     if (
       row.discrepancy === "identical" ||
       row.discrepancy === "rounding" ||
-      row.discrepancy === "both-null"
+      row.discrepancy === "both-null" ||
+      row.discrepancy === "report-absent" ||
+      row.discrepancy === "report-extra"
     )
       continue;
 

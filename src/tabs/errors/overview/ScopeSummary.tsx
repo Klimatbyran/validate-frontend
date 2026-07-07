@@ -28,6 +28,16 @@ const BREAKDOWN_ITEMS = [
   },
   { filterKey: "missing", key: "missing" as const, color: "text-orange-400" },
   {
+    filterKey: "report-absent",
+    key: "reportAbsent" as const,
+    color: "text-sky-400",
+  },
+  {
+    filterKey: "report-extra",
+    key: "reportExtra" as const,
+    color: "text-blue-400",
+  },
+  {
     filterKey: "unit-error",
     key: "unitError" as const,
     color: "text-indigo-400",

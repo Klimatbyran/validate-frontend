@@ -1,9 +1,9 @@
-import {
-  getPeriodShellKey,
-  UNLINKED_REPORT_SHELL_KEY,
-} from "@/tabs/editor/lib/company-report-shells";
 import { getPeriodDataYear } from "@/tabs/editor/lib/reporting-period-ui";
 import type { ReportingPeriod } from "../types";
+import {
+  getCrossEnvPeriodShellKey,
+  resolveSlotCompanyReportId,
+} from "./cross-env-report-shell";
 import { getPeriodReportYearFromApi } from "./emissions";
 
 export type ReportingPeriodComparisonSlot = {
@@ -71,14 +71,14 @@ export function buildReportingPeriodComparisonSlots(
   >();
 
   for (const period of stageMatched) {
-    const shellKey = getPeriodShellKey(period);
+    const shellKey = getCrossEnvPeriodShellKey(period);
     const entry = byShell.get(shellKey) ?? {};
     entry.stage = period;
     byShell.set(shellKey, entry);
   }
 
   for (const period of prodMatched) {
-    const shellKey = getPeriodShellKey(period);
+    const shellKey = getCrossEnvPeriodShellKey(period);
     const entry = byShell.get(shellKey) ?? {};
     entry.prod = period;
     byShell.set(shellKey, entry);
@@ -89,8 +89,7 @@ export function buildReportingPeriodComparisonSlots(
       const anchor = stage ?? prod;
       return {
         shellKey,
-        companyReportId:
-          shellKey === UNLINKED_REPORT_SHELL_KEY ? null : shellKey,
+        companyReportId: resolveSlotCompanyReportId(shellKey, anchor),
         reportYear: anchor ? getPeriodReportYearFromApi(anchor) : null,
         stagePeriod: stage ?? null,
         prodPeriod: prod ?? null,
@@ -112,7 +111,7 @@ export function findReportingPeriodForShell(
 ): ReportingPeriod | null {
   return (
     pickReportingPeriodsForFilters(reportingPeriods, dataYear, reportYear).find(
-      (period) => getPeriodShellKey(period) === shellKey,
+      (period) => getCrossEnvPeriodShellKey(period) === shellKey,
     ) ?? null
   );
 }

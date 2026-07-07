@@ -45,6 +45,8 @@ function calcRates(dp: DataPointMetric) {
     dp.breakdown.rounding +
     dp.breakdown.hallucination +
     dp.breakdown.missing +
+    dp.breakdown.reportAbsent +
+    dp.breakdown.reportExtra +
     dp.breakdown.unitError +
     dp.breakdown.smallError +
     dp.breakdown.error +

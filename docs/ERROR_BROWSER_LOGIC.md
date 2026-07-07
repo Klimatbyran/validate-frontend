@@ -14,11 +14,13 @@ Key implementation: `src/tabs/errors/hooks/useErrorBrowserData.ts`.
 
 ### Core concepts
 
-- **Company union**: most views start from the union of company ids across Stage and Prod (`wikidataId`).
+- **Company union**: most views start from the union of company ids across Stage and Prod. Pairing prefers `wikidataId`, then unique shared report `sha256` / URL when Wikidata is missing on one side.
 - **Reporting period selection**: for a selected **data year**, `pickReportingPeriodsForFilters(...)` matches the DB `year` field (via `getPeriodDataYear`). Optional **report year** filters by PDF catalog year on `CompanyReport`.
-- **Multiple rows per company**: when several report shells have data for the same data year, the browser shows one comparison row per shell (matched by `companyReportId`).
-- **Data points**: the set of emissions data points is `DATA_POINTS` in `src/tabs/errors/types.ts`.
-- **Discrepancy classification**: Stage/Prod values are compared and assigned a discrepancy type via `classifyDiscrepancy(...)` (plus category-error reclassification).
+- **Multiple rows per company**: when several report shells have data for the same data year, the browser shows one comparison row per shell (matched by stable report identity — `reportSha256`, report URL, or catalog/data year — not env-local `companyReportId`).
+- **Discrepancy classification**:
+  - `report-absent` / `report-extra`: one environment has the report shell, the other does not (run / sync reports).
+  - `missing` / `hallucination`: both shells exist; a value is present on only one side (extraction gap).
+  - Other types (`error`, `rounding`, `category-error`, …) compare values when both shells exist.
 - **Prod verification**: a data point is considered verified when Prod metadata indicates it (see `getDataPointVerified(...)` in `src/tabs/errors/lib/emissions.ts`).
 
 ### Views and what they are allowed to filter
