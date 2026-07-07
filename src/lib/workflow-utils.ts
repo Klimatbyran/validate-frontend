@@ -17,6 +17,24 @@ import {
 } from "./workflow-config";
 
 /**
+ * guessWikidata completed via job autoApprove without a human verifier.
+ * Pipeline continues; identifier is stored as unverified in Garbo.
+ */
+function isWikidataAutoApprovedUnverified(job: any): boolean {
+  const queueId = job?.queueId ?? job?.queue;
+  if (queueId !== "guessWikidata") return false;
+
+  const approval = job.data?.approval || job?.approval;
+  if (!approval || typeof approval !== "object") return false;
+  if (approval.type !== "wikidata" || approval.approved !== true) return false;
+
+  const autoApprove = Boolean(job.data?.autoApprove ?? job?.autoApprove);
+  if (!autoApprove) return false;
+
+  return !approval.verifiedByUserId;
+}
+
+/**
  * Single source of truth for job status determination
  * Used by all views to ensure consistency
  */
@@ -46,8 +64,16 @@ export function getJobStatus(job: any): SwimlaneStatusType {
     return "processing";
   }
 
-  // For completed jobs, check if they need approval (fallback check)
+  // For completed jobs, distinguish auto-approved unverified Wikidata from fully done
   if (rawStatus === "completed" || job.finishedOn) {
+    if (isWikidataAutoApprovedUnverified(job)) {
+      return "wikidata_unverified";
+    }
+
+    if (hasApprovalObject && approval.approved === true) {
+      return "completed";
+    }
+
     const needsApproval = !job.data?.approved && !job.data?.autoApprove;
     return needsApproval ? "needs_approval" : "completed";
   }
@@ -305,6 +331,7 @@ export function calculateStepJobStats(
       init.total++;
       switch (agg.status) {
         case "completed":
+        case "wikidata_unverified":
           init.completed++;
           break;
         case "processing":
@@ -349,6 +376,10 @@ function hasJobBeenStarted(job: any): boolean {
     job.status === "completed" ||
     job.status === "failed"
   );
+}
+
+function isPipelineProgressStatus(status: SwimlaneStatusType): boolean {
+  return status === "completed" || status === "wikidata_unverified";
 }
 
 /**
@@ -459,11 +490,11 @@ export function calculatePipelineStepStatus(
     // Check statuses of started jobs only
     const startedStatuses = startedJobs.map((entry) => entry.status);
     const hasFailed = startedStatuses.some((status) => status === "failed");
-    const allCompleted = startedStatuses.every(
-      (status) => status === "completed",
+    const allCompleted = startedStatuses.every((status) =>
+      isPipelineProgressStatus(status),
     );
-    const hasCompleted = startedStatuses.some(
-      (status) => status === "completed",
+    const hasCompleted = startedStatuses.some((status) =>
+      isPipelineProgressStatus(status),
     );
 
     // If any started job failed, show failed
@@ -499,7 +530,9 @@ export function calculatePipelineStepStatus(
   }
 
   const fieldStatuses = jobsWithStatuses.map((entry) => entry.status);
-  const hasCompleted = fieldStatuses.some((status) => status === "completed");
+  const hasCompleted = fieldStatuses.some((status) =>
+    isPipelineProgressStatus(status),
+  );
   const hasWaiting = fieldStatuses.some((status) => status === "waiting");
   const hasFailed = fieldStatuses.some((status) => status === "failed");
 

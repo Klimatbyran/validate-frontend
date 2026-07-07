@@ -2,25 +2,15 @@ import { useState } from "react";
 import { Button } from "@/ui/button";
 import { Callout } from "@/ui/callout";
 import { useI18n } from "@/contexts/I18nContext";
-import { Check, ExternalLink, AlertCircle, RotateCcw } from "lucide-react";
+import {
+  Check,
+  ExternalLink,
+  AlertCircle,
+  RotateCcw,
+  ShieldAlert,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface WikidataData {
-  node: string;
-  url: string;
-  label: string;
-  description?: string;
-}
-
-interface WikidataApprovalData {
-  status: "approved" | "pending_approval";
-  wikidata: WikidataData;
-  message?: string;
-  metadata?: {
-    source?: string;
-    comment?: string;
-  };
-}
+import type { WikidataApprovalData } from "../lib/job-specific-data-parsing";
 
 interface WikidataApprovalDisplayProps {
   data: WikidataApprovalData;
@@ -38,6 +28,7 @@ export function WikidataApprovalDisplay({
   const [overrideError, setOverrideError] = useState("");
 
   const isApproved = data.status === "approved";
+  const isApprovedUnverified = data.status === "approved_unverified";
   const isPending = data.status === "pending_approval";
 
   const handleOverrideChange = (value: string) => {
@@ -85,6 +76,13 @@ export function WikidataApprovalDisplay({
               {t("wikidata.approved")}
             </span>
           </div>
+        ) : isApprovedUnverified ? (
+          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-green-02/20 border border-green-02">
+            <ShieldAlert className="w-4 h-4 text-green-02" />
+            <span className="text-sm font-medium text-green-02">
+              {t("wikidata.autoApprovedUnverified")}
+            </span>
+          </div>
         ) : (
           <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-orange-03/20 border border-orange-03">
             <AlertCircle className="w-4 h-4 text-orange-03" />
@@ -96,11 +94,11 @@ export function WikidataApprovalDisplay({
       </div>
 
       {/* Message */}
-      {data.message && (
+      {data.message ? (
         <Callout variant={isApproved ? "success" : "warning"}>
           {data.message}
         </Callout>
-      )}
+      ) : null}
 
       {/* Wikidata Information */}
       <div className="bg-gray-03/20 rounded-lg p-4 space-y-3">

@@ -284,7 +284,16 @@
       "wikidataId": "Wikidata ID",
       "internalId": "Internal ID",
       "lei": "LEI",
-      "tags": "Tags"
+      "tags": "Tags",
+      "verified": "Verified",
+      "unverified": "Unverified",
+      "verifiedBy": "Verified by {{name}}",
+      "identifierType": {
+        "wikidata": "Wikidata",
+        "lei": "LEI",
+        "orgNumber": "Org number",
+        "isin": "ISIN"
+      }
     },
     "singleCompanyView": {
       "table": {
@@ -594,6 +603,7 @@
     "archiveShowing": "Showing {{from}}–{{to}} of {{total}} runs",
     "archiveEmpty": "No archived runs match your search.",
     "archiveWikidata": "Wikidata",
+    "archiveCompanyId": "Company ID",
     "archiveThread": "Thread",
     "archiveStatus": "Status",
     "archiveJobCount": "{{count}} jobs",
@@ -1473,6 +1483,7 @@
     "mustStartWithQ": "Wikidata ID must start with Q",
     "approved": "Approved",
     "pendingApproval": "Pending approval",
+    "autoApprovedUnverified": "Auto-approved (unverified)",
     "approveDescription": "Approve the suggested Wikidata ID. The job will be re-run with approval.",
     "approveButton": "Approve",
     "wikidataInfo": "Wikidata Information",
@@ -1495,6 +1506,7 @@
     "completed": "Completed",
     "failed": "Failed",
     "needs_approval": "Needs approval",
+    "wikidata_unverified": "Wikidata unverified",
     "processing": "Processing",
     "waiting": "Waiting",
     "processingNow": "Processing now"

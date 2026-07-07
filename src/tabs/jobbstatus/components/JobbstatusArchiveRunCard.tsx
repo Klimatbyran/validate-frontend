@@ -5,6 +5,7 @@
  */
 
 import { useMemo, useState, type ReactElement } from "react";
+import { Link } from "react-router-dom";
 import { ChevronDown, FileText } from "lucide-react";
 import { Button } from "@/ui/button";
 import { useI18n } from "@/contexts/I18nContext";
@@ -25,6 +26,7 @@ import {
 import type { ArchiveRunJobRow, ArchiveRunSummary } from "../lib/archive-types";
 import { formatArchiveWhen } from "../lib/format-archive-datetime";
 import { ArchiveQueueStepPill } from "./ArchiveQueueStepPill";
+import { editorCompanyPath } from "@/tabs/editor/lib/editor-routes";
 
 export type {
   ArchiveRunJobRow,
@@ -196,6 +198,16 @@ export function JobbstatusArchiveRunCard({
                   <span className="font-mono text-gray-01">
                     {run.wikidataId}
                   </span>
+                </span>
+              ) : run.companyId ? (
+                <span className="shrink-0">
+                  {t("jobstatus.archiveCompanyId")}:{" "}
+                  <Link
+                    to={editorCompanyPath(run.companyId)}
+                    className="font-mono text-blue-03 hover:text-blue-04"
+                  >
+                    {run.companyId}
+                  </Link>
                 </span>
               ) : null}
               {run.batch?.batchName ? (

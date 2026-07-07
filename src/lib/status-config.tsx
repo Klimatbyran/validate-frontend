@@ -4,6 +4,7 @@ import {
   HelpCircle,
   XCircle,
   RotateCw,
+  ShieldAlert,
 } from "lucide-react";
 import type { SwimlaneStatusType } from "./types";
 
@@ -54,6 +55,17 @@ export const STATUS_CONFIG = {
       background: "bg-orange-03/60",
       border: "border-transparent",
       icon: "text-orange-03",
+      iconCompact: "text-white",
+    },
+  },
+  wikidata_unverified: {
+    label: "Wikidata Unverified",
+    icon: ShieldAlert,
+    colors: {
+      text: "text-green-02",
+      background: "bg-green-02/70",
+      border: "border-green-02/80",
+      icon: "text-green-02",
       iconCompact: "text-white",
     },
   },
@@ -155,6 +167,7 @@ export function getStatusBackgroundColor(status: SwimlaneStatusType): string {
     failed: "bg-pink-03/20",
     processing: "bg-blue-03/20",
     needs_approval: "bg-orange-03/20",
+    wikidata_unverified: "bg-green-02/20",
     waiting: "bg-blue-01/20",
   };
   return backgroundMap[status];
@@ -208,7 +221,13 @@ export function getStatCardLabelColor(
  * Get step icon for pipeline step status
  */
 export function getStepIcon(
-  status: "completed" | "processing" | "failed" | "waiting" | "needs_approval",
+  status:
+    | "completed"
+    | "processing"
+    | "failed"
+    | "waiting"
+    | "needs_approval"
+    | "wikidata_unverified",
 ) {
   const config = getStatusConfig(status);
   const IconComponent = config.icon;
