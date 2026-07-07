@@ -37,6 +37,8 @@ export function BrowserView({
   const [searchQuery, setSearchQuery] = React.useState("");
   const [visibleTypes, setVisibleTypes] = React.useState<Set<DiscrepancyType>>(
     new Set([
+      "report-absent",
+      "report-extra",
       "hallucination",
       "missing",
       "rounding",
@@ -82,6 +84,8 @@ export function BrowserView({
       new Set([
         "identical",
         "both-null",
+        "report-absent",
+        "report-extra",
         "hallucination",
         "missing",
         "rounding",
@@ -96,6 +100,8 @@ export function BrowserView({
   const showDefaultTypes = () => {
     setVisibleTypes(
       new Set([
+        "report-absent",
+        "report-extra",
         "hallucination",
         "missing",
         "rounding",
@@ -112,6 +118,8 @@ export function BrowserView({
     const result: Record<string, number> = {
       identical: 0,
       "both-null": 0,
+      "report-absent": 0,
+      "report-extra": 0,
       hallucination: 0,
       missing: 0,
       rounding: 0,

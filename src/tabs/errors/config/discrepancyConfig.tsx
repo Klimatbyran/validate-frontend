@@ -50,6 +50,20 @@ export const discrepancyConfig: Record<
     textColor: "text-orange-400",
     borderColor: "border-orange-500/20",
   },
+  "report-absent": {
+    icon: React.createElement(AlertCircle, { className: "w-4 h-4" }),
+    label: "Report Not on Stage",
+    bgColor: "bg-sky-500/10",
+    textColor: "text-sky-400",
+    borderColor: "border-sky-500/20",
+  },
+  "report-extra": {
+    icon: React.createElement(AlertCircle, { className: "w-4 h-4" }),
+    label: "Report Not on Prod",
+    bgColor: "bg-blue-500/10",
+    textColor: "text-blue-400",
+    borderColor: "border-blue-500/20",
+  },
   rounding: {
     icon: React.createElement(Calculator, { className: "w-4 h-4" }),
     label: "Rounding",

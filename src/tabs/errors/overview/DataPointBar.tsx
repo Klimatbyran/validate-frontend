@@ -66,6 +66,12 @@ export function DataPointBar({ dp, onSelect }: DataPointBarProps) {
           <span className="text-orange-400">
             {dp.breakdown.missing} {t("errors.overview.missing")}
           </span>
+          <span className="text-sky-400">
+            {dp.breakdown.reportAbsent} {t("errors.overview.reportAbsent")}
+          </span>
+          <span className="text-blue-400">
+            {dp.breakdown.reportExtra} {t("errors.overview.reportExtra")}
+          </span>
           <span className="text-cyan-400">
             {dp.breakdown.categoryError} {t("errors.overview.categoryError")}
           </span>
