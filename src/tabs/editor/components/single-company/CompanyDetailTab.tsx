@@ -519,7 +519,8 @@ export function CompanyDetailTab({
         title={t("editor.singleCompanyView.deleteCompany.title")}
         description={t("editor.singleCompanyView.deleteCompany.description", {
           name: company.name ?? company.id,
-          wikidataId: wikidataFromIdentifiers(company) ?? t("common.placeholderDash"),
+          wikidataId:
+            wikidataFromIdentifiers(company) ?? t("common.placeholderDash"),
         })}
         footer={
           <>

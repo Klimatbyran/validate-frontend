@@ -8,7 +8,10 @@ import {
   type GarboRegistryReportSummary,
   type ReportingPeriodWritePayload,
 } from "./types";
-import { parseGarboCompanyDetail, garboCompanyIdSchema } from "./companies-schemas";
+import {
+  parseGarboCompanyDetail,
+  garboCompanyIdSchema,
+} from "./companies-schemas";
 import { apiUrl } from "./api-utils";
 
 function normalizeReportingPeriodUrls(

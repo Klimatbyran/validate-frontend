@@ -2,7 +2,13 @@ import { useState } from "react";
 import { Button } from "@/ui/button";
 import { Callout } from "@/ui/callout";
 import { useI18n } from "@/contexts/I18nContext";
-import { Check, ExternalLink, AlertCircle, RotateCcw, ShieldAlert } from "lucide-react";
+import {
+  Check,
+  ExternalLink,
+  AlertCircle,
+  RotateCcw,
+  ShieldAlert,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { WikidataApprovalData } from "../lib/job-specific-data-parsing";
 

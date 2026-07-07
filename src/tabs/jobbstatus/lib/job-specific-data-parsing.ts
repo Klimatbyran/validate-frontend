@@ -93,7 +93,9 @@ export interface WikidataApprovalData {
   verifiedByUserId?: string;
 }
 
-function approvalSummary(approval: Record<string, unknown>): string | undefined {
+function approvalSummary(
+  approval: Record<string, unknown>,
+): string | undefined {
   return typeof approval.summary === "string" && approval.summary.trim()
     ? approval.summary
     : undefined;
@@ -113,7 +115,8 @@ function wikidataApprovalFromApprovalObject(
     typeof approval.verifiedByUserId === "string"
       ? approval.verifiedByUserId
       : undefined;
-  const metadata = (approval.metadata as WikidataApprovalData["metadata"]) || {};
+  const metadata =
+    (approval.metadata as WikidataApprovalData["metadata"]) || {};
 
   if (approval.approved === false) {
     return {
@@ -149,7 +152,11 @@ export function getWikidataApprovalData(
   const jobData = effectiveJob?.data || job?.data;
   const approval = jobData?.approval;
 
-  if (approval && typeof approval === "object" && approval.type === "wikidata") {
+  if (
+    approval &&
+    typeof approval === "object" &&
+    approval.type === "wikidata"
+  ) {
     return wikidataApprovalFromApprovalObject(
       approval as Record<string, unknown>,
       jobData as Record<string, unknown> | undefined,

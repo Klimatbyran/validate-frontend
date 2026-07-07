@@ -6,11 +6,11 @@ export const garboCompanyIdSchema = z.string().uuid();
 
 const garboMinimalMetadataSchema = z
   .object({
-    user: z.object({ name: z.string().nullable().optional() }).nullable().optional(),
-    verifiedBy: z
-      .object({ name: z.string() })
+    user: z
+      .object({ name: z.string().nullable().optional() })
       .nullable()
       .optional(),
+    verifiedBy: z.object({ name: z.string() }).nullable().optional(),
     source: z.string().nullable().optional(),
     comment: z.string().nullable().optional(),
   })
