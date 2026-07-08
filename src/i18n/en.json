@@ -1167,11 +1167,13 @@
       "searchNoResults": "No companies found.",
       "confirmMatch": "Save match",
       "clearMatch": "Clear manual match",
+      "markAsMissing": "Mark as missing",
       "useSuggestedMatch": "Use suggested match",
       "suggestedMatch": "suggested",
       "manualBadge": "manual",
       "saveMatchSuccess": "Saved match for {{name}} → {{company}}",
       "clearMatchSuccess": "Cleared manual match for {{name}}",
+      "markAsMissingSuccess": "Marked {{name}} as missing in Garbo",
       "saveMatchError": "Could not save match for {{name}}: {{message}}",
       "stats": {
         "total": "Total names",

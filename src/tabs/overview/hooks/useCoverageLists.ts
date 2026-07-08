@@ -13,6 +13,7 @@ import {
 import type {
   CoverageListSummary,
   CoverageYearDetail,
+  CoverageMatchSaveAction,
 } from "../lib/coverage-types";
 
 export function useCoverageLists() {
@@ -119,13 +120,28 @@ export function useCoverageYearDetail(
     isLoading,
     error,
     refresh: loadDetail,
-    setEntryMatch: async (entryId: string, matchedCompanyId: string | null) => {
+    setEntryMatch: async (entryId: string, action: CoverageMatchSaveAction) => {
       if (!listId || year === null) return null;
+      const payload =
+        action.type === "match"
+          ? {
+              matchedCompanyId: action.companyId,
+              matchConfirmedMissing: false,
+            }
+          : action.type === "markMissing"
+            ? {
+                matchedCompanyId: null,
+                matchConfirmedMissing: true,
+              }
+            : {
+                matchedCompanyId: null,
+                matchConfirmedMissing: false,
+              };
       const updated = await setCoverageEntryMatch(
         listId,
         year,
         entryId,
-        matchedCompanyId,
+        payload,
       );
       setDetail(updated);
       return updated;

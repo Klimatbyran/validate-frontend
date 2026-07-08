@@ -4,6 +4,7 @@ import { searchCoverageCompanies } from "@/tabs/overview/lib/coverage-api";
 import type {
   CoverageCompanySearchHit,
   CoverageEntry,
+  CoverageMatchSaveAction,
 } from "@/tabs/overview/lib/coverage-types";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
@@ -12,10 +13,7 @@ type CoverageEntryMatchDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entry: CoverageEntry | null;
-  onConfirm: (
-    companyId: string | null,
-    companyName?: string | null,
-  ) => Promise<void>;
+  onAction: (action: CoverageMatchSaveAction) => Promise<void>;
   isSubmitting?: boolean;
 };
 
@@ -23,7 +21,7 @@ export function CoverageEntryMatchDialog({
   open,
   onOpenChange,
   entry,
-  onConfirm,
+  onAction,
   isSubmitting = false,
 }: CoverageEntryMatchDialogProps) {
   const { t } = useI18n();
@@ -96,16 +94,30 @@ export function CoverageEntryMatchDialog({
             <Button
               variant="secondary"
               disabled={isSubmitting}
-              onClick={() => void onConfirm(null)}
+              onClick={() => void onAction({ type: "clear" })}
             >
               {t("overview.coverage.clearMatch")}
+            </Button>
+          ) : entry.status === "ambiguous" ? (
+            <Button
+              variant="secondary"
+              disabled={isSubmitting}
+              onClick={() => void onAction({ type: "markMissing" })}
+            >
+              {t("overview.coverage.markAsMissing")}
             </Button>
           ) : null}
           {entry.status === "ambiguous" && suggestedHit ? (
             <Button
               variant="secondary"
               disabled={isSubmitting}
-              onClick={() => void onConfirm(suggestedHit.id, suggestedHit.name)}
+              onClick={() =>
+                void onAction({
+                  type: "match",
+                  companyId: suggestedHit.id,
+                  companyName: suggestedHit.name,
+                })
+              }
             >
               {t("overview.coverage.useSuggestedMatch")}
             </Button>
@@ -117,7 +129,11 @@ export function CoverageEntryMatchDialog({
             disabled={!selectedCompany || isSubmitting}
             onClick={() =>
               selectedCompany
-                ? void onConfirm(selectedCompany.id, selectedCompany.name)
+                ? void onAction({
+                    type: "match",
+                    companyId: selectedCompany.id,
+                    companyName: selectedCompany.name,
+                  })
                 : undefined
             }
           >

@@ -68,4 +68,7 @@ export type CoverageCompanySearchHit = z.infer<
   typeof coverageCompanySearchHitSchema
 >;
 
-export type CoverageEntryFilter = "all" | CoverageEntryStatus;
+export type CoverageMatchSaveAction =
+  | { type: "match"; companyId: string; companyName: string }
+  | { type: "clear" }
+  | { type: "markMissing" };

@@ -1167,11 +1167,13 @@
       "searchNoResults": "Inga företag hittades.",
       "confirmMatch": "Spara match",
       "clearMatch": "Rensa manuell match",
+      "markAsMissing": "Markera som saknas",
       "useSuggestedMatch": "Använd föreslagen match",
       "suggestedMatch": "föreslagen",
       "manualBadge": "manuell",
       "saveMatchSuccess": "Sparade match för {{name}} → {{company}}",
       "clearMatchSuccess": "Rensade manuell match för {{name}}",
+      "markAsMissingSuccess": "Markerade {{name}} som saknas i Garbo",
       "saveMatchError": "Kunde inte spara match för {{name}}: {{message}}",
       "stats": {
         "total": "Totalt antal namn",
