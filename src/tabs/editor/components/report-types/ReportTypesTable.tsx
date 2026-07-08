@@ -36,7 +36,10 @@ export function ReportTypesTable({
         </thead>
         <tbody>
           {options.map((opt) => (
-            <tr key={opt.id} className="border-b border-gray-03/60 last:border-0">
+            <tr
+              key={opt.id}
+              className="border-b border-gray-03/60 last:border-0"
+            >
               <td className="px-4 py-3 font-mono text-gray-01">{opt.slug}</td>
               <td className="px-4 py-3 text-gray-02">
                 {opt.label ?? t("common.placeholderDash")}
