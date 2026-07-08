@@ -5,7 +5,8 @@ export const OVERVIEW_YEAR_RANGE_START = 2020;
 export type OverviewViewMode =
   | "companyYears"
   | "registryReports"
-  | "prodToStage";
+  | "prodToStage"
+  | "coverage";
 
 export type OverviewStatusKind =
   | "ok"
@@ -119,6 +120,7 @@ export function defaultFiltersForView(
   viewMode: OverviewViewMode,
 ): OverviewFilters {
   if (viewMode === "registryReports") return defaultRegistryOverviewFilters();
+  if (viewMode === "coverage") return defaultOverviewFilters();
   return defaultOverviewFilters();
 }
 

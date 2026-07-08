@@ -8,6 +8,8 @@
     "clearFilters": "Rensa filter",
     "refresh": "Uppdatera",
     "search": "Sök",
+    "cancel": "Avbryt",
+    "save": "Spara",
     "scrollToTop": "Scrolla till toppen",
     "yes": "Ja",
     "no": "Nej",
@@ -1058,8 +1060,10 @@
     "views": {
       "companyYears": "Företagsår",
       "registryReports": "Register-rapporter",
-      "prodToStage": "Prod → Stage"
+      "prodToStage": "Prod → Stage",
+      "coverage": "Täckning"
     },
+    "subtitleCoverage": "Hantera indexlistor per år och se hur många företagsnamn som redan finns i Garbo.",
     "subtitleProdToStage": "Prod CompanyReports med minst en fullt verifierad rapporteringsperiod där motsvarande stage-rapport ännu saknar utsläppsdata. Kör valda laddar upp prod-rapportens URL via stage-pipeline endast.",
     "filtersTitle": "Sök och filter",
     "searchLabel": "Företagsnamn eller ID",
@@ -1107,6 +1111,58 @@
         "runnable": "Körbara",
         "selected": "Valda",
         "allCandidates": "Alla kandidater"
+      }
+    },
+    "coverage": {
+      "errorTitle": "Täckningsanrop misslyckades",
+      "addList": "Lägg till lista",
+      "addYear": "Lägg till år",
+      "editYear": "Redigera namn",
+      "deleteList": "Ta bort lista",
+      "deleteYear": "Ta bort år",
+      "confirmDeleteListTitle": "Ta bort täckningslista?",
+      "confirmDeleteList": "Ta bort \"{{name}}\" och alla årsutgåvor? Detta går inte att ångra.",
+      "confirmDeleteYearTitle": "Ta bort årsutgåva?",
+      "confirmDeleteYear": "Ta bort årsutgåvan {{year}} från \"{{name}}\"? Detta går inte att ångra.",
+      "backToLists": "Tillbaka till listor",
+      "noLists": "Inga täckningslistor ännu.",
+      "noYears": "Inga årsutgåvor ännu. Lägg till ett år och klistra in företagsnamn.",
+      "noEntries": "Inga rader matchar filtret.",
+      "createListTitle": "Skapa täckningslista",
+      "addYearTitle": "Lägg till årsutgåva",
+      "editYearTitle": "Redigera namn för år",
+      "formHint": "Klistra in ett företagsnamn per rad. Täckning beräknas live mot Garbo-företagsnamn.",
+      "listNameLabel": "Listnamn",
+      "listNamePlaceholder": "t.ex. MSCI World Index",
+      "yearLabel": "År",
+      "namesLabel": "Företagsnamn",
+      "namesPlaceholder": "Apple Inc.\nMicrosoft Corporation\n…",
+      "namesCount": "{{count}} namn",
+      "yearPill": "{{year}} · {{percent}}%",
+      "latestCoverageCell": "{{year}}: {{percent}}% ({{matched}}/{{total}})",
+      "entryFilterLabel": "Radfilter",
+      "searchPlaceholder": "Sök namn eller matchningar…",
+      "filters": {
+        "all": "Alla",
+        "matched": "Matchade",
+        "missing": "Saknas",
+        "ambiguous": "Tvetydiga"
+      },
+      "columns": {
+        "list": "Lista",
+        "years": "År",
+        "latestCoverage": "Senaste täckning",
+        "updated": "Uppdaterad",
+        "listName": "Listnamn",
+        "status": "Status",
+        "dbMatch": "DB-match"
+      },
+      "stats": {
+        "total": "Totalt antal namn",
+        "matched": "Matchade",
+        "missing": "Saknas",
+        "ambiguous": "Tvetydiga",
+        "coverage": "Täckning"
       }
     },
     "fetchError": "Kunde inte ladda översiktsdata.",
