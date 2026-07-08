@@ -4,8 +4,10 @@ import {
   coverageListCollectionSchema,
   coverageListSummarySchema,
   coverageYearDetailSchema,
+  coverageCompanySearchHitSchema,
   type CoverageListSummary,
   type CoverageYearDetail,
+  type CoverageCompanySearchHit,
 } from "./coverage-types";
 
 function coverageUrl(path: string): string {
@@ -150,6 +152,33 @@ export async function deleteCoverageListYear(
       `Delete coverage year failed (${response.status})${body ? `: ${body.slice(0, 200)}` : ""}`,
     );
   }
+}
+
+export async function searchCoverageCompanies(
+  query: string,
+): Promise<CoverageCompanySearchHit[]> {
+  const url = `${coverageUrl("companies/search")}?q=${encodeURIComponent(query)}`;
+  const response = await garboAuthFetch(url, { cache: "no-store" });
+  return parseJson(response, url, (data) =>
+    z.array(coverageCompanySearchHitSchema).parse(data),
+  );
+}
+
+export async function setCoverageEntryMatch(
+  listId: string,
+  year: number,
+  entryId: string,
+  matchedCompanyId: string | null,
+): Promise<CoverageYearDetail> {
+  const url = coverageUrl(`${listId}/years/${year}/entries/${entryId}`);
+  const response = await garboAuthFetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ matchedCompanyId }),
+  });
+  return parseJson(response, url, (data) =>
+    coverageYearDetailSchema.parse(data),
+  );
 }
 
 export function namesFromTextarea(text: string): string[] {

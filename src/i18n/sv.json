@@ -1155,8 +1155,21 @@
         "updated": "Uppdaterad",
         "listName": "Listnamn",
         "status": "Status",
-        "dbMatch": "DB-match"
+        "dbMatch": "DB-match",
+        "actions": "Åtgärder"
       },
+      "editMatch": "Redigera match",
+      "editMatchTitle": "Redigera företagsmatch",
+      "editMatchDescription": "Sök Garbo-företag och koppla listraden till ett befintligt företag.",
+      "searchCompanyLabel": "Sök företag",
+      "searchCompanyPlaceholder": "Skriv minst 2 tecken…",
+      "searchMinLength": "Skriv minst 2 tecken för att söka.",
+      "searchNoResults": "Inga företag hittades.",
+      "confirmMatch": "Spara match",
+      "clearMatch": "Rensa manuell match",
+      "useSuggestedMatch": "Använd föreslagen match",
+      "suggestedMatch": "föreslagen",
+      "manualBadge": "manuell",
       "stats": {
         "total": "Totalt antal namn",
         "matched": "Matchade",

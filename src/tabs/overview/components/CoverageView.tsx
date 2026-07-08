@@ -12,6 +12,8 @@ import {
 import { CoverageListTable } from "./CoverageListTable";
 import { CoverageYearDetailView } from "./CoverageYearDetail";
 import { CoverageYearFormDialog } from "./CoverageYearFormDialog";
+import { CoverageEntryMatchDialog } from "./CoverageEntryMatchDialog";
+import type { CoverageEntry } from "@/tabs/overview/lib/coverage-types";
 
 type DialogState =
   | { kind: "closed" }
@@ -35,6 +37,8 @@ export function CoverageView() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [matchEntry, setMatchEntry] = useState<CoverageEntry | null>(null);
+  const [isMatchSubmitting, setIsMatchSubmitting] = useState(false);
 
   const selectedList = useMemo(
     () => coverage.lists.find((list) => list.id === selectedListId) ?? null,
@@ -267,6 +271,7 @@ export function CoverageView() {
                         .join("\n"),
                     })
                   }
+                  onEditEntry={setMatchEntry}
                 />
               ) : null}
             </div>
@@ -337,6 +342,26 @@ export function CoverageView() {
         confirmVariant="danger"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}
+      />
+
+      <CoverageEntryMatchDialog
+        open={matchEntry !== null}
+        onOpenChange={(open) => {
+          if (!open) setMatchEntry(null);
+        }}
+        entry={matchEntry}
+        isSubmitting={isMatchSubmitting}
+        onConfirm={async (matchedCompanyId) => {
+          if (!matchEntry) return;
+          setIsMatchSubmitting(true);
+          try {
+            await yearDetail.setEntryMatch(matchEntry.id, matchedCompanyId);
+            await coverage.refresh();
+            setMatchEntry(null);
+          } finally {
+            setIsMatchSubmitting(false);
+          }
+        }}
       />
     </div>
   );

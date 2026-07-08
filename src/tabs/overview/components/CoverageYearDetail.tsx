@@ -13,11 +13,13 @@ import type {
 type CoverageYearDetailProps = {
   detail: CoverageYearDetail;
   onEdit: () => void;
+  onEditEntry: (entry: CoverageEntry) => void;
 };
 
 export function CoverageYearDetailView({
   detail,
   onEdit,
+  onEditEntry,
 }: CoverageYearDetailProps) {
   const { t } = useI18n();
   const [filter, setFilter] = useState<CoverageEntryFilter>("all");
@@ -120,15 +122,22 @@ export function CoverageYearDetailView({
               <th className="px-4 py-2 font-medium">
                 {t("overview.coverage.columns.dbMatch")}
               </th>
+              <th className="px-4 py-2 font-medium w-28">
+                {t("overview.coverage.columns.actions")}
+              </th>
             </tr>
           </thead>
           <tbody>
             {filteredEntries.map((entry) => (
-              <CoverageEntryRow key={entry.id} entry={entry} />
+              <CoverageEntryRow
+                key={entry.id}
+                entry={entry}
+                onEditEntry={onEditEntry}
+              />
             ))}
             {filteredEntries.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-gray-02">
+                <td colSpan={4} className="px-4 py-8 text-center text-gray-02">
                   {t("overview.coverage.noEntries")}
                 </td>
               </tr>
@@ -157,7 +166,13 @@ function CoverageStatCard({
   );
 }
 
-function CoverageEntryRow({ entry }: { entry: CoverageEntry }) {
+function CoverageEntryRow({
+  entry,
+  onEditEntry,
+}: {
+  entry: CoverageEntry;
+  onEditEntry: (entry: CoverageEntry) => void;
+}) {
   const { t } = useI18n();
 
   const statusLabel =
@@ -177,7 +192,14 @@ function CoverageEntryRow({ entry }: { entry: CoverageEntry }) {
   return (
     <tr className="border-t border-gray-03/60">
       <td className="px-4 py-2 text-gray-01">{entry.name}</td>
-      <td className={`px-4 py-2 font-medium ${statusClass}`}>{statusLabel}</td>
+      <td className={`px-4 py-2 font-medium ${statusClass}`}>
+        <span>{statusLabel}</span>
+        {entry.matchMethod === "manual" ? (
+          <span className="ml-2 text-[10px] uppercase tracking-wide text-blue-03">
+            {t("overview.coverage.manualBadge")}
+          </span>
+        ) : null}
+      </td>
       <td className="px-4 py-2 text-gray-02">
         {entry.matchedCompany ? (
           <Link
@@ -189,6 +211,11 @@ function CoverageEntryRow({ entry }: { entry: CoverageEntry }) {
         ) : (
           "—"
         )}
+      </td>
+      <td className="px-4 py-2">
+        <Button variant="secondary" size="sm" onClick={() => onEditEntry(entry)}>
+          {t("overview.coverage.editMatch")}
+        </Button>
       </td>
     </tr>
   );

@@ -8,6 +8,7 @@ import {
   fetchCoverageYearDetail,
   renameCoverageList,
   replaceCoverageYearNames,
+  setCoverageEntryMatch,
 } from "../lib/coverage-api";
 import type {
   CoverageListSummary,
@@ -113,5 +114,21 @@ export function useCoverageYearDetail(
     void loadDetail();
   }, [loadDetail]);
 
-  return { detail, isLoading, error, refresh: loadDetail };
+  return {
+    detail,
+    isLoading,
+    error,
+    refresh: loadDetail,
+    setEntryMatch: async (entryId: string, matchedCompanyId: string | null) => {
+      if (!listId || year === null) return null;
+      const updated = await setCoverageEntryMatch(
+        listId,
+        year,
+        entryId,
+        matchedCompanyId,
+      );
+      setDetail(updated);
+      return updated;
+    },
+  };
 }
