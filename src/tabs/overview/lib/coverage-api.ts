@@ -168,13 +168,16 @@ export async function setCoverageEntryMatch(
   listId: string,
   year: number,
   entryId: string,
-  matchedCompanyId: string | null,
+  input: {
+    matchedCompanyId: string | null;
+    matchConfirmedMissing?: boolean;
+  },
 ): Promise<CoverageYearDetail> {
   const url = coverageUrl(`${listId}/years/${year}/entries/${entryId}`);
   const response = await garboAuthFetch(url, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ matchedCompanyId }),
+    body: JSON.stringify(input),
   });
   return parseJson(response, url, (data) =>
     coverageYearDetailSchema.parse(data),

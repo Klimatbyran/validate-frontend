@@ -14,7 +14,10 @@ import { CoverageListTable } from "./CoverageListTable";
 import { CoverageYearDetailView } from "./CoverageYearDetail";
 import { CoverageYearFormDialog } from "./CoverageYearFormDialog";
 import { CoverageEntryMatchDialog } from "./CoverageEntryMatchDialog";
-import type { CoverageEntry } from "@/tabs/overview/lib/coverage-types";
+import type {
+  CoverageEntry,
+  CoverageMatchSaveAction,
+} from "@/tabs/overview/lib/coverage-types";
 
 type DialogState =
   | { kind: "closed" }
@@ -352,16 +355,22 @@ export function CoverageView() {
         }}
         entry={matchEntry}
         isSubmitting={isMatchSubmitting}
-        onConfirm={async (matchedCompanyId, companyName) => {
+        onAction={async (action: CoverageMatchSaveAction) => {
           if (!matchEntry) return;
           setIsMatchSubmitting(true);
           try {
-            await yearDetail.setEntryMatch(matchEntry.id, matchedCompanyId);
+            await yearDetail.setEntryMatch(matchEntry.id, action);
             await coverage.refresh();
             setMatchEntry(null);
-            if (matchedCompanyId === null) {
+            if (action.type === "clear") {
               toast.success(
                 t("overview.coverage.clearMatchSuccess", {
+                  name: matchEntry.name,
+                }),
+              );
+            } else if (action.type === "markMissing") {
+              toast.success(
+                t("overview.coverage.markAsMissingSuccess", {
                   name: matchEntry.name,
                 }),
               );
@@ -369,7 +378,7 @@ export function CoverageView() {
               toast.success(
                 t("overview.coverage.saveMatchSuccess", {
                   name: matchEntry.name,
-                  company: companyName ?? "",
+                  company: action.companyName,
                 }),
               );
             }
