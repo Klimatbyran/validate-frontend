@@ -50,7 +50,14 @@ export function CoverageEntryMatchDialog({
       setIsSearching(true);
       setSearchError(null);
       void searchCoverageCompanies(trimmed)
-        .then((hits) => setResults(hits))
+        .then((hits) => {
+          setResults(hits);
+          if (!entry?.matchedCompany) return;
+          const suggested = hits.find(
+            (hit) => hit.wikidataId === entry.matchedCompany?.wikidataId,
+          );
+          if (suggested) setSelectedId(suggested.id);
+        })
         .catch((err) => {
           setResults([]);
           setSearchError(err instanceof Error ? err.message : "Search failed");
@@ -59,7 +66,7 @@ export function CoverageEntryMatchDialog({
     }, 300);
 
     return () => window.clearTimeout(handle);
-  }, [open, query]);
+  }, [open, query, entry]);
 
   const selectedCompany = useMemo(
     () => results.find((hit) => hit.id === selectedId) ?? null,

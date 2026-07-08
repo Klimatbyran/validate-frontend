@@ -42,6 +42,10 @@ export const coverageCompanySearchHitSchema = z.object({
   wikidataId: z.string(),
 });
 
+export const coverageCompanySearchResponseSchema = z.array(
+  coverageCompanySearchHitSchema,
+);
+
 export const coverageYearDetailSchema = coverageYearSummarySchema.extend({
   listId: z.string(),
   listName: z.string(),
