@@ -1293,6 +1293,7 @@
     "batch": "Batch",
     "reportType": "Rapporttyp",
     "reportTypeNone": "Ingen typ",
+    "reportTypesLoadError": "Kunde inte ladda rapporttyper: {{message}}",
     "reportUrl": "Rapport-URL",
     "sourceUrl": "Käll-URL",
     "s3Url": "PDF / lagrings-URL",

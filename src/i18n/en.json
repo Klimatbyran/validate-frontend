@@ -1293,6 +1293,7 @@
     "batch": "Batch",
     "reportType": "Report type",
     "reportTypeNone": "No type",
+    "reportTypesLoadError": "Failed to load report types: {{message}}",
     "reportUrl": "Report URL",
     "sourceUrl": "Source URL",
     "s3Url": "PDF / storage URL",

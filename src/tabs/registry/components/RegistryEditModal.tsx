@@ -111,7 +111,14 @@ const RegistryEditModal = ({
     setReportTypesLoading(true);
     void fetchReportTypes()
       .then(setReportTypes)
-      .catch(() => setReportTypes([]))
+      .catch((error: unknown) => {
+        setReportTypes([]);
+        toast.error(
+          t("registry.reportTypesLoadError", {
+            message: error instanceof Error ? error.message : String(error),
+          }),
+        );
+      })
       .finally(() => setReportTypesLoading(false));
   }, [open]);
 
