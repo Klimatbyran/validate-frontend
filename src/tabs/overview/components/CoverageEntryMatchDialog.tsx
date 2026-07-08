@@ -12,7 +12,10 @@ type CoverageEntryMatchDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entry: CoverageEntry | null;
-  onConfirm: (companyId: string | null) => Promise<void>;
+  onConfirm: (
+    companyId: string | null,
+    companyName?: string | null,
+  ) => Promise<void>;
   isSubmitting?: boolean;
 };
 
@@ -102,7 +105,7 @@ export function CoverageEntryMatchDialog({
             <Button
               variant="secondary"
               disabled={isSubmitting}
-              onClick={() => void onConfirm(suggestedHit.id)}
+              onClick={() => void onConfirm(suggestedHit.id, suggestedHit.name)}
             >
               {t("overview.coverage.useSuggestedMatch")}
             </Button>
@@ -113,7 +116,9 @@ export function CoverageEntryMatchDialog({
           <Button
             disabled={!selectedCompany || isSubmitting}
             onClick={() =>
-              selectedCompany ? void onConfirm(selectedCompany.id) : undefined
+              selectedCompany
+                ? void onConfirm(selectedCompany.id, selectedCompany.name)
+                : undefined
             }
           >
             {t("overview.coverage.confirmMatch")}

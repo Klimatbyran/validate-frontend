@@ -1170,6 +1170,9 @@
       "useSuggestedMatch": "Use suggested match",
       "suggestedMatch": "suggested",
       "manualBadge": "manual",
+      "saveMatchSuccess": "Saved match for {{name}} → {{company}}",
+      "clearMatchSuccess": "Cleared manual match for {{name}}",
+      "saveMatchError": "Could not save match for {{name}}: {{message}}",
       "stats": {
         "total": "Total names",
         "matched": "Matched",

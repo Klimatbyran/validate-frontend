@@ -1170,6 +1170,9 @@
       "useSuggestedMatch": "Använd föreslagen match",
       "suggestedMatch": "föreslagen",
       "manualBadge": "manuell",
+      "saveMatchSuccess": "Sparade match för {{name}} → {{company}}",
+      "clearMatchSuccess": "Rensade manuell match för {{name}}",
+      "saveMatchError": "Kunde inte spara match för {{name}}: {{message}}",
       "stats": {
         "total": "Totalt antal namn",
         "matched": "Matchade",

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { Callout } from "@/ui/callout";
@@ -351,13 +352,34 @@ export function CoverageView() {
         }}
         entry={matchEntry}
         isSubmitting={isMatchSubmitting}
-        onConfirm={async (matchedCompanyId) => {
+        onConfirm={async (matchedCompanyId, companyName) => {
           if (!matchEntry) return;
           setIsMatchSubmitting(true);
           try {
             await yearDetail.setEntryMatch(matchEntry.id, matchedCompanyId);
             await coverage.refresh();
             setMatchEntry(null);
+            if (matchedCompanyId === null) {
+              toast.success(
+                t("overview.coverage.clearMatchSuccess", {
+                  name: matchEntry.name,
+                }),
+              );
+            } else {
+              toast.success(
+                t("overview.coverage.saveMatchSuccess", {
+                  name: matchEntry.name,
+                  company: companyName ?? "",
+                }),
+              );
+            }
+          } catch (err) {
+            toast.error(
+              t("overview.coverage.saveMatchError", {
+                name: matchEntry.name,
+                message: err instanceof Error ? err.message : "Unknown error",
+              }),
+            );
           } finally {
             setIsMatchSubmitting(false);
           }
