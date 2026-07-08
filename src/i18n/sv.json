@@ -660,9 +660,9 @@
     },
     "jobdetails": {
       "redisRetentionLiveTitle": "Fortfarande i Redis",
-      "redisRetentionLiveBody": "Jobbet är aktivt eller väntar. Live Redis behåller ungefär de {{count}} senaste körningarna per företag; äldre avslutade körningar finns i Arkiv.",
+      "redisRetentionLiveBody": "Jobbet är aktivt eller väntar. Live Redis behåller ungefär de {{count}} senaste körningarna i Jobbstatus; äldre avslutade körningar finns i Arkiv.",
       "redisRetentionTerminalTitle": "Redis-retention",
-      "redisRetentionTerminalBody": "Live Redis behåller ungefär de {{count}} senaste körningarna per företag. När gränsen överskrids tas äldre avslutade körningar bort från Redis — använd Arkiv-fliken för full historik.",
+      "redisRetentionTerminalBody": "Live Redis behåller ungefär de {{count}} senaste körningarna totalt i Jobbstatus. När fler körningar avslutas tas äldre bort från Redis — använd Arkiv-fliken för full historik.",
       "information": "Information",
       "noValue": "Inget värde",
       "rerunJob": "Kör om jobbet",

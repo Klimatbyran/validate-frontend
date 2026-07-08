@@ -660,9 +660,9 @@
     },
     "jobdetails": {
       "redisRetentionLiveTitle": "Still in Redis",
-      "redisRetentionLiveBody": "This job is still active or waiting. Live Redis keeps about the {{count}} most recent runs per company; older completed runs move to Archive.",
+      "redisRetentionLiveBody": "This job is still active or waiting. Live Redis keeps about the {{count}} most recent runs in Job status; older completed runs move to Archive.",
       "redisRetentionTerminalTitle": "Redis retention",
-      "redisRetentionTerminalBody": "Live Redis keeps about the {{count}} most recent runs per company. When a company exceeds that, older completed runs are removed from Redis — use the Archive tab for full history.",
+      "redisRetentionTerminalBody": "Live Redis keeps about the {{count}} most recent runs in Job status overall. When more runs finish, older completed runs are removed from Redis — use the Archive tab for full history.",
       "information": "Information",
       "noValue": "No value",
       "rerunJob": "Rerun job",

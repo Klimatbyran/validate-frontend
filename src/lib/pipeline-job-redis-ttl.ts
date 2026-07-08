@@ -1,5 +1,5 @@
-/** Live Redis keeps about this many completed runs per company (align with pipeline retention). */
-export const PIPELINE_REDIS_RUNS_PER_COMPANY = 15;
+/** Live Redis keeps about this many runs total in Job status (align with pipeline retention). */
+export const PIPELINE_REDIS_LIVE_RUN_CAP = 15;
 
 const LIVE_STATUSES = new Set([
   "active",

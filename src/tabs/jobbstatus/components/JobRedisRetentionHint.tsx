@@ -3,7 +3,7 @@ import type { QueueJob } from "@/lib/types";
 import { Callout } from "@/ui/callout";
 import { useI18n } from "@/contexts/I18nContext";
 import {
-  PIPELINE_REDIS_RUNS_PER_COMPANY,
+  PIPELINE_REDIS_LIVE_RUN_CAP,
   isPipelineJobLikelyInRedisLiveState,
 } from "@/lib/pipeline-job-redis-ttl";
 
@@ -24,7 +24,7 @@ export function JobRedisRetentionHint({ job }: JobRedisRetentionHintProps) {
         variant="info"
         title={t("jobstatus.jobdetails.redisRetentionLiveTitle")}
         description={t("jobstatus.jobdetails.redisRetentionLiveBody", {
-          count: PIPELINE_REDIS_RUNS_PER_COMPANY,
+          count: PIPELINE_REDIS_LIVE_RUN_CAP,
         })}
         icon={<Clock className="w-5 h-5" />}
       />
