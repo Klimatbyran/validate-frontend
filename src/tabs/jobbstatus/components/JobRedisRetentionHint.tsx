@@ -36,7 +36,7 @@ export function JobRedisRetentionHint({ job }: JobRedisRetentionHintProps) {
       variant="info"
       title={t("jobstatus.jobdetails.redisRetentionTerminalTitle")}
       description={t("jobstatus.jobdetails.redisRetentionTerminalBody", {
-        count: PIPELINE_REDIS_RUNS_PER_COMPANY,
+        count: PIPELINE_REDIS_LIVE_RUN_CAP,
       })}
       icon={<Clock className="w-5 h-5" />}
     />
