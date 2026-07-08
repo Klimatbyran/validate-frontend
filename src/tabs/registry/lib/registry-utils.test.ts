@@ -5,6 +5,7 @@ import {
   parseRegistrySearchTerms,
   registryEntryMatchesSearchTerm,
   registryEntrySelectionKey,
+  resolveRegistryEntryReportTypeId,
 } from "./registry-utils";
 import type { RegistryEntry } from "./registry-types";
 
@@ -108,6 +109,30 @@ describe("registryEntrySelectionKey", () => {
     expect(registryEntrySelectionKey(entry)).toBe(
       "https://example.com/abb.pdf",
     );
+  });
+});
+
+describe("resolveRegistryEntryReportTypeId", () => {
+  it("prefers top-level reportTypeId", () => {
+    const entry: RegistryEntry = {
+      url: "https://example.com/a.pdf",
+      reportTypeId: " top-id ",
+      reportType: { id: "embedded-id", slug: "annual", label: "Annual" },
+    };
+    expect(resolveRegistryEntryReportTypeId(entry)).toBe("top-id");
+  });
+
+  it("falls back to embedded reportType.id when reportTypeId is missing", () => {
+    const entry: RegistryEntry = {
+      url: "https://example.com/a.pdf",
+      reportType: { id: " embedded-id ", slug: "annual", label: "Annual" },
+    };
+    expect(resolveRegistryEntryReportTypeId(entry)).toBe("embedded-id");
+  });
+
+  it("returns empty string when no report type is set", () => {
+    const entry: RegistryEntry = { url: "https://example.com/a.pdf" };
+    expect(resolveRegistryEntryReportTypeId(entry)).toBe("");
   });
 });
 

@@ -24,8 +24,13 @@ import {
   DialogTitle,
 } from "@/ui/dialog";
 import type { RegistryEntry, RegistryEntryUpdate } from "../lib/registry-types";
-import { isValidOptionalHttpUrl } from "../lib/registry-utils";
+import {
+  isValidOptionalHttpUrl,
+  resolveRegistryEntryReportTypeId,
+} from "../lib/registry-utils";
 import { RegistryAddBatchOptions } from "./RegistryAddBatchOptions";
+import { fetchReportTypes } from "@/tabs/editor/lib/report-types-api";
+import type { ReportType } from "@/tabs/editor/lib/types";
 
 interface RegistryEditModalProps {
   entry: RegistryEntry;
@@ -61,6 +66,11 @@ const RegistryEditModal = ({
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [batchDropdownChoice, setBatchDropdownChoice] = useState("");
   const [customBatchName, setCustomBatchName] = useState("");
+  const [reportTypeId, setReportTypeId] = useState(() =>
+    resolveRegistryEntryReportTypeId(entry),
+  );
+  const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
+  const [reportTypesLoading, setReportTypesLoading] = useState(false);
   const {
     batches: existingBatches,
     isLoading: batchesLoading,
@@ -86,6 +96,7 @@ const RegistryEditModal = ({
     setIsUploadingPdf(false);
     setBatchDropdownChoice(entry.batchId?.trim() ?? "");
     setCustomBatchName("");
+    setReportTypeId(resolveRegistryEntryReportTypeId(entry));
   }, [
     entry.companyName,
     entry.reportYear,
@@ -97,7 +108,25 @@ const RegistryEditModal = ({
     entry.s3Bucket,
     entry.sha256,
     entry.batchId,
+    entry.reportTypeId,
+    entry.reportType?.id,
   ]);
+
+  useEffect(() => {
+    if (!open) return;
+    setReportTypesLoading(true);
+    void fetchReportTypes()
+      .then(setReportTypes)
+      .catch((error: unknown) => {
+        setReportTypes([]);
+        toast.error(
+          t("registry.reportTypesLoadError", {
+            message: error instanceof Error ? error.message : String(error),
+          }),
+        );
+      })
+      .finally(() => setReportTypesLoading(false));
+  }, [open]);
 
   const uploadPdfAndApplyFields = useCallback(
     async (file: File) => {
@@ -325,6 +354,12 @@ const RegistryEditModal = ({
       updates.batchId = nextBatchId;
     }
 
+    const prevReportTypeId = resolveRegistryEntryReportTypeId(entry);
+    const nextReportTypeId = reportTypeId.trim();
+    if (nextReportTypeId !== prevReportTypeId) {
+      updates.reportTypeId = nextReportTypeId ? nextReportTypeId : null;
+    }
+
     if (Object.keys(updates).length === 1) {
       onOpenChange(false);
       return;
@@ -356,6 +391,22 @@ const RegistryEditModal = ({
             }}
           />
 
+          <label className="text-sm text-gray-02">
+            {t("registry.reportType")}
+            <select
+              value={reportTypeId}
+              onChange={(event) => setReportTypeId(event.target.value)}
+              disabled={reportTypesLoading || isEditing || isUploadingPdf}
+              className="mt-1 w-full bg-gray-03/20 border border-gray-03 rounded-lg px-3 py-2 text-gray-01"
+            >
+              <option value="">{t("registry.reportTypeNone")}</option>
+              {reportTypes.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.label?.trim() || type.slug}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="text-sm text-gray-02">
             {t("registry.companyName")}
             <input

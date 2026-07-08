@@ -68,6 +68,9 @@ const RegistryResultsList = ({
                 {t("registry.batch")}
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                {t("registry.reportType")}
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
                 {t("registry.reportUrl")}
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
