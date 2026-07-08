@@ -26,11 +26,20 @@ export const coverageEntryStatusSchema = z.enum([
   "ambiguous",
 ]);
 
+export const coverageMatchMethodSchema = z.enum(["auto", "manual"]);
+
 export const coverageEntrySchema = z.object({
   id: z.string(),
   name: z.string(),
   status: coverageEntryStatusSchema,
+  matchMethod: coverageMatchMethodSchema.optional(),
   matchedCompany: coverageMatchedCompanySchema.optional(),
+});
+
+export const coverageCompanySearchHitSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  wikidataId: z.string(),
 });
 
 export const coverageYearDetailSchema = coverageYearSummarySchema.extend({
@@ -51,5 +60,8 @@ export type CoverageListSummary = z.infer<typeof coverageListSummarySchema>;
 export type CoverageEntryStatus = z.infer<typeof coverageEntryStatusSchema>;
 export type CoverageEntry = z.infer<typeof coverageEntrySchema>;
 export type CoverageYearDetail = z.infer<typeof coverageYearDetailSchema>;
+export type CoverageCompanySearchHit = z.infer<
+  typeof coverageCompanySearchHitSchema
+>;
 
 export type CoverageEntryFilter = "all" | CoverageEntryStatus;

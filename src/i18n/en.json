@@ -1155,8 +1155,21 @@
         "updated": "Updated",
         "listName": "List name",
         "status": "Status",
-        "dbMatch": "DB match"
+        "dbMatch": "DB match",
+        "actions": "Actions"
       },
+      "editMatch": "Edit match",
+      "editMatchTitle": "Edit company match",
+      "editMatchDescription": "Search Garbo companies and link this list entry to an existing company.",
+      "searchCompanyLabel": "Search companies",
+      "searchCompanyPlaceholder": "Type at least 2 characters…",
+      "searchMinLength": "Type at least 2 characters to search.",
+      "searchNoResults": "No companies found.",
+      "confirmMatch": "Save match",
+      "clearMatch": "Clear manual match",
+      "useSuggestedMatch": "Use suggested match",
+      "suggestedMatch": "suggested",
+      "manualBadge": "manual",
       "stats": {
         "total": "Total names",
         "matched": "Matched",
