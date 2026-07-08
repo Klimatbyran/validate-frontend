@@ -22,6 +22,22 @@ export interface UpdateTagOptionBody {
   label?: string | null;
 }
 
+export interface ReportType {
+  id: string;
+  slug: string;
+  label: string | null;
+}
+
+export interface CreateReportTypeBody {
+  slug: string;
+  label?: string | null;
+}
+
+export interface UpdateReportTypeBody {
+  slug?: string;
+  label?: string | null;
+}
+
 export const WIKIDATA_ID_REGEX = /^Q\d+$/;
 
 export interface GarboCompanyListItem {
@@ -51,6 +67,8 @@ export interface GarboRegistryReportSummary {
   reportYear?: string | null;
   sha256?: string | null;
   wikidataId?: string | null;
+  reportTypeId?: string | null;
+  reportType?: ReportType | null;
 }
 
 export interface GarboCompanyReportSummary {

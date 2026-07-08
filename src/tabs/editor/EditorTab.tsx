@@ -5,16 +5,22 @@ import { useI18n } from "@/contexts/I18nContext";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { getUnearthTarget } from "@/config/api-env";
 import { ManageTagOptions } from "./components/tag-options/ManageTagOptions";
+import { ManageReportTypes } from "./components/report-types/ManageReportTypes";
 import { MultiCompanyView } from "./components/multi-company/MultiCompanyView";
 import { SingleCompanyView } from "./components/single-company/SingleCompanyView";
 import { EDITOR_INDEX_PATH } from "./lib/editor-routes";
 
-export type EditorViewMode = "tag-options" | "multi-company" | "single-company";
+export type EditorViewMode =
+  | "tag-options"
+  | "report-types"
+  | "multi-company"
+  | "single-company";
 
 const VIEW_MODES: { value: EditorViewMode; labelKey: string }[] = [
   { value: "single-company", labelKey: "editor.singleCompany" },
   { value: "multi-company", labelKey: "editor.multiCompany" },
   { value: "tag-options", labelKey: "editor.manageTagOptions" },
+  { value: "report-types", labelKey: "editor.manageReportTypes" },
 ];
 
 export function EditorTab() {
@@ -73,6 +79,7 @@ export function EditorTab() {
       </motion.div>
 
       {viewMode === "tag-options" && <ManageTagOptions />}
+      {viewMode === "report-types" && <ManageReportTypes />}
       {viewMode === "multi-company" && <MultiCompanyView />}
       {viewMode === "single-company" && <SingleCompanyView />}
     </div>

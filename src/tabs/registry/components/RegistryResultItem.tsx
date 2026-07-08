@@ -74,6 +74,11 @@ const RegistryResultItem = ({
       <td className="px-4 py-3 text-sm text-gray-02">
         {entry.batchName?.trim() || t("common.placeholderDash")}
       </td>
+      <td className="px-4 py-3 text-sm text-gray-02">
+        {entry.reportType?.label?.trim() ||
+          entry.reportType?.slug?.trim() ||
+          t("common.placeholderDash")}
+      </td>
       <td className="px-4 py-3 text-sm text-gray-02 max-w-[22rem]">
         <div className="flex flex-wrap gap-2">
           {linkItems.length ? (

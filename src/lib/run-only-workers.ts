@@ -16,6 +16,7 @@ export const RUN_ONLY_WORKER_IDS = [
   "baseYear",
   "fiscalYear",
   "companyTags",
+  "reportType",
   "lei",
   "descriptions",
 ] as const;
@@ -39,6 +40,7 @@ export const RUN_ONLY_WORKERS: RunOnlyWorker[] = [
   { id: "baseYear", label: "Base year" },
   { id: "fiscalYear", label: "Räkenskapsår" },
   { id: "companyTags", label: "Company tags" },
+  { id: "reportType", label: "Report type" },
   { id: "lei", label: "LEI" },
   { id: "descriptions", label: "Descriptions" },
 ];
