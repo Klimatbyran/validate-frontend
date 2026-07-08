@@ -4,7 +4,7 @@ import {
   coverageListCollectionSchema,
   coverageListSummarySchema,
   coverageYearDetailSchema,
-  coverageCompanySearchHitSchema,
+  coverageCompanySearchResponseSchema,
   type CoverageListSummary,
   type CoverageYearDetail,
   type CoverageCompanySearchHit,
@@ -160,7 +160,7 @@ export async function searchCoverageCompanies(
   const url = `${coverageUrl("companies/search")}?q=${encodeURIComponent(query)}`;
   const response = await garboAuthFetch(url, { cache: "no-store" });
   return parseJson(response, url, (data) =>
-    z.array(coverageCompanySearchHitSchema).parse(data),
+    coverageCompanySearchResponseSchema.parse(data),
   );
 }
 
