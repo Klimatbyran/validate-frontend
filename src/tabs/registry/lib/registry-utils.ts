@@ -40,6 +40,11 @@ export function registryEntrySelectionKey(entry: RegistryEntry): string {
   return entry.id ?? entry.url;
 }
 
+/** Effective report type id for forms and diffs (top-level id or embedded reportType.id). */
+export function resolveRegistryEntryReportTypeId(entry: RegistryEntry): string {
+  return entry.reportTypeId?.trim() || entry.reportType?.id?.trim() || "";
+}
+
 export function isSameRegistryEntrySelection(
   a: RegistryEntry,
   b: RegistryEntry,

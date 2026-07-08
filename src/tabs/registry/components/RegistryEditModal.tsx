@@ -24,7 +24,10 @@ import {
   DialogTitle,
 } from "@/ui/dialog";
 import type { RegistryEntry, RegistryEntryUpdate } from "../lib/registry-types";
-import { isValidOptionalHttpUrl } from "../lib/registry-utils";
+import {
+  isValidOptionalHttpUrl,
+  resolveRegistryEntryReportTypeId,
+} from "../lib/registry-utils";
 import { RegistryAddBatchOptions } from "./RegistryAddBatchOptions";
 import { fetchReportTypes } from "@/tabs/editor/lib/report-types-api";
 import type { ReportType } from "@/tabs/editor/lib/types";
@@ -63,7 +66,9 @@ const RegistryEditModal = ({
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [batchDropdownChoice, setBatchDropdownChoice] = useState("");
   const [customBatchName, setCustomBatchName] = useState("");
-  const [reportTypeId, setReportTypeId] = useState("");
+  const [reportTypeId, setReportTypeId] = useState(() =>
+    resolveRegistryEntryReportTypeId(entry),
+  );
   const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
   const [reportTypesLoading, setReportTypesLoading] = useState(false);
   const {
@@ -91,7 +96,7 @@ const RegistryEditModal = ({
     setIsUploadingPdf(false);
     setBatchDropdownChoice(entry.batchId?.trim() ?? "");
     setCustomBatchName("");
-    setReportTypeId(entry.reportTypeId?.trim() ?? "");
+    setReportTypeId(resolveRegistryEntryReportTypeId(entry));
   }, [
     entry.companyName,
     entry.reportYear,
@@ -104,6 +109,7 @@ const RegistryEditModal = ({
     entry.sha256,
     entry.batchId,
     entry.reportTypeId,
+    entry.reportType?.id,
   ]);
 
   useEffect(() => {
@@ -348,7 +354,7 @@ const RegistryEditModal = ({
       updates.batchId = nextBatchId;
     }
 
-    const prevReportTypeId = entry.reportTypeId?.trim() ?? "";
+    const prevReportTypeId = resolveRegistryEntryReportTypeId(entry);
     const nextReportTypeId = reportTypeId.trim();
     if (nextReportTypeId !== prevReportTypeId) {
       updates.reportTypeId = nextReportTypeId ? nextReportTypeId : null;
