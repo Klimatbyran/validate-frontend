@@ -53,9 +53,7 @@ export function CoverageEntryMatchDialog({
         .then((hits) => setResults(hits))
         .catch((err) => {
           setResults([]);
-          setSearchError(
-            err instanceof Error ? err.message : "Search failed",
-          );
+          setSearchError(err instanceof Error ? err.message : "Search failed");
         })
         .finally(() => setIsSearching(false));
     }, 300);
@@ -160,7 +158,9 @@ export function CoverageEntryMatchDialog({
                     <button
                       type="button"
                       className={`w-full px-3 py-2 text-left text-sm border-b border-gray-03/60 hover:bg-gray-04/40 ${
-                        isSelected ? "bg-blue-03/10 text-blue-03" : "text-gray-01"
+                        isSelected
+                          ? "bg-blue-03/10 text-blue-03"
+                          : "text-gray-01"
                       }`}
                       onClick={() => setSelectedId(hit.id)}
                     >

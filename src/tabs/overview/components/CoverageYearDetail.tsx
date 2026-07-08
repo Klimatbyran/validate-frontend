@@ -213,7 +213,11 @@ function CoverageEntryRow({
         )}
       </td>
       <td className="px-4 py-2">
-        <Button variant="secondary" size="sm" onClick={() => onEditEntry(entry)}>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => onEditEntry(entry)}
+        >
           {t("overview.coverage.editMatch")}
         </Button>
       </td>
