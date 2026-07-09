@@ -837,7 +837,8 @@
       "sendCompanyLink": "Send company link",
       "saveToAPI": "API save",
       "wikipediaUpload": "Wikipedia",
-      "diffTags": "Tags"
+      "diffTags": "Tags",
+      "diffReportType": "Report type"
     },
     "filters": {
       "pending_approval": "Pending approval",
