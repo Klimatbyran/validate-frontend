@@ -12,6 +12,7 @@ import {
 import {
   defaultFiltersForView,
   defaultProdToStageFilters,
+  defaultRegistryOverviewFilters,
   overviewFiltersAreActive,
   registryOverviewFiltersAreActive,
   overviewYearRange,
@@ -111,6 +112,26 @@ export function useOverviewData() {
           const query = viewModeToQuery(mode);
           if (query) next.set(OVERVIEW_VIEW_QUERY, query);
           else next.delete(OVERVIEW_VIEW_QUERY);
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  const openRegistryReportsWithSearch = useCallback(
+    (searchQuery: string) => {
+      setPage(1);
+      setShowAll(false);
+      setFilters({
+        ...defaultRegistryOverviewFilters(),
+        searchQuery: searchQuery.trim(),
+      });
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set(OVERVIEW_VIEW_QUERY, "registry");
           return next;
         },
         { replace: true },
@@ -292,6 +313,7 @@ export function useOverviewData() {
     isRefreshing,
     error,
     refresh: () => loadData(true),
+    openRegistryReportsWithSearch,
     filtersAreActive,
     pagination: {
       page,

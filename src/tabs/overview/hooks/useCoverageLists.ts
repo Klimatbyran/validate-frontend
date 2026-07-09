@@ -11,10 +11,50 @@ import {
   setCoverageEntryMatch,
 } from "../lib/coverage-api";
 import type {
+  CoverageEntry,
   CoverageListSummary,
   CoverageYearDetail,
   CoverageMatchSaveAction,
 } from "../lib/coverage-types";
+
+function entryMatchChanged(
+  previous: CoverageEntry,
+  updated: CoverageEntry,
+): boolean {
+  return (
+    previous.status !== updated.status ||
+    previous.matchMethod !== updated.matchMethod ||
+    previous.matchedCompany?.wikidataId !== updated.matchedCompany?.wikidataId
+  );
+}
+
+function mergeCoverageMatchUpdate(
+  previous: CoverageYearDetail | null,
+  updated: CoverageYearDetail,
+): CoverageYearDetail {
+  if (!previous) return updated;
+
+  const previousById = new Map(
+    previous.entries.map((entry) => [entry.id, entry] as const),
+  );
+
+  return {
+    ...updated,
+    hasAnyReportCount: previous.hasAnyReportCount,
+    prodReadyCount: previous.prodReadyCount,
+    noReportCount: previous.noReportCount,
+    entries: updated.entries.map((entry) => {
+      const prior = previousById.get(entry.id);
+      if (!prior || entryMatchChanged(prior, entry)) {
+        return entry;
+      }
+      return {
+        ...entry,
+        registryReports: prior.registryReports ?? [],
+      };
+    }),
+  };
+}
 
 export function useCoverageLists() {
   const [lists, setLists] = useState<CoverageListSummary[]>([]);
@@ -94,20 +134,26 @@ export function useCoverageYearDetail(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadDetail = useCallback(async () => {
+  const loadDetail = useCallback(async (options?: { silent?: boolean }) => {
     if (!listId || year === null) {
       setDetail(null);
       return;
     }
-    setIsLoading(true);
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       setDetail(await fetchCoverageYearDetail(listId, year));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
-      setDetail(null);
+      if (!options?.silent) {
+        setDetail(null);
+      }
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   }, [listId, year]);
 
@@ -119,7 +165,7 @@ export function useCoverageYearDetail(
     detail,
     isLoading,
     error,
-    refresh: loadDetail,
+    refresh: () => loadDetail(),
     setEntryMatch: async (entryId: string, action: CoverageMatchSaveAction) => {
       if (!listId || year === null) return null;
       const payload =
@@ -143,7 +189,8 @@ export function useCoverageYearDetail(
         entryId,
         payload,
       );
-      setDetail(updated);
+      setDetail((previous) => mergeCoverageMatchUpdate(previous, updated));
+      void loadDetail({ silent: true });
       return updated;
     },
   };
