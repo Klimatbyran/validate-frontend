@@ -1,7 +1,7 @@
 {
   "name": "garbo-validation-tool",
   "private": true,
-  "version": "1.13.3",
+  "version": "1.13.4-rc.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
