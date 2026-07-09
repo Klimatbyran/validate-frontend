@@ -1170,7 +1170,17 @@
         "all": "All",
         "matched": "Matched",
         "missing": "Missing",
-        "ambiguous": "Ambiguous"
+        "ambiguous": "Ambiguous",
+        "hasReports": "Has reports",
+        "noReports": "No reports",
+        "prodReady": "Prod ready",
+        "reportNotProdReady": "Reports not prod-ready"
+      },
+      "reports": {
+        "none": "No reports",
+        "viewInRegistry": "View in Registry Reports",
+        "pillProdReady": "Run completed, data in prod",
+        "pillNotProdReady": "Report in registry, not prod-ready"
       },
       "columns": {
         "list": "List",
@@ -1180,6 +1190,7 @@
         "listName": "List name",
         "status": "Status",
         "dbMatch": "DB match",
+        "reports": "Reports",
         "actions": "Actions"
       },
       "editMatch": "Edit match",
@@ -1204,7 +1215,10 @@
         "matched": "Matched",
         "missing": "Missing",
         "ambiguous": "Ambiguous",
-        "coverage": "Coverage"
+        "coverage": "Coverage",
+        "hasReports": "Has reports",
+        "prodReady": "Prod ready",
+        "noReports": "No reports"
       }
     },
     "fetchError": "Could not load overview data.",

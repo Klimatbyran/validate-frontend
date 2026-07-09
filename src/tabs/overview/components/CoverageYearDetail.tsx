@@ -4,6 +4,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { editorCompanyPath } from "@/tabs/editor/lib/editor-routes";
 import { Button } from "@/ui/button";
 import { ViewModePills } from "@/ui/view-mode-pills";
+import { ReportYearPill } from "./ReportYearPill";
 import type {
   CoverageEntry,
   CoverageEntryFilter,
@@ -14,12 +15,40 @@ type CoverageYearDetailProps = {
   detail: CoverageYearDetail;
   onEdit: () => void;
   onEditEntry: (entry: CoverageEntry) => void;
+  onViewRegistryReports?: (names: string[]) => void;
 };
+
+function entryMatchesFilter(
+  entry: CoverageEntry,
+  filter: CoverageEntryFilter,
+): boolean {
+  const reports = entry.registryReports ?? [];
+
+  switch (filter) {
+    case "all":
+      return true;
+    case "matched":
+    case "missing":
+    case "ambiguous":
+      return entry.status === filter;
+    case "hasReports":
+      return reports.length > 0;
+    case "noReports":
+      return reports.length === 0;
+    case "prodReady":
+      return reports.some((report) => report.prodReady);
+    case "reportNotProdReady":
+      return reports.length > 0 && !reports.some((report) => report.prodReady);
+    default:
+      return true;
+  }
+}
 
 export function CoverageYearDetailView({
   detail,
   onEdit,
   onEditEntry,
+  onViewRegistryReports,
 }: CoverageYearDetailProps) {
   const { t } = useI18n();
   const [filter, setFilter] = useState<CoverageEntryFilter>("all");
@@ -32,13 +61,17 @@ export function CoverageYearDetailView({
     const q = search.trim().toLocaleLowerCase("sv-SE");
 
     return detail.entries.filter((entry) => {
-      if (filter !== "all" && entry.status !== filter) return false;
+      if (!entryMatchesFilter(entry, filter)) return false;
       if (!q) return true;
 
       const haystack = [
         entry.name,
         entry.matchedCompany?.name ?? "",
         entry.matchedCompany?.wikidataId ?? "",
+        ...(entry.registryReports ?? []).map(
+          (report) =>
+            `${report.reportYear ?? ""} ${report.companyName ?? ""}`,
+        ),
       ]
         .join(" ")
         .toLocaleLowerCase("sv-SE");
@@ -52,6 +85,13 @@ export function CoverageYearDetailView({
     { value: "matched", label: t("overview.coverage.filters.matched") },
     { value: "missing", label: t("overview.coverage.filters.missing") },
     { value: "ambiguous", label: t("overview.coverage.filters.ambiguous") },
+    { value: "hasReports", label: t("overview.coverage.filters.hasReports") },
+    { value: "noReports", label: t("overview.coverage.filters.noReports") },
+    { value: "prodReady", label: t("overview.coverage.filters.prodReady") },
+    {
+      value: "reportNotProdReady",
+      label: t("overview.coverage.filters.reportNotProdReady"),
+    },
   ];
 
   return (
@@ -61,12 +101,25 @@ export function CoverageYearDetailView({
           <h3 className="text-lg font-semibold text-gray-01">
             {detail.listName} — {detail.year}
           </h3>
-          <Button variant="secondary" size="sm" onClick={onEdit}>
-            {t("overview.coverage.editYear")}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {onViewRegistryReports ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  onViewRegistryReports(detail.entries.map((entry) => entry.name))
+                }
+              >
+                {t("overview.coverage.reports.viewInRegistry")}
+              </Button>
+            ) : null}
+            <Button variant="secondary" size="sm" onClick={onEdit}>
+              {t("overview.coverage.editYear")}
+            </Button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-3">
           <CoverageStatCard
             label={t("overview.coverage.stats.total")}
             value={detail.totalNames}
@@ -91,6 +144,21 @@ export function CoverageYearDetailView({
             label={t("overview.coverage.stats.coverage")}
             value={`${detail.coveragePercent}%`}
             className="border-blue-03/30 bg-blue-03/10 text-blue-03"
+          />
+          <CoverageStatCard
+            label={t("overview.coverage.stats.hasReports")}
+            value={detail.hasAnyReportCount}
+            className="border-gray-03/80 bg-gray-04/30 text-gray-01"
+          />
+          <CoverageStatCard
+            label={t("overview.coverage.stats.prodReady")}
+            value={detail.prodReadyCount}
+            className="border-green-03/30 bg-green-03/10 text-green-03"
+          />
+          <CoverageStatCard
+            label={t("overview.coverage.stats.noReports")}
+            value={detail.noReportCount}
+            className="border-orange-03/30 bg-orange-03/10 text-orange-03"
           />
         </div>
       </div>
@@ -122,6 +190,9 @@ export function CoverageYearDetailView({
               <th className="px-4 py-2 font-medium">
                 {t("overview.coverage.columns.dbMatch")}
               </th>
+              <th className="px-4 py-2 font-medium">
+                {t("overview.coverage.columns.reports")}
+              </th>
               <th className="px-4 py-2 font-medium w-28">
                 {t("overview.coverage.columns.actions")}
               </th>
@@ -137,7 +208,7 @@ export function CoverageYearDetailView({
             ))}
             {filteredEntries.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-gray-02">
+                <td colSpan={5} className="px-4 py-8 text-center text-gray-02">
                   {t("overview.coverage.noEntries")}
                 </td>
               </tr>
@@ -189,6 +260,8 @@ function CoverageEntryRow({
         ? "text-orange-03"
         : "text-yellow-400";
 
+  const reports = entry.registryReports ?? [];
+
   return (
     <tr className="border-t border-gray-03/60">
       <td className="px-4 py-2 text-gray-01">{entry.name}</td>
@@ -210,6 +283,19 @@ function CoverageEntryRow({
           </Link>
         ) : (
           "—"
+        )}
+      </td>
+      <td className="px-4 py-2">
+        {reports.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {reports.map((report) => (
+              <ReportYearPill key={report.reportId} report={report} />
+            ))}
+          </div>
+        ) : (
+          <span className="text-gray-02">
+            {t("overview.coverage.reports.none")}
+          </span>
         )}
       </td>
       <td className="px-4 py-2">

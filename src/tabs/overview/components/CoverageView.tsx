@@ -30,7 +30,11 @@ type DeleteConfirmState =
   | { kind: "year"; listId: string; listName: string; year: number }
   | { kind: "list"; listId: string; listName: string };
 
-export function CoverageView() {
+type CoverageViewProps = {
+  onViewRegistryReports?: (names: string[]) => void;
+};
+
+export function CoverageView({ onViewRegistryReports }: CoverageViewProps) {
   const { t } = useI18n();
   const coverage = useCoverageLists();
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
@@ -265,6 +269,7 @@ export function CoverageView() {
               ) : yearDetail.detail ? (
                 <CoverageYearDetailView
                   detail={yearDetail.detail}
+                  onViewRegistryReports={onViewRegistryReports}
                   onEdit={() =>
                     setDialog({
                       kind: "editYear",

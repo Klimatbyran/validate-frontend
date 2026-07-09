@@ -11,6 +11,9 @@ export const coverageYearSummarySchema = z.object({
   matchedCount: z.number(),
   ambiguousCount: z.number(),
   coveragePercent: z.number(),
+  hasAnyReportCount: z.number().optional(),
+  prodReadyCount: z.number().optional(),
+  noReportCount: z.number().optional(),
 });
 
 export const coverageListSummarySchema = z.object({
@@ -28,12 +31,24 @@ export const coverageEntryStatusSchema = z.enum([
 
 export const coverageMatchMethodSchema = z.enum(["auto", "manual"]);
 
+export const registryReportPillSchema = z.object({
+  reportId: z.string(),
+  reportYear: z.string().nullable(),
+  companyName: z.string().nullable(),
+  wikidataId: z.string().nullable(),
+  url: z.string(),
+  sourceUrl: z.string().nullable(),
+  matchMethod: z.enum(["wikidata", "name"]),
+  prodReady: z.boolean(),
+});
+
 export const coverageEntrySchema = z.object({
   id: z.string(),
   name: z.string(),
   status: coverageEntryStatusSchema,
   matchMethod: coverageMatchMethodSchema.optional(),
   matchedCompany: coverageMatchedCompanySchema.optional(),
+  registryReports: z.array(registryReportPillSchema).default([]),
 });
 
 export const coverageCompanySearchHitSchema = z.object({
@@ -49,6 +64,9 @@ export const coverageCompanySearchResponseSchema = z.array(
 export const coverageYearDetailSchema = coverageYearSummarySchema.extend({
   listId: z.string(),
   listName: z.string(),
+  hasAnyReportCount: z.number().default(0),
+  prodReadyCount: z.number().default(0),
+  noReportCount: z.number().default(0),
   entries: z.array(coverageEntrySchema),
 });
 
@@ -72,3 +90,15 @@ export type CoverageMatchSaveAction =
   | { type: "match"; companyId: string; companyName: string }
   | { type: "clear" }
   | { type: "markMissing" };
+
+export type RegistryReportPill = z.infer<typeof registryReportPillSchema>;
+
+export type CoverageEntryFilter =
+  | "all"
+  | "matched"
+  | "missing"
+  | "ambiguous"
+  | "hasReports"
+  | "noReports"
+  | "prodReady"
+  | "reportNotProdReady";
