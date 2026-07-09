@@ -837,7 +837,8 @@
       "sendCompanyLink": "Skicka företagslänk",
       "saveToAPI": "API Lagring",
       "wikipediaUpload": "Wikipedia",
-      "diffTags": "Taggar"
+      "diffTags": "Taggar",
+      "diffReportType": "Rapporttyp"
     },
     "filters": {
       "pending_approval": "Väntar på godkännande",

@@ -67,6 +67,7 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   saveToAPI: "API Lagring",
   wikipediaUpload: "Wikipedia",
   diffTags: "Taggar",
+  diffReportType: "Rapporttyp",
 };
 
 /**
@@ -117,6 +118,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
       "diffBaseYear",
       "diffDescriptions",
       "checkDB",
+      "diffReportType",
     ],
     order: 2,
   },
@@ -124,7 +126,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
     id: "finalize",
     name: "Finalize",
     description: "Final processing and data storage",
-    stageIds: ["sendCompanyLink", "saveToAPI", "wikipediaUpload", "diffTags"],
+    stageIds: ["sendCompanyLink", "saveToAPI", "wikipediaUpload", "diffTags", "diffReportType"],
     order: 3,
   },
 ];
