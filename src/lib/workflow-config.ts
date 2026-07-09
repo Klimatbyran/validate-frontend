@@ -126,7 +126,13 @@ export const PIPELINE_STEPS: PipelineStep[] = [
     id: "finalize",
     name: "Finalize",
     description: "Final processing and data storage",
-    stageIds: ["sendCompanyLink", "saveToAPI", "wikipediaUpload", "diffTags", "diffReportType"],
+    stageIds: [
+      "sendCompanyLink",
+      "saveToAPI",
+      "wikipediaUpload",
+      "diffTags",
+      "diffReportType",
+    ],
     order: 3,
   },
 ];
