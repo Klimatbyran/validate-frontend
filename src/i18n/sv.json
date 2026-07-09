@@ -1169,7 +1169,17 @@
         "all": "Alla",
         "matched": "Matchade",
         "missing": "Saknas",
-        "ambiguous": "Tvetydiga"
+        "ambiguous": "Tvetydiga",
+        "hasReports": "Har rapporter",
+        "noReports": "Inga rapporter",
+        "prodReady": "Prod-klar",
+        "reportNotProdReady": "Rapporter ej prod-klara"
+      },
+      "reports": {
+        "none": "Inga rapporter",
+        "viewInRegistry": "Visa i registerrapporter",
+        "pillProdReady": "Körning klar, data i prod",
+        "pillNotProdReady": "Rapport i register, ej prod-klar"
       },
       "columns": {
         "list": "Lista",
@@ -1179,6 +1189,7 @@
         "listName": "Listnamn",
         "status": "Status",
         "dbMatch": "DB-match",
+        "reports": "Rapporter",
         "actions": "Åtgärder"
       },
       "editMatch": "Redigera match",
@@ -1203,7 +1214,10 @@
         "matched": "Matchade",
         "missing": "Saknas",
         "ambiguous": "Tvetydiga",
-        "coverage": "Täckning"
+        "coverage": "Täckning",
+        "hasReports": "Har rapporter",
+        "prodReady": "Prod-klar",
+        "noReports": "Inga rapporter"
       }
     },
     "fetchError": "Kunde inte ladda översiktsdata.",

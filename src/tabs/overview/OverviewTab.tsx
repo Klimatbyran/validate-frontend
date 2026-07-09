@@ -336,7 +336,11 @@ export function OverviewTab() {
             <LoadingSpinner />
           </div>
         ) : data.error && !isCoverage ? null : isCoverage ? (
-          <CoverageView />
+          <CoverageView
+            onViewRegistryReports={(names) =>
+              data.openRegistryReportsWithSearch(names.join("\n"))
+            }
+          />
         ) : isProdToStage ? (
           <ProdToStageTable
             data={data}
