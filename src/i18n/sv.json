@@ -1193,6 +1193,12 @@
         "actions": "Åtgärder"
       },
       "editMatch": "Redigera match",
+      "findReport": "Hitta rapport",
+      "findReportTitle": "Hitta rapport",
+      "findReportDescription": "Sök hållbarhetsrapporter för {{name}} ({{year}}). Välj ett resultat och spara det i registret.",
+      "findReportNoResults": "Inga rapportlänkar hittades för detta företag och år.",
+      "findReportError": "Kunde inte söka efter rapporter.",
+      "findReportSaving": "Sparar…",
       "editMatchTitle": "Redigera företagsmatch",
       "editMatchDescription": "Sök Garbo-företag och koppla listraden till ett befintligt företag.",
       "searchCompanyLabel": "Sök företag",

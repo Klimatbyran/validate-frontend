@@ -1193,6 +1193,12 @@
         "actions": "Actions"
       },
       "editMatch": "Edit match",
+      "findReport": "Find report",
+      "findReportTitle": "Find report",
+      "findReportDescription": "Search for sustainability reports for {{name}} ({{year}}). Select a result and save it to the registry.",
+      "findReportNoResults": "No report links were found for this company and year.",
+      "findReportError": "Could not search for reports.",
+      "findReportSaving": "Saving…",
       "editMatchTitle": "Edit company match",
       "editMatchDescription": "Search Garbo companies and link this list entry to an existing company.",
       "searchCompanyLabel": "Search companies",

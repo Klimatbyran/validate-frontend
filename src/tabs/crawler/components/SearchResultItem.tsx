@@ -18,17 +18,20 @@ interface SearchResultItemProps {
   companyReport: CompanyReport;
   selectedReport?: string;
   onSelect: (companyName: string, url: string | null) => void;
+  /** When true, result links are expanded on first render (e.g. coverage find-report modal). */
+  initialExpanded?: boolean;
 }
 
 const SearchResultItem = ({
   companyReport,
   selectedReport,
   onSelect,
+  initialExpanded = false,
 }: SearchResultItemProps) => {
   const { t } = useI18n();
   const { companyName, results } = companyReport;
   const [resultsWithPreview, setResultsWithPreview] = useState<any[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(initialExpanded);
   const [previewOpenIndex, setPreviewOpenIndex] = useState<number | null>(null);
   const [imgStatus, setImgStatus] = useState<
     { loading: boolean; error: boolean }[]

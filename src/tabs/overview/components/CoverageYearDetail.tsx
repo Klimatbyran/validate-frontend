@@ -1,10 +1,15 @@
 import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { editorCompanyPath } from "@/tabs/editor/lib/editor-routes";
 import { Button } from "@/ui/button";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { ReportYearPill } from "./ReportYearPill";
+import { CoverageFindReportDialog } from "./CoverageFindReportDialog";
+import { searchCompanyReports } from "@/tabs/crawler/lib/crawler-utils";
+import type { CompanyReport } from "@/tabs/crawler/lib/crawler-types";
 import type {
   CoverageEntry,
   CoverageEntryFilter,
@@ -16,6 +21,7 @@ type CoverageYearDetailProps = {
   onEdit: () => void;
   onEditEntry: (entry: CoverageEntry) => void;
   onViewRegistryReports?: (names: string[]) => void;
+  onRegistryReportSaved?: () => void;
 };
 
 function entryMatchesFilter(
@@ -47,6 +53,7 @@ export function CoverageYearDetailView({
   onEdit,
   onEditEntry,
   onViewRegistryReports,
+  onRegistryReportSaved,
 }: CoverageYearDetailProps) {
   const { t } = useI18n();
   const [filter, setFilter] = useState<CoverageEntryFilter>("all");
@@ -182,7 +189,7 @@ export function CoverageYearDetailView({
               <th className="px-4 py-2 font-medium">
                 {t("overview.coverage.columns.reports")}
               </th>
-              <th className="px-4 py-2 font-medium w-28">
+              <th className="px-4 py-2 font-medium min-w-[12rem]">
                 {t("overview.coverage.columns.actions")}
               </th>
             </tr>
@@ -192,7 +199,9 @@ export function CoverageYearDetailView({
               <CoverageEntryRow
                 key={entry.id}
                 entry={entry}
+                reportYear={detail.year}
                 onEditEntry={onEditEntry}
+                onRegistryReportSaved={onRegistryReportSaved}
               />
             ))}
             {filteredEntries.length === 0 ? (
@@ -228,12 +237,49 @@ function CoverageStatCard({
 
 function CoverageEntryRow({
   entry,
+  reportYear,
   onEditEntry,
+  onRegistryReportSaved,
 }: {
   entry: CoverageEntry;
+  reportYear: number;
   onEditEntry: (entry: CoverageEntry) => void;
+  onRegistryReportSaved?: () => void;
 }) {
   const { t } = useI18n();
+  const [isFindingReport, setIsFindingReport] = useState(false);
+  const [findReportOpen, setFindReportOpen] = useState(false);
+  const [companyReport, setCompanyReport] = useState<CompanyReport | null>(
+    null,
+  );
+
+  const handleFindReport = async () => {
+    setIsFindingReport(true);
+    try {
+      const results = await searchCompanyReports({
+        companyNames: [entry.name],
+        reportYear: String(reportYear),
+      });
+      const report = results[0] ?? {
+        companyName: entry.name,
+        reportYear: String(reportYear),
+        results: [],
+      };
+      setCompanyReport({
+        ...report,
+        wikidataId: entry.matchedCompany?.wikidataId,
+      });
+      setFindReportOpen(true);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("overview.coverage.findReportError"),
+      );
+    } finally {
+      setIsFindingReport(false);
+    }
+  };
 
   const statusLabel =
     entry.status === "matched"
@@ -288,13 +334,42 @@ function CoverageEntryRow({
         )}
       </td>
       <td className="px-4 py-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => onEditEntry(entry)}
-        >
-          {t("overview.coverage.editMatch")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onEditEntry(entry)}
+            disabled={isFindingReport}
+          >
+            {t("overview.coverage.editMatch")}
+          </Button>
+          {isFindingReport ? (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled
+              className="min-w-[7.5rem]"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void handleFindReport()}
+            >
+              {t("overview.coverage.findReport")}
+            </Button>
+          )}
+        </div>
+        <CoverageFindReportDialog
+          open={findReportOpen}
+          onOpenChange={setFindReportOpen}
+          entry={entry}
+          reportYear={reportYear}
+          companyReport={companyReport}
+          onSaved={onRegistryReportSaved}
+        />
       </td>
     </tr>
   );
