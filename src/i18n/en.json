@@ -1171,16 +1171,15 @@
         "matched": "Matched",
         "missing": "Missing",
         "ambiguous": "Ambiguous",
-        "hasReports": "Has reports",
-        "noReports": "No reports",
-        "prodReady": "Prod ready",
-        "reportNotProdReady": "Reports not prod-ready"
+        "registryInProd": "In prod",
+        "registryOnly": "In registry only",
+        "registryMissing": "Missing reports"
       },
       "reports": {
-        "none": "No reports",
+        "missing": "Missing",
         "viewInRegistry": "View in Registry Reports",
-        "pillProdReady": "Run completed, data in prod",
-        "pillNotProdReady": "Report in registry, not prod-ready"
+        "pillInProd": "In prod — report has been run",
+        "pillInRegistry": "In registry — not run yet"
       },
       "columns": {
         "list": "List",
@@ -1215,10 +1214,7 @@
         "matched": "Matched",
         "missing": "Missing",
         "ambiguous": "Ambiguous",
-        "coverage": "Coverage",
-        "hasReports": "Has reports",
-        "prodReady": "Prod ready",
-        "noReports": "No reports"
+        "coverage": "Coverage"
       }
     },
     "fetchError": "Could not load overview data.",

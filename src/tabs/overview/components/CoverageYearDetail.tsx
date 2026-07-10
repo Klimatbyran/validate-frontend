@@ -31,14 +31,12 @@ function entryMatchesFilter(
     case "missing":
     case "ambiguous":
       return entry.status === filter;
-    case "hasReports":
-      return reports.length > 0;
-    case "noReports":
-      return reports.length === 0;
-    case "prodReady":
+    case "registryInProd":
       return reports.some((report) => report.prodReady);
-    case "reportNotProdReady":
+    case "registryOnly":
       return reports.length > 0 && !reports.some((report) => report.prodReady);
+    case "registryMissing":
+      return reports.length === 0;
     default:
       return true;
   }
@@ -69,8 +67,7 @@ export function CoverageYearDetailView({
         entry.matchedCompany?.name ?? "",
         entry.matchedCompany?.wikidataId ?? "",
         ...(entry.registryReports ?? []).map(
-          (report) =>
-            `${report.reportYear ?? ""} ${report.companyName ?? ""}`,
+          (report) => `${report.reportYear ?? ""} ${report.companyName ?? ""}`,
         ),
       ]
         .join(" ")
@@ -85,12 +82,17 @@ export function CoverageYearDetailView({
     { value: "matched", label: t("overview.coverage.filters.matched") },
     { value: "missing", label: t("overview.coverage.filters.missing") },
     { value: "ambiguous", label: t("overview.coverage.filters.ambiguous") },
-    { value: "hasReports", label: t("overview.coverage.filters.hasReports") },
-    { value: "noReports", label: t("overview.coverage.filters.noReports") },
-    { value: "prodReady", label: t("overview.coverage.filters.prodReady") },
     {
-      value: "reportNotProdReady",
-      label: t("overview.coverage.filters.reportNotProdReady"),
+      value: "registryInProd",
+      label: t("overview.coverage.filters.registryInProd"),
+    },
+    {
+      value: "registryOnly",
+      label: t("overview.coverage.filters.registryOnly"),
+    },
+    {
+      value: "registryMissing",
+      label: t("overview.coverage.filters.registryMissing"),
     },
   ];
 
@@ -107,7 +109,9 @@ export function CoverageYearDetailView({
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  onViewRegistryReports(detail.entries.map((entry) => entry.name))
+                  onViewRegistryReports(
+                    detail.entries.map((entry) => entry.name),
+                  )
                 }
               >
                 {t("overview.coverage.reports.viewInRegistry")}
@@ -119,7 +123,7 @@ export function CoverageYearDetailView({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <CoverageStatCard
             label={t("overview.coverage.stats.total")}
             value={detail.totalNames}
@@ -144,21 +148,6 @@ export function CoverageYearDetailView({
             label={t("overview.coverage.stats.coverage")}
             value={`${detail.coveragePercent}%`}
             className="border-blue-03/30 bg-blue-03/10 text-blue-03"
-          />
-          <CoverageStatCard
-            label={t("overview.coverage.stats.hasReports")}
-            value={detail.hasAnyReportCount}
-            className="border-gray-03/80 bg-gray-04/30 text-gray-01"
-          />
-          <CoverageStatCard
-            label={t("overview.coverage.stats.prodReady")}
-            value={detail.prodReadyCount}
-            className="border-green-03/30 bg-green-03/10 text-green-03"
-          />
-          <CoverageStatCard
-            label={t("overview.coverage.stats.noReports")}
-            value={detail.noReportCount}
-            className="border-orange-03/30 bg-orange-03/10 text-orange-03"
           />
         </div>
       </div>
@@ -293,8 +282,8 @@ function CoverageEntryRow({
             ))}
           </div>
         ) : (
-          <span className="text-gray-02">
-            {t("overview.coverage.reports.none")}
+          <span className="font-medium text-gray-02">
+            {t("overview.coverage.reports.missing")}
           </span>
         )}
       </td>
