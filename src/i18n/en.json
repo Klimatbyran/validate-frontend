@@ -1199,6 +1199,8 @@
       "findReportNoResults": "No report links were found for this company and year.",
       "findReportError": "Could not search for reports.",
       "findReportSaving": "Saving…",
+      "findReportSaveToRegistry": "Save to registry",
+      "findReportActionsHint": "Save to registry stores the report URL only. Run & save now starts the pipeline immediately.",
       "editMatchTitle": "Edit company match",
       "editMatchDescription": "Search Garbo companies and link this list entry to an existing company.",
       "searchCompanyLabel": "Search companies",
