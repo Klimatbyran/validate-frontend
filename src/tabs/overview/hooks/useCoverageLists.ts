@@ -134,28 +134,31 @@ export function useCoverageYearDetail(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadDetail = useCallback(async (options?: { silent?: boolean }) => {
-    if (!listId || year === null) {
-      setDetail(null);
-      return;
-    }
-    if (!options?.silent) {
-      setIsLoading(true);
-    }
-    setError(null);
-    try {
-      setDetail(await fetchCoverageYearDetail(listId, year));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-      if (!options?.silent) {
+  const loadDetail = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!listId || year === null) {
         setDetail(null);
+        return;
       }
-    } finally {
       if (!options?.silent) {
-        setIsLoading(false);
+        setIsLoading(true);
       }
-    }
-  }, [listId, year]);
+      setError(null);
+      try {
+        setDetail(await fetchCoverageYearDetail(listId, year));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unknown error");
+        if (!options?.silent) {
+          setDetail(null);
+        }
+      } finally {
+        if (!options?.silent) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [listId, year],
+  );
 
   useEffect(() => {
     void loadDetail();

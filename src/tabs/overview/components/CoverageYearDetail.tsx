@@ -67,8 +67,7 @@ export function CoverageYearDetailView({
         entry.matchedCompany?.name ?? "",
         entry.matchedCompany?.wikidataId ?? "",
         ...(entry.registryReports ?? []).map(
-          (report) =>
-            `${report.reportYear ?? ""} ${report.companyName ?? ""}`,
+          (report) => `${report.reportYear ?? ""} ${report.companyName ?? ""}`,
         ),
       ]
         .join(" ")
@@ -110,7 +109,9 @@ export function CoverageYearDetailView({
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  onViewRegistryReports(detail.entries.map((entry) => entry.name))
+                  onViewRegistryReports(
+                    detail.entries.map((entry) => entry.name),
+                  )
                 }
               >
                 {t("overview.coverage.reports.viewInRegistry")}
