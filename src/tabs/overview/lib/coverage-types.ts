@@ -98,7 +98,6 @@ export type CoverageEntryFilter =
   | "matched"
   | "missing"
   | "ambiguous"
-  | "hasReports"
-  | "noReports"
-  | "prodReady"
-  | "reportNotProdReady";
+  | "registryInProd"
+  | "registryOnly"
+  | "registryMissing";

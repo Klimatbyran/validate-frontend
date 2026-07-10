@@ -11,7 +11,7 @@ export function ReportYearPill({ report }: ReportYearPillProps) {
   const label = report.reportYear ?? "?";
   const className = report.prodReady
     ? "border-green-03/40 bg-green-03/20 text-green-03 hover:bg-green-03/30"
-    : "border-orange-03/40 bg-orange-03/20 text-orange-03 hover:bg-orange-03/30";
+    : "border-yellow-500/40 bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30";
 
   return (
     <a
@@ -20,8 +20,8 @@ export function ReportYearPill({ report }: ReportYearPillProps) {
       rel="noopener noreferrer"
       title={
         report.prodReady
-          ? t("overview.coverage.reports.pillProdReady")
-          : t("overview.coverage.reports.pillNotProdReady")
+          ? t("overview.coverage.reports.pillInProd")
+          : t("overview.coverage.reports.pillInRegistry")
       }
       className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium transition-colors ${className}`}
     >
