@@ -22,6 +22,8 @@ interface SearchResultItemProps {
   initialExpanded?: boolean;
   /** Flatter layout for use inside dialogs (no nested cards). */
   variant?: "default" | "embedded";
+  /** Notifies parent when the full-page PDF preview overlay opens or closes. */
+  onPreviewOpenChange?: (open: boolean) => void;
 }
 
 const SearchResultItem = ({
@@ -30,6 +32,7 @@ const SearchResultItem = ({
   onSelect,
   initialExpanded = false,
   variant = "default",
+  onPreviewOpenChange,
 }: SearchResultItemProps) => {
   const { t } = useI18n();
   const { companyName, results } = companyReport;
@@ -41,6 +44,10 @@ const SearchResultItem = ({
   const [imgStatus, setImgStatus] = useState<
     { loading: boolean; error: boolean }[]
   >([]);
+
+  useEffect(() => {
+    onPreviewOpenChange?.(previewOpenIndex !== null);
+  }, [previewOpenIndex, onPreviewOpenChange]);
 
   useEffect(() => {
     if (previewOpenIndex === null) return;
@@ -87,6 +94,7 @@ const SearchResultItem = ({
         companyName={companyName}
         selectedReport={selectedReport}
         onSelect={onSelect}
+        variant={variant}
       />
 
       {resultsWithPreview.map((result, index) => (
@@ -160,30 +168,55 @@ const SearchResultItem = ({
             <div
               className={
                 variant === "embedded"
-                  ? "min-w-0 flex-1 space-y-2"
+                  ? "flex min-w-0 flex-1 items-start gap-2"
                   : "flex gap-2 text-sm text-gray-02"
               }
             >
-              <span className="text-sm text-gray-02">{index + 1}.</span>
-              <a
-                href={result.url as string}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={
-                  variant === "embedded"
-                    ? "break-all text-sm text-gray-01 hover:text-blue-04"
-                    : "flex items-center text-gray-02 hover:text-blue-04"
-                }
-              >
-                {variant === "embedded"
-                  ? result.url
-                  : `${result?.url?.substring(0, 100)}...`}
-                <ExternalLink className="ml-2 inline h-4 w-4 shrink-0" />
-              </a>
-              <CopyButton
-                getText={() => String(result.url ?? "")}
-                className="px-2 py-0.5 border-gray-03/70 bg-gray-03/20 text-gray-02 hover:bg-gray-03/40"
-              />
+              <span className="shrink-0 text-sm text-gray-02">
+                {index + 1}.
+              </span>
+              {variant === "embedded" ? (
+                <div className="min-w-0 flex-1">
+                  <a
+                    href={result.url as string}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-all text-sm text-gray-01 hover:text-blue-04"
+                  >
+                    {result.url}
+                  </a>
+                  <div className="mt-1.5 flex flex-nowrap items-center gap-2">
+                    <a
+                      href={result.url as string}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex shrink-0 items-center text-gray-02 hover:text-blue-04"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                    <CopyButton
+                      getText={() => String(result.url ?? "")}
+                      className="shrink-0 whitespace-nowrap border-gray-03/70 bg-gray-03/20 px-2 py-0.5 text-gray-02 hover:bg-gray-03/40"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <a
+                    href={result.url as string}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center text-gray-02 hover:text-blue-04"
+                  >
+                    {`${result?.url?.substring(0, 100)}...`}
+                    <ExternalLink className="ml-2 inline h-4 w-4 shrink-0" />
+                  </a>
+                  <CopyButton
+                    getText={() => String(result.url ?? "")}
+                    className="border-gray-03/70 bg-gray-03/20 px-2 py-0.5 text-gray-02 hover:bg-gray-03/40"
+                  />
+                </>
+              )}
             </div>
           </div>
           <button
@@ -210,6 +243,7 @@ const SearchResultItem = ({
                   alignItems: "center",
                   justifyContent: "center",
                 }}
+                onPointerDown={(event) => event.stopPropagation()}
                 onClick={handlePreviewClose}
               >
                 <img

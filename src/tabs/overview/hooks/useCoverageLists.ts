@@ -15,7 +15,9 @@ import type {
   CoverageListSummary,
   CoverageYearDetail,
   CoverageMatchSaveAction,
+  RegistryReportPill,
 } from "../lib/coverage-types";
+import type { SaveReportSuccess } from "@/tabs/crawler/lib/crawler-types";
 
 function entryMatchChanged(
   previous: CoverageEntry,
@@ -53,6 +55,57 @@ function mergeCoverageMatchUpdate(
         registryReports: prior.registryReports ?? [],
       };
     }),
+  };
+}
+
+function savedReportToPill(saved: SaveReportSuccess): RegistryReportPill {
+  return {
+    reportId: saved.id,
+    reportYear: saved.reportYear,
+    companyName: saved.companyName,
+    wikidataId: saved.wikidataId ?? null,
+    url: saved.url,
+    sourceUrl: saved.url,
+    matchMethod: saved.wikidataId ? "wikidata" : "name",
+    prodReady: false,
+  };
+}
+
+function addRegistryReportToEntry(
+  detail: CoverageYearDetail,
+  entryId: string,
+  saved: SaveReportSuccess,
+): CoverageYearDetail {
+  const entryIndex = detail.entries.findIndex((entry) => entry.id === entryId);
+  if (entryIndex === -1) return detail;
+
+  const entry = detail.entries[entryIndex];
+  const existingReports = entry.registryReports ?? [];
+  if (
+    existingReports.some(
+      (report) => report.reportId === saved.id || report.url === saved.url,
+    )
+  ) {
+    return detail;
+  }
+
+  const hadReports = existingReports.length > 0;
+  const nextReports = [...existingReports, savedReportToPill(saved)];
+  const entries = [...detail.entries];
+  entries[entryIndex] = {
+    ...entry,
+    registryReports: nextReports,
+  };
+
+  return {
+    ...detail,
+    entries,
+    hasAnyReportCount: hadReports
+      ? detail.hasAnyReportCount
+      : detail.hasAnyReportCount + 1,
+    noReportCount: hadReports
+      ? detail.noReportCount
+      : Math.max(0, detail.noReportCount - 1),
   };
 }
 
@@ -169,6 +222,14 @@ export function useCoverageYearDetail(
     isLoading,
     error,
     refresh: () => loadDetail(),
+    addEntryRegistryReport: (
+      entryId: string,
+      saved: SaveReportSuccess,
+    ) => {
+      setDetail((previous) =>
+        previous ? addRegistryReportToEntry(previous, entryId, saved) : previous,
+      );
+    },
     setEntryMatch: async (entryId: string, action: CoverageMatchSaveAction) => {
       if (!listId || year === null) return null;
       const payload =

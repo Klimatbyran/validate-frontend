@@ -8,8 +8,9 @@ import { Button } from "@/ui/button";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { ReportYearPill } from "./ReportYearPill";
 import { CoverageFindReportDialog } from "./CoverageFindReportDialog";
+import { CoverageFindReportYearPrompt } from "./CoverageFindReportYearPrompt";
 import { searchCompanyReports } from "@/tabs/crawler/lib/crawler-utils";
-import type { CompanyReport } from "@/tabs/crawler/lib/crawler-types";
+import type { SaveReportSuccess } from "@/tabs/crawler/lib/crawler-types";
 import type {
   CoverageEntry,
   CoverageEntryFilter,
@@ -21,7 +22,7 @@ type CoverageYearDetailProps = {
   onEdit: () => void;
   onEditEntry: (entry: CoverageEntry) => void;
   onViewRegistryReports?: (names: string[]) => void;
-  onRegistryReportSaved?: () => void;
+  onRegistryReportSaved?: (entryId: string, saved: SaveReportSuccess) => void;
 };
 
 function entryMatchesFilter(
@@ -244,31 +245,39 @@ function CoverageEntryRow({
   entry: CoverageEntry;
   reportYear: number;
   onEditEntry: (entry: CoverageEntry) => void;
-  onRegistryReportSaved?: () => void;
+  onRegistryReportSaved?: (entryId: string, saved: SaveReportSuccess) => void;
 }) {
   const { t } = useI18n();
   const [isFindingReport, setIsFindingReport] = useState(false);
+  const [yearPromptOpen, setYearPromptOpen] = useState(false);
   const [findReportOpen, setFindReportOpen] = useState(false);
+  const [searchYear, setSearchYear] = useState(reportYear);
   const [companyReport, setCompanyReport] = useState<CompanyReport | null>(
     null,
   );
 
-  const handleFindReport = async () => {
+  const handleFindReportClick = () => {
+    setYearPromptOpen(true);
+  };
+
+  const handleYearConfirm = async (year: number) => {
+    setSearchYear(year);
     setIsFindingReport(true);
     try {
       const results = await searchCompanyReports({
         companyNames: [entry.name],
-        reportYear: String(reportYear),
+        reportYear: String(year),
       });
       const report = results[0] ?? {
         companyName: entry.name,
-        reportYear: String(reportYear),
+        reportYear: String(year),
         results: [],
       };
       setCompanyReport({
         ...report,
         wikidataId: entry.matchedCompany?.wikidataId,
       });
+      setYearPromptOpen(false);
       setFindReportOpen(true);
     } catch (error) {
       toast.error(
@@ -356,19 +365,29 @@ function CoverageEntryRow({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => void handleFindReport()}
+              onClick={handleFindReportClick}
             >
               {t("overview.coverage.findReport")}
             </Button>
           )}
         </div>
+        <CoverageFindReportYearPrompt
+          open={yearPromptOpen}
+          onOpenChange={(open) => {
+            if (!isFindingReport) setYearPromptOpen(open);
+          }}
+          companyName={entry.name}
+          defaultYear={reportYear}
+          isSearching={isFindingReport}
+          onConfirm={(year) => void handleYearConfirm(year)}
+        />
         <CoverageFindReportDialog
           open={findReportOpen}
           onOpenChange={setFindReportOpen}
           entry={entry}
-          reportYear={reportYear}
+          reportYear={searchYear}
           companyReport={companyReport}
-          onSaved={onRegistryReportSaved}
+          onSaved={(saved) => onRegistryReportSaved?.(entry.id, saved)}
         />
       </td>
     </tr>

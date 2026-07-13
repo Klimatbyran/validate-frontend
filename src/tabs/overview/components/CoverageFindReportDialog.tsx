@@ -17,6 +17,7 @@ import RegistryList from "@/tabs/crawler/components/RegistryList";
 import { saveToRegistry } from "@/tabs/crawler/lib/crawler-api";
 import type {
   CompanyReport,
+  SaveReportSuccess,
   SaveReportsListResponse,
   SelectedReport,
 } from "@/tabs/crawler/lib/crawler-types";
@@ -28,7 +29,7 @@ type CoverageFindReportDialogProps = {
   entry: CoverageEntry;
   reportYear: number;
   companyReport: CompanyReport | null;
-  onSaved?: () => void;
+  onSaved?: (saved: SaveReportSuccess) => void;
 };
 
 export function CoverageFindReportDialog({
@@ -48,6 +49,7 @@ export function CoverageFindReportDialog({
   const [registryResponse, setRegistryResponse] =
     useState<SaveReportsListResponse | null>(null);
   const [isRunModalOpen, setIsRunModalOpen] = useState(false);
+  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
 
   const {
     runForUrls,
@@ -77,12 +79,20 @@ export function CoverageFindReportDialog({
     ];
   }, [selectedReport]);
 
+  const blockDialogDismiss = (event: Event) => {
+    if (isPdfPreviewOpen) {
+      event.preventDefault();
+    }
+  };
+
   const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && isPdfPreviewOpen) return;
     if (!nextOpen) {
       setSelectedReport(null);
       setRegistryResponse(null);
       setIsSaving(false);
       setIsRunModalOpen(false);
+      setIsPdfPreviewOpen(false);
     }
     onOpenChange(nextOpen);
   };
@@ -108,7 +118,7 @@ export function CoverageFindReportDialog({
       const response = await saveToRegistry([selectedReport]);
       setRegistryResponse(response);
       if (response.successes.length > 0) {
-        onSaved?.();
+        onSaved?.(response.successes[0]);
       }
     } catch (error) {
       const errorMessage =
@@ -142,6 +152,15 @@ export function CoverageFindReportDialog({
     if (!url) return;
     void runForUrls([url], {
       onSuccess: () => {
+        if (selectedReport) {
+          onSaved?.({
+            id: url,
+            companyName: selectedReport.companyName,
+            reportYear: selectedReport.reportYear,
+            url,
+            wikidataId: selectedReport.wikidataId ?? null,
+          });
+        }
         setIsRunModalOpen(false);
         handleOpenChange(false);
       },
@@ -168,7 +187,12 @@ export function CoverageFindReportDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="flex w-[min(100vw-2rem,48rem)] max-h-[min(88vh,52rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+        <DialogContent
+          className="flex w-[min(100vw-2rem,52rem)] max-h-[min(88vh,52rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+          onInteractOutside={blockDialogDismiss}
+          onPointerDownOutside={blockDialogDismiss}
+          onEscapeKeyDown={blockDialogDismiss}
+        >
           <DialogHeader className="shrink-0 space-y-2 border-b border-gray-03/60 px-6 pb-4 pt-6 pr-12">
             <DialogTitle>{t("overview.coverage.findReportTitle")}</DialogTitle>
             <DialogDescription className="text-left leading-relaxed">
@@ -227,31 +251,34 @@ export function CoverageFindReportDialog({
                   onSelect={handleSelectReport}
                   initialExpanded
                   variant="embedded"
+                  onPreviewOpenChange={setIsPdfPreviewOpen}
                 />
               )
             ) : null}
           </div>
 
-          <DialogFooter className="shrink-0 flex-col gap-3 border-t border-gray-03/60 bg-gray-05/40 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <DialogFooter className="shrink-0 flex-col gap-3 border-t border-gray-03/60 bg-gray-05/40 px-6 py-4">
             {registryResponse ? (
-              <Button
-                className="w-full sm:ml-auto sm:w-auto"
-                variant="secondary"
-                onClick={() => handleOpenChange(false)}
-              >
-                {t("common.cancel")}
-              </Button>
+              <div className="flex w-full justify-end">
+                <Button
+                  variant="secondary"
+                  className="whitespace-nowrap"
+                  onClick={() => handleOpenChange(false)}
+                >
+                  {t("common.cancel")}
+                </Button>
+              </div>
             ) : (
               <>
-                <p className="text-left text-xs leading-relaxed text-gray-02 sm:max-w-[55%]">
+                <p className="w-full text-left text-xs leading-relaxed text-gray-02">
                   {t("overview.coverage.findReportActionsHint")}
                 </p>
-                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-nowrap sm:justify-end">
                   <Button
                     variant="outline"
                     onClick={() => handleOpenChange(false)}
                     disabled={isSaving || isRunningReports}
-                    className="w-full sm:w-auto"
+                    className="whitespace-nowrap"
                   >
                     {t("common.cancel")}
                   </Button>
@@ -259,7 +286,7 @@ export function CoverageFindReportDialog({
                     variant="secondary"
                     onClick={() => void handleSaveToRegistry()}
                     disabled={!selectedReport || isSaving || isRunningReports}
-                    className="w-full sm:w-auto"
+                    className="whitespace-nowrap"
                   >
                     {isSaving
                       ? t("overview.coverage.findReportSaving")
@@ -268,7 +295,7 @@ export function CoverageFindReportDialog({
                   <Button
                     onClick={handleRunPipeline}
                     disabled={!selectedReport || isSaving || isRunningReports}
-                    className="w-full sm:w-auto"
+                    className="whitespace-nowrap"
                   >
                     {t("crawler.runSelectedReports")}
                   </Button>
