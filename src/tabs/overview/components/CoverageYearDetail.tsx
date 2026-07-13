@@ -346,7 +346,9 @@ function CoverageEntryRow({
       <td className="px-4 py-2 text-gray-02">
         {entry.matchedCompany ? (
           <Link
-            to={editorCompanyPath(entry.matchedCompany.wikidataId)}
+            to={editorCompanyPath(
+              entry.matchedCompany.wikidataId ?? entry.matchedCompany.id,
+            )}
             className="text-blue-03 hover:underline"
           >
             {entry.matchedCompany.name}
