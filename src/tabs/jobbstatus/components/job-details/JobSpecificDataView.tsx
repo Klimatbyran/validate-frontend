@@ -15,6 +15,7 @@ import { EconomySection } from "../scope/EconomySection";
 import { WikidataApprovalDisplay } from "../WikidataApprovalDisplay";
 import { CompanyLinkApprovalDisplay } from "../CompanyLinkApprovalDisplay";
 import { Button } from "@/ui/button";
+import { Callout } from "@/ui/callout";
 import { getJobStatus } from "@/lib/workflow-utils";
 import {
   parseReturnValueData,
@@ -23,6 +24,7 @@ import {
   getScope3Data,
   getWikidataApprovalData,
   getCompanyLinkApprovalData,
+  hasPendingStructuredApproval,
 } from "../../lib/job-specific-data-parsing";
 import { CompanyNameOverrideDisplay } from "./CompanyNameOverrideDisplay";
 import { useJobRerunActions } from "../../hooks/useJobRerunActions";
@@ -76,8 +78,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   React.useEffect(() => {
     let aborted = false;
     async function loadDetails() {
-      if (!job || job.returnvalue) return;
-      if (!job.queueId || !job.id) return;
+      if (!job?.queueId || !job?.id) return;
       try {
         setIsLoading(true);
         const res = await fetch(
@@ -96,7 +97,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     return () => {
       aborted = true;
     };
-  }, [job?.id, job?.queueId, Boolean(job?.returnvalue)]);
+  }, [job?.id, job?.queueId]);
 
   const effectiveJob = React.useMemo(() => {
     if (!job) return undefined;
@@ -206,6 +207,13 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const economyData = getEconomyData(returnValueData);
   const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob);
   const companyLinkApprovalData = getCompanyLinkApprovalData(job, effectiveJob);
+  const pendingStructuredApproval = hasPendingStructuredApproval(
+    effectiveJob?.data,
+  );
+  const showUnresolvedApprovalHint =
+    pendingStructuredApproval &&
+    !wikidataApprovalData &&
+    !companyLinkApprovalData;
   const wikidataId: string | undefined = React.useMemo(() => {
     const fromJob = getWikidataInfo(effectiveJob as any)?.node;
     const fromProcessed =
@@ -423,7 +431,15 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         </div>
       ) : null}
 
-      {/* Show Company Link Approval for ambiguous precheck matches */}
+      {/* Company link / Wikidata approval gates */}
+      {showUnresolvedApprovalHint && (
+        <Callout
+          variant="warning"
+          title={t("jobstatus.jobdetails.unresolvedApprovalTitle")}
+          description={t("jobstatus.jobdetails.unresolvedApprovalDescription")}
+        />
+      )}
+
       {companyLinkApprovalData && (
         <div className="mb-4">
           <CompanyLinkApprovalDisplay

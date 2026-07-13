@@ -1,5 +1,33 @@
 import { describe, it, expect } from "vitest";
-import { getCompanyLinkApprovalData } from "./job-specific-data-parsing";
+import {
+  getCompanyLinkApprovalData,
+  getWikidataApprovalData,
+} from "./job-specific-data-parsing";
+
+describe("getWikidataApprovalData", () => {
+  it("falls back to job.data.wikidata when approval payload omits nested wikidata", () => {
+    const job = {
+      data: {
+        wikidata: {
+          node: "Q123",
+          url: "https://www.wikidata.org/wiki/Q123",
+          label: "Test Co",
+        },
+        approval: {
+          type: "wikidata",
+          approved: false,
+          summary: "Wikidata selection for Test Co",
+          data: { newValue: {} },
+        },
+      },
+    };
+
+    expect(getWikidataApprovalData(job as any)).toMatchObject({
+      status: "pending_approval",
+      wikidata: { node: "Q123", label: "Test Co" },
+    });
+  });
+});
 
 describe("getCompanyLinkApprovalData", () => {
   it("parses pending company link approval from precheck job data", () => {

@@ -705,6 +705,8 @@
       "jobRerunning": "Jobbet körs om",
       "approvalRequired": "Godkännande krävs",
       "approvalDescription": "Vänligen granska informationen och godkänn eller avvisa.",
+      "unresolvedApprovalTitle": "Godkännande väntar men åtgärder kunde inte laddas",
+      "unresolvedApprovalDescription": "Uppdatera dialogen eller öppna Tekniska detaljer för att inspektera job.data.approval. Om garbo nyligen uppdaterats, deploya motsvarande Validate-version så att företagslänk- och Wikidata-godkännandekontroller visas.",
       "cannotRerunError": "Kunde inte köra om jobbet: {{message}}",
       "fullErrorMessage": "Fullständigt felmeddelande",
       "lastJobFailed": "Senaste jobbet misslyckades",

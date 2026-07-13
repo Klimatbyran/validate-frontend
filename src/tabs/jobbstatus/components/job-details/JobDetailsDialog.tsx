@@ -25,6 +25,7 @@ import {
 import { getQueueDisplayName } from "@/lib/workflow-config";
 import { findJobByQueueId } from "@/lib/workflow-utils";
 import { getWikidataInfo } from "@/lib/utils";
+import { hasPendingStructuredApproval } from "@/tabs/jobbstatus/lib/job-specific-data-parsing";
 import { Button } from "@/ui/button";
 import { useI18n } from "@/contexts/I18nContext";
 import { JobRedisRetentionHint } from "../JobRedisRetentionHint";
@@ -60,10 +61,7 @@ export function JobDetailsDialog({
     if (!job) return;
     let aborted = false;
     async function loadDetails() {
-      if (!job) return;
-      // If we already have a return value on the job, no need to fetch details
-      if (job.returnvalue) return;
-      if (!job.queueId || !job.id) return;
+      if (!job?.queueId || !job?.id) return;
       try {
         const res = await fetch(
           getPipelineUrl(
@@ -81,7 +79,7 @@ export function JobDetailsDialog({
     return () => {
       aborted = true;
     };
-  }, [job?.id, job?.queueId, Boolean(job?.returnvalue)]);
+  }, [job?.id, job?.queueId, isOpen]);
 
   // Create effectiveJob that merges detailed data (similar to job-specific-data-view)
   const effectiveJob = useMemo(() => {
@@ -204,6 +202,8 @@ export function JobDetailsDialog({
 
   if (!job) return null;
 
+  const dialogJob = effectiveJob ?? job;
+
   // Debug: log threadId sources for the selected job
   try {
     console.log("[JobDetailsDialog] Selected job debug", {
@@ -217,7 +217,9 @@ export function JobDetailsDialog({
     // ignore debug logging errors
   }
 
-  const needsApproval = !job.data.approved && !job.data.autoApprove;
+  const needsApproval =
+    hasPendingStructuredApproval(dialogJob.data) ||
+    (!dialogJob.data?.approved && !dialogJob.data?.autoApprove);
   const canRetry = Boolean(job.isFailed);
 
   const handleApprove = (approved: boolean) => {
