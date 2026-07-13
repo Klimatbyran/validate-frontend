@@ -69,6 +69,8 @@ const SearchResultItem = ({
   useEffect(() => {
     if (results && results.length > 0) {
       setResultsWithPreview(generateReportPreviews(results as Report[]));
+    } else {
+      setResultsWithPreview([]);
     }
   }, [results]);
 

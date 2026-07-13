@@ -10,7 +10,11 @@ import { ReportYearPill } from "./ReportYearPill";
 import { CoverageFindReportDialog } from "./CoverageFindReportDialog";
 import { CoverageFindReportYearPrompt } from "./CoverageFindReportYearPrompt";
 import { searchCompanyReports } from "@/tabs/crawler/lib/crawler-utils";
-import type { SaveReportSuccess } from "@/tabs/crawler/lib/crawler-types";
+import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
+import type {
+  CompanyReport,
+  SaveReportSuccess,
+} from "@/tabs/crawler/lib/crawler-types";
 import type {
   CoverageEntry,
   CoverageEntryFilter,
@@ -23,6 +27,12 @@ type CoverageYearDetailProps = {
   onEditEntry: (entry: CoverageEntry) => void;
   onViewRegistryReports?: (names: string[]) => void;
   onRegistryReportSaved?: (entryId: string, saved: SaveReportSuccess) => void;
+};
+
+type FindReportSession = {
+  entry: CoverageEntry;
+  reportYear: number;
+  companyReport: CompanyReport;
 };
 
 function entryMatchesFilter(
@@ -59,6 +69,9 @@ export function CoverageYearDetailView({
   const { t } = useI18n();
   const [filter, setFilter] = useState<CoverageEntryFilter>("all");
   const [search, setSearch] = useState("");
+  const [findReportSession, setFindReportSession] =
+    useState<FindReportSession | null>(null);
+  const runPipeline = useRunReportsPipeline();
 
   const missingCount =
     detail.totalNames - detail.matchedCount - detail.ambiguousCount;
@@ -202,7 +215,7 @@ export function CoverageYearDetailView({
                 entry={entry}
                 reportYear={detail.year}
                 onEditEntry={onEditEntry}
-                onRegistryReportSaved={onRegistryReportSaved}
+                onFindReportReady={setFindReportSession}
               />
             ))}
             {filteredEntries.length === 0 ? (
@@ -215,6 +228,22 @@ export function CoverageYearDetailView({
           </tbody>
         </table>
       </div>
+
+      {findReportSession ? (
+        <CoverageFindReportDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setFindReportSession(null);
+          }}
+          entry={findReportSession.entry}
+          reportYear={findReportSession.reportYear}
+          companyReport={findReportSession.companyReport}
+          runPipeline={runPipeline}
+          onSaved={(saved) =>
+            onRegistryReportSaved?.(findReportSession.entry.id, saved)
+          }
+        />
+      ) : null}
     </div>
   );
 }
@@ -240,28 +269,22 @@ function CoverageEntryRow({
   entry,
   reportYear,
   onEditEntry,
-  onRegistryReportSaved,
+  onFindReportReady,
 }: {
   entry: CoverageEntry;
   reportYear: number;
   onEditEntry: (entry: CoverageEntry) => void;
-  onRegistryReportSaved?: (entryId: string, saved: SaveReportSuccess) => void;
+  onFindReportReady: (session: FindReportSession) => void;
 }) {
   const { t } = useI18n();
   const [isFindingReport, setIsFindingReport] = useState(false);
   const [yearPromptOpen, setYearPromptOpen] = useState(false);
-  const [findReportOpen, setFindReportOpen] = useState(false);
-  const [searchYear, setSearchYear] = useState(reportYear);
-  const [companyReport, setCompanyReport] = useState<CompanyReport | null>(
-    null,
-  );
 
   const handleFindReportClick = () => {
     setYearPromptOpen(true);
   };
 
   const handleYearConfirm = async (year: number) => {
-    setSearchYear(year);
     setIsFindingReport(true);
     try {
       const results = await searchCompanyReports({
@@ -273,12 +296,15 @@ function CoverageEntryRow({
         reportYear: String(year),
         results: [],
       };
-      setCompanyReport({
-        ...report,
-        wikidataId: entry.matchedCompany?.wikidataId,
-      });
       setYearPromptOpen(false);
-      setFindReportOpen(true);
+      onFindReportReady({
+        entry,
+        reportYear: year,
+        companyReport: {
+          ...report,
+          wikidataId: entry.matchedCompany?.wikidataId,
+        },
+      });
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -376,14 +402,6 @@ function CoverageEntryRow({
           defaultYear={reportYear}
           isSearching={isFindingReport}
           onConfirm={(year) => void handleYearConfirm(year)}
-        />
-        <CoverageFindReportDialog
-          open={findReportOpen}
-          onOpenChange={setFindReportOpen}
-          entry={entry}
-          reportYear={searchYear}
-          companyReport={companyReport}
-          onSaved={(saved) => onRegistryReportSaved?.(entry.id, saved)}
         />
       </td>
     </tr>

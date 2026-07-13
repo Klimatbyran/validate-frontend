@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { RunReportsModal } from "@/components/RunReportsModal";
-import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
+import type { RunReportsPipelineHandle } from "@/hooks/useRunReportsPipeline";
 import type { RunReportListItem } from "@/lib/run-reports-types";
 import { Button } from "@/ui/button";
 import {
@@ -30,6 +30,7 @@ type CoverageFindReportDialogProps = {
   reportYear: number;
   companyReport: CompanyReport | null;
   onSaved?: (saved: SaveReportSuccess) => void;
+  runPipeline: RunReportsPipelineHandle;
 };
 
 export function CoverageFindReportDialog({
@@ -39,6 +40,7 @@ export function CoverageFindReportDialog({
   reportYear,
   companyReport,
   onSaved,
+  runPipeline,
 }: CoverageFindReportDialogProps) {
   const { t } = useI18n();
   const reportYearLabel = String(reportYear);
@@ -57,7 +59,7 @@ export function CoverageFindReportDialog({
     autoApprove,
     setAutoApprove,
     runOptions,
-  } = useRunReportsPipeline();
+  } = runPipeline;
 
   const reportWithWikidata = useMemo((): CompanyReport | null => {
     if (!companyReport) return null;
@@ -240,20 +242,14 @@ export function CoverageFindReportDialog({
                 ) : null}
               </div>
             ) : reportWithWikidata ? (
-              reportWithWikidata.results.length === 0 ? (
-                <p className="py-8 text-center text-sm text-gray-02">
-                  {t("overview.coverage.findReportNoResults")}
-                </p>
-              ) : (
-                <SearchResultItem
-                  companyReport={reportWithWikidata}
-                  selectedReport={selectedReport?.url}
-                  onSelect={handleSelectReport}
-                  initialExpanded
-                  variant="embedded"
-                  onPreviewOpenChange={setIsPdfPreviewOpen}
-                />
-              )
+              <SearchResultItem
+                companyReport={reportWithWikidata}
+                selectedReport={selectedReport?.url}
+                onSelect={handleSelectReport}
+                initialExpanded
+                variant="embedded"
+                onPreviewOpenChange={setIsPdfPreviewOpen}
+              />
             ) : null}
           </div>
 
