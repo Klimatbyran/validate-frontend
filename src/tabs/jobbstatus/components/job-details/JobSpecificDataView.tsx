@@ -13,6 +13,7 @@ import { CollapsibleSection } from "@/ui/collapsible-section";
 import { Image, ExternalLink, FileText, RotateCcw } from "lucide-react";
 import { EconomySection } from "../scope/EconomySection";
 import { WikidataApprovalDisplay } from "../WikidataApprovalDisplay";
+import { CompanyLinkApprovalDisplay } from "../CompanyLinkApprovalDisplay";
 import { Button } from "@/ui/button";
 import { getJobStatus } from "@/lib/workflow-utils";
 import {
@@ -21,6 +22,7 @@ import {
   getEconomyData,
   getScope3Data,
   getWikidataApprovalData,
+  getCompanyLinkApprovalData,
 } from "../../lib/job-specific-data-parsing";
 import { CompanyNameOverrideDisplay } from "./CompanyNameOverrideDisplay";
 import { useJobRerunActions } from "../../hooks/useJobRerunActions";
@@ -123,6 +125,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const {
     handleWikidataApprove,
     handleWikidataOverride,
+    handleCompanyLinkApprove,
     handleCompanyNameOverride,
     handleRerun,
     handleRerunAndSave,
@@ -202,6 +205,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const scope3Data = getScope3Data(processedData, returnValueData);
   const economyData = getEconomyData(returnValueData);
   const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob);
+  const companyLinkApprovalData = getCompanyLinkApprovalData(job, effectiveJob);
   const wikidataId: string | undefined = React.useMemo(() => {
     const fromJob = getWikidataInfo(effectiveJob as any)?.node;
     const fromProcessed =
@@ -280,12 +284,29 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     return nameString.trim() || undefined;
   }, [effectiveJob, job, processedData]);
 
-  // Check if this is a completed precheck job
-  const isCompletedPrecheck = React.useMemo(() => {
+  // Show company name override on precheck when completed (correction) or waiting for manual name
+  const showCompanyNameOverride = React.useMemo(() => {
     if (!effectiveJob || effectiveJob.queueId !== "precheck") return false;
+
     const status = getJobStatus(effectiveJob);
-    return status === "completed";
+    if (status === "completed") return true;
+
+    const waitingForCompanyName =
+      effectiveJob.data?.waitingForCompanyName === true;
+    if (status === "delayed" && waitingForCompanyName) return true;
+
+    if (status === "failed") {
+      const failedReason = String(effectiveJob.failedReason ?? "");
+      return (
+        failedReason.includes("Could not identify company name") ||
+        failedReason.includes("companyName provided in job data")
+      );
+    }
+
+    return false;
   }, [effectiveJob]);
+
+  const missingCompanyNameForOverride = !companyName;
 
   React.useEffect(() => {
     try {
@@ -402,6 +423,16 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         </div>
       ) : null}
 
+      {/* Show Company Link Approval for ambiguous precheck matches */}
+      {companyLinkApprovalData && (
+        <div className="mb-4">
+          <CompanyLinkApprovalDisplay
+            data={companyLinkApprovalData}
+            onApprove={handleCompanyLinkApprove}
+          />
+        </div>
+      )}
+
       {/* Show Wikidata Approval Display if available (for guessWikidata step) */}
       {wikidataApprovalData && (
         <div className="mb-4">
@@ -413,10 +444,11 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         </div>
       )}
 
-      {/* Show Company Name Override for completed precheck jobs */}
-      {isCompletedPrecheck && (
+      {/* Company name override / manual entry for precheck */}
+      {showCompanyNameOverride && (
         <CompanyNameOverrideDisplay
           currentCompanyName={companyName}
+          missingCompanyName={missingCompanyNameForOverride}
           onOverride={handleCompanyNameOverride}
         />
       )}
