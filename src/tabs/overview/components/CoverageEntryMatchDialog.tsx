@@ -98,7 +98,7 @@ export function CoverageEntryMatchDialog({
       description={t("overview.coverage.editMatchDescription")}
       footer={
         <div className="flex flex-wrap justify-end gap-2">
-          {entry.matchMethod === "manual" ? (
+          {entry.status === "matched" ? (
             <Button
               variant="secondary"
               disabled={isSubmitting}
