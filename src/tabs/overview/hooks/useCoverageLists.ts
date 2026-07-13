@@ -26,6 +26,7 @@ function entryMatchChanged(
   return (
     previous.status !== updated.status ||
     previous.matchMethod !== updated.matchMethod ||
+    previous.matchedCompany?.id !== updated.matchedCompany?.id ||
     previous.matchedCompany?.wikidataId !== updated.matchedCompany?.wikidataId
   );
 }
@@ -40,21 +41,27 @@ function mergeCoverageMatchUpdate(
     previous.entries.map((entry) => [entry.id, entry] as const),
   );
 
+  let anyMatchChanged = false;
+  const entries = updated.entries.map((entry) => {
+    const prior = previousById.get(entry.id);
+    if (!prior || entryMatchChanged(prior, entry)) {
+      anyMatchChanged = true;
+      return entry;
+    }
+    return {
+      ...entry,
+      registryReports: prior.registryReports ?? [],
+    };
+  });
+
+  if (anyMatchChanged) return updated;
+
   return {
     ...updated,
     hasAnyReportCount: previous.hasAnyReportCount,
     prodReadyCount: previous.prodReadyCount,
     noReportCount: previous.noReportCount,
-    entries: updated.entries.map((entry) => {
-      const prior = previousById.get(entry.id);
-      if (!prior || entryMatchChanged(prior, entry)) {
-        return entry;
-      }
-      return {
-        ...entry,
-        registryReports: prior.registryReports ?? [],
-      };
-    }),
+    entries,
   };
 }
 
@@ -237,7 +244,7 @@ export function useCoverageYearDetail(
               matchedCompanyId: action.companyId,
               matchConfirmedMissing: false,
             }
-          : action.type === "markMissing"
+          : action.type === "markMissing" || action.type === "clear"
             ? {
                 matchedCompanyId: null,
                 matchConfirmedMissing: true,
