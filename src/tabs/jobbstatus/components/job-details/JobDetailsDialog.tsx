@@ -31,6 +31,7 @@ import {
 import { Button } from "@/ui/button";
 import { useI18n } from "@/contexts/I18nContext";
 import { JobRedisRetentionHint } from "../JobRedisRetentionHint";
+import { JobActionRequiredSection } from "./JobActionRequiredSection";
 
 interface JobDetailsDialogProps {
   job: QueueJob | null;
@@ -359,6 +360,12 @@ export function JobDetailsDialog({
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         job={effectiveJob ?? job}
+      />
+
+      <JobActionRequiredSection
+        job={job}
+        detailed={detailed}
+        onDetailedChange={setDetailed}
       />
 
       <div className="space-y-6 my-6">

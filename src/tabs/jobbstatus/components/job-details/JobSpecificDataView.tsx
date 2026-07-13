@@ -13,17 +13,13 @@ import { CollapsibleSection } from "@/ui/collapsible-section";
 import { Image, ExternalLink, FileText, RotateCcw } from "lucide-react";
 import { EconomySection } from "../scope/EconomySection";
 import { Button } from "@/ui/button";
-import { getJobStatus } from "@/lib/workflow-utils";
 import {
   parseReturnValueData,
   getScopeData,
   getEconomyData,
   getScope3Data,
   getWikidataApprovalData,
-  getCompanyLinkApprovalData,
-  hasPendingStructuredApproval,
 } from "../../lib/job-specific-data-parsing";
-import { JobApprovalPanels } from "./JobApprovalPanels";
 import { useJobRerunActions } from "../../hooks/useJobRerunActions";
 import { getPipelineUrl } from "@/config/api-env";
 import { useI18n } from "@/contexts/I18nContext";
@@ -141,14 +137,12 @@ export function JobSpecificDataView({
     } as any;
   }, [job, detailed]);
 
-  const {
-    handleWikidataApprove,
-    handleWikidataOverride,
-    handleCompanyLinkApprove,
-    handleCompanyNameOverride,
-    handleRerun,
-    handleRerunAndSave,
-  } = useJobRerunActions({ job, effectiveJob, detailed, setDetailed });
+  const { handleRerun, handleRerunAndSave } = useJobRerunActions({
+    job,
+    effectiveJob,
+    detailed,
+    setDetailed,
+  });
 
   const processedData =
     typeof data === "string" && isJsonString(data) ? JSON.parse(data) : data;
@@ -224,16 +218,6 @@ export function JobSpecificDataView({
   const scope3Data = getScope3Data(processedData, returnValueData);
   const economyData = getEconomyData(returnValueData);
   const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob);
-  const companyLinkApprovalData = getCompanyLinkApprovalData(job, effectiveJob);
-  const pendingStructuredApproval = hasPendingStructuredApproval(
-    effectiveJob?.data,
-  );
-  const showUnresolvedApprovalHint =
-    pendingStructuredApproval &&
-    !wikidataApprovalData &&
-    !companyLinkApprovalData;
-  const isLoadingApprovalDetails =
-    pendingStructuredApproval && !detailed && Boolean(job?.queueId && job?.id);
   const wikidataId: string | undefined = React.useMemo(() => {
     const fromJob = getWikidataInfo(effectiveJob as any)?.node;
     const fromProcessed =
@@ -298,44 +282,6 @@ export function JobSpecificDataView({
     return { reportYearHint, documentReportYear };
   }, [effectiveJob, job, processedData]);
 
-  // Get company name from multiple possible sources
-  const companyName: string | undefined = React.useMemo(() => {
-    const name =
-      effectiveJob?.data?.companyName ||
-      job?.data?.companyName ||
-      processedData?.companyName ||
-      effectiveJob?.data?.company ||
-      job?.data?.company ||
-      processedData?.company;
-    if (!name) return undefined;
-    const nameString = typeof name === "string" ? name : String(name);
-    return nameString.trim() || undefined;
-  }, [effectiveJob, job, processedData]);
-
-  // Show company name override on precheck when completed (correction) or waiting for manual name
-  const showCompanyNameOverride = React.useMemo(() => {
-    if (!effectiveJob || effectiveJob.queueId !== "precheck") return false;
-
-    const status = getJobStatus(effectiveJob);
-    if (status === "completed") return true;
-
-    const waitingForCompanyName =
-      effectiveJob.data?.waitingForCompanyName === true;
-    if (status === "delayed" && waitingForCompanyName) return true;
-
-    if (status === "failed") {
-      const failedReason = String(effectiveJob.failedReason ?? "");
-      return (
-        failedReason.includes("Could not identify company name") ||
-        failedReason.includes("companyName provided in job data")
-      );
-    }
-
-    return false;
-  }, [effectiveJob]);
-
-  const missingCompanyNameForOverride = !companyName;
-
   React.useEffect(() => {
     try {
       console.log("[JobSpecificDataView] scope3 panel context", {
@@ -382,20 +328,6 @@ export function JobSpecificDataView({
 
   return (
     <div className="space-y-3 text-sm">
-      <JobApprovalPanels
-        companyLinkApprovalData={companyLinkApprovalData}
-        wikidataApprovalData={wikidataApprovalData}
-        showCompanyNameOverride={showCompanyNameOverride}
-        companyName={companyName}
-        missingCompanyNameForOverride={missingCompanyNameForOverride}
-        showUnresolvedApprovalHint={showUnresolvedApprovalHint}
-        isLoadingApprovalDetails={isLoadingApprovalDetails}
-        onCompanyLinkApprove={handleCompanyLinkApprove}
-        onWikidataApprove={handleWikidataApprove}
-        onWikidataOverride={handleWikidataOverride}
-        onCompanyNameOverride={handleCompanyNameOverride}
-      />
-
       {/* Report / PDF URLs (source vs cached S3 when both exist) */}
       {(storedPdfUrl || sourceReportUrl) && (
         <div className="mb-4">
