@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 export const coverageMatchedCompanySchema = z.object({
-  wikidataId: z.string(),
+  id: z.string(),
+  wikidataId: z.string().nullable(),
   name: z.string(),
 });
 
@@ -54,7 +55,7 @@ export const coverageEntrySchema = z.object({
 export const coverageCompanySearchHitSchema = z.object({
   id: z.string(),
   name: z.string(),
-  wikidataId: z.string(),
+  wikidataId: z.string().nullable(),
 });
 
 export const coverageCompanySearchResponseSchema = z.array(

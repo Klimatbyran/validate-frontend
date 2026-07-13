@@ -55,7 +55,10 @@ export function CoverageEntryMatchDialog({
           setResults(hits);
           if (!entry?.matchedCompany) return;
           const suggested = hits.find(
-            (hit) => hit.wikidataId === entry.matchedCompany?.wikidataId,
+            (hit) =>
+              hit.id === entry.matchedCompany?.id ||
+              (entry.matchedCompany?.wikidataId &&
+                hit.wikidataId === entry.matchedCompany.wikidataId),
           );
           if (suggested) setSelectedId(suggested.id);
         })
@@ -77,7 +80,12 @@ export function CoverageEntryMatchDialog({
   if (!entry) return null;
 
   const suggestedHit = entry.matchedCompany
-    ? results.find((hit) => hit.wikidataId === entry.matchedCompany?.wikidataId)
+    ? results.find(
+        (hit) =>
+          hit.id === entry.matchedCompany?.id ||
+          (entry.matchedCompany?.wikidataId &&
+            hit.wikidataId === entry.matchedCompany.wikidataId),
+      )
     : null;
 
   return (
@@ -180,7 +188,9 @@ export function CoverageEntryMatchDialog({
               {results.map((hit) => {
                 const isSelected = selectedId === hit.id;
                 const isSuggested =
-                  hit.wikidataId === entry.matchedCompany?.wikidataId;
+                  hit.id === entry.matchedCompany?.id ||
+                  (entry.matchedCompany?.wikidataId &&
+                    hit.wikidataId === entry.matchedCompany.wikidataId);
                 return (
                   <li key={hit.id}>
                     <button
@@ -194,7 +204,7 @@ export function CoverageEntryMatchDialog({
                     >
                       <span className="font-medium">{hit.name}</span>
                       <span className="ml-2 text-xs text-gray-02">
-                        {hit.wikidataId}
+                        {hit.wikidataId || "—"}
                         {isSuggested
                           ? ` · ${t("overview.coverage.suggestedMatch")}`
                           : ""}
