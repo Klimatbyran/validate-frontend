@@ -93,6 +93,16 @@ describe("getJobStatus precheck company name", () => {
 
     expect(status).toBe("waiting");
   });
+
+  it("returns needs_approval when delayed precheck only has placeholder Unknown", () => {
+    const status = getJobStatus({
+      queueId: "precheck",
+      status: "delayed",
+      data: { companyName: "Unknown" },
+    });
+
+    expect(status).toBe("needs_approval");
+  });
 });
 
 describe("jobNeedsUserInteraction", () => {
@@ -124,7 +134,11 @@ describe("calculatePipelineStepStatus preprocessing", () => {
           queueId: "precheck",
           status: "delayed",
           processedOn: Date.now(),
-          data: { threadId: "thread-1", waitingForCompanyName: true },
+          data: {
+            threadId: "thread-1",
+            companyName: "Unknown",
+            waitingForCompanyName: true,
+          },
         },
       ],
     };

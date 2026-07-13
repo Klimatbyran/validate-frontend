@@ -34,10 +34,18 @@ function isWikidataAutoApprovedUnverified(job: any): boolean {
   return !approval.verifiedByUserId;
 }
 
+/** False for empty names and registry/upload placeholders like "Unknown". */
+export function isResolvableCompanyName(name?: string | null): boolean {
+  if (!name || typeof name !== "string") return false;
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  return trimmed.toLocaleLowerCase("en-US") !== "unknown";
+}
+
 function companyNameFromJobData(job: any): string | undefined {
   const candidates = [job?.data?.companyName, job?.data?.company];
   for (const value of candidates) {
-    if (typeof value === "string" && value.trim()) return value.trim();
+    if (isResolvableCompanyName(value)) return value!.trim();
   }
   return undefined;
 }

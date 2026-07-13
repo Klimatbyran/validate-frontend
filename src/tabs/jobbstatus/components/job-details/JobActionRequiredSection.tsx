@@ -5,7 +5,7 @@
 
 import React from "react";
 import type { DetailedJobResponse, QueueJob } from "@/lib/types";
-import { getJobStatus } from "@/lib/workflow-utils";
+import { getJobStatus, isResolvableCompanyName } from "@/lib/workflow-utils";
 import {
   getCompanyLinkApprovalData,
   getWikidataApprovalData,
@@ -33,7 +33,8 @@ function companyNameFromJob(
     job?.data?.company;
   if (!name) return undefined;
   const nameString = typeof name === "string" ? name : String(name);
-  return nameString.trim() || undefined;
+  const trimmed = nameString.trim();
+  return isResolvableCompanyName(trimmed) ? trimmed : undefined;
 }
 
 export function JobActionRequiredSection({
@@ -107,7 +108,7 @@ export function JobActionRequiredSection({
     if (
       isDelayed &&
       hasNoStructuredApproval &&
-      !companyName &&
+      !isResolvableCompanyName(companyName) &&
       !effectiveJob.data?.approval
     ) {
       return true;
