@@ -362,11 +362,7 @@ function CoverageEntryRow({
               <Loader2 className="h-4 w-4 animate-spin" />
             </Button>
           ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleFindReportClick}
-            >
+            <Button variant="outline" size="sm" onClick={handleFindReportClick}>
               {t("overview.coverage.findReport")}
             </Button>
           )}

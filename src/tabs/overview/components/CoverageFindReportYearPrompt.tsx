@@ -61,7 +61,9 @@ export function CoverageFindReportYearPrompt({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[min(100vw-2rem,24rem)] sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>{t("overview.coverage.findReportYearTitle")}</DialogTitle>
+          <DialogTitle>
+            {t("overview.coverage.findReportYearTitle")}
+          </DialogTitle>
           <DialogDescription className="text-left">
             {t("overview.coverage.findReportYearDescription", {
               name: companyName,

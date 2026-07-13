@@ -222,12 +222,11 @@ export function useCoverageYearDetail(
     isLoading,
     error,
     refresh: () => loadDetail(),
-    addEntryRegistryReport: (
-      entryId: string,
-      saved: SaveReportSuccess,
-    ) => {
+    addEntryRegistryReport: (entryId: string, saved: SaveReportSuccess) => {
       setDetail((previous) =>
-        previous ? addRegistryReportToEntry(previous, entryId, saved) : previous,
+        previous
+          ? addRegistryReportToEntry(previous, entryId, saved)
+          : previous,
       );
     },
     setEntryMatch: async (entryId: string, action: CoverageMatchSaveAction) => {

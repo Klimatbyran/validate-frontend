@@ -113,7 +113,9 @@ const SearchResultItem = ({
                 : "relative flex items-center gap-4"
             }
             style={
-              variant === "embedded" ? undefined : { minWidth: 50, minHeight: 50 }
+              variant === "embedded"
+                ? undefined
+                : { minWidth: 50, minHeight: 50 }
             }
           >
             <div
