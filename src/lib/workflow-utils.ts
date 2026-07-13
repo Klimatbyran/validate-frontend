@@ -34,6 +34,38 @@ function isWikidataAutoApprovedUnverified(job: any): boolean {
   return !approval.verifiedByUserId;
 }
 
+function companyNameFromJobData(job: any): string | undefined {
+  const candidates = [job?.data?.companyName, job?.data?.company];
+  for (const value of candidates) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+/** True when a delayed/waiting job is blocked on staff input (not just queue backoff). */
+export function jobNeedsUserInteraction(job: any): boolean {
+  if (!job) return false;
+
+  const approval = job.data?.approval || (job as any)?.approval;
+  if (approval && typeof approval === "object" && approval.approved === false) {
+    return true;
+  }
+
+  const queueId = job?.queueId ?? job?.queue;
+  if (queueId !== "precheck") return false;
+
+  const rawStatus = job.status;
+  const isWaitingState =
+    rawStatus === "delayed" ||
+    rawStatus === "waiting" ||
+    rawStatus === "waiting-children";
+  if (!isWaitingState) return false;
+
+  if (job.data?.waitingForCompanyName === true) return true;
+
+  return !companyNameFromJobData(job) && !approval;
+}
+
 /**
  * Single source of truth for job status determination
  * Used by all views to ensure consistency
@@ -47,8 +79,8 @@ export function getJobStatus(job: any): SwimlaneStatusType {
   const hasApprovalObject = approval && typeof approval === "object";
   const isPendingApproval = hasApprovalObject && approval.approved === false;
 
-  // If job has pending approval, return needs_approval regardless of other status
-  if (isPendingApproval) {
+  // Staff action required: structured approvals or precheck waiting for company name
+  if (isPendingApproval || jobNeedsUserInteraction(job)) {
     return "needs_approval";
   }
 
@@ -387,6 +419,7 @@ function isPipelineProgressStatus(status: SwimlaneStatusType): boolean {
  */
 function isJobActivelyProcessing(job: any): boolean {
   if (!job) return false;
+  if (job.status === "delayed") return false;
   // Job is actively processing if it has processedOn but no finishedOn, or status is "active"
   return (job.processedOn && !job.finishedOn) || job.status === "active";
 }
@@ -426,17 +459,25 @@ export function calculatePipelineStepStatus(
 
   // Special case for finalize step: show green if saveToAPI (API Lagring) is completed
   // This is the most important step for the user
-  // But check for delayed jobs first - if any job is delayed, show gray
   if (stepId === "finalize") {
-    // Check for delayed jobs first (check raw status, not mapped status)
+    const hasNeedsApproval = jobsWithStatuses.some(
+      (entry) => entry.status === "needs_approval",
+    );
+    if (hasNeedsApproval) {
+      return "needs_approval";
+    }
+
+    // Delayed jobs that are not awaiting staff input show gray
     const hasDelayed = jobsWithStatuses.some(
       (entry) =>
         Array.isArray(entry.attempts) &&
-        entry.attempts.some((j: any) => j && j.status === "delayed"),
+        entry.attempts.some(
+          (j: any) => j && j.status === "delayed" && !jobNeedsUserInteraction(j),
+        ),
     );
 
     if (hasDelayed) {
-      return "waiting"; // Show gray for delayed
+      return "waiting";
     }
 
     const saveToAPIEntry = jobsWithStatuses.find(
@@ -464,15 +505,23 @@ export function calculatePipelineStepStatus(
       return "processing";
     }
 
-    // Check for delayed jobs (check raw status, not mapped status)
+    const hasNeedsApproval = jobsWithStatuses.some(
+      (entry) => entry.status === "needs_approval",
+    );
+    if (hasNeedsApproval) {
+      return "needs_approval";
+    }
+
     const hasDelayed = jobsWithStatuses.some(
       (entry) =>
         Array.isArray(entry.attempts) &&
-        entry.attempts.some((j: any) => j && j.status === "delayed"),
+        entry.attempts.some(
+          (j: any) => j && j.status === "delayed" && !jobNeedsUserInteraction(j),
+        ),
     );
 
     if (hasDelayed) {
-      return "waiting"; // Show gray for delayed
+      return "waiting";
     }
 
     // Filter to only jobs that have been started (ignore waiting jobs that haven't been run)
@@ -517,16 +566,23 @@ export function calculatePipelineStepStatus(
     return "waiting";
   }
 
-  // For other steps, use the original logic but also check for delayed
-  // Check for delayed jobs (check raw status, not mapped status)
+  const hasNeedsApproval = jobsWithStatuses.some(
+    (entry) => entry.status === "needs_approval",
+  );
+  if (hasNeedsApproval) {
+    return "needs_approval";
+  }
+
   const hasDelayed = jobsWithStatuses.some(
     (entry) =>
       Array.isArray(entry.attempts) &&
-      entry.attempts.some((j: any) => j && j.status === "delayed"),
+      entry.attempts.some(
+        (j: any) => j && j.status === "delayed" && !jobNeedsUserInteraction(j),
+      ),
   );
 
   if (hasDelayed) {
-    return "waiting"; // Show gray for delayed
+    return "waiting";
   }
 
   const fieldStatuses = jobsWithStatuses.map((entry) => entry.status);
@@ -543,16 +599,10 @@ export function calculatePipelineStepStatus(
 
   // Priority-based status determination:
   // 1. If there's at least one red (failed) → show red
-  // 2. If there's at least one orange (needs_approval) → show orange (prioritize approval)
-  // 3. If there's at least one gray (waiting) → show gray
-  // 4. Otherwise, if there's any green (completed) → show green
-  const hasNeedsApproval = fieldStatuses.some(
-    (status) => status === "needs_approval",
-  );
+  // 2. If there's at least one gray (waiting) → show gray
+  // 3. Otherwise, if there's any green (completed) → show green
   if (hasFailed) {
     return "failed";
-  } else if (hasNeedsApproval) {
-    return "needs_approval";
   } else if (hasWaiting) {
     return "waiting";
   } else if (hasCompleted) {

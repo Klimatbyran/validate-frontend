@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { getJobStatus } from "./workflow-utils";
+import {
+  calculatePipelineStepStatus,
+  getJobStatus,
+  jobNeedsUserInteraction,
+} from "./workflow-utils";
+import type { SwimlaneYearData } from "./types";
 
 describe("getJobStatus wikidata", () => {
   it("returns needs_approval when wikidata approval is pending", () => {
@@ -53,5 +58,79 @@ describe("getJobStatus wikidata", () => {
     });
 
     expect(status).toBe("completed");
+  });
+});
+
+describe("getJobStatus precheck company name", () => {
+  it("returns needs_approval when precheck is delayed waiting for company name", () => {
+    const status = getJobStatus({
+      queueId: "precheck",
+      status: "delayed",
+      data: {
+        waitingForCompanyName: true,
+      },
+    });
+
+    expect(status).toBe("needs_approval");
+  });
+
+  it("returns needs_approval when delayed precheck has no company name", () => {
+    const status = getJobStatus({
+      queueId: "precheck",
+      status: "delayed",
+      data: {},
+    });
+
+    expect(status).toBe("needs_approval");
+  });
+
+  it("returns waiting when delayed precheck already has a company name", () => {
+    const status = getJobStatus({
+      queueId: "precheck",
+      status: "delayed",
+      data: { companyName: "Alfa Laval AB" },
+    });
+
+    expect(status).toBe("waiting");
+  });
+});
+
+describe("jobNeedsUserInteraction", () => {
+  it("detects precheck waiting for manual company name", () => {
+    expect(
+      jobNeedsUserInteraction({
+        queueId: "precheck",
+        status: "delayed",
+        data: { waitingForCompanyName: true },
+      }),
+    ).toBe(true);
+  });
+});
+
+describe("calculatePipelineStepStatus preprocessing", () => {
+  it("shows needs_approval when precheck awaits company name input", () => {
+    const yearData: SwimlaneYearData = {
+      year: 2025,
+      attempts: 1,
+      fields: {},
+      jobs: [
+        {
+          queueId: "doclingParsePDF",
+          status: "completed",
+          finishedOn: Date.now(),
+          data: { threadId: "thread-1" },
+        },
+        {
+          queueId: "precheck",
+          status: "delayed",
+          processedOn: Date.now(),
+          data: { threadId: "thread-1", waitingForCompanyName: true },
+        },
+      ],
+    };
+
+    expect(calculatePipelineStepStatus(yearData, "preprocessing")).toBe(
+      "needs_approval",
+    );
   });
 });
