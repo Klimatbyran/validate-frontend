@@ -165,3 +165,97 @@ export function getWikidataApprovalData(
 
   return null;
 }
+
+export interface CompanyLinkCandidate {
+  id: string;
+  name: string;
+  wikidataId?: string | null;
+}
+
+export interface CompanyLinkApprovalData {
+  status: "approved" | "pending_approval";
+  extractedName: string;
+  candidates: CompanyLinkCandidate[];
+  selectedCompanyId?: string;
+  createNew?: boolean;
+  allowCreateNew?: boolean;
+  wikidataNode?: string;
+  message?: string;
+  metadata?: {
+    source?: string;
+    comment?: string;
+  };
+}
+
+function companyLinkApprovalFromApprovalObject(
+  approval: Record<string, unknown>,
+): CompanyLinkApprovalData | null {
+  const newValue = (approval.data as any)?.newValue;
+  const extractedName =
+    typeof newValue?.extractedName === "string" ? newValue.extractedName : "";
+  const candidates = Array.isArray(newValue?.candidates)
+    ? (newValue.candidates as CompanyLinkCandidate[])
+    : [];
+
+  if (!extractedName || candidates.length === 0) {
+    return null;
+  }
+
+  const allowCreateNew = newValue?.allowCreateNew !== false;
+  const wikidataNode =
+    typeof newValue?.wikidataNode === "string"
+      ? newValue.wikidataNode
+      : undefined;
+
+  const metadata =
+    (approval.metadata as CompanyLinkApprovalData["metadata"]) || {};
+
+  if (approval.approved === false) {
+    return {
+      status: "pending_approval",
+      extractedName,
+      candidates,
+      allowCreateNew,
+      wikidataNode,
+      message: approvalSummary(approval),
+      metadata,
+    };
+  }
+
+  if (approval.approved === true) {
+    return {
+      status: "approved",
+      extractedName,
+      candidates,
+      allowCreateNew,
+      wikidataNode,
+      selectedCompanyId:
+        typeof newValue?.companyId === "string" ? newValue.companyId : undefined,
+      createNew: Boolean(newValue?.createNew),
+      message: approvalSummary(approval),
+      metadata,
+    };
+  }
+
+  return null;
+}
+
+export function getCompanyLinkApprovalData(
+  job?: QueueJob,
+  effectiveJob?: any,
+): CompanyLinkApprovalData | null {
+  const jobData = effectiveJob?.data || job?.data;
+  const approval = jobData?.approval;
+
+  if (
+    approval &&
+    typeof approval === "object" &&
+    approval.type === "companyLink"
+  ) {
+    return companyLinkApprovalFromApprovalObject(
+      approval as Record<string, unknown>,
+    );
+  }
+
+  return null;
+}

@@ -128,6 +128,60 @@ export function useJobRerunActions({
     [effectiveJob?.queueId, effectiveJob?.id, refreshJobData, t],
   );
 
+  const handleCompanyLinkApprove = useCallback(
+    async (selection: { companyId?: string; createNew?: boolean }) => {
+      if (!effectiveJob?.queueId || !effectiveJob?.id) {
+        toast.error(t("jobstatus.jobdetails.toastCannotApprove"));
+        return;
+      }
+      try {
+        const response = await authenticatedFetch(
+          getPipelineUrl(
+            `/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+          ),
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              data: {
+                approval: {
+                  approved: true,
+                  data: {
+                    newValue: {
+                      ...(selection.companyId && {
+                        companyId: selection.companyId,
+                      }),
+                      ...(selection.createNew && { createNew: true }),
+                    },
+                  },
+                },
+              },
+            }),
+          },
+        );
+        if (!response.ok) {
+          const errorText = await response.text();
+          toast.error(
+            t("jobstatus.jobdetails.toastApproveError", {
+              message: errorText || t("upload.unknownError"),
+            }),
+          );
+          return;
+        }
+        toast.success(t("jobstatus.jobdetails.toastCompanyLinkApproveSuccess"));
+        await refreshJobData();
+      } catch (error) {
+        toast.error(
+          t("jobstatus.jobdetails.toastApproveFailed", {
+            message:
+              error instanceof Error ? error.message : t("upload.unknownError"),
+          }),
+        );
+      }
+    },
+    [effectiveJob?.queueId, effectiveJob?.id, refreshJobData, t],
+  );
+
   const handleCompanyNameOverride = useCallback(
     async (overrideCompanyName: string) => {
       if (!effectiveJob?.queueId || !effectiveJob?.id) {
@@ -263,6 +317,7 @@ export function useJobRerunActions({
     refreshJobData,
     handleWikidataApprove,
     handleWikidataOverride,
+    handleCompanyLinkApprove,
     handleCompanyNameOverride,
     handleRerun,
     handleRerunAndSave,
