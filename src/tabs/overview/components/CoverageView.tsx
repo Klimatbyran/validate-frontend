@@ -270,6 +270,9 @@ export function CoverageView({ onViewRegistryReports }: CoverageViewProps) {
                 <CoverageYearDetailView
                   detail={yearDetail.detail}
                   onViewRegistryReports={onViewRegistryReports}
+                  onRegistryReportSaved={(entryId, saved) => {
+                    yearDetail.addEntryRegistryReport(entryId, saved);
+                  }}
                   onEdit={() =>
                     setDialog({
                       kind: "editYear",

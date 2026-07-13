@@ -38,10 +38,11 @@ export const searchCompanyReports = async ({
     return [];
   }
 
+  const trimmedCountry = (country ?? "").trim();
   const searchQueries: crawlerSearchQuery[] = companyNames.map((name) => ({
     name,
     reportYear,
-    country: (country ?? "").trim(),
+    ...(trimmedCountry ? { country: trimmedCountry } : {}),
   }));
 
   const data: CompanyReport[][] = await Promise.all(

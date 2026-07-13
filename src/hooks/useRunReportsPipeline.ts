@@ -23,6 +23,17 @@ export type RunReportsPipelineRunOptions = {
   workers: UploadWorkerRunOptionsProps;
 };
 
+export type RunReportsPipelineHandle = {
+  runForUrls: (
+    urls: string[],
+    options?: { onSuccess?: () => void },
+  ) => Promise<void>;
+  isRunningReports: boolean;
+  autoApprove: boolean;
+  setAutoApprove: (value: boolean) => void;
+  runOptions: RunReportsPipelineRunOptions;
+};
+
 export type RunReportsPipelineToastKeys = {
   partial: string;
   success: string;
@@ -160,13 +171,12 @@ export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
           );
         } else {
           toast.success(t(toastKeys.success, { count: urls.length }));
+          options?.onSuccess?.();
         }
 
         if (batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE) {
           refetchBatches();
         }
-
-        options?.onSuccess?.();
       } catch (error) {
         console.error("Failed to run selected reports", error);
         const errorMessage =
