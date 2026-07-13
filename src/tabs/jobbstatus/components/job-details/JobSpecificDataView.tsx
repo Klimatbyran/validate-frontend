@@ -284,12 +284,29 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     return nameString.trim() || undefined;
   }, [effectiveJob, job, processedData]);
 
-  // Check if this is a completed precheck job
-  const isCompletedPrecheck = React.useMemo(() => {
+  // Show company name override on precheck when completed (correction) or waiting for manual name
+  const showCompanyNameOverride = React.useMemo(() => {
     if (!effectiveJob || effectiveJob.queueId !== "precheck") return false;
+
     const status = getJobStatus(effectiveJob);
-    return status === "completed";
+    if (status === "completed") return true;
+
+    const waitingForCompanyName =
+      effectiveJob.data?.waitingForCompanyName === true;
+    if (status === "delayed" && waitingForCompanyName) return true;
+
+    if (status === "failed") {
+      const failedReason = String(effectiveJob.failedReason ?? "");
+      return (
+        failedReason.includes("Could not identify company name") ||
+        failedReason.includes("companyName provided in job data")
+      );
+    }
+
+    return false;
   }, [effectiveJob]);
+
+  const missingCompanyNameForOverride = !companyName;
 
   React.useEffect(() => {
     try {
@@ -427,10 +444,11 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         </div>
       )}
 
-      {/* Show Company Name Override for completed precheck jobs */}
-      {isCompletedPrecheck && (
+      {/* Company name override / manual entry for precheck */}
+      {showCompanyNameOverride && (
         <CompanyNameOverrideDisplay
           currentCompanyName={companyName}
+          missingCompanyName={missingCompanyNameForOverride}
           onOverride={handleCompanyNameOverride}
         />
       )}

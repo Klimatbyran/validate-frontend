@@ -855,9 +855,13 @@
   "companyOverride": {
     "title": "Change company name",
     "description": "If the company name found in the pre-check is not correct, you can enter a new name here. The job will be re-run with the new name.",
+    "titleMissing": "Enter company name",
+    "descriptionMissing": "The company name could not be identified from this report. Enter the correct company name below to continue processing.",
     "currentName": "Current company name",
     "newNameLabel": "New company name",
+    "nameLabel": "Company name",
     "placeholder": "Enter new company name",
+    "placeholderMissing": "Enter company name",
     "applyAndRerun": "Save and run again",
     "nameRequired": "Company name cannot be empty",
     "enterName": "Enter a company name"

@@ -855,9 +855,13 @@
   "companyOverride": {
     "title": "Ändra företagsnamn",
     "description": "Om det företagsnamn som hittades i förkontrollen inte är korrekt, kan du ange ett nytt namn här. Jobbet kommer att köras om med det nya namnet.",
+    "titleMissing": "Ange företagsnamn",
+    "descriptionMissing": "Företagsnamnet kunde inte identifieras från den här rapporten. Ange rätt företagsnamn nedan för att fortsätta bearbetningen.",
     "currentName": "Nuvarande företagsnamn",
     "newNameLabel": "Nytt företagsnamn",
+    "nameLabel": "Företagsnamn",
     "placeholder": "Ange nytt företagsnamn",
+    "placeholderMissing": "Ange företagsnamn",
     "applyAndRerun": "Spara och kör om",
     "nameRequired": "Företagsnamn kan inte vara tomt",
     "enterName": "Ange ett företagsnamn"
