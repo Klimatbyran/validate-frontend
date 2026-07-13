@@ -8,7 +8,10 @@ import type {
   SwimlaneCompany,
   SwimlaneYearData,
 } from "@/lib/types";
-import { getJobStatus as getJobStatusFromUtils, isResolvableCompanyName } from "@/lib/workflow-utils";
+import {
+  getJobStatus as getJobStatusFromUtils,
+  isResolvableCompanyName,
+} from "@/lib/workflow-utils";
 
 /**
  * Convert CustomAPICompany array to SwimlaneCompany array
@@ -96,7 +99,7 @@ export function convertCompaniesToSwimlaneFormat(
                 ? rawJobCompany!.trim()
                 : isResolvableCompanyName(companyName)
                   ? companyName
-                  : rawJobCompany ?? companyName;
+                  : (rawJobCompany ?? companyName);
 
               const convertedJob = {
                 ...job,

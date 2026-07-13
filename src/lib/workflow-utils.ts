@@ -480,7 +480,8 @@ export function calculatePipelineStepStatus(
       (entry) =>
         Array.isArray(entry.attempts) &&
         entry.attempts.some(
-          (j: any) => j && j.status === "delayed" && !jobNeedsUserInteraction(j),
+          (j: any) =>
+            j && j.status === "delayed" && !jobNeedsUserInteraction(j),
         ),
     );
 
@@ -524,7 +525,8 @@ export function calculatePipelineStepStatus(
       (entry) =>
         Array.isArray(entry.attempts) &&
         entry.attempts.some(
-          (j: any) => j && j.status === "delayed" && !jobNeedsUserInteraction(j),
+          (j: any) =>
+            j && j.status === "delayed" && !jobNeedsUserInteraction(j),
         ),
     );
 
