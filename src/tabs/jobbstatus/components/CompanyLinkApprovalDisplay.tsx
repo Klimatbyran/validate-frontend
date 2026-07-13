@@ -8,10 +8,7 @@ import type { CompanyLinkApprovalData } from "../lib/job-specific-data-parsing";
 
 interface CompanyLinkApprovalDisplayProps {
   data: CompanyLinkApprovalData;
-  onApprove?: (selection: {
-    companyId?: string;
-    createNew?: boolean;
-  }) => void;
+  onApprove?: (selection: { companyId?: string; createNew?: boolean }) => void;
 }
 
 export function CompanyLinkApprovalDisplay({
@@ -86,7 +83,9 @@ export function CompanyLinkApprovalDisplay({
               : t("companyLink.approvedSelected", {
                   name:
                     data.candidates.find((c) => c.id === data.selectedCompanyId)
-                      ?.name ?? data.selectedCompanyId ?? "—",
+                      ?.name ??
+                    data.selectedCompanyId ??
+                    "—",
                 })}
           </div>
         ) : (
@@ -131,9 +130,7 @@ export function CompanyLinkApprovalDisplay({
               <label
                 className={cn(
                   "flex items-start gap-3 rounded-lg border p-3 cursor-pointer",
-                  createNew
-                    ? "border-blue-03 bg-blue-03/10"
-                    : "border-gray-03",
+                  createNew ? "border-blue-03 bg-blue-03/10" : "border-gray-03",
                 )}
               >
                 <input

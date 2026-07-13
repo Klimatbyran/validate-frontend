@@ -230,7 +230,9 @@ function companyLinkApprovalFromApprovalObject(
       allowCreateNew,
       wikidataNode,
       selectedCompanyId:
-        typeof newValue?.companyId === "string" ? newValue.companyId : undefined,
+        typeof newValue?.companyId === "string"
+          ? newValue.companyId
+          : undefined,
       createNew: Boolean(newValue?.createNew),
       message: approvalSummary(approval),
       metadata,
