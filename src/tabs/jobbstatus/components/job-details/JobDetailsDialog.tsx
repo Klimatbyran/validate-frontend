@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Modal } from "@/ui/modal";
-import { Callout } from "@/ui/callout";
 import { toast } from "sonner";
 import { QueueJob, DetailedJobResponse, SwimlaneYearData } from "@/lib/types";
-import { HelpCircle, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { JobSpecificDataView } from "./JobSpecificDataView";
 import { JobDialogHeader } from "./JobDialogHeader";
 import { DialogTabs } from "./DialogTabs";
@@ -25,6 +24,10 @@ import {
 import { getQueueDisplayName } from "@/lib/workflow-config";
 import { findJobByQueueId } from "@/lib/workflow-utils";
 import { getWikidataInfo } from "@/lib/utils";
+import {
+  hasActionableStructuredApprovalUi,
+  hasPendingStructuredApproval,
+} from "@/tabs/jobbstatus/lib/job-specific-data-parsing";
 import { Button } from "@/ui/button";
 import { useI18n } from "@/contexts/I18nContext";
 import { JobRedisRetentionHint } from "../JobRedisRetentionHint";
@@ -55,15 +58,12 @@ export function JobDetailsDialog({
   const [activeTab, setActiveTab] = useState<"user" | "technical">("user");
   const [detailed, setDetailed] = useState<DetailedJobResponse | null>(null);
 
-  // Fetch detailed job data if returnValue is not present (similar to job-specific-data-view)
+  // Always load full pipeline job payload so approval.data is available for action UI
   useEffect(() => {
-    if (!job) return;
+    if (!job || !isOpen) return;
     let aborted = false;
     async function loadDetails() {
-      if (!job) return;
-      // If we already have a return value on the job, no need to fetch details
-      if (job.returnvalue) return;
-      if (!job.queueId || !job.id) return;
+      if (!job?.queueId || !job?.id) return;
       try {
         const res = await fetch(
           getPipelineUrl(
@@ -81,7 +81,7 @@ export function JobDetailsDialog({
     return () => {
       aborted = true;
     };
-  }, [job?.id, job?.queueId, Boolean(job?.returnvalue)]);
+  }, [job?.id, job?.queueId, isOpen]);
 
   // Create effectiveJob that merges detailed data (similar to job-specific-data-view)
   const effectiveJob = useMemo(() => {
@@ -204,6 +204,8 @@ export function JobDetailsDialog({
 
   if (!job) return null;
 
+  const dialogJob = effectiveJob ?? job;
+
   // Debug: log threadId sources for the selected job
   try {
     console.log("[JobDetailsDialog] Selected job debug", {
@@ -217,7 +219,15 @@ export function JobDetailsDialog({
     // ignore debug logging errors
   }
 
-  const needsApproval = !job.data.approved && !job.data.autoApprove;
+  const hasStructuredApprovalUi = hasActionableStructuredApprovalUi(
+    job,
+    dialogJob,
+  );
+  const showLegacyFooterApproval =
+    !dialogJob.data?.approved &&
+    !dialogJob.data?.autoApprove &&
+    !hasStructuredApprovalUi &&
+    !hasPendingStructuredApproval(dialogJob.data);
   const canRetry = Boolean(job.isFailed);
 
   const handleApprove = (approved: boolean) => {
@@ -317,16 +327,16 @@ export function JobDetailsDialog({
     return rest;
   };
 
-  const footer = needsApproval ? (
+  const footer = showLegacyFooterApproval ? (
     <JobDialogFooter
-      needsApproval={needsApproval}
+      needsApproval={showLegacyFooterApproval}
       canRetry={false}
       approvalOnly={true}
       onApprove={handleApprove}
     />
   ) : (
     <JobDialogFooter
-      needsApproval={needsApproval}
+      needsApproval={false}
       canRetry={canRetry}
       onApprove={handleApprove}
       onRetry={handleRetry}
@@ -354,51 +364,26 @@ export function JobDetailsDialog({
       <div className="space-y-6 my-6">
         {activeTab === "user" && (
           <>
-            {needsApproval ? (
-              <>
-                <Callout
-                  variant="info"
-                  title={t("jobstatus.jobdetails.approvalRequired")}
-                  description={t("jobstatus.jobdetails.approvalDescription")}
-                  icon={<HelpCircle className="w-5 h-5" />}
-                />
+            <JobStatusSection
+              job={dialogJob}
+              isRerun={isRerun}
+              yearData={yearData}
+            />
+            <JobRelationshipsSection job={dialogJob} />
 
-                <div className="bg-gray-03/20 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-gray-01 mb-4">
-                    {t("jobstatus.jobdetails.information")}
-                  </h3>
-                  <JobSpecificDataView
-                    data={getFilteredJobDataWithoutSchema()}
-                    job={job}
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                <JobStatusSection
-                  job={job}
-                  isRerun={isRerun}
-                  yearData={yearData}
-                />
-                <JobRelationshipsSection job={job} />
+            <div className="bg-gray-03/20 rounded-lg p-4">
+              <h3 className="text-lg font-medium text-gray-01 mb-4">
+                {t("jobstatus.jobdetails.information")}
+              </h3>
+              <JobSpecificDataView
+                data={getFilteredJobDataWithoutSchema()}
+                job={job}
+                sharedDetailed={detailed}
+                onSharedDetailedChange={setDetailed}
+              />
+            </div>
 
-                {/* Information Section */}
-                <div className="bg-gray-03/20 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-gray-01 mb-4">
-                    {t("jobstatus.jobdetails.information")}
-                  </h3>
-                  <JobSpecificDataView
-                    data={getFilteredJobDataWithoutSchema()}
-                    job={job}
-                  />
-                </div>
-
-                <ErrorSection
-                  job={effectiveJob ?? job}
-                  setActiveTab={setActiveTab}
-                />
-              </>
-            )}
+            <ErrorSection job={dialogJob} setActiveTab={setActiveTab} />
           </>
         )}
         {activeTab === "technical" && (

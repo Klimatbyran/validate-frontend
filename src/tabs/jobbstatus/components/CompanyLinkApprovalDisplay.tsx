@@ -94,11 +94,15 @@ export function CompanyLinkApprovalDisplay({
               <label
                 key={candidate.id}
                 className={cn(
-                  "flex items-start gap-3 rounded-lg border p-3 cursor-pointer",
+                  "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
                   !createNew && selectedId === candidate.id
                     ? "border-blue-03 bg-blue-03/10"
-                    : "border-gray-03",
+                    : "border-gray-03 hover:border-blue-03/50",
                 )}
+                onClick={() => {
+                  setCreateNew(false);
+                  setSelectedId(candidate.id);
+                }}
               >
                 <input
                   type="radio"
@@ -108,7 +112,7 @@ export function CompanyLinkApprovalDisplay({
                     setCreateNew(false);
                     setSelectedId(candidate.id);
                   }}
-                  className="mt-1"
+                  className="mt-1 shrink-0 accent-blue-03"
                 />
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-gray-01">
@@ -129,16 +133,19 @@ export function CompanyLinkApprovalDisplay({
             {data.allowCreateNew !== false ? (
               <label
                 className={cn(
-                  "flex items-start gap-3 rounded-lg border p-3 cursor-pointer",
-                  createNew ? "border-blue-03 bg-blue-03/10" : "border-gray-03",
+                  "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
+                  createNew
+                    ? "border-blue-03 bg-blue-03/10"
+                    : "border-gray-03 hover:border-blue-03/50",
                 )}
+                onClick={() => setCreateNew(true)}
               >
                 <input
                   type="radio"
                   name="company-link-candidate"
                   checked={createNew}
                   onChange={() => setCreateNew(true)}
-                  className="mt-1"
+                  className="mt-1 shrink-0 accent-blue-03"
                 />
                 <div>
                   <div className="text-sm font-medium text-gray-01">
@@ -155,19 +162,19 @@ export function CompanyLinkApprovalDisplay({
       </div>
 
       {isPending && (
-        <Callout
-          variant="success"
-          title={
-            isWikidataRelink
-              ? t("companyLink.wikidataRelinkApproveTitle")
-              : t("companyLink.approveTitle")
-          }
-          description={
-            isWikidataRelink
-              ? t("companyLink.wikidataRelinkApproveDescription")
-              : t("companyLink.approveDescription")
-          }
-        >
+        <div className="rounded-lg border border-green-03/40 bg-green-03/10 p-4 space-y-3">
+          <div>
+            <h4 className="text-base font-medium text-gray-01">
+              {isWikidataRelink
+                ? t("companyLink.wikidataRelinkApproveTitle")
+                : t("companyLink.approveTitle")}
+            </h4>
+            <p className="text-sm text-gray-02 mt-1">
+              {isWikidataRelink
+                ? t("companyLink.wikidataRelinkApproveDescription")
+                : t("companyLink.approveDescription")}
+            </p>
+          </div>
           <Button
             variant="primary"
             size="sm"
@@ -178,7 +185,7 @@ export function CompanyLinkApprovalDisplay({
             <Check className="w-4 h-4 mr-2" />
             {t("companyLink.approveButton")}
           </Button>
-        </Callout>
+        </div>
       )}
 
       {data.metadata && (

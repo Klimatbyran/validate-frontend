@@ -12,8 +12,6 @@ import { ScreenshotSlideshow } from "@/components/screenshot-slideshow";
 import { CollapsibleSection } from "@/ui/collapsible-section";
 import { Image, ExternalLink, FileText, RotateCcw } from "lucide-react";
 import { EconomySection } from "../scope/EconomySection";
-import { WikidataApprovalDisplay } from "../WikidataApprovalDisplay";
-import { CompanyLinkApprovalDisplay } from "../CompanyLinkApprovalDisplay";
 import { Button } from "@/ui/button";
 import { getJobStatus } from "@/lib/workflow-utils";
 import {
@@ -23,15 +21,22 @@ import {
   getScope3Data,
   getWikidataApprovalData,
   getCompanyLinkApprovalData,
+  hasPendingStructuredApproval,
 } from "../../lib/job-specific-data-parsing";
-import { CompanyNameOverrideDisplay } from "./CompanyNameOverrideDisplay";
+import { JobApprovalPanels } from "./JobApprovalPanels";
 import { useJobRerunActions } from "../../hooks/useJobRerunActions";
 import { getPipelineUrl } from "@/config/api-env";
 import { useI18n } from "@/contexts/I18nContext";
+import type { DetailedJobResponse } from "@/lib/types";
 
 interface JobSpecificDataViewProps {
   data: any;
   job?: QueueJob;
+  /** Parent-loaded pipeline job payload; avoids duplicate fetch from JobDetailsDialog */
+  sharedDetailed?: DetailedJobResponse | null;
+  onSharedDetailedChange?: React.Dispatch<
+    React.SetStateAction<DetailedJobResponse | null>
+  >;
 }
 
 function isHttpReportUrl(s: string) {
@@ -68,16 +73,30 @@ function JobReportUrlRow({ title, url }: { title: string; url: string }) {
   );
 }
 
-export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
+export function JobSpecificDataView({
+  data,
+  job,
+  sharedDetailed,
+  onSharedDetailedChange,
+}: JobSpecificDataViewProps) {
   const { t } = useI18n();
-  const [detailed, setDetailed] = React.useState<any | null>(null);
+  const [localDetailed, setLocalDetailed] = React.useState<any | null>(null);
   const [, setIsLoading] = React.useState(false);
 
+  const usesSharedDetailed = onSharedDetailedChange !== undefined;
+  const detailed = usesSharedDetailed
+    ? (sharedDetailed ?? null)
+    : localDetailed;
+  const setDetailed = usesSharedDetailed
+    ? onSharedDetailedChange!
+    : setLocalDetailed;
+
   React.useEffect(() => {
+    if (usesSharedDetailed) return;
+
     let aborted = false;
     async function loadDetails() {
-      if (!job || job.returnvalue) return;
-      if (!job.queueId || !job.id) return;
+      if (!job?.queueId || !job?.id) return;
       try {
         setIsLoading(true);
         const res = await fetch(
@@ -87,7 +106,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         );
         if (!res.ok) return;
         const json = await res.json();
-        if (!aborted) setDetailed(json);
+        if (!aborted) setLocalDetailed(json);
       } finally {
         if (!aborted) setIsLoading(false);
       }
@@ -96,7 +115,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     return () => {
       aborted = true;
     };
-  }, [job?.id, job?.queueId, Boolean(job?.returnvalue)]);
+  }, [job?.id, job?.queueId, usesSharedDetailed]);
 
   const effectiveJob = React.useMemo(() => {
     if (!job) return undefined;
@@ -206,6 +225,15 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
   const economyData = getEconomyData(returnValueData);
   const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob);
   const companyLinkApprovalData = getCompanyLinkApprovalData(job, effectiveJob);
+  const pendingStructuredApproval = hasPendingStructuredApproval(
+    effectiveJob?.data,
+  );
+  const showUnresolvedApprovalHint =
+    pendingStructuredApproval &&
+    !wikidataApprovalData &&
+    !companyLinkApprovalData;
+  const isLoadingApprovalDetails =
+    pendingStructuredApproval && !detailed && Boolean(job?.queueId && job?.id);
   const wikidataId: string | undefined = React.useMemo(() => {
     const fromJob = getWikidataInfo(effectiveJob as any)?.node;
     const fromProcessed =
@@ -354,6 +382,20 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
 
   return (
     <div className="space-y-3 text-sm">
+      <JobApprovalPanels
+        companyLinkApprovalData={companyLinkApprovalData}
+        wikidataApprovalData={wikidataApprovalData}
+        showCompanyNameOverride={showCompanyNameOverride}
+        companyName={companyName}
+        missingCompanyNameForOverride={missingCompanyNameForOverride}
+        showUnresolvedApprovalHint={showUnresolvedApprovalHint}
+        isLoadingApprovalDetails={isLoadingApprovalDetails}
+        onCompanyLinkApprove={handleCompanyLinkApprove}
+        onWikidataApprove={handleWikidataApprove}
+        onWikidataOverride={handleWikidataOverride}
+        onCompanyNameOverride={handleCompanyNameOverride}
+      />
+
       {/* Report / PDF URLs (source vs cached S3 when both exist) */}
       {(storedPdfUrl || sourceReportUrl) && (
         <div className="mb-4">
@@ -423,37 +465,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         </div>
       ) : null}
 
-      {/* Show Company Link Approval for ambiguous precheck matches */}
-      {companyLinkApprovalData && (
-        <div className="mb-4">
-          <CompanyLinkApprovalDisplay
-            data={companyLinkApprovalData}
-            onApprove={handleCompanyLinkApprove}
-          />
-        </div>
-      )}
-
-      {/* Show Wikidata Approval Display if available (for guessWikidata step) */}
-      {wikidataApprovalData && (
-        <div className="mb-4">
-          <WikidataApprovalDisplay
-            data={wikidataApprovalData}
-            onOverride={handleWikidataOverride}
-            onApprove={handleWikidataApprove}
-          />
-        </div>
-      )}
-
-      {/* Company name override / manual entry for precheck */}
-      {showCompanyNameOverride && (
-        <CompanyNameOverrideDisplay
-          currentCompanyName={companyName}
-          missingCompanyName={missingCompanyNameForOverride}
-          onOverride={handleCompanyNameOverride}
-        />
-      )}
-
-      {/* Show Fiscal Year display if available */}
+      {/* Show Scope 1+2 emissions data if available */}
       {(processedData.fiscalYear ||
         (processedData.startMonth && processedData.endMonth)) && (
         <div className="mb-4">

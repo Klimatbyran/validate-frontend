@@ -101,12 +101,40 @@ function approvalSummary(
     : undefined;
 }
 
+function wikidataFromJobData(
+  jobData?: Record<string, unknown>,
+): WikidataApprovalWikidata | null {
+  const wikidata = jobData?.wikidata;
+  if (!wikidata || typeof wikidata !== "object") return null;
+
+  const node =
+    typeof (wikidata as { node?: unknown }).node === "string"
+      ? (wikidata as { node: string }).node.trim()
+      : "";
+  if (!node) return null;
+
+  const raw = wikidata as {
+    url?: string;
+    label?: string;
+    description?: string;
+  };
+
+  return {
+    node,
+    url: raw.url?.trim() || `https://www.wikidata.org/wiki/${node}`,
+    label: raw.label?.trim() || node,
+    description: raw.description?.trim(),
+  };
+}
+
 function wikidataApprovalFromApprovalObject(
   approval: Record<string, unknown>,
   jobData?: Record<string, unknown>,
 ): WikidataApprovalData | null {
-  const wikidata = (approval.data as any)?.newValue?.wikidata;
-  if (!wikidata || typeof wikidata !== "object" || !wikidata.node) {
+  const wikidata =
+    (approval.data as { newValue?: { wikidata?: WikidataApprovalWikidata } })
+      ?.newValue?.wikidata ?? wikidataFromJobData(jobData);
+  if (!wikidata?.node) {
     return null;
   }
 
@@ -164,6 +192,16 @@ export function getWikidataApprovalData(
   }
 
   return null;
+}
+
+/** True when job.data.approval exists and staff action is still required. */
+export function hasPendingStructuredApproval(jobData?: {
+  approval?: { approved?: boolean };
+}): boolean {
+  const approval = jobData?.approval;
+  return Boolean(
+    approval && typeof approval === "object" && approval.approved === false,
+  );
 }
 
 export interface CompanyLinkCandidate {
@@ -260,4 +298,16 @@ export function getCompanyLinkApprovalData(
   }
 
   return null;
+}
+
+export function hasActionableStructuredApprovalUi(
+  job?: QueueJob,
+  effectiveJob?: QueueJob,
+): boolean {
+  const companyLink = getCompanyLinkApprovalData(job, effectiveJob);
+  const wikidata = getWikidataApprovalData(job, effectiveJob);
+  return (
+    companyLink?.status === "pending_approval" ||
+    wikidata?.status === "pending_approval"
+  );
 }
