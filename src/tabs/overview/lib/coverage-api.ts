@@ -4,11 +4,18 @@ import {
   coverageListCollectionSchema,
   coverageListSummarySchema,
   coverageYearDetailSchema,
+  coverageYearNamesSchema,
+  coverageYearRegistryRefreshSchema,
   coverageCompanySearchResponseSchema,
   type CoverageListSummary,
   type CoverageYearDetail,
+  type CoverageYearNames,
+  type CoverageYearRegistryRefresh,
   type CoverageCompanySearchHit,
+  type CoverageEntryFilter,
 } from "./coverage-types";
+
+export const COVERAGE_PAGE_SIZE = 100;
 
 function coverageUrl(path: string): string {
   const base = getUnearthApiBaseUrl();
@@ -54,14 +61,64 @@ export async function fetchCoverageList(
   );
 }
 
+export type CoverageYearDetailQuery = {
+  offset?: number;
+  limit?: number;
+  filter?: CoverageEntryFilter;
+  q?: string;
+  includeRegistry?: boolean;
+};
+
 export async function fetchCoverageYearDetail(
   listId: string,
   year: number,
+  query: CoverageYearDetailQuery = {},
 ): Promise<CoverageYearDetail> {
-  const url = coverageUrl(`${listId}/years/${year}`);
+  const params = new URLSearchParams();
+  if (query.offset !== undefined) {
+    params.set("offset", String(query.offset));
+  }
+  if (query.limit !== undefined) {
+    params.set("limit", String(query.limit));
+  }
+  if (query.filter && query.filter !== "all") {
+    params.set("filter", query.filter);
+  }
+  if (query.q?.trim()) {
+    params.set("q", query.q.trim());
+  }
+  if (query.includeRegistry === false) {
+    params.set("includeRegistry", "false");
+  }
+  const queryString = params.toString();
+  const url = coverageUrl(
+    `${listId}/years/${year}${queryString ? `?${queryString}` : ""}`,
+  );
   const response = await garboAuthFetch(url, { cache: "no-store" });
   return parseJson(response, url, (data) =>
     coverageYearDetailSchema.parse(data),
+  );
+}
+
+export async function fetchCoverageYearNames(
+  listId: string,
+  year: number,
+): Promise<CoverageYearNames> {
+  const url = coverageUrl(`${listId}/years/${year}/names`);
+  const response = await garboAuthFetch(url, { cache: "no-store" });
+  return parseJson(response, url, (data) =>
+    coverageYearNamesSchema.parse(data),
+  );
+}
+
+export async function refreshCoverageYearRegistry(
+  listId: string,
+  year: number,
+): Promise<CoverageYearRegistryRefresh> {
+  const url = coverageUrl(`${listId}/years/${year}/refresh-registry`);
+  const response = await garboAuthFetch(url, { method: "POST" });
+  return parseJson(response, url, (data) =>
+    coverageYearRegistryRefreshSchema.parse(data),
   );
 }
 

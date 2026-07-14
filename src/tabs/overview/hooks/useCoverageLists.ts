@@ -1,17 +1,20 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   addCoverageListYear,
+  COVERAGE_PAGE_SIZE,
   createCoverageList,
   deleteCoverageList,
   deleteCoverageListYear,
   fetchCoverageLists,
   fetchCoverageYearDetail,
+  refreshCoverageYearRegistry,
   renameCoverageList,
   replaceCoverageYearNames,
   setCoverageEntryMatch,
 } from "../lib/coverage-api";
 import type {
   CoverageEntry,
+  CoverageEntryFilter,
   CoverageListSummary,
   CoverageYearDetail,
   CoverageMatchSaveAction,
@@ -191,44 +194,117 @@ export function useCoverageYearDetail(
   year: number | null,
 ) {
   const [detail, setDetail] = useState<CoverageYearDetail | null>(null);
+  const [filter, setFilter] = useState<CoverageEntryFilter>("all");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isRefreshingRegistry, setIsRefreshingRegistry] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestRef = useRef(0);
 
-  const loadDetail = useCallback(
-    async (options?: { silent?: boolean }) => {
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const loadPage = useCallback(
+    async (offset: number, append: boolean) => {
       if (!listId || year === null) {
         setDetail(null);
         return;
       }
-      if (!options?.silent) {
-        setIsLoading(true);
-      }
+
+      const requestId = ++requestRef.current;
       setError(null);
+
       try {
-        setDetail(await fetchCoverageYearDetail(listId, year));
+        const page = await fetchCoverageYearDetail(listId, year, {
+          offset,
+          limit: COVERAGE_PAGE_SIZE,
+          filter,
+          q: debouncedSearch,
+          includeRegistry: true,
+        });
+
+        if (requestId !== requestRef.current) return;
+
+        setDetail((previous) => {
+          if (!append || !previous) return page;
+          return {
+            ...page,
+            entries: [...previous.entries, ...page.entries],
+          };
+        });
       } catch (err) {
+        if (requestId !== requestRef.current) return;
         setError(err instanceof Error ? err.message : "Unknown error");
-        if (!options?.silent) {
+        if (!append) {
           setDetail(null);
-        }
-      } finally {
-        if (!options?.silent) {
-          setIsLoading(false);
         }
       }
     },
-    [listId, year],
+    [listId, year, filter, debouncedSearch],
   );
 
   useEffect(() => {
-    void loadDetail();
-  }, [loadDetail]);
+    if (!listId || year === null) {
+      setDetail(null);
+      return;
+    }
+
+    setIsLoading(true);
+    void loadPage(0, false).finally(() => setIsLoading(false));
+  }, [listId, year, filter, debouncedSearch, loadPage]);
+
+  const loadMore = useCallback(async () => {
+    if (!detail?.hasMore || isLoadingMore || isLoading) return;
+    setIsLoadingMore(true);
+    try {
+      await loadPage(detail.entries.length, true);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [detail, isLoading, isLoadingMore, loadPage]);
+
+  const refreshRegistry = useCallback(async () => {
+    if (!listId || year === null) return;
+    setIsRefreshingRegistry(true);
+    setError(null);
+    try {
+      const refreshed = await refreshCoverageYearRegistry(listId, year);
+      setDetail((previous) =>
+        previous
+          ? {
+              ...previous,
+              hasAnyReportCount: refreshed.hasAnyReportCount,
+              prodReadyCount: refreshed.prodReadyCount,
+              noReportCount: refreshed.noReportCount,
+              registryRefreshedAt: refreshed.registryRefreshedAt,
+            }
+          : previous,
+      );
+      await loadPage(0, false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setIsRefreshingRegistry(false);
+    }
+  }, [listId, year, loadPage]);
 
   return {
     detail,
+    filter,
+    setFilter,
+    search,
+    setSearch,
     isLoading,
+    isLoadingMore,
+    isRefreshingRegistry,
     error,
-    refresh: () => loadDetail(),
+    loadMore,
+    refreshRegistry,
+    refresh: () => loadPage(0, false),
     addEntryRegistryReport: (entryId: string, saved: SaveReportSuccess) => {
       setDetail((previous) =>
         previous
@@ -260,7 +336,7 @@ export function useCoverageYearDetail(
         payload,
       );
       setDetail((previous) => mergeCoverageMatchUpdate(previous, updated));
-      void loadDetail({ silent: true });
+      void loadPage(0, false);
       return updated;
     },
   };

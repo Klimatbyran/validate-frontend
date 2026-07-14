@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
@@ -11,6 +12,7 @@ import { CoverageFindReportDialog } from "./CoverageFindReportDialog";
 import { CoverageFindReportYearPrompt } from "./CoverageFindReportYearPrompt";
 import { searchCompanyReports } from "@/tabs/crawler/lib/crawler-utils";
 import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
+import { fetchCoverageYearNames } from "@/tabs/overview/lib/coverage-api";
 import type {
   CompanyReport,
   SaveReportSuccess,
@@ -21,8 +23,22 @@ import type {
   CoverageYearDetail,
 } from "@/tabs/overview/lib/coverage-types";
 
+const COVERAGE_ROW_HEIGHT_PX = 56;
+const COVERAGE_TABLE_MAX_HEIGHT_PX = 560;
+
 type CoverageYearDetailProps = {
+  listId: string;
+  year: number;
   detail: CoverageYearDetail;
+  filter: CoverageEntryFilter;
+  onFilterChange: (filter: CoverageEntryFilter) => void;
+  search: string;
+  onSearchChange: (search: string) => void;
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  onLoadMore: () => void;
+  isRefreshingRegistry: boolean;
+  onRefreshRegistry: () => void;
   onEdit: () => void;
   onEditEntry: (entry: CoverageEntry) => void;
   onViewRegistryReports?: (names: string[]) => void;
@@ -35,68 +51,48 @@ type FindReportSession = {
   companyReport: CompanyReport;
 };
 
-function entryMatchesFilter(
-  entry: CoverageEntry,
-  filter: CoverageEntryFilter,
-): boolean {
-  const reports = entry.registryReports ?? [];
-
-  switch (filter) {
-    case "all":
-      return true;
-    case "matched":
-    case "missing":
-    case "ambiguous":
-      return entry.status === filter;
-    case "registryInProd":
-      return reports.some((report) => report.prodReady);
-    case "registryOnly":
-      return reports.length > 0 && !reports.some((report) => report.prodReady);
-    case "registryMissing":
-      return reports.length === 0;
-    default:
-      return true;
-  }
-}
-
 export function CoverageYearDetailView({
+  listId,
+  year,
   detail,
+  filter,
+  onFilterChange,
+  search,
+  onSearchChange,
+  hasMore,
+  isLoadingMore,
+  onLoadMore,
+  isRefreshingRegistry,
+  onRefreshRegistry,
   onEdit,
   onEditEntry,
   onViewRegistryReports,
   onRegistryReportSaved,
 }: CoverageYearDetailProps) {
   const { t } = useI18n();
-  const [filter, setFilter] = useState<CoverageEntryFilter>("all");
-  const [search, setSearch] = useState("");
   const [findReportSession, setFindReportSession] =
     useState<FindReportSession | null>(null);
+  const [findingReportEntryId, setFindingReportEntryId] = useState<
+    string | null
+  >(null);
+  const [yearPromptEntryId, setYearPromptEntryId] = useState<string | null>(
+    null,
+  );
+  const [isLoadingRegistryNames, setIsLoadingRegistryNames] = useState(false);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
   const runPipeline = useRunReportsPipeline();
 
   const missingCount =
     detail.totalNames - detail.matchedCount - detail.ambiguousCount;
+  const filteredCount = detail.filteredCount ?? detail.entries.length;
+  const entries = detail.entries;
 
-  const filteredEntries = useMemo(() => {
-    const q = search.trim().toLocaleLowerCase("sv-SE");
-
-    return detail.entries.filter((entry) => {
-      if (!entryMatchesFilter(entry, filter)) return false;
-      if (!q) return true;
-
-      const haystack = [
-        entry.name,
-        entry.matchedCompany?.name ?? "",
-        entry.matchedCompany?.wikidataId ?? "",
-        ...(entry.registryReports ?? []).map(
-          (report) => `${report.reportYear ?? ""} ${report.companyName ?? ""}`,
-        ),
-      ]
-        .join(" ")
-        .toLocaleLowerCase("sv-SE");
-
-      return haystack.includes(q);
-    });
-  }, [detail.entries, filter, search]);
+  const rowVirtualizer = useVirtualizer({
+    count: entries.length,
+    getScrollElement: () => tableScrollRef.current,
+    estimateSize: () => COVERAGE_ROW_HEIGHT_PX,
+    overscan: 12,
+  });
 
   const filterOptions: { value: CoverageEntryFilter; label: string }[] = [
     { value: "all", label: t("overview.coverage.filters.all") },
@@ -117,6 +113,60 @@ export function CoverageYearDetailView({
     },
   ];
 
+  const yearPromptEntry =
+    yearPromptEntryId != null
+      ? (entries.find((entry) => entry.id === yearPromptEntryId) ?? null)
+      : null;
+
+  const handleYearConfirm = async (entry: CoverageEntry, reportYear: number) => {
+    setFindingReportEntryId(entry.id);
+    try {
+      const results = await searchCompanyReports({
+        companyNames: [entry.name],
+        reportYear: String(reportYear),
+      });
+      const report = results[0] ?? {
+        companyName: entry.name,
+        reportYear: String(reportYear),
+        results: [],
+      };
+      setYearPromptEntryId(null);
+      setFindReportSession({
+        entry,
+        reportYear,
+        companyReport: {
+          ...report,
+          wikidataId: entry.matchedCompany?.wikidataId,
+        },
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("overview.coverage.findReportError"),
+      );
+    } finally {
+      setFindingReportEntryId(null);
+    }
+  };
+
+  const handleViewInRegistry = async () => {
+    if (!onViewRegistryReports) return;
+    setIsLoadingRegistryNames(true);
+    try {
+      const response = await fetchCoverageYearNames(listId, year);
+      onViewRegistryReports(response.names);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("overview.coverage.errorTitle"),
+      );
+    } finally {
+      setIsLoadingRegistryNames(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-gray-03 bg-gray-05/50 p-4 space-y-4">
@@ -129,17 +179,30 @@ export function CoverageYearDetailView({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  onViewRegistryReports(
-                    detail.entries.map((entry) => entry.name),
-                  )
-                }
+                onClick={() => void handleViewInRegistry()}
+                disabled={isLoadingRegistryNames}
               >
-                {t("overview.coverage.reports.viewInRegistry")}
+                {isLoadingRegistryNames ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  t("overview.coverage.reports.viewInRegistry")
+                )}
               </Button>
             ) : null}
             <Button variant="secondary" size="sm" onClick={onEdit}>
               {t("overview.coverage.editYear")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void onRefreshRegistry()}
+              disabled={isRefreshingRegistry}
+            >
+              {isRefreshingRegistry ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                t("overview.coverage.refreshRegistry")
+              )}
             </Button>
           </div>
         </div>
@@ -171,63 +234,173 @@ export function CoverageYearDetailView({
             className="border-blue-03/30 bg-blue-03/10 text-blue-03"
           />
         </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <CoverageStatCard
+            label={t("overview.coverage.stats.inRegistry")}
+            value={detail.hasAnyReportCount}
+            className="border-gray-03/80 bg-gray-04/30 text-gray-01"
+          />
+          <CoverageStatCard
+            label={t("overview.coverage.stats.inProd")}
+            value={detail.prodReadyCount}
+            className="border-green-03/30 bg-green-03/10 text-green-03"
+          />
+          <CoverageStatCard
+            label={t("overview.coverage.stats.missingReports")}
+            value={detail.noReportCount}
+            className="border-orange-03/30 bg-orange-03/10 text-orange-03"
+          />
+        </div>
+        {detail.registryRefreshedAt ? (
+          <p className="text-xs text-gray-02">
+            {t("overview.coverage.registryRefreshedAt", {
+              time: new Date(detail.registryRefreshedAt).toLocaleString(),
+            })}
+          </p>
+        ) : null}
       </div>
 
       <ViewModePills
         options={filterOptions}
         value={filter}
-        onValueChange={setFilter}
+        onValueChange={onFilterChange}
         ariaLabel={t("overview.coverage.entryFilterLabel")}
       />
 
-      <input
-        className="w-full max-w-md rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder={t("overview.coverage.searchPlaceholder")}
-      />
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          className="w-full max-w-md rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder={t("overview.coverage.searchPlaceholder")}
+        />
+        <p className="text-sm text-gray-02 tabular-nums">
+          {t("overview.coverage.filteredCount", {
+            shown: entries.length,
+            total: filteredCount,
+          })}
+        </p>
+      </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-03">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-05/80 text-left text-gray-02">
+      <div
+        ref={tableScrollRef}
+        className="overflow-auto rounded-lg border border-gray-03"
+        style={{ maxHeight: COVERAGE_TABLE_MAX_HEIGHT_PX }}
+      >
+        <table className="min-w-full text-sm table-fixed">
+          <thead className="sticky top-0 z-10 bg-gray-05/95 text-left text-gray-02 backdrop-blur-sm">
             <tr>
-              <th className="px-4 py-2 font-medium">
+              <th className="w-[24%] px-4 py-2 font-medium">
                 {t("overview.coverage.columns.listName")}
               </th>
-              <th className="px-4 py-2 font-medium">
+              <th className="w-[14%] px-4 py-2 font-medium">
                 {t("overview.coverage.columns.status")}
               </th>
-              <th className="px-4 py-2 font-medium">
+              <th className="w-[22%] px-4 py-2 font-medium">
                 {t("overview.coverage.columns.dbMatch")}
               </th>
-              <th className="px-4 py-2 font-medium">
+              <th className="w-[18%] px-4 py-2 font-medium">
                 {t("overview.coverage.columns.reports")}
               </th>
-              <th className="px-4 py-2 font-medium min-w-[12rem]">
+              <th className="w-[22%] px-4 py-2 font-medium min-w-[12rem]">
                 {t("overview.coverage.columns.actions")}
               </th>
             </tr>
           </thead>
           <tbody>
-            {filteredEntries.map((entry) => (
-              <CoverageEntryRow
-                key={entry.id}
-                entry={entry}
-                reportYear={detail.year}
-                onEditEntry={onEditEntry}
-                onFindReportReady={setFindReportSession}
-              />
-            ))}
-            {filteredEntries.length === 0 ? (
+            {entries.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-gray-02">
                   {t("overview.coverage.noEntries")}
                 </td>
               </tr>
-            ) : null}
+            ) : (
+              <>
+                {rowVirtualizer.getVirtualItems().length > 0 ? (
+                  <tr aria-hidden="true">
+                    <td
+                      colSpan={5}
+                      style={{
+                        height: rowVirtualizer.getVirtualItems()[0]?.start ?? 0,
+                        padding: 0,
+                        border: 0,
+                      }}
+                    />
+                  </tr>
+                ) : null}
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const entry = entries[virtualRow.index];
+                  if (!entry) return null;
+
+                  return (
+                    <CoverageEntryRow
+                      key={entry.id}
+                      entry={entry}
+                      isFindingReport={findingReportEntryId === entry.id}
+                      onEditEntry={onEditEntry}
+                      onFindReportClick={() => setYearPromptEntryId(entry.id)}
+                    />
+                  );
+                })}
+                {rowVirtualizer.getVirtualItems().length > 0 ? (
+                  <tr aria-hidden="true">
+                    <td
+                      colSpan={5}
+                      style={{
+                        height:
+                          rowVirtualizer.getTotalSize() -
+                          (rowVirtualizer.getVirtualItems().at(-1)?.end ?? 0),
+                        padding: 0,
+                        border: 0,
+                      }}
+                    />
+                  </tr>
+                ) : null}
+              </>
+            )}
           </tbody>
         </table>
       </div>
+
+      {hasMore ? (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void onLoadMore()}
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="ml-2">
+                  {t("overview.coverage.loadingMore")}
+                </span>
+              </>
+            ) : (
+              t("overview.coverage.loadMore")
+            )}
+          </Button>
+        </div>
+      ) : null}
+
+      {yearPromptEntry ? (
+        <CoverageFindReportYearPrompt
+          open
+          onOpenChange={(open) => {
+            if (!findingReportEntryId) {
+              setYearPromptEntryId(open ? yearPromptEntry.id : null);
+            }
+          }}
+          companyName={yearPromptEntry.name}
+          defaultYear={year}
+          isSearching={findingReportEntryId === yearPromptEntry.id}
+          onConfirm={(reportYear) =>
+            void handleYearConfirm(yearPromptEntry, reportYear)
+          }
+        />
+      ) : null}
 
       {findReportSession ? (
         <CoverageFindReportDialog
@@ -267,54 +440,16 @@ function CoverageStatCard({
 
 function CoverageEntryRow({
   entry,
-  reportYear,
+  isFindingReport,
   onEditEntry,
-  onFindReportReady,
+  onFindReportClick,
 }: {
   entry: CoverageEntry;
-  reportYear: number;
+  isFindingReport: boolean;
   onEditEntry: (entry: CoverageEntry) => void;
-  onFindReportReady: (session: FindReportSession) => void;
+  onFindReportClick: () => void;
 }) {
   const { t } = useI18n();
-  const [isFindingReport, setIsFindingReport] = useState(false);
-  const [yearPromptOpen, setYearPromptOpen] = useState(false);
-
-  const handleFindReportClick = () => {
-    setYearPromptOpen(true);
-  };
-
-  const handleYearConfirm = async (year: number) => {
-    setIsFindingReport(true);
-    try {
-      const results = await searchCompanyReports({
-        companyNames: [entry.name],
-        reportYear: String(year),
-      });
-      const report = results[0] ?? {
-        companyName: entry.name,
-        reportYear: String(year),
-        results: [],
-      };
-      setYearPromptOpen(false);
-      onFindReportReady({
-        entry,
-        reportYear: year,
-        companyReport: {
-          ...report,
-          wikidataId: entry.matchedCompany?.wikidataId,
-        },
-      });
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : t("overview.coverage.findReportError"),
-      );
-    } finally {
-      setIsFindingReport(false);
-    }
-  };
 
   const statusLabel =
     entry.status === "matched"
@@ -334,8 +469,13 @@ function CoverageEntryRow({
 
   return (
     <tr className="border-t border-gray-03/60">
-      <td className="px-4 py-2 text-gray-01">{entry.name}</td>
-      <td className={`px-4 py-2 font-medium ${statusClass}`}>
+      <td
+        className="px-4 py-2 text-gray-01 align-top truncate"
+        title={entry.name}
+      >
+        {entry.name}
+      </td>
+      <td className={`px-4 py-2 font-medium align-top ${statusClass}`}>
         <span>{statusLabel}</span>
         {entry.matchMethod === "manual" ? (
           <span className="ml-2 text-[10px] uppercase tracking-wide text-blue-03">
@@ -343,7 +483,7 @@ function CoverageEntryRow({
           </span>
         ) : null}
       </td>
-      <td className="px-4 py-2 text-gray-02">
+      <td className="px-4 py-2 text-gray-02 align-top truncate">
         {entry.matchedCompany ? (
           <Link
             to={editorCompanyPath(
@@ -357,7 +497,7 @@ function CoverageEntryRow({
           "—"
         )}
       </td>
-      <td className="px-4 py-2">
+      <td className="px-4 py-2 align-top">
         {reports.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {reports.map((report) => (
@@ -370,7 +510,7 @@ function CoverageEntryRow({
           </span>
         )}
       </td>
-      <td className="px-4 py-2">
+      <td className="px-4 py-2 align-top">
         <div className="flex flex-wrap gap-2">
           <Button
             variant="secondary"
@@ -390,21 +530,11 @@ function CoverageEntryRow({
               <Loader2 className="h-4 w-4 animate-spin" />
             </Button>
           ) : (
-            <Button variant="outline" size="sm" onClick={handleFindReportClick}>
+            <Button variant="outline" size="sm" onClick={onFindReportClick}>
               {t("overview.coverage.findReport")}
             </Button>
           )}
         </div>
-        <CoverageFindReportYearPrompt
-          open={yearPromptOpen}
-          onOpenChange={(open) => {
-            if (!isFindingReport) setYearPromptOpen(open);
-          }}
-          companyName={entry.name}
-          defaultYear={reportYear}
-          isSearching={isFindingReport}
-          onConfirm={(year) => void handleYearConfirm(year)}
-        />
       </td>
     </tr>
   );

@@ -1236,6 +1236,11 @@
       "latestCoverageCell": "{{year}}: {{percent}}% ({{matched}}/{{total}})",
       "entryFilterLabel": "Entry filter",
       "searchPlaceholder": "Search names or matches…",
+      "filteredCount": "{{shown}} of {{total}}",
+      "loadMore": "Load more",
+      "loadingMore": "Loading…",
+      "refreshRegistry": "Refresh report status",
+      "registryRefreshedAt": "Report status updated {{time}}",
       "filters": {
         "all": "All",
         "matched": "Matched",
@@ -1296,7 +1301,10 @@
         "matched": "Matched",
         "missing": "Missing",
         "ambiguous": "Ambiguous",
-        "coverage": "Coverage"
+        "coverage": "Coverage",
+        "inRegistry": "In registry",
+        "inProd": "In prod",
+        "missingReports": "Missing reports"
       }
     },
     "fetchError": "Could not load overview data.",
