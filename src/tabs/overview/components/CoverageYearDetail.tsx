@@ -92,6 +92,7 @@ export function CoverageYearDetailView({
     getScrollElement: () => tableScrollRef.current,
     estimateSize: () => COVERAGE_ROW_HEIGHT_PX,
     overscan: 12,
+    measureElement: (element) => element.getBoundingClientRect().height,
   });
 
   const filterOptions: { value: CoverageEntryFilter; label: string }[] = [
@@ -118,7 +119,10 @@ export function CoverageYearDetailView({
       ? (entries.find((entry) => entry.id === yearPromptEntryId) ?? null)
       : null;
 
-  const handleYearConfirm = async (entry: CoverageEntry, reportYear: number) => {
+  const handleYearConfirm = async (
+    entry: CoverageEntry,
+    reportYear: number,
+  ) => {
     setFindingReportEntryId(entry.id);
     try {
       const results = await searchCompanyReports({
@@ -337,6 +341,8 @@ export function CoverageYearDetailView({
                     <CoverageEntryRow
                       key={entry.id}
                       entry={entry}
+                      rowRef={rowVirtualizer.measureElement}
+                      dataIndex={virtualRow.index}
                       isFindingReport={findingReportEntryId === entry.id}
                       onEditEntry={onEditEntry}
                       onFindReportClick={() => setYearPromptEntryId(entry.id)}
@@ -440,11 +446,15 @@ function CoverageStatCard({
 
 function CoverageEntryRow({
   entry,
+  rowRef,
+  dataIndex,
   isFindingReport,
   onEditEntry,
   onFindReportClick,
 }: {
   entry: CoverageEntry;
+  rowRef: (element: HTMLTableRowElement | null) => void;
+  dataIndex: number;
   isFindingReport: boolean;
   onEditEntry: (entry: CoverageEntry) => void;
   onFindReportClick: () => void;
@@ -468,7 +478,11 @@ function CoverageEntryRow({
   const reports = entry.registryReports ?? [];
 
   return (
-    <tr className="border-t border-gray-03/60">
+    <tr
+      ref={rowRef}
+      data-index={dataIndex}
+      className="border-t border-gray-03/60"
+    >
       <td
         className="px-4 py-2 text-gray-01 align-top truncate"
         title={entry.name}

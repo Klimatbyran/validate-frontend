@@ -202,6 +202,7 @@ export function useCoverageYearDetail(
   const [isRefreshingRegistry, setIsRefreshingRegistry] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef(0);
+  const selectionRef = useRef<string | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
@@ -209,7 +210,11 @@ export function useCoverageYearDetail(
   }, [search]);
 
   const loadPage = useCallback(
-    async (offset: number, append: boolean) => {
+    async (
+      offset: number,
+      append: boolean,
+      queryOverride?: { filter?: CoverageEntryFilter; q?: string },
+    ) => {
       if (!listId || year === null) {
         setDetail(null);
         return;
@@ -222,8 +227,8 @@ export function useCoverageYearDetail(
         const page = await fetchCoverageYearDetail(listId, year, {
           offset,
           limit: COVERAGE_PAGE_SIZE,
-          filter,
-          q: debouncedSearch,
+          filter: queryOverride?.filter ?? filter,
+          q: queryOverride?.q ?? debouncedSearch,
           includeRegistry: true,
         });
 
@@ -239,9 +244,6 @@ export function useCoverageYearDetail(
       } catch (err) {
         if (requestId !== requestRef.current) return;
         setError(err instanceof Error ? err.message : "Unknown error");
-        if (!append) {
-          setDetail(null);
-        }
       }
     },
     [listId, year, filter, debouncedSearch],
@@ -250,22 +252,44 @@ export function useCoverageYearDetail(
   useEffect(() => {
     if (!listId || year === null) {
       setDetail(null);
+      selectionRef.current = null;
       return;
     }
 
+    const selectionKey = `${listId}:${year}`;
+    const selectionChanged = selectionRef.current !== selectionKey;
+    selectionRef.current = selectionKey;
+
+    if (selectionChanged) {
+      setFilter("all");
+      setSearch("");
+      setDebouncedSearch("");
+    }
+
     setIsLoading(true);
-    void loadPage(0, false).finally(() => setIsLoading(false));
+    void loadPage(
+      0,
+      false,
+      selectionChanged ? { filter: "all", q: "" } : undefined,
+    ).finally(() => setIsLoading(false));
   }, [listId, year, filter, debouncedSearch, loadPage]);
 
   const loadMore = useCallback(async () => {
-    if (!detail?.hasMore || isLoadingMore || isLoading) return;
+    if (
+      !detail?.hasMore ||
+      isLoadingMore ||
+      isLoading ||
+      isRefreshingRegistry
+    ) {
+      return;
+    }
     setIsLoadingMore(true);
     try {
       await loadPage(detail.entries.length, true);
     } finally {
       setIsLoadingMore(false);
     }
-  }, [detail, isLoading, isLoadingMore, loadPage]);
+  }, [detail, isLoading, isLoadingMore, isRefreshingRegistry, loadPage]);
 
   const refreshRegistry = useCallback(async () => {
     if (!listId || year === null) return;
