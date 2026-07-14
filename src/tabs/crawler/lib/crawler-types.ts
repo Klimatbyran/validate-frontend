@@ -2,7 +2,7 @@ export type Report = {
   url: string | null;
   title?: string | null;
   description?: string | null;
-  source?: "company_site" | "web_search";
+  source?: "company_site" | "web_search" | "firecrawl_search";
 };
 
 export type LockedReport = {
@@ -22,7 +22,7 @@ export interface CompanyReport {
   reportYear: string;
   results: Report[];
   wikidataId?: string;
-  discoverySource?: "company_site" | "web_search";
+  discoverySource?: "company_site" | "web_search" | "filing_feed" | "firecrawl_search";
   listingPageUrl?: string;
 }
 
@@ -124,9 +124,10 @@ export type AutoSearchCompanyDetail = {
     | "low_confidence"
     | "no_results"
     | "analyze_failed"
+    | "llm_failed"
     | "failed"
     | "already_in_registry";
-  discoverySource?: "company_site" | "web_search";
+  discoverySource?: "company_site" | "web_search" | "filing_feed" | "firecrawl_search";
   listingPageUrl?: string;
   candidates: AutoSearchCandidateDetail[];
   prefilter?: PrefilterReportResult;
@@ -141,6 +142,7 @@ export type AutoSearchStats = {
   added: SaveReportSuccess[];
   skippedNoResults: { companyName: string }[];
   skippedAnalyzeFailed: { companyName: string }[];
+  skippedLlmFailed: { companyName: string }[];
   skippedLowConfidence: {
     companyName: string;
     confidence: number;

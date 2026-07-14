@@ -22,6 +22,7 @@ import ManualSearchControls from "./components/ManualSearchControls";
 import DatabaseSearchControls from "./components/DatabaseSearchControls";
 import RegistryList from "./components/RegistryList";
 import AutoSearchModal from "./components/AutoSearchModal";
+import AutoSearchLogButton from "./components/AutoSearchLogButton";
 import AutoSearchRegistryCheckModal from "./components/AutoSearchRegistryCheckModal";
 import { writeCrawledReportsToCsv } from "./lib/crawler-utils";
 import { saveToRegistry } from "./lib/crawler-api";
@@ -76,6 +77,7 @@ export function CrawlerTab() {
   >(() => new Set());
   const [pendingAutoSearchParams, setPendingAutoSearchParams] =
     useState<AutoSearchRunParams | null>(null);
+  const [lastAutoSearchYear, setLastAutoSearchYear] = useState<string>("");
 
   const {
     phase: autoSearchPhase,
@@ -254,6 +256,7 @@ export function CrawlerTab() {
   const startAutoSearch = useCallback(
     async (params: AutoSearchRunParams) => {
       resetAutoSearch();
+      setLastAutoSearchYear(params.reportYear);
       setIsAutoSearchModalOpen(true);
       await runAutoSearch(params);
     },
@@ -352,10 +355,11 @@ export function CrawlerTab() {
   };
 
   const handleCloseAutoSearchModal = () => {
+    // Cancel + discard only while running. After a finished run, keep the stats
+    // so the Log button on the Crawler tab stays available; the next run resets
+    // them via startAutoSearch.
     if (isAutoSearchRunning) {
       cancelAutoSearch();
-    } else {
-      resetAutoSearch();
     }
     setIsAutoSearchModalOpen(false);
   };
@@ -443,12 +447,20 @@ export function CrawlerTab() {
           <h2 className="text-xl font-semibold text-gray-01">
             {t("crawler.title")}
           </h2>
-          <ViewModePills
-            options={viewModeOptions}
-            value={viewMode}
-            onValueChange={setViewMode}
-            ariaLabel={t("crawler.viewMode")}
-          />
+          <div className="flex items-center gap-3">
+            {autoSearchStats && !isAutoSearchRunning && (
+              <AutoSearchLogButton
+                stats={autoSearchStats}
+                reportYear={lastAutoSearchYear}
+              />
+            )}
+            <ViewModePills
+              options={viewModeOptions}
+              value={viewMode}
+              onValueChange={setViewMode}
+              ariaLabel={t("crawler.viewMode")}
+            />
+          </div>
         </div>
 
         <div className="flex flex-col gap-2 justify-center">
@@ -536,6 +548,7 @@ export function CrawlerTab() {
           phase={autoSearchPhase}
           progress={autoSearchProgress}
           stats={autoSearchStats}
+          reportYear={reportYearInput}
           errorMessage={autoSearchError}
           runStartedAt={autoSearchStartedAt}
           runFinishedAt={autoSearchFinishedAt}

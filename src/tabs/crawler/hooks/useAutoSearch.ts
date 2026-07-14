@@ -3,6 +3,7 @@ import { searchCompanyReports } from "../lib/crawler-utils";
 import { saveToRegistry } from "../lib/crawler-api";
 import { filterReportsNotAlreadyInRegistry } from "../lib/auto-search-registry-check";
 import { pickBestReportForCompany } from "../lib/auto-search-runner";
+import { mapWithConcurrency } from "../lib/map-with-concurrency";
 import type {
   AutoSearchPhase,
   AutoSearchProgress,
@@ -21,6 +22,15 @@ export type AutoSearchRunParams = {
   country?: string;
 };
 
+/** Parallel LLM + PDF analysis — tune via VITE_AUTO_SEARCH_ANALYZE_CONCURRENCY (default 3). */
+const AUTO_SEARCH_ANALYZE_CONCURRENCY = Math.max(
+  1,
+  Math.min(
+    6,
+    Number(import.meta.env.VITE_AUTO_SEARCH_ANALYZE_CONCURRENCY ?? 3),
+  ),
+);
+
 const emptyStats = (): AutoSearchStats => ({
   companiesRequested: 0,
   companiesWithResults: 0,
@@ -29,6 +39,7 @@ const emptyStats = (): AutoSearchStats => ({
   added: [],
   skippedNoResults: [],
   skippedAnalyzeFailed: [],
+  skippedLlmFailed: [],
   skippedLowConfidence: [],
   skippedAlreadyInRegistry: [],
   failed: [],
@@ -103,29 +114,31 @@ export function useAutoSearch() {
 
       setPhase("analyzing");
       const winners: SelectedReport[] = [];
+      let analyzeFinished = 0;
 
-      for (let i = 0; i < companyReports.length; i++) {
-        if (isStale()) return null;
+      const analyzeResults = await mapWithConcurrency(
+        companyReports,
+        AUTO_SEARCH_ANALYZE_CONCURRENCY,
+        async (companyReport, i) => {
+          if (isStale()) {
+            return null;
+          }
 
-        const companyReport = companyReports[i];
-        const candidateTotal = companyReport.results.filter((r) =>
-          r.url?.trim(),
-        ).length;
+          const candidateTotal = companyReport.results.filter((r) =>
+            r.url?.trim(),
+          ).length;
 
-        setProgress({
-          companyIndex: i + 1,
-          companyTotal: companyReports.length,
-          companyName: companyReport.companyName,
-          candidateIndex: 0,
-          candidateTotal,
-        });
+          const wikidataId = params.companies.find(
+            (c) => c.name === companyReport.companyName,
+          )?.wikidataId;
 
-        const wikidataId = params.companies.find(
-          (c) => c.name === companyReport.companyName,
-        )?.wikidataId;
-
-        const { result: outcome, candidatesAnalyzed, candidates, prefilter, llm } =
-          await pickBestReportForCompany(
+          const {
+            result: outcome,
+            candidatesAnalyzed,
+            candidates,
+            prefilter,
+            llm,
+          } = await pickBestReportForCompany(
             companyReport,
             params.reportYear,
             wikidataId,
@@ -141,7 +154,41 @@ export function useAutoSearch() {
             },
           );
 
-        if (isStale()) return null;
+          analyzeFinished += 1;
+          if (!isStale()) {
+            setProgress({
+              companyIndex: analyzeFinished,
+              companyTotal: companyReports.length,
+              companyName: companyReport.companyName,
+              candidateIndex: candidateTotal,
+              candidateTotal,
+            });
+          }
+
+          return {
+            companyReport,
+            outcome,
+            candidatesAnalyzed,
+            candidates,
+            prefilter,
+            llm,
+          };
+        },
+      );
+
+      if (isStale()) return null;
+
+      for (const analyzed of analyzeResults) {
+        if (!analyzed) continue;
+
+        const {
+          companyReport,
+          outcome,
+          candidatesAnalyzed,
+          candidates,
+          prefilter,
+          llm,
+        } = analyzed;
 
         resultStats.candidatesAnalyzed += candidatesAnalyzed;
 
@@ -159,7 +206,9 @@ export function useAutoSearch() {
                 ? "low_confidence"
                 : outcome.kind === "analyze_failed"
                   ? "analyze_failed"
-                  : "no_results",
+                  : outcome.kind === "llm_failed"
+                    ? "llm_failed"
+                    : "no_results",
           candidates: candidates.map((c) => ({
             url: c.url,
             pagesRead: c.pagesRead,
@@ -177,6 +226,10 @@ export function useAutoSearch() {
           });
         } else if (outcome.kind === "analyze_failed") {
           resultStats.skippedAnalyzeFailed.push({
+            companyName: outcome.companyName,
+          });
+        } else if (outcome.kind === "llm_failed") {
+          resultStats.skippedLlmFailed.push({
             companyName: outcome.companyName,
           });
         } else if (outcome.kind === "low_confidence") {

@@ -1108,7 +1108,8 @@
     "autoSearchStatsAnalyzed": "PDF:er analyserade",
     "autoSearchStatsAdded": "Rapporter tillagda",
     "autoSearchSkippedNoResults": "Hoppade över — ingen matchande PDF hittades",
-    "autoSearchSkippedAnalyzeFailed": "Hoppade över — PDF-analys misslyckades (API kan ha varit nere)",
+    "autoSearchSkippedAnalyzeFailed": "Hoppade över — kunde inte läsa PDF-text (stor fil, timeout eller oläslig första sida)",
+    "autoSearchSkippedLlmFailed": "Hoppade över — AI-valet var otillgängligt (API-fel under körningen, försök igen)",
     "autoSearchSkippedLowConfidence": "Hoppade över — AI-säkerhet under 50 %",
     "autoSearchSkippedAlreadyInRegistry": "Hoppade över — rapport finns redan i registret för detta år",
     "autoSearchLlmConfidence": "AI-säkerhet {{confidence}} %",
@@ -1126,6 +1127,7 @@
     "autoSearchOutcomeLowConfidence": "låg säkerhet",
     "autoSearchOutcomeNoResults": "inga PDF:er",
     "autoSearchOutcomeAnalyzeFailed": "analys misslyckades",
+    "autoSearchOutcomeLlmFailed": "AI-anrop misslyckades",
     "autoSearchOutcomeAlreadyInRegistry": "finns redan i registret",
     "autoSearchRegistryCheckTitle": "Rapporter finns redan i registret",
     "autoSearchRegistryCheckDescription": "Vissa företag har redan rapporter för {{reportYear}} i registret. Exkludera företag du inte vill söka igen.",
@@ -1135,7 +1137,13 @@
     "autoSearchRegistryCheckContinue": "Fortsätt autosökning ({{count}} företag)",
     "autoSearchRegistryCheckNoCompanies": "Inga företag kvar att söka",
     "autoSearchDiscoveryCompanySite": "företagets webbplats",
-    "autoSearchDiscoveryWebSearch": "webbsökning"
+    "autoSearchDiscoveryFilingFeed": "Börs-/registreringskällor",
+    "autoSearchDiscoveryWebSearch": "webbsökning",
+    "autoSearchDiscoveryFirecrawlSearch": "Firecrawl-sökning",
+    "autoSearchLog": "Logg ({{count}})",
+    "autoSearchLogCopied": "Kopierad!",
+    "autoSearchLogHint": "Kopiera en JSON-logg över företagen vi inte hittade, med AI:ns förklaring — klistra in den i Cursor för felsökning.",
+    "autoSearchLogDownload": "Ladda ner logg som .json"
   },
   "overview": {
     "title": "Statusöversikt",

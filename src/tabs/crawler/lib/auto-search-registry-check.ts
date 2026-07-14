@@ -21,10 +21,29 @@ export function normalizeCompanyNameForMatch(name: string): string {
     .trim();
 }
 
+// Short tokens like "BP" or "AL" are the distinguishing part of sibling
+// company names (Aker BP vs Aker) — they must count.
 function significantTokens(name: string): string[] {
   return normalizeCompanyNameForMatch(name)
     .split(" ")
-    .filter((token) => token.length > 2);
+    .filter((token) => token.length >= 2);
+}
+
+// Exact token, plural/definite variants ("car"/"cars"), or a long shared
+// prefix (Scandinavian definite forms: "handelsbank"/"handelsbanken").
+// Short-prefix matches are false friends ("abl" would match "abloy").
+function tokensAlike(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (!a.startsWith(b) && !b.startsWith(a)) return false;
+  if (Math.abs(a.length - b.length) <= 1 && Math.min(a.length, b.length) >= 3) {
+    return true;
+  }
+  return Math.min(a.length, b.length) >= 5;
+}
+
+function coverage(from: string[], to: string[]): number {
+  return from.filter((token) => to.some((other) => tokensAlike(token, other)))
+    .length;
 }
 
 export function fuzzyCompanyNamesMatch(
@@ -35,20 +54,34 @@ export function fuzzyCompanyNamesMatch(
   const right = normalizeCompanyNameForMatch(registryName);
   if (!left || !right) return false;
   if (left === right) return true;
-  if (left.includes(right) || right.includes(left)) return true;
 
   const leftTokens = significantTokens(searched);
   const rightTokens = significantTokens(registryName);
   if (leftTokens.length === 0 || rightTokens.length === 0) return false;
 
-  const matched = leftTokens.filter((token) =>
-    rightTokens.some(
-      (other) => other.includes(token) || token.includes(other),
-    ),
-  ).length;
+  const leftMatched = coverage(leftTokens, rightTokens);
+  const rightMatched = coverage(rightTokens, leftTokens);
 
-  const threshold = Math.max(1, Math.ceil(Math.min(leftTokens.length, rightTokens.length) * 0.6));
-  return matched >= threshold;
+  // Distinctive single-name variants match ("Handelsbanken" vs "Svenska
+  // Handelsbanken AB"), but only for long names — a short shared token like
+  // "Aker" also names distinct sibling companies (Aker BP, Aker Solutions).
+  if (leftTokens.length === 1 && leftTokens[0]!.length >= 6 && leftMatched === 1) {
+    return true;
+  }
+  if (
+    rightTokens.length === 1 &&
+    rightTokens[0]!.length >= 6 &&
+    rightMatched === 1
+  ) {
+    return true;
+  }
+
+  // Same company only when the significant tokens of BOTH names line up;
+  // sharing a token ("Aker" ∈ "Aker BioMarine") is not enough.
+  return (
+    leftMatched >= Math.ceil(leftTokens.length * 0.6) &&
+    rightMatched >= Math.ceil(rightTokens.length * 0.6)
+  );
 }
 
 export function buildFuzzyRegistrySearchTerms(companyName: string): string[] {

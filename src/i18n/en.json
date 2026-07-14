@@ -1108,7 +1108,8 @@
     "autoSearchStatsAnalyzed": "PDFs analyzed",
     "autoSearchStatsAdded": "Reports added",
     "autoSearchSkippedNoResults": "Skipped — no matching PDF found",
-    "autoSearchSkippedAnalyzeFailed": "Skipped — PDF analysis failed (API may have been down)",
+    "autoSearchSkippedAnalyzeFailed": "Skipped — could not read PDF text (large file, timeout, or unreadable first page)",
+    "autoSearchSkippedLlmFailed": "Skipped — AI selection unavailable (API error during run, retry usually works)",
     "autoSearchSkippedLowConfidence": "Skipped — AI confidence below 50%",
     "autoSearchSkippedAlreadyInRegistry": "Skipped — report already in Registry for this year",
     "autoSearchLlmConfidence": "AI confidence {{confidence}}%",
@@ -1126,6 +1127,7 @@
     "autoSearchOutcomeLowConfidence": "low confidence",
     "autoSearchOutcomeNoResults": "no PDFs",
     "autoSearchOutcomeAnalyzeFailed": "analysis failed",
+    "autoSearchOutcomeLlmFailed": "AI call failed",
     "autoSearchOutcomeAlreadyInRegistry": "already in Registry",
     "autoSearchRegistryCheckTitle": "Reports already in Registry",
     "autoSearchRegistryCheckDescription": "Some companies already have reports for {{reportYear}} in the Registry. Exclude companies you do not want to search again.",
@@ -1135,7 +1137,13 @@
     "autoSearchRegistryCheckContinue": "Continue auto-search ({{count}} companies)",
     "autoSearchRegistryCheckNoCompanies": "No companies left to search",
     "autoSearchDiscoveryCompanySite": "company site",
-    "autoSearchDiscoveryWebSearch": "web search"
+    "autoSearchDiscoveryFilingFeed": "Exchange filings",
+    "autoSearchDiscoveryWebSearch": "web search",
+    "autoSearchDiscoveryFirecrawlSearch": "Firecrawl search",
+    "autoSearchLog": "Log ({{count}})",
+    "autoSearchLogCopied": "Copied!",
+    "autoSearchLogHint": "Copy a JSON log of the companies we could not find, with the AI's explanation — paste it into Cursor to problem-solve.",
+    "autoSearchLogDownload": "Download log as .json"
   },
   "overview": {
     "title": "Status overview",

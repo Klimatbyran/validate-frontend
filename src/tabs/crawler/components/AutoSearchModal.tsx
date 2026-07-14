@@ -17,12 +17,14 @@ import type {
 import { AUTO_SEARCH_CRAWL_CONCURRENCY } from "../lib/crawler-utils";
 import RegistryList from "./RegistryList";
 import AutoSearchLlmBreakdown from "./AutoSearchLlmBreakdown";
+import AutoSearchLogButton from "./AutoSearchLogButton";
 
 interface AutoSearchModalProps {
   open: boolean;
   phase: AutoSearchPhase;
   progress: AutoSearchProgress | null;
   stats: AutoSearchStats | null;
+  reportYear: string;
   errorMessage: string | null;
   runStartedAt: number | null;
   runFinishedAt: number | null;
@@ -103,6 +105,7 @@ export default function AutoSearchModal({
   phase,
   progress,
   stats,
+  reportYear,
   errorMessage,
   runStartedAt,
   runFinishedAt,
@@ -282,6 +285,19 @@ export default function AutoSearchModal({
               </div>
             )}
 
+            {stats.skippedLlmFailed.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-gray-01 mb-2">
+                  {t("crawler.autoSearchSkippedLlmFailed")}
+                </p>
+                <ul className="text-sm text-gray-02 list-disc list-inside">
+                  {stats.skippedLlmFailed.map((s) => (
+                    <li key={s.companyName}>{s.companyName}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {stats.skippedLowConfidence.length > 0 && (
               <div>
                 <p className="text-sm font-medium text-gray-01 mb-2">
@@ -331,9 +347,12 @@ export default function AutoSearchModal({
               <AutoSearchLlmBreakdown details={stats.companyDetails} />
             )}
 
-            <Button size="sm" onClick={onClose} className="self-end">
-              {t("crawler.autoSearchClose")}
-            </Button>
+            <div className="flex items-center justify-between gap-2">
+              <AutoSearchLogButton stats={stats} reportYear={reportYear} />
+              <Button size="sm" onClick={onClose} className="ml-auto">
+                {t("crawler.autoSearchClose")}
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>

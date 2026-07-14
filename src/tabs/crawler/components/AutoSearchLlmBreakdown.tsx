@@ -27,9 +27,11 @@ function CompanyLlmDetail({ detail }: { detail: AutoSearchCompanyDetail }) {
             ? t("crawler.autoSearchOutcomeLowConfidence")
             : detail.outcome === "analyze_failed"
               ? t("crawler.autoSearchOutcomeAnalyzeFailed")
-              : detail.outcome === "failed"
-                ? t("crawler.failed")
-                : t("crawler.autoSearchOutcomeNoResults");
+              : detail.outcome === "llm_failed"
+                ? t("crawler.autoSearchOutcomeLlmFailed")
+                : detail.outcome === "failed"
+                  ? t("crawler.failed")
+                  : t("crawler.autoSearchOutcomeNoResults");
 
   const confidencePct = detail.llm
     ? Math.round(detail.llm.confidence * 100)
@@ -53,7 +55,11 @@ function CompanyLlmDetail({ detail }: { detail: AutoSearchCompanyDetail }) {
           <span className="text-xs text-blue-03">
             {detail.discoverySource === "company_site"
               ? t("crawler.autoSearchDiscoveryCompanySite")
-              : t("crawler.autoSearchDiscoveryWebSearch")}
+              : detail.discoverySource === "filing_feed"
+                ? t("crawler.autoSearchDiscoveryFilingFeed")
+                : detail.discoverySource === "firecrawl_search"
+                  ? t("crawler.autoSearchDiscoveryFirecrawlSearch")
+                  : t("crawler.autoSearchDiscoveryWebSearch")}
           </span>
         )}
         {confidencePct != null && (
