@@ -20,6 +20,7 @@ export type OverviewPageMeta = {
 };
 
 export type CompanyYearsOverviewResponse = OverviewPageMeta & {
+  viewMode: "companyYears";
   rows: OverviewRow[];
   stats: OverviewStats;
   reportYears: string[];
@@ -27,13 +28,21 @@ export type CompanyYearsOverviewResponse = OverviewPageMeta & {
   localEnv?: "stage" | "prod";
 };
 
-export type RegistryReportsOverviewResponse = CompanyYearsOverviewResponse;
+export type RegistryReportsOverviewResponse = OverviewPageMeta & {
+  viewMode: "registryReports";
+  rows: OverviewRow[];
+  stats: OverviewStats;
+  reportYears: string[];
+  warnings?: OverviewWarning[];
+  localEnv?: "stage" | "prod";
+};
 
 export type ProdToStageBuildDiagnostics = {
   prodShells: number;
   skippedUnlinked: number;
   skippedNoFullyVerifiedOnProd: number;
   skippedStageHasEmissions: number;
+  includedWithoutReportUrl: number;
   included: number;
 };
 

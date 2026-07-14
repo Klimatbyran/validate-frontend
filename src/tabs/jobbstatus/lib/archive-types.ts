@@ -15,6 +15,7 @@ export type ArchiveRunSummary = {
   pdfUrl: string;
   companyName: string | null;
   wikidataId: string | null;
+  companyId?: string | null;
   companyReportId?: string | null;
   batch?: { id: string; batchName: string } | null;
   status: string;

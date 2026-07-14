@@ -11,6 +11,12 @@ export interface RegistryEntry {
   sha256?: string | null;
   batchId?: string | null;
   batchName?: string | null;
+  reportTypeId?: string | null;
+  reportType?: {
+    id: string;
+    slug: string;
+    label: string | null;
+  } | null;
 }
 
 export interface RegistryEntryUpdate {
@@ -25,6 +31,7 @@ export interface RegistryEntryUpdate {
   s3Bucket?: string | null;
   sha256?: string | null;
   batchId?: string | null;
+  reportTypeId?: string | null;
 }
 
 export interface RegistryNewEntry {

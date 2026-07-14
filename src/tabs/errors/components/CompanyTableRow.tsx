@@ -55,6 +55,14 @@ export function CompanyTableRow({
               {!row.inStage ? t("errors.notInStage") : t("errors.notInProd")}
             </span>
           )}
+          {row.companyPairingMethod === "report-identity" && (
+            <span
+              className="text-xs px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400"
+              title={t("errors.pairedViaReportIdentity")}
+            >
+              {t("errors.pairedViaReportIdentityShort")}
+            </span>
+          )}
         </div>
       </td>
       <td className="px-4 py-3 text-right font-mono text-sm text-gray-01">

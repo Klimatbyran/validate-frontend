@@ -12,9 +12,7 @@ import { ScreenshotSlideshow } from "@/components/screenshot-slideshow";
 import { CollapsibleSection } from "@/ui/collapsible-section";
 import { Image, ExternalLink, FileText, RotateCcw } from "lucide-react";
 import { EconomySection } from "../scope/EconomySection";
-import { WikidataApprovalDisplay } from "../WikidataApprovalDisplay";
 import { Button } from "@/ui/button";
-import { getJobStatus } from "@/lib/workflow-utils";
 import {
   parseReturnValueData,
   getScopeData,
@@ -22,14 +20,19 @@ import {
   getScope3Data,
   getWikidataApprovalData,
 } from "../../lib/job-specific-data-parsing";
-import { CompanyNameOverrideDisplay } from "./CompanyNameOverrideDisplay";
 import { useJobRerunActions } from "../../hooks/useJobRerunActions";
 import { getPipelineUrl } from "@/config/api-env";
 import { useI18n } from "@/contexts/I18nContext";
+import type { DetailedJobResponse } from "@/lib/types";
 
 interface JobSpecificDataViewProps {
   data: any;
   job?: QueueJob;
+  /** Parent-loaded pipeline job payload; avoids duplicate fetch from JobDetailsDialog */
+  sharedDetailed?: DetailedJobResponse | null;
+  onSharedDetailedChange?: React.Dispatch<
+    React.SetStateAction<DetailedJobResponse | null>
+  >;
 }
 
 function isHttpReportUrl(s: string) {
@@ -66,16 +69,30 @@ function JobReportUrlRow({ title, url }: { title: string; url: string }) {
   );
 }
 
-export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
+export function JobSpecificDataView({
+  data,
+  job,
+  sharedDetailed,
+  onSharedDetailedChange,
+}: JobSpecificDataViewProps) {
   const { t } = useI18n();
-  const [detailed, setDetailed] = React.useState<any | null>(null);
+  const [localDetailed, setLocalDetailed] = React.useState<any | null>(null);
   const [, setIsLoading] = React.useState(false);
 
+  const usesSharedDetailed = onSharedDetailedChange !== undefined;
+  const detailed = usesSharedDetailed
+    ? (sharedDetailed ?? null)
+    : localDetailed;
+  const setDetailed = usesSharedDetailed
+    ? onSharedDetailedChange!
+    : setLocalDetailed;
+
   React.useEffect(() => {
+    if (usesSharedDetailed) return;
+
     let aborted = false;
     async function loadDetails() {
-      if (!job || job.returnvalue) return;
-      if (!job.queueId || !job.id) return;
+      if (!job?.queueId || !job?.id) return;
       try {
         setIsLoading(true);
         const res = await fetch(
@@ -85,7 +102,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         );
         if (!res.ok) return;
         const json = await res.json();
-        if (!aborted) setDetailed(json);
+        if (!aborted) setLocalDetailed(json);
       } finally {
         if (!aborted) setIsLoading(false);
       }
@@ -94,7 +111,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     return () => {
       aborted = true;
     };
-  }, [job?.id, job?.queueId, Boolean(job?.returnvalue)]);
+  }, [job?.id, job?.queueId, usesSharedDetailed]);
 
   const effectiveJob = React.useMemo(() => {
     if (!job) return undefined;
@@ -120,13 +137,12 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     } as any;
   }, [job, detailed]);
 
-  const {
-    handleWikidataApprove,
-    handleWikidataOverride,
-    handleCompanyNameOverride,
-    handleRerun,
-    handleRerunAndSave,
-  } = useJobRerunActions({ job, effectiveJob, detailed, setDetailed });
+  const { handleRerun, handleRerunAndSave } = useJobRerunActions({
+    job,
+    effectiveJob,
+    detailed,
+    setDetailed,
+  });
 
   const processedData =
     typeof data === "string" && isJsonString(data) ? JSON.parse(data) : data;
@@ -266,27 +282,6 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
     return { reportYearHint, documentReportYear };
   }, [effectiveJob, job, processedData]);
 
-  // Get company name from multiple possible sources
-  const companyName: string | undefined = React.useMemo(() => {
-    const name =
-      effectiveJob?.data?.companyName ||
-      job?.data?.companyName ||
-      processedData?.companyName ||
-      effectiveJob?.data?.company ||
-      job?.data?.company ||
-      processedData?.company;
-    if (!name) return undefined;
-    const nameString = typeof name === "string" ? name : String(name);
-    return nameString.trim() || undefined;
-  }, [effectiveJob, job, processedData]);
-
-  // Check if this is a completed precheck job
-  const isCompletedPrecheck = React.useMemo(() => {
-    if (!effectiveJob || effectiveJob.queueId !== "precheck") return false;
-    const status = getJobStatus(effectiveJob);
-    return status === "completed";
-  }, [effectiveJob]);
-
   React.useEffect(() => {
     try {
       console.log("[JobSpecificDataView] scope3 panel context", {
@@ -402,26 +397,7 @@ export function JobSpecificDataView({ data, job }: JobSpecificDataViewProps) {
         </div>
       ) : null}
 
-      {/* Show Wikidata Approval Display if available (for guessWikidata step) */}
-      {wikidataApprovalData && (
-        <div className="mb-4">
-          <WikidataApprovalDisplay
-            data={wikidataApprovalData}
-            onOverride={handleWikidataOverride}
-            onApprove={handleWikidataApprove}
-          />
-        </div>
-      )}
-
-      {/* Show Company Name Override for completed precheck jobs */}
-      {isCompletedPrecheck && (
-        <CompanyNameOverrideDisplay
-          currentCompanyName={companyName}
-          onOverride={handleCompanyNameOverride}
-        />
-      )}
-
-      {/* Show Fiscal Year display if available */}
+      {/* Show Scope 1+2 emissions data if available */}
       {(processedData.fiscalYear ||
         (processedData.startMonth && processedData.endMonth)) && (
         <div className="mb-4">

@@ -17,6 +17,7 @@ import { ProdToStageFilters } from "./components/ProdToStageFilters";
 import { OverviewStatsBar } from "./components/OverviewStatsBar";
 import { OverviewTable } from "./components/OverviewTable";
 import { ProdToStageTable } from "./components/ProdToStageTable";
+import { CoverageView } from "./components/CoverageView";
 import type {
   OverviewRow,
   OverviewViewMode,
@@ -27,6 +28,7 @@ const VIEW_MODES: { value: OverviewViewMode; labelKey: string }[] = [
   { value: "companyYears", labelKey: "overview.views.companyYears" },
   { value: "registryReports", labelKey: "overview.views.registryReports" },
   { value: "prodToStage", labelKey: "overview.views.prodToStage" },
+  { value: "coverage", labelKey: "overview.views.coverage" },
 ];
 
 export function OverviewTab() {
@@ -46,6 +48,7 @@ export function OverviewTab() {
   );
 
   const isProdToStage = data.viewMode === "prodToStage";
+  const isCoverage = data.viewMode === "coverage";
   const activePipeline = isProdToStage ? stagePipeline : envPipeline;
 
   const selectedOverviewRows = useMemo(
@@ -124,7 +127,9 @@ export function OverviewTab() {
       ? t("overview.subtitleCompanyYears")
       : data.viewMode === "registryReports"
         ? t("overview.subtitleRegistryReports")
-        : t("overview.subtitleProdToStage");
+        : data.viewMode === "coverage"
+          ? t("overview.subtitleCoverage")
+          : t("overview.subtitleProdToStage");
 
   const selectedCount = isProdToStage
     ? selectedProdToStageRows.length
@@ -158,35 +163,39 @@ export function OverviewTab() {
             />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              onClick={() => data.refresh()}
-              disabled={data.isRefreshing}
-            >
-              {data.isRefreshing ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4 mr-2" />
-              )}
-              {t("common.refresh")}
-            </Button>
-            <Button
-              onClick={() => setIsRunReportsOpen(true)}
-              disabled={
-                runItems.length === 0 || activePipeline.isRunningReports
-              }
-            >
-              {activePipeline.isRunningReports ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Play className="w-4 h-4 mr-2" />
-              )}
-              {isProdToStage
-                ? t("overview.prodToStage.runOnStage", {
-                    count: runItems.length,
-                  })
-                : t("overview.runSelected", { count: runItems.length })}
-            </Button>
+            {!isCoverage ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => data.refresh()}
+                  disabled={data.isRefreshing}
+                >
+                  {data.isRefreshing ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                  )}
+                  {t("common.refresh")}
+                </Button>
+                <Button
+                  onClick={() => setIsRunReportsOpen(true)}
+                  disabled={
+                    runItems.length === 0 || activePipeline.isRunningReports
+                  }
+                >
+                  {activePipeline.isRunningReports ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4 mr-2" />
+                  )}
+                  {isProdToStage
+                    ? t("overview.prodToStage.runOnStage", {
+                        count: runItems.length,
+                      })
+                    : t("overview.runSelected", { count: runItems.length })}
+                </Button>
+              </>
+            ) : null}
           </div>
         </div>
 
@@ -236,6 +245,17 @@ export function OverviewTab() {
                     count: data.prodToStageDiagnostics.skippedStageHasEmissions,
                   })}
                 </p>
+                {data.prodToStageDiagnostics.includedWithoutReportUrl > 0 ? (
+                  <p>
+                    {t(
+                      "overview.prodToStage.emptyDiagnosticsIncludedWithoutUrl",
+                      {
+                        count:
+                          data.prodToStageDiagnostics.includedWithoutReportUrl,
+                      },
+                    )}
+                  </p>
+                ) : null}
                 <p className="font-medium text-gray-01">
                   {t("overview.prodToStage.emptyDiagnosticsIncluded", {
                     count: data.prodToStageDiagnostics.included,
@@ -246,13 +266,13 @@ export function OverviewTab() {
           </div>
         ) : null}
 
-        {!isProdToStage ? (
+        {!isProdToStage && !isCoverage ? (
           <OverviewStatsBar
             stats={data.stats}
             selectedCount={selectedCount}
             viewMode={data.viewMode}
           />
-        ) : (
+        ) : isProdToStage ? (
           <MetricCardGrid className="grid-cols-2 sm:grid-cols-4">
             <MetricCard
               label={t("overview.prodToStage.stats.total")}
@@ -271,21 +291,23 @@ export function OverviewTab() {
               value={data.pagination.totalRows}
             />
           </MetricCardGrid>
-        )}
+        ) : null}
 
-        {isProdToStage ? (
-          <ProdToStageFilters data={data} />
-        ) : (
-          <OverviewFilters data={data} />
-        )}
+        {!isCoverage ? (
+          isProdToStage ? (
+            <ProdToStageFilters data={data} />
+          ) : (
+            <OverviewFilters data={data} />
+          )
+        ) : null}
 
-        {data.error ? (
+        {!isCoverage && data.error ? (
           <Callout variant="error" title={t("overview.apiErrorTitle")}>
             <p className="text-sm">{data.error}</p>
           </Callout>
         ) : null}
 
-        {!data.error && data.warnings.length > 0 ? (
+        {!isCoverage && !data.error && data.warnings.length > 0 ? (
           <Callout
             variant="warning"
             title={t("overview.apiWarningsTitle")}
@@ -309,11 +331,17 @@ export function OverviewTab() {
           </Callout>
         ) : null}
 
-        {data.isLoading ? (
+        {data.isLoading && !isCoverage ? (
           <div className="py-16 flex justify-center">
             <LoadingSpinner />
           </div>
-        ) : data.error ? null : isProdToStage ? (
+        ) : data.error && !isCoverage ? null : isCoverage ? (
+          <CoverageView
+            onViewRegistryReports={(names) =>
+              data.openRegistryReportsWithSearch(names.join("\n"))
+            }
+          />
+        ) : isProdToStage ? (
           <ProdToStageTable
             data={data}
             selectedKeys={selectedKeys}
@@ -330,16 +358,18 @@ export function OverviewTab() {
           />
         )}
 
-        <div className="flex flex-wrap gap-2 pt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => data.clearFilters()}
-            disabled={!data.filtersAreActive}
-          >
-            {t("common.clearFilters")}
-          </Button>
-        </div>
+        {!isCoverage ? (
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => data.clearFilters()}
+              disabled={!data.filtersAreActive}
+            >
+              {t("common.clearFilters")}
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       <RunReportsModal

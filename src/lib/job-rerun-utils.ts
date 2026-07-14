@@ -29,6 +29,7 @@ export const QUEUE_TO_FOLLOW_UP_KEY: Record<string, string> = {
   followUpIndustryGics: "industryGics",
   followUpFiscalYear: "fiscalYear",
   followUpCompanyTags: "companyTags",
+  followUpReportType: "reportType",
 };
 
 /**

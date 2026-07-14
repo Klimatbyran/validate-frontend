@@ -23,6 +23,7 @@ function getStatusLabelKey(status: string, isActive?: boolean): string {
     failed: "status.failed",
     processing: "status.processing",
     needs_approval: "status.needs_approval",
+    wikidata_unverified: "status.wikidata_unverified",
     waiting: "status.waiting",
   };
   return keyMap[status] ?? "status.waiting";

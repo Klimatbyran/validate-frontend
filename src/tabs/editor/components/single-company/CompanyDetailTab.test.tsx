@@ -13,6 +13,7 @@ vi.mock("../../lib/companies-api", () => ({
   fetchIndustryGics: () => fetchIndustryGics(),
   updateCompanyIndustry: vi.fn(),
   updateCompanyBaseYear: vi.fn(),
+  deleteCompany: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({
@@ -132,5 +133,30 @@ describe("CompanyDetailTab wikidataId", () => {
         wikidataId: undefined,
       }),
     );
+  });
+
+  it("shows verification badges for identifiers from API", async () => {
+    await renderTab({
+      ...mockCompany,
+      wikidataId: null,
+      identifiers: [
+        {
+          id: "id-w",
+          type: "WIKIDATA",
+          value: "Q12345",
+          metadata: { verifiedBy: null },
+        },
+        {
+          id: "id-l",
+          type: "LEI",
+          value: "5493001KJTIIGC8Y1R12",
+          metadata: { verifiedBy: { name: "Staff User" } },
+        },
+      ],
+    });
+
+    expect(screen.getByText("Unverified")).toBeInTheDocument();
+    expect(screen.getByText("Verified")).toBeInTheDocument();
+    expect(screen.getByText("5493001KJTIIGC8Y1R12")).toBeInTheDocument();
   });
 });

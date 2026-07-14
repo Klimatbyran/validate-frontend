@@ -12,11 +12,14 @@ import { cn } from "@/lib/utils";
 
 interface CompanyNameOverrideDisplayProps {
   currentCompanyName?: string;
+  /** When true, copy explains that extraction failed and a name must be entered. */
+  missingCompanyName?: boolean;
   onOverride?: (overrideCompanyName: string) => void;
 }
 
 export function CompanyNameOverrideDisplay({
   currentCompanyName,
+  missingCompanyName = false,
   onOverride,
 }: CompanyNameOverrideDisplayProps) {
   const { t } = useI18n();
@@ -50,9 +53,17 @@ export function CompanyNameOverrideDisplay({
   return (
     <div className="mb-4 space-y-4">
       <Callout
-        variant="info"
-        title={t("companyOverride.title")}
-        description={t("companyOverride.description")}
+        variant={missingCompanyName ? "warning" : "info"}
+        title={t(
+          missingCompanyName
+            ? "companyOverride.titleMissing"
+            : "companyOverride.title",
+        )}
+        description={t(
+          missingCompanyName
+            ? "companyOverride.descriptionMissing"
+            : "companyOverride.description",
+        )}
       >
         {currentCompanyName && (
           <div className="bg-gray-03/20 rounded-lg p-3">
@@ -71,7 +82,11 @@ export function CompanyNameOverrideDisplay({
               htmlFor="override-company-name"
               className="block text-xs text-gray-02 mb-1"
             >
-              {t("companyOverride.newNameLabel")}
+              {t(
+                missingCompanyName
+                  ? "companyOverride.nameLabel"
+                  : "companyOverride.newNameLabel",
+              )}
             </label>
             <div className="flex items-center space-x-2">
               <input
@@ -79,7 +94,11 @@ export function CompanyNameOverrideDisplay({
                 type="text"
                 value={overrideName}
                 onChange={(e) => handleOverrideChange(e.target.value)}
-                placeholder={t("companyOverride.placeholder")}
+                placeholder={t(
+                  missingCompanyName
+                    ? "companyOverride.placeholderMissing"
+                    : "companyOverride.placeholder",
+                )}
                 className={cn(
                   "flex-1 px-3 py-2 rounded-lg border text-sm",
                   "bg-gray-04 text-gray-01",

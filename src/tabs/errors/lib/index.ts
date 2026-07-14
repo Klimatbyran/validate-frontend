@@ -27,6 +27,9 @@ export {
   companyCrossEnvKey,
   crossEnvKeyFromRow,
   classifyDiscrepancy,
+  classifySlotDiscrepancy,
+  isExtractionComparisonDiscrepancy,
+  isPipelineExtractionDiscrepancy,
   getUnitErrorFactor,
   reclassifyDiscrepancyForCategoryError,
   applyCategoryErrorToRows,
@@ -38,6 +41,8 @@ export {
 } from "./metrics";
 export type { PerformanceMetricRow, OverviewAggregates } from "./metrics";
 export { exportOverviewCsv, exportComparisonToCsv } from "./csv";
+export { buildPairedCompanyMaps } from "./company-cross-env-pairing";
+export type { PairedCompanyLookup } from "./company-cross-env-pairing";
 export {
   buildProdCompanyVerifiedForYearMap,
   isProdCompanyFullyVerifiedForYear,

@@ -103,6 +103,8 @@ export interface OverviewAggregates {
     rounding: number;
     hallucination: number;
     missing: number;
+    reportAbsent: number;
+    reportExtra: number;
     unitError: number;
     smallError: number;
     error: number;
@@ -123,6 +125,8 @@ export function calculateOverviewAggregates(
       acc.rounding += dp.breakdown.rounding;
       acc.hallucination += dp.breakdown.hallucination;
       acc.missing += dp.breakdown.missing;
+      acc.reportAbsent += dp.breakdown.reportAbsent;
+      acc.reportExtra += dp.breakdown.reportExtra;
       acc.unitError += dp.breakdown.unitError;
       acc.smallError += dp.breakdown.smallError;
       acc.error += dp.breakdown.error;
@@ -135,6 +139,8 @@ export function calculateOverviewAggregates(
         dp.breakdown.rounding +
         dp.breakdown.hallucination +
         dp.breakdown.missing +
+        dp.breakdown.reportAbsent +
+        dp.breakdown.reportExtra +
         dp.breakdown.unitError +
         dp.breakdown.smallError +
         dp.breakdown.error +
@@ -147,6 +153,8 @@ export function calculateOverviewAggregates(
       rounding: 0,
       hallucination: 0,
       missing: 0,
+      reportAbsent: 0,
+      reportExtra: 0,
       unitError: 0,
       smallError: 0,
       error: 0,

@@ -7,6 +7,8 @@ import { discrepancyConfig } from "../config/discrepancyConfig";
 
 /** Filter pill order: default-on types first, then identical and both-null (off by default) last. */
 const FILTER_PILL_ORDER: DiscrepancyType[] = [
+  "report-absent",
+  "report-extra",
   "hallucination",
   "missing",
   "rounding",

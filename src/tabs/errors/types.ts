@@ -3,6 +3,8 @@ export type DiscrepancyType =
   | "identical"
   | "hallucination"
   | "missing"
+  | "report-absent"
+  | "report-extra"
   | "rounding"
   | "unit-error"
   | "small-error"
@@ -140,9 +142,19 @@ export interface ReportingPeriod {
   /** Data year key in DB (may differ from endDate calendar year). */
   year?: string | null;
   companyReportId?: string | null;
+  reportURL?: string | null;
+  reportS3Url?: string | null;
+  reportSha256?: string | null;
   companyReport?: {
     id?: string;
     reportYear?: string | null;
+    registryReportId?: string | null;
+    report?: {
+      url?: string | null;
+      sourceUrl?: string | null;
+      s3Url?: string | null;
+      sha256?: string | null;
+    } | null;
   } | null;
   emissions?: {
     statedTotalEmissions?:
@@ -176,6 +188,8 @@ export interface ReportingPeriod {
   };
 }
 
+export type CompanyPairingMethod = "wikidata" | "report-identity" | "unpaired";
+
 export interface CompanyRow {
   /** Unique row key (company + report shell when multiple periods). */
   rowKey: string;
@@ -186,6 +200,8 @@ export interface CompanyRow {
   shellKey?: string;
   reportYear?: number | null;
   companyReportId?: string | null;
+  /** How this company was paired across stage and prod. */
+  companyPairingMethod?: CompanyPairingMethod;
   stageValue: number | null;
   prodValue: number | null;
   discrepancy: DiscrepancyType;
@@ -212,6 +228,8 @@ export interface DataPointMetric {
     rounding: number;
     hallucination: number;
     missing: number;
+    reportAbsent: number;
+    reportExtra: number;
     unitError: number;
     smallError: number;
     error: number;

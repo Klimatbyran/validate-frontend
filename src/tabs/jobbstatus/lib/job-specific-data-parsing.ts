@@ -74,61 +74,240 @@ export function getScope3Data(processedData: any, returnValueData: any): any {
   return null;
 }
 
-export function getWikidataApprovalData(
-  job?: QueueJob,
-  effectiveJob?: any,
-): any {
-  const jobData = effectiveJob?.data || job?.data;
-  const approval = jobData?.approval;
+export interface WikidataApprovalWikidata {
+  node: string;
+  url: string;
+  label: string;
+  description?: string;
+}
 
-  if (approval && typeof approval === "object") {
-    if (
-      approval.type === "wikidata" &&
-      approval.approved === false &&
-      approval.data?.newValue?.wikidata &&
-      typeof approval.data.newValue.wikidata === "object" &&
-      approval.data.newValue.wikidata.node
-    ) {
-      return {
-        status: "pending_approval",
-        wikidata: approval.data.newValue.wikidata,
-        message: approval.summary || "Waiting for approval",
-        metadata: approval.metadata || {},
-      };
-    }
-    if (
-      approval.type === "wikidata" &&
-      approval.approved === true &&
-      approval.data?.newValue?.wikidata &&
-      typeof approval.data.newValue.wikidata === "object" &&
-      approval.data.newValue.wikidata.node
-    ) {
-      return {
-        status: "approved",
-        wikidata: approval.data.newValue.wikidata,
-        message: approval.summary || "Approved",
-        metadata: approval.metadata || {},
-      };
-    }
+export interface WikidataApprovalData {
+  status: "approved" | "pending_approval" | "approved_unverified";
+  wikidata: WikidataApprovalWikidata;
+  message?: string;
+  metadata?: {
+    source?: string;
+    comment?: string;
+  };
+  autoApproved?: boolean;
+  verifiedByUserId?: string;
+}
+
+function approvalSummary(
+  approval: Record<string, unknown>,
+): string | undefined {
+  return typeof approval.summary === "string" && approval.summary.trim()
+    ? approval.summary
+    : undefined;
+}
+
+function wikidataFromJobData(
+  jobData?: Record<string, unknown>,
+): WikidataApprovalWikidata | null {
+  const wikidata = jobData?.wikidata;
+  if (!wikidata || typeof wikidata !== "object") return null;
+
+  const node =
+    typeof (wikidata as { node?: unknown }).node === "string"
+      ? (wikidata as { node: string }).node.trim()
+      : "";
+  if (!node) return null;
+
+  const raw = wikidata as {
+    url?: string;
+    label?: string;
+    description?: string;
+  };
+
+  return {
+    node,
+    url: raw.url?.trim() || `https://www.wikidata.org/wiki/${node}`,
+    label: raw.label?.trim() || node,
+    description: raw.description?.trim(),
+  };
+}
+
+function wikidataApprovalFromApprovalObject(
+  approval: Record<string, unknown>,
+  jobData?: Record<string, unknown>,
+): WikidataApprovalData | null {
+  const wikidata =
+    (approval.data as { newValue?: { wikidata?: WikidataApprovalWikidata } })
+      ?.newValue?.wikidata ?? wikidataFromJobData(jobData);
+  if (!wikidata?.node) {
+    return null;
   }
 
-  if (job?.queueId === "guessWikidata") {
+  const autoApproved = Boolean(jobData?.autoApprove);
+  const verifiedByUserId =
+    typeof approval.verifiedByUserId === "string"
+      ? approval.verifiedByUserId
+      : undefined;
+  const metadata =
+    (approval.metadata as WikidataApprovalData["metadata"]) || {};
+
+  if (approval.approved === false) {
     return {
       status: "pending_approval",
-      wikidata: {
-        node: "Q123456",
-        url: "https://wikidata.org/wiki/Q123456",
-        label: "Example Company AB",
-        description: "Swedish company",
-      },
-      message:
-        "Wikidata selection for Example Company AB - waiting for approval",
-      metadata: {
-        source: "wikidata-search",
-        comment: "Wikidata found via search and LLM selection",
-      },
+      wikidata,
+      message: approvalSummary(approval),
+      metadata,
+      autoApproved,
+      verifiedByUserId,
+    };
+  }
+
+  if (approval.approved === true) {
+    const status =
+      autoApproved && !verifiedByUserId ? "approved_unverified" : "approved";
+    return {
+      status,
+      wikidata,
+      message: approvalSummary(approval),
+      metadata,
+      autoApproved,
+      verifiedByUserId,
     };
   }
 
   return null;
+}
+
+export function getWikidataApprovalData(
+  job?: QueueJob,
+  effectiveJob?: any,
+): WikidataApprovalData | null {
+  const jobData = effectiveJob?.data || job?.data;
+  const approval = jobData?.approval;
+
+  if (
+    approval &&
+    typeof approval === "object" &&
+    approval.type === "wikidata"
+  ) {
+    return wikidataApprovalFromApprovalObject(
+      approval as Record<string, unknown>,
+      jobData as Record<string, unknown> | undefined,
+    );
+  }
+
+  return null;
+}
+
+/** True when job.data.approval exists and staff action is still required. */
+export function hasPendingStructuredApproval(jobData?: {
+  approval?: { approved?: boolean };
+}): boolean {
+  const approval = jobData?.approval;
+  return Boolean(
+    approval && typeof approval === "object" && approval.approved === false,
+  );
+}
+
+export interface CompanyLinkCandidate {
+  id: string;
+  name: string;
+  wikidataId?: string | null;
+}
+
+export interface CompanyLinkApprovalData {
+  status: "approved" | "pending_approval";
+  extractedName: string;
+  candidates: CompanyLinkCandidate[];
+  selectedCompanyId?: string;
+  createNew?: boolean;
+  allowCreateNew?: boolean;
+  wikidataNode?: string;
+  message?: string;
+  metadata?: {
+    source?: string;
+    comment?: string;
+  };
+}
+
+function companyLinkApprovalFromApprovalObject(
+  approval: Record<string, unknown>,
+): CompanyLinkApprovalData | null {
+  const newValue = (approval.data as any)?.newValue;
+  const extractedName =
+    typeof newValue?.extractedName === "string" ? newValue.extractedName : "";
+  const candidates = Array.isArray(newValue?.candidates)
+    ? (newValue.candidates as CompanyLinkCandidate[])
+    : [];
+
+  if (!extractedName || candidates.length === 0) {
+    return null;
+  }
+
+  const allowCreateNew = newValue?.allowCreateNew !== false;
+  const wikidataNode =
+    typeof newValue?.wikidataNode === "string"
+      ? newValue.wikidataNode
+      : undefined;
+
+  const metadata =
+    (approval.metadata as CompanyLinkApprovalData["metadata"]) || {};
+
+  if (approval.approved === false) {
+    return {
+      status: "pending_approval",
+      extractedName,
+      candidates,
+      allowCreateNew,
+      wikidataNode,
+      message: approvalSummary(approval),
+      metadata,
+    };
+  }
+
+  if (approval.approved === true) {
+    return {
+      status: "approved",
+      extractedName,
+      candidates,
+      allowCreateNew,
+      wikidataNode,
+      selectedCompanyId:
+        typeof newValue?.companyId === "string"
+          ? newValue.companyId
+          : undefined,
+      createNew: Boolean(newValue?.createNew),
+      message: approvalSummary(approval),
+      metadata,
+    };
+  }
+
+  return null;
+}
+
+export function getCompanyLinkApprovalData(
+  job?: QueueJob,
+  effectiveJob?: any,
+): CompanyLinkApprovalData | null {
+  const jobData = effectiveJob?.data || job?.data;
+  const approval = jobData?.approval;
+
+  if (
+    approval &&
+    typeof approval === "object" &&
+    approval.type === "companyLink"
+  ) {
+    return companyLinkApprovalFromApprovalObject(
+      approval as Record<string, unknown>,
+    );
+  }
+
+  return null;
+}
+
+export function hasActionableStructuredApprovalUi(
+  job?: QueueJob,
+  effectiveJob?: QueueJob,
+): boolean {
+  const companyLink = getCompanyLinkApprovalData(job, effectiveJob);
+  const wikidata = getWikidataApprovalData(job, effectiveJob);
+  return (
+    companyLink?.status === "pending_approval" ||
+    wikidata?.status === "pending_approval"
+  );
 }

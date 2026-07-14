@@ -93,15 +93,19 @@ export const searchCompanyReports = async ({
     return [];
   }
 
-  const defaultCountry = (country ?? "").trim() || undefined;
+  const trimmedCountry = (country ?? "").trim();
 
-  const searchQueries: crawlerSearchQuery[] = companies.map((company) => ({
-    name: company.name,
-    reportYear: company.reportYear,
-    country: (company.country ?? defaultCountry ?? "").trim() || undefined,
-    wikidataId: company.wikidataId,
-    companyUrl: company.companyUrl,
-  }));
+  const searchQueries: crawlerSearchQuery[] = companies.map((company) => {
+    const companyCountry =
+      (company.country ?? "").trim() || trimmedCountry || undefined;
+    return {
+      name: company.name,
+      reportYear: company.reportYear,
+      ...(companyCountry ? { country: companyCountry } : {}),
+      wikidataId: company.wikidataId,
+      companyUrl: company.companyUrl,
+    };
+  });
 
   let completed = 0;
   onProgress?.({

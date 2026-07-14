@@ -26,6 +26,11 @@ import {
 } from "../../lib/company-edit-utils";
 import { buildTagLabelBySlug } from "../../lib/editor-tag-and-payload-utils";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
+import {
+  leiFromIdentifiers,
+  wikidataFromIdentifiers,
+} from "../../lib/company-identifiers";
+import { CompanyIdentifiersList } from "./CompanyIdentifiersList";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 
 export function CompanyDetailTab({
@@ -53,8 +58,10 @@ export function CompanyDetailTab({
   const [descriptionSv, setDescriptionSv] = useState(() =>
     getDescriptionByLang(company, "SV"),
   );
-  const [wikidataId, setWikidataId] = useState(company.wikidataId ?? "");
-  const [lei, setLei] = useState(company.lei ?? "");
+  const [wikidataId, setWikidataId] = useState(
+    () => wikidataFromIdentifiers(company) ?? "",
+  );
+  const [lei, setLei] = useState(() => leiFromIdentifiers(company) ?? "");
   const [url, setUrl] = useState(company.url ?? "");
   const [internalComment, setInternalComment] = useState(
     company.internalComment ?? "",
@@ -86,8 +93,8 @@ export function CompanyDetailTab({
     setName(company.name ?? "");
     setDescriptionEn(getDescriptionByLang(company, "EN"));
     setDescriptionSv(getDescriptionByLang(company, "SV"));
-    setWikidataId(company.wikidataId ?? "");
-    setLei(company.lei ?? "");
+    setWikidataId(wikidataFromIdentifiers(company) ?? "");
+    setLei(leiFromIdentifiers(company) ?? "");
     setUrl(company.url ?? "");
     setInternalComment(company.internalComment ?? "");
     setSelectedTags(company.tags ?? []);
@@ -96,8 +103,7 @@ export function CompanyDetailTab({
   }, [
     company.id,
     company.name,
-    company.wikidataId,
-    company.lei,
+    company.identifiers,
     company.url,
     company.internalComment,
     company.tags,
@@ -216,7 +222,7 @@ export function CompanyDetailTab({
   const handleDeleteCompany = async () => {
     setDeletingCompany(true);
     try {
-      await deleteCompany(company.wikidataId);
+      await deleteCompany(company.id);
       toast.success(t("editor.singleCompanyView.deleteCompany.deleted"));
       setDeleteModalOpen(false);
       onDeleted?.();
@@ -321,7 +327,10 @@ export function CompanyDetailTab({
               <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide mb-3">
                 {t("editor.companyDetail.identifiers")}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {company.identifiers && company.identifiers.length > 0 ? (
+                <CompanyIdentifiersList identifiers={company.identifiers} />
+              ) : null}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-01 mb-1">
                     {t("editor.companyDetail.wikidataId")}
@@ -509,8 +518,9 @@ export function CompanyDetailTab({
         size="md"
         title={t("editor.singleCompanyView.deleteCompany.title")}
         description={t("editor.singleCompanyView.deleteCompany.description", {
-          name: company.name ?? company.wikidataId,
-          wikidataId: company.wikidataId,
+          name: company.name ?? company.id,
+          wikidataId:
+            wikidataFromIdentifiers(company) ?? t("common.placeholderDash"),
         })}
         footer={
           <>

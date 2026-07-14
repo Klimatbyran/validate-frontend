@@ -8,7 +8,10 @@ import type {
   SwimlaneCompany,
   SwimlaneYearData,
 } from "@/lib/types";
-import { getJobStatus as getJobStatusFromUtils } from "@/lib/workflow-utils";
+import {
+  getJobStatus as getJobStatusFromUtils,
+  isResolvableCompanyName,
+} from "@/lib/workflow-utils";
 
 /**
  * Convert CustomAPICompany array to SwimlaneCompany array
@@ -90,6 +93,14 @@ export function convertCompaniesToSwimlaneFormat(
             attempts: yearProcesses.length,
             fields: {},
             jobs: (process.jobs || []).map((job) => {
+              const rawJobCompany =
+                job.data?.companyName ?? job.data?.company ?? job.company;
+              const displayCompanyName = isResolvableCompanyName(rawJobCompany)
+                ? rawJobCompany!.trim()
+                : isResolvableCompanyName(companyName)
+                  ? companyName
+                  : (rawJobCompany ?? companyName);
+
               const convertedJob = {
                 ...job,
                 queueId: job.queue,
@@ -98,8 +109,9 @@ export function convertCompaniesToSwimlaneFormat(
                   (job as any)?.threadId ?? (job as any)?.processId ?? threadId,
                 data: {
                   ...job.data,
-                  company: companyName,
-                  companyName: companyName,
+                  company: displayCompanyName,
+                  companyName: displayCompanyName,
+                  waitingForCompanyName: job.data?.waitingForCompanyName,
                   year: year,
                   threadId:
                     (job as any)?.threadId ??

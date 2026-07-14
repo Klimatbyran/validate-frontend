@@ -5,7 +5,8 @@ export const OVERVIEW_YEAR_RANGE_START = 2020;
 export type OverviewViewMode =
   | "companyYears"
   | "registryReports"
-  | "prodToStage";
+  | "prodToStage"
+  | "coverage";
 
 export type OverviewStatusKind =
   | "ok"
@@ -74,6 +75,8 @@ export type OverviewRow = {
   companyReportId: string | null;
   tags: string[];
   registryEntry: RegistryEntry | null;
+  /** url → sourceUrl → s3Url for display in the overview table. */
+  reportDisplayUrl: string | null;
   runUrl: string | null;
   statuses: Partial<Record<OverviewStatusColumn, OverviewStatusDetail>>;
 };
@@ -89,10 +92,9 @@ export type OverviewFilters = {
 };
 
 export function defaultOverviewFilters(): OverviewFilters {
-  const currentYear = String(new Date().getFullYear());
   return {
     searchQuery: "",
-    reportYears: [currentYear],
+    reportYears: [],
     tagSlugs: [],
     statusFilters: [],
     missingRegistryOnly: false,
@@ -118,6 +120,7 @@ export function defaultFiltersForView(
   viewMode: OverviewViewMode,
 ): OverviewFilters {
   if (viewMode === "registryReports") return defaultRegistryOverviewFilters();
+  if (viewMode === "coverage") return defaultOverviewFilters();
   return defaultOverviewFilters();
 }
 
@@ -129,10 +132,9 @@ export type ProdToStageFilters = {
 };
 
 export function defaultProdToStageFilters(): ProdToStageFilters {
-  const currentYear = String(new Date().getFullYear());
   return {
     searchQuery: "",
-    reportYears: [currentYear],
+    reportYears: [],
     tagSlugs: [],
     runnableOnly: false,
   };
@@ -187,11 +189,9 @@ export type ProdToStageRow = {
 };
 
 export function overviewFiltersAreActive(filters: OverviewFilters): boolean {
-  const currentYear = String(new Date().getFullYear());
   return (
     Boolean(filters.searchQuery.trim()) ||
-    filters.reportYears.length !== 1 ||
-    filters.reportYears[0] !== currentYear ||
+    filters.reportYears.length > 0 ||
     filters.tagSlugs.length > 0 ||
     filters.statusFilters.length > 0 ||
     filters.missingRegistryOnly ||

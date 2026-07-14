@@ -22,6 +22,22 @@ export interface UpdateTagOptionBody {
   label?: string | null;
 }
 
+export interface ReportType {
+  id: string;
+  slug: string;
+  label: string | null;
+}
+
+export interface CreateReportTypeBody {
+  slug: string;
+  label?: string | null;
+}
+
+export interface UpdateReportTypeBody {
+  slug?: string;
+  label?: string | null;
+}
+
 export const WIKIDATA_ID_REGEX = /^Q\d+$/;
 
 export interface GarboCompanyListItem {
@@ -40,6 +56,7 @@ export interface GarboCompanyListItem {
   reportingPeriods?: GarboReportingPeriodSummary[];
   hasUnverifiedEmissions?: boolean;
   hasUnverifiedData?: boolean;
+  identifiers?: GarboCompanyIdentifier[];
 }
 
 export interface GarboRegistryReportSummary {
@@ -50,6 +67,8 @@ export interface GarboRegistryReportSummary {
   reportYear?: string | null;
   sha256?: string | null;
   wikidataId?: string | null;
+  reportTypeId?: string | null;
+  reportType?: ReportType | null;
 }
 
 export interface GarboCompanyReportSummary {
@@ -98,6 +117,21 @@ export type ReportingPeriodWritePayload = {
 export interface GarboMinimalMetadata {
   user?: { name?: string | null } | null;
   verifiedBy?: { name: string } | null;
+  source?: string | null;
+  comment?: string | null;
+}
+
+export type GarboCompanyIdentifierType =
+  | "WIKIDATA"
+  | "LEI"
+  | "ORG_NUMBER"
+  | "ISIN";
+
+export interface GarboCompanyIdentifier {
+  id: string;
+  type: GarboCompanyIdentifierType;
+  value: string;
+  metadata?: GarboMinimalMetadata | null;
 }
 
 export interface GarboFieldMetadata extends GarboMinimalMetadata {
@@ -161,6 +195,7 @@ export interface GarboCompanyDetail extends GarboCompanyListItem {
   logoUrl?: string | null;
   lei?: string | null;
   internalComment?: string | null;
+  identifiers?: GarboCompanyIdentifier[];
   descriptions?: Array<{ id?: string; language: string; text: string }>;
   industry?: { subIndustryCode?: string } | null;
   baseYear?: number | null;
