@@ -69,6 +69,26 @@ export const coverageYearDetailSchema = coverageYearSummarySchema.extend({
   prodReadyCount: z.number().default(0),
   noReportCount: z.number().default(0),
   entries: z.array(coverageEntrySchema),
+  filteredCount: z.number().optional(),
+  offset: z.number().optional(),
+  limit: z.number().optional(),
+  hasMore: z.boolean().optional(),
+  registryRefreshedAt: z.string().nullable().optional(),
+});
+
+export const coverageYearRegistryRefreshSchema = z.object({
+  listId: z.string(),
+  year: z.number(),
+  hasAnyReportCount: z.number(),
+  prodReadyCount: z.number(),
+  noReportCount: z.number(),
+  registryRefreshedAt: z.string(),
+});
+
+export const coverageYearNamesSchema = z.object({
+  listId: z.string(),
+  year: z.number(),
+  names: z.array(z.string()),
 });
 
 export const coverageListCollectionSchema = z.object({
@@ -83,6 +103,10 @@ export type CoverageListSummary = z.infer<typeof coverageListSummarySchema>;
 export type CoverageEntryStatus = z.infer<typeof coverageEntryStatusSchema>;
 export type CoverageEntry = z.infer<typeof coverageEntrySchema>;
 export type CoverageYearDetail = z.infer<typeof coverageYearDetailSchema>;
+export type CoverageYearNames = z.infer<typeof coverageYearNamesSchema>;
+export type CoverageYearRegistryRefresh = z.infer<
+  typeof coverageYearRegistryRefreshSchema
+>;
 export type CoverageCompanySearchHit = z.infer<
   typeof coverageCompanySearchHitSchema
 >;

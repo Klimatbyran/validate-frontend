@@ -1236,6 +1236,11 @@
       "latestCoverageCell": "{{year}}: {{percent}}% ({{matched}}/{{total}})",
       "entryFilterLabel": "Radfilter",
       "searchPlaceholder": "Sök namn eller matchningar…",
+      "filteredCount": "{{shown}} av {{total}}",
+      "loadMore": "Ladda fler",
+      "loadingMore": "Laddar…",
+      "refreshRegistry": "Uppdatera rapportstatus",
+      "registryRefreshedAt": "Rapportstatus uppdaterad {{time}}",
       "filters": {
         "all": "Alla",
         "matched": "Matchade",
@@ -1296,7 +1301,10 @@
         "matched": "Matchade",
         "missing": "Saknas",
         "ambiguous": "Tvetydiga",
-        "coverage": "Täckning"
+        "coverage": "Täckning",
+        "inRegistry": "I register",
+        "inProd": "I prod",
+        "missingReports": "Saknar rapporter"
       }
     },
     "fetchError": "Kunde inte ladda översiktsdata.",

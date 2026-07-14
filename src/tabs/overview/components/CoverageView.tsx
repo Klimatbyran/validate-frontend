@@ -10,6 +10,7 @@ import {
   useCoverageLists,
   useCoverageYearDetail,
 } from "@/tabs/overview/hooks/useCoverageLists";
+import { fetchCoverageYearNames } from "@/tabs/overview/lib/coverage-api";
 import { CoverageListTable } from "./CoverageListTable";
 import { CoverageYearDetailView } from "./CoverageYearDetail";
 import { CoverageYearFormDialog } from "./CoverageYearFormDialog";
@@ -268,21 +269,44 @@ export function CoverageView({ onViewRegistryReports }: CoverageViewProps) {
                 </Callout>
               ) : yearDetail.detail ? (
                 <CoverageYearDetailView
+                  listId={selectedList.id}
+                  year={selectedYear}
                   detail={yearDetail.detail}
+                  filter={yearDetail.filter}
+                  onFilterChange={yearDetail.setFilter}
+                  search={yearDetail.search}
+                  onSearchChange={yearDetail.setSearch}
+                  hasMore={yearDetail.detail.hasMore ?? false}
+                  isLoadingMore={yearDetail.isLoadingMore}
+                  onLoadMore={() => void yearDetail.loadMore()}
+                  isRefreshingRegistry={yearDetail.isRefreshingRegistry}
+                  onRefreshRegistry={() => void yearDetail.refreshRegistry()}
                   onViewRegistryReports={onViewRegistryReports}
                   onRegistryReportSaved={(entryId, saved) => {
                     yearDetail.addEntryRegistryReport(entryId, saved);
                   }}
-                  onEdit={() =>
-                    setDialog({
-                      kind: "editYear",
-                      listId: selectedList.id,
-                      year: selectedYear,
-                      namesText: yearDetail
-                        .detail!.entries.map((e) => e.name)
-                        .join("\n"),
-                    })
-                  }
+                  onEdit={() => {
+                    void (async () => {
+                      try {
+                        const names = await fetchCoverageYearNames(
+                          selectedList.id,
+                          selectedYear,
+                        );
+                        setDialog({
+                          kind: "editYear",
+                          listId: selectedList.id,
+                          year: selectedYear,
+                          namesText: names.names.join("\n"),
+                        });
+                      } catch (error) {
+                        toast.error(
+                          error instanceof Error
+                            ? error.message
+                            : t("overview.coverage.errorTitle"),
+                        );
+                      }
+                    })();
+                  }}
                   onEditEntry={setMatchEntry}
                 />
               ) : null}
