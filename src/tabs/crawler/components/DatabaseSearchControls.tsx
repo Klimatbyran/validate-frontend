@@ -9,6 +9,8 @@ interface DatabaseSearchControlsProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
   onSearch: () => void;
+  onAutoSearch?: () => void;
+  isAutoSearchRunning?: boolean;
   isSearchDisabled: boolean;
   selectedReports: SelectedReport[];
   onExport: () => void;
@@ -27,6 +29,8 @@ interface DatabaseSearchControlsProps {
 const DatabaseSearchControls = ({
   onReportYearChange,
   onSearch,
+  onAutoSearch,
+  isAutoSearchRunning,
   isSearchDisabled,
   selectedReports,
   onExport,
@@ -112,22 +116,29 @@ const DatabaseSearchControls = ({
       <h3 className="text-gray-02">
         {t("crawler.databaseControlsDescription")}
       </h3>
-      <div className="flex items-center">
-        <input
-          required
-          onChange={onReportYearChange}
-          value={searchYear}
-          placeholder="Ex. 2025"
-          className="bg-gray-03/20 w-48 border mr-4 p-2 flex items-center justify-center border-gray-03 rounded-lg text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
-        />
-        <ControlsBase
-          onSearch={onSearch}
-          onExport={onExport}
-          isSearchDisabled={isSearchDisabled}
-          selectedReports={selectedReports}
-          handleAddToRegistryClick={handleAddToRegistryClick}
-          onRunSelectedReports={onRunSelectedReports}
-        />
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center flex-wrap gap-4">
+          <input
+            required
+            onChange={onReportYearChange}
+            value={searchYear}
+            placeholder="Ex. 2025"
+            className="bg-gray-03/20 w-48 border p-2 flex items-center justify-center border-gray-03 rounded-lg text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
+          />
+          <ControlsBase
+            onSearch={onSearch}
+            onAutoSearch={onAutoSearch}
+            isAutoSearchRunning={isAutoSearchRunning}
+            onExport={onExport}
+            isSearchDisabled={isSearchDisabled}
+            selectedReports={selectedReports}
+            handleAddToRegistryClick={handleAddToRegistryClick}
+            onRunSelectedReports={onRunSelectedReports}
+          />
+        </div>
+        <p className="text-xs text-gray-02 max-w-[750px]">
+          {t("crawler.autoSearchDisclaimer")}
+        </p>
       </div>
     </>
   );

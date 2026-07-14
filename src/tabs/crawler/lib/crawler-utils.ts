@@ -1,19 +1,71 @@
 import type {
   CompanyReport,
   LockedReport,
+  Report,
   crawlerSearchQuery,
 } from "./crawler-types";
 import { updateCompanyReports } from "./crawler-api";
 import { reportsUrl } from "./crawler-api";
+import { mapWithConcurrency } from "./map-with-concurrency";
+
+/** Parallel crawl cap — tune via VITE_AUTO_SEARCH_CRAWL_CONCURRENCY (default 6). */
+export const AUTO_SEARCH_CRAWL_CONCURRENCY = Math.max(
+  1,
+  Math.min(12, Number(import.meta.env.VITE_AUTO_SEARCH_CRAWL_CONCURRENCY ?? 6)),
+);
+const CRAWL_CONCURRENCY = AUTO_SEARCH_CRAWL_CONCURRENCY;
 
 export interface ReportWithPreview extends Report {
   previewUrl: string;
 }
 
-interface SearchCompanyReportsParams {
-  companyNames: string[];
+export type AutoSearchCompanyInput = {
+  name: string;
   reportYear: string;
   country?: string;
+  wikidataId?: string;
+  companyUrl?: string;
+};
+
+export type CrawlProgress = {
+  /** During crawl: number finished (not queue position). During analyze: company index. */
+  companyIndex: number;
+  companyTotal: number;
+  companyName: string;
+  /** Active parallel crawl workers (crawl phase only). */
+  parallel?: number;
+};
+
+interface SearchCompanyReportsParams {
+  companies: AutoSearchCompanyInput[];
+  country?: string;
+  onProgress?: (progress: CrawlProgress) => void;
+}
+
+function normalizeCompanyReport(
+  item: CompanyReport | undefined,
+  fallback: crawlerSearchQuery,
+): CompanyReport {
+  return {
+    companyName: item?.companyName || fallback.name || "Unknown",
+    reportYear: item?.reportYear || fallback.reportYear || "Unknown",
+    results: item?.results ?? [],
+    discoverySource: item?.discoverySource,
+    listingPageUrl: item?.listingPageUrl,
+  };
+}
+
+async function crawlSingleCompany(
+  query: crawlerSearchQuery,
+): Promise<CompanyReport> {
+  try {
+    const data = await updateCompanyReports(query);
+    const row = Array.isArray(data) ? data[0] : data;
+    return normalizeCompanyReport(row as CompanyReport | undefined, query);
+  } catch (error) {
+    console.error(`Crawl failed for ${query.name}:`, error);
+    return normalizeCompanyReport(undefined, query);
+  }
 }
 
 export const generateReportPreviews = (
@@ -26,35 +78,69 @@ export const generateReportPreviews = (
 };
 
 /**
- * Fetches company reports for given names and year.
+ * Fetches company reports for given companies and year.
  * Returns an array of CompanyReport objects.
  */
 export const searchCompanyReports = async ({
-  companyNames,
-  reportYear,
+  companies,
   country,
+  onProgress,
 }: SearchCompanyReportsParams): Promise<CompanyReport[]> => {
-  if (!companyNames.length || !reportYear) {
+  if (!companies.length) {
     return [];
   }
 
   const trimmedCountry = (country ?? "").trim();
-  const searchQueries: crawlerSearchQuery[] = companyNames.map((name) => ({
-    name,
-    reportYear,
-    ...(trimmedCountry ? { country: trimmedCountry } : {}),
-  }));
 
-  const data: CompanyReport[][] = await Promise.all(
-    searchQueries.map((query) => updateCompanyReports(query)),
-  );
+  const searchQueries: crawlerSearchQuery[] = companies.map((company) => {
+    const companyCountry =
+      (company.country ?? "").trim() || trimmedCountry || undefined;
+    return {
+      name: company.name,
+      reportYear: company.reportYear,
+      ...(companyCountry ? { country: companyCountry } : {}),
+      wikidataId: company.wikidataId,
+      companyUrl: company.companyUrl,
+    };
+  });
 
-  return data.flat().map((item) => ({
-    companyName: item.companyName || "Unknown",
-    reportYear: item.reportYear || "Unknown",
-    results: item.results ?? [],
-  }));
+  let completed = 0;
+  onProgress?.({
+    companyIndex: 0,
+    companyTotal: searchQueries.length,
+    companyName: "",
+    parallel: CRAWL_CONCURRENCY,
+  });
+
+  return mapWithConcurrency(searchQueries, CRAWL_CONCURRENCY, async (query) => {
+    const result = await crawlSingleCompany(query);
+    completed += 1;
+    onProgress?.({
+      companyIndex: completed,
+      companyTotal: searchQueries.length,
+      companyName: query.name,
+      parallel: CRAWL_CONCURRENCY,
+    });
+    return result;
+  });
 };
+
+/** @deprecated Prefer searchCompanyReports with full company objects. */
+export const searchCompanyReportsByNames = async ({
+  companyNames,
+  reportYear,
+  country,
+  onProgress,
+}: {
+  companyNames: string[];
+  reportYear: string;
+  country?: string;
+  onProgress?: (progress: CrawlProgress) => void;
+}): Promise<CompanyReport[]> =>
+  searchCompanyReports({
+    companies: companyNames.map((name) => ({ name, reportYear, country })),
+    onProgress,
+  });
 
 /**
  * Writes crawled reports to CSV file and triggers download.

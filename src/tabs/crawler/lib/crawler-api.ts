@@ -1,12 +1,76 @@
 import { getUnearthApiBaseUrl } from "@/config/api-env";
 import type {
   crawlerSearchQuery,
+  LlmSelectionCandidate,
+  LlmSelectionResult,
+  PdfTextResponse,
+  PrefilterReportResult,
   SaveReportsListResponse,
   SelectedReport,
 } from "./crawler-types";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 
 /** Crawler uses Unearth API. Base follows VITE_UNEARTH_TARGET / VITE_API_MODE. */
+
+const TRANSIENT_HTTP_STATUSES = new Set([500, 502, 503, 504]);
+const TRANSIENT_FETCH_ATTEMPTS = 4;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function transientRetryDelayMs(attempt: number): number {
+  return Math.min(8000, 500 * 2 ** (attempt - 1));
+}
+
+/** Retry when Vite proxy or API dev restart drops in-flight requests (ECONNREFUSED → 500). */
+async function fetchWithTransientRetry(
+  url: string,
+  init?: RequestInit,
+): Promise<Response | null> {
+  let lastResponse: Response | null = null;
+  for (let attempt = 1; attempt <= TRANSIENT_FETCH_ATTEMPTS; attempt++) {
+    try {
+      const response = await fetch(url, init);
+      lastResponse = response;
+      if (
+        response.ok ||
+        !TRANSIENT_HTTP_STATUSES.has(response.status) ||
+        attempt === TRANSIENT_FETCH_ATTEMPTS
+      ) {
+        return response;
+      }
+    } catch {
+      if (attempt === TRANSIENT_FETCH_ATTEMPTS) return null;
+    }
+    await sleep(transientRetryDelayMs(attempt));
+  }
+  return lastResponse;
+}
+
+async function authFetchWithTransientRetry(
+  url: string,
+  init?: RequestInit,
+): Promise<Response | null> {
+  let lastResponse: Response | null = null;
+  for (let attempt = 1; attempt <= TRANSIENT_FETCH_ATTEMPTS; attempt++) {
+    try {
+      const response = await garboAuthFetch(url, init);
+      lastResponse = response;
+      if (
+        response.ok ||
+        !TRANSIENT_HTTP_STATUSES.has(response.status) ||
+        attempt === TRANSIENT_FETCH_ATTEMPTS
+      ) {
+        return response;
+      }
+    } catch {
+      if (attempt === TRANSIENT_FETCH_ATTEMPTS) return null;
+    }
+    await sleep(transientRetryDelayMs(attempt));
+  }
+  return lastResponse;
+}
 
 export function reportsUrl(path: string): string {
   const base = getUnearthApiBaseUrl();
@@ -60,6 +124,81 @@ export const fetchCompanyNamesList = async () => {
   }
 };
 
+export async function fetchPdfText(
+  pdfUrl: string,
+  maxPages = 1,
+): Promise<PdfTextResponse | null> {
+  const params = new URLSearchParams({
+    pdfUrl,
+    maxPages: String(maxPages),
+  });
+  const url = `${reportsUrl("internal-companies/reports/pdf-text")}?${params}`;
+  try {
+    const response = await fetchWithTransientRetry(url);
+    if (!response?.ok) return null;
+    return (await response.json()) as PdfTextResponse;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fast LLM triage on crawl metadata — skip obvious non-matches before PDF download.
+ */
+export async function prefilterReportCandidates(input: {
+  companyName: string;
+  reportYear: string;
+  candidates: Pick<LlmSelectionCandidate, "url" | "title" | "description">[];
+}): Promise<PrefilterReportResult | null> {
+  if (input.candidates.length === 0) return null;
+  try {
+    const response = await authFetchWithTransientRetry(
+      reportsUrl("internal-companies/reports/prefilter-reports"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(input),
+      },
+    );
+    if (!response?.ok) return null;
+    return (await response.json()) as PrefilterReportResult;
+  } catch (error) {
+    console.error("LLM report prefilter failed:", error);
+    return null;
+  }
+}
+
+/**
+ * Ask the API's LLM to pick the correct company/year report from candidates.
+ * Best-effort: returns null on any failure so callers skip auto-save.
+ */
+export async function selectReportWithLlm(input: {
+  companyName: string;
+  reportYear: string;
+  candidates: LlmSelectionCandidate[];
+}): Promise<LlmSelectionResult | null> {
+  if (input.candidates.length === 0) return null;
+  try {
+    const response = await authFetchWithTransientRetry(
+      reportsUrl("internal-companies/reports/select-report"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(input),
+      },
+    );
+    if (!response?.ok) return null;
+    return (await response.json()) as LlmSelectionResult;
+  } catch (error) {
+    console.error("LLM report selection failed:", error);
+    return null;
+  }
+}
+
 export const saveToRegistry = async (
   reports: SelectedReport[],
 ): Promise<SaveReportsListResponse> => {
@@ -84,7 +223,11 @@ export const saveToRegistry = async (
     }
 
     if (!response.ok) {
-      if (response.status === 409 && responseBody) {
+      if (
+        (response.status === 409 || response.status === 500) &&
+        responseBody &&
+        "failed" in responseBody
+      ) {
         return responseBody as SaveReportsListResponse;
       }
       const errorMsg = responseBody?.message
