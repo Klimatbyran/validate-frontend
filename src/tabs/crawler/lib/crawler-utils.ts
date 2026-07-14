@@ -11,10 +11,7 @@ import { mapWithConcurrency } from "./map-with-concurrency";
 /** Parallel crawl cap — tune via VITE_AUTO_SEARCH_CRAWL_CONCURRENCY (default 6). */
 export const AUTO_SEARCH_CRAWL_CONCURRENCY = Math.max(
   1,
-  Math.min(
-    12,
-    Number(import.meta.env.VITE_AUTO_SEARCH_CRAWL_CONCURRENCY ?? 6),
-  ),
+  Math.min(12, Number(import.meta.env.VITE_AUTO_SEARCH_CRAWL_CONCURRENCY ?? 6)),
 );
 const CRAWL_CONCURRENCY = AUTO_SEARCH_CRAWL_CONCURRENCY;
 
@@ -115,21 +112,17 @@ export const searchCompanyReports = async ({
     parallel: CRAWL_CONCURRENCY,
   });
 
-  return mapWithConcurrency(
-    searchQueries,
-    CRAWL_CONCURRENCY,
-    async (query) => {
-      const result = await crawlSingleCompany(query);
-      completed += 1;
-      onProgress?.({
-        companyIndex: completed,
-        companyTotal: searchQueries.length,
-        companyName: query.name,
-        parallel: CRAWL_CONCURRENCY,
-      });
-      return result;
-    },
-  );
+  return mapWithConcurrency(searchQueries, CRAWL_CONCURRENCY, async (query) => {
+    const result = await crawlSingleCompany(query);
+    completed += 1;
+    onProgress?.({
+      companyIndex: completed,
+      companyTotal: searchQueries.length,
+      companyName: query.name,
+      parallel: CRAWL_CONCURRENCY,
+    });
+    return result;
+  });
 };
 
 /** @deprecated Prefer searchCompanyReports with full company objects. */

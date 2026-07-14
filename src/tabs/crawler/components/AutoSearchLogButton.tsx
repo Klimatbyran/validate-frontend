@@ -3,7 +3,10 @@ import { useMemo, useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import type { AutoSearchStats } from "../lib/crawler-types";
-import { autoSearchLogToJson, buildAutoSearchLog } from "../lib/auto-search-log";
+import {
+  autoSearchLogToJson,
+  buildAutoSearchLog,
+} from "../lib/auto-search-log";
 
 /**
  * Copy/download the diagnostic log of companies whose report was not saved in
@@ -24,7 +27,10 @@ export default function AutoSearchLogButton({
 
   const { json, notFoundCount } = useMemo(() => {
     const log = buildAutoSearchLog(stats, reportYear);
-    return { json: autoSearchLogToJson(log), notFoundCount: log.entries.length };
+    return {
+      json: autoSearchLogToJson(log),
+      notFoundCount: log.entries.length,
+    };
   }, [stats, reportYear]);
 
   if (notFoundCount === 0) return null;

@@ -87,12 +87,20 @@ function StepRow({
   return (
     <li
       className={`text-sm flex items-center gap-2 ${
-        active ? "text-gray-01 font-medium" : done ? "text-gray-02" : "text-gray-02/60"
+        active
+          ? "text-gray-01 font-medium"
+          : done
+            ? "text-gray-02"
+            : "text-gray-02/60"
       }`}
     >
       <span
         className={`w-2 h-2 rounded-full shrink-0 ${
-          active ? "bg-orange-03 animate-pulse" : done ? "bg-green-500" : "bg-gray-03"
+          active
+            ? "bg-orange-03 animate-pulse"
+            : done
+              ? "bg-green-500"
+              : "bg-gray-03"
         }`}
       />
       {label}
@@ -221,23 +229,33 @@ export default function AutoSearchModal({
                   </dd>
                 </>
               )}
-              <dt className="text-gray-02">{t("crawler.autoSearchStatsCompanies")}</dt>
+              <dt className="text-gray-02">
+                {t("crawler.autoSearchStatsCompanies")}
+              </dt>
               <dd className="text-gray-01 font-medium">
                 {stats.companiesRequested}
               </dd>
-              <dt className="text-gray-02">{t("crawler.autoSearchStatsWithResults")}</dt>
+              <dt className="text-gray-02">
+                {t("crawler.autoSearchStatsWithResults")}
+              </dt>
               <dd className="text-gray-01 font-medium">
                 {stats.companiesWithResults}
               </dd>
-              <dt className="text-gray-02">{t("crawler.autoSearchStatsFetched")}</dt>
+              <dt className="text-gray-02">
+                {t("crawler.autoSearchStatsFetched")}
+              </dt>
               <dd className="text-gray-01 font-medium">
                 {stats.candidatesFetched}
               </dd>
-              <dt className="text-gray-02">{t("crawler.autoSearchStatsAnalyzed")}</dt>
+              <dt className="text-gray-02">
+                {t("crawler.autoSearchStatsAnalyzed")}
+              </dt>
               <dd className="text-gray-01 font-medium">
                 {stats.candidatesAnalyzed}
               </dd>
-              <dt className="text-gray-02">{t("crawler.autoSearchStatsAdded")}</dt>
+              <dt className="text-gray-02">
+                {t("crawler.autoSearchStatsAdded")}
+              </dt>
               <dd className="text-gray-01 font-medium">{stats.added.length}</dd>
             </dl>
 

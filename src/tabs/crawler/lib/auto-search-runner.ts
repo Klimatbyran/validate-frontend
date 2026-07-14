@@ -3,10 +3,7 @@ import type {
   LlmSelectionResult,
   SelectedReport,
 } from "./crawler-types";
-import {
-  fetchPdfText,
-  selectReportWithLlm,
-} from "./crawler-api";
+import { fetchPdfText, selectReportWithLlm } from "./crawler-api";
 import {
   pickHeuristicReportCandidate,
   pickMetadataOnlyReportCandidate,
@@ -18,10 +15,7 @@ const PDF_TEXT_MAX_PAGES = 1;
 const PDF_COVER_TEXT_CHARS = 1000;
 const CANDIDATE_CONCURRENCY = Math.max(
   1,
-  Math.min(
-    6,
-    Number(import.meta.env.VITE_AUTO_SEARCH_PDF_CONCURRENCY ?? 6),
-  ),
+  Math.min(6, Number(import.meta.env.VITE_AUTO_SEARCH_PDF_CONCURRENCY ?? 6)),
 );
 /** Only auto-save when the LLM is at least this confident (0..1). */
 export const LLM_MIN_CONFIDENCE = 0.5;
@@ -101,9 +95,8 @@ async function mapWithConcurrency<T, R>(
     }
   }
 
-  const workers = Array.from(
-    { length: Math.min(limit, items.length) },
-    () => worker(),
+  const workers = Array.from({ length: Math.min(limit, items.length) }, () =>
+    worker(),
   );
   await Promise.all(workers);
   return results;
@@ -113,7 +106,10 @@ export async function pickBestReportForCompany(
   companyReport: CompanyReport,
   reportYear: string,
   wikidataId?: string,
-  onCandidateProgress?: (candidateIndex: number, candidateTotal: number) => void,
+  onCandidateProgress?: (
+    candidateIndex: number,
+    candidateTotal: number,
+  ) => void,
 ): Promise<CompanyAutoSearchRunResult> {
   const candidateSources = companyReport.results
     .map((r) => ({
@@ -173,7 +169,7 @@ export async function pickBestReportForCompany(
     return extracted;
   }
 
-  let extracted = await extractPdfCandidates(toAnalyze, onCandidateProgress);
+  const extracted = await extractPdfCandidates(toAnalyze, onCandidateProgress);
 
   const allCandidates: AnalyzedCandidate[] = extracted.map((c) => ({
     url: c.url,
@@ -250,7 +246,10 @@ export async function pickBestReportForCompany(
     }
 
     return {
-      result: { kind: "analyze_failed", companyName: companyReport.companyName },
+      result: {
+        kind: "analyze_failed",
+        companyName: companyReport.companyName,
+      },
       candidatesAnalyzed: 0,
       candidates: candidateSources.map((c) => ({
         url: c.url,

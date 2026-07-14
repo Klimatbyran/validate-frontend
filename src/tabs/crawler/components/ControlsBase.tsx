@@ -1,5 +1,11 @@
 import { Button } from "@/ui/button";
-import { BookDownIcon, PlayCircle, WandIcon, Heart, Sparkles } from "lucide-react";
+import {
+  BookDownIcon,
+  PlayCircle,
+  WandIcon,
+  Heart,
+  Sparkles,
+} from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { SelectedReport } from "../lib/crawler-types";
 

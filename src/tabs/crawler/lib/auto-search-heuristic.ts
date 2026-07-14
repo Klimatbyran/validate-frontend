@@ -20,7 +20,10 @@ export function isGovernanceReportUrl(url: string): boolean {
 function companyTokens(companyName: string): string[] {
   return companyName
     .toLowerCase()
-    .replace(/\b(as|asa|ab|group|holding|holdings|inc|ltd|plc|bank|publ)\b\.?/g, " ")
+    .replace(
+      /\b(as|asa|ab|group|holding|holdings|inc|ltd|plc|bank|publ)\b\.?/g,
+      " ",
+    )
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter((token) => token.length > 2);
@@ -50,16 +53,18 @@ function adjacentYearPenalty(haystack: string, reportYear: string): number {
       const prev = String(year - 1);
       const next = String(year + 1);
       if (
-        new RegExp(`(?:\\b|[-_/])${prev}(?:\\b|[-_./]|\\.(?:pdf|zip)|$)`, "i").test(
-          haystack,
-        )
+        new RegExp(
+          `(?:\\b|[-_/])${prev}(?:\\b|[-_./]|\\.(?:pdf|zip)|$)`,
+          "i",
+        ).test(haystack)
       ) {
         return -45;
       }
       if (
-        new RegExp(`(?:\\b|[-_/])${next}(?:\\b|[-_./]|\\.(?:pdf|zip)|$)`, "i").test(
-          haystack,
-        )
+        new RegExp(
+          `(?:\\b|[-_/])${next}(?:\\b|[-_./]|\\.(?:pdf|zip)|$)`,
+          "i",
+        ).test(haystack)
       ) {
         return -45;
       }
@@ -187,7 +192,14 @@ export function scoreExtractedReportCandidate(input: {
     score += 20;
   }
 
-  if (!urlMatchesCompany(input.url, input.companyName, input.title, input.description)) {
+  if (
+    !urlMatchesCompany(
+      input.url,
+      input.companyName,
+      input.title,
+      input.description,
+    )
+  ) {
     score -= 120;
   }
 

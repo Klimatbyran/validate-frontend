@@ -5,7 +5,12 @@ import { RunReportsModal } from "@/components/RunReportsModal";
 import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
 import type { RunReportListItem } from "@/lib/run-reports-types";
 import { ViewModePills } from "@/ui/view-mode-pills";
-import { searchCompanyReports, searchCompanyReportsByNames, type CrawlProgress, AUTO_SEARCH_CRAWL_CONCURRENCY } from "./lib/crawler-utils";
+import {
+  searchCompanyReports,
+  searchCompanyReportsByNames,
+  type CrawlProgress,
+  AUTO_SEARCH_CRAWL_CONCURRENCY,
+} from "./lib/crawler-utils";
 import type { AutoSearchRunParams } from "./hooks/useAutoSearch";
 import { Loader2 } from "lucide-react";
 import type {
@@ -60,7 +65,9 @@ export function CrawlerTab() {
     CompanySelection[]
   >([]);
   const [isLoading, setIsLoading] = useState<boolean | null>(null);
-  const [crawlProgress, setCrawlProgress] = useState<CrawlProgress | null>(null);
+  const [crawlProgress, setCrawlProgress] = useState<CrawlProgress | null>(
+    null,
+  );
   const [registryResponse, setRegistryResponse] =
     useState<SaveReportsListResponse | null>(null);
 
@@ -301,7 +308,9 @@ export function CrawlerTab() {
             .map((c) => [c.name, c.wikidataId]),
         ),
       });
-      const withMatches = checkResults.filter((item) => item.matches.length > 0);
+      const withMatches = checkResults.filter(
+        (item) => item.matches.length > 0,
+      );
 
       if (withMatches.length > 0) {
         setPendingAutoSearchParams(searchParams);
@@ -472,7 +481,9 @@ export function CrawlerTab() {
                 onCountryChange={handleCountryInputChange}
                 onSearch={handleManualSearchClick}
                 onAutoSearch={handleAutoSearchClick}
-                isAutoSearchRunning={isAutoSearchRunning || isRegistryCheckLoading}
+                isAutoSearchRunning={
+                  isAutoSearchRunning || isRegistryCheckLoading
+                }
                 onExport={handleExportClick}
                 isSearchDisabled={!companyNameInput || !reportYearInput}
                 selectedReports={selectedReports}
@@ -493,7 +504,9 @@ export function CrawlerTab() {
                 onReportYearChange={handleReportYearInputChange}
                 onSearch={handleDatabaseSearchClick}
                 onAutoSearch={handleAutoSearchClick}
-                isAutoSearchRunning={isAutoSearchRunning || isRegistryCheckLoading}
+                isAutoSearchRunning={
+                  isAutoSearchRunning || isRegistryCheckLoading
+                }
                 isSearchDisabled={!selectedCompanies.length || !reportYearInput}
                 selectedReports={selectedReports}
                 onExport={handleExportClick}
@@ -570,7 +583,8 @@ export function CrawlerTab() {
                     ? t("crawler.crawlProgressStarting", {
                         companyTotal: crawlProgress.companyTotal,
                         parallel:
-                          crawlProgress.parallel ?? AUTO_SEARCH_CRAWL_CONCURRENCY,
+                          crawlProgress.parallel ??
+                          AUTO_SEARCH_CRAWL_CONCURRENCY,
                       })
                     : t("crawler.crawlProgress", {
                         company: crawlProgress.companyName,

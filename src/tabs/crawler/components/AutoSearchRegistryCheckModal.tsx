@@ -22,12 +22,11 @@ interface AutoSearchRegistryCheckModalProps {
   onCancel: () => void;
 }
 
-function reportHref(match: AutoSearchRegistryMatch["matches"][number]): string | null {
+function reportHref(
+  match: AutoSearchRegistryMatch["matches"][number],
+): string | null {
   return (
-    match.sourceUrl?.trim() ||
-    match.s3Url?.trim() ||
-    match.url?.trim() ||
-    null
+    match.sourceUrl?.trim() || match.s3Url?.trim() || match.url?.trim() || null
   );
 }
 

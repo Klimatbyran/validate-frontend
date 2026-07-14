@@ -87,9 +87,11 @@ function CompanyLlmDetail({ detail }: { detail: AutoSearchCompanyDetail }) {
               {detail.llm.detectedYear && (
                 <span className="text-gray-02/80">
                   {" "}
-                  ({t("crawler.autoSearchLlmDetectedYear", {
+                  (
+                  {t("crawler.autoSearchLlmDetectedYear", {
                     year: detail.llm.detectedYear,
-                  })})
+                  })}
+                  )
                 </span>
               )}
             </li>

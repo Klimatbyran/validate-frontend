@@ -65,7 +65,11 @@ export function fuzzyCompanyNamesMatch(
   // Distinctive single-name variants match ("Handelsbanken" vs "Svenska
   // Handelsbanken AB"), but only for long names — a short shared token like
   // "Aker" also names distinct sibling companies (Aker BP, Aker Solutions).
-  if (leftTokens.length === 1 && leftTokens[0]!.length >= 6 && leftMatched === 1) {
+  if (
+    leftTokens.length === 1 &&
+    leftTokens[0]!.length >= 6 &&
+    leftMatched === 1
+  ) {
     return true;
   }
   if (
@@ -133,7 +137,11 @@ function mergeRegistryMatches(
 ): void {
   for (const row of rows) {
     if (
-      registryEntryMatchesAutoSearchCompany(row, searchedCompanyName, wikidataId)
+      registryEntryMatchesAutoSearchCompany(
+        row,
+        searchedCompanyName,
+        wikidataId,
+      )
     ) {
       target.set(row.id ?? row.url, row);
     }
@@ -197,13 +205,11 @@ export async function findRegistryMatchesForAutoSearch(input: {
   return results;
 }
 
-export async function reportAlreadyInRegistry(
-  report: {
-    companyName: string;
-    reportYear: string;
-    wikidataId?: string;
-  },
-): Promise<boolean> {
+export async function reportAlreadyInRegistry(report: {
+  companyName: string;
+  reportYear: string;
+  wikidataId?: string;
+}): Promise<boolean> {
   const matches = await findRegistryMatchesForCompany(
     report.companyName,
     report.reportYear,

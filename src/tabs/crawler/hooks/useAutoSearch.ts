@@ -306,10 +306,7 @@ export function useAutoSearch() {
 
       resultStats.failed = resultStats.failed.filter(
         (f) =>
-          !(
-            f.error === "duplicate" &&
-            f.message?.includes("company and year")
-          ),
+          !(f.error === "duplicate" && f.message?.includes("company and year")),
       );
 
       for (const detail of resultStats.companyDetails) {

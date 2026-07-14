@@ -22,7 +22,11 @@ export interface CompanyReport {
   reportYear: string;
   results: Report[];
   wikidataId?: string;
-  discoverySource?: "company_site" | "web_search" | "filing_feed" | "firecrawl_search";
+  discoverySource?:
+    | "company_site"
+    | "web_search"
+    | "filing_feed"
+    | "firecrawl_search";
   listingPageUrl?: string;
 }
 
@@ -127,7 +131,11 @@ export type AutoSearchCompanyDetail = {
     | "llm_failed"
     | "failed"
     | "already_in_registry";
-  discoverySource?: "company_site" | "web_search" | "filing_feed" | "firecrawl_search";
+  discoverySource?:
+    | "company_site"
+    | "web_search"
+    | "filing_feed"
+    | "firecrawl_search";
   listingPageUrl?: string;
   candidates: AutoSearchCandidateDetail[];
   prefilter?: PrefilterReportResult;

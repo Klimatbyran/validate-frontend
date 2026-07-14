@@ -1,11 +1,14 @@
-import type {
-  AutoSearchCompanyDetail,
-  AutoSearchStats,
-} from "./crawler-types";
+import type { AutoSearchCompanyDetail, AutoSearchStats } from "./crawler-types";
 
 /** Outcomes that mean "the requested report was NOT saved" — these are logged. */
 const NOT_FOUND_OUTCOMES: ReadonlySet<AutoSearchCompanyDetail["outcome"]> =
-  new Set(["no_results", "analyze_failed", "llm_failed", "low_confidence", "failed"]);
+  new Set([
+    "no_results",
+    "analyze_failed",
+    "llm_failed",
+    "low_confidence",
+    "failed",
+  ]);
 
 export type AutoSearchLogEntry = {
   companyName: string;
@@ -84,7 +87,8 @@ export function buildAutoSearchLog(
 
     const saveError =
       detail.outcome === "failed"
-        ? stats.failed.find((f) => f.companyName === detail.companyName)?.message
+        ? stats.failed.find((f) => f.companyName === detail.companyName)
+            ?.message
         : undefined;
 
     entries.push({
