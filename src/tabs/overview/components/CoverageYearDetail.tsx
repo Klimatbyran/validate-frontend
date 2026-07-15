@@ -126,8 +126,13 @@ export function CoverageYearDetailView({
     setFindingReportEntryId(entry.id);
     try {
       const results = await searchCompanyReports({
-        companyNames: [entry.name],
-        reportYear: String(reportYear),
+        companies: [
+          {
+            name: entry.matchedCompany?.name ?? entry.name,
+            reportYear: String(reportYear),
+            wikidataId: entry.matchedCompany?.wikidataId,
+          },
+        ],
       });
       const report = results[0] ?? {
         companyName: entry.name,

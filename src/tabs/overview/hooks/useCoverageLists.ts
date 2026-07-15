@@ -22,6 +22,47 @@ import type {
 } from "../lib/coverage-types";
 import type { SaveReportSuccess } from "@/tabs/crawler/lib/crawler-types";
 
+const REGISTRY_REFRESH_POLL_MS = 2000;
+const REGISTRY_REFRESH_MAX_POLLS = 120;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function waitForRegistryRefresh(
+  listId: string,
+  year: number,
+): Promise<CoverageYearDetail> {
+  for (let attempt = 0; attempt < REGISTRY_REFRESH_MAX_POLLS; attempt += 1) {
+    await sleep(REGISTRY_REFRESH_POLL_MS);
+    const page = await fetchCoverageYearDetail(listId, year, {
+      offset: 0,
+      limit: COVERAGE_PAGE_SIZE,
+      filter: "all",
+      includeRegistry: true,
+    });
+    if (!page.registryRefreshInProgress) {
+      return page;
+    }
+  }
+  throw new Error("Registry refresh timed out");
+}
+
+function applyYearStats(
+  previous: CoverageYearDetail | null,
+  stats: Pick<
+    CoverageYearDetail,
+    | "hasAnyReportCount"
+    | "prodReadyCount"
+    | "noReportCount"
+    | "registryRefreshedAt"
+    | "registryRefreshInProgress"
+  >,
+): CoverageYearDetail | null {
+  if (!previous) return previous;
+  return { ...previous, ...stats };
+}
+
 function entryMatchChanged(
   previous: CoverageEntry,
   updated: CoverageEntry,
@@ -40,6 +81,34 @@ function mergeCoverageMatchUpdate(
 ): CoverageYearDetail {
   if (!previous) return updated;
 
+  const yearFields = {
+    totalNames: updated.totalNames,
+    matchedCount: updated.matchedCount,
+    ambiguousCount: updated.ambiguousCount,
+    coveragePercent: updated.coveragePercent,
+    hasAnyReportCount: updated.hasAnyReportCount,
+    prodReadyCount: updated.prodReadyCount,
+    noReportCount: updated.noReportCount,
+    registryRefreshedAt: updated.registryRefreshedAt,
+  };
+
+  const isPartialEntryUpdate =
+    updated.entries.length > 0 &&
+    updated.entries.length < previous.entries.length;
+
+  if (isPartialEntryUpdate) {
+    const patchById = new Map(
+      updated.entries.map((entry) => [entry.id, entry] as const),
+    );
+    return {
+      ...previous,
+      ...yearFields,
+      entries: previous.entries.map(
+        (entry) => patchById.get(entry.id) ?? entry,
+      ),
+    };
+  }
+
   const previousById = new Map(
     previous.entries.map((entry) => [entry.id, entry] as const),
   );
@@ -57,10 +126,24 @@ function mergeCoverageMatchUpdate(
     };
   });
 
-  if (anyMatchChanged) return updated;
+  if (anyMatchChanged) {
+    return {
+      ...updated,
+      ...yearFields,
+      filteredCount: previous.filteredCount,
+      offset: previous.offset,
+      limit: previous.limit,
+      hasMore: previous.hasMore,
+      entries: previous.entries.map(
+        (entry) =>
+          updated.entries.find((patch) => patch.id === entry.id) ?? entry,
+      ),
+    };
+  }
 
   return {
     ...updated,
+    ...yearFields,
     hasAnyReportCount: previous.hasAnyReportCount,
     prodReadyCount: previous.prodReadyCount,
     noReportCount: previous.noReportCount,
@@ -298,16 +381,28 @@ export function useCoverageYearDetail(
     try {
       const refreshed = await refreshCoverageYearRegistry(listId, year);
       setDetail((previous) =>
-        previous
-          ? {
-              ...previous,
-              hasAnyReportCount: refreshed.hasAnyReportCount,
-              prodReadyCount: refreshed.prodReadyCount,
-              noReportCount: refreshed.noReportCount,
-              registryRefreshedAt: refreshed.registryRefreshedAt,
-            }
-          : previous,
+        applyYearStats(previous, {
+          hasAnyReportCount: refreshed.hasAnyReportCount,
+          prodReadyCount: refreshed.prodReadyCount,
+          noReportCount: refreshed.noReportCount,
+          registryRefreshedAt: refreshed.registryRefreshedAt,
+          registryRefreshInProgress: refreshed.inProgress,
+        }),
       );
+
+      if (refreshed.inProgress) {
+        const completed = await waitForRegistryRefresh(listId, year);
+        setDetail((previous) =>
+          applyYearStats(previous, {
+            hasAnyReportCount: completed.hasAnyReportCount,
+            prodReadyCount: completed.prodReadyCount,
+            noReportCount: completed.noReportCount,
+            registryRefreshedAt: completed.registryRefreshedAt,
+            registryRefreshInProgress: false,
+          }),
+        );
+      }
+
       await loadPage(0, false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");

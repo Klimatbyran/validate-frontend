@@ -74,6 +74,7 @@ export const coverageYearDetailSchema = coverageYearSummarySchema.extend({
   limit: z.number().optional(),
   hasMore: z.boolean().optional(),
   registryRefreshedAt: z.string().nullable().optional(),
+  registryRefreshInProgress: z.boolean().optional(),
 });
 
 export const coverageYearRegistryRefreshSchema = z.object({
@@ -82,7 +83,8 @@ export const coverageYearRegistryRefreshSchema = z.object({
   hasAnyReportCount: z.number(),
   prodReadyCount: z.number(),
   noReportCount: z.number(),
-  registryRefreshedAt: z.string(),
+  registryRefreshedAt: z.string().nullable(),
+  inProgress: z.boolean(),
 });
 
 export const coverageYearNamesSchema = z.object({
