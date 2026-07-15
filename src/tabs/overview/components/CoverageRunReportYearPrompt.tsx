@@ -26,15 +26,16 @@ export function CoverageRunReportYearPrompt({
   onConfirm,
 }: CoverageRunReportYearPromptProps) {
   const { t } = useI18n();
+  const yearOptionsKey = yearOptions.join(",");
+  const defaultYear = yearOptions[0] ?? null;
   const [selectedYear, setSelectedYear] = useState(() =>
-    String(yearOptions[0] ?? ""),
+    String(defaultYear ?? ""),
   );
 
   useEffect(() => {
-    if (open && yearOptions.length > 0) {
-      setSelectedYear(String(yearOptions[0]));
-    }
-  }, [open, yearOptions]);
+    if (!open || defaultYear == null) return;
+    setSelectedYear(String(defaultYear));
+  }, [open, yearOptionsKey, defaultYear]);
 
   const parsedYear = Number.parseInt(selectedYear, 10);
   const isValidYear =

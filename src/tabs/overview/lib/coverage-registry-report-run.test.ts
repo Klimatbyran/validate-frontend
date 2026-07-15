@@ -45,6 +45,15 @@ describe("coverage-registry-report-run", () => {
     expect(registryReportYears(entry.registryReports)).toEqual([2025, 2024]);
   });
 
+  it("ignores registry pills without a parseable year", () => {
+    expect(
+      registryReportYears([
+        { ...entry.registryReports[0]!, reportYear: null },
+        { ...entry.registryReports[0]!, reportId: "r-bad", reportYear: "n/a" },
+      ]),
+    ).toEqual([]);
+  });
+
   it("prefers prod-ready report for a year", () => {
     const reports = [
       ...entry.registryReports,

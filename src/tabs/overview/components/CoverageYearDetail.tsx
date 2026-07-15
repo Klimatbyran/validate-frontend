@@ -154,6 +154,14 @@ export function CoverageYearDetailView({
       ? (entries.find((entry) => entry.id === runReportYearEntryId) ?? null)
       : null;
 
+  const runReportYearOptions = useMemo(
+    () =>
+      runReportYearEntry
+        ? registryReportYears(runReportYearEntry.registryReports)
+        : [],
+    [runReportYearEntry],
+  );
+
   const runModalItems = useMemo((): RunReportListItem[] => {
     if (!runReportSession) return [];
     return [runReportSession.runItem];
@@ -514,7 +522,7 @@ export function CoverageYearDetailView({
             setRunReportYearEntryId(open ? runReportYearEntry.id : null);
           }}
           companyName={runReportYearEntry.name}
-          yearOptions={registryReportYears(runReportYearEntry.registryReports)}
+          yearOptions={runReportYearOptions}
           onConfirm={(reportYear) =>
             handleRunReportYearConfirm(runReportYearEntry, reportYear)
           }
@@ -589,7 +597,7 @@ function CoverageEntryRow({
         : "text-yellow-400";
 
   const reports = entry.registryReports ?? [];
-  const canRunReport = reports.length > 0;
+  const canRunReport = registryReportYears(reports).length > 0;
 
   return (
     <tr
