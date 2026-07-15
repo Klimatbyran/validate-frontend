@@ -21,6 +21,7 @@ import {
   registryReportYears,
   toRunReportListItem,
 } from "@/tabs/overview/lib/coverage-registry-report-run";
+import { coveragePercentCardClass } from "@/tabs/overview/lib/coverage-overview-styles";
 import { getRegistryRunReportsPipelineConfig } from "@/tabs/registry/lib/registry-api";
 import type {
   CompanyReport,
@@ -314,7 +315,7 @@ export function CoverageYearDetailView({
           <CoverageStatCard
             label={t("overview.coverage.stats.coverage")}
             value={`${detail.coveragePercent}%`}
-            className="border-blue-03/30 bg-blue-03/10 text-blue-03"
+            className={coveragePercentCardClass(detail.coveragePercent)}
           />
         </div>
 
@@ -638,7 +639,7 @@ function CoverageEntryRow({
       <td className="px-4 py-2 align-top">
         <div className="flex flex-wrap gap-2">
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
             onClick={() => onEditEntry(entry)}
             disabled={isFindingReport}

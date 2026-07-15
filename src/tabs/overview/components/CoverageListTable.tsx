@@ -1,6 +1,9 @@
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import type { CoverageListSummary } from "@/tabs/overview/lib/coverage-types";
+import {
+  coveragePercentTextClass,
+} from "@/tabs/overview/lib/coverage-overview-styles";
 
 type CoverageListTableProps = {
   lists: CoverageListSummary[];
@@ -54,15 +57,25 @@ export function CoverageListTable({
                   <td className="px-4 py-2 text-gray-02">
                     {list.years.length}
                   </td>
-                  <td className="px-4 py-2 text-gray-02">
-                    {latestYear
-                      ? t("overview.coverage.latestCoverageCell", {
-                          year: latestYear.year,
-                          percent: latestYear.coveragePercent,
-                          matched: latestYear.matchedCount,
-                          total: latestYear.totalNames,
-                        })
-                      : "—"}
+                  <td className="px-4 py-2">
+                    {latestYear ? (
+                      <span className="text-gray-02 tabular-nums">
+                        <span className="font-medium text-gray-01">
+                          {latestYear.year}
+                        </span>
+                        {": "}
+                        <span
+                          className={`font-semibold ${coveragePercentTextClass(latestYear.coveragePercent)}`}
+                        >
+                          {latestYear.coveragePercent}%
+                        </span>
+                        {" ("}
+                        {latestYear.matchedCount}/{latestYear.totalNames}
+                        {")"}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td className="px-4 py-2 text-gray-02">
                     {new Date(list.updatedAt).toLocaleString()}
