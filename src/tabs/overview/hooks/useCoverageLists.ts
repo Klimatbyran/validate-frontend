@@ -103,9 +103,17 @@ function mergeCoverageMatchUpdate(
     return {
       ...previous,
       ...yearFields,
-      entries: previous.entries.map(
-        (entry) => patchById.get(entry.id) ?? entry,
-      ),
+      entries: previous.entries.map((entry) => {
+        const patch = patchById.get(entry.id);
+        if (!patch) return entry;
+        return {
+          ...patch,
+          registryReports:
+            patch.registryReports.length > 0
+              ? patch.registryReports
+              : entry.registryReports,
+        };
+      }),
     };
   }
 
