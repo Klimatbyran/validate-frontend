@@ -26,8 +26,8 @@ export function CoverageRunReportYearPrompt({
   onConfirm,
 }: CoverageRunReportYearPromptProps) {
   const { t } = useI18n();
-  const [selectedYear, setSelectedYear] = useState(
-    () => String(yearOptions[0] ?? ""),
+  const [selectedYear, setSelectedYear] = useState(() =>
+    String(yearOptions[0] ?? ""),
   );
 
   useEffect(() => {

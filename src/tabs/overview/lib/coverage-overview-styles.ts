@@ -26,7 +26,8 @@ export function coveragePercentCardClass(percent: number): string {
   return "border-orange-03/30 bg-orange-03/10 text-orange-03";
 }
 
-export const coverageMatchedTextClass = "text-green-03 font-medium tabular-nums";
+export const coverageMatchedTextClass =
+  "text-green-03 font-medium tabular-nums";
 export const coverageAmbiguousTextClass =
   "text-yellow-400 font-medium tabular-nums";
 export const coverageMissingTextClass =

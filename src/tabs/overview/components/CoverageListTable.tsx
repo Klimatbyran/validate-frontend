@@ -1,9 +1,7 @@
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import type { CoverageListSummary } from "@/tabs/overview/lib/coverage-types";
-import {
-  coveragePercentTextClass,
-} from "@/tabs/overview/lib/coverage-overview-styles";
+import { coveragePercentTextClass } from "@/tabs/overview/lib/coverage-overview-styles";
 
 type CoverageListTableProps = {
   lists: CoverageListSummary[];

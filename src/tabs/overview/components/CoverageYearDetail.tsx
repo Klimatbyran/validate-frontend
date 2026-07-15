@@ -101,7 +101,9 @@ export function CoverageYearDetailView({
   const [isRunModalOpen, setIsRunModalOpen] = useState(false);
   const [isLoadingRegistryNames, setIsLoadingRegistryNames] = useState(false);
   const tableScrollRef = useRef<HTMLDivElement>(null);
-  const runPipeline = useRunReportsPipeline(getRegistryRunReportsPipelineConfig());
+  const runPipeline = useRunReportsPipeline(
+    getRegistryRunReportsPipelineConfig(),
+  );
   const {
     runForUrls,
     isRunningReports,
