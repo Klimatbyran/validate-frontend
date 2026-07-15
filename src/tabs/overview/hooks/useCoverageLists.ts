@@ -285,6 +285,7 @@ export function useCoverageYearDetail(
   const [isRefreshingRegistry, setIsRefreshingRegistry] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef(0);
+  const registryRefreshRef = useRef(0);
   const selectionRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -344,6 +345,8 @@ export function useCoverageYearDetail(
     selectionRef.current = selectionKey;
 
     if (selectionChanged) {
+      registryRefreshRef.current += 1;
+      setIsRefreshingRegistry(false);
       setFilter("all");
       setSearch("");
       setDebouncedSearch("");
@@ -376,10 +379,19 @@ export function useCoverageYearDetail(
 
   const refreshRegistry = useCallback(async () => {
     if (!listId || year === null) return;
+
+    const refreshId = ++registryRefreshRef.current;
+    const selectionKey = `${listId}:${year}`;
+    const isStale = () =>
+      refreshId !== registryRefreshRef.current ||
+      selectionRef.current !== selectionKey;
+
     setIsRefreshingRegistry(true);
     setError(null);
     try {
       const refreshed = await refreshCoverageYearRegistry(listId, year);
+      if (isStale()) return;
+
       setDetail((previous) =>
         applyYearStats(previous, {
           hasAnyReportCount: refreshed.hasAnyReportCount,
@@ -392,6 +404,8 @@ export function useCoverageYearDetail(
 
       if (refreshed.inProgress) {
         const completed = await waitForRegistryRefresh(listId, year);
+        if (isStale()) return;
+
         setDetail((previous) =>
           applyYearStats(previous, {
             hasAnyReportCount: completed.hasAnyReportCount,
@@ -403,11 +417,20 @@ export function useCoverageYearDetail(
         );
       }
 
+      if (isStale()) return;
       await loadPage(0, false);
     } catch (err) {
+      if (isStale()) return;
+
+      setDetail((previous) =>
+        applyYearStats(previous, { registryRefreshInProgress: false }),
+      );
       setError(err instanceof Error ? err.message : "Unknown error");
+      await loadPage(0, false);
     } finally {
-      setIsRefreshingRegistry(false);
+      if (!isStale()) {
+        setIsRefreshingRegistry(false);
+      }
     }
   }, [listId, year, loadPage]);
 
