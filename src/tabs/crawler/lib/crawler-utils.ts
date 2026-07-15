@@ -86,7 +86,7 @@ export const searchCompanyReports = async ({
   country,
   onProgress,
 }: SearchCompanyReportsParams): Promise<CompanyReport[]> => {
-  if (!companies.length) {
+  if (!companies?.length) {
     return [];
   }
 
