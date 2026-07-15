@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
+import { cn } from "@/lib/utils";
 import { Button } from "@/ui/button";
 import { Callout } from "@/ui/callout";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
@@ -11,6 +12,7 @@ import {
   useCoverageYearDetail,
 } from "@/tabs/overview/hooks/useCoverageLists";
 import { fetchCoverageYearNames } from "@/tabs/overview/lib/coverage-api";
+import { coveragePercentTextClass } from "@/tabs/overview/lib/coverage-overview-styles";
 import { CoverageListTable } from "./CoverageListTable";
 import { CoverageYearDetailView } from "./CoverageYearDetail";
 import { CoverageYearFormDialog } from "./CoverageYearFormDialog";
@@ -234,16 +236,21 @@ export function CoverageView({ onViewRegistryReports }: CoverageViewProps) {
               {selectedList.years.map((yearRow) => (
                 <Button
                   key={yearRow.year}
-                  variant={
-                    selectedYear === yearRow.year ? "primary" : "secondary"
-                  }
+                  variant="secondary"
                   size="sm"
+                  className={cn(
+                    selectedYear === yearRow.year &&
+                      "ring-2 ring-gray-01 ring-offset-1 ring-offset-gray-05",
+                  )}
                   onClick={() => setSelectedYear(yearRow.year)}
                 >
-                  {t("overview.coverage.yearPill", {
-                    year: yearRow.year,
-                    percent: yearRow.coveragePercent,
-                  })}
+                  <span className="text-gray-01">{yearRow.year}</span>
+                  <span className="mx-1 text-gray-02">·</span>
+                  <span
+                    className={`font-semibold tabular-nums ${coveragePercentTextClass(yearRow.coveragePercent)}`}
+                  >
+                    {yearRow.coveragePercent}%
+                  </span>
                 </Button>
               ))}
               {selectedList.years.length === 0 ? (

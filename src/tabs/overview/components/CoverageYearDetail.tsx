@@ -1,18 +1,28 @@
 import { Link } from "react-router-dom";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
+import { RunReportsModal } from "@/components/RunReportsModal";
 import { editorCompanyPath } from "@/tabs/editor/lib/editor-routes";
 import { Button } from "@/ui/button";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { ReportYearPill } from "./ReportYearPill";
 import { CoverageFindReportDialog } from "./CoverageFindReportDialog";
 import { CoverageFindReportYearPrompt } from "./CoverageFindReportYearPrompt";
+import { CoverageRunReportYearPrompt } from "./CoverageRunReportYearPrompt";
 import { searchCompanyReports } from "@/tabs/crawler/lib/crawler-utils";
 import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
+import type { RunReportListItem } from "@/lib/run-reports-types";
 import { fetchCoverageYearNames } from "@/tabs/overview/lib/coverage-api";
+import {
+  pickRegistryReportForYear,
+  registryReportYears,
+  toRunReportListItem,
+} from "@/tabs/overview/lib/coverage-registry-report-run";
+import { coveragePercentCardClass } from "@/tabs/overview/lib/coverage-overview-styles";
+import { getRegistryRunReportsPipelineConfig } from "@/tabs/registry/lib/registry-api";
 import type {
   CompanyReport,
   SaveReportSuccess,
@@ -51,6 +61,11 @@ type FindReportSession = {
   companyReport: CompanyReport;
 };
 
+type RunReportSession = {
+  entry: CoverageEntry;
+  runItem: RunReportListItem;
+};
+
 export function CoverageYearDetailView({
   listId,
   year,
@@ -78,9 +93,24 @@ export function CoverageYearDetailView({
   const [yearPromptEntryId, setYearPromptEntryId] = useState<string | null>(
     null,
   );
+  const [runReportYearEntryId, setRunReportYearEntryId] = useState<
+    string | null
+  >(null);
+  const [runReportSession, setRunReportSession] =
+    useState<RunReportSession | null>(null);
+  const [isRunModalOpen, setIsRunModalOpen] = useState(false);
   const [isLoadingRegistryNames, setIsLoadingRegistryNames] = useState(false);
   const tableScrollRef = useRef<HTMLDivElement>(null);
-  const runPipeline = useRunReportsPipeline();
+  const runPipeline = useRunReportsPipeline(
+    getRegistryRunReportsPipelineConfig(),
+  );
+  const {
+    runForUrls,
+    isRunningReports,
+    autoApprove,
+    setAutoApprove,
+    runOptions,
+  } = runPipeline;
 
   const missingCount =
     detail.totalNames - detail.matchedCount - detail.ambiguousCount;
@@ -118,6 +148,61 @@ export function CoverageYearDetailView({
     yearPromptEntryId != null
       ? (entries.find((entry) => entry.id === yearPromptEntryId) ?? null)
       : null;
+
+  const runReportYearEntry =
+    runReportYearEntryId != null
+      ? (entries.find((entry) => entry.id === runReportYearEntryId) ?? null)
+      : null;
+
+  const runReportYearOptions = useMemo(
+    () =>
+      runReportYearEntry
+        ? registryReportYears(runReportYearEntry.registryReports)
+        : [],
+    [runReportYearEntry],
+  );
+
+  const runModalItems = useMemo((): RunReportListItem[] => {
+    if (!runReportSession) return [];
+    return [runReportSession.runItem];
+  }, [runReportSession]);
+
+  const openRunReportModal = (entry: CoverageEntry, reportYear: number) => {
+    const report = pickRegistryReportForYear(entry.registryReports, reportYear);
+    if (!report) {
+      toast.error(t("overview.coverage.runReportMissing"));
+      return;
+    }
+    setRunReportSession({
+      entry,
+      runItem: toRunReportListItem(entry, report),
+    });
+    setIsRunModalOpen(true);
+  };
+
+  const handleRunReportClick = (entry: CoverageEntry) => {
+    const years = registryReportYears(entry.registryReports);
+    if (years.length === 0) return;
+    if (years.length === 1) {
+      openRunReportModal(entry, years[0]!);
+      return;
+    }
+    setRunReportYearEntryId(entry.id);
+  };
+
+  const handleRunReportYearConfirm = (
+    entry: CoverageEntry,
+    reportYear: number,
+  ) => {
+    setRunReportYearEntryId(null);
+    openRunReportModal(entry, reportYear);
+  };
+
+  const handleRunReportModalRun = () => {
+    const url = runReportSession?.runItem.url?.trim();
+    if (!url) return;
+    void runForUrls([url], { onSuccess: () => setIsRunModalOpen(false) });
+  };
 
   const handleYearConfirm = async (
     entry: CoverageEntry,
@@ -240,7 +325,7 @@ export function CoverageYearDetailView({
           <CoverageStatCard
             label={t("overview.coverage.stats.coverage")}
             value={`${detail.coveragePercent}%`}
-            className="border-blue-03/30 bg-blue-03/10 text-blue-03"
+            className={coveragePercentCardClass(detail.coveragePercent)}
           />
         </div>
 
@@ -351,6 +436,7 @@ export function CoverageYearDetailView({
                       isFindingReport={findingReportEntryId === entry.id}
                       onEditEntry={onEditEntry}
                       onFindReportClick={() => setYearPromptEntryId(entry.id)}
+                      onRunReportClick={() => handleRunReportClick(entry)}
                     />
                   );
                 })}
@@ -428,6 +514,34 @@ export function CoverageYearDetailView({
           }
         />
       ) : null}
+
+      {runReportYearEntry ? (
+        <CoverageRunReportYearPrompt
+          open
+          onOpenChange={(open) => {
+            setRunReportYearEntryId(open ? runReportYearEntry.id : null);
+          }}
+          companyName={runReportYearEntry.name}
+          yearOptions={runReportYearOptions}
+          onConfirm={(reportYear) =>
+            handleRunReportYearConfirm(runReportYearEntry, reportYear)
+          }
+        />
+      ) : null}
+
+      <RunReportsModal
+        open={isRunModalOpen}
+        onOpenChange={(open) => {
+          setIsRunModalOpen(open);
+          if (!open) setRunReportSession(null);
+        }}
+        items={runModalItems}
+        autoApprove={autoApprove}
+        onAutoApproveChange={setAutoApprove}
+        runOptions={runOptions}
+        onRunReports={handleRunReportModalRun}
+        isRunning={isRunningReports}
+      />
     </div>
   );
 }
@@ -456,6 +570,7 @@ function CoverageEntryRow({
   isFindingReport,
   onEditEntry,
   onFindReportClick,
+  onRunReportClick,
 }: {
   entry: CoverageEntry;
   rowRef: (element: HTMLTableRowElement | null) => void;
@@ -463,6 +578,7 @@ function CoverageEntryRow({
   isFindingReport: boolean;
   onEditEntry: (entry: CoverageEntry) => void;
   onFindReportClick: () => void;
+  onRunReportClick: () => void;
 }) {
   const { t } = useI18n();
 
@@ -481,6 +597,7 @@ function CoverageEntryRow({
         : "text-yellow-400";
 
   const reports = entry.registryReports ?? [];
+  const canRunReport = registryReportYears(reports).length > 0;
 
   return (
     <tr
@@ -532,7 +649,7 @@ function CoverageEntryRow({
       <td className="px-4 py-2 align-top">
         <div className="flex flex-wrap gap-2">
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
             onClick={() => onEditEntry(entry)}
             disabled={isFindingReport}
@@ -553,6 +670,19 @@ function CoverageEntryRow({
               {t("overview.coverage.findReport")}
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRunReportClick}
+            disabled={!canRunReport || isFindingReport}
+            title={
+              canRunReport
+                ? undefined
+                : t("overview.coverage.runReportDisabled")
+            }
+          >
+            {t("overview.coverage.runReport")}
+          </Button>
         </div>
       </td>
     </tr>
