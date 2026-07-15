@@ -4,11 +4,18 @@ import type {
   RegistryReportPill,
 } from "@/tabs/overview/lib/coverage-types";
 
+function parseRegistryReportYear(
+  reportYear: string | null | undefined,
+): number | null {
+  const year = Number.parseInt((reportYear ?? "").trim(), 10);
+  return Number.isFinite(year) ? year : null;
+}
+
 export function registryReportYears(reports: RegistryReportPill[]): number[] {
   const years = new Set<number>();
   for (const report of reports) {
-    const year = Number.parseInt(report.reportYear ?? "", 10);
-    if (Number.isFinite(year)) {
+    const year = parseRegistryReportYear(report.reportYear);
+    if (year != null) {
       years.add(year);
     }
   }
@@ -19,8 +26,9 @@ export function pickRegistryReportForYear(
   reports: RegistryReportPill[],
   year: number,
 ): RegistryReportPill | null {
-  const yearLabel = String(year);
-  const matches = reports.filter((report) => report.reportYear === yearLabel);
+  const matches = reports.filter(
+    (report) => parseRegistryReportYear(report.reportYear) === year,
+  );
   if (matches.length === 0) return null;
   return matches.find((report) => report.prodReady) ?? matches[0] ?? null;
 }

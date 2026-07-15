@@ -69,6 +69,21 @@ describe("coverage-registry-report-run", () => {
     );
   });
 
+  it("matches registry years with trimmed non-canonical strings", () => {
+    const reports = [
+      {
+        ...entry.registryReports[0]!,
+        reportId: "r-trim",
+        reportYear: " 2024 ",
+        url: "https://example.com/trimmed-2024.pdf",
+      },
+    ];
+    expect(registryReportYears(reports)).toEqual([2024]);
+    expect(pickRegistryReportForYear(reports, 2024)?.url).toBe(
+      "https://example.com/trimmed-2024.pdf",
+    );
+  });
+
   it("maps registry pill to run modal item", () => {
     const report = entry.registryReports[1]!;
     expect(toRunReportListItem(entry, report)).toEqual({
