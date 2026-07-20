@@ -6,10 +6,13 @@ import type { GarboCompanyDetail } from "../../lib/types";
 import { CompanyDetailTab } from "./CompanyDetailTab";
 
 const updateCompany = vi.fn();
+const upsertCompanyIdentifier = vi.fn();
 const fetchIndustryGics = vi.fn();
 
 vi.mock("../../lib/companies-api", () => ({
   updateCompany: (...args: unknown[]) => updateCompany(...args),
+  upsertCompanyIdentifier: (...args: unknown[]) =>
+    upsertCompanyIdentifier(...args),
   fetchIndustryGics: () => fetchIndustryGics(),
   updateCompanyIndustry: vi.fn(),
   updateCompanyBaseYear: vi.fn(),
@@ -32,6 +35,20 @@ const mockCompany: GarboCompanyDetail = {
     { language: "EN", text: "English description" },
     { language: "SV", text: "Swedish description" },
   ],
+  identifiers: [
+    {
+      id: "id-w",
+      type: "WIKIDATA",
+      value: "Q12345",
+      metadata: { verifiedBy: null },
+    },
+    {
+      id: "id-l",
+      type: "LEI",
+      value: "5493001KJTIIGC8Y1R12",
+      metadata: { verifiedBy: { name: "Staff User" } },
+    },
+  ],
 };
 
 async function renderTab(company: GarboCompanyDetail = mockCompany) {
@@ -46,80 +63,120 @@ async function renderTab(company: GarboCompanyDetail = mockCompany) {
   return view;
 }
 
-function getWikidataInput() {
-  return screen.getByPlaceholderText("Q123456");
-}
-
 async function saveCoreSection(user: ReturnType<typeof userEvent.setup>) {
-  const saveButtons = screen.getAllByRole("button", { name: "Save" });
-  await user.click(saveButtons[0]);
+  const coreSection = screen
+    .getByRole("heading", { name: /Core Info/i })
+    .closest("section");
+  expect(coreSection).toBeTruthy();
+
+  const saveButtons = within(coreSection as HTMLElement).getAllByRole(
+    "button",
+    { name: "Save" },
+  );
+  const coreSave = saveButtons[saveButtons.length - 1];
+  expect(coreSave).toBeTruthy();
+  await user.click(coreSave!);
 
   const dialog = await screen.findByRole("dialog");
   await user.click(within(dialog).getByRole("button", { name: "Save" }));
 }
 
-describe("CompanyDetailTab wikidataId", () => {
+describe("CompanyDetailTab identifiers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     fetchIndustryGics.mockResolvedValue([]);
     updateCompany.mockResolvedValue(undefined);
+    upsertCompanyIdentifier.mockResolvedValue(undefined);
   });
 
-  it("renders an editable Wikidata ID field", async () => {
+  it("renders editable identifier values with verification badges", async () => {
     await renderTab();
 
-    const input = getWikidataInput();
-    expect(input).toHaveValue("Q12345");
-    expect(input).not.toHaveAttribute("readonly");
+    expect(screen.getByDisplayValue("Q12345")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("5493001KJTIIGC8Y1R12")).toBeInTheDocument();
+    expect(screen.getByText("Unverified")).toBeInTheDocument();
+    expect(screen.getByText("Verified")).toBeInTheDocument();
   });
 
-  it("sends wikidataId to updateCompany on core save", async () => {
+  it("saves an edited identifier via upsertCompanyIdentifier", async () => {
     const user = userEvent.setup();
     await renderTab();
 
-    const input = getWikidataInput();
-    await user.clear(input);
-    await user.type(input, "Q99999");
+    const wikidataInput = screen.getByDisplayValue("Q12345");
+    await user.clear(wikidataInput);
+    await user.type(wikidataInput, "Q99999");
 
-    await saveCoreSection(user);
+    const row = wikidataInput.closest("li");
+    expect(row).toBeTruthy();
+    await user.click(within(row as HTMLElement).getByRole("button", { name: "Save" }));
+
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
-      expect(updateCompany).toHaveBeenCalledTimes(1);
+      expect(upsertCompanyIdentifier).toHaveBeenCalledTimes(1);
     });
 
-    expect(updateCompany).toHaveBeenCalledWith(
+    expect(upsertCompanyIdentifier).toHaveBeenCalledWith(
       mockCompany.id,
       expect.objectContaining({
-        wikidataId: "Q99999",
-        name: "Test Company",
+        type: "WIKIDATA",
+        value: "Q99999",
       }),
     );
   });
 
-  it("rejects invalid wikidataId and does not call updateCompany", async () => {
+  it("rejects invalid wikidata identifier values", async () => {
     const user = userEvent.setup();
     const { toast } = await import("sonner");
     await renderTab();
 
-    const input = getWikidataInput();
-    await user.clear(input);
-    await user.type(input, "not-a-wikidata-id");
+    const wikidataInput = screen.getByDisplayValue("Q12345");
+    await user.clear(wikidataInput);
+    await user.type(wikidataInput, "not-a-wikidata-id");
 
-    await saveCoreSection(user);
+    const row = wikidataInput.closest("li");
+    expect(row).toBeTruthy();
+    await user.click(within(row as HTMLElement).getByRole("button", { name: "Save" }));
+
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalled();
     });
 
-    expect(updateCompany).not.toHaveBeenCalled();
+    expect(upsertCompanyIdentifier).not.toHaveBeenCalled();
   });
 
-  it("omits wikidataId when cleared", async () => {
+  it("adds a new org number identifier", async () => {
     const user = userEvent.setup();
     await renderTab();
 
-    const input = getWikidataInput();
-    await user.clear(input);
+    await user.type(
+      screen.getByPlaceholderText("Enter identifier value"),
+      "556012-1234",
+    );
+    await user.click(screen.getByRole("button", { name: "Add identifier" }));
+
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(upsertCompanyIdentifier).toHaveBeenCalledWith(
+        mockCompany.id,
+        expect.objectContaining({
+          type: "ORG_NUMBER",
+          value: "556012-1234",
+          verified: true,
+        }),
+      );
+    });
+  });
+
+  it("core save no longer sends wikidataId or lei", async () => {
+    const user = userEvent.setup();
+    await renderTab();
 
     await saveCoreSection(user);
 
@@ -130,33 +187,10 @@ describe("CompanyDetailTab wikidataId", () => {
     expect(updateCompany).toHaveBeenCalledWith(
       mockCompany.id,
       expect.objectContaining({
-        wikidataId: undefined,
+        name: "Test Company",
       }),
     );
-  });
-
-  it("shows verification badges for identifiers from API", async () => {
-    await renderTab({
-      ...mockCompany,
-      wikidataId: null,
-      identifiers: [
-        {
-          id: "id-w",
-          type: "WIKIDATA",
-          value: "Q12345",
-          metadata: { verifiedBy: null },
-        },
-        {
-          id: "id-l",
-          type: "LEI",
-          value: "5493001KJTIIGC8Y1R12",
-          metadata: { verifiedBy: { name: "Staff User" } },
-        },
-      ],
-    });
-
-    expect(screen.getByText("Unverified")).toBeInTheDocument();
-    expect(screen.getByText("Verified")).toBeInTheDocument();
-    expect(screen.getByText("5493001KJTIIGC8Y1R12")).toBeInTheDocument();
+    expect(updateCompany.mock.calls[0][1]).not.toHaveProperty("wikidataId");
+    expect(updateCompany.mock.calls[0][1]).not.toHaveProperty("lei");
   });
 });
