@@ -1,5 +1,5 @@
 import { getPeriodReportYear } from "@/tabs/editor/lib/reporting-period-ui";
-import { ReportingPeriod, DATA_POINTS } from "../types";
+import { ReportingPeriod, DATA_POINTS, DatapointNoteInfo } from "../types";
 import { pickReportingPeriodsForFilters } from "./reporting-period-comparison";
 
 // Emission values can be either a plain number or an object with { total: number }
@@ -91,6 +91,49 @@ export function getDataPointValue(
 
   const dataPoint = DATA_POINTS.find((dp) => dp.id === dataPointId);
   if (dataPoint?.category) return getCategoryValue(scope3, dataPoint.category);
+
+  return null;
+}
+
+/**
+ * Get the reviewer note for a data point, when the API included one (stage detail
+ * reads only - list reads may omit it depending on which endpoint served the data).
+ * Mirrors `getDataPointValue`'s dispatch by data point id.
+ */
+export function getDataPointNote(
+  emissions: ReportingPeriod["emissions"] | null | undefined,
+  dataPointId: string,
+): DatapointNoteInfo | null {
+  if (!emissions) return null;
+
+  if (dataPointId === "scope1-total") return emissions.scope1?.note ?? null;
+  if (
+    dataPointId === "scope2-mb" ||
+    dataPointId === "scope2-lb" ||
+    dataPointId === "scope2-unknown"
+  ) {
+    return emissions.scope2?.note ?? null;
+  }
+
+  if (dataPointId === "stated-total") {
+    const stated = emissions.statedTotalEmissions;
+    return stated && typeof stated === "object" ? (stated.note ?? null) : null;
+  }
+
+  const scope3 = emissions.scope3;
+  if (!scope3) return null;
+
+  if (dataPointId === "scope3-stated-total") {
+    return scope3.statedTotalEmissions?.note ?? null;
+  }
+
+  const dataPoint = DATA_POINTS.find((dp) => dp.id === dataPointId);
+  if (dataPoint?.category) {
+    return (
+      scope3.categories?.find((c) => c.category === dataPoint.category)?.note ??
+      null
+    );
+  }
 
   return null;
 }

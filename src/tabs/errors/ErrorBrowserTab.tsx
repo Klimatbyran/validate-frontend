@@ -6,6 +6,7 @@ import { ViewModePills } from "@/ui/view-mode-pills";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
+import type { ErrorBrowserStageSource } from "@/config/api-env";
 import type { ErrorBrowserViewMode } from "./types";
 import { useErrorBrowserData } from "./hooks/useErrorBrowserData";
 import { BrowserView } from "./components/BrowserView";
@@ -29,6 +30,8 @@ export function ErrorBrowserTab() {
     React.useState<ErrorBrowserViewMode>("browser");
   const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
   const [verifiedOnly, setVerifiedOnly] = React.useState(false);
+  const [stageSource, setStageSource] =
+    React.useState<ErrorBrowserStageSource>("stage");
 
   const viewModeOptions = React.useMemo(
     () =>
@@ -57,6 +60,7 @@ export function ErrorBrowserTab() {
     selectedDataPoint,
     selectedTags,
     verifiedOnly,
+    stageSource,
   );
 
   const handleOverviewSelectDataPoint = (dataPointId: string) => {
@@ -170,6 +174,26 @@ export function ErrorBrowserTab() {
               </span>
             </label>
           </div>
+
+          {import.meta.env.DEV && (
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-02 uppercase tracking-wide">
+                {t("errors.stageSource")}
+              </label>
+              <SingleSelectDropdown
+                options={["stage", "local"]}
+                value={stageSource}
+                onChange={(v) => setStageSource(v as ErrorBrowserStageSource)}
+                getOptionLabel={(v) =>
+                  v === "local"
+                    ? t("errors.stageSourceLocal")
+                    : t("errors.stageSourceStage")
+                }
+                ariaLabel={t("errors.stageSource")}
+                panelMinWidth={140}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -185,6 +209,7 @@ export function ErrorBrowserTab() {
           selectedYear={selectedDataYear}
           selectedTags={selectedTags}
           verifiedOnly={verifiedOnly}
+          stageSource={stageSource}
         />
       )}
 

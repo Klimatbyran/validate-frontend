@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { AlertTriangle, BadgeCheck } from "lucide-react";
+import { AlertTriangle, BadgeCheck, MessageSquarePlus } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
 import { getCompanyUrlSegment } from "@/lib/company-routing";
@@ -11,16 +11,31 @@ interface CompanyTableRowProps {
   row: CompanyRow;
   index: number;
   difficultCompanyIds: Map<string, number>;
+  dataPointSupportsNotes: boolean;
+  onAddReason: (row: CompanyRow) => void;
+  savedReason?: string;
 }
 
 export function CompanyTableRow({
   row,
   index,
   difficultCompanyIds,
+  dataPointSupportsNotes,
+  onAddReason,
+  savedReason,
 }: CompanyTableRowProps) {
   const { t, formatNumber } = useI18n();
   const isMissingCompany = !row.inStage || !row.inProd;
   const displayId = getCompanyUrlSegment(row);
+  const canAddReason =
+    dataPointSupportsNotes && row.inStage && !!row.wikidataId;
+  const addReasonDisabledTitle = !dataPointSupportsNotes
+    ? t("errors.reasonDialog.unsupportedDataPoint")
+    : !row.inStage
+      ? t("errors.reasonDialog.noStageValue")
+      : !row.wikidataId
+        ? t("errors.reasonDialog.noWikidataId")
+        : undefined;
 
   return (
     <motion.tr
@@ -81,7 +96,28 @@ export function CompanyTableRow({
         </span>
       </td>
       <td className="px-4 py-3 text-center">
-        <DiscrepancyBadge row={row} />
+        <div className="inline-flex items-center gap-1.5">
+          <DiscrepancyBadge row={row} />
+          <button
+            type="button"
+            onClick={() => onAddReason(row)}
+            disabled={!canAddReason}
+            title={addReasonDisabledTitle ?? t("errors.reasonDialog.addReason")}
+            aria-label={t("errors.reasonDialog.addReason")}
+            className="text-gray-02 hover:text-gray-01 disabled:opacity-30 disabled:hover:text-gray-02 transition-colors"
+          >
+            <MessageSquarePlus className="w-4 h-4" />
+          </button>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-02 max-w-[180px]">
+        {savedReason ? (
+          <span className="block truncate" title={savedReason}>
+            {savedReason}
+          </span>
+        ) : (
+          <span className="text-gray-02/50">—</span>
+        )}
       </td>
       <td className="px-4 py-3 text-right font-mono text-sm">
         {row.diff !== null ? (

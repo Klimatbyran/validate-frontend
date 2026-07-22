@@ -136,6 +136,13 @@ export interface VerifiedBy {
   name: string;
 }
 
+/** Reviewer note for a single datapoint (stage only). */
+export interface DatapointNoteInfo {
+  comment: string | null;
+  errorReason: string | null;
+  status?: "OPEN" | "RESOLVED" | "WONT_FIX" | null;
+}
+
 export interface ReportingPeriod {
   startDate: string;
   endDate: string;
@@ -158,30 +165,38 @@ export interface ReportingPeriod {
   } | null;
   emissions?: {
     statedTotalEmissions?:
-      | { total?: number | null; metadata?: { verifiedBy?: VerifiedBy | null } }
+      | {
+          total?: number | null;
+          metadata?: { verifiedBy?: VerifiedBy | null };
+          note?: DatapointNoteInfo | null;
+        }
       | number
       | null;
     calculatedTotalEmissions?: number | null;
     scope1?: {
       total?: number | null;
       metadata?: { verifiedBy?: VerifiedBy | null };
+      note?: DatapointNoteInfo | null;
     } | null;
     scope2?: {
       mb?: number | null;
       lb?: number | null;
       unknown?: number | null;
       metadata?: { verifiedBy?: VerifiedBy | null };
+      note?: DatapointNoteInfo | null;
     } | null;
     scope3?: {
       statedTotalEmissions?: {
         total?: number | null;
         metadata?: { verifiedBy?: VerifiedBy | null };
+        note?: DatapointNoteInfo | null;
       } | null;
       calculatedTotalEmissions?: number | null;
       categories?: Array<{
         category: number;
         total: number | null;
         metadata?: { verifiedBy?: VerifiedBy | null };
+        note?: DatapointNoteInfo | null;
       }>;
       metadata?: { verifiedBy?: VerifiedBy | null };
     } | null;
@@ -215,6 +230,8 @@ export interface CompanyRow {
   matchedDataPoint?: string;
   categoryErrorKind?: CategoryErrorKind;
   unitErrorFactor?: number;
+  /** Reviewer note for this datapoint on stage, when the API included one. */
+  errorNote?: DatapointNoteInfo | null;
 }
 
 export interface DataPointMetric {

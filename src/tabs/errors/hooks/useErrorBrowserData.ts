@@ -8,9 +8,11 @@ import {
   DATA_POINTS,
 } from "../types";
 import { fetchStageAndProdPipelineCompanies } from "@/lib/pipeline-companies-cross-env";
+import type { ErrorBrowserStageSource } from "@/config/api-env";
 import {
   getDataPointValue,
   getDataPointVerified,
+  getDataPointNote,
   classifySlotDiscrepancy,
   isExtractionComparisonDiscrepancy,
   isPipelineExtractionDiscrepancy,
@@ -33,31 +35,36 @@ export function useErrorBrowserData(
   selectedDataPoint: string,
   selectedTags: string[],
   verifiedOnly: boolean,
+  stageSource: ErrorBrowserStageSource = "stage",
 ) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [stageCompanies, setStageCompanies] = React.useState<Company[]>([]);
   const [prodCompanies, setProdCompanies] = React.useState<Company[]>([]);
+  const latestRequestId = React.useRef(0);
 
   const fetchData = React.useCallback(async () => {
+    const requestId = ++latestRequestId.current;
     setIsLoading(true);
     setError(null);
 
     try {
       const { stageCompanies: stage, prodCompanies: prod } =
-        await fetchStageAndProdPipelineCompanies();
+        await fetchStageAndProdPipelineCompanies(stageSource);
 
+      if (requestId !== latestRequestId.current) return;
       setStageCompanies(stage);
       setProdCompanies(prod);
     } catch (err) {
+      if (requestId !== latestRequestId.current) return;
       const message = err instanceof Error ? err.message : "Unknown error";
       setError(message);
       if (import.meta.env.DEV)
         console.error("useErrorBrowserData fetch error:", err);
     } finally {
-      setIsLoading(false);
+      if (requestId === latestRequestId.current) setIsLoading(false);
     }
-  }, []);
+  }, [stageSource]);
 
   React.useEffect(() => {
     fetchData();
@@ -161,6 +168,10 @@ export function useErrorBrowserData(
           slot.prodPeriod?.emissions,
           selectedDataPoint,
         );
+        const errorNote = getDataPointNote(
+          slot.stagePeriod?.emissions,
+          selectedDataPoint,
+        );
         const rowKey = slot.shellKey
           ? `${crossEnvKey}:${slot.shellKey}`
           : crossEnvKey;
@@ -183,6 +194,7 @@ export function useErrorBrowserData(
           inProd: !!prodCompany,
           unitErrorFactor,
           prodVerified,
+          errorNote,
           prodCompanyVerifiedForYear: isProdReportingPeriodFullyVerified(
             slot.prodPeriod,
           ),

@@ -21,6 +21,7 @@ export {
   getCategoryValue,
   getDataPointValue,
   getDataPointVerified,
+  getDataPointNote,
 } from "./emissions";
 export {
   companiesToMapById,
@@ -48,3 +49,16 @@ export {
   isProdCompanyFullyVerifiedForYear,
   isProdReportingPeriodFullyVerified,
 } from "./verification";
+export {
+  mapDataPointToNoteTarget,
+  resolveStageDatapoint,
+  saveDatapointNote,
+} from "./datapoint-notes";
+export type {
+  DatapointNoteType,
+  DatapointNoteTarget,
+  SaveDatapointNoteInput,
+  DatapointErrorStatus,
+  ExistingDatapointNote,
+  ResolvedStageDatapoint,
+} from "./datapoint-notes";
