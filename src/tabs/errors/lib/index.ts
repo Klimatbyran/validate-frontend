@@ -57,6 +57,7 @@ export {
 export type {
   DatapointNoteType,
   DatapointNoteTarget,
+  StatedTotalLocation,
   SaveDatapointNoteInput,
   DatapointErrorStatus,
   ExistingDatapointNote,

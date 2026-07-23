@@ -39,15 +39,24 @@ export type DatapointNoteType =
   | "turnover"
   | "employees";
 
+/** Both overall and scope3 stated totals use API type `statedTotalEmissions`. */
+export type StatedTotalLocation = "overall" | "scope3";
+
 export interface DatapointNoteTarget {
   datapointType: DatapointNoteType;
   category?: number;
+  /** Which stated-total field to resolve - required when datapointType is statedTotalEmissions. */
+  statedTotalLocation?: StatedTotalLocation;
 }
 
 /**
  * Maps an Errors-tab `selectedDataPoint` id to the backend's datapointType.
  * Returns null for data points with no underlying id to attach a note to
  * (scope3/overall calculated totals are plain computed numbers, no FK target).
+ *
+ * Overall stated total and Scope 3 stated total share the same API datapointType
+ * (`statedTotalEmissions`) but are different DB rows - `statedTotalLocation` keeps
+ * them from being collapsed into one target.
  */
 export function mapDataPointToNoteTarget(
   selectedDataPoint: string,
@@ -62,11 +71,17 @@ export function mapDataPointToNoteTarget(
   ) {
     return { datapointType: "scope2" };
   }
-  if (
-    selectedDataPoint === "scope3-stated-total" ||
-    selectedDataPoint === "stated-total"
-  ) {
-    return { datapointType: "statedTotalEmissions" };
+  if (selectedDataPoint === "stated-total") {
+    return {
+      datapointType: "statedTotalEmissions",
+      statedTotalLocation: "overall",
+    };
+  }
+  if (selectedDataPoint === "scope3-stated-total") {
+    return {
+      datapointType: "statedTotalEmissions",
+      statedTotalLocation: "scope3",
+    };
   }
   const categoryMatch = /^cat-(\d+)$/.exec(selectedDataPoint);
   if (categoryMatch) {
@@ -111,6 +126,16 @@ interface StageCompanyDetails {
 export interface ResolvedStageDatapoint {
   datapointId: string;
   note: ExistingDatapointNote | null;
+}
+
+function resolveStatedTotalDatapoint(
+  emissions: NonNullable<StageReportingPeriod["emissions"]>,
+  location: StatedTotalLocation | undefined,
+): StageDatapointPayload | null | undefined {
+  if (location === "scope3") {
+    return emissions.scope3?.statedTotalEmissions;
+  }
+  return emissions.statedTotalEmissions;
 }
 
 /**
@@ -163,9 +188,9 @@ export async function resolveStageDatapoint(
       case "biogenicEmissions":
         return emissions.biogenicEmissions;
       case "statedTotalEmissions":
-        return (
-          emissions.statedTotalEmissions ??
-          emissions.scope3?.statedTotalEmissions
+        return resolveStatedTotalDatapoint(
+          emissions,
+          target.statedTotalLocation,
         );
       case "category":
         return emissions.scope3?.categories?.find(
