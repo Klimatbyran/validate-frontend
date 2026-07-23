@@ -117,9 +117,18 @@ export interface ResolvedStageDatapoint {
  * Finds the real stage-side datapoint (id + any existing reviewer note) for a row +
  * target. Requires a wikidataId (unpaired/report-identity-only rows can't be resolved
  * this way) and a matching reporting period on the stage company detail payload.
+ *
+ * Matches by `companyReportId` + the selected *data* year, not `row.reportYear` (the
+ * PDF/report's publication year - a different concept, see `getPeriodReportYearFromApi`
+ * vs `getPeriodDataYear`). A single CompanyReport can hold multiple ReportingPeriods
+ * (e.g. a report published in 2025 disclosing both 2024 and 2023 data), all sharing one
+ * companyReportId - comparing against reportYear instead of dataYear silently matched
+ * the wrong sibling period whenever those two years differ, attaching/reading notes
+ * against a datapoint other than the one the table row actually shows.
  */
 export async function resolveStageDatapoint(
-  row: Pick<CompanyRow, "wikidataId" | "companyReportId" | "reportYear">,
+  row: Pick<CompanyRow, "wikidataId" | "companyReportId">,
+  dataYear: number,
   target: DatapointNoteTarget,
   source: ErrorBrowserStageSource = "stage",
 ): Promise<ResolvedStageDatapoint | null> {
@@ -138,8 +147,7 @@ export async function resolveStageDatapoint(
   const company: StageCompanyDetails = await res.json();
   const period = (company.reportingPeriods ?? []).find(
     (p) =>
-      p.companyReportId === row.companyReportId &&
-      p.year === String(row.reportYear ?? ""),
+      p.companyReportId === row.companyReportId && p.year === String(dataYear),
   );
   const emissions = period?.emissions;
   if (!emissions) return null;

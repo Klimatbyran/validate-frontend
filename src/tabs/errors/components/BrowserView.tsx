@@ -100,6 +100,7 @@ export function BrowserView({
     try {
       const resolved = await resolveStageDatapoint(
         row,
+        selectedYear,
         noteTarget,
         stageSource,
       );

@@ -96,9 +96,10 @@ export function getDataPointValue(
 }
 
 /**
- * Get the reviewer note for a data point, when the API included one (stage detail
- * reads only - list reads may omit it depending on which endpoint served the data).
- * Mirrors `getDataPointValue`'s dispatch by data point id.
+ * Get the reviewer note for a data point. Populated on both the pipeline list and
+ * detail reads (unlike the datapoint `id`, which the list intentionally omits -
+ * see `resolveStageDatapoint` in `datapoint-notes.ts`). Mirrors `getDataPointValue`'s
+ * dispatch by data point id.
  */
 export function getDataPointNote(
   emissions: ReportingPeriod["emissions"] | null | undefined,
