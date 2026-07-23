@@ -1,14 +1,26 @@
 import React from "react";
+import { toast } from "sonner";
 import { XCircle, Download } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { getCompanyUrlSegment } from "@/lib/company-routing";
+import { ApiAuthError } from "@/lib/garbo-auth-fetch";
+import type { ErrorBrowserStageSource } from "@/config/api-env";
 import { DiscrepancyType, CompanyRow, DATA_POINTS } from "../types";
-import { computePerformanceMetrics, exportComparisonToCsv } from "../lib";
+import {
+  computePerformanceMetrics,
+  exportComparisonToCsv,
+  mapDataPointToNoteTarget,
+  resolveStageDatapoint,
+  saveDatapointNote,
+} from "../lib";
+import type { DatapointErrorStatus } from "../lib";
 import { CompanyTableRow } from "./CompanyTableRow";
 import { PerformanceMetricsTable } from "./PerformanceMetricsTable";
 import { DiscrepancyFilterPills } from "./DiscrepancyFilterPills";
+import { ErrorReasonDialog } from "./ErrorReasonDialog";
+import type { ErrorReasonSaveInput } from "./ErrorReasonDialog";
 
 interface BrowserViewProps {
   isLoading: boolean;
@@ -20,6 +32,7 @@ interface BrowserViewProps {
   selectedYear: number;
   selectedTags: string[];
   verifiedOnly: boolean;
+  stageSource: ErrorBrowserStageSource;
 }
 
 export function BrowserView({
@@ -32,6 +45,7 @@ export function BrowserView({
   selectedYear,
   selectedTags,
   verifiedOnly,
+  stageSource,
 }: BrowserViewProps) {
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -49,6 +63,114 @@ export function BrowserView({
     ]),
   );
   const [showMissingCompany, setShowMissingCompany] = React.useState(false);
+  const [reasonDialogRow, setReasonDialogRow] =
+    React.useState<CompanyRow | null>(null);
+  const [reasonDialogLoading, setReasonDialogLoading] = React.useState(false);
+  const [reasonDialogDatapointId, setReasonDialogDatapointId] = React.useState<
+    string | null
+  >(null);
+  const [reasonDialogExistingReason, setReasonDialogExistingReason] =
+    React.useState("");
+  const [reasonDialogExistingStatus, setReasonDialogExistingStatus] =
+    React.useState<DatapointErrorStatus | null>(null);
+  const [savingReason, setSavingReason] = React.useState(false);
+  /** Reasons saved/loaded this session, keyed by `${rowKey}::${dataPointId}` so
+   * switching the Data Point dropdown doesn't bleed one field's reason into
+   * another's row. Populated both by saves and by opening a row's dialog (which
+   * fetches whatever note already exists), not eagerly for the whole table. */
+  const [savedReasons, setSavedReasons] = React.useState<
+    Record<string, string>
+  >({});
+
+  const noteTarget = React.useMemo(
+    () => mapDataPointToNoteTarget(selectedDataPoint),
+    [selectedDataPoint],
+  );
+
+  const savedReasonKey = (rowKey: string, dataPoint: string) =>
+    `${rowKey}::${dataPoint}`;
+
+  const handleOpenReasonDialog = async (row: CompanyRow) => {
+    setReasonDialogRow(row);
+    setReasonDialogDatapointId(null);
+    setReasonDialogExistingReason("");
+    setReasonDialogExistingStatus(null);
+    if (!noteTarget) return;
+    setReasonDialogLoading(true);
+    try {
+      const resolved = await resolveStageDatapoint(
+        row,
+        selectedYear,
+        noteTarget,
+        stageSource,
+      );
+      if (!resolved) {
+        toast.error(t("errors.reasonDialog.noDatapointFound"));
+        setReasonDialogRow(null);
+        return;
+      }
+      setReasonDialogDatapointId(resolved.datapointId);
+      const existingReason = resolved.note?.errorReason ?? "";
+      setReasonDialogExistingReason(existingReason);
+      setReasonDialogExistingStatus(resolved.note?.status ?? null);
+      if (existingReason) {
+        setSavedReasons((prev) => ({
+          ...prev,
+          [savedReasonKey(row.rowKey, selectedDataPoint)]: existingReason,
+        }));
+      }
+    } catch (err) {
+      if (err instanceof ApiAuthError) {
+        toast.error(t("errors.reasonDialog.loginRequired"));
+      } else {
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : t("errors.reasonDialog.noDatapointFound"),
+        );
+      }
+      setReasonDialogRow(null);
+    } finally {
+      setReasonDialogLoading(false);
+    }
+  };
+
+  const handleSaveReason = async (input: ErrorReasonSaveInput) => {
+    if (!reasonDialogRow || !noteTarget || !reasonDialogDatapointId) return;
+    setSavingReason(true);
+    try {
+      await saveDatapointNote(
+        {
+          datapointType: noteTarget.datapointType,
+          datapointId: reasonDialogDatapointId,
+          errorReason: input.errorReason,
+          status: input.status,
+          previousValue: input.previousValue,
+          newValue: input.newValue,
+        },
+        stageSource,
+      );
+      setSavedReasons((prev) => ({
+        ...prev,
+        [savedReasonKey(reasonDialogRow.rowKey, selectedDataPoint)]:
+          input.errorReason,
+      }));
+      toast.success(t("errors.reasonDialog.saved"));
+      setReasonDialogRow(null);
+    } catch (err) {
+      if (err instanceof ApiAuthError) {
+        toast.error(t("errors.reasonDialog.loginRequired"));
+      } else {
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : t("errors.reasonDialog.saveFailed"),
+        );
+      }
+    } finally {
+      setSavingReason(false);
+    }
+  };
 
   const tagFilteredRows = React.useMemo(() => {
     if (!selectedTags.length) return comparisonRows;
@@ -279,6 +401,9 @@ export function BrowserView({
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-02 uppercase tracking-wider">
                     {t("errors.tableStatus")}
                   </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-02 uppercase tracking-wider">
+                    {t("errors.tableReason")}
+                  </th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-02 uppercase tracking-wider">
                     {t("errors.tableDiff")}
                   </th>
@@ -288,7 +413,7 @@ export function BrowserView({
                 {filteredRows.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="px-4 py-8 text-center text-gray-02"
                     >
                       {t("errors.noDataTryFilters")}
@@ -301,6 +426,15 @@ export function BrowserView({
                       row={row}
                       index={index}
                       difficultCompanyIds={difficultCompanyIds}
+                      dataPointSupportsNotes={noteTarget !== null}
+                      onAddReason={handleOpenReasonDialog}
+                      savedReason={
+                        savedReasons[
+                          savedReasonKey(row.rowKey, selectedDataPoint)
+                        ] ??
+                        row.errorNote?.errorReason ??
+                        undefined
+                      }
                     />
                   ))
                 )}
@@ -320,6 +454,20 @@ export function BrowserView({
           </div>
         )}
       </div>
+
+      <ErrorReasonDialog
+        open={reasonDialogRow !== null}
+        onOpenChange={(open) => {
+          if (!open) setReasonDialogRow(null);
+        }}
+        row={reasonDialogRow}
+        dataPointLabel={selectedDataPointLabel}
+        saving={savingReason}
+        loading={reasonDialogLoading}
+        initialReason={reasonDialogExistingReason}
+        initialStatus={reasonDialogExistingStatus}
+        onSave={handleSaveReason}
+      />
     </>
   );
 }
