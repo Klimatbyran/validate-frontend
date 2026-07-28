@@ -97,7 +97,9 @@ describe("CompanyDetailTab identifiers", () => {
     await renderTab();
 
     expect(screen.getByDisplayValue("Q12345")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("5493001KJTIIGC8Y1R12")).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue("5493001KJTIIGC8Y1R12"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Unverified")).toBeInTheDocument();
     expect(screen.getByText("Verified")).toBeInTheDocument();
   });
@@ -112,7 +114,9 @@ describe("CompanyDetailTab identifiers", () => {
 
     const row = wikidataInput.closest("li");
     expect(row).toBeTruthy();
-    await user.click(within(row as HTMLElement).getByRole("button", { name: "Save" }));
+    await user.click(
+      within(row as HTMLElement).getByRole("button", { name: "Save" }),
+    );
 
     const dialog = await screen.findByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
@@ -141,7 +145,9 @@ describe("CompanyDetailTab identifiers", () => {
 
     const row = wikidataInput.closest("li");
     expect(row).toBeTruthy();
-    await user.click(within(row as HTMLElement).getByRole("button", { name: "Save" }));
+    await user.click(
+      within(row as HTMLElement).getByRole("button", { name: "Save" }),
+    );
 
     const dialog = await screen.findByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
@@ -162,7 +168,9 @@ describe("CompanyDetailTab identifiers", () => {
 
     const row = leiInput.closest("li");
     expect(row).toBeTruthy();
-    await user.click(within(row as HTMLElement).getByRole("button", { name: "Save" }));
+    await user.click(
+      within(row as HTMLElement).getByRole("button", { name: "Save" }),
+    );
 
     const dialog = await screen.findByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Save" }));

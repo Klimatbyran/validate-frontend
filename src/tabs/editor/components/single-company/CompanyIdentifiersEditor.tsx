@@ -4,7 +4,10 @@ import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
-import { upsertCompanyIdentifier, deleteCompanyIdentifier } from "../../lib/companies-api";
+import {
+  upsertCompanyIdentifier,
+  deleteCompanyIdentifier,
+} from "../../lib/companies-api";
 import {
   WIKIDATA_ID_REGEX,
   type GarboCompanyDetail,
@@ -63,9 +66,8 @@ export function CompanyIdentifiersEditor({
   const [addType, setAddType] = useState<GarboCompanyIdentifierType | "">("");
   const [addValue, setAddValue] = useState("");
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [pendingSave, setPendingSave] = useState<EditableCompanyIdentifier | null>(
-    null,
-  );
+  const [pendingSave, setPendingSave] =
+    useState<EditableCompanyIdentifier | null>(null);
 
   useEffect(() => {
     setRows(buildEditableIdentifiers(company));
@@ -73,10 +75,7 @@ export function CompanyIdentifiersEditor({
     setAddValue("");
   }, [company.id, company.identifiers, company.wikidataId, company.lei]);
 
-  const typesInUse = useMemo(
-    () => rows.map((row) => row.type),
-    [rows],
-  );
+  const typesInUse = useMemo(() => rows.map((row) => row.type), [rows]);
   const typesAvailableToAdd = useMemo(
     () => availableIdentifierTypesToAdd(typesInUse),
     [typesInUse],
@@ -323,7 +322,9 @@ export function CompanyIdentifiersEditor({
                 type="text"
                 value={addValue}
                 onChange={(e) => setAddValue(e.target.value)}
-                placeholder={t("editor.companyDetail.identifierValuePlaceholder")}
+                placeholder={t(
+                  "editor.companyDetail.identifierValuePlaceholder",
+                )}
                 className={inputClassName + " !max-w-none !h-8 !text-xs"}
               />
             </div>
