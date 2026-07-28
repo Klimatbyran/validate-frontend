@@ -297,6 +297,7 @@
       "identifierValueRequired": "Identifier value is required",
       "identifierTypeAlreadyExists": "This identifier type already exists for the company",
       "identifierSaved": "Identifier saved",
+      "identifierCleared": "Identifier cleared",
       "selectIdentifierType": "Select type",
       "identifierType": {
         "wikidata": "Wikidata",

@@ -100,6 +100,12 @@ export function buildEditableIdentifiers(
   return rows;
 }
 
+export function canClearIdentifierType(
+  type: GarboCompanyIdentifierType,
+): boolean {
+  return type === "LEI" || type === "ORG_NUMBER" || type === "ISIN";
+}
+
 export function availableIdentifierTypesToAdd(
   existingTypes: Iterable<GarboCompanyIdentifierType>,
 ): GarboCompanyIdentifierType[] {

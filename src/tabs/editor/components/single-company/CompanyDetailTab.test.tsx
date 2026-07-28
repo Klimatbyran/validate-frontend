@@ -7,12 +7,15 @@ import { CompanyDetailTab } from "./CompanyDetailTab";
 
 const updateCompany = vi.fn();
 const upsertCompanyIdentifier = vi.fn();
+const deleteCompanyIdentifier = vi.fn();
 const fetchIndustryGics = vi.fn();
 
 vi.mock("../../lib/companies-api", () => ({
   updateCompany: (...args: unknown[]) => updateCompany(...args),
   upsertCompanyIdentifier: (...args: unknown[]) =>
     upsertCompanyIdentifier(...args),
+  deleteCompanyIdentifier: (...args: unknown[]) =>
+    deleteCompanyIdentifier(...args),
   fetchIndustryGics: () => fetchIndustryGics(),
   updateCompanyIndustry: vi.fn(),
   updateCompanyBaseYear: vi.fn(),
@@ -87,6 +90,7 @@ describe("CompanyDetailTab identifiers", () => {
     fetchIndustryGics.mockResolvedValue([]);
     updateCompany.mockResolvedValue(undefined);
     upsertCompanyIdentifier.mockResolvedValue(undefined);
+    deleteCompanyIdentifier.mockResolvedValue(undefined);
   });
 
   it("renders editable identifier values with verification badges", async () => {
@@ -146,6 +150,28 @@ describe("CompanyDetailTab identifiers", () => {
       expect(toast.error).toHaveBeenCalled();
     });
 
+    expect(upsertCompanyIdentifier).not.toHaveBeenCalled();
+  });
+
+  it("clears an existing LEI identifier when the value is removed", async () => {
+    const user = userEvent.setup();
+    await renderTab();
+
+    const leiInput = screen.getByDisplayValue("5493001KJTIIGC8Y1R12");
+    await user.clear(leiInput);
+
+    const row = leiInput.closest("li");
+    expect(row).toBeTruthy();
+    await user.click(within(row as HTMLElement).getByRole("button", { name: "Save" }));
+
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(deleteCompanyIdentifier).toHaveBeenCalledTimes(1);
+    });
+
+    expect(deleteCompanyIdentifier).toHaveBeenCalledWith(mockCompany.id, "LEI");
     expect(upsertCompanyIdentifier).not.toHaveBeenCalled();
   });
 

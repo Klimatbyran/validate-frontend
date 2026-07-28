@@ -132,6 +132,7 @@
       "identifierValueRequired": "Identifierarvärde krävs",
       "identifierTypeAlreadyExists": "Denna identifierartyp finns redan för företaget",
       "identifierSaved": "Identifierare sparad",
+      "identifierCleared": "Identifierare borttagen",
       "selectIdentifierType": "Välj typ",
       "identifierType": {
         "wikidata": "Wikidata",

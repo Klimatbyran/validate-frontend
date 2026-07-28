@@ -3,6 +3,7 @@ import type { GarboCompanyDetail } from "./types";
 import {
   availableIdentifierTypesToAdd,
   buildEditableIdentifiers,
+  canClearIdentifierType,
 } from "./company-identifiers";
 
 const baseCompany: GarboCompanyDetail = {
@@ -52,5 +53,14 @@ describe("availableIdentifierTypesToAdd", () => {
       "ORG_NUMBER",
       "ISIN",
     ]);
+  });
+});
+
+describe("canClearIdentifierType", () => {
+  it("allows clearing LEI and other non-wikidata identifiers", () => {
+    expect(canClearIdentifierType("LEI")).toBe(true);
+    expect(canClearIdentifierType("ORG_NUMBER")).toBe(true);
+    expect(canClearIdentifierType("ISIN")).toBe(true);
+    expect(canClearIdentifierType("WIKIDATA")).toBe(false);
   });
 });

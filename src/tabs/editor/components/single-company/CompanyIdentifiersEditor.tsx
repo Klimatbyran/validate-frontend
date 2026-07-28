@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
-import { upsertCompanyIdentifier } from "../../lib/companies-api";
+import { upsertCompanyIdentifier, deleteCompanyIdentifier } from "../../lib/companies-api";
 import {
   WIKIDATA_ID_REGEX,
   type GarboCompanyDetail,
@@ -15,6 +15,7 @@ import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes"
 import {
   availableIdentifierTypesToAdd,
   buildEditableIdentifiers,
+  canClearIdentifierType,
   type EditableCompanyIdentifier,
 } from "../../lib/company-identifiers";
 import { MetadataVerifyUndoActions } from "../MetadataVerifyUndoActions";
@@ -130,6 +131,27 @@ export function CompanyIdentifiersEditor({
     row: EditableCompanyIdentifier,
     meta?: { comment?: string; source?: string },
   ) => {
+    const trimmed = row.value.trim();
+
+    if (!trimmed) {
+      if (row.isNew || !canClearIdentifierType(row.type)) {
+        toast.error(t("editor.companyDetail.identifierValueRequired"));
+        return;
+      }
+
+      setSavingKey(row.key);
+      try {
+        await deleteCompanyIdentifier(company.id, row.type);
+        toast.success(t("editor.companyDetail.identifierCleared"));
+        onSaved?.();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : String(e));
+      } finally {
+        setSavingKey(null);
+      }
+      return;
+    }
+
     const validationError = validateIdentifierValue(row.type, row.value, t);
     if (validationError) {
       toast.error(validationError);
@@ -140,7 +162,7 @@ export function CompanyIdentifiersEditor({
     try {
       await upsertCompanyIdentifier(company.id, {
         type: row.type,
-        value: row.value.trim(),
+        value: trimmed,
         verified: row.verified,
         metadata:
           meta?.comment?.trim() || meta?.source?.trim()
