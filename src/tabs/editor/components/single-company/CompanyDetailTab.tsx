@@ -14,11 +14,7 @@ import {
   updateCompanyIndustry,
   type IndustryGicsOption,
 } from "../../lib/companies-api";
-import {
-  WIKIDATA_ID_REGEX,
-  type GarboCompanyDetail,
-  type TagOption,
-} from "../../lib/types";
+import { type GarboCompanyDetail, type TagOption } from "../../lib/types";
 import {
   displayBaseYear,
   getDescriptionByLang,
@@ -26,11 +22,8 @@ import {
 } from "../../lib/company-edit-utils";
 import { buildTagLabelBySlug } from "../../lib/editor-tag-and-payload-utils";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
-import {
-  leiFromIdentifiers,
-  wikidataFromIdentifiers,
-} from "../../lib/company-identifiers";
-import { CompanyIdentifiersList } from "./CompanyIdentifiersList";
+import { wikidataFromIdentifiers } from "../../lib/company-identifiers";
+import { CompanyIdentifiersEditor } from "./CompanyIdentifiersEditor";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 
 export function CompanyDetailTab({
@@ -58,10 +51,6 @@ export function CompanyDetailTab({
   const [descriptionSv, setDescriptionSv] = useState(() =>
     getDescriptionByLang(company, "SV"),
   );
-  const [wikidataId, setWikidataId] = useState(
-    () => wikidataFromIdentifiers(company) ?? "",
-  );
-  const [lei, setLei] = useState(() => leiFromIdentifiers(company) ?? "");
   const [url, setUrl] = useState(company.url ?? "");
   const [internalComment, setInternalComment] = useState(
     company.internalComment ?? "",
@@ -93,8 +82,6 @@ export function CompanyDetailTab({
     setName(company.name ?? "");
     setDescriptionEn(getDescriptionByLang(company, "EN"));
     setDescriptionSv(getDescriptionByLang(company, "SV"));
-    setWikidataId(wikidataFromIdentifiers(company) ?? "");
-    setLei(leiFromIdentifiers(company) ?? "");
     setUrl(company.url ?? "");
     setInternalComment(company.internalComment ?? "");
     setSelectedTags(company.tags ?? []);
@@ -103,7 +90,6 @@ export function CompanyDetailTab({
   }, [
     company.id,
     company.name,
-    company.identifiers,
     company.url,
     company.internalComment,
     company.tags,
@@ -132,22 +118,14 @@ export function CompanyDetailTab({
     comment?: string;
     source?: string;
   }) => {
-    const trimmedWikidataId = wikidataId.trim();
-    if (trimmedWikidataId && !WIKIDATA_ID_REGEX.test(trimmedWikidataId)) {
-      toast.error(t("wikidata.invalidFormat"));
-      return;
-    }
-
     setSavingCore(true);
     try {
       await updateCompany(company.id, {
-        wikidataId: trimmedWikidataId || undefined,
         name,
         descriptions: [
           { language: "EN", text: descriptionEn },
           { language: "SV", text: descriptionSv },
         ],
-        lei: lei || undefined,
         url: url || undefined,
         internalComment: internalComment || undefined,
         tags: selectedTags,
@@ -323,50 +301,7 @@ export function CompanyDetailTab({
           </div>
 
           <div className="space-y-6">
-            <section className="rounded-lg bg-gray-05/60 p-4">
-              <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide mb-3">
-                {t("editor.companyDetail.identifiers")}
-              </div>
-              {company.identifiers && company.identifiers.length > 0 ? (
-                <CompanyIdentifiersList identifiers={company.identifiers} />
-              ) : null}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-01 mb-1">
-                    {t("editor.companyDetail.wikidataId")}
-                  </label>
-                  <input
-                    type="text"
-                    value={wikidataId}
-                    onChange={(e) => setWikidataId(e.target.value)}
-                    placeholder={t("wikidata.placeholder")}
-                    className={inputClassName + " !max-w-none"}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-01 mb-1">
-                    {t("editor.companyDetail.internalId")}
-                  </label>
-                  <input
-                    type="text"
-                    value={company.id}
-                    readOnly
-                    className={inputClassName + " bg-gray-04/60 !max-w-none"}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-01 mb-1">
-                    {t("editor.companyDetail.lei")}
-                  </label>
-                  <input
-                    type="text"
-                    value={lei}
-                    onChange={(e) => setLei(e.target.value)}
-                    className={inputClassName + " !max-w-none"}
-                  />
-                </div>
-              </div>
-            </section>
+            <CompanyIdentifiersEditor company={company} onSaved={onSaved} />
 
             <section className="rounded-lg bg-gray-05/60 p-4">
               <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide mb-3">

@@ -653,3 +653,81 @@ export async function updateCompanyBaseYear(
     throw new Error(`Failed to update base year: ${res.status} ${text}`);
   }
 }
+
+export async function upsertCompanyIdentifier(
+  companyId: string,
+  body: {
+    type: "WIKIDATA" | "LEI" | "ORG_NUMBER" | "ISIN";
+    value: string;
+    metadata?: GarboMetadata;
+    verified?: boolean;
+  },
+): Promise<void> {
+  const res = await garboAuthFetch(
+    apiUrl(companiesPath(`${encodeURIComponent(companyId)}/identifiers`)),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+  );
+  if (res.status === 401) {
+    throw new Error("Please log in to update identifiers.");
+  }
+  if (res.status === 404) {
+    throw new Error("Company not found.");
+  }
+  if (res.status === 409) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(
+      (data as { message?: string }).message ??
+        "Identifier value is already in use.",
+    );
+  }
+  if (res.status === 400) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(
+      (data as { message?: string }).message ?? "Invalid identifier.",
+    );
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to update identifier: ${res.status} ${text}`);
+  }
+}
+
+export async function deleteCompanyIdentifier(
+  companyId: string,
+  type: "WIKIDATA" | "LEI" | "ORG_NUMBER" | "ISIN",
+): Promise<void> {
+  const res = await garboAuthFetch(
+    apiUrl(
+      companiesPath(
+        `${encodeURIComponent(companyId)}/identifiers/${encodeURIComponent(type)}`,
+      ),
+    ),
+    {
+      method: "DELETE",
+      headers: { Accept: "application/json" },
+    },
+  );
+  if (res.status === 401) {
+    throw new Error("Please log in to update identifiers.");
+  }
+  if (res.status === 404) {
+    throw new Error("Company or identifier not found.");
+  }
+  if (res.status === 400) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(
+      (data as { message?: string }).message ?? "Invalid identifier.",
+    );
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to clear identifier: ${res.status} ${text}`);
+  }
+}
