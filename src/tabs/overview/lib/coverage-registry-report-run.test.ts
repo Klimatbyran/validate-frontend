@@ -89,6 +89,7 @@ describe("coverage-registry-report-run", () => {
     expect(toRunReportListItem(entry, report)).toEqual({
       id: "r2",
       url: "https://example.com/2025.pdf",
+      companyId: "c1",
       companyName: "ABB Ltd",
       wikidataId: "Q52825",
       reportYear: "2025",

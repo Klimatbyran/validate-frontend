@@ -120,7 +120,14 @@ export function CrawlerTab() {
     const urls = selectedReports
       .map((r) => r.url?.trim())
       .filter((url): url is string => Boolean(url));
-    void runForUrls(urls, { onSuccess: () => setIsRunReportsOpen(false) });
+    void runForUrls(urls, {
+      runItems: selectedReports.map((r) => ({
+        url: r.url,
+        companyName: r.companyName,
+        wikidataId: r.wikidataId ?? null,
+      })),
+      onSuccess: () => setIsRunReportsOpen(false),
+    });
   }, [runForUrls, selectedReports]);
 
   const viewModeOptions = [

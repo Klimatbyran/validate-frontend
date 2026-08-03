@@ -13,6 +13,11 @@ import {
   UploadApiError,
   createJobsFromUrls,
 } from "@/tabs/upload/lib/upload-api";
+import type { RunReportListItem } from "@/lib/run-reports-types";
+import {
+  urlContextsFromRunItems,
+  type PipelineUrlContext,
+} from "@/lib/pipeline-company-context";
 import type { UploadBatchOptionsProps } from "@/tabs/upload/components/UploadBatchOptions";
 import type { UploadTagsOptionsProps } from "@/tabs/upload/components/UploadTagsOptions";
 import type { UploadWorkerRunOptionsProps } from "@/tabs/upload/components/UploadWorkerRunOptions";
@@ -23,10 +28,18 @@ export type RunReportsPipelineRunOptions = {
   workers: UploadWorkerRunOptionsProps;
 };
 
+export type RunReportsPipelineRunForUrlsOptions = {
+  onSuccess?: () => void;
+  /** Per-URL Garbo company identity (wikidata, name, id). */
+  urlContexts?: PipelineUrlContext[];
+  /** Shorthand: build urlContexts from run-report rows. */
+  runItems?: RunReportListItem[];
+};
+
 export type RunReportsPipelineHandle = {
   runForUrls: (
     urls: string[],
-    options?: { onSuccess?: () => void },
+    options?: RunReportsPipelineRunForUrlsOptions,
   ) => Promise<void>;
   isRunningReports: boolean;
   autoApprove: boolean;
@@ -106,7 +119,7 @@ export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
   const runForUrls = useCallback(
     async (
       urls: string[],
-      options?: { onSuccess?: () => void },
+      options?: RunReportsPipelineRunForUrlsOptions,
     ): Promise<void> => {
       if (!urls.length) {
         toast.error(t("registry.noReportUrls"));
@@ -144,6 +157,12 @@ export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
 
       setIsRunningReports(true);
       try {
+        const urlContexts =
+          options?.urlContexts ??
+          (options?.runItems
+            ? urlContextsFromRunItems(options.runItems)
+            : undefined);
+
         const result = await createJobsFromUrls({
           urls,
           autoApprove,
@@ -152,6 +171,7 @@ export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
           runOnly,
           tags,
           parsePdfEndpoint: config?.parsePdfEndpoint,
+          urlContexts,
         });
 
         const envelope =

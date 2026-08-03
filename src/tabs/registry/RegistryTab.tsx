@@ -197,7 +197,14 @@ function RegistryTabContent() {
     const urls = selectedReports
       .map((entry) => entry.url?.trim())
       .filter((url): url is string => Boolean(url));
-    void runForUrls(urls, { onSuccess: () => setIsRunReportsOpen(false) });
+    void runForUrls(urls, {
+      runItems: selectedReports.map((entry) => ({
+        url: entry.url,
+        companyName: entry.companyName,
+        wikidataId: entry.wikidataId ?? null,
+      })),
+      onSuccess: () => setIsRunReportsOpen(false),
+    });
   }, [runForUrls, selectedReports]);
 
   const handleAddEntry = async (entry: RegistryNewEntry) => {

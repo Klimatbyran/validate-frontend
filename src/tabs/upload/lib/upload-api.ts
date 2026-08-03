@@ -1,5 +1,9 @@
 import { authenticatedFetch } from "@/lib/api-helpers";
 import type { RunOnlyWorkerId } from "@/lib/run-only-workers";
+import type {
+  PipelineCompanyContext,
+  PipelineUrlContext,
+} from "@/lib/pipeline-company-context";
 import { PARSE_PDF_API_ENDPOINT, PARSE_PDF_UPLOAD_ENDPOINT } from "./utils";
 
 export class UploadApiError extends Error {
@@ -94,6 +98,8 @@ export interface CreateJobsFromUrlsOptions {
   tags?: string[];
   cachePdf?: boolean;
   parsePdfEndpoint?: string;
+  pipelineCompany?: PipelineCompanyContext;
+  urlContexts?: PipelineUrlContext[];
 }
 
 export async function uploadPdfsToParsePdf({
@@ -138,6 +144,8 @@ export async function createJobsFromUrls({
   tags,
   cachePdf = true,
   parsePdfEndpoint = PARSE_PDF_API_ENDPOINT,
+  pipelineCompany,
+  urlContexts,
 }: CreateJobsFromUrlsOptions): Promise<CreateJobsFromUrlsResult> {
   const body = {
     autoApprove: Boolean(autoApprove),
@@ -147,6 +155,8 @@ export async function createJobsFromUrls({
     ...(runOnly && runOnly.length > 0 ? { runOnly } : {}),
     ...(tags && tags.length > 0 ? { tags } : {}),
     ...(cachePdf ? { cachePdf: true } : {}),
+    ...(pipelineCompany ? { pipelineCompany } : {}),
+    ...(urlContexts && urlContexts.length > 0 ? { urlContexts } : {}),
     urls,
   };
 
