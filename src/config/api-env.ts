@@ -2,6 +2,9 @@
 
 export type ApiTarget = "local" | "stage" | "prod";
 
+/** Errors tab "Stage source" toggle - where the stage-side pipeline reads come from. */
+export type ErrorBrowserStageSource = "stage" | "local";
+
 export const GARBO_STAGE_ORIGIN = "https://stage.klimatkollen.se";
 export const GARBO_PROD_ORIGIN = "https://klimatkollen.se";
 
