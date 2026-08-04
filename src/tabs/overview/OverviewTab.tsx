@@ -67,7 +67,7 @@ export function OverviewTab() {
         .filter((row) => row.reportUrl)
         .map((row) => ({
           url: row.reportUrl!,
-          companyId: row.companyId,
+          companyId: row.stageCompanyId ?? undefined,
           companyName: row.companyName,
           wikidataId: row.wikidataId,
           reportYear: row.reportYear,
