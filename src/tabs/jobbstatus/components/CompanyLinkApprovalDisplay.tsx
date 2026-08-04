@@ -24,6 +24,13 @@ export function CompanyLinkApprovalDisplay({
   const isApproved = data.status === "approved";
   const isPending = data.status === "pending_approval";
   const isWikidataRelink = data.metadata?.source === "wikidata-relink";
+  const allowCreateNew =
+    data.allowCreateNew !== false && !data.wikidataNode?.trim();
+
+  const normalizedExtracted = data.extractedName.trim().toLowerCase();
+  const hasExactNameCandidate = data.candidates.some(
+    (candidate) => candidate.name.trim().toLowerCase() === normalizedExtracted,
+  );
 
   const handleApprove = () => {
     if (createNew) {
@@ -130,7 +137,7 @@ export function CompanyLinkApprovalDisplay({
               </label>
             ))}
 
-            {data.allowCreateNew !== false ? (
+            {allowCreateNew ? (
               <label
                 className={cn(
                   "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
@@ -154,6 +161,11 @@ export function CompanyLinkApprovalDisplay({
                   <div className="text-xs text-gray-02">
                     {t("companyLink.createNewDescription")}
                   </div>
+                  {createNew && hasExactNameCandidate ? (
+                    <Callout variant="warning" className="mt-2 text-xs">
+                      {t("companyLink.createNewExactNameWarning")}
+                    </Callout>
+                  ) : null}
                 </div>
               </label>
             ) : null}

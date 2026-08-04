@@ -167,14 +167,21 @@ export function SingleCompanyOverviewTable({
                   <td className="px-4 py-3 font-medium">
                     <div className="flex flex-col">
                       <span>{c.name}</span>
-                      <span className="text-xs text-gray-02">
-                        {c.wikidataId ?? c.id.split("-")[0]}
+                      <span className="text-xs text-gray-02 break-all">
+                        {t("editor.singleCompanyView.table.companyIdLabel")}:{" "}
+                        {c.id}
                       </span>
+                      {c.wikidataId ? (
+                        <span className="text-xs text-gray-02">
+                          Wikidata: {c.wikidataId}
+                        </span>
+                      ) : null}
                       {row.companyReportId ? (
                         <span
-                          className={`${editorSecondaryIdTextClass} mt-0.5`}
+                          className={`${editorSecondaryIdTextClass} mt-0.5 break-all`}
                         >
-                          {row.companyReportId}
+                          {t("editor.singleCompanyView.table.reportShellLabel")}
+                          : {row.companyReportId}
                         </span>
                       ) : null}
                     </div>

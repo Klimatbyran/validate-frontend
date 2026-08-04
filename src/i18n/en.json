@@ -312,7 +312,9 @@
         "emissions": "Emissions",
         "economy": "Economy",
         "allYears": "All years",
-        "thisReport": "This report"
+        "thisReport": "This report",
+        "companyIdLabel": "Company",
+        "reportShellLabel": "Report shell"
       },
       "searchPlaceholder": "Search by company name or Wikidata ID...",
       "searchAndFilters": "Search & Filters",
@@ -579,6 +581,7 @@
     "orClickToSelect": "or click to select files",
     "pastePdfLinks": "Paste PDF links (one per line)",
     "autoApprove": "Auto-approve",
+    "autoApproveHint": "Auto-approves the Wikidata match only. It does not merge or deduplicate companies — existing companies are linked by Wikidata, LEI, or exact name when known.",
     "addLinks": "Add links",
     "uploadedFiles": "Uploaded files ({{count}})",
     "addedLinks": "Added links ({{count}})",
@@ -1734,6 +1737,7 @@
     "companyId": "Company ID",
     "createNew": "Create new company",
     "createNewDescription": "Use when none of the candidates are the correct company.",
+    "createNewExactNameWarning": "An existing company already matches this name exactly. Creating a new company will likely produce a duplicate.",
     "approved": "Company linked",
     "pendingApproval": "Select company",
     "approveTitle": "Confirm company link",

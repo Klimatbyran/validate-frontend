@@ -29,6 +29,7 @@ export function UrlUploadForm({
           <AutoApproveToggle
             value={autoApprove}
             onChange={onAutoApproveChange}
+            showScopeHint
           />
         </div>
         <textarea

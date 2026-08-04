@@ -201,7 +201,10 @@ export function CoverageYearDetailView({
   const handleRunReportModalRun = () => {
     const url = runReportSession?.runItem.url?.trim();
     if (!url) return;
-    void runForUrls([url], { onSuccess: () => setIsRunModalOpen(false) });
+    void runForUrls([url], {
+      runItems: runReportSession ? [runReportSession.runItem] : undefined,
+      onSuccess: () => setIsRunModalOpen(false),
+    });
   };
 
   const handleYearConfirm = async (

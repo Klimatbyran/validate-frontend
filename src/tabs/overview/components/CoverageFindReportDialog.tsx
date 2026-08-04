@@ -153,6 +153,20 @@ export function CoverageFindReportDialog({
     const url = selectedReport?.url?.trim();
     if (!url) return;
     void runForUrls([url], {
+      runItems: [
+        {
+          url,
+          companyId: entry.matchedCompany?.id ?? null,
+          companyName:
+            selectedReport?.companyName ??
+            entry.matchedCompany?.name ??
+            entry.name,
+          wikidataId:
+            selectedReport?.wikidataId ??
+            entry.matchedCompany?.wikidataId ??
+            null,
+        },
+      ],
       onSuccess: () => {
         if (selectedReport) {
           onSaved?.({

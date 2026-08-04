@@ -312,7 +312,9 @@
         "emissions": "Utsläpp",
         "economy": "Ekonomi",
         "allYears": "Alla år",
-        "thisReport": "Denna rapport"
+        "thisReport": "Denna rapport",
+        "companyIdLabel": "Bolag",
+        "reportShellLabel": "Rapportskal"
       },
       "searchPlaceholder": "Sök på företagsnamn eller Wikidata-ID...",
       "searchAndFilters": "Sök & filter",
@@ -579,6 +581,7 @@
     "orClickToSelect": "eller klicka för att välja filer",
     "pastePdfLinks": "Klistra in PDF-länkar (en per rad)",
     "autoApprove": "Auto-godkänn",
+    "autoApproveHint": "Auto-godkänner endast Wikidata-matchningen. Det slår inte ihop eller deduplicerar bolag — befintliga bolag kopplas via Wikidata, LEI eller exakt namn när det är känt.",
     "addLinks": "Lägg till länkar",
     "uploadedFiles": "Uppladdade filer ({{count}})",
     "addedLinks": "Tillagda länkar ({{count}})",
@@ -1734,6 +1737,7 @@
     "companyId": "Bolags-ID",
     "createNew": "Skapa nytt bolag",
     "createNewDescription": "Använd när inget av förslagen är rätt bolag.",
+    "createNewExactNameWarning": "Ett befintligt bolag matchar redan detta namn exakt. Att skapa ett nytt bolag ger sannolikt en dubblett.",
     "approved": "Bolag kopplat",
     "pendingApproval": "Välj bolag",
     "approveTitle": "Bekräfta bolagskoppling",

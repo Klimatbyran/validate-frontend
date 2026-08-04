@@ -32,7 +32,11 @@ export function FileUploadZone({
   return (
     <>
       <div className="flex items-center justify-end mb-2">
-        <AutoApproveToggle value={autoApprove} onChange={onAutoApproveChange} />
+        <AutoApproveToggle
+          value={autoApprove}
+          onChange={onAutoApproveChange}
+          showScopeHint
+        />
       </div>
       <FileDropZone
         isDragging={isDragging}

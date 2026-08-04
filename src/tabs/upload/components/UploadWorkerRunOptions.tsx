@@ -99,32 +99,37 @@ export function UploadWorkerRunOptions({
       {/* Bottom toggles */}
       <div className="space-y-2 pt-2 border-t border-gray-03/50">
         {typeof autoApprove === "boolean" && onAutoApproveChange && (
-          <div className="flex items-center justify-between">
-            <label
-              htmlFor="auto-approve"
-              className="text-sm text-gray-01 cursor-pointer"
-            >
-              {t("upload.autoApprove")}
-            </label>
-            <button
-              id="auto-approve"
-              type="button"
-              role="switch"
-              aria-checked={autoApprove}
-              onClick={() => onAutoApproveChange(!autoApprove)}
-              className={cn(
-                "relative inline-flex h-6 w-11 items-center rounded-full",
-                "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                autoApprove ? "bg-green-03" : "bg-gray-03",
-              )}
-            >
-              <span
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="auto-approve"
+                className="text-sm text-gray-01 cursor-pointer"
+              >
+                {t("upload.autoApprove")}
+              </label>
+              <button
+                id="auto-approve"
+                type="button"
+                role="switch"
+                aria-checked={autoApprove}
+                onClick={() => onAutoApproveChange(!autoApprove)}
                 className={cn(
-                  "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                  autoApprove ? "translate-x-6" : "translate-x-1",
+                  "relative inline-flex h-6 w-11 items-center rounded-full",
+                  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  autoApprove ? "bg-green-03" : "bg-gray-03",
                 )}
-              />
-            </button>
+              >
+                <span
+                  className={cn(
+                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                    autoApprove ? "translate-x-6" : "translate-x-1",
+                  )}
+                />
+              </button>
+            </div>
+            <p className="text-xs text-gray-02">
+              {t("upload.autoApproveHint")}
+            </p>
           </div>
         )}
 

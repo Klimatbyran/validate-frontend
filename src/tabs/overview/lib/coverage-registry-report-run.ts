@@ -40,6 +40,7 @@ export function toRunReportListItem(
   return {
     id: report.reportId,
     url: report.url,
+    companyId: entry.matchedCompany?.id ?? null,
     companyName: report.companyName ?? entry.matchedCompany?.name ?? entry.name,
     wikidataId: report.wikidataId ?? entry.matchedCompany?.wikidataId ?? null,
     reportYear: report.reportYear,

@@ -67,6 +67,7 @@ export function OverviewTab() {
         .filter((row) => row.reportUrl)
         .map((row) => ({
           url: row.reportUrl!,
+          companyId: row.stageCompanyId ?? undefined,
           companyName: row.companyName,
           wikidataId: row.wikidataId,
           reportYear: row.reportYear,
@@ -77,6 +78,7 @@ export function OverviewTab() {
       .map((row) => ({
         id: row.registryEntry?.id,
         url: row.runUrl!,
+        companyId: row.companyId,
         companyName: row.companyName,
         wikidataId: row.wikidataId,
         reportYear: row.reportYear,
@@ -114,6 +116,7 @@ export function OverviewTab() {
   const handleRunReports = useCallback(() => {
     const urls = runItems.map((item) => item.url);
     void activePipeline.runForUrls(urls, {
+      runItems,
       onSuccess: () => {
         setIsRunReportsOpen(false);
         clearSelection();
