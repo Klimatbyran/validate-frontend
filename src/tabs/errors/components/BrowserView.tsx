@@ -15,7 +15,7 @@ import {
   resolveStageDatapoint,
   saveDatapointNote,
 } from "../lib";
-import type { DatapointErrorStatus } from "../lib";
+import type { DatapointErrorStatus, DatapointCreateContext } from "../lib";
 import { CompanyTableRow } from "./CompanyTableRow";
 import { PerformanceMetricsTable } from "./PerformanceMetricsTable";
 import { DiscrepancyFilterPills } from "./DiscrepancyFilterPills";
@@ -51,8 +51,6 @@ export function BrowserView({
   const [searchQuery, setSearchQuery] = React.useState("");
   const [visibleTypes, setVisibleTypes] = React.useState<Set<DiscrepancyType>>(
     new Set([
-      "report-absent",
-      "report-extra",
       "hallucination",
       "missing",
       "rounding",
@@ -69,6 +67,8 @@ export function BrowserView({
   const [reasonDialogDatapointId, setReasonDialogDatapointId] = React.useState<
     string | null
   >(null);
+  const [reasonDialogCreateContext, setReasonDialogCreateContext] =
+    React.useState<DatapointCreateContext | null>(null);
   const [reasonDialogExistingReason, setReasonDialogExistingReason] =
     React.useState("");
   const [reasonDialogExistingStatus, setReasonDialogExistingStatus] =
@@ -93,6 +93,7 @@ export function BrowserView({
   const handleOpenReasonDialog = async (row: CompanyRow) => {
     setReasonDialogRow(row);
     setReasonDialogDatapointId(null);
+    setReasonDialogCreateContext(null);
     setReasonDialogExistingReason("");
     setReasonDialogExistingStatus(null);
     if (!noteTarget) return;
@@ -109,7 +110,10 @@ export function BrowserView({
         setReasonDialogRow(null);
         return;
       }
+      // Value not extracted on stage yet (e.g. a `missing` row) - the dialog
+      // still opens, empty, and the placeholder row is created on save.
       setReasonDialogDatapointId(resolved.datapointId);
+      setReasonDialogCreateContext(resolved.createContext ?? null);
       const existingReason = resolved.note?.errorReason ?? "";
       setReasonDialogExistingReason(existingReason);
       setReasonDialogExistingStatus(resolved.note?.status ?? null);
@@ -136,13 +140,17 @@ export function BrowserView({
   };
 
   const handleSaveReason = async (input: ErrorReasonSaveInput) => {
-    if (!reasonDialogRow || !noteTarget || !reasonDialogDatapointId) return;
+    if (!reasonDialogRow || !noteTarget) return;
+    if (!reasonDialogDatapointId && !reasonDialogCreateContext) return;
     setSavingReason(true);
     try {
       await saveDatapointNote(
         {
           datapointType: noteTarget.datapointType,
-          datapointId: reasonDialogDatapointId,
+          datapointId: reasonDialogDatapointId ?? undefined,
+          createContext: reasonDialogDatapointId
+            ? undefined
+            : (reasonDialogCreateContext ?? undefined),
           errorReason: input.errorReason,
           status: input.status,
           previousValue: input.previousValue,
@@ -222,8 +230,6 @@ export function BrowserView({
   const showDefaultTypes = () => {
     setVisibleTypes(
       new Set([
-        "report-absent",
-        "report-extra",
         "hallucination",
         "missing",
         "rounding",

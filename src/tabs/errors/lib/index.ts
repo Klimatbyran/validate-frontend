@@ -62,4 +62,5 @@ export type {
   DatapointErrorStatus,
   ExistingDatapointNote,
   ResolvedStageDatapoint,
+  DatapointCreateContext,
 } from "./datapoint-notes";
