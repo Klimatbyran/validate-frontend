@@ -214,6 +214,7 @@ export interface CompanyRow {
   tags?: string[];
   shellKey?: string;
   reportYear?: number | null;
+  reportUrl?: string | null;
   companyReportId?: string | null;
   /** How this company was paired across stage and prod. */
   companyPairingMethod?: CompanyPairingMethod;

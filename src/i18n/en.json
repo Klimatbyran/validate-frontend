@@ -926,6 +926,7 @@
     "dataYear": "Data year",
     "companyReportYear": "CompanyReport year",
     "companyReportYearShort": "CompanyReport {{year}}",
+    "openReportSource": "Open source report ({{year}}) in a new tab",
     "allCompanyReportYears": "All CompanyReport years",
     "reportYear": "CompanyReport year",
     "reportYearShort": "CompanyReport {{year}}",

@@ -3,6 +3,7 @@ import type { ReportingPeriod } from "../types";
 import {
   getCrossEnvPeriodShellKey,
   resolveSlotCompanyReportId,
+  resolveCompanyReportSourceUrl,
 } from "./cross-env-report-shell";
 import { getPeriodReportYearFromApi } from "./emissions";
 
@@ -10,6 +11,7 @@ export type ReportingPeriodComparisonSlot = {
   shellKey: string;
   companyReportId: string | null;
   reportYear: number | null;
+  reportUrl: string | null;
   stagePeriod: ReportingPeriod | null;
   prodPeriod: ReportingPeriod | null;
 };
@@ -87,10 +89,12 @@ export function buildReportingPeriodComparisonSlots(
   return Array.from(byShell.entries())
     .map(([shellKey, { stage, prod }]) => {
       const anchor = stage ?? prod;
+      const reportUrl = anchor ? resolveCompanyReportSourceUrl(anchor) : null;
       return {
         shellKey,
         companyReportId: resolveSlotCompanyReportId(shellKey, anchor),
         reportYear: anchor ? getPeriodReportYearFromApi(anchor) : null,
+        reportUrl,
         stagePeriod: stage ?? null,
         prodPeriod: prod ?? null,
       };

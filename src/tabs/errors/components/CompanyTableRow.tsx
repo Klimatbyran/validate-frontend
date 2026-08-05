@@ -61,9 +61,21 @@ export function CompanyTableRow({
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className="text-xs text-gray-02">{displayId}</span>
           {row.reportYear != null ? (
-            <span className="text-xs text-gray-02">
-              {t("errors.companyReportYearShort", { year: row.reportYear })}
-            </span>
+            row.reportUrl ? (
+              <a
+                href={row.reportUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={t("errors.openReportSource", { year: row.reportYear })}
+                className="text-xs text-gray-02 underline decoration-dotted hover:text-gray-01"
+              >
+                {t("errors.companyReportYearShort", { year: row.reportYear })}
+              </a>
+            ) : (
+              <span className="text-xs text-gray-02">
+                {t("errors.companyReportYearShort", { year: row.reportYear })}
+              </span>
+            )
           ) : null}
           {isMissingCompany && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">

@@ -46,6 +46,22 @@ function firstNormalizedUrl(period: ReportingPeriod): string | null {
   return null;
 }
 
+/**
+ * Raw (non-normalized) source URL for the CompanyReport this period's data is actually
+ * saved under (via companyReportId -> companyReport.report). Deliberately ignores the
+ * period's own reportURL/reportS3Url fields, which are set at extraction time and can go
+ * stale if the period is later re-linked to a different CompanyReport.
+ */
+export function resolveCompanyReportSourceUrl(
+  period: ReportingPeriod,
+): string | null {
+  const report = period.companyReport?.report;
+  if (!report) return null;
+  return (
+    trim(report.sourceUrl) ?? trim(report.url) ?? trim(report.s3Url) ?? null
+  );
+}
+
 /** Strong cross-env identity keys (sha256 / URL) used for company pairing. */
 export function collectStrongReportIdentityKeys(
   period: ReportingPeriod,

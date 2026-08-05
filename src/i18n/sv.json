@@ -926,6 +926,7 @@
     "dataYear": "Dataår",
     "companyReportYear": "CompanyReport-år",
     "companyReportYearShort": "CompanyReport {{year}}",
+    "openReportSource": "Öppna källrapporten ({{year}}) i en ny flik",
     "allCompanyReportYears": "Alla CompanyReport-år",
     "reportYear": "CompanyReport-år",
     "reportYearShort": "CompanyReport {{year}}",
