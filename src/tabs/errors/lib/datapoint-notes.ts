@@ -123,9 +123,28 @@ interface StageCompanyDetails {
   reportingPeriods?: StageReportingPeriod[];
 }
 
+/**
+ * Identifies where to create a placeholder datapoint row when the reviewer is
+ * noting an error on a value the pipeline never extracted (a `missing` row).
+ * The reporting period must already exist on stage - this only fills in the
+ * leaf Scope1/Scope2/etc. row so a note has something to attach to.
+ */
+export interface DatapointCreateContext {
+  wikidataId: string;
+  companyReportId: string;
+  dataYear: string;
+  /** Required when datapointType is "category". */
+  category?: number;
+  /** Required when datapointType is "statedTotalEmissions". */
+  statedTotalLocation?: StatedTotalLocation;
+}
+
 export interface ResolvedStageDatapoint {
-  datapointId: string;
+  /** Null when the value doesn't exist on stage yet - see createContext. */
+  datapointId: string | null;
   note: ExistingDatapointNote | null;
+  /** Present when datapointId is null and the row can be created on save. */
+  createContext?: DatapointCreateContext;
 }
 
 function resolveStatedTotalDatapoint(
@@ -157,7 +176,7 @@ export async function resolveStageDatapoint(
   target: DatapointNoteTarget,
   source: ErrorBrowserStageSource = "stage",
 ): Promise<ResolvedStageDatapoint | null> {
-  if (!row.wikidataId) return null;
+  if (!row.wikidataId || !row.companyReportId) return null;
 
   const res = await garboAuthFetch(
     errorBrowserStageUnearthUrl(
@@ -174,35 +193,57 @@ export async function resolveStageDatapoint(
     (p) =>
       p.companyReportId === row.companyReportId && p.year === String(dataYear),
   );
-  const emissions = period?.emissions;
-  if (!emissions) return null;
+  // No reporting period at all on stage - the report itself hasn't run there
+  // yet (report-absent), nothing to attach a note to.
+  if (!period) return null;
 
-  const datapoint: StageDatapointPayload | null | undefined = (() => {
-    switch (target.datapointType) {
-      case "scope1":
-        return emissions.scope1;
-      case "scope2":
-        return emissions.scope2;
-      case "scope1And2":
-        return emissions.scope1And2;
-      case "biogenicEmissions":
-        return emissions.biogenicEmissions;
-      case "statedTotalEmissions":
-        return resolveStatedTotalDatapoint(
-          emissions,
-          target.statedTotalLocation,
-        );
-      case "category":
-        return emissions.scope3?.categories?.find(
-          (c) => c.category === target.category,
-        );
-      default:
-        return null;
-    }
-  })();
+  const emissions = period.emissions;
+  const datapoint: StageDatapointPayload | null | undefined = emissions
+    ? (() => {
+        switch (target.datapointType) {
+          case "scope1":
+            return emissions.scope1;
+          case "scope2":
+            return emissions.scope2;
+          case "scope1And2":
+            return emissions.scope1And2;
+          case "biogenicEmissions":
+            return emissions.biogenicEmissions;
+          case "statedTotalEmissions":
+            return resolveStatedTotalDatapoint(
+              emissions,
+              target.statedTotalLocation,
+            );
+          case "category":
+            return emissions.scope3?.categories?.find(
+              (c) => c.category === target.category,
+            );
+          default:
+            return null;
+        }
+      })()
+    : null;
 
-  if (!datapoint) return null;
-  return { datapointId: datapoint.id, note: datapoint.note ?? null };
+  if (datapoint) {
+    return { datapointId: datapoint.id, note: datapoint.note ?? null };
+  }
+
+  // Reporting period exists but this specific value was never extracted
+  // (a `missing` row) - creatable on save, see DatapointCreateContext.
+  return {
+    datapointId: null,
+    note: null,
+    createContext: {
+      wikidataId: row.wikidataId,
+      companyReportId: row.companyReportId,
+      dataYear: String(dataYear),
+      category: target.datapointType === "category" ? target.category : undefined,
+      statedTotalLocation:
+        target.datapointType === "statedTotalEmissions"
+          ? target.statedTotalLocation
+          : undefined,
+    },
+  };
 }
 
 /** Matches Prisma's DatapointErrorStatus enum. */
@@ -210,7 +251,9 @@ export type DatapointErrorStatus = "OPEN" | "RESOLVED" | "WONT_FIX";
 
 export interface SaveDatapointNoteInput {
   datapointType: DatapointNoteType;
-  datapointId: string;
+  /** Omit when the datapoint doesn't exist yet - pass createContext instead. */
+  datapointId?: string;
+  createContext?: DatapointCreateContext;
   errorReason?: string;
   comment?: string;
   status?: DatapointErrorStatus;

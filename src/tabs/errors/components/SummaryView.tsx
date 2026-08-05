@@ -40,13 +40,13 @@ function calcRates(dp: DataPointMetric) {
   const rounding = dp.breakdown.rounding;
   const bothNull = dp.breakdown.bothNull;
   const withAnyData = dp.withAnyData;
+  // Excludes reportAbsent/reportExtra: those are coverage gaps (report year missing
+  // on one side), not extraction outcomes, and must never dilute accuracy.
   const totalSlots =
     dp.breakdown.identical +
     dp.breakdown.rounding +
     dp.breakdown.hallucination +
     dp.breakdown.missing +
-    dp.breakdown.reportAbsent +
-    dp.breakdown.reportExtra +
     dp.breakdown.unitError +
     dp.breakdown.smallError +
     dp.breakdown.error +

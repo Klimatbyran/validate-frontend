@@ -1,4 +1,5 @@
 import type { CompanyRow, DataPointMetric } from "../types";
+import { isExtractionComparisonDiscrepancy } from "./discrepancy";
 
 export interface PerformanceMetricRow {
   /** Translation key for the metric name (e.g. errors.metrics.exactMatch). */
@@ -22,7 +23,12 @@ export function computePerformanceMetrics(
   zeroInclusive: PerformanceMetricRow;
 } | null {
   const verifiedOnly = Boolean(opts?.verifiedOnly);
-  const bothExist = comparisonRows.filter((r) => r.inStage && r.inProd);
+  // Only compare rows where the report year exists on both sides - report-absent/
+  // report-extra reflect coverage gaps, not extraction accuracy, and must never
+  // dilute the accuracy percentages.
+  const bothExist = comparisonRows.filter(
+    (r) => r.inStage && r.inProd && isExtractionComparisonDiscrepancy(r.discrepancy),
+  );
   const rows = verifiedOnly
     ? bothExist.filter((r) => r.prodVerified)
     : bothExist;
@@ -165,6 +171,11 @@ export function calculateOverviewAggregates(
     },
   );
 
+  // Denominator for zeroInclusive: only slots where the report year exists on both
+  // sides (totalCompanies also counts reportAbsent/reportExtra, which are coverage
+  // gaps, not extraction outcomes, and must never dilute accuracy).
+  const comparableSlots = totals.totalCompanies - totals.reportAbsent - totals.reportExtra;
+
   return {
     exactMatch:
       totals.withAnyData > 0
@@ -181,9 +192,9 @@ export function calculateOverviewAggregates(
           100
         : 0,
     zeroInclusive:
-      totals.totalCompanies > 0
+      comparableSlots > 0
         ? ((totals.identical + totals.rounding + totals.bothNull) /
-            totals.totalCompanies) *
+            comparableSlots) *
           100
         : 0,
     totals,
