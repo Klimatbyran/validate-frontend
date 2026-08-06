@@ -19,6 +19,7 @@ export const RUN_ONLY_WORKER_IDS = [
   "reportType",
   "lei",
   "descriptions",
+  "reportingQuality",
 ] as const;
 
 export type RunOnlyWorkerId = (typeof RUN_ONLY_WORKER_IDS)[number];
@@ -43,6 +44,7 @@ export const RUN_ONLY_WORKERS: RunOnlyWorker[] = [
   { id: "reportType", label: "Report type" },
   { id: "lei", label: "LEI" },
   { id: "descriptions", label: "Descriptions" },
+  { id: "reportingQuality", label: "Reporting quality" },
 ];
 
 /** Scope key for API is the worker id. Used by jobstatus rerun-and-save. */

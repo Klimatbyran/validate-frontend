@@ -826,7 +826,8 @@
       "companyTags": "Company tags",
       "reportType": "Report type",
       "lei": "LEI",
-      "descriptions": "Descriptions"
+      "descriptions": "Descriptions",
+      "reportingQuality": "Reporting quality"
     },
     "queues": {
       "nlmParsePDF": "PDF parsing NLM",
@@ -852,11 +853,13 @@
       "followUpReportType": "Follow-up Report type",
       "followUpBaseYear": "Follow-up Base year",
       "followUpIndustryGics": "Follow-up Industry GICS",
+      "followUpReportingQuality": "Follow-up Reporting quality",
       "diffIndustry": "Industry",
       "diffGoals": "Climate goals",
       "diffInitiatives": "Initiatives",
       "diffBaseYear": "Base year",
       "diffDescriptions": "Descriptions",
+      "diffReportingQuality": "Reporting quality",
       "checkDB": "DB check",
       "sendCompanyLink": "Send company link",
       "saveToAPI": "API save",

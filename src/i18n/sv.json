@@ -826,7 +826,8 @@
       "companyTags": "Företagstaggar",
       "reportType": "Rapporttyp",
       "lei": "LEI",
-      "descriptions": "Beskrivningar"
+      "descriptions": "Beskrivningar",
+      "reportingQuality": "Rapportkvalitet"
     },
     "queues": {
       "nlmParsePDF": "PDF Parsning NLM",
@@ -852,11 +853,13 @@
       "followUpReportType": "Uppföljning Rapporttyp",
       "followUpBaseYear": "Uppföljning Basår",
       "followUpIndustryGics": "Uppföljning Bransch GICS",
+      "followUpReportingQuality": "Uppföljning Rapportkvalitet",
       "diffIndustry": "Bransch",
       "diffGoals": "Klimatmål",
       "diffInitiatives": "Initiativ",
       "diffBaseYear": "Basår",
       "diffDescriptions": "Beskrivningar",
+      "diffReportingQuality": "Rapportkvalitet",
       "checkDB": "DB Kontroll",
       "sendCompanyLink": "Skicka företagslänk",
       "saveToAPI": "API Lagring",
