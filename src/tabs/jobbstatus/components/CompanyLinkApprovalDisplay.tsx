@@ -25,7 +25,7 @@ export function CompanyLinkApprovalDisplay({
   );
   const [createNew, setCreateNew] = useState(Boolean(data.createNew));
   const [displayName, setDisplayName] = useState(
-    data.displayName ?? data.extractedName,
+    data.displayName ?? (data.partialNameMatch ? data.extractedName : ""),
   );
 
   const isApproved = data.status === "approved";
@@ -43,7 +43,11 @@ export function CompanyLinkApprovalDisplay({
 
   const selectedCandidate = data.candidates.find((c) => c.id === selectedId);
   const showDisplayNameField =
-    isPending && !createNew && Boolean(selectedId) && !isWikidataRelink;
+    isPending &&
+    data.partialNameMatch &&
+    !createNew &&
+    Boolean(selectedId) &&
+    !isWikidataRelink;
 
   const handleApprove = () => {
     if (createNew) {
@@ -56,15 +60,10 @@ export function CompanyLinkApprovalDisplay({
     }
     if (selectedId) {
       const trimmedDisplayName = displayName.trim();
-      const candidateName = selectedCandidate?.name.trim() ?? "";
       onApprove?.({
         companyId: selectedId,
-        ...(data.partialNameMatch
-          ? trimmedDisplayName && { displayName: trimmedDisplayName }
-          : trimmedDisplayName &&
-            trimmedDisplayName !== candidateName && {
-              displayName: trimmedDisplayName,
-            }),
+        ...(data.partialNameMatch &&
+          trimmedDisplayName && { displayName: trimmedDisplayName }),
       });
     }
   };
