@@ -176,7 +176,7 @@ export async function resolveStageDatapoint(
   target: DatapointNoteTarget,
   source: ErrorBrowserStageSource = "stage",
 ): Promise<ResolvedStageDatapoint | null> {
-  if (!row.wikidataId || !row.companyReportId) return null;
+  if (!row.wikidataId) return null;
 
   const res = await garboAuthFetch(
     errorBrowserStageUnearthUrl(
@@ -230,6 +230,10 @@ export async function resolveStageDatapoint(
 
   // Reporting period exists but this specific value was never extracted
   // (a `missing` row) - creatable on save, see DatapointCreateContext.
+  // Needs a companyReportId to re-identify the period on save - an unlinked
+  // period (no CompanyReport shell) can't be targeted that way.
+  if (!row.companyReportId) return null;
+
   return {
     datapointId: null,
     note: null,
