@@ -32,9 +32,7 @@ export function CompanyLinkApprovalDisplay({
   const isPending = data.status === "pending_approval";
   const isWikidataRelink = data.metadata?.source === "wikidata-relink";
   const allowCreateNew =
-    data.allowCreateNew !== false &&
-    !data.partialNameMatch &&
-    !data.wikidataNode?.trim();
+    data.allowCreateNew !== false && !data.wikidataNode?.trim();
 
   const normalizedExtracted = data.extractedName.trim().toLowerCase();
   const hasExactNameCandidate = data.candidates.some(
@@ -211,6 +209,11 @@ export function CompanyLinkApprovalDisplay({
                   <div className="text-xs text-gray-02">
                     {t("companyLink.createNewDescription")}
                   </div>
+                  {createNew && data.partialNameMatch ? (
+                    <Callout variant="warning" className="mt-2 text-xs">
+                      {t("companyLink.createNewPartialNameMatchWarning")}
+                    </Callout>
+                  ) : null}
                   {createNew && hasExactNameCandidate ? (
                     <Callout variant="warning" className="mt-2 text-xs">
                       {t("companyLink.createNewExactNameWarning")}
