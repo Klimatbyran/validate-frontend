@@ -173,6 +173,7 @@ export function convertCompaniesToSwimlaneFormat(
 
       const companyId =
         resolvedCompanyId ||
+        company.company ||
         company.wikidataId ||
         company.processes?.[0]?.id ||
         `${companyName}-${company.processes?.[0]?.startedAt || Date.now()}`;

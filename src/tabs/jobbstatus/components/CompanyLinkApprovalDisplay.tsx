@@ -116,21 +116,34 @@ export function CompanyLinkApprovalDisplay({
         </p>
 
         {isApproved ? (
-          <div className="text-sm text-gray-01">
-            {data.createNew
-              ? t("companyLink.approvedCreateNew")
-              : data.displayName
-                ? t("companyLink.approvedWithDisplayName", {
-                    name: data.displayName,
-                  })
-                : t("companyLink.approvedSelected", {
-                    name:
-                      data.candidates.find(
-                        (c) => c.id === data.selectedCompanyId,
-                      )?.name ??
-                      data.selectedCompanyId ??
-                      "—",
-                  })}
+          <div className="space-y-1 text-sm text-gray-01">
+            {data.createNew ? (
+              t("companyLink.approvedCreateNew")
+            ) : (
+              <>
+                {(data.candidates.find((c) => c.id === data.selectedCompanyId)
+                  ?.name ??
+                  data.selectedCompanyId) && (
+                  <div>
+                    {t("companyLink.approvedSelected", {
+                      name:
+                        data.candidates.find(
+                          (c) => c.id === data.selectedCompanyId,
+                        )?.name ??
+                        data.selectedCompanyId ??
+                        "—",
+                    })}
+                  </div>
+                )}
+                {data.displayName ? (
+                  <div>
+                    {t("companyLink.approvedWithDisplayName", {
+                      name: data.displayName,
+                    })}
+                  </div>
+                ) : null}
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
