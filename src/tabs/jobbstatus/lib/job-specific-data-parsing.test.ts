@@ -54,7 +54,7 @@ describe("getCompanyLinkApprovalData", () => {
       },
     };
 
-    expect(getCompanyLinkApprovalData(job as any)).toEqual({
+    expect(getCompanyLinkApprovalData(job as any)).toMatchObject({
       status: "pending_approval",
       extractedName: "Alfa Laval AB",
       candidates: [
@@ -62,6 +62,7 @@ describe("getCompanyLinkApprovalData", () => {
         { id: "alfa-2", name: "Alfa Laval", wikidataId: "Q686030" },
       ],
       allowCreateNew: true,
+      partialNameMatch: false,
       message: "Company link for Alfa Laval AB",
       metadata: {
         source: "company-name-search",

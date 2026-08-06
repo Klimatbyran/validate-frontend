@@ -263,6 +263,8 @@ export interface CustomAPIJob {
     | "repeat"
     | "wait";
   company?: string;
+  companyId?: string;
+  companyName?: string;
   wikidataId?: string;
   year?: number;
   data?: any;
@@ -272,6 +274,7 @@ export interface CustomAPIJob {
 export interface CustomAPIProcess {
   id: string;
   company?: string;
+  companyId?: string;
   wikidataId?: string;
   year?: number;
   /** Batch ID when the process was started (e.g. from upload run options). */
@@ -284,6 +287,7 @@ export interface CustomAPIProcess {
 
 export interface CustomAPICompany {
   company: string;
+  companyId?: string;
   wikidataId?: string;
   processes: CustomAPIProcess[];
 }

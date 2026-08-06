@@ -35,6 +35,10 @@ export function convertCompaniesToSwimlaneFormat(
       const companyName =
         company.company || company.processes?.[0]?.company || "Unknown";
 
+      const resolvedCompanyId =
+        company.companyId ||
+        company.processes?.find((p) => p.companyId)?.companyId;
+
       // Safety check: ensure processes array exists
       if (!company.processes || !Array.isArray(company.processes)) {
         console.warn(
@@ -94,7 +98,10 @@ export function convertCompaniesToSwimlaneFormat(
             fields: {},
             jobs: (process.jobs || []).map((job) => {
               const rawJobCompany =
-                job.data?.companyName ?? job.data?.company ?? job.company;
+                job.companyName ??
+                job.data?.companyName ??
+                job.data?.company ??
+                job.company;
               const displayCompanyName = isResolvableCompanyName(rawJobCompany)
                 ? rawJobCompany!.trim()
                 : isResolvableCompanyName(companyName)
@@ -165,6 +172,7 @@ export function convertCompaniesToSwimlaneFormat(
       });
 
       const companyId =
+        resolvedCompanyId ||
         company.company ||
         company.wikidataId ||
         company.processes?.[0]?.id ||
