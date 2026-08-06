@@ -129,7 +129,11 @@ export function useJobRerunActions({
   );
 
   const handleCompanyLinkApprove = useCallback(
-    async (selection: { companyId?: string; createNew?: boolean }) => {
+    async (selection: {
+      companyId?: string;
+      createNew?: boolean;
+      displayName?: string;
+    }) => {
       if (!effectiveJob?.queueId || !effectiveJob?.id) {
         toast.error(t("jobstatus.jobdetails.toastCannotApprove"));
         return;
@@ -152,6 +156,9 @@ export function useJobRerunActions({
                         companyId: selection.companyId,
                       }),
                       ...(selection.createNew && { createNew: true }),
+                      ...(selection.displayName?.trim() && {
+                        displayName: selection.displayName.trim(),
+                      }),
                     },
                   },
                 },
