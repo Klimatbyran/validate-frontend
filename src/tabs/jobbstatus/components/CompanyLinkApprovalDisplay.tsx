@@ -8,7 +8,11 @@ import type { CompanyLinkApprovalData } from "../lib/job-specific-data-parsing";
 
 interface CompanyLinkApprovalDisplayProps {
   data: CompanyLinkApprovalData;
-  onApprove?: (selection: { companyId?: string; createNew?: boolean }) => void;
+  onApprove?: (selection: {
+    companyId?: string;
+    createNew?: boolean;
+    displayName?: string;
+  }) => void;
 }
 
 export function CompanyLinkApprovalDisplay({
@@ -20,25 +24,48 @@ export function CompanyLinkApprovalDisplay({
     data.selectedCompanyId ?? data.candidates[0]?.id ?? "",
   );
   const [createNew, setCreateNew] = useState(Boolean(data.createNew));
+  const [displayName, setDisplayName] = useState(
+    data.displayName ?? data.extractedName,
+  );
 
   const isApproved = data.status === "approved";
   const isPending = data.status === "pending_approval";
   const isWikidataRelink = data.metadata?.source === "wikidata-relink";
   const allowCreateNew =
-    data.allowCreateNew !== false && !data.wikidataNode?.trim();
+    data.allowCreateNew !== false &&
+    !data.partialNameMatch &&
+    !data.wikidataNode?.trim();
 
   const normalizedExtracted = data.extractedName.trim().toLowerCase();
   const hasExactNameCandidate = data.candidates.some(
     (candidate) => candidate.name.trim().toLowerCase() === normalizedExtracted,
   );
 
+  const selectedCandidate = data.candidates.find((c) => c.id === selectedId);
+  const showDisplayNameField =
+    isPending && !createNew && Boolean(selectedId) && !isWikidataRelink;
+
   const handleApprove = () => {
     if (createNew) {
-      onApprove?.({ createNew: true });
+      const trimmedDisplayName = displayName.trim();
+      onApprove?.({
+        createNew: true,
+        ...(trimmedDisplayName && { displayName: trimmedDisplayName }),
+      });
       return;
     }
     if (selectedId) {
-      onApprove?.({ companyId: selectedId });
+      const trimmedDisplayName = displayName.trim();
+      const candidateName = selectedCandidate?.name.trim() ?? "";
+      onApprove?.({
+        companyId: selectedId,
+        ...(data.partialNameMatch
+          ? trimmedDisplayName && { displayName: trimmedDisplayName }
+          : trimmedDisplayName &&
+            trimmedDisplayName !== candidateName && {
+              displayName: trimmedDisplayName,
+            }),
+      });
     }
   };
 
@@ -68,6 +95,12 @@ export function CompanyLinkApprovalDisplay({
         </Callout>
       ) : null}
 
+      {data.partialNameMatch && isPending ? (
+        <Callout variant="warning">
+          {t("companyLink.partialNameMatchHint")}
+        </Callout>
+      ) : null}
+
       <div className="bg-gray-03/20 rounded-lg p-4 space-y-3">
         <h4 className="text-base font-medium text-gray-01">
           {isWikidataRelink
@@ -87,13 +120,18 @@ export function CompanyLinkApprovalDisplay({
           <div className="text-sm text-gray-01">
             {data.createNew
               ? t("companyLink.approvedCreateNew")
-              : t("companyLink.approvedSelected", {
-                  name:
-                    data.candidates.find((c) => c.id === data.selectedCompanyId)
-                      ?.name ??
-                    data.selectedCompanyId ??
-                    "—",
-                })}
+              : data.displayName
+                ? t("companyLink.approvedWithDisplayName", {
+                    name: data.displayName,
+                  })
+                : t("companyLink.approvedSelected", {
+                    name:
+                      data.candidates.find(
+                        (c) => c.id === data.selectedCompanyId,
+                      )?.name ??
+                      data.selectedCompanyId ??
+                      "—",
+                  })}
           </div>
         ) : (
           <div className="space-y-2">
@@ -168,6 +206,39 @@ export function CompanyLinkApprovalDisplay({
                   ) : null}
                 </div>
               </label>
+            ) : null}
+
+            {showDisplayNameField || (createNew && isPending) ? (
+              <div className="space-y-1.5 pt-1">
+                <label
+                  htmlFor="company-link-display-name"
+                  className="text-sm font-medium text-gray-01"
+                >
+                  {t("companyLink.displayNameLabel")}
+                </label>
+                {selectedCandidate && showDisplayNameField ? (
+                  <p className="text-xs text-gray-02">
+                    {t("companyLink.displayNameLinkHint", {
+                      candidate: selectedCandidate.name,
+                    })}
+                  </p>
+                ) : null}
+                <input
+                  id="company-link-display-name"
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder={t("companyLink.displayNamePlaceholder")}
+                  className={cn(
+                    "w-full px-3 py-2 rounded-lg border text-sm",
+                    "bg-gray-04 text-gray-01 border-gray-03",
+                    "focus:outline-none focus:ring-2 focus:ring-blue-03 focus:border-transparent",
+                  )}
+                />
+                <p className="text-xs text-gray-02">
+                  {t("companyLink.displayNameHint")}
+                </p>
+              </div>
             ) : null}
           </div>
         )}

@@ -217,6 +217,8 @@ export interface CompanyLinkApprovalData {
   selectedCompanyId?: string;
   createNew?: boolean;
   allowCreateNew?: boolean;
+  partialNameMatch?: boolean;
+  displayName?: string;
   wikidataNode?: string;
   message?: string;
   metadata?: {
@@ -239,7 +241,9 @@ function companyLinkApprovalFromApprovalObject(
     return null;
   }
 
-  const allowCreateNew = newValue?.allowCreateNew !== false;
+  const partialNameMatch = Boolean(newValue?.partialNameMatch);
+  const allowCreateNew =
+    !partialNameMatch && newValue?.allowCreateNew !== false;
   const wikidataNode =
     typeof newValue?.wikidataNode === "string"
       ? newValue.wikidataNode
@@ -254,7 +258,14 @@ function companyLinkApprovalFromApprovalObject(
       extractedName,
       candidates,
       allowCreateNew,
+      partialNameMatch,
       wikidataNode,
+      displayName:
+        typeof newValue?.displayName === "string"
+          ? newValue.displayName
+          : partialNameMatch
+            ? extractedName
+            : undefined,
       message: approvalSummary(approval),
       metadata,
     };
@@ -266,12 +277,17 @@ function companyLinkApprovalFromApprovalObject(
       extractedName,
       candidates,
       allowCreateNew,
+      partialNameMatch,
       wikidataNode,
       selectedCompanyId:
         typeof newValue?.companyId === "string"
           ? newValue.companyId
           : undefined,
       createNew: Boolean(newValue?.createNew),
+      displayName:
+        typeof newValue?.displayName === "string"
+          ? newValue.displayName
+          : undefined,
       message: approvalSummary(approval),
       metadata,
     };

@@ -24,6 +24,7 @@ interface JobApprovalPanelsProps {
   onCompanyLinkApprove: (selection: {
     companyId?: string;
     createNew?: boolean;
+    displayName?: string;
   }) => void;
   onWikidataApprove: () => void;
   onWikidataOverride: (overrideWikidataId: string) => void;

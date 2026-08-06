@@ -1,3 +1,4 @@
+import { getPipelineTarget } from "@/config/api-env";
 import { authenticatedFetch } from "@/lib/api-helpers";
 import type { RunOnlyWorkerId } from "@/lib/run-only-workers";
 import type {
@@ -142,7 +143,8 @@ export async function createJobsFromUrls({
   batchId,
   runOnly,
   tags,
-  cachePdf = true,
+  // Local pipeline-api usually has no S3_BUCKET; workers fetch PDF URLs directly.
+  cachePdf = getPipelineTarget() !== "local",
   parsePdfEndpoint = PARSE_PDF_API_ENDPOINT,
   pipelineCompany,
   urlContexts,
