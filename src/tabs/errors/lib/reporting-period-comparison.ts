@@ -1,4 +1,5 @@
 import { getPeriodDataYear } from "@/tabs/editor/lib/reporting-period-ui";
+import { pickOnePeriodPerDataYear } from "@/tabs/editor/lib/reporting-period-public-read";
 import type { ReportingPeriod } from "../types";
 import {
   getCrossEnvPeriodShellKey,
@@ -34,7 +35,14 @@ function periodMatchesReportYearFilter(
   return getPeriodReportYearFromApi(period) === reportYear;
 }
 
-/** All reporting periods matching data year and optional PDF report year. */
+/**
+ * All reporting periods matching data year and optional PDF report year,
+ * collapsed to one per data year - a company can have two CompanyReport
+ * shells covering the same data year (e.g. a re-processed duplicate); this
+ * picks the same one the public API would serve (`pickOnePeriodPerDataYear`),
+ * so stage/prod comparisons never show a value as missing when it's really
+ * just stranded on a losing duplicate shell.
+ */
 export function pickReportingPeriodsForFilters(
   reportingPeriods: ReportingPeriod[] | undefined,
   dataYear: number,
@@ -42,11 +50,12 @@ export function pickReportingPeriodsForFilters(
 ): ReportingPeriod[] {
   if (!reportingPeriods?.length) return [];
   const reportYearFilter = reportYear ?? null;
-  return reportingPeriods.filter(
+  const matched = reportingPeriods.filter(
     (period) =>
       periodMatchesDataYear(period, dataYear) &&
       periodMatchesReportYearFilter(period, reportYearFilter),
   );
+  return pickOnePeriodPerDataYear(matched);
 }
 
 /** One period per CompanyReport shell, unioned across stage and prod. */

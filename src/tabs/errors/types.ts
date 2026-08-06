@@ -155,6 +155,7 @@ export interface ReportingPeriod {
   companyReport?: {
     id?: string;
     reportYear?: string | null;
+    reportPublicationDate?: string | null;
     registryReportId?: string | null;
     report?: {
       url?: string | null;

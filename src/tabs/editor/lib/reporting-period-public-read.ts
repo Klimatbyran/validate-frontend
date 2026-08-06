@@ -3,6 +3,26 @@ import { getPeriodDataYear, getPeriodReportYear } from "./reporting-period-ui";
 
 type PeriodForPublicPick = GarboReportingPeriodSummary & { id: string };
 
+/**
+ * Minimal shape the pick algorithm actually reads - no period `id` required,
+ * so it also works for callers (e.g. the Errors tab) whose ReportingPeriod
+ * type omits period ids. `publicPeriodIdsForCompany` below needs `id` and
+ * keeps the stricter `PeriodForPublicPick` type.
+ */
+export interface MinimalPeriodForPick {
+  year?: string | null;
+  startDate?: string;
+  endDate?: string;
+  companyReportId?: string | null;
+  reportURL?: string | null;
+  reportS3Url?: string | null;
+  companyReport?: {
+    id?: string | null;
+    reportYear?: string | null;
+    reportPublicationDate?: string | null;
+  } | null;
+}
+
 function parseCompanyReportYear(
   reportYear: string | null | undefined,
 ): number | null {
@@ -11,21 +31,21 @@ function parseCompanyReportYear(
   return Number(trimmed);
 }
 
-function reportYearForPick(period: PeriodForPublicPick): number | null {
+function reportYearForPick(period: MinimalPeriodForPick): number | null {
   const fromShell = parseCompanyReportYear(period.companyReport?.reportYear);
   if (fromShell !== null) return fromShell;
   const fallback = getPeriodReportYear(period);
   return fallback ? parseCompanyReportYear(fallback) : null;
 }
 
-function publicationTime(period: PeriodForPublicPick): number {
+function publicationTime(period: MinimalPeriodForPick): number {
   const raw = period.companyReport?.reportPublicationDate;
   if (!raw) return 0;
   const ms = Date.parse(raw);
   return Number.isFinite(ms) ? ms : 0;
 }
 
-function companyReportIdForPick(period: PeriodForPublicPick): string {
+function companyReportIdForPick(period: MinimalPeriodForPick): string {
   return (
     period.companyReport?.id?.trim() || period.companyReportId?.trim() || ""
   );
@@ -33,8 +53,8 @@ function companyReportIdForPick(period: PeriodForPublicPick): string {
 
 /** Negative = prefer `a` over `b` (higher CompanyReport.reportYear wins). */
 function preferPeriodFromNewerReport(
-  a: PeriodForPublicPick,
-  b: PeriodForPublicPick,
+  a: MinimalPeriodForPick,
+  b: MinimalPeriodForPick,
 ): number {
   const yearA = reportYearForPick(a);
   const yearB = reportYearForPick(b);
@@ -56,7 +76,7 @@ function preferPeriodFromNewerReport(
  * Mirrors public API `pickOnePeriodPerDataYear`: one period per data year,
  * preferring the row linked to the newest CompanyReport.reportYear.
  */
-export function pickOnePeriodPerDataYear<T extends PeriodForPublicPick>(
+export function pickOnePeriodPerDataYear<T extends MinimalPeriodForPick>(
   periods: T[],
 ): T[] {
   const byDataYear = new Map<string, T>();

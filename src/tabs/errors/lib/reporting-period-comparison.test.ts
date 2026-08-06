@@ -67,7 +67,12 @@ describe("pickReportingPeriodsForFilters", () => {
 });
 
 describe("buildReportingPeriodComparisonSlots", () => {
-  it("emits one slot per report shell for the same data year", () => {
+  it("collapses duplicate shells for the same data year to the public-pick winner", () => {
+    // Same scenario as production: a company re-processed into a second
+    // CompanyReport shell that also covers data year 2024. Only the period
+    // the public API would serve (higher CompanyReport.reportYear) should
+    // produce a slot - the losing duplicate must not show up as a separate
+    // "missing" comparison row.
     const stagePeriods = [
       period({
         startDate: "2024-01-01",
@@ -92,30 +97,12 @@ describe("buildReportingPeriodComparisonSlots", () => {
       null,
     );
 
-    expect(slots).toHaveLength(2);
-    expect(slots.map((slot) => slot.shellKey).sort()).toEqual([
-      "catalog:2023:data:2024",
-      "catalog:2024:data:2024",
-    ]);
+    expect(slots).toHaveLength(1);
+    expect(slots[0]?.shellKey).toBe("catalog:2024:data:2024");
+    expect(slots[0]?.stagePeriod?.companyReportId).toBe("shell-a");
   });
 
-  it("pairs stage and prod shells by stable identity, not env-local companyReportId", () => {
-    const stageOnly = period({
-      startDate: "2024-01-01",
-      endDate: "2024-12-31",
-      year: "2024",
-      companyReportId: "stage-only",
-      reportSha256: "abc123",
-      companyReport: { id: "stage-only", reportYear: "2024" },
-    });
-    const prodOnly = period({
-      startDate: "2024-01-01",
-      endDate: "2024-12-31",
-      year: "2024",
-      companyReportId: "prod-only",
-      reportSha256: "def456",
-      companyReport: { id: "prod-only", reportYear: "2023" },
-    });
+  it("pairs stage and prod periods by stable identity, not env-local companyReportId", () => {
     const sharedStage = period({
       startDate: "2024-01-01",
       endDate: "2024-12-31",
@@ -134,25 +121,39 @@ describe("buildReportingPeriodComparisonSlots", () => {
     });
 
     const slots = buildReportingPeriodComparisonSlots(
-      [stageOnly, sharedStage],
-      [prodOnly, sharedProd],
+      [sharedStage],
+      [sharedProd],
       2024,
       null,
     );
 
-    expect(slots).toHaveLength(3);
+    expect(slots).toHaveLength(1);
+    expect(slots[0]?.shellKey).toBe("sha256:shared-hash");
+    expect(slots[0]?.stagePeriod?.companyReportId).toBe("stage-shared");
+    expect(slots[0]?.prodPeriod?.companyReportId).toBe("prod-shared");
+  });
 
-    const sharedSlot = slots.find(
-      (slot) => slot.shellKey === "sha256:shared-hash",
-    );
-    expect(sharedSlot?.stagePeriod?.companyReportId).toBe("stage-shared");
-    expect(sharedSlot?.prodPeriod?.companyReportId).toBe("prod-shared");
+  it("produces a stage-only slot when prod has no period for that shell", () => {
+    const stageOnly = period({
+      startDate: "2024-01-01",
+      endDate: "2024-12-31",
+      year: "2024",
+      companyReportId: "stage-only",
+      reportSha256: "abc123",
+      companyReport: { id: "stage-only", reportYear: "2024" },
+    });
 
-    const stageOnlySlot = slots.find(
-      (slot) => slot.shellKey === "sha256:abc123",
+    const slots = buildReportingPeriodComparisonSlots(
+      [stageOnly],
+      [],
+      2024,
+      null,
     );
-    expect(stageOnlySlot?.stagePeriod).toBeTruthy();
-    expect(stageOnlySlot?.prodPeriod).toBeNull();
+
+    expect(slots).toHaveLength(1);
+    expect(slots[0]?.shellKey).toBe("sha256:abc123");
+    expect(slots[0]?.stagePeriod).toBeTruthy();
+    expect(slots[0]?.prodPeriod).toBeNull();
   });
 
   it("maps unlinked periods to null companyReportId", () => {
