@@ -71,6 +71,33 @@ describe("getCompanyLinkApprovalData", () => {
     });
   });
 
+  it("allows create new on partial name match approvals", () => {
+    const job = {
+      data: {
+        approval: {
+          type: "companyLink",
+          approved: false,
+          summary: "Company link for Wise Group AB (publ)",
+          data: {
+            newValue: {
+              extractedName: "Wise Group AB (publ)",
+              partialNameMatch: true,
+              displayName: "Wise Group AB (publ)",
+              candidates: [{ id: "wise-plc", name: "Wise plc" }],
+            },
+          },
+        },
+      },
+    };
+
+    expect(getCompanyLinkApprovalData(job as any)).toMatchObject({
+      status: "pending_approval",
+      partialNameMatch: true,
+      allowCreateNew: true,
+      displayName: "Wise Group AB (publ)",
+    });
+  });
+
   it("parses approved company link selection", () => {
     const job = {
       data: {

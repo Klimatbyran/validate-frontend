@@ -242,8 +242,7 @@ function companyLinkApprovalFromApprovalObject(
   }
 
   const partialNameMatch = Boolean(newValue?.partialNameMatch);
-  const allowCreateNew =
-    !partialNameMatch && newValue?.allowCreateNew !== false;
+  const allowCreateNew = newValue?.allowCreateNew !== false;
   const wikidataNode =
     typeof newValue?.wikidataNode === "string"
       ? newValue.wikidataNode
