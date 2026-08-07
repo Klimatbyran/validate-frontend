@@ -448,8 +448,7 @@ function isAcceptableStepOutcome(entry: {
 }): boolean {
   if (isPipelineProgressStatus(entry.status)) return true;
   return (
-    entry.status === "failed" &&
-    NON_BLOCKING_FAILURE_QUEUES.has(entry.queueId)
+    entry.status === "failed" && NON_BLOCKING_FAILURE_QUEUES.has(entry.queueId)
   );
 }
 
