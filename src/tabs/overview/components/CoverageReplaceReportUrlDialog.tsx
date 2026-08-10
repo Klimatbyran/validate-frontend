@@ -97,7 +97,7 @@ export function CoverageReplaceReportUrlDialog({
           </Button>
           <Button type="button" disabled={!canSave || isSaving} onClick={() => void handleSave()}>
             {isSaving
-              ? t("overview.coverage.replaceReportUrlSaving")
+              ? t("overview.coverage.replaceReportUrlReuploading")
               : t("overview.coverage.replaceReportUrlSave")}
           </Button>
         </DialogFooter>

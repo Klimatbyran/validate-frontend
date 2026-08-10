@@ -25,7 +25,7 @@ import { coveragePercentCardClass } from "@/tabs/overview/lib/coverage-overview-
 import { getRegistryRunReportsPipelineConfig } from "@/tabs/registry/lib/registry-api";
 import {
   deleteReportFromRegistry,
-  editRegistryEntry,
+  replaceRegistryReportSourceUrl,
 } from "@/tabs/registry/lib/registry-api";
 import type { SaveReportSuccess } from "@/tabs/crawler/lib/crawler-types";
 import type {
@@ -219,11 +219,11 @@ export function CoverageYearDetailView({
     if (!replaceReportTarget) return;
     setIsReplacingReport(true);
     try {
-      const updated = await editRegistryEntry({
-        id: replaceReportTarget.report.reportId,
-        url,
-        sourceUrl: url,
-      });
+      const { entry: updated, cacheFailed } =
+        await replaceRegistryReportSourceUrl(
+          replaceReportTarget.report.reportId,
+          url,
+        );
       onRegistryReportUpdated?.(
         replaceReportTarget.entryId,
         replaceReportTarget.report.reportId,
@@ -234,7 +234,11 @@ export function CoverageYearDetailView({
           prodReady: false,
         },
       );
-      toast.success(t("overview.coverage.replaceReportUrlSuccess"));
+      toast.success(
+        cacheFailed
+          ? t("overview.coverage.replaceReportUrlSuccessCacheFailed")
+          : t("overview.coverage.replaceReportUrlSuccess"),
+      );
       setReplaceReportTarget(null);
     } catch (error) {
       toast.error(

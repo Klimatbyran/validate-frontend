@@ -11,6 +11,32 @@ function parseRegistryReportYear(
   return Number.isFinite(year) ? year : null;
 }
 
+function isStorageUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return (
+      host === "storage.googleapis.com" ||
+      host.endsWith(".storage.googleapis.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Prefer the original web PDF link over a cached storage URL for pipeline runs. */
+export function registryReportPipelineUrl(report: RegistryReportPill): string {
+  const source = report.sourceUrl?.trim();
+  const url = report.url.trim();
+
+  if (source && /^https?:\/\//i.test(source) && !isStorageUrl(source)) {
+    return source;
+  }
+  if (url && !isStorageUrl(url)) {
+    return url;
+  }
+  return source || url;
+}
+
 export function registryReportYears(reports: RegistryReportPill[]): number[] {
   const years = new Set<number>();
   for (const report of reports) {
@@ -39,7 +65,7 @@ export function toRunReportListItem(
 ): RunReportListItem {
   return {
     id: report.reportId,
-    url: report.url,
+    url: registryReportPipelineUrl(report),
     companyId: entry.matchedCompany?.id ?? null,
     companyName: report.companyName ?? entry.matchedCompany?.name ?? entry.name,
     wikidataId: report.wikidataId ?? entry.matchedCompany?.wikidataId ?? null,

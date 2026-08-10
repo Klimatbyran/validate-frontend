@@ -16,7 +16,7 @@ import {
 import SearchResultItem from "@/tabs/crawler/components/SearchResultItem";
 import ManuallyAddReportItem from "@/tabs/crawler/components/ManuallyAddReportItem";
 import RegistryList from "@/tabs/crawler/components/RegistryList";
-import { saveToRegistry } from "@/tabs/crawler/lib/crawler-api";
+import { addRegistryEntry } from "@/tabs/registry/lib/registry-api";
 import { searchCompanyReports } from "@/tabs/crawler/lib/crawler-utils";
 import type {
   CompanyReport,
@@ -189,16 +189,39 @@ export function CoverageFindReportDialog({
 
     setIsSaving(true);
     try {
-      const response = await saveToRegistry([selectedReport]);
-      setRegistryResponse(response);
-      if (response.successes.length > 0) {
-        onSaved?.(response.successes[0]);
+      const saved = await addRegistryEntry({
+        companyName: selectedReport.companyName,
+        reportYear: selectedReport.reportYear,
+        url: selectedReport.url,
+        sourceUrl: selectedReport.url,
+        ...(selectedReport.wikidataId
+          ? { wikidataId: selectedReport.wikidataId }
+          : {}),
+      });
+      if (!saved.id) {
+        throw new Error(t("overview.coverage.findReportError"));
       }
+      const success: SaveReportSuccess = {
+        id: saved.id,
+        companyName: saved.companyName ?? selectedReport.companyName,
+        reportYear: saved.reportYear ?? selectedReport.reportYear,
+        url: saved.url,
+        wikidataId: saved.wikidataId ?? selectedReport.wikidataId ?? null,
+      };
+      setRegistryResponse({
+        message: "",
+        successes: [success],
+        failed: [],
+      });
+      onSaved?.(success);
     } catch (error) {
       const errorMessage =
         error instanceof Error
           ? error.message
           : t("overview.coverage.findReportError");
+      const lower = errorMessage.toLowerCase();
+      const isDuplicate =
+        lower.includes("duplicate") || lower.includes("already");
       setRegistryResponse({
         message: errorMessage,
         successes: [],
@@ -206,7 +229,7 @@ export function CoverageFindReportDialog({
           {
             companyName: selectedReport.companyName,
             reportYear: selectedReport.reportYear,
-            error: "unknown",
+            error: isDuplicate ? "duplicate" : "unknown",
             message: errorMessage,
           },
         ],
@@ -458,7 +481,7 @@ export function CoverageFindReportDialog({
                     className="whitespace-nowrap"
                   >
                     {isSaving
-                      ? t("overview.coverage.findReportSaving")
+                      ? t("overview.coverage.findReportReuploading")
                       : t("overview.coverage.findReportSaveToRegistry")}
                   </Button>
                   <Button
