@@ -4,10 +4,16 @@ import { namesFromTextarea } from "@/tabs/overview/lib/coverage-api";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 
+export type CoverageYearFormMode =
+  | "createList"
+  | "addYear"
+  | "editYear"
+  | "editListName";
+
 type CoverageYearFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mode: "createList" | "addYear" | "editYear";
+  mode: CoverageYearFormMode;
   initialListName?: string;
   initialYear?: number;
   initialNamesText?: string;
@@ -46,20 +52,27 @@ export function CoverageYearFormDialog({
       ? t("overview.coverage.createListTitle")
       : mode === "addYear"
         ? t("overview.coverage.addYearTitle")
-        : t("overview.coverage.editYearTitle");
+        : mode === "editListName"
+          ? t("overview.coverage.editListNameTitle")
+          : t("overview.coverage.editYearTitle");
 
   const trimmedListName = listName.trim();
   const parsedYear = Number.parseInt(year, 10);
   const isValidYear = Number.isFinite(parsedYear);
   const canSubmit =
-    mode === "createList"
-      ? trimmedListName.length > 0 && isValidYear
-      : isValidYear;
+    mode === "editListName"
+      ? trimmedListName.length > 0
+      : mode === "createList"
+        ? trimmedListName.length > 0 && isValidYear
+        : isValidYear;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     await onSubmit({
-      listName: mode === "createList" ? trimmedListName : undefined,
+      listName:
+        mode === "createList" || mode === "editListName"
+          ? trimmedListName
+          : undefined,
       year: parsedYear,
       names: namesFromTextarea(namesText),
     });
@@ -70,10 +83,14 @@ export function CoverageYearFormDialog({
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      size="3xl"
-      scrollable
+      size={mode === "editListName" ? "lg" : "3xl"}
+      scrollable={mode !== "editListName"}
       title={title}
-      description={t("overview.coverage.formHint")}
+      description={
+        mode === "editListName"
+          ? t("overview.coverage.editListNameHint")
+          : t("overview.coverage.formHint")
+      }
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
@@ -89,7 +106,7 @@ export function CoverageYearFormDialog({
       }
     >
       <div className="space-y-4">
-        {mode === "createList" ? (
+        {mode === "createList" || mode === "editListName" ? (
           <label className="block space-y-1">
             <span className="text-sm text-gray-02">
               {t("overview.coverage.listNameLabel")}
@@ -103,7 +120,7 @@ export function CoverageYearFormDialog({
           </label>
         ) : null}
 
-        {mode !== "editYear" ? (
+        {mode !== "editListName" ? (
           <label className="block space-y-1">
             <span className="text-sm text-gray-02">
               {t("overview.coverage.yearLabel")}
@@ -119,22 +136,24 @@ export function CoverageYearFormDialog({
           </label>
         ) : null}
 
-        <label className="block space-y-1">
-          <span className="text-sm text-gray-02">
-            {t("overview.coverage.namesLabel")}
-          </span>
-          <textarea
-            className="w-full min-h-[320px] rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm font-mono"
-            value={namesText}
-            onChange={(e) => setNamesText(e.target.value)}
-            placeholder={t("overview.coverage.namesPlaceholder")}
-          />
-          <p className="text-xs text-gray-02">
-            {t("overview.coverage.namesCount", {
-              count: namesFromTextarea(namesText).length,
-            })}
-          </p>
-        </label>
+        {mode !== "editListName" ? (
+          <label className="block space-y-1">
+            <span className="text-sm text-gray-02">
+              {t("overview.coverage.namesLabel")}
+            </span>
+            <textarea
+              className="w-full min-h-[320px] rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm font-mono"
+              value={namesText}
+              onChange={(e) => setNamesText(e.target.value)}
+              placeholder={t("overview.coverage.namesPlaceholder")}
+            />
+            <p className="text-xs text-gray-02">
+              {t("overview.coverage.namesCount", {
+                count: namesFromTextarea(namesText).length,
+              })}
+            </p>
+          </label>
+        ) : null}
       </div>
     </Modal>
   );

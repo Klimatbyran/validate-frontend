@@ -173,11 +173,19 @@ export async function replaceCoverageYearNames(
   year: number,
   names: string[],
 ): Promise<CoverageListSummary> {
+  return updateCoverageYearEdition(listId, year, { names });
+}
+
+export async function updateCoverageYearEdition(
+  listId: string,
+  year: number,
+  input: { year?: number; names?: string[] },
+): Promise<CoverageListSummary> {
   const url = coverageUrl(`${listId}/years/${year}`);
   const response = await garboAuthFetch(url, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ names }),
+    body: JSON.stringify(input),
   });
   return parseJson(response, url, (data) =>
     coverageListSummarySchema.parse(data),
