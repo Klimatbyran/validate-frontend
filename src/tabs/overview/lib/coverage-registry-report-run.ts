@@ -11,30 +11,9 @@ function parseRegistryReportYear(
   return Number.isFinite(year) ? year : null;
 }
 
-function isStorageUrl(url: string): boolean {
-  try {
-    const host = new URL(url).hostname.toLowerCase();
-    return (
-      host === "storage.googleapis.com" ||
-      host.endsWith(".storage.googleapis.com")
-    );
-  } catch {
-    return false;
-  }
-}
-
-/** Prefer the original web PDF link over a cached storage URL for pipeline runs. */
+/** URL passed to the pipeline when running from coverage (matches Registry tab: use `url`). */
 export function registryReportPipelineUrl(report: RegistryReportPill): string {
-  const source = report.sourceUrl?.trim();
-  const url = report.url.trim();
-
-  if (source && /^https?:\/\//i.test(source) && !isStorageUrl(source)) {
-    return source;
-  }
-  if (url && !isStorageUrl(url)) {
-    return url;
-  }
-  return source || url;
+  return report.url.trim() || report.sourceUrl?.trim() || report.url;
 }
 
 export function registryReportYears(reports: RegistryReportPill[]): number[] {

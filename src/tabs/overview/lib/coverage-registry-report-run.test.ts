@@ -97,15 +97,14 @@ describe("coverage-registry-report-run", () => {
     });
   });
 
-  it("prefers source web URL over storage URL for pipeline runs", () => {
+  it("uses registry url field for pipeline runs (same as Registry tab)", () => {
     const report = {
       ...entry.registryReports[1]!,
       url: "https://storage.googleapis.com/bucket/uploads/prod/abc.pdf",
-      sourceUrl: "https://example.com/2025.pdf",
+      sourceUrl: "https://example.com/2025-dead.pdf",
     };
-    expect(registryReportPipelineUrl(report)).toBe("https://example.com/2025.pdf");
-    expect(toRunReportListItem(entry, report).url).toBe(
-      "https://example.com/2025.pdf",
+    expect(registryReportPipelineUrl(report)).toBe(
+      "https://storage.googleapis.com/bucket/uploads/prod/abc.pdf",
     );
   });
 });
