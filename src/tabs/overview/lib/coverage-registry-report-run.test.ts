@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   pickRegistryReportForYear,
+  registryReportPipelineUrl,
   registryReportYears,
   toRunReportListItem,
 } from "./coverage-registry-report-run";
@@ -94,5 +95,16 @@ describe("coverage-registry-report-run", () => {
       wikidataId: "Q52825",
       reportYear: "2025",
     });
+  });
+
+  it("uses registry url field for pipeline runs (same as Registry tab)", () => {
+    const report = {
+      ...entry.registryReports[1]!,
+      url: "https://storage.googleapis.com/bucket/uploads/prod/abc.pdf",
+      sourceUrl: "https://example.com/2025-dead.pdf",
+    };
+    expect(registryReportPipelineUrl(report)).toBe(
+      "https://storage.googleapis.com/bucket/uploads/prod/abc.pdf",
+    );
   });
 });

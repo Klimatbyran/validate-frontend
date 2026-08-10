@@ -11,6 +11,11 @@ function parseRegistryReportYear(
   return Number.isFinite(year) ? year : null;
 }
 
+/** URL passed to the pipeline when running from coverage (matches Registry tab: use `url`). */
+export function registryReportPipelineUrl(report: RegistryReportPill): string {
+  return report.url.trim() || report.sourceUrl?.trim() || report.url;
+}
+
 export function registryReportYears(reports: RegistryReportPill[]): number[] {
   const years = new Set<number>();
   for (const report of reports) {
@@ -39,7 +44,7 @@ export function toRunReportListItem(
 ): RunReportListItem {
   return {
     id: report.reportId,
-    url: report.url,
+    url: registryReportPipelineUrl(report),
     companyId: entry.matchedCompany?.id ?? null,
     companyName: report.companyName ?? entry.matchedCompany?.name ?? entry.name,
     wikidataId: report.wikidataId ?? entry.matchedCompany?.wikidataId ?? null,

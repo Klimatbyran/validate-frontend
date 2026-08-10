@@ -1,18 +1,18 @@
 import { Link } from "react-router-dom";
 import { useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Loader2 } from "lucide-react";
+import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { RunReportsModal } from "@/components/RunReportsModal";
+import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { editorCompanyPath } from "@/tabs/editor/lib/editor-routes";
 import { Button } from "@/ui/button";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { ReportYearPill } from "./ReportYearPill";
 import { CoverageFindReportDialog } from "./CoverageFindReportDialog";
-import { CoverageFindReportYearPrompt } from "./CoverageFindReportYearPrompt";
+import { CoverageReplaceReportUrlDialog } from "./CoverageReplaceReportUrlDialog";
 import { CoverageRunReportYearPrompt } from "./CoverageRunReportYearPrompt";
-import { searchCompanyReports } from "@/tabs/crawler/lib/crawler-utils";
 import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
 import type { RunReportListItem } from "@/lib/run-reports-types";
 import { fetchCoverageYearNames } from "@/tabs/overview/lib/coverage-api";
@@ -23,14 +23,16 @@ import {
 } from "@/tabs/overview/lib/coverage-registry-report-run";
 import { coveragePercentCardClass } from "@/tabs/overview/lib/coverage-overview-styles";
 import { getRegistryRunReportsPipelineConfig } from "@/tabs/registry/lib/registry-api";
-import type {
-  CompanyReport,
-  SaveReportSuccess,
-} from "@/tabs/crawler/lib/crawler-types";
+import {
+  deleteReportFromRegistry,
+  replaceRegistryReportSourceUrl,
+} from "@/tabs/registry/lib/registry-api";
+import type { SaveReportSuccess } from "@/tabs/crawler/lib/crawler-types";
 import type {
   CoverageEntry,
   CoverageEntryFilter,
   CoverageYearDetail,
+  RegistryReportPill,
 } from "@/tabs/overview/lib/coverage-types";
 
 const COVERAGE_ROW_HEIGHT_PX = 56;
@@ -53,12 +55,21 @@ type CoverageYearDetailProps = {
   onEditEntry: (entry: CoverageEntry) => void;
   onViewRegistryReports?: (names: string[]) => void;
   onRegistryReportSaved?: (entryId: string, saved: SaveReportSuccess) => void;
+  onRegistryReportRemoved?: (entryId: string, reportId: string) => void;
+  onRegistryReportUpdated?: (
+    entryId: string,
+    reportId: string,
+    updated: RegistryReportPill,
+  ) => void;
 };
 
 type FindReportSession = {
   entry: CoverageEntry;
-  reportYear: number;
-  companyReport: CompanyReport;
+};
+
+type RegistryReportActionTarget = {
+  entryId: string;
+  report: RegistryReportPill;
 };
 
 type RunReportSession = {
@@ -83,16 +94,18 @@ export function CoverageYearDetailView({
   onEditEntry,
   onViewRegistryReports,
   onRegistryReportSaved,
+  onRegistryReportRemoved,
+  onRegistryReportUpdated,
 }: CoverageYearDetailProps) {
   const { t } = useI18n();
   const [findReportSession, setFindReportSession] =
     useState<FindReportSession | null>(null);
-  const [findingReportEntryId, setFindingReportEntryId] = useState<
-    string | null
-  >(null);
-  const [yearPromptEntryId, setYearPromptEntryId] = useState<string | null>(
-    null,
-  );
+  const [replaceReportTarget, setReplaceReportTarget] =
+    useState<RegistryReportActionTarget | null>(null);
+  const [removeReportTarget, setRemoveReportTarget] =
+    useState<RegistryReportActionTarget | null>(null);
+  const [isReplacingReport, setIsReplacingReport] = useState(false);
+  const [isRemovingReport, setIsRemovingReport] = useState(false);
   const [runReportYearEntryId, setRunReportYearEntryId] = useState<
     string | null
   >(null);
@@ -143,11 +156,6 @@ export function CoverageYearDetailView({
       label: t("overview.coverage.filters.registryMissing"),
     },
   ];
-
-  const yearPromptEntry =
-    yearPromptEntryId != null
-      ? (entries.find((entry) => entry.id === yearPromptEntryId) ?? null)
-      : null;
 
   const runReportYearEntry =
     runReportYearEntryId != null
@@ -207,43 +215,61 @@ export function CoverageYearDetailView({
     });
   };
 
-  const handleYearConfirm = async (
-    entry: CoverageEntry,
-    reportYear: number,
-  ) => {
-    setFindingReportEntryId(entry.id);
+  const handleReplaceReportUrl = async (url: string) => {
+    if (!replaceReportTarget) return;
+    setIsReplacingReport(true);
     try {
-      const results = await searchCompanyReports({
-        companies: [
-          {
-            name: entry.matchedCompany?.name ?? entry.name,
-            reportYear: String(reportYear),
-            wikidataId: entry.matchedCompany?.wikidataId,
-          },
-        ],
-      });
-      const report = results[0] ?? {
-        companyName: entry.name,
-        reportYear: String(reportYear),
-        results: [],
-      };
-      setYearPromptEntryId(null);
-      setFindReportSession({
-        entry,
-        reportYear,
-        companyReport: {
-          ...report,
-          wikidataId: entry.matchedCompany?.wikidataId,
+      const { entry: updated, cacheFailed } =
+        await replaceRegistryReportSourceUrl(
+          replaceReportTarget.report.reportId,
+          url,
+        );
+      onRegistryReportUpdated?.(
+        replaceReportTarget.entryId,
+        replaceReportTarget.report.reportId,
+        {
+          ...replaceReportTarget.report,
+          url: updated.url,
+          sourceUrl: updated.sourceUrl ?? updated.url,
+          prodReady: false,
         },
-      });
+      );
+      toast.success(
+        cacheFailed
+          ? t("overview.coverage.replaceReportUrlSuccessCacheFailed")
+          : t("overview.coverage.replaceReportUrlSuccess"),
+      );
+      setReplaceReportTarget(null);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : t("overview.coverage.findReportError"),
+          : t("overview.coverage.replaceReportUrlError"),
       );
     } finally {
-      setFindingReportEntryId(null);
+      setIsReplacingReport(false);
+    }
+  };
+
+  const handleRemoveReport = async () => {
+    if (!removeReportTarget) return;
+    setIsRemovingReport(true);
+    try {
+      await deleteReportFromRegistry([removeReportTarget.report.reportId]);
+      onRegistryReportRemoved?.(
+        removeReportTarget.entryId,
+        removeReportTarget.report.reportId,
+      );
+      toast.success(t("overview.coverage.removeReportSuccess"));
+      setRemoveReportTarget(null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("overview.coverage.removeReportError"),
+      );
+    } finally {
+      setIsRemovingReport(false);
     }
   };
 
@@ -436,10 +462,15 @@ export function CoverageYearDetailView({
                       entry={entry}
                       rowRef={rowVirtualizer.measureElement}
                       dataIndex={virtualRow.index}
-                      isFindingReport={findingReportEntryId === entry.id}
                       onEditEntry={onEditEntry}
-                      onFindReportClick={() => setYearPromptEntryId(entry.id)}
+                      onFindReportClick={() => setFindReportSession({ entry })}
                       onRunReportClick={() => handleRunReportClick(entry)}
+                      onReplaceReport={(report) =>
+                        setReplaceReportTarget({ entryId: entry.id, report })
+                      }
+                      onRemoveReport={(report) =>
+                        setRemoveReportTarget({ entryId: entry.id, report })
+                      }
                     />
                   );
                 })}
@@ -485,23 +516,6 @@ export function CoverageYearDetailView({
         </div>
       ) : null}
 
-      {yearPromptEntry ? (
-        <CoverageFindReportYearPrompt
-          open
-          onOpenChange={(open) => {
-            if (!findingReportEntryId) {
-              setYearPromptEntryId(open ? yearPromptEntry.id : null);
-            }
-          }}
-          companyName={yearPromptEntry.name}
-          defaultYear={year}
-          isSearching={findingReportEntryId === yearPromptEntry.id}
-          onConfirm={(reportYear) =>
-            void handleYearConfirm(yearPromptEntry, reportYear)
-          }
-        />
-      ) : null}
-
       {findReportSession ? (
         <CoverageFindReportDialog
           open
@@ -509,14 +523,41 @@ export function CoverageYearDetailView({
             if (!open) setFindReportSession(null);
           }}
           entry={findReportSession.entry}
-          reportYear={findReportSession.reportYear}
-          companyReport={findReportSession.companyReport}
+          defaultYear={year}
           runPipeline={runPipeline}
           onSaved={(saved) =>
             onRegistryReportSaved?.(findReportSession.entry.id, saved)
           }
         />
       ) : null}
+
+      {replaceReportTarget ? (
+        <CoverageReplaceReportUrlDialog
+          open
+          onOpenChange={(open) => {
+            if (!open && !isReplacingReport) setReplaceReportTarget(null);
+          }}
+          report={replaceReportTarget.report}
+          isSaving={isReplacingReport}
+          onSave={handleReplaceReportUrl}
+        />
+      ) : null}
+
+      <ConfirmDialog
+        open={removeReportTarget != null}
+        onOpenChange={(open) => {
+          if (!open && !isRemovingReport) setRemoveReportTarget(null);
+        }}
+        title={t("overview.coverage.removeReportTitle")}
+        description={t("overview.coverage.removeReportDescription", {
+          year: removeReportTarget?.report.reportYear ?? "?",
+        })}
+        cancelLabel={t("common.cancel")}
+        confirmLabel={t("overview.coverage.removeReportConfirm")}
+        confirmVariant="danger"
+        isLoading={isRemovingReport}
+        onConfirm={handleRemoveReport}
+      />
 
       {runReportYearEntry ? (
         <CoverageRunReportYearPrompt
@@ -570,18 +611,20 @@ function CoverageEntryRow({
   entry,
   rowRef,
   dataIndex,
-  isFindingReport,
   onEditEntry,
   onFindReportClick,
   onRunReportClick,
+  onReplaceReport,
+  onRemoveReport,
 }: {
   entry: CoverageEntry;
   rowRef: (element: HTMLTableRowElement | null) => void;
   dataIndex: number;
-  isFindingReport: boolean;
   onEditEntry: (entry: CoverageEntry) => void;
   onFindReportClick: () => void;
   onRunReportClick: () => void;
+  onReplaceReport: (report: RegistryReportPill) => void;
+  onRemoveReport: (report: RegistryReportPill) => void;
 }) {
   const { t } = useI18n();
 
@@ -638,9 +681,30 @@ function CoverageEntryRow({
       </td>
       <td className="px-4 py-2 align-top">
         {reports.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {reports.map((report) => (
-              <ReportYearPill key={report.reportId} report={report} />
+              <div
+                key={report.reportId}
+                className="inline-flex items-center gap-0.5"
+              >
+                <ReportYearPill report={report} />
+                <button
+                  type="button"
+                  className="rounded-full p-1 text-gray-02 transition-colors hover:bg-gray-03/60 hover:text-gray-01"
+                  title={t("overview.coverage.replaceReportUrl")}
+                  onClick={() => onReplaceReport(report)}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  className="rounded-full p-1 text-gray-02 transition-colors hover:bg-pink-03/20 hover:text-pink-03"
+                  title={t("overview.coverage.removeReport")}
+                  onClick={() => onRemoveReport(report)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             ))}
           </div>
         ) : (
@@ -655,29 +719,17 @@ function CoverageEntryRow({
             variant="outline"
             size="sm"
             onClick={() => onEditEntry(entry)}
-            disabled={isFindingReport}
           >
             {t("overview.coverage.editMatch")}
           </Button>
-          {isFindingReport ? (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled
-              className="min-w-[7.5rem]"
-            >
-              <Loader2 className="h-4 w-4 animate-spin" />
-            </Button>
-          ) : (
-            <Button variant="outline" size="sm" onClick={onFindReportClick}>
-              {t("overview.coverage.findReport")}
-            </Button>
-          )}
+          <Button variant="outline" size="sm" onClick={onFindReportClick}>
+            {t("overview.coverage.findReport")}
+          </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={onRunReportClick}
-            disabled={!canRunReport || isFindingReport}
+            disabled={!canRunReport}
             title={
               canRunReport
                 ? undefined

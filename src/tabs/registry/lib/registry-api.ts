@@ -218,6 +218,25 @@ async function cachePdfToS3(sourceUrl: string): Promise<PdfCacheResult | null> {
   }
 }
 
+function registryStorageFieldsFromCache(
+  cache: PdfCacheResult | null,
+): Pick<RegistryEntryUpdate, "s3Url" | "s3Key" | "s3Bucket" | "sha256"> {
+  if (cache) {
+    return {
+      s3Url: cache.publicUrl,
+      s3Key: cache.key,
+      s3Bucket: cache.bucket,
+      sha256: cache.sha256,
+    };
+  }
+  return {
+    s3Url: null,
+    s3Key: null,
+    s3Bucket: null,
+    sha256: null,
+  };
+}
+
 async function saveRegistryPayloads(
   payloads: RegistryNewEntry[],
   onProgress?: (progress: RegistryBulkProgress) => void,
@@ -314,15 +333,13 @@ export const addRegistryEntries = async (
 
   const payloads = await Promise.all(
     entries.map(async (entry) => {
-      const cache = entry.s3Url ? null : await cachePdfToS3(entry.url);
+      const sourceUrl = entry.sourceUrl?.trim() || entry.url;
+      const cache = entry.s3Url ? null : await cachePdfToS3(sourceUrl);
       return {
         ...entry,
-        ...(cache && {
-          s3Url: cache.publicUrl,
-          s3Key: cache.key,
-          s3Bucket: cache.bucket,
-          sha256: cache.sha256,
-        }),
+        url: sourceUrl,
+        sourceUrl,
+        ...(cache ? registryStorageFieldsFromCache(cache) : {}),
       };
     }),
   );
@@ -415,3 +432,24 @@ export const editRegistryEntry = async (entry: RegistryEntryUpdate) => {
     throw error instanceof Error ? error : new Error(msg);
   }
 };
+
+export type ReplaceRegistryReportUrlResult = {
+  entry: RegistryEntry;
+  cacheFailed: boolean;
+};
+
+/** Re-cache PDF from a web URL and update registry source + storage fields. */
+export async function replaceRegistryReportSourceUrl(
+  id: string,
+  sourceUrl: string,
+): Promise<ReplaceRegistryReportUrlResult> {
+  const trimmed = sourceUrl.trim();
+  const cache = await cachePdfToS3(trimmed);
+  const entry = await editRegistryEntry({
+    id,
+    url: trimmed,
+    sourceUrl: trimmed,
+    ...registryStorageFieldsFromCache(cache),
+  });
+  return { entry, cacheFailed: !cache };
+}
