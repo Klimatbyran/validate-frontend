@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { RunReportsModal } from "@/components/RunReportsModal";
 import type { RunReportsPipelineHandle } from "@/hooks/useRunReportsPipeline";
@@ -13,8 +14,10 @@ import {
   DialogTitle,
 } from "@/ui/dialog";
 import SearchResultItem from "@/tabs/crawler/components/SearchResultItem";
+import ManuallyAddReportItem from "@/tabs/crawler/components/ManuallyAddReportItem";
 import RegistryList from "@/tabs/crawler/components/RegistryList";
 import { saveToRegistry } from "@/tabs/crawler/lib/crawler-api";
+import { searchCompanyReports } from "@/tabs/crawler/lib/crawler-utils";
 import type {
   CompanyReport,
   SaveReportSuccess,
@@ -27,26 +30,39 @@ type CoverageFindReportDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entry: CoverageEntry;
-  reportYear: number;
-  companyReport: CompanyReport | null;
+  defaultYear: number;
   onSaved?: (saved: SaveReportSuccess) => void;
   runPipeline: RunReportsPipelineHandle;
 };
+
+function recentYearOptions(anchorYear: number): number[] {
+  const current = new Date().getFullYear();
+  const years = new Set<number>([anchorYear, current]);
+  for (let year = current; year >= current - 8; year -= 1) {
+    years.add(year);
+  }
+  return [...years].sort((a, b) => b - a);
+}
 
 export function CoverageFindReportDialog({
   open,
   onOpenChange,
   entry,
-  reportYear,
-  companyReport,
+  defaultYear,
   onSaved,
   runPipeline,
 }: CoverageFindReportDialogProps) {
   const { t } = useI18n();
-  const reportYearLabel = String(reportYear);
+  const companyName = entry.matchedCompany?.name ?? entry.name;
+  const [reportYear, setReportYear] = useState(String(defaultYear));
   const [selectedReport, setSelectedReport] = useState<SelectedReport | null>(
     null,
   );
+  const [companyReport, setCompanyReport] = useState<CompanyReport | null>(
+    null,
+  );
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [registryResponse, setRegistryResponse] =
     useState<SaveReportsListResponse | null>(null);
@@ -61,13 +77,42 @@ export function CoverageFindReportDialog({
     runOptions,
   } = runPipeline;
 
+  const reportYearLabel = reportYear;
+  const yearOptions = recentYearOptions(defaultYear);
+  const parsedYear = Number.parseInt(reportYear, 10);
+  const isValidYear =
+    Number.isFinite(parsedYear) &&
+    parsedYear >= 1990 &&
+    parsedYear <= new Date().getFullYear() + 1;
+
+  useEffect(() => {
+    if (!open) return;
+    setReportYear(String(defaultYear));
+    setSelectedReport(null);
+    setCompanyReport(null);
+    setIsSearching(false);
+    setSearchError(null);
+    setIsSaving(false);
+    setRegistryResponse(null);
+    setIsRunModalOpen(false);
+    setIsPdfPreviewOpen(false);
+  }, [open, defaultYear, entry.id]);
+
+  useEffect(() => {
+    if (!selectedReport) return;
+    setSelectedReport((previous) =>
+      previous ? { ...previous, reportYear: reportYearLabel } : previous,
+    );
+  }, [reportYearLabel]);
+
   const reportWithWikidata = useMemo((): CompanyReport | null => {
     if (!companyReport) return null;
     return {
       ...companyReport,
+      reportYear: reportYearLabel,
       wikidataId: companyReport.wikidataId ?? entry.matchedCompany?.wikidataId,
     };
-  }, [companyReport, entry.matchedCompany?.wikidataId]);
+  }, [companyReport, entry.matchedCompany?.wikidataId, reportYearLabel]);
 
   const runModalItems = useMemo((): RunReportListItem[] => {
     if (!selectedReport?.url) return [];
@@ -89,27 +134,54 @@ export function CoverageFindReportDialog({
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && isPdfPreviewOpen) return;
-    if (!nextOpen) {
-      setSelectedReport(null);
-      setRegistryResponse(null);
-      setIsSaving(false);
-      setIsRunModalOpen(false);
-      setIsPdfPreviewOpen(false);
-    }
     onOpenChange(nextOpen);
   };
 
-  const handleSelectReport = (companyName: string, url: string | null) => {
+  const handleSelectReport = (name: string, url: string | null) => {
     if (!url) {
       setSelectedReport(null);
       return;
     }
     setSelectedReport({
-      companyName,
+      companyName: name,
       reportYear: reportYearLabel,
       url,
-      wikidataId: reportWithWikidata?.wikidataId,
+      wikidataId: entry.matchedCompany?.wikidataId,
     });
+  };
+
+  const handleSearchOnline = async () => {
+    if (!isValidYear || isSearching) return;
+    setIsSearching(true);
+    setSearchError(null);
+    setCompanyReport(null);
+    setSelectedReport(null);
+    try {
+      const results = await searchCompanyReports({
+        companies: [
+          {
+            name: companyName,
+            reportYear: reportYearLabel,
+            wikidataId: entry.matchedCompany?.wikidataId,
+          },
+        ],
+      });
+      setCompanyReport(
+        results[0] ?? {
+          companyName,
+          reportYear: reportYearLabel,
+          results: [],
+        },
+      );
+    } catch (error) {
+      setSearchError(
+        error instanceof Error
+          ? error.message
+          : t("overview.coverage.findReportError"),
+      );
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleSaveToRegistry = async () => {
@@ -200,6 +272,8 @@ export function CoverageFindReportDialog({
           ? "text-pink-03"
           : "text-gray-01";
 
+  const crawlHasResults = (reportWithWikidata?.results.length ?? 0) > 0;
+
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -212,9 +286,8 @@ export function CoverageFindReportDialog({
           <DialogHeader className="shrink-0 space-y-2 border-b border-gray-03/60 px-6 pb-4 pt-6 pr-12">
             <DialogTitle>{t("overview.coverage.findReportTitle")}</DialogTitle>
             <DialogDescription className="text-left leading-relaxed">
-              {t("overview.coverage.findReportDescription", {
+              {t("overview.coverage.findReportDescriptionUnified", {
                 name: entry.name,
-                year: reportYearLabel,
               })}
             </DialogDescription>
           </DialogHeader>
@@ -255,16 +328,100 @@ export function CoverageFindReportDialog({
                   </div>
                 ) : null}
               </div>
-            ) : reportWithWikidata ? (
-              <SearchResultItem
-                companyReport={reportWithWikidata}
-                selectedReport={selectedReport?.url}
-                onSelect={handleSelectReport}
-                initialExpanded
-                variant="embedded"
-                onPreviewOpenChange={setIsPdfPreviewOpen}
-              />
-            ) : null}
+            ) : (
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-01">
+                    {t("crawler.reportYear")}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {yearOptions.map((year) => {
+                      const active = reportYear === String(year);
+                      return (
+                        <button
+                          key={year}
+                          type="button"
+                          disabled={isSearching || isSaving}
+                          onClick={() => setReportYear(String(year))}
+                          className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                            active
+                              ? "border-orange-03 bg-orange-03/20 text-orange-03"
+                              : "border-gray-03 text-gray-02 hover:border-gray-02 hover:text-gray-01"
+                          }`}
+                        >
+                          {year}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <input
+                    type="number"
+                    min={1990}
+                    max={new Date().getFullYear() + 1}
+                    value={reportYear}
+                    disabled={isSearching || isSaving}
+                    onChange={(event) => setReportYear(event.target.value)}
+                    className="w-full rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm text-gray-01 focus:outline-none focus:ring-2 focus:ring-orange-03"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-01">
+                    {t("overview.coverage.findReportManualSection")}
+                  </p>
+                  <ManuallyAddReportItem
+                    companyName={companyName}
+                    selectedReport={selectedReport?.url}
+                    onSelect={handleSelectReport}
+                    variant="embedded"
+                  />
+                </div>
+
+                <div className="space-y-3 border-t border-gray-03/60 pt-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm font-medium text-gray-01">
+                      {t("overview.coverage.findReportCrawlSection")}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      disabled={!isValidYear || isSearching || isSaving}
+                      onClick={() => void handleSearchOnline()}
+                    >
+                      {isSearching ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          {t("overview.coverage.findReportSearching")}
+                        </>
+                      ) : (
+                        t("overview.coverage.findReportSearchOnline")
+                      )}
+                    </Button>
+                  </div>
+                  {searchError ? (
+                    <p className="text-sm text-pink-03">{searchError}</p>
+                  ) : null}
+                  {reportWithWikidata ? (
+                    crawlHasResults ? (
+                      <SearchResultItem
+                        companyReport={reportWithWikidata}
+                        selectedReport={selectedReport?.url}
+                        onSelect={handleSelectReport}
+                        initialExpanded
+                        variant="embedded"
+                        onPreviewOpenChange={setIsPdfPreviewOpen}
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-02">
+                        {t("overview.coverage.findReportNoResults")}
+                      </p>
+                    )
+                  ) : null}
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="shrink-0 flex-col gap-3 border-t border-gray-03/60 bg-gray-05/40 px-6 py-4">
@@ -287,7 +444,7 @@ export function CoverageFindReportDialog({
                   <Button
                     variant="outline"
                     onClick={() => handleOpenChange(false)}
-                    disabled={isSaving || isRunningReports}
+                    disabled={isSaving || isRunningReports || isSearching}
                     className="whitespace-nowrap"
                   >
                     {t("common.cancel")}
@@ -295,7 +452,9 @@ export function CoverageFindReportDialog({
                   <Button
                     variant="secondary"
                     onClick={() => void handleSaveToRegistry()}
-                    disabled={!selectedReport || isSaving || isRunningReports}
+                    disabled={
+                      !selectedReport || isSaving || isRunningReports || isSearching
+                    }
                     className="whitespace-nowrap"
                   >
                     {isSaving
@@ -304,7 +463,9 @@ export function CoverageFindReportDialog({
                   </Button>
                   <Button
                     onClick={handleRunPipeline}
-                    disabled={!selectedReport || isSaving || isRunningReports}
+                    disabled={
+                      !selectedReport || isSaving || isRunningReports || isSearching
+                    }
                     className="whitespace-nowrap"
                   >
                     {t("crawler.runSelectedReports")}
