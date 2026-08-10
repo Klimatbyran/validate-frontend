@@ -476,7 +476,10 @@ export function CoverageFindReportDialog({
                     variant="secondary"
                     onClick={() => void handleSaveToRegistry()}
                     disabled={
-                      !selectedReport || isSaving || isRunningReports || isSearching
+                      !selectedReport ||
+                      isSaving ||
+                      isRunningReports ||
+                      isSearching
                     }
                     className="whitespace-nowrap"
                   >
@@ -487,7 +490,10 @@ export function CoverageFindReportDialog({
                   <Button
                     onClick={handleRunPipeline}
                     disabled={
-                      !selectedReport || isSaving || isRunningReports || isSearching
+                      !selectedReport ||
+                      isSaving ||
+                      isRunningReports ||
+                      isSearching
                     }
                     className="whitespace-nowrap"
                   >

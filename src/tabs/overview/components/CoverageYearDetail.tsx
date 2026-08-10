@@ -463,9 +463,7 @@ export function CoverageYearDetailView({
                       rowRef={rowVirtualizer.measureElement}
                       dataIndex={virtualRow.index}
                       onEditEntry={onEditEntry}
-                      onFindReportClick={() =>
-                        setFindReportSession({ entry })
-                      }
+                      onFindReportClick={() => setFindReportSession({ entry })}
                       onRunReportClick={() => handleRunReportClick(entry)}
                       onReplaceReport={(report) =>
                         setReplaceReportTarget({ entryId: entry.id, report })

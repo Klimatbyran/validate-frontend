@@ -220,10 +220,7 @@ async function cachePdfToS3(sourceUrl: string): Promise<PdfCacheResult | null> {
 
 function registryStorageFieldsFromCache(
   cache: PdfCacheResult | null,
-): Pick<
-  RegistryEntryUpdate,
-  "s3Url" | "s3Key" | "s3Bucket" | "sha256"
-> {
+): Pick<RegistryEntryUpdate, "s3Url" | "s3Key" | "s3Bucket" | "sha256"> {
   if (cache) {
     return {
       s3Url: cache.publicUrl,

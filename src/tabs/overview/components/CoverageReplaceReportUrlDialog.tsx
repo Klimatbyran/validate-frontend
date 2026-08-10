@@ -81,9 +81,7 @@ export function CoverageReplaceReportUrlDialog({
             }}
             className="w-full rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm text-gray-01 focus:outline-none focus:ring-2 focus:ring-orange-03"
           />
-          {urlError ? (
-            <p className="text-sm text-pink-03">{urlError}</p>
-          ) : null}
+          {urlError ? <p className="text-sm text-pink-03">{urlError}</p> : null}
         </div>
 
         <DialogFooter className="gap-2 sm:justify-end">
@@ -95,7 +93,11 @@ export function CoverageReplaceReportUrlDialog({
           >
             {t("common.cancel")}
           </Button>
-          <Button type="button" disabled={!canSave || isSaving} onClick={() => void handleSave()}>
+          <Button
+            type="button"
+            disabled={!canSave || isSaving}
+            onClick={() => void handleSave()}
+          >
             {isSaving
               ? t("overview.coverage.replaceReportUrlReuploading")
               : t("overview.coverage.replaceReportUrlSave")}

@@ -185,7 +185,9 @@ function removeRegistryReportFromEntry(
 
   const entry = detail.entries[entryIndex];
   const existingReports = entry.registryReports ?? [];
-  const removed = existingReports.find((report) => report.reportId === reportId);
+  const removed = existingReports.find(
+    (report) => report.reportId === reportId,
+  );
   if (!removed) return detail;
 
   const nextReports = existingReports.filter(
