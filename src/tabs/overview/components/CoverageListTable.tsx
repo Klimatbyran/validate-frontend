@@ -1,3 +1,4 @@
+import { Pencil } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import type { CoverageListSummary } from "@/tabs/overview/lib/coverage-types";
@@ -7,12 +8,14 @@ type CoverageListTableProps = {
   lists: CoverageListSummary[];
   onSelectList: (listId: string) => void;
   onCreateList: () => void;
+  onEditList: (list: CoverageListSummary) => void;
 };
 
 export function CoverageListTable({
   lists,
   onSelectList,
   onCreateList,
+  onEditList,
 }: CoverageListTableProps) {
   const { t } = useI18n();
 
@@ -37,6 +40,9 @@ export function CoverageListTable({
               </th>
               <th className="px-4 py-2 font-medium">
                 {t("overview.coverage.columns.updated")}
+              </th>
+              <th className="px-4 py-2 font-medium w-[1%]">
+                {t("overview.coverage.columns.actions")}
               </th>
             </tr>
           </thead>
@@ -78,12 +84,26 @@ export function CoverageListTable({
                   <td className="px-4 py-2 text-gray-02">
                     {new Date(list.updatedAt).toLocaleString()}
                   </td>
+                  <td className="px-4 py-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      aria-label={t("overview.coverage.editListName")}
+                      title={t("overview.coverage.editListName")}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onEditList(list);
+                      }}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  </td>
                 </tr>
               );
             })}
             {lists.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-gray-02">
+                <td colSpan={5} className="px-4 py-8 text-center text-gray-02">
                   {t("overview.coverage.noLists")}
                 </td>
               </tr>

@@ -10,6 +10,7 @@ import {
   refreshCoverageYearRegistry,
   renameCoverageList,
   replaceCoverageYearNames,
+  updateCoverageYearEdition,
   setCoverageEntryMatch,
 } from "../lib/coverage-api";
 import type {
@@ -268,6 +269,15 @@ export function useCoverageLists() {
     },
     replaceYearNames: async (listId: string, year: number, names: string[]) => {
       const updated = await replaceCoverageYearNames(listId, year, names);
+      await loadLists(true);
+      return updated;
+    },
+    updateYearEdition: async (
+      listId: string,
+      year: number,
+      input: { year?: number; names?: string[] },
+    ) => {
+      const updated = await updateCoverageYearEdition(listId, year, input);
       await loadLists(true);
       return updated;
     },
