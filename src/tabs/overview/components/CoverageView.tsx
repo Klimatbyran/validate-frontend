@@ -347,7 +347,9 @@ export function CoverageView({ onViewRegistryReports }: CoverageViewProps) {
                   onRegistryReportSaved={(entryId, saved) => {
                     yearDetail.addEntryRegistryReport(entryId, saved);
                   }}
-                  onEdit={() => openEditYearDialog(selectedList.id, selectedYear)}
+                  onEdit={() =>
+                    openEditYearDialog(selectedList.id, selectedYear)
+                  }
                   onEditEntry={setMatchEntry}
                 />
               ) : null}
