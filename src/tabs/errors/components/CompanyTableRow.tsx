@@ -16,6 +16,7 @@ import {
 } from "../lib";
 import { DiscrepancyBadge } from "./DiscrepancyBadge";
 import { ReportingQualityDetail } from "./ReportingQualityDetail";
+import { RerunReportingQualityAction } from "./RerunReportingQualityAction";
 
 interface CompanyTableRowProps {
   row: CompanyRow;
@@ -161,6 +162,7 @@ export function CompanyTableRow({
           >
             <MessageSquarePlus className="w-4 h-4" />
           </button>
+          <RerunReportingQualityAction row={row} />
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-gray-02 max-w-[180px]">

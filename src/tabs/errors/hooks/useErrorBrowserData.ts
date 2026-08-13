@@ -184,6 +184,7 @@ export function useErrorBrowserData(
         rows.push({
           rowKey,
           id: stageCompany?.id ?? prodCompany?.id ?? crossEnvKey,
+          stageCompanyId: stageCompany?.id ?? null,
           wikidataId:
             stageCompany?.wikidataId ?? prodCompany?.wikidataId ?? null,
           name,
