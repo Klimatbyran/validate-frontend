@@ -239,7 +239,15 @@ export type CompanyPairingMethod = "wikidata" | "report-identity" | "unpaired";
 export interface CompanyRow {
   /** Unique row key (company + report shell when multiple periods). */
   rowKey: string;
+  /** Stage id if present, else prod id, else the cross-env pairing key - display/keying only. */
   id: string;
+  /**
+   * Stage company id specifically, null when this row doesn't exist on stage.
+   * The Errors browser is a stage-centric view - use this (never `id`, which
+   * can silently fall back to the prod id) for anything that resolves a
+   * company on stage, e.g. re-running a pipeline job there.
+   */
+  stageCompanyId?: string | null;
   wikidataId?: string | null;
   name: string;
   tags?: string[];

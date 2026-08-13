@@ -1074,6 +1074,18 @@
     "reportingQualityWarningTooltip": "Reporting quality issue detected — click for details",
     "reportingQualityShowMore": "Show more",
     "reportingQualityShowLess": "Show less",
+    "rerunReportingQuality": {
+      "tooltip": "Re-run reporting quality for this report",
+      "title": "Re-run reporting quality",
+      "body": "This re-fetches and re-parses the PDF, re-embeds it, and runs only the reporting-quality worker (no other data is re-extracted or overwritten). It costs a fresh parse + LLM call and may take a minute.",
+      "confirm": "Run",
+      "running": "Running…",
+      "success": "Reporting-quality rerun started",
+      "error": "Failed to start rerun: {{message}}",
+      "target": "Target",
+      "targetStage": "Stage pipeline",
+      "targetLocal": "Local pipeline"
+    },
     "unitErrorTooltip": "Stage value is {{factor}} the prod value — likely a unit mismatch (e.g. tonnes vs kilotonnes)",
     "filterType": {
       "identical": "Identical",

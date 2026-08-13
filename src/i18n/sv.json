@@ -1074,6 +1074,18 @@
     "reportingQualityWarningTooltip": "Kvalitetsproblem i rapporteringen upptäckt — klicka för detaljer",
     "reportingQualityShowMore": "Visa mer",
     "reportingQualityShowLess": "Visa mindre",
+    "rerunReportingQuality": {
+      "tooltip": "Kör om rapportkvalitet för denna rapport",
+      "title": "Kör om rapportkvalitet",
+      "body": "Detta hämtar och parsar om PDF:en, indexerar om den, och kör endast rapportkvalitets-arbetaren (ingen annan data extraheras eller skrivs över). Det kostar en ny parsning + LLM-anrop och kan ta en minut.",
+      "confirm": "Kör",
+      "running": "Kör…",
+      "success": "Omkörning av rapportkvalitet startad",
+      "error": "Kunde inte starta omkörning: {{message}}",
+      "target": "Mål",
+      "targetStage": "Stage-pipeline",
+      "targetLocal": "Lokal pipeline"
+    },
     "unitErrorTooltip": "Stage-värdet är {{factor}} prod-värdet — troligen enhetsmismatch (t.ex. ton vs kiloton)",
     "filterType": {
       "identical": "Identisk",

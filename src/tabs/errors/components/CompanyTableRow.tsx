@@ -9,6 +9,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/ui/modal";
 import { getCompanyUrlSegment } from "@/lib/company-routing";
+import type { ErrorBrowserStageSource } from "@/config/api-env";
 import { CompanyRow } from "../types";
 import {
   crossEnvKeyFromRow,
@@ -16,6 +17,7 @@ import {
 } from "../lib";
 import { DiscrepancyBadge } from "./DiscrepancyBadge";
 import { ReportingQualityDetail } from "./ReportingQualityDetail";
+import { RerunReportingQualityAction } from "./RerunReportingQualityAction";
 
 interface CompanyTableRowProps {
   row: CompanyRow;
@@ -24,6 +26,8 @@ interface CompanyTableRowProps {
   dataPointSupportsNotes: boolean;
   /** Which data point column is selected - the warning icon is scoped to it. */
   selectedDataPoint: string;
+  /** Which pipeline env the Errors browser's stage data (and this row's ids) came from. */
+  stageSource: ErrorBrowserStageSource;
   onAddReason: (row: CompanyRow) => void;
   savedReason?: string;
 }
@@ -34,6 +38,7 @@ export function CompanyTableRow({
   difficultCompanyIds,
   dataPointSupportsNotes,
   selectedDataPoint,
+  stageSource,
   onAddReason,
   savedReason,
 }: CompanyTableRowProps) {
@@ -161,6 +166,7 @@ export function CompanyTableRow({
           >
             <MessageSquarePlus className="w-4 h-4" />
           </button>
+          <RerunReportingQualityAction row={row} stageSource={stageSource} />
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-gray-02 max-w-[180px]">
