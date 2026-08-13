@@ -173,6 +173,10 @@ export function useErrorBrowserData(
           slot.stagePeriod?.emissions,
           selectedDataPoint,
         );
+        // Reporting quality is stage-only for now (Garbo's reportingQuality worker
+        // hasn't run against prod data yet).
+        const reportingQuality =
+          slot.stagePeriod?.companyReport?.reportingQuality ?? null;
         const rowKey = slot.shellKey
           ? `${crossEnvKey}:${slot.shellKey}`
           : crossEnvKey;
@@ -197,6 +201,7 @@ export function useErrorBrowserData(
           unitErrorFactor,
           prodVerified,
           errorNote,
+          reportingQuality,
           prodCompanyVerifiedForYear: isProdReportingPeriodFullyVerified(
             slot.prodPeriod,
           ),

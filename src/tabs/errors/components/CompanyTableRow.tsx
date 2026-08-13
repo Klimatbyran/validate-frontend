@@ -1,17 +1,29 @@
 import { motion } from "framer-motion";
-import { AlertTriangle, BadgeCheck, MessageSquarePlus } from "lucide-react";
+import {
+  AlertTriangle,
+  BadgeCheck,
+  MessageSquarePlus,
+  ShieldAlert,
+} from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
+import { Modal } from "@/ui/modal";
 import { getCompanyUrlSegment } from "@/lib/company-routing";
 import { CompanyRow } from "../types";
-import { crossEnvKeyFromRow } from "../lib";
+import {
+  crossEnvKeyFromRow,
+  getDataPointReportingQualityWarning,
+} from "../lib";
 import { DiscrepancyBadge } from "./DiscrepancyBadge";
+import { ReportingQualityDetail } from "./ReportingQualityDetail";
 
 interface CompanyTableRowProps {
   row: CompanyRow;
   index: number;
   difficultCompanyIds: Map<string, number>;
   dataPointSupportsNotes: boolean;
+  /** Which data point column is selected - the warning icon is scoped to it. */
+  selectedDataPoint: string;
   onAddReason: (row: CompanyRow) => void;
   savedReason?: string;
 }
@@ -21,6 +33,7 @@ export function CompanyTableRow({
   index,
   difficultCompanyIds,
   dataPointSupportsNotes,
+  selectedDataPoint,
   onAddReason,
   savedReason,
 }: CompanyTableRowProps) {
@@ -56,6 +69,34 @@ export function CompanyTableRow({
             >
               <AlertTriangle className="w-3.5 h-3.5" />
             </span>
+          )}
+          {getDataPointReportingQualityWarning(
+            selectedDataPoint,
+            row.reportingQuality,
+          ) && (
+            <Modal
+              size="lg"
+              scrollable
+              title={t("jobstatus.jobdetails.reportingQuality.title")}
+              description={row.name}
+              trigger={
+                <button
+                  type="button"
+                  className="text-amber-400 hover:text-amber-300 cursor-pointer"
+                  title={t("errors.reportingQualityWarningTooltip")}
+                  aria-label={t("errors.reportingQualityWarningTooltip")}
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                </button>
+              }
+            >
+              {row.reportingQuality && (
+                <ReportingQualityDetail
+                  reportingQuality={row.reportingQuality}
+                  selectedDataPoint={selectedDataPoint}
+                />
+              )}
+            </Modal>
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">

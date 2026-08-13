@@ -43,6 +43,66 @@ export function getEconomyData(returnValueData: any): any[] | null {
   return null;
 }
 
+export type Scope3CategoryReporting =
+  | "FULL"
+  | "GROUPED"
+  | "CUSTOM_LABELS"
+  | "SINGLE_TOTAL";
+
+export type FragmentedValuesReporting =
+  | "NONE"
+  | "PARTS_WITH_TOTAL"
+  | "PARTS_ONLY_NO_TOTAL";
+
+export interface Scope3CategoryFragmentation {
+  category: number;
+  fragmentedReporting: "PARTS_WITH_TOTAL" | "PARTS_ONLY_NO_TOTAL";
+  example: string;
+}
+
+export interface ReportingQualityData {
+  usesGhgProtocolCategories: Scope3CategoryReporting | null;
+  categoryLabelsExample: string | null;
+  methodChanges: Array<{ year: number | null; description: string }>;
+  missingScopesExplained: boolean | null;
+  missingScopesReason: string | null;
+  scope2MethodExplicit: boolean | null;
+  scope1FragmentedReporting: FragmentedValuesReporting | null;
+  scope1FragmentedExample: string | null;
+  scope2FragmentedReporting: FragmentedValuesReporting | null;
+  scope2FragmentedExample: string | null;
+  scope3CategoryFragmentation: Scope3CategoryFragmentation[];
+}
+
+/**
+ * Reporting quality lives in returnvalue.value.reportingQuality for the
+ * follow-up job (LLM extraction) and in job.data.reportingQuality for the
+ * diff job (already-extracted flags being saved).
+ */
+export function getReportingQualityData(
+  returnValueData: any,
+  processedData: any,
+): ReportingQualityData | null {
+  const data =
+    returnValueData?.value?.reportingQuality ?? processedData?.reportingQuality;
+  if (!data || typeof data !== "object") return null;
+  return {
+    usesGhgProtocolCategories: data.usesGhgProtocolCategories ?? null,
+    categoryLabelsExample: data.categoryLabelsExample ?? null,
+    methodChanges: Array.isArray(data.methodChanges) ? data.methodChanges : [],
+    missingScopesExplained: data.missingScopesExplained ?? null,
+    missingScopesReason: data.missingScopesReason ?? null,
+    scope2MethodExplicit: data.scope2MethodExplicit ?? null,
+    scope1FragmentedReporting: data.scope1FragmentedReporting ?? null,
+    scope1FragmentedExample: data.scope1FragmentedExample ?? null,
+    scope2FragmentedReporting: data.scope2FragmentedReporting ?? null,
+    scope2FragmentedExample: data.scope2FragmentedExample ?? null,
+    scope3CategoryFragmentation: Array.isArray(data.scope3CategoryFragmentation)
+      ? data.scope3CategoryFragmentation
+      : [],
+  };
+}
+
 export function getScope3Data(processedData: any, returnValueData: any): any {
   const hasScope3 =
     (processedData.scope3 && Array.isArray(processedData.scope3)) ||

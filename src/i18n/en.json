@@ -712,6 +712,33 @@
       "redisRetentionTerminalBody": "Live Redis keeps about the {{count}} most recent runs in Job status overall. When more runs finish, older completed runs are removed from Redis — use the Archive tab for full history.",
       "information": "Information",
       "noValue": "No value",
+      "reportingQuality": {
+        "title": "Reporting quality",
+        "usesGhgProtocolCategories": "Uses GHG Protocol categories",
+        "categoryLabelsExample": "Example wording",
+        "categoryReporting": {
+          "full": "Full — official categories reported individually",
+          "grouped": "Grouped — categories bundled into ranges",
+          "customLabels": "Custom labels — not mapped to official categories",
+          "singleTotal": "Single total — no category breakdown"
+        },
+        "missingScopesExplained": "Missing scopes explained",
+        "missingScopesReason": "Reason",
+        "scope2MethodExplicit": "Scope 2 method stated explicitly",
+        "fragmentedReporting": {
+          "scope1": "Scope 1 fragmented reporting",
+          "scope2": "Scope 2 fragmented reporting",
+          "scope3": "Scope 3 fragmented reporting (per category)",
+          "category": "Category {{number}}",
+          "none": "None — reported as a clean total",
+          "partsWithTotal": "Parts with total — broken down, but a total is also stated",
+          "partsOnlyNoTotal": "Parts only, no total — must be summed manually, needs review",
+          "noCategoriesFragmented": "No categories are split into sub-parts"
+        },
+        "methodChanges": "Methodology changes",
+        "noMethodChanges": "No methodology changes reported",
+        "rawData": "Raw data (debug)"
+      },
       "rerunJob": "Rerun job",
       "rerunAndSaveScope12": "Rerun and save Scope 1+2",
       "rerunAndSaveScope1": "Rerun and save Scope 1",
@@ -826,7 +853,8 @@
       "companyTags": "Company tags",
       "reportType": "Report type",
       "lei": "LEI",
-      "descriptions": "Descriptions"
+      "descriptions": "Descriptions",
+      "reportingQuality": "Reporting quality"
     },
     "queues": {
       "nlmParsePDF": "PDF parsing NLM",
@@ -852,11 +880,13 @@
       "followUpReportType": "Follow-up Report type",
       "followUpBaseYear": "Follow-up Base year",
       "followUpIndustryGics": "Follow-up Industry GICS",
+      "followUpReportingQuality": "Follow-up Reporting quality",
       "diffIndustry": "Industry",
       "diffGoals": "Climate goals",
       "diffInitiatives": "Initiatives",
       "diffBaseYear": "Base year",
       "diffDescriptions": "Descriptions",
+      "diffReportingQuality": "Reporting quality",
       "checkDB": "DB check",
       "sendCompanyLink": "Send company link",
       "saveToAPI": "API save",
@@ -1041,6 +1071,9 @@
       "error": "error"
     },
     "difficultReportTooltip": "Difficult report — {{count}} errors across all data points",
+    "reportingQualityWarningTooltip": "Reporting quality issue detected — click for details",
+    "reportingQualityShowMore": "Show more",
+    "reportingQualityShowLess": "Show less",
     "unitErrorTooltip": "Stage value is {{factor}} the prod value — likely a unit mismatch (e.g. tonnes vs kilotonnes)",
     "filterType": {
       "identical": "Identical",
