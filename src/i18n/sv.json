@@ -712,6 +712,33 @@
       "redisRetentionTerminalBody": "Live Redis behåller ungefär de {{count}} senaste körningarna totalt i Jobbstatus. När fler körningar avslutas tas äldre bort från Redis — använd Arkiv-fliken för full historik.",
       "information": "Information",
       "noValue": "Inget värde",
+      "reportingQuality": {
+        "title": "Rapportkvalitet",
+        "usesGhgProtocolCategories": "Använder GHG Protocol-kategorier",
+        "categoryLabelsExample": "Exempel på formulering",
+        "categoryReporting": {
+          "full": "Fullständig — officiella kategorier rapporterade var för sig",
+          "grouped": "Grupperad — kategorier slås ihop i intervall",
+          "customLabels": "Egna etiketter — ej kopplade till officiella kategorier",
+          "singleTotal": "Endast totalsumma — ingen kategoriuppdelning"
+        },
+        "missingScopesExplained": "Saknade scope förklarade",
+        "missingScopesReason": "Anledning",
+        "scope2MethodExplicit": "Scope 2-metod uttryckligen angiven",
+        "fragmentedReporting": {
+          "scope1": "Scope 1 uppdelad rapportering",
+          "scope2": "Scope 2 uppdelad rapportering",
+          "scope3": "Scope 3 uppdelad rapportering (per kategori)",
+          "category": "Kategori {{number}}",
+          "none": "Ingen — rapporterad som en samlad totalsumma",
+          "partsWithTotal": "Delar med totalsumma — uppdelad, men en totalsumma anges också",
+          "partsOnlyNoTotal": "Endast delar, ingen totalsumma — måste summeras manuellt, bör granskas",
+          "noCategoriesFragmented": "Inga kategorier är uppdelade i mindre delar"
+        },
+        "methodChanges": "Metodförändringar",
+        "noMethodChanges": "Inga metodförändringar rapporterade",
+        "rawData": "Rådata (felsökning)"
+      },
       "rerunJob": "Kör om jobbet",
       "rerunAndSaveScope12": "Kör om och spara Scope 1+2",
       "rerunAndSaveScope1": "Kör om och spara Scope 1",
@@ -1044,6 +1071,9 @@
       "error": "fel"
     },
     "difficultReportTooltip": "Svår rapport — {{count}} fel över alla datapunkter",
+    "reportingQualityWarningTooltip": "Kvalitetsproblem i rapporteringen upptäckt — klicka för detaljer",
+    "reportingQualityShowMore": "Visa mer",
+    "reportingQualityShowLess": "Visa mindre",
     "unitErrorTooltip": "Stage-värdet är {{factor}} prod-värdet — troligen enhetsmismatch (t.ex. ton vs kiloton)",
     "filterType": {
       "identical": "Identisk",

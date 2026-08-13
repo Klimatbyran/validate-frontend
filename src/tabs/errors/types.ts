@@ -143,6 +143,35 @@ export interface DatapointNoteInfo {
   status?: "OPEN" | "RESOLVED" | "WONT_FIX" | null;
 }
 
+type FragmentedValuesReporting =
+  | "NONE"
+  | "PARTS_WITH_TOTAL"
+  | "PARTS_ONLY_NO_TOTAL";
+
+/** Reporting quality flags derived from the processed PDF (Garbo's reportingQuality worker). */
+export interface ReportingQualityInfo {
+  usesGhgProtocolCategories:
+    | "FULL"
+    | "GROUPED"
+    | "CUSTOM_LABELS"
+    | "SINGLE_TOTAL"
+    | null;
+  categoryLabelsExample: string | null;
+  methodChanges: Array<{ year: number | null; description: string }>;
+  missingScopesExplained: boolean | null;
+  missingScopesReason: string | null;
+  scope2MethodExplicit: boolean | null;
+  scope1FragmentedReporting: FragmentedValuesReporting | null;
+  scope1FragmentedExample: string | null;
+  scope2FragmentedReporting: FragmentedValuesReporting | null;
+  scope2FragmentedExample: string | null;
+  scope3CategoryFragmentation: Array<{
+    category: number;
+    fragmentedReporting: "PARTS_WITH_TOTAL" | "PARTS_ONLY_NO_TOTAL";
+    example: string;
+  }>;
+}
+
 export interface ReportingPeriod {
   startDate: string;
   endDate: string;
@@ -163,6 +192,7 @@ export interface ReportingPeriod {
       s3Url?: string | null;
       sha256?: string | null;
     } | null;
+    reportingQuality?: ReportingQualityInfo | null;
   } | null;
   emissions?: {
     statedTotalEmissions?:
@@ -234,6 +264,8 @@ export interface CompanyRow {
   unitErrorFactor?: number;
   /** Reviewer note for this datapoint on stage, when the API included one. */
   errorNote?: DatapointNoteInfo | null;
+  /** Reporting quality flags for this row's report shell, stage only for now. */
+  reportingQuality?: ReportingQualityInfo | null;
 }
 
 export interface DataPointMetric {

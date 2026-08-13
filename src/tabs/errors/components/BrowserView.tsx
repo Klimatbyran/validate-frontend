@@ -433,6 +433,7 @@ export function BrowserView({
                       index={index}
                       difficultCompanyIds={difficultCompanyIds}
                       dataPointSupportsNotes={noteTarget !== null}
+                      selectedDataPoint={selectedDataPoint}
                       onAddReason={handleOpenReasonDialog}
                       savedReason={
                         savedReasons[

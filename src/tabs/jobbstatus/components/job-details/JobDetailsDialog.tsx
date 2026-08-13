@@ -320,7 +320,10 @@ export function JobDetailsDialog({
 
   // Filter out schema and metadata fields from job data for user-friendly view
   const getFilteredJobDataWithoutSchema = () => {
-    const merged = (job.data || {}) as Record<string, unknown>;
+    const merged = ((effectiveJob ?? job).data || {}) as Record<
+      string,
+      unknown
+    >;
     const rest: Record<string, unknown> = { ...merged };
     delete rest.companyName;
     delete rest.description;
@@ -397,7 +400,7 @@ export function JobDetailsDialog({
           <>
             <SchemaSection job={job} />
             <ReturnValueSection job={effectiveJob ?? job} />
-            <TechnicalDataSection job={job} />
+            <TechnicalDataSection job={effectiveJob ?? job} />
             <ErrorSection
               job={effectiveJob ?? job}
               setActiveTab={setActiveTab}

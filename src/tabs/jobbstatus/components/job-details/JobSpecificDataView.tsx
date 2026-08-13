@@ -10,7 +10,7 @@ import {
 import { MetadataDisplay } from "@/ui/metadata-display";
 import { ScreenshotSlideshow } from "@/components/screenshot-slideshow";
 import { CollapsibleSection } from "@/ui/collapsible-section";
-import { Image, ExternalLink, FileText, RotateCcw } from "lucide-react";
+import { Image, ExternalLink, FileText, RotateCcw, Code2 } from "lucide-react";
 import { EconomySection } from "../scope/EconomySection";
 import { Button } from "@/ui/button";
 import {
@@ -18,7 +18,10 @@ import {
   getScopeData,
   getEconomyData,
   getScope3Data,
+  getReportingQualityData,
   getWikidataApprovalData,
+  type ReportingQualityData,
+  type FragmentedValuesReporting,
 } from "../../lib/job-specific-data-parsing";
 import { useJobRerunActions } from "../../hooks/useJobRerunActions";
 import { getPipelineUrl } from "@/config/api-env";
@@ -210,6 +213,45 @@ export function JobSpecificDataView({
     return String(value);
   };
 
+  const renderCategoryReporting = (
+    value: ReportingQualityData["usesGhgProtocolCategories"],
+  ): React.ReactNode => {
+    if (value === null)
+      return (
+        <span className="text-gray-02">
+          {t("jobstatus.jobdetails.noValue")}
+        </span>
+      );
+    const key = {
+      FULL: "full",
+      GROUPED: "grouped",
+      CUSTOM_LABELS: "customLabels",
+      SINGLE_TOTAL: "singleTotal",
+    }[value];
+    return key
+      ? t(`jobstatus.jobdetails.reportingQuality.categoryReporting.${key}`)
+      : value;
+  };
+
+  const renderFragmentedReporting = (
+    value: FragmentedValuesReporting | null,
+  ): React.ReactNode => {
+    if (value === null)
+      return (
+        <span className="text-gray-02">
+          {t("jobstatus.jobdetails.noValue")}
+        </span>
+      );
+    const key = {
+      NONE: "none",
+      PARTS_WITH_TOTAL: "partsWithTotal",
+      PARTS_ONLY_NO_TOTAL: "partsOnlyNoTotal",
+    }[value];
+    return key
+      ? t(`jobstatus.jobdetails.reportingQuality.fragmentedReporting.${key}`)
+      : value;
+  };
+
   const isProcessedObject =
     processedData !== null && typeof processedData === "object";
 
@@ -217,6 +259,10 @@ export function JobSpecificDataView({
   const scopeData = getScopeData(returnValueData);
   const scope3Data = getScope3Data(processedData, returnValueData);
   const economyData = getEconomyData(returnValueData);
+  const reportingQualityData = getReportingQualityData(
+    returnValueData,
+    processedData,
+  );
   const wikidataApprovalData = getWikidataApprovalData(job, effectiveJob);
   const wikidataId: string | undefined = React.useMemo(() => {
     const fromJob = getWikidataInfo(effectiveJob as any)?.node;
@@ -433,6 +479,169 @@ export function JobSpecificDataView({
           />
         </div>
       )}
+      {/* Show Reporting Quality flags if available (follow-up returnvalue or diff job.data) */}
+      {reportingQualityData && (
+        <div className="mb-4">
+          <div className="bg-gray-03/20 rounded-lg p-4 space-y-2">
+            <h4 className="text-base font-medium text-gray-01">
+              {t("jobstatus.jobdetails.reportingQuality.title")}
+            </h4>
+            <div className="text-sm text-gray-02">
+              <span className="font-medium text-gray-01">
+                {t(
+                  "jobstatus.jobdetails.reportingQuality.usesGhgProtocolCategories",
+                )}
+                :
+              </span>{" "}
+              {renderCategoryReporting(
+                reportingQualityData.usesGhgProtocolCategories,
+              )}
+            </div>
+            {reportingQualityData.categoryLabelsExample && (
+              <div className="text-sm text-gray-02">
+                <span className="font-medium text-gray-01">
+                  {t(
+                    "jobstatus.jobdetails.reportingQuality.categoryLabelsExample",
+                  )}
+                  :
+                </span>{" "}
+                <span className="italic">
+                  “{reportingQualityData.categoryLabelsExample}”
+                </span>
+              </div>
+            )}
+            <div className="text-sm text-gray-02">
+              <span className="font-medium text-gray-01">
+                {t(
+                  "jobstatus.jobdetails.reportingQuality.missingScopesExplained",
+                )}
+                :
+              </span>{" "}
+              {renderValue(reportingQualityData.missingScopesExplained)}
+            </div>
+            {reportingQualityData.missingScopesReason && (
+              <div className="text-sm text-gray-02">
+                <span className="font-medium text-gray-01">
+                  {t(
+                    "jobstatus.jobdetails.reportingQuality.missingScopesReason",
+                  )}
+                  :
+                </span>{" "}
+                {reportingQualityData.missingScopesReason}
+              </div>
+            )}
+            <div className="text-sm text-gray-02">
+              <span className="font-medium text-gray-01">
+                {t(
+                  "jobstatus.jobdetails.reportingQuality.scope2MethodExplicit",
+                )}
+                :
+              </span>{" "}
+              {renderValue(reportingQualityData.scope2MethodExplicit)}
+            </div>
+            {(
+              [
+                [
+                  "scope1",
+                  reportingQualityData.scope1FragmentedReporting,
+                  reportingQualityData.scope1FragmentedExample,
+                ],
+                [
+                  "scope2",
+                  reportingQualityData.scope2FragmentedReporting,
+                  reportingQualityData.scope2FragmentedExample,
+                ],
+              ] as const
+            ).map(([scopeKey, reporting, example]) => (
+              <div key={scopeKey} className="text-sm text-gray-02">
+                <span className="font-medium text-gray-01">
+                  {t(
+                    `jobstatus.jobdetails.reportingQuality.fragmentedReporting.${scopeKey}`,
+                  )}
+                  :
+                </span>{" "}
+                {renderFragmentedReporting(reporting)}
+                {example && (
+                  <span className="block italic mt-0.5">“{example}”</span>
+                )}
+              </div>
+            ))}
+            <div className="text-sm text-gray-02">
+              <span className="font-medium text-gray-01 block mb-1">
+                {t(
+                  "jobstatus.jobdetails.reportingQuality.fragmentedReporting.scope3",
+                )}
+                :
+              </span>
+              {reportingQualityData.scope3CategoryFragmentation.length === 0 ? (
+                <span className="text-gray-02">
+                  {t(
+                    "jobstatus.jobdetails.reportingQuality.fragmentedReporting.noCategoriesFragmented",
+                  )}
+                </span>
+              ) : (
+                <ul className="list-disc pl-5 space-y-1">
+                  {reportingQualityData.scope3CategoryFragmentation.map(
+                    (entry) => (
+                      <li key={entry.category}>
+                        {t(
+                          "jobstatus.jobdetails.reportingQuality.fragmentedReporting.category",
+                          { number: entry.category },
+                        )}
+                        :{" "}
+                        {t(
+                          `jobstatus.jobdetails.reportingQuality.fragmentedReporting.${
+                            entry.fragmentedReporting === "PARTS_WITH_TOTAL"
+                              ? "partsWithTotal"
+                              : "partsOnlyNoTotal"
+                          }`,
+                        )}
+                        <span className="block italic mt-0.5">
+                          “{entry.example}”
+                        </span>
+                      </li>
+                    ),
+                  )}
+                </ul>
+              )}
+            </div>
+            <div className="text-sm text-gray-02">
+              <span className="font-medium text-gray-01 block mb-1">
+                {t("jobstatus.jobdetails.reportingQuality.methodChanges")}:
+              </span>
+              {reportingQualityData.methodChanges.length === 0 ? (
+                <span className="text-gray-02">
+                  {t("jobstatus.jobdetails.reportingQuality.noMethodChanges")}
+                </span>
+              ) : (
+                <ul className="list-disc pl-5 space-y-1">
+                  {reportingQualityData.methodChanges.map((change, i) => (
+                    <li key={i}>
+                      {change.year != null ? `${change.year}: ` : ""}
+                      {change.description}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Raw reportingQuality object — booleans/enums as actually stored, for debugging */}
+      {reportingQualityData && (
+        <CollapsibleSection
+          title={t("jobstatus.jobdetails.reportingQuality.rawData")}
+          icon={<Code2 />}
+          accentIconBg="bg-gray-03/40"
+          accentTextColor="text-gray-01"
+          className="mb-4"
+        >
+          <pre className="text-xs whitespace-pre-wrap break-all">
+            {JSON.stringify(reportingQualityData, null, 2)}
+          </pre>
+        </CollapsibleSection>
+      )}
+
       {/* Show Screenshot slideshow if scopeData and PDF URL exist */}
       {scopeData && job?.data?.url && (
         <CollapsibleSection
@@ -464,7 +673,8 @@ export function JobSpecificDataView({
           key === "endMonth" ||
           key === "scope12" ||
           key === "scope1" ||
-          key === "scope2"
+          key === "scope2" ||
+          key === "reportingQuality"
         )
           return null;
 

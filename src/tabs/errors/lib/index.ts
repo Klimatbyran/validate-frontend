@@ -64,3 +64,9 @@ export type {
   ResolvedStageDatapoint,
   DatapointCreateContext,
 } from "./datapoint-notes";
+export {
+  hasReportingQualityWarning,
+  getDataPointReportingQualityWarning,
+  getPrimaryReportingQualitySection,
+} from "./reporting-quality-warning";
+export type { ReportingQualitySection } from "./reporting-quality-warning";
