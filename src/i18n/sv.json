@@ -1081,7 +1081,10 @@
       "confirm": "Kör",
       "running": "Kör…",
       "success": "Omkörning av rapportkvalitet startad",
-      "error": "Kunde inte starta omkörning: {{message}}"
+      "error": "Kunde inte starta omkörning: {{message}}",
+      "target": "Mål",
+      "targetStage": "Stage-pipeline",
+      "targetLocal": "Lokal pipeline"
     },
     "unitErrorTooltip": "Stage-värdet är {{factor}} prod-värdet — troligen enhetsmismatch (t.ex. ton vs kiloton)",
     "filterType": {

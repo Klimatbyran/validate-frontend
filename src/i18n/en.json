@@ -1081,7 +1081,10 @@
       "confirm": "Run",
       "running": "Running…",
       "success": "Reporting-quality rerun started",
-      "error": "Failed to start rerun: {{message}}"
+      "error": "Failed to start rerun: {{message}}",
+      "target": "Target",
+      "targetStage": "Stage pipeline",
+      "targetLocal": "Local pipeline"
     },
     "unitErrorTooltip": "Stage value is {{factor}} the prod value — likely a unit mismatch (e.g. tonnes vs kilotonnes)",
     "filterType": {

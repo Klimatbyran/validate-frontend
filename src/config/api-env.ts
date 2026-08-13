@@ -70,6 +70,24 @@ export function getStagePipelineUrl(path: string): string {
   return getStagePipelineApiBaseUrl() + p;
 }
 
+/**
+ * Error Browser: fixed pipeline-api host matching its "Stage source" toggle -
+ * ignores VITE_PIPELINE_TARGET, same as getStagePipelineUrl/
+ * getStageOrLocalPipelineCompaniesListUrl. Use for anything the Errors
+ * browser submits to the pipeline (e.g. a rerun), not just reads - it must
+ * hit the same environment the row's data (and its stage-only ids) came from.
+ */
+export function getErrorBrowserPipelineUrl(
+  path: string,
+  source: ErrorBrowserStageSource,
+): string {
+  if (source === "local" && import.meta.env.DEV) {
+    const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
+    return `/pipeline-local${p}`;
+  }
+  return getStagePipelineUrl(path);
+}
+
 export function getUnearthApiBaseUrl(): string {
   const target = getUnearthTarget();
   let url: string;

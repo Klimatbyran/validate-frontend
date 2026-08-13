@@ -4,6 +4,15 @@
  * used by Registry/Crawler/Overview (createJobsFromUrls), scoped with
  * runOnly: ["reportingQuality"] and forceReindex: true so it re-parses and
  * re-embeds the PDF even if it's already (or no longer) in ChromaDB.
+ *
+ * Must target the same pipeline-api environment the row's data (and its
+ * stage-only companyId) came from - the default createJobsFromUrls endpoint
+ * follows this deployment's global VITE_PIPELINE_TARGET, which is prod in a
+ * production Validate instance regardless of what this tab is showing. A
+ * stage companyId sent to prod would resolve there too (garbo skips existence
+ * checks for anything UUID-shaped), silently writing to the wrong company.
+ * getErrorBrowserPipelineUrl pins the request to this tab's own stage/local
+ * source instead.
  */
 import { useState } from "react";
 import { RotateCcw } from "lucide-react";
@@ -12,12 +21,22 @@ import { useI18n } from "@/contexts/I18nContext";
 import { Modal } from "@/ui/modal";
 import { Button } from "@/ui/button";
 import {
+  getErrorBrowserPipelineUrl,
+  type ErrorBrowserStageSource,
+} from "@/config/api-env";
+import {
   createJobsFromUrls,
   UploadApiError,
 } from "@/tabs/upload/lib/upload-api";
 import { CompanyRow } from "../types";
 
-export function RerunReportingQualityAction({ row }: { row: CompanyRow }) {
+export function RerunReportingQualityAction({
+  row,
+  stageSource,
+}: {
+  row: CompanyRow;
+  stageSource: ErrorBrowserStageSource;
+}) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -38,6 +57,10 @@ export function RerunReportingQualityAction({ row }: { row: CompanyRow }) {
         autoApprove: hasKnownIdentity,
         forceReindex: true,
         runOnly: ["reportingQuality"],
+        parsePdfEndpoint: getErrorBrowserPipelineUrl(
+          "/queues/parsePdf",
+          stageSource,
+        ),
         urlContexts: [
           {
             url,
@@ -124,6 +147,14 @@ export function RerunReportingQualityAction({ row }: { row: CompanyRow }) {
       <div className="text-sm text-gray-02 space-y-2">
         <p>{t("errors.rerunReportingQuality.body")}</p>
         <p className="break-all text-xs">{url}</p>
+        <p className="text-xs">
+          <span className="font-medium text-gray-01">
+            {t("errors.rerunReportingQuality.target")}:
+          </span>{" "}
+          {stageSource === "local"
+            ? t("errors.rerunReportingQuality.targetLocal")
+            : t("errors.rerunReportingQuality.targetStage")}
+        </p>
       </div>
     </Modal>
   );
