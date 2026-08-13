@@ -10,6 +10,7 @@ import {
   refreshCoverageYearRegistry,
   renameCoverageList,
   replaceCoverageYearNames,
+  updateCoverageYearEdition,
   setCoverageEntryMatch,
 } from "../lib/coverage-api";
 import type {
@@ -174,6 +175,83 @@ function savedReportToPill(saved: SaveReportSuccess): RegistryReportPill {
   };
 }
 
+function removeRegistryReportFromEntry(
+  detail: CoverageYearDetail,
+  entryId: string,
+  reportId: string,
+): CoverageYearDetail {
+  const entryIndex = detail.entries.findIndex((entry) => entry.id === entryId);
+  if (entryIndex === -1) return detail;
+
+  const entry = detail.entries[entryIndex];
+  const existingReports = entry.registryReports ?? [];
+  const removed = existingReports.find(
+    (report) => report.reportId === reportId,
+  );
+  if (!removed) return detail;
+
+  const nextReports = existingReports.filter(
+    (report) => report.reportId !== reportId,
+  );
+  const entries = [...detail.entries];
+  entries[entryIndex] = {
+    ...entry,
+    registryReports: nextReports,
+  };
+
+  return {
+    ...detail,
+    entries,
+    hasAnyReportCount:
+      nextReports.length === 0
+        ? Math.max(0, detail.hasAnyReportCount - 1)
+        : detail.hasAnyReportCount,
+    noReportCount:
+      nextReports.length === 0
+        ? detail.noReportCount + 1
+        : detail.noReportCount,
+    prodReadyCount: removed.prodReady
+      ? Math.max(0, detail.prodReadyCount - 1)
+      : detail.prodReadyCount,
+  };
+}
+
+function updateRegistryReportInEntry(
+  detail: CoverageYearDetail,
+  entryId: string,
+  reportId: string,
+  updated: RegistryReportPill,
+): CoverageYearDetail {
+  const entryIndex = detail.entries.findIndex((entry) => entry.id === entryId);
+  if (entryIndex === -1) return detail;
+
+  const entry = detail.entries[entryIndex];
+  const existingReports = entry.registryReports ?? [];
+  const reportIndex = existingReports.findIndex(
+    (report) => report.reportId === reportId,
+  );
+  if (reportIndex === -1) return detail;
+
+  const previous = existingReports[reportIndex]!;
+  const nextReports = [...existingReports];
+  nextReports[reportIndex] = updated;
+
+  const entries = [...detail.entries];
+  entries[entryIndex] = {
+    ...entry,
+    registryReports: nextReports,
+  };
+
+  return {
+    ...detail,
+    entries,
+    prodReadyCount:
+      previous.prodReady && !updated.prodReady
+        ? Math.max(0, detail.prodReadyCount - 1)
+        : detail.prodReadyCount,
+  };
+}
+
 function addRegistryReportToEntry(
   detail: CoverageYearDetail,
   entryId: string,
@@ -268,6 +346,15 @@ export function useCoverageLists() {
     },
     replaceYearNames: async (listId: string, year: number, names: string[]) => {
       const updated = await replaceCoverageYearNames(listId, year, names);
+      await loadLists(true);
+      return updated;
+    },
+    updateYearEdition: async (
+      listId: string,
+      year: number,
+      input: { year?: number; names?: string[] },
+    ) => {
+      const updated = await updateCoverageYearEdition(listId, year, input);
       await loadLists(true);
       return updated;
     },
@@ -461,6 +548,24 @@ export function useCoverageYearDetail(
       setDetail((previous) =>
         previous
           ? addRegistryReportToEntry(previous, entryId, saved)
+          : previous,
+      );
+    },
+    removeEntryRegistryReport: (entryId: string, reportId: string) => {
+      setDetail((previous) =>
+        previous
+          ? removeRegistryReportFromEntry(previous, entryId, reportId)
+          : previous,
+      );
+    },
+    replaceEntryRegistryReport: (
+      entryId: string,
+      reportId: string,
+      updated: RegistryReportPill,
+    ) => {
+      setDetail((previous) =>
+        previous
+          ? updateRegistryReportInEntry(previous, entryId, reportId, updated)
           : previous,
       );
     },

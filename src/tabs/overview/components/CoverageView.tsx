@@ -26,6 +26,7 @@ type DialogState =
   | { kind: "closed" }
   | { kind: "createList" }
   | { kind: "addYear"; listId: string }
+  | { kind: "editListName"; listId: string; listName: string }
   | { kind: "editYear"; listId: string; year: number; namesText: string };
 
 type DeleteConfirmState =
@@ -110,6 +111,17 @@ export function CoverageView({ onViewRegistryReports }: CoverageViewProps) {
     year: number;
     names: string[];
   }) => {
+    if (dialog.kind === "editListName") {
+      if (!input.listName) return;
+      setIsSubmitting(true);
+      try {
+        await coverage.renameList(dialog.listId, input.listName);
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     if (dialog.kind === "addYear") {
       setIsSubmitting(true);
       try {
@@ -128,18 +140,37 @@ export function CoverageView({ onViewRegistryReports }: CoverageViewProps) {
     if (dialog.kind === "editYear") {
       setIsSubmitting(true);
       try {
-        await coverage.replaceYearNames(
-          dialog.listId,
-          dialog.year,
-          input.names,
-        );
+        const previousYear = dialog.year;
+        await coverage.updateYearEdition(dialog.listId, previousYear, {
+          year: input.year !== previousYear ? input.year : undefined,
+          names: input.names,
+        });
         setSelectedListId(dialog.listId);
-        setSelectedYear(dialog.year);
-        await yearDetail.refresh();
+        setSelectedYear(input.year);
       } finally {
         setIsSubmitting(false);
       }
     }
+  };
+
+  const openEditYearDialog = (listId: string, year: number) => {
+    void (async () => {
+      try {
+        const names = await fetchCoverageYearNames(listId, year);
+        setDialog({
+          kind: "editYear",
+          listId,
+          year,
+          namesText: names.names.join("\n"),
+        });
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : t("overview.coverage.errorTitle"),
+        );
+      }
+    })();
   };
 
   const editNamesText =
@@ -196,11 +227,35 @@ export function CoverageView({ onViewRegistryReports }: CoverageViewProps) {
                 variant="secondary"
                 size="sm"
                 onClick={() =>
+                  setDialog({
+                    kind: "editListName",
+                    listId: selectedList.id,
+                    listName: selectedList.name,
+                  })
+                }
+              >
+                {t("overview.coverage.editListName")}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() =>
                   setDialog({ kind: "addYear", listId: selectedList.id })
                 }
               >
                 {t("overview.coverage.addYear")}
               </Button>
+              {selectedYear !== null ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() =>
+                    openEditYearDialog(selectedList.id, selectedYear)
+                  }
+                >
+                  {t("overview.coverage.editYear")}
+                </Button>
+              ) : null}
               {selectedYear !== null ? (
                 <Button
                   variant="danger"
@@ -292,28 +347,19 @@ export function CoverageView({ onViewRegistryReports }: CoverageViewProps) {
                   onRegistryReportSaved={(entryId, saved) => {
                     yearDetail.addEntryRegistryReport(entryId, saved);
                   }}
-                  onEdit={() => {
-                    void (async () => {
-                      try {
-                        const names = await fetchCoverageYearNames(
-                          selectedList.id,
-                          selectedYear,
-                        );
-                        setDialog({
-                          kind: "editYear",
-                          listId: selectedList.id,
-                          year: selectedYear,
-                          namesText: names.names.join("\n"),
-                        });
-                      } catch (error) {
-                        toast.error(
-                          error instanceof Error
-                            ? error.message
-                            : t("overview.coverage.errorTitle"),
-                        );
-                      }
-                    })();
+                  onRegistryReportRemoved={(entryId, reportId) => {
+                    yearDetail.removeEntryRegistryReport(entryId, reportId);
                   }}
+                  onRegistryReportUpdated={(entryId, reportId, updated) => {
+                    yearDetail.replaceEntryRegistryReport(
+                      entryId,
+                      reportId,
+                      updated,
+                    );
+                  }}
+                  onEdit={() =>
+                    openEditYearDialog(selectedList.id, selectedYear)
+                  }
                   onEditEntry={setMatchEntry}
                 />
               ) : null}
@@ -325,6 +371,13 @@ export function CoverageView({ onViewRegistryReports }: CoverageViewProps) {
           lists={coverage.lists}
           onSelectList={openList}
           onCreateList={() => setDialog({ kind: "createList" })}
+          onEditList={(list) =>
+            setDialog({
+              kind: "editListName",
+              listId: list.id,
+              listName: list.name,
+            })
+          }
         />
       )}
 
@@ -338,7 +391,12 @@ export function CoverageView({ onViewRegistryReports }: CoverageViewProps) {
             ? "createList"
             : dialog.kind === "addYear"
               ? "addYear"
-              : "editYear"
+              : dialog.kind === "editListName"
+                ? "editListName"
+                : "editYear"
+        }
+        initialListName={
+          dialog.kind === "editListName" ? dialog.listName : undefined
         }
         initialYear={
           dialog.kind === "editYear" ? dialog.year : new Date().getFullYear()

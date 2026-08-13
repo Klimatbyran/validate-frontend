@@ -72,6 +72,9 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   diffReportType: "Rapporttyp",
 };
 
+/** Failed jobs on these queues must not fail the overall pipeline step/run. */
+export const NON_BLOCKING_FAILURE_QUEUES = new Set<string>(["extractLEI"]);
+
 /**
  * Pipeline Steps Configuration
  * Defines the logical grouping of workflow stages into pipeline steps

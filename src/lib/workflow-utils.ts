@@ -14,6 +14,7 @@ import type {
 import {
   getQueuesForPipelineStep,
   getAllPipelineSteps,
+  NON_BLOCKING_FAILURE_QUEUES,
 } from "./workflow-config";
 
 /**
@@ -432,6 +433,25 @@ function isJobActivelyProcessing(job: any): boolean {
   return (job.processedOn && !job.finishedOn) || job.status === "active";
 }
 
+function isBlockingFailedQueueEntry(entry: {
+  queueId: string;
+  status: string;
+}): boolean {
+  return (
+    entry.status === "failed" && !NON_BLOCKING_FAILURE_QUEUES.has(entry.queueId)
+  );
+}
+
+function isAcceptableStepOutcome(entry: {
+  queueId: string;
+  status: SwimlaneStatusType;
+}): boolean {
+  if (isPipelineProgressStatus(entry.status)) return true;
+  return (
+    entry.status === "failed" && NON_BLOCKING_FAILURE_QUEUES.has(entry.queueId)
+  );
+}
+
 /**
  * Calculate the overall status for a pipeline step based on its fields
  */
@@ -548,13 +568,9 @@ export function calculatePipelineStepStatus(
 
     // Check statuses of started jobs only
     const startedStatuses = startedJobs.map((entry) => entry.status);
-    const hasFailed = startedStatuses.some((status) => status === "failed");
-    const allCompleted = startedStatuses.every((status) =>
-      isPipelineProgressStatus(status),
-    );
-    const hasCompleted = startedStatuses.some((status) =>
-      isPipelineProgressStatus(status),
-    );
+    const hasFailed = startedJobs.some(isBlockingFailedQueueEntry);
+    const allCompleted = startedJobs.every(isAcceptableStepOutcome);
+    const hasCompleted = startedJobs.some(isAcceptableStepOutcome);
 
     // If any started job failed, show failed
     if (hasFailed) {
@@ -600,7 +616,7 @@ export function calculatePipelineStepStatus(
     isPipelineProgressStatus(status),
   );
   const hasWaiting = fieldStatuses.some((status) => status === "waiting");
-  const hasFailed = fieldStatuses.some((status) => status === "failed");
+  const hasFailed = jobsWithStatuses.some(isBlockingFailedQueueEntry);
 
   // Check if all jobs are completed (no waiting, no failed, at least one completed)
   if (hasCompleted && !hasWaiting && !hasFailed) {
