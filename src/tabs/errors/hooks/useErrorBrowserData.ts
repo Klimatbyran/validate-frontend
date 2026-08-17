@@ -189,6 +189,7 @@ export function useErrorBrowserData(
             stageCompany?.wikidataId ?? prodCompany?.wikidataId ?? null,
           name,
           shellKey: slot.shellKey || undefined,
+          identityKeys: slot.identityKeys,
           reportYear: slot.reportYear,
           reportUrl: slot.reportUrl,
           companyReportId: slot.companyReportId,

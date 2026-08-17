@@ -156,6 +156,48 @@ describe("buildReportingPeriodComparisonSlots", () => {
     expect(slots[0]?.prodPeriod).toBeNull();
   });
 
+  it("pairs by shared URL when only stage has a populated sha256", () => {
+    // Reproduces the bug where rerunning a company on stage backfills
+    // Report.sha256 for the first time (e.g. via forceReindex), while prod's
+    // copy of the same report - never reprocessed - still has sha256 null.
+    // The two periods must still pair via their matching URL instead of
+    // splitting into an unpaired stage-only + prod-only pair of slots.
+    const stagePeriod = period({
+      startDate: "2024-01-01",
+      endDate: "2024-12-31",
+      year: "2024",
+      companyReportId: "stage-shell",
+      reportSha256: "freshly-computed-hash",
+      companyReport: {
+        id: "stage-shell",
+        reportYear: "2024",
+        report: { url: "https://example.com/report.pdf" },
+      },
+    });
+    const prodPeriod = period({
+      startDate: "2024-01-01",
+      endDate: "2024-12-31",
+      year: "2024",
+      companyReportId: "prod-shell",
+      companyReport: {
+        id: "prod-shell",
+        reportYear: "2024",
+        report: { url: "https://example.com/report.pdf", sha256: null },
+      },
+    });
+
+    const slots = buildReportingPeriodComparisonSlots(
+      [stagePeriod],
+      [prodPeriod],
+      2024,
+      null,
+    );
+
+    expect(slots).toHaveLength(1);
+    expect(slots[0]?.stagePeriod?.companyReportId).toBe("stage-shell");
+    expect(slots[0]?.prodPeriod?.companyReportId).toBe("prod-shell");
+  });
+
   it("maps unlinked periods to null companyReportId", () => {
     const unlinked = period({
       startDate: "2024-01-01",
@@ -189,7 +231,7 @@ describe("findReportingPeriodForShell", () => {
     ];
 
     const shellKey = getCrossEnvPeriodShellKey(periods[0]!);
-    const found = findReportingPeriodForShell(periods, 2024, null, shellKey);
+    const found = findReportingPeriodForShell(periods, 2024, null, [shellKey]);
 
     expect(found?.companyReportId).toBe("target-shell");
   });

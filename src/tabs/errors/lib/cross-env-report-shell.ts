@@ -110,6 +110,21 @@ export function getCrossEnvPeriodShellKey(period: ReportingPeriod): string {
   return UNLINKED_REPORT_SHELL_KEY;
 }
 
+/**
+ * All identity keys this period could be paired on. Unlike `getCrossEnvPeriodShellKey`
+ * (which picks a single preferred key for display), this returns every strong key the
+ * period has - sha256 *and* url when both are present - so pairing survives cases where
+ * one env has a populated `Report.sha256` and the other doesn't (e.g. a report reprocessed
+ * on stage after the sha256 column was backfilled, while prod's row predates it). Falls
+ * back to the same catalog/companyReportId/unlinked key as `getCrossEnvPeriodShellKey`
+ * when no strong identity exists.
+ */
+export function getPeriodIdentityKeys(period: ReportingPeriod): string[] {
+  const strong = collectStrongReportIdentityKeys(period);
+  if (strong.length) return strong;
+  return [getCrossEnvPeriodShellKey(period)];
+}
+
 export function isUnlinkedCrossEnvShellKey(shellKey: string): boolean {
   return (
     shellKey === UNLINKED_REPORT_SHELL_KEY ||

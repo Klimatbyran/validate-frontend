@@ -1,6 +1,7 @@
 import type { Company, CompanyPairingMethod } from "../types";
 import { companyCrossEnvKey } from "./discrepancy";
 import { collectStrongReportIdentityKeysForCompany } from "./cross-env-report-shell";
+import { UnionFind } from "./union-find";
 
 export type PairedCompanyLookup = {
   stageMap: Map<string, Company>;
@@ -13,42 +14,6 @@ type NodeId = `${Env}\0${string}`;
 
 function nodeId(env: Env, company: Company): NodeId {
   return `${env}\0${companyCrossEnvKey(company)}`;
-}
-
-class UnionFind {
-  private parent = new Map<NodeId, NodeId>();
-
-  add(id: NodeId): void {
-    if (!this.parent.has(id)) this.parent.set(id, id);
-  }
-
-  find(id: NodeId): NodeId {
-    const parent = this.parent.get(id);
-    if (!parent) throw new Error(`Unknown union-find node: ${id}`);
-    if (parent !== id) {
-      const root = this.find(parent);
-      this.parent.set(id, root);
-      return root;
-    }
-    return id;
-  }
-
-  union(a: NodeId, b: NodeId): void {
-    const rootA = this.find(a);
-    const rootB = this.find(b);
-    if (rootA !== rootB) this.parent.set(rootA, rootB);
-  }
-
-  groups(): Map<NodeId, NodeId[]> {
-    const byRoot = new Map<NodeId, NodeId[]>();
-    for (const id of this.parent.keys()) {
-      const root = this.find(id);
-      const bucket = byRoot.get(root) ?? [];
-      bucket.push(id);
-      byRoot.set(root, bucket);
-    }
-    return byRoot;
-  }
 }
 
 type CompanyNode = {
