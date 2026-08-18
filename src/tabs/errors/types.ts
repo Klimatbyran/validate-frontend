@@ -252,6 +252,9 @@ export interface CompanyRow {
   name: string;
   tags?: string[];
   shellKey?: string;
+  /** Every identity key (sha256/url/fallback) this row's shell pairs on - use this,
+   * not `shellKey` alone, to look the shell back up in the other env's periods. */
+  identityKeys?: string[];
   reportYear?: number | null;
   reportUrl?: string | null;
   companyReportId?: string | null;

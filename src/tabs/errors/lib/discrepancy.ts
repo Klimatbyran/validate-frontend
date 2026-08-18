@@ -208,19 +208,19 @@ export function applyCategoryErrorToRows(
       row.stageValue !== null &&
       prodCompany
     ) {
-      const shellKey = row.shellKey ?? "";
+      const identityKeys = row.identityKeys ?? [];
       const prodRP = findReportingPeriodForShell(
         prodCompany.reportingPeriods,
         selectedDataYear,
         selectedReportYear ?? null,
-        shellKey,
+        identityKeys,
       );
       const stageRPForKind = stageCompany
         ? findReportingPeriodForShell(
             stageCompany.reportingPeriods,
             selectedDataYear,
             selectedReportYear ?? null,
-            shellKey,
+            identityKeys,
           )
         : null;
       for (const otherDP of sameScopeDataPoints) {
@@ -266,7 +266,7 @@ export function applyCategoryErrorToRows(
         stageCompany.reportingPeriods,
         selectedDataYear,
         selectedReportYear ?? null,
-        row.shellKey ?? "",
+        row.identityKeys ?? [],
       );
       for (const otherDP of sameScopeDataPoints) {
         const otherStageValue = getDataPointValue(
