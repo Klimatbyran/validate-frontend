@@ -1,0 +1,53 @@
+import { useState, useEffect, useCallback } from "react";
+import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
+
+export type PipelineStepStatus = "running" | "completed" | "failed";
+
+export interface PipelineStepRun {
+  step: string;
+  status: PipelineStepStatus;
+  startedAt: string;
+  completedAt: string | null;
+  error: string | null;
+}
+
+export interface ClimatePipelinePlan {
+  id: string;
+  url: string;
+  extractedMunicipalityName: string | null;
+  municipality: { id: string; name: string } | null;
+  status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+  createdAt: string;
+  updatedAt: string;
+  pipelineSteps: PipelineStepRun[];
+}
+
+const POLL_MS = 5000;
+
+export function useClimatePipelinePlans() {
+  const [plans, setPlans] = useState<ClimatePipelinePlan[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPlans = useCallback(async () => {
+    try {
+      const res = await fetch(`${getClimatePlansPipelineApiUrl()}/plans`);
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const data = (await res.json()) as ClimatePipelinePlan[];
+      setPlans(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load plans");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPlans();
+    const timer = window.setInterval(fetchPlans, POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [fetchPlans]);
+
+  return { plans, isLoading, error, refresh: fetchPlans };
+}

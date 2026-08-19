@@ -48,7 +48,15 @@
     "errorBrowser": "Felutforskare",
     "crawler": "Crawler",
     "climatePlans": "Utforska klimatplaner",
+    "climatePipeline": "Klimatpipeline",
     "editor": "Redigerare"
+  },
+  "climatePipeline": {
+    "title": "Klimatplanspipeline",
+    "subtitle": "Live-status för åtagande-/åtgärdsextraktionspipelinen, per plan",
+    "refresh": "Uppdatera",
+    "empty": "Inga planer än — skicka in en PDF eller URL från Ladda upp med \"Använd klimatplanspipelinen\" ikryssad.",
+    "error": "Kunde inte läsa in planer: {{error}}"
   },
   "apiAccess": {
     "title": "API Access",

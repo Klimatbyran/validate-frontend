@@ -49,6 +49,9 @@ export function MainLayout() {
               <TabsTrigger value="climate-plans">
                 {t("nav.climatePlans")}
               </TabsTrigger>
+              <TabsTrigger value="climate-pipeline">
+                {t("nav.climatePipeline")}
+              </TabsTrigger>
             </TabsList>
 
             <AnimatePresence mode="popLayout" initial={false}>

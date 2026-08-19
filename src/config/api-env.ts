@@ -158,3 +158,17 @@ export function getStagePipelineCompaniesListUrl(): string {
 export function getProdPipelineCompaniesListUrl(): string {
   return joinApiPath(getProdUnearthUrl("/api"), PIPELINE_COMPANIES_LIST_PATH);
 }
+
+/**
+ * climate-plans-pipeline's own API — read directly by the browser (unlike
+ * the callbackUrl garbo posts to server-side), so this one genuinely needs
+ * to be reachable from wherever validate is running. No stage/prod split
+ * yet since climate-plans-pipeline isn't deployed anywhere but locally.
+ */
+export function getClimatePlansPipelineApiUrl(): string {
+  return (
+    (import.meta.env.VITE_CLIMATE_PLANS_PIPELINE_API_URL as
+      | string
+      | undefined) || "http://localhost:3003/api"
+  );
+}

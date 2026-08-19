@@ -48,7 +48,15 @@
     "errorBrowser": "Error Browser",
     "crawler": "Crawler",
     "climatePlans": "Explore climate plans",
+    "climatePipeline": "Climate Pipeline",
     "editor": "Editor"
+  },
+  "climatePipeline": {
+    "title": "Climate Plans Pipeline",
+    "subtitle": "Live status of the commitment/measure extraction pipeline, per plan",
+    "refresh": "Refresh",
+    "empty": "No plans yet — submit a PDF or URL from Upload with \"Use climate plans pipeline\" checked.",
+    "error": "Could not load plans: {{error}}"
   },
   "apiAccess": {
     "title": "API Access",

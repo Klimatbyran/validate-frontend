@@ -6,6 +6,7 @@ import SlideshowPage from "@/pages/SlideshowPage";
 import { MainLayout } from "@/layouts/MainLayout";
 import { ApiAccessTab } from "@/tabs/api-access/ApiAccessTab";
 import { ClimatePlansExplorer } from "@/tabs/climate-plans/ClimatePlansExplorer";
+import { ClimatePipelineTab } from "@/tabs/climate-pipeline/ClimatePipelineTab";
 import { CrawlerTab } from "@/tabs/crawler/CrawlerTab";
 import { DebugTab } from "@/tabs/debug/DebugTab";
 import { EditorTab } from "@/tabs/editor/EditorTab";
@@ -46,6 +47,7 @@ function App() {
           />
           <Route path="/editor" element={<EditorTab />} />
           <Route path="/climate-plans" element={<ClimatePlansExplorer />} />
+          <Route path="/climate-pipeline" element={<ClimatePipelineTab />} />
         </Route>
         <Route
           path="*"
