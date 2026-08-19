@@ -622,6 +622,8 @@
     "runOnly": "Run only:",
     "forceReindex": "Force reindex",
     "forceReindexDescription": "When on: run docling even if the report already exists in the vector DB (use after docling/OCR upgrade).",
+    "useClimatePlansPipeline": "Use climate plans pipeline",
+    "useClimatePlansPipelineDescription": "When on: stop after Docling + indexing (skip precheck/emissions extraction) and hand the url off to the climate plans pipeline instead.",
     "companyWithName": "Company: {{name}}",
     "fileSizeMb": "{{size}} MB",
     "storageDeduplicated": "Reused {{count}} existing PDF(s) from storage (no duplicate upload).",
