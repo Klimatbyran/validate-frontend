@@ -140,6 +140,26 @@ export function getProdUnearthUrl(path: string): string {
   return `/unearth-prod-api${p}`;
 }
 
+/**
+ * climate-plans-pipeline's /webhook, sent as the upload's callbackUrl so
+ * garbo POSTs {url} there once indexMarkdown completes, instead of
+ * continuing into precheck. This is a plain absolute URL, not proxied
+ * through Vite/nginx like the other targets above — garbo's worker calls it
+ * server-to-server, so the browser never needs to reach it directly (only
+ * pipeline-api needs to receive the string and pass it through as job data).
+ * Locally, climate-plans-pipeline must run on a port other than 3001, since
+ * pipeline-api's own local dev port is also 3001 by default.
+ * Must also be listed in garbo's ALLOWED_CALLBACK_URLS or the callback will
+ * be rejected.
+ */
+export function getClimatePlansPipelineWebhookUrl(): string {
+  return (
+    (import.meta.env.VITE_CLIMATE_PLANS_PIPELINE_WEBHOOK_URL as
+      | string
+      | undefined) || "http://localhost:3002/webhook"
+  );
+}
+
 /** X-API-Key twin of staff GET /api/pipeline/companies — proxy injects the key. */
 export const PIPELINE_COMPANIES_LIST_PATH = "/internal-pipeline/companies";
 

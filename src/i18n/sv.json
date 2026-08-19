@@ -614,6 +614,8 @@
     "runOnly": "Kör endast:",
     "forceReindex": "Tvinga omindexering",
     "forceReindexDescription": "Om på: kör docling även om rapporten redan finns i vektordatabasen (använd efter uppgradering av docling/OCR).",
+    "useClimatePlansPipeline": "Använd klimatplanspipelinen",
+    "useClimatePlansPipelineDescription": "Om på: stanna efter Docling + indexering (hoppa över precheck/utsläppsextraktion) och lämna över url:en till klimatplanspipelinen istället.",
     "companyWithName": "Företag: {{name}}",
     "fileSizeMb": "{{size}} MB",
     "storageDeduplicated": "{{count}} befintlig(a) PDF:er återanvändes från lagring (ingen dubbeluppladdning).",

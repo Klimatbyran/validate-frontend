@@ -50,6 +50,9 @@ export interface UploadPdfsOptions {
   batchId?: string;
   runOnly?: RunOnlyWorkerId[];
   tags?: string[];
+  /** When set, garbo stops after indexMarkdown and POSTs {url} here instead
+   * of continuing into precheck. Must be in garbo's ALLOWED_CALLBACK_URLS. */
+  callbackUrl?: string;
 }
 
 export type UploadPdfUploadMeta = {
@@ -101,6 +104,9 @@ export interface CreateJobsFromUrlsOptions {
   parsePdfEndpoint?: string;
   pipelineCompany?: PipelineCompanyContext;
   urlContexts?: PipelineUrlContext[];
+  /** When set, garbo stops after indexMarkdown and POSTs {url} here instead
+   * of continuing into precheck. Must be in garbo's ALLOWED_CALLBACK_URLS. */
+  callbackUrl?: string;
 }
 
 export async function uploadPdfsToParsePdf({
@@ -110,6 +116,7 @@ export async function uploadPdfsToParsePdf({
   batchId,
   runOnly,
   tags,
+  callbackUrl,
 }: UploadPdfsOptions): Promise<UploadPdfsResponse> {
   const formData = new FormData();
   for (const file of files) formData.append("files", file);
@@ -120,6 +127,7 @@ export async function uploadPdfsToParsePdf({
   if (runOnly && runOnly.length > 0)
     formData.append("runOnly", JSON.stringify(runOnly));
   if (tags && tags.length > 0) formData.append("tags", JSON.stringify(tags));
+  if (callbackUrl) formData.append("callbackUrl", callbackUrl);
 
   const response = await authenticatedFetch(PARSE_PDF_UPLOAD_ENDPOINT, {
     method: "POST",
