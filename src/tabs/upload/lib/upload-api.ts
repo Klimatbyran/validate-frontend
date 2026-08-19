@@ -156,6 +156,7 @@ export async function createJobsFromUrls({
   parsePdfEndpoint = PARSE_PDF_API_ENDPOINT,
   pipelineCompany,
   urlContexts,
+  callbackUrl,
 }: CreateJobsFromUrlsOptions): Promise<CreateJobsFromUrlsResult> {
   const body = {
     autoApprove: Boolean(autoApprove),
@@ -167,6 +168,7 @@ export async function createJobsFromUrls({
     ...(cachePdf ? { cachePdf: true } : {}),
     ...(pipelineCompany ? { pipelineCompany } : {}),
     ...(urlContexts && urlContexts.length > 0 ? { urlContexts } : {}),
+    ...(callbackUrl ? { callbackUrl } : {}),
     urls,
   };
 
