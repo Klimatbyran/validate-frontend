@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Loader2, ChevronsDown, ChevronsUp } from "lucide-react";
+import { Loader2, ChevronsDown, ChevronsUp, RotateCw } from "lucide-react";
 import { Modal } from "@/ui/modal";
 import { Button } from "@/ui/button";
+import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
 import {
   DataTableShell,
   DataTable,
@@ -144,11 +145,62 @@ function PreviousStepRuns({ runs }: { runs: PipelineStepRun[] }) {
   );
 }
 
+function RerunButton({
+  planId,
+  step,
+  onRerun,
+}: {
+  planId: string;
+  step: string;
+  onRerun: () => void;
+}) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleClick = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `${getClimatePlansPipelineApiUrl()}/plans/${planId}/rerun/${step}`,
+        { method: "POST" },
+      );
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      onRerun();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to rerun");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleClick}
+        disabled={isLoading}
+        className="h-7 px-3 text-xs"
+      >
+        {isLoading ? (
+          <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+        ) : (
+          <RotateCw className="w-3 h-3 mr-1.5" />
+        )}
+        Rerun from here
+      </Button>
+      {error && <span className="text-xs text-pink-03">{error}</span>}
+    </div>
+  );
+}
+
 interface StepResultDialogProps {
   plan: ClimatePipelinePlan | null;
   step: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onRerun?: () => void;
 }
 
 function YesNo({ value }: { value: boolean | null }) {
@@ -378,8 +430,9 @@ export function StepResultDialog({
   step,
   open,
   onOpenChange,
+  onRerun,
 }: StepResultDialogProps) {
-  const { detail, isLoading, error } = useClimatePlanDetail(
+  const { detail, isLoading, error, refresh } = useClimatePlanDetail(
     open ? (plan?.id ?? null) : null,
   );
 
@@ -476,6 +529,14 @@ export function StepResultDialog({
             label={run?.status ?? "pending"}
             status={toSwimlaneStatus(run?.status)}
             isActive={run?.status === "running"}
+          />
+          <RerunButton
+            planId={plan.id}
+            step={step}
+            onRerun={() => {
+              refresh();
+              onRerun?.();
+            }}
           />
         </div>
       }

@@ -104,13 +104,15 @@ function PlanRow({ plan, onStepClick }: PlanRowProps) {
 export function ClimatePipelineTab() {
   const { t } = useI18n();
   const { plans, isLoading, error, refresh } = useClimatePipelinePlans();
-  const [dialogPlan, setDialogPlan] = useState<ClimatePipelinePlan | null>(
-    null,
-  );
+  // Looked up live from `plans` (rather than storing the plan object itself)
+  // so an already-open dialog picks up polling/rerun updates instead of
+  // showing whatever pipelineSteps looked like at the moment it was opened.
+  const [dialogPlanId, setDialogPlanId] = useState<string | null>(null);
   const [dialogStep, setDialogStep] = useState<string | null>(null);
+  const dialogPlan = plans.find((p) => p.id === dialogPlanId) ?? null;
 
   const handleStepClick = (plan: ClimatePipelinePlan, step: string) => {
-    setDialogPlan(plan);
+    setDialogPlanId(plan.id);
     setDialogStep(step);
   };
 
@@ -158,10 +160,11 @@ export function ClimatePipelineTab() {
         open={dialogPlan !== null && dialogStep !== null}
         onOpenChange={(open) => {
           if (!open) {
-            setDialogPlan(null);
+            setDialogPlanId(null);
             setDialogStep(null);
           }
         }}
+        onRerun={refresh}
       />
     </div>
   );
