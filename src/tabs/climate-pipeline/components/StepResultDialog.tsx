@@ -1,5 +1,7 @@
-import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Loader2, ChevronsDown, ChevronsUp } from "lucide-react";
 import { Modal } from "@/ui/modal";
+import { Button } from "@/ui/button";
 import {
   DataTableShell,
   DataTable,
@@ -10,6 +12,7 @@ import { StatusPill } from "@/components/StatusPill";
 import {
   toSwimlaneStatus,
   type ClimatePipelinePlan,
+  type PipelineStepRun,
 } from "../hooks/useClimatePipelinePlans";
 import {
   useClimatePlanDetail,
@@ -90,6 +93,53 @@ function TransitionElementsView({ measures }: { measures: ExtractedMeasure[] }) 
           ))}
         </div>
       ))}
+    </div>
+  );
+}
+
+function PreviousStepRuns({ runs }: { runs: PipelineStepRun[] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (runs.length === 0) return null;
+
+  return (
+    <div className="mt-1">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setExpanded((v) => !v)}
+        className="h-6 px-2 text-xs text-blue-03 hover:text-blue-04 hover:bg-blue-03/10"
+      >
+        {expanded ? (
+          <>
+            <ChevronsUp className="w-3 h-3 mr-1" /> Hide previous runs
+          </>
+        ) : (
+          <>
+            <ChevronsDown className="w-3 h-3 mr-1" /> {runs.length} previous{" "}
+            {runs.length === 1 ? "run" : "runs"}
+          </>
+        )}
+      </Button>
+      {expanded && (
+        <ul className="mt-2 space-y-1.5 border-l-2 border-gray-03 pl-3">
+          {runs.map((r, i) => (
+            <li key={i} className="flex items-center gap-2 text-xs">
+              <StatusPill
+                label={r.status}
+                status={toSwimlaneStatus(r.status)}
+                isActive={false}
+              />
+              <span className="text-gray-02">
+                {new Date(r.startedAt).toLocaleString()}
+                {r.completedAt &&
+                  ` · finished ${new Date(r.completedAt).toLocaleString()}`}
+              </span>
+              {r.error && <span className="text-pink-03">{r.error}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -335,7 +385,11 @@ export function StepResultDialog({
 
   if (!plan || !step) return null;
 
-  const run = plan.pipelineSteps.find((s) => s.step === step);
+  // pipelineSteps is ordered newest-first, so the first match for this step
+  // is its latest run — everything after that is history.
+  const stepRuns = plan.pipelineSteps.filter((s) => s.step === step);
+  const run = stepRuns[0];
+  const previousRuns = stepRuns.slice(1);
   const itemCount = detail ? getStepItemCount(step, detail) : null;
 
   const content = (() => {
@@ -427,14 +481,17 @@ export function StepResultDialog({
       }
       description={
         run ? (
-          <span className="text-xs">
-            Started {new Date(run.startedAt).toLocaleString()}
-            {run.completedAt &&
-              ` · finished ${new Date(run.completedAt).toLocaleString()}`}
-            {run.error && (
-              <span className="block text-pink-03 mt-1">{run.error}</span>
-            )}
-          </span>
+          <div>
+            <span className="text-xs">
+              Started {new Date(run.startedAt).toLocaleString()}
+              {run.completedAt &&
+                ` · finished ${new Date(run.completedAt).toLocaleString()}`}
+              {run.error && (
+                <span className="block text-pink-03 mt-1">{run.error}</span>
+              )}
+            </span>
+            <PreviousStepRuns runs={previousRuns} />
+          </div>
         ) : (
           "This step hasn't run yet."
         )

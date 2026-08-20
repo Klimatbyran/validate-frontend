@@ -33,10 +33,12 @@ interface PlanRowProps {
 function StepStatusPill({
   step,
   run,
+  isRerun,
   onClick,
 }: {
   step: string;
   run?: PipelineStepRun;
+  isRerun?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -45,13 +47,22 @@ function StepStatusPill({
       status={toSwimlaneStatus(run?.status)}
       isActive={run?.status === "running"}
       jobExists={run !== undefined}
+      isRerun={isRerun}
       onClick={onClick}
     />
   );
 }
 
 function PlanRow({ plan, onStepClick }: PlanRowProps) {
-  const stepByName = new Map(plan.pipelineSteps.map((s) => [s.step, s]));
+  // pipelineSteps is ordered newest-first per step. Group all runs per step
+  // so the pill can show the latest status plus an isRerun flag when a step
+  // has run more than once.
+  const runsByStep = new Map<string, PipelineStepRun[]>();
+  for (const s of plan.pipelineSteps) {
+    const list = runsByStep.get(s.step) ?? [];
+    list.push(s);
+    runsByStep.set(s.step, list);
+  }
   const name =
     plan.municipality?.name ?? plan.extractedMunicipalityName ?? plan.url;
 
@@ -69,7 +80,8 @@ function PlanRow({ plan, onStepClick }: PlanRowProps) {
           <StepStatusPill
             key={step}
             step={step}
-            run={stepByName.get(step)}
+            run={runsByStep.get(step)?.[0]}
+            isRerun={(runsByStep.get(step)?.length ?? 0) > 1}
             onClick={() => onStepClick(plan, step)}
           />
         ))}
@@ -79,7 +91,8 @@ function PlanRow({ plan, onStepClick }: PlanRowProps) {
           <StepStatusPill
             key={step}
             step={step}
-            run={stepByName.get(step)}
+            run={runsByStep.get(step)?.[0]}
+            isRerun={(runsByStep.get(step)?.length ?? 0) > 1}
             onClick={() => onStepClick(plan, step)}
           />
         ))}
