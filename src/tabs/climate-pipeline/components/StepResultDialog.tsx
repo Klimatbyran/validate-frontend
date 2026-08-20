@@ -56,7 +56,7 @@ function TransitionElementsView({ measures }: { measures: ExtractedMeasure[] }) 
       {withShifts.map((m) => (
         <div key={m.id} className="bg-gray-03/30 rounded-lg p-3 space-y-3">
           <p className="text-sm text-gray-01">
-            <TruncatedText text={m.measureText} width="max-w-2xl" />
+            <WrappedText text={m.measureText} width="max-w-2xl" />
           </p>
           {m.score!.activityShifts.map((shift) => (
             <div key={shift.id} className="pl-3 border-l-2 border-gray-03 space-y-1">
@@ -160,9 +160,9 @@ function YesNo({ value }: { value: boolean | null }) {
   );
 }
 
-function TruncatedText({ text, width = "max-w-md" }: { text: string; width?: string }) {
+function WrappedText({ text, width = "max-w-md" }: { text: string; width?: string }) {
   return (
-    <span title={text} className={`block truncate ${width}`}>
+    <span className={`block whitespace-pre-wrap break-words ${width}`}>
       {text}
     </span>
   );
@@ -273,7 +273,7 @@ function CommitmentsTable({
             <tr key={c.id}>
               <td className="px-3 py-2 font-mono text-xs text-gray-02">{c.stableId}</td>
               <td className="px-3 py-2">
-                <TruncatedText text={c.text} />
+                <WrappedText text={c.text} />
               </td>
               {columns === "climate" && (
                 <>
@@ -284,7 +284,7 @@ function CommitmentsTable({
                     <YesNo value={c.adaptation} />
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-02">
-                    <TruncatedText text={c.climateFilterReason ?? ""} width="max-w-xs" />
+                    <WrappedText text={c.climateFilterReason ?? ""} width="max-w-xs" />
                   </td>
                 </>
               )}
@@ -294,14 +294,14 @@ function CommitmentsTable({
                     <YesNo value={c.actionable} />
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-02">
-                    <TruncatedText text={c.actionableReason ?? ""} width="max-w-xs" />
+                    <WrappedText text={c.actionableReason ?? ""} width="max-w-xs" />
                   </td>
                 </>
               )}
               {columns === "extract" && (
                 <>
                   <td className="px-3 py-2 text-xs text-gray-02">
-                    <TruncatedText text={c.section} width="max-w-[10rem]" />
+                    <WrappedText text={c.section} width="max-w-[10rem]" />
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-02">{c.type}</td>
                   <td className="px-3 py-2">
@@ -347,7 +347,7 @@ function MeasuresTable({
           {measures.map((m) => (
             <tr key={m.id}>
               <td className="px-3 py-2">
-                <TruncatedText text={m.measureText} />
+                <WrappedText text={m.measureText} />
               </td>
               {columns === "extract" && (
                 <td className="px-3 py-2 text-xs text-gray-02">{m.climateRelevanceScore}</td>
