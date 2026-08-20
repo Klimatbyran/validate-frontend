@@ -8,11 +8,8 @@ import {
   getQueueDisplayName,
 } from "@/lib/workflow-config";
 import { findJobByQueueId, getQueueAttemptSummary } from "@/lib/workflow-utils";
-import {
-  getStatusIcon,
-  getStatusLabel,
-  getCompactStyles,
-} from "@/lib/status-config";
+import { getStatusIcon, getStatusLabel } from "@/lib/status-config";
+import { StatusPill } from "@/components/StatusPill";
 import type { SwimlaneYearData } from "@/lib/types";
 import { useI18n } from "@/contexts/I18nContext";
 
@@ -101,45 +98,21 @@ export function YearStepGrid({
             (job?.processedOn && !job?.finishedOn) || job?.status === "active";
           const statusDisplay = {
             status: aggregate.status,
-            icon: getStatusIcon(
-              aggregate.status,
-              variant === "compact" ? "compact" : "detailed",
-              !!isActive,
-            ),
+            icon: getStatusIcon(aggregate.status, "detailed", !!isActive),
             text: getStatusLabel(aggregate.status, !!isActive),
-            styles:
-              variant === "compact"
-                ? getCompactStyles(
-                    aggregate.status,
-                    !!isActive,
-                    job !== undefined,
-                  )
-                : undefined,
           };
 
           if (variant === "compact") {
             return (
-              <button
+              <StatusPill
                 key={queueId}
+                label={fieldName}
+                status={aggregate.status}
+                isActive={!!isActive}
+                jobExists={job !== undefined}
+                isRerun={isRerun}
                 onClick={() => onFieldClick(queueId, yearData, { isRerun })}
-                className={`
-                  relative px-2 py-1 rounded border text-[10px] font-medium
-                  hover:shadow-sm hover:scale-105 transition-all
-                  ${statusDisplay.styles ?? ""}
-                `}
-              >
-                {isRerun && (
-                  <span className="pointer-events-none absolute top-0 right-0 w-0 h-0 border-t-[10px] border-t-orange-03 border-l-[10px] border-l-transparent" />
-                )}
-                <span className="flex items-center gap-1">
-                  <span
-                    className={isActive ? "inline-block animate-spin-slow" : ""}
-                  >
-                    {statusDisplay.icon}
-                  </span>
-                  <span>{fieldName}</span>
-                </span>
-              </button>
+              />
             );
           }
 

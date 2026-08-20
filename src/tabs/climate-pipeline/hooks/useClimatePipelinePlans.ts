@@ -1,7 +1,25 @@
 import { useState, useEffect, useCallback } from "react";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
+import type { SwimlaneStatusType } from "@/lib/types";
 
 export type PipelineStepStatus = "running" | "completed" | "failed";
+
+/** Maps onto the same STATUS_CONFIG (status-config.tsx) the Jobbstatus
+ * swimlane uses, so StatusPill renders identically in both places. */
+export function toSwimlaneStatus(
+  status: PipelineStepStatus | undefined,
+): SwimlaneStatusType {
+  switch (status) {
+    case "completed":
+      return "completed";
+    case "failed":
+      return "failed";
+    case "running":
+      return "processing";
+    default:
+      return "waiting";
+  }
+}
 
 export interface PipelineStepRun {
   step: string;

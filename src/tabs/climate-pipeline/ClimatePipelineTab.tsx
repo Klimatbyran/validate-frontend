@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
-import { cn } from "@/lib/utils";
+import { StatusPill } from "@/components/StatusPill";
 import {
   useClimatePipelinePlans,
+  toSwimlaneStatus,
   type ClimatePipelinePlan,
   type PipelineStepRun,
 } from "./hooks/useClimatePipelinePlans";
+import { StepResultDialog } from "./components/StepResultDialog";
 
 const COMMITMENT_STEPS = [
   "extractMunicipality",
@@ -22,27 +25,32 @@ const MEASURE_STEPS = [
   "scoreMeasures",
 ] as const;
 
-function StepPill({ step, run }: { step: string; run?: PipelineStepRun }) {
-  const status = run?.status ?? "pending";
+interface PlanRowProps {
+  plan: ClimatePipelinePlan;
+  onStepClick: (plan: ClimatePipelinePlan, step: string) => void;
+}
+
+function StepStatusPill({
+  step,
+  run,
+  onClick,
+}: {
+  step: string;
+  run?: PipelineStepRun;
+  onClick: () => void;
+}) {
   return (
-    <div
-      title={run?.error ?? undefined}
-      className={cn(
-        "px-2.5 py-1 rounded-full text-xs font-medium border",
-        status === "completed" &&
-          "bg-green-03/20 border-green-03 text-green-03",
-        status === "running" &&
-          "bg-blue-03/20 border-blue-03 text-blue-03 animate-pulse",
-        status === "failed" && "bg-red-03/20 border-red-03 text-red-03",
-        status === "pending" && "bg-gray-03/50 border-gray-03 text-gray-02",
-      )}
-    >
-      {step}
-    </div>
+    <StatusPill
+      label={step}
+      status={toSwimlaneStatus(run?.status)}
+      isActive={run?.status === "running"}
+      jobExists={run !== undefined}
+      onClick={onClick}
+    />
   );
 }
 
-function PlanRow({ plan }: { plan: ClimatePipelinePlan }) {
+function PlanRow({ plan, onStepClick }: PlanRowProps) {
   const stepByName = new Map(plan.pipelineSteps.map((s) => [s.step, s]));
   const name =
     plan.municipality?.name ?? plan.extractedMunicipalityName ?? plan.url;
@@ -59,13 +67,23 @@ function PlanRow({ plan }: { plan: ClimatePipelinePlan }) {
       </div>
       <div className="flex flex-wrap gap-1.5">
         {COMMITMENT_STEPS.map((step) => (
-          <StepPill key={step} step={step} run={stepByName.get(step)} />
+          <StepStatusPill
+            key={step}
+            step={step}
+            run={stepByName.get(step)}
+            onClick={() => onStepClick(plan, step)}
+          />
         ))}
       </div>
       {hasMeasureActivity && (
         <div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-03/50">
           {MEASURE_STEPS.map((step) => (
-            <StepPill key={step} step={step} run={stepByName.get(step)} />
+            <StepStatusPill
+              key={step}
+              step={step}
+              run={stepByName.get(step)}
+              onClick={() => onStepClick(plan, step)}
+            />
           ))}
         </div>
       )}
@@ -76,6 +94,15 @@ function PlanRow({ plan }: { plan: ClimatePipelinePlan }) {
 export function ClimatePipelineTab() {
   const { t } = useI18n();
   const { plans, isLoading, error, refresh } = useClimatePipelinePlans();
+  const [dialogPlan, setDialogPlan] = useState<ClimatePipelinePlan | null>(
+    null,
+  );
+  const [dialogStep, setDialogStep] = useState<string | null>(null);
+
+  const handleStepClick = (plan: ClimatePipelinePlan, step: string) => {
+    setDialogPlan(plan);
+    setDialogStep(step);
+  };
 
   return (
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6 flex flex-col gap-4">
@@ -110,10 +137,22 @@ export function ClimatePipelineTab() {
       ) : (
         <div className="space-y-3">
           {plans.map((plan) => (
-            <PlanRow key={plan.id} plan={plan} />
+            <PlanRow key={plan.id} plan={plan} onStepClick={handleStepClick} />
           ))}
         </div>
       )}
+
+      <StepResultDialog
+        plan={dialogPlan}
+        step={dialogStep}
+        open={dialogPlan !== null && dialogStep !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDialogPlan(null);
+            setDialogStep(null);
+          }
+        }}
+      />
     </div>
   );
 }
