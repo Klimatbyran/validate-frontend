@@ -55,7 +55,6 @@ function PlanRow({ plan, onStepClick }: PlanRowProps) {
   const stepByName = new Map(plan.pipelineSteps.map((s) => [s.step, s]));
   const name =
     plan.municipality?.name ?? plan.extractedMunicipalityName ?? plan.url;
-  const hasMeasureActivity = MEASURE_STEPS.some((s) => stepByName.has(s));
 
   return (
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] p-4 space-y-3">
@@ -76,18 +75,16 @@ function PlanRow({ plan, onStepClick }: PlanRowProps) {
           />
         ))}
       </div>
-      {hasMeasureActivity && (
-        <div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-03/50">
-          {MEASURE_STEPS.map((step) => (
-            <StepStatusPill
-              key={step}
-              step={step}
-              run={stepByName.get(step)}
-              onClick={() => onStepClick(plan, step)}
-            />
-          ))}
-        </div>
-      )}
+      <div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-03/50">
+        {MEASURE_STEPS.map((step) => (
+          <StepStatusPill
+            key={step}
+            step={step}
+            run={stepByName.get(step)}
+            onClick={() => onStepClick(plan, step)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
