@@ -23,6 +23,7 @@ const MEASURE_STEPS = [
   "extractMeasures",
   "filterMeasuresResource",
   "scoreMeasures",
+  "matchTransitionElements",
 ] as const;
 
 interface PlanRowProps {

@@ -20,6 +20,14 @@ export interface Commitment {
   theme: string | null;
 }
 
+export interface TransitionElementMatch {
+  stableId: string;
+  shortLabel: string;
+  sectorPath: string;
+  score: number;
+  matchConfidence: "high" | "mid" | "low";
+}
+
 export interface ActivityShift {
   id: string;
   activity: string;
@@ -30,7 +38,7 @@ export interface ActivityShift {
   typeReasoning: string;
   score: number;
   reasoning: string;
-  transitionElementMatches: unknown;
+  transitionElementMatches: TransitionElementMatch[];
 }
 
 export interface MeasureScore {

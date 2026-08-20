@@ -17,6 +17,57 @@ import {
   type ExtractedMeasure,
 } from "../hooks/useClimatePlanDetail";
 
+function TransitionElementsView({ measures }: { measures: ExtractedMeasure[] }) {
+  const withShifts = measures.filter((m) => m.score && m.score.activityShifts.length > 0);
+  if (withShifts.length === 0) {
+    return <p className="text-sm text-gray-02">No activity shifts to match yet.</p>;
+  }
+  return (
+    <div className="space-y-4">
+      {withShifts.map((m) => (
+        <div key={m.id} className="bg-gray-03/30 rounded-lg p-3 space-y-3">
+          <p className="text-sm text-gray-01">
+            <TruncatedText text={m.measureText} width="max-w-2xl" />
+          </p>
+          {m.score!.activityShifts.map((shift) => (
+            <div key={shift.id} className="pl-3 border-l-2 border-gray-03 space-y-1">
+              <p className="text-xs text-gray-02">
+                <span className="font-medium">{shift.type}</span>: {shift.shiftFrom} →{" "}
+                {shift.shiftTo}{" "}
+                <span className="text-gray-02/70">(need: {shift.need})</span>
+              </p>
+              {shift.transitionElementMatches.length === 0 ? (
+                <p className="text-xs text-gray-02 italic">No matches</p>
+              ) : (
+                <ul className="text-xs space-y-0.5">
+                  {shift.transitionElementMatches.map((match) => (
+                    <li key={match.stableId} className="text-gray-01">
+                      <span
+                        className={
+                          match.matchConfidence === "high"
+                            ? "text-green-03"
+                            : match.matchConfidence === "mid"
+                              ? "text-blue-03"
+                              : "text-gray-02"
+                        }
+                      >
+                        {match.shortLabel}
+                      </span>{" "}
+                      <span className="text-gray-02">
+                        ({match.matchConfidence}, {match.score.toFixed(2)})
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface StepResultDialogProps {
   plan: ClimatePipelinePlan | null;
   step: string | null;
@@ -340,6 +391,12 @@ export function StepResultDialog({
           <MeasuresTable
             measures={detail.extractedMeasures.filter((m) => m.resourceChange)}
             columns="score"
+          />
+        );
+      case "matchTransitionElements":
+        return (
+          <TransitionElementsView
+            measures={detail.extractedMeasures.filter((m) => m.resourceChange)}
           />
         );
       default:
