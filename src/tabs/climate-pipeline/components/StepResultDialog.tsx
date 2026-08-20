@@ -15,7 +15,31 @@ import {
   useClimatePlanDetail,
   type Commitment,
   type ExtractedMeasure,
+  type ClimatePlanDetail,
 } from "../hooks/useClimatePlanDetail";
+
+/** Count of items shown in each step's dialog — same filters the dialog
+ * content itself applies, so the title badge always matches what's below. */
+function getStepItemCount(step: string, detail: ClimatePlanDetail): number | null {
+  switch (step) {
+    case "extractCommitments":
+      return detail.commitments.length;
+    case "filterCommitmentsClimate":
+      return detail.commitments.filter((c) => c.climateRelevant).length;
+    case "filterCommitmentsActionable":
+    case "groupCommitmentsSimilar":
+    case "groupCommitmentsThemes":
+      return detail.commitments.filter((c) => c.climateRelevant && c.actionable).length;
+    case "extractMeasures":
+    case "filterMeasuresResource":
+      return detail.extractedMeasures.length;
+    case "scoreMeasures":
+    case "matchTransitionElements":
+      return detail.extractedMeasures.filter((m) => m.resourceChange).length;
+    default:
+      return null;
+  }
+}
 
 function TransitionElementsView({ measures }: { measures: ExtractedMeasure[] }) {
   const withShifts = measures.filter((m) => m.score && m.score.activityShifts.length > 0);
@@ -326,6 +350,7 @@ export function StepResultDialog({
   if (!plan || !step) return null;
 
   const run = plan.pipelineSteps.find((s) => s.step === step);
+  const itemCount = detail ? getStepItemCount(step, detail) : null;
 
   const content = (() => {
     if (isLoading || !detail) {
@@ -413,6 +438,11 @@ export function StepResultDialog({
       title={
         <div className="flex items-center gap-3">
           <span>{step}</span>
+          {itemCount !== null && (
+            <span className="text-xs font-normal text-gray-02">
+              {itemCount} {itemCount === 1 ? "item" : "items"}
+            </span>
+          )}
           <StatusPill
             label={run?.status ?? "pending"}
             status={toSwimlaneStatus(run?.status)}
