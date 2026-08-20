@@ -31,11 +31,13 @@ function getStepItemCount(step: string, detail: ClimatePlanDetail): number | nul
     case "groupCommitmentsThemes":
       return detail.commitments.filter((c) => c.climateRelevant && c.actionable).length;
     case "extractMeasures":
-    case "filterMeasuresResource":
       return detail.extractedMeasures.length;
     case "scoreMeasures":
+      return detail.extractedMeasures.filter((m) => m.score).length;
     case "matchTransitionElements":
-      return detail.extractedMeasures.filter((m) => m.resourceChange).length;
+      return detail.extractedMeasures.filter(
+        (m) => m.score && m.score.activityShifts.length > 0,
+      ).length;
     default:
       return null;
   }
@@ -270,7 +272,7 @@ function MeasuresTable({
   columns,
 }: {
   measures: ExtractedMeasure[];
-  columns: "extract" | "resource" | "score";
+  columns: "extract" | "score";
 }) {
   if (measures.length === 0) {
     return <p className="text-sm text-gray-02">No measures yet.</p>;
@@ -282,12 +284,6 @@ function MeasuresTable({
           <tr>
             <th className="px-3 py-2">Measure</th>
             {columns === "extract" && <th className="px-3 py-2">Relevance</th>}
-            {columns === "resource" && (
-              <>
-                <th className="px-3 py-2">Resource change</th>
-                <th className="px-3 py-2">Reason</th>
-              </>
-            )}
             {columns === "score" && (
               <>
                 <th className="px-3 py-2">Activity shift</th>
@@ -305,16 +301,6 @@ function MeasuresTable({
               </td>
               {columns === "extract" && (
                 <td className="px-3 py-2 text-xs text-gray-02">{m.climateRelevanceScore}</td>
-              )}
-              {columns === "resource" && (
-                <>
-                  <td className="px-3 py-2">
-                    <YesNo value={m.resourceChange} />
-                  </td>
-                  <td className="px-3 py-2 text-xs text-gray-02">
-                    <TruncatedText text={m.resourceChangeReason ?? ""} width="max-w-xs" />
-                  </td>
-                </>
               )}
               {columns === "score" && (
                 <>
@@ -409,21 +395,10 @@ export function StepResultDialog({
         );
       case "extractMeasures":
         return <MeasuresTable measures={detail.extractedMeasures} columns="extract" />;
-      case "filterMeasuresResource":
-        return <MeasuresTable measures={detail.extractedMeasures} columns="resource" />;
       case "scoreMeasures":
-        return (
-          <MeasuresTable
-            measures={detail.extractedMeasures.filter((m) => m.resourceChange)}
-            columns="score"
-          />
-        );
+        return <MeasuresTable measures={detail.extractedMeasures} columns="score" />;
       case "matchTransitionElements":
-        return (
-          <TransitionElementsView
-            measures={detail.extractedMeasures.filter((m) => m.resourceChange)}
-          />
-        );
+        return <TransitionElementsView measures={detail.extractedMeasures} />;
       default:
         return <p className="text-sm text-gray-02">No details for this step.</p>;
     }

@@ -21,7 +21,6 @@ const COMMITMENT_STEPS = [
 
 const MEASURE_STEPS = [
   "extractMeasures",
-  "filterMeasuresResource",
   "scoreMeasures",
   "matchTransitionElements",
 ] as const;

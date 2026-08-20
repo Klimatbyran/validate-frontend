@@ -69,7 +69,6 @@ interface ApiMeasureScore {
 
 interface ApiExtractedMeasure {
   measureText: string;
-  resourceChange: boolean | null;
   score: ApiMeasureScore | null;
 }
 
@@ -170,7 +169,7 @@ export async function fetchPipelineMeasures(): Promise<MunicipalityMeasures[]> {
       .filter((d): d is ApiPlanDetail => d !== null)
       .map((plan) => {
         const measures = plan.extractedMeasures
-          .filter((m) => m.resourceChange)
+          .filter((m) => m.score !== null)
           .map(toExplorerMeasure);
         return {
           id: plan.id,

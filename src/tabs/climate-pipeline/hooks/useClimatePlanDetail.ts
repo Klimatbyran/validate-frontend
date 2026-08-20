@@ -59,8 +59,6 @@ export interface ExtractedMeasure {
   id: string;
   measureText: string;
   climateRelevanceScore: "high" | "mid" | "low";
-  resourceChange: boolean | null;
-  resourceChangeReason: string | null;
   score: MeasureScore | null;
 }
 
