@@ -27,6 +27,7 @@ export interface PipelineStepRun {
   startedAt: string;
   completedAt: string | null;
   error: string | null;
+  runId: string | null;
 }
 
 export interface ClimatePipelinePlan {
