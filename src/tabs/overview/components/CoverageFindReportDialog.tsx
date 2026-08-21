@@ -25,6 +25,7 @@ import type {
   SelectedReport,
 } from "@/tabs/crawler/lib/crawler-types";
 import type { CoverageEntry } from "@/tabs/overview/lib/coverage-types";
+import { CRAWLER_FEATURES } from "@/config/crawler-features";
 
 type CoverageFindReportDialogProps = {
   open: boolean;
@@ -400,49 +401,51 @@ export function CoverageFindReportDialog({
                   />
                 </div>
 
-                <div className="space-y-3 border-t border-gray-03/60 pt-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm font-medium text-gray-01">
-                      {t("overview.coverage.findReportCrawlSection")}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="whitespace-nowrap"
-                      disabled={!isValidYear || isSearching || isSaving}
-                      onClick={() => void handleSearchOnline()}
-                    >
-                      {isSearching ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {t("overview.coverage.findReportSearching")}
-                        </>
-                      ) : (
-                        t("overview.coverage.findReportSearchOnline")
-                      )}
-                    </Button>
-                  </div>
-                  {searchError ? (
-                    <p className="text-sm text-pink-03">{searchError}</p>
-                  ) : null}
-                  {reportWithWikidata ? (
-                    crawlHasResults ? (
-                      <SearchResultItem
-                        companyReport={reportWithWikidata}
-                        selectedReport={selectedReport?.url}
-                        onSelect={handleSelectReport}
-                        initialExpanded
-                        variant="embedded"
-                        onPreviewOpenChange={setIsPdfPreviewOpen}
-                      />
-                    ) : (
-                      <p className="text-sm text-gray-02">
-                        {t("overview.coverage.findReportNoResults")}
+                {CRAWLER_FEATURES.coverageSearchOnline ? (
+                  <div className="space-y-3 border-t border-gray-03/60 pt-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm font-medium text-gray-01">
+                        {t("overview.coverage.findReportCrawlSection")}
                       </p>
-                    )
-                  ) : null}
-                </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="whitespace-nowrap"
+                        disabled={!isValidYear || isSearching || isSaving}
+                        onClick={() => void handleSearchOnline()}
+                      >
+                        {isSearching ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {t("overview.coverage.findReportSearching")}
+                          </>
+                        ) : (
+                          t("overview.coverage.findReportSearchOnline")
+                        )}
+                      </Button>
+                    </div>
+                    {searchError ? (
+                      <p className="text-sm text-pink-03">{searchError}</p>
+                    ) : null}
+                    {reportWithWikidata ? (
+                      crawlHasResults ? (
+                        <SearchResultItem
+                          companyReport={reportWithWikidata}
+                          selectedReport={selectedReport?.url}
+                          onSelect={handleSelectReport}
+                          initialExpanded
+                          variant="embedded"
+                          onPreviewOpenChange={setIsPdfPreviewOpen}
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-02">
+                          {t("overview.coverage.findReportNoResults")}
+                        </p>
+                      )
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             )}
           </div>

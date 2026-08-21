@@ -4,6 +4,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { RunReportsModal } from "@/components/RunReportsModal";
 import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
 import type { RunReportListItem } from "@/lib/run-reports-types";
+import { CRAWLER_FEATURES } from "@/config/crawler-features";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import {
   searchCompanyReports,
@@ -464,7 +465,9 @@ export function CrawlerTab() {
             {t("crawler.title")}
           </h2>
           <div className="flex items-center gap-3">
-            {autoSearchStats && !isAutoSearchRunning && (
+            {CRAWLER_FEATURES.autoSearch &&
+              autoSearchStats &&
+              !isAutoSearchRunning && (
               <AutoSearchLogButton
                 stats={autoSearchStats}
                 reportYear={lastAutoSearchYear}
@@ -487,7 +490,9 @@ export function CrawlerTab() {
                 onReportYearChange={handleReportYearInputChange}
                 onCountryChange={handleCountryInputChange}
                 onSearch={handleManualSearchClick}
-                onAutoSearch={handleAutoSearchClick}
+                onAutoSearch={
+                  CRAWLER_FEATURES.autoSearch ? handleAutoSearchClick : undefined
+                }
                 isAutoSearchRunning={
                   isAutoSearchRunning || isRegistryCheckLoading
                 }
@@ -510,7 +515,9 @@ export function CrawlerTab() {
               <DatabaseSearchControls
                 onReportYearChange={handleReportYearInputChange}
                 onSearch={handleDatabaseSearchClick}
-                onAutoSearch={handleAutoSearchClick}
+                onAutoSearch={
+                  CRAWLER_FEATURES.autoSearch ? handleAutoSearchClick : undefined
+                }
                 isAutoSearchRunning={
                   isAutoSearchRunning || isRegistryCheckLoading
                 }
@@ -548,32 +555,36 @@ export function CrawlerTab() {
           isRunning={isRunningReports}
         />
 
-        <AutoSearchRegistryCheckModal
-          open={isRegistryCheckModalOpen}
-          reportYear={reportYearInput}
-          matches={registryCheckMatches}
-          remainingCompanyCount={
-            pendingAutoSearchParams?.companies.filter(
-              (company) => !registryCheckExcluded.has(company.name),
-            ).length ?? 0
-          }
-          excludedCompanies={registryCheckExcluded}
-          onToggleExclude={handleRegistryCheckToggleExclude}
-          onContinue={() => void handleRegistryCheckContinue()}
-          onCancel={handleRegistryCheckCancel}
-        />
+        {CRAWLER_FEATURES.autoSearch ? (
+          <>
+            <AutoSearchRegistryCheckModal
+              open={isRegistryCheckModalOpen}
+              reportYear={reportYearInput}
+              matches={registryCheckMatches}
+              remainingCompanyCount={
+                pendingAutoSearchParams?.companies.filter(
+                  (company) => !registryCheckExcluded.has(company.name),
+                ).length ?? 0
+              }
+              excludedCompanies={registryCheckExcluded}
+              onToggleExclude={handleRegistryCheckToggleExclude}
+              onContinue={() => void handleRegistryCheckContinue()}
+              onCancel={handleRegistryCheckCancel}
+            />
 
-        <AutoSearchModal
-          open={isAutoSearchModalOpen}
-          phase={autoSearchPhase}
-          progress={autoSearchProgress}
-          stats={autoSearchStats}
-          reportYear={reportYearInput}
-          errorMessage={autoSearchError}
-          runStartedAt={autoSearchStartedAt}
-          runFinishedAt={autoSearchFinishedAt}
-          onClose={handleCloseAutoSearchModal}
-        />
+            <AutoSearchModal
+              open={isAutoSearchModalOpen}
+              phase={autoSearchPhase}
+              progress={autoSearchProgress}
+              stats={autoSearchStats}
+              reportYear={reportYearInput}
+              errorMessage={autoSearchError}
+              runStartedAt={autoSearchStartedAt}
+              runFinishedAt={autoSearchFinishedAt}
+              onClose={handleCloseAutoSearchModal}
+            />
+          </>
+        ) : null}
       </motion.div>
 
       {isLoading && (

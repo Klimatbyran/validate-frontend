@@ -1,6 +1,7 @@
 import ControlsBase from "./ControlsBase";
 import type { SelectedReport } from "../lib/crawler-types";
 import { useI18n } from "@/contexts/I18nContext";
+import { CRAWLER_FEATURES } from "@/config/crawler-features";
 
 interface ManualSearchControlsProps {
   onCompanyNamesChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
@@ -67,9 +68,11 @@ const ManualSearchControls = ({
           handleAddToRegistryClick={handleAddToRegistryClick}
           onRunSelectedReports={onRunSelectedReports}
         />
-        <p className="text-xs text-gray-02 max-w-[750px]">
-          {t("crawler.autoSearchDisclaimer")}
-        </p>
+        {CRAWLER_FEATURES.autoSearch ? (
+          <p className="text-xs text-gray-02 max-w-[750px]">
+            {t("crawler.autoSearchDisclaimer")}
+          </p>
+        ) : null}
       </div>
     </>
   );

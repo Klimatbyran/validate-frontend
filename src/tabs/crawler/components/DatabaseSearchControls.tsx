@@ -3,6 +3,7 @@ import type { SelectedReport } from "../lib/crawler-types";
 import { useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
+import { CRAWLER_FEATURES } from "@/config/crawler-features";
 
 interface DatabaseSearchControlsProps {
   onReportYearChange: (
@@ -136,9 +137,11 @@ const DatabaseSearchControls = ({
             onRunSelectedReports={onRunSelectedReports}
           />
         </div>
-        <p className="text-xs text-gray-02 max-w-[750px]">
-          {t("crawler.autoSearchDisclaimer")}
-        </p>
+        {CRAWLER_FEATURES.autoSearch ? (
+          <p className="text-xs text-gray-02 max-w-[750px]">
+            {t("crawler.autoSearchDisclaimer")}
+          </p>
+        ) : null}
       </div>
     </>
   );

@@ -46,6 +46,12 @@ const SearchResultItem = ({
   >([]);
 
   useEffect(() => {
+    if ((results?.length ?? 0) > 0) {
+      setIsDialogOpen(true);
+    }
+  }, [results?.length]);
+
+  useEffect(() => {
     onPreviewOpenChange?.(previewOpenIndex !== null);
   }, [previewOpenIndex, onPreviewOpenChange]);
 

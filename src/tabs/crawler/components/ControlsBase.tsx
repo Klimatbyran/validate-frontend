@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { SelectedReport } from "../lib/crawler-types";
+import { CRAWLER_FEATURES } from "@/config/crawler-features";
 
 interface ControlsBaseProps {
   onSearch: () => void;
@@ -38,15 +39,17 @@ const ControlsBase = ({
           {t("crawler.search")}
           <WandIcon className="w-4 h-4 ml-4" />
         </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={() => onAutoSearch?.()}
-          disabled={isSearchDisabled || isAutoSearchRunning || !onAutoSearch}
-        >
-          {t("crawler.autoSearch")}
-          <Sparkles className="w-4 h-4 ml-2" />
-        </Button>
+        {CRAWLER_FEATURES.autoSearch ? (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => onAutoSearch?.()}
+            disabled={isSearchDisabled || isAutoSearchRunning || !onAutoSearch}
+          >
+            {t("crawler.autoSearch")}
+            <Sparkles className="w-4 h-4 ml-2" />
+          </Button>
+        ) : null}
       </div>
       <div className="flex flex-wrap gap-3 justify-end">
         <Button
