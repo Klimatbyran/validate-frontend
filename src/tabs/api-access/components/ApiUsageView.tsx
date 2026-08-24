@@ -108,7 +108,9 @@ export function ApiUsageView() {
                       >
                         <span className="font-mono text-gray-02">
                           {ep.service ? (
-                            <span className="text-gray-02/80">{ep.service} </span>
+                            <span className="text-gray-02/80">
+                              {ep.service}{" "}
+                            </span>
                           ) : null}
                           <span className="text-blue-300">{ep.method}</span>{" "}
                           {ep.path}
