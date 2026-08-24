@@ -66,6 +66,8 @@ export type CreateClientApiKeyResponse = z.infer<
 export const usageEndpointSchema = z.object({
   method: z.string(),
   path: z.string(),
+  /** `garbo` | `unearth`; null for rows logged before service was recorded. */
+  service: z.string().nullable().optional(),
   count: z.number(),
 });
 

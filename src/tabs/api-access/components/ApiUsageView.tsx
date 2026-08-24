@@ -103,10 +103,13 @@ export function ApiUsageView() {
                   <ul className="space-y-0.5">
                     {item.endpoints.map((ep) => (
                       <li
-                        key={`${ep.method}:${ep.path}`}
+                        key={`${ep.service ?? "unknown"}:${ep.method}:${ep.path}`}
                         className="flex items-center justify-between text-xs"
                       >
                         <span className="font-mono text-gray-02">
+                          {ep.service ? (
+                            <span className="text-gray-02/80">{ep.service} </span>
+                          ) : null}
                           <span className="text-blue-300">{ep.method}</span>{" "}
                           {ep.path}
                         </span>
