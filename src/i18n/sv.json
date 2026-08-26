@@ -621,7 +621,7 @@
     "runPartial": "Delvis",
     "runOnly": "Kör endast:",
     "forceReindex": "Tvinga omindexering",
-    "forceReindexDescription": "Om på: kör docling även om rapporten redan finns i vektordatabasen (använd efter uppgradering av docling/OCR). Vid URL-uppladdning med PDF-cachning kringgås även den 14 dagar gamla cachade kopian så att käll-PDF:en hämtas på nytt — använd detta när du lägger till ett dokument vars innehåll kan ha ändrats.",
+    "forceReindexDescription": "Om på: kör docling även om rapporten redan finns i vektordatabasen (använd efter uppgradering av docling/OCR).",
     "useClimatePlansPipeline": "Använd klimatplanspipelinen",
     "useClimatePlansPipelineDescription": "Om på: stanna efter Docling + indexering (hoppa över precheck/utsläppsextraktion) och lämna över url:en till klimatplanspipelinen istället.",
     "companyWithName": "Företag: {{name}}",
