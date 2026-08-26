@@ -24,7 +24,10 @@ import {
 
 /** Count of items shown in each step's dialog — same filters the dialog
  * content itself applies, so the title badge always matches what's below. */
-function getStepItemCount(step: string, detail: ClimatePlanDetail): number | null {
+function getStepItemCount(
+  step: string,
+  detail: ClimatePlanDetail,
+): number | null {
   switch (step) {
     case "extractCommitments":
       return detail.commitments.length;
@@ -33,7 +36,8 @@ function getStepItemCount(step: string, detail: ClimatePlanDetail): number | nul
     case "filterCommitmentsActionable":
     case "groupCommitmentsSimilar":
     case "groupCommitmentsThemes":
-      return detail.commitments.filter((c) => c.climateRelevant && c.actionable).length;
+      return detail.commitments.filter((c) => c.climateRelevant && c.actionable)
+        .length;
     case "extractMeasures":
       return detail.extractedMeasures.length;
     case "scoreMeasures":
@@ -47,10 +51,18 @@ function getStepItemCount(step: string, detail: ClimatePlanDetail): number | nul
   }
 }
 
-function TransitionElementsView({ measures }: { measures: ExtractedMeasure[] }) {
-  const withShifts = measures.filter((m) => m.score && m.score.activityShifts.length > 0);
+function TransitionElementsView({
+  measures,
+}: {
+  measures: ExtractedMeasure[];
+}) {
+  const withShifts = measures.filter(
+    (m) => m.score && m.score.activityShifts.length > 0,
+  );
   if (withShifts.length === 0) {
-    return <p className="text-sm text-gray-02">No activity shifts to match yet.</p>;
+    return (
+      <p className="text-sm text-gray-02">No activity shifts to match yet.</p>
+    );
   }
   return (
     <div className="space-y-4">
@@ -60,10 +72,13 @@ function TransitionElementsView({ measures }: { measures: ExtractedMeasure[] }) 
             <WrappedText text={m.measureText} width="max-w-2xl" />
           </p>
           {m.score!.activityShifts.map((shift) => (
-            <div key={shift.id} className="pl-3 border-l-2 border-gray-03 space-y-1">
+            <div
+              key={shift.id}
+              className="pl-3 border-l-2 border-gray-03 space-y-1"
+            >
               <p className="text-xs text-gray-02">
-                <span className="font-medium">{shift.type}</span>: {shift.shiftFrom} →{" "}
-                {shift.shiftTo}{" "}
+                <span className="font-medium">{shift.type}</span>:{" "}
+                {shift.shiftFrom} → {shift.shiftTo}{" "}
                 <span className="text-gray-02/70">(need: {shift.need})</span>
               </p>
               {shift.transitionElementMatches.length === 0 ? (
@@ -212,7 +227,13 @@ function YesNo({ value }: { value: boolean | null }) {
   );
 }
 
-function WrappedText({ text, width = "max-w-md" }: { text: string; width?: string }) {
+function WrappedText({
+  text,
+  width = "max-w-md",
+}: {
+  text: string;
+  width?: string;
+}) {
   return (
     <span className={`block whitespace-pre-wrap break-words ${width}`}>
       {text}
@@ -246,13 +267,16 @@ function CommitmentsTable({
     return (
       <div className="space-y-4">
         <p className="text-xs text-gray-02">
-          {groups.size} duplicate group(s), {singletons.length} unique commitment(s)
+          {groups.size} duplicate group(s), {singletons.length} unique
+          commitment(s)
         </p>
         {[...groups.entries()].map(([groupId, members]) => (
           <div key={groupId} className="bg-gray-03/30 rounded-lg p-3 space-y-1">
             {members.map((c) => (
               <p key={c.id} className="text-sm text-gray-01">
-                <span className="text-gray-02 font-mono text-xs mr-2">{c.stableId}</span>
+                <span className="text-gray-02 font-mono text-xs mr-2">
+                  {c.stableId}
+                </span>
                 {c.text}
               </p>
             ))}
@@ -280,7 +304,9 @@ function CommitmentsTable({
             <div className="bg-gray-03/30 rounded-lg p-3 space-y-1">
               {members.map((c) => (
                 <p key={c.id} className="text-sm text-gray-01">
-                  <span className="text-gray-02 font-mono text-xs mr-2">{c.stableId}</span>
+                  <span className="text-gray-02 font-mono text-xs mr-2">
+                    {c.stableId}
+                  </span>
                   {c.text}
                 </p>
               ))}
@@ -323,7 +349,9 @@ function CommitmentsTable({
         <DataTableBody>
           {commitments.map((c) => (
             <tr key={c.id}>
-              <td className="px-3 py-2 font-mono text-xs text-gray-02">{c.stableId}</td>
+              <td className="px-3 py-2 font-mono text-xs text-gray-02">
+                {c.stableId}
+              </td>
               <td className="px-3 py-2">
                 <WrappedText text={c.text} />
               </td>
@@ -336,7 +364,10 @@ function CommitmentsTable({
                     <YesNo value={c.adaptation} />
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-02">
-                    <WrappedText text={c.climateFilterReason ?? ""} width="max-w-xs" />
+                    <WrappedText
+                      text={c.climateFilterReason ?? ""}
+                      width="max-w-xs"
+                    />
                   </td>
                 </>
               )}
@@ -346,7 +377,10 @@ function CommitmentsTable({
                     <YesNo value={c.actionable} />
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-02">
-                    <WrappedText text={c.actionableReason ?? ""} width="max-w-xs" />
+                    <WrappedText
+                      text={c.actionableReason ?? ""}
+                      width="max-w-xs"
+                    />
                   </td>
                 </>
               )}
@@ -402,7 +436,9 @@ function MeasuresTable({
                 <WrappedText text={m.measureText} />
               </td>
               {columns === "extract" && (
-                <td className="px-3 py-2 text-xs text-gray-02">{m.climateRelevanceScore}</td>
+                <td className="px-3 py-2 text-xs text-gray-02">
+                  {m.climateRelevanceScore}
+                </td>
               )}
               {columns === "score" && (
                 <>
@@ -476,9 +512,19 @@ export function StepResultDialog({
           </div>
         );
       case "extractCommitments":
-        return <CommitmentsTable commitments={detail.commitments} columns="extract" />;
+        return (
+          <CommitmentsTable
+            commitments={detail.commitments}
+            columns="extract"
+          />
+        );
       case "filterCommitmentsClimate":
-        return <CommitmentsTable commitments={detail.commitments} columns="climate" />;
+        return (
+          <CommitmentsTable
+            commitments={detail.commitments}
+            columns="climate"
+          />
+        );
       case "filterCommitmentsActionable":
         return (
           <CommitmentsTable
@@ -489,25 +535,38 @@ export function StepResultDialog({
       case "groupCommitmentsSimilar":
         return (
           <CommitmentsTable
-            commitments={detail.commitments.filter((c) => c.climateRelevant && c.actionable)}
+            commitments={detail.commitments.filter(
+              (c) => c.climateRelevant && c.actionable,
+            )}
             columns="similar"
           />
         );
       case "groupCommitmentsThemes":
         return (
           <CommitmentsTable
-            commitments={detail.commitments.filter((c) => c.climateRelevant && c.actionable)}
+            commitments={detail.commitments.filter(
+              (c) => c.climateRelevant && c.actionable,
+            )}
             columns="themes"
           />
         );
       case "extractMeasures":
-        return <MeasuresTable measures={detail.extractedMeasures} columns="extract" />;
+        return (
+          <MeasuresTable
+            measures={detail.extractedMeasures}
+            columns="extract"
+          />
+        );
       case "scoreMeasures":
-        return <MeasuresTable measures={detail.extractedMeasures} columns="score" />;
+        return (
+          <MeasuresTable measures={detail.extractedMeasures} columns="score" />
+        );
       case "matchTransitionElements":
         return <TransitionElementsView measures={detail.extractedMeasures} />;
       default:
-        return <p className="text-sm text-gray-02">No details for this step.</p>;
+        return (
+          <p className="text-sm text-gray-02">No details for this step.</p>
+        );
     }
   })();
 

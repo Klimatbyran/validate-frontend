@@ -51,7 +51,10 @@ interface ApiActivityShift {
   reasoning: string;
   transitionElementMatches: ApiTransitionElementMatch[];
   transitionElementCandidates: ApiTransitionElementCandidate[];
-  transitionElementSuggestedNew?: { shortLabel: string; description: string } | null;
+  transitionElementSuggestedNew?: {
+    shortLabel: string;
+    description: string;
+  } | null;
 }
 
 interface ApiMeasureScore {
@@ -105,13 +108,15 @@ function toExplorerShift(shift: ApiActivityShift): ActivityShift {
       sector_path: m.sectorPath,
       match_confidence: m.matchConfidence,
     })),
-    transition_element_candidates: shift.transitionElementCandidates.map((c) => ({
-      stable_id: c.stableId,
-      short_label: c.shortLabel,
-      description: c.description,
-      sector_path: c.sectorPath,
-      score: c.score,
-    })),
+    transition_element_candidates: shift.transitionElementCandidates.map(
+      (c) => ({
+        stable_id: c.stableId,
+        short_label: c.shortLabel,
+        description: c.description,
+        sector_path: c.sectorPath,
+        score: c.score,
+      }),
+    ),
     ...(shift.transitionElementSuggestedNew
       ? {
           transition_element_suggested_new: {
@@ -182,7 +187,10 @@ export async function fetchPipelineMeasures(): Promise<MunicipalityMeasures[]> {
       })
       .filter((m) => m.measures.length > 0);
   } catch (err) {
-    console.warn("[pipeline-measures] climate-plans-pipeline unreachable, showing static data only", err);
+    console.warn(
+      "[pipeline-measures] climate-plans-pipeline unreachable, showing static data only",
+      err,
+    );
     return [];
   }
 }
