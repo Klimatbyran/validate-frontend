@@ -5,7 +5,10 @@ import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { NO_TAGS_FILTER_OPTION } from "../../lib/types";
-import type { FilterUnverifiedOption } from "../../lib/single-company-overview-list";
+import type {
+  FilterMissingDataOption,
+  FilterUnverifiedOption,
+} from "../../lib/single-company-overview-list";
 import type { SingleCompanyOverviewList } from "../../hooks/useSingleCompanyOverviewList";
 
 type Props = {
@@ -135,6 +138,37 @@ export function SingleCompanyOverviewFilters({ list, afterSlot }: Props) {
               return t("editor.singleCompanyView.filterUnverifiedNoFilter");
             }}
             triggerClassName="min-w-[180px] !h-8 !text-xs px-3"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-02 mb-1">
+            {t("editor.singleCompanyView.filterMissingDataLabel")}
+          </label>
+          <SingleSelectDropdown
+            options={
+              [
+                "",
+                "no-emissions",
+                "no-reporting-period-data",
+              ] as FilterMissingDataOption[]
+            }
+            value={list.filterMissingData}
+            onChange={list.setFilterMissingData}
+            placeholder={t(
+              "editor.singleCompanyView.filterMissingDataNoFilter",
+            )}
+            getOptionLabel={(v) => {
+              if (v === "no-emissions")
+                return t(
+                  "editor.singleCompanyView.filterMissingDataNoEmissions",
+                );
+              if (v === "no-reporting-period-data")
+                return t(
+                  "editor.singleCompanyView.filterMissingDataNoReportingPeriodData",
+                );
+              return t("editor.singleCompanyView.filterMissingDataNoFilter");
+            }}
+            triggerClassName="min-w-[200px] !h-8 !text-xs px-3"
           />
         </div>
         {list.filterUnverified && (

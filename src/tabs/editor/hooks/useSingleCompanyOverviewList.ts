@@ -5,6 +5,7 @@ import type { GarboCompanyListItem, TagOption } from "../lib/types";
 import { buildTagLabelBySlug } from "../lib/editor-tag-and-payload-utils";
 import {
   type CompanySortId,
+  type FilterMissingDataOption,
   type FilterUnverifiedOption,
   reportRowPassesOverviewFilters,
   computeOverviewFilterPeriodStats,
@@ -42,6 +43,8 @@ export function useSingleCompanyOverviewList() {
     setFilterUnverifiedRaw(v);
     if (!v) setFilterApplyUnverifiedToSelectedYears(false);
   }, []);
+  const [filterMissingData, setFilterMissingData] =
+    useState<FilterMissingDataOption>("");
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [companySort, setCompanySort] = useState<CompanySortId>("name-asc");
 
@@ -108,6 +111,7 @@ export function useSingleCompanyOverviewList() {
       filterSector,
       filterUnverified,
       filterApplyUnverifiedToSelectedYears,
+      filterMissingData,
     }),
     [
       searchQuery,
@@ -118,6 +122,7 @@ export function useSingleCompanyOverviewList() {
       filterSector,
       filterUnverified,
       filterApplyUnverifiedToSelectedYears,
+      filterMissingData,
     ],
   );
 
@@ -167,6 +172,8 @@ export function useSingleCompanyOverviewList() {
     setFilterUnverified,
     filterApplyUnverifiedToSelectedYears,
     setFilterApplyUnverifiedToSelectedYears,
+    filterMissingData,
+    setFilterMissingData,
     filtersOpen,
     setFiltersOpen,
     companySort,
