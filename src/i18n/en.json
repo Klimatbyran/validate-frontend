@@ -1173,6 +1173,8 @@
     "registryFailureReason": "Reason for failure",
     "registryDuplicateFailure": "A report for this company and year already exists in the registry.",
     "unknownError": "An unknown error occurred while adding to the registry.",
+    "autoSaveFailed": "Could not save crawled reports to the registry.",
+    "selectedReportNeedsYear": "This PDF has no report year in the filename or title, so it cannot be selected.",
     "reportLink": "Report",
     "wikidataIdLabel": "Wikidata ID",
     "reportIdLabel": "Report ID",

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { CompanyReport } from "./crawler-types";
 import {
   labeledHitsToSelectedReports,
+  selectedReportFromHit,
   withFallbackReportType,
 } from "./crawler-utils";
 
@@ -143,5 +144,57 @@ describe("withFallbackReportType", () => {
         fetchFailed: true,
       }),
     ).not.toHaveProperty("reportTypeSlug");
+  });
+
+  it("does not overwrite a slug with Other when the label is missing", () => {
+    expect(
+      withFallbackReportType({
+        url: "https://example.com/csr-2024.pdf",
+        reportTypeSlug: "csr-report",
+      }),
+    ).toMatchObject({
+      reportTypeSlug: "csr-report",
+      reportType: "csr-report",
+    });
+  });
+
+  it("keeps a label without inventing an other slug", () => {
+    expect(
+      withFallbackReportType({
+        url: "https://example.com/sust.pdf",
+        reportType: "Sustainability report",
+      }),
+    ).toMatchObject({
+      reportType: "Sustainability report",
+    });
+    expect(
+      withFallbackReportType({
+        url: "https://example.com/sust.pdf",
+        reportType: "Sustainability report",
+      }),
+    ).not.toHaveProperty("reportTypeSlug", "other");
+  });
+});
+
+describe("selectedReportFromHit", () => {
+  it("returns null when no four-digit year can be inferred", () => {
+    expect(
+      selectedReportFromHit({
+        companyName: "Acme",
+        url: "https://example.com/report.pdf",
+      }),
+    ).toBeNull();
+  });
+
+  it("omits reportTypeSlug when the hit has no classifier type", () => {
+    expect(
+      selectedReportFromHit({
+        companyName: "Acme",
+        url: "https://example.com/report-2025.pdf",
+      }),
+    ).toMatchObject({
+      reportYear: "2025",
+      reportTypeSlug: undefined,
+    });
   });
 });

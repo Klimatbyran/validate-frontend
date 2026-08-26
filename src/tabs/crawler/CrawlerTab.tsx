@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { RunReportsModal } from "@/components/RunReportsModal";
 import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
@@ -151,6 +152,9 @@ export function CrawlerTab() {
     const failed = response.failed.filter((item) => item.error !== "duplicate");
     if (response.successes.length === 0 && failed.length === 0) return;
     setRegistryResponse({ ...response, failed });
+    if (failed.length > 0 && response.successes.length === 0) {
+      toast.error(response.message?.trim() || t("crawler.autoSaveFailed"));
+    }
   };
 
   const handleManualSearchClick = async () => {

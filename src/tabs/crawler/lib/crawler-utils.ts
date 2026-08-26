@@ -24,15 +24,76 @@ export function fallbackReportTypeSlug(slug?: string | null): string {
   return slug?.trim() || FALLBACK_REPORT_TYPE_SLUG;
 }
 
+/** Auto-save: keep a known slug; unlabeled hits become `other`; label-only hits omit slug. */
+export function reportTypeSlugForAutoSave(
+  hit?: Pick<Report, "reportTypeSlug" | "reportType"> | null,
+): string | undefined {
+  const slug = hit?.reportTypeSlug?.trim();
+  if (slug) return slug;
+  if (hit?.reportType?.trim()) return undefined;
+  return FALLBACK_REPORT_TYPE_SLUG;
+}
+
+/**
+ * Manual pick/paste: keep a classifier slug when present, otherwise omit
+ * the type instead of stamping `other`.
+ */
+export function reportTypeSlugForManualSave(
+  hit?: Pick<Report, "reportTypeSlug" | "reportType"> | null,
+): string | undefined {
+  return hit?.reportTypeSlug?.trim() || undefined;
+}
+
 export function withFallbackReportType(hit: Report): Report {
   if (hit.fetchFailed) return hit;
   const slug = hit.reportTypeSlug?.trim();
   const label = hit.reportType?.trim();
   if (slug && label) return hit;
+  if (slug) return { ...hit, reportTypeSlug: slug, reportType: label || slug };
+  if (label) return { ...hit, reportType: label };
   return {
     ...hit,
-    reportTypeSlug: slug || FALLBACK_REPORT_TYPE_SLUG,
-    reportType: label || FALLBACK_REPORT_TYPE_LABEL,
+    reportTypeSlug: FALLBACK_REPORT_TYPE_SLUG,
+    reportType: FALLBACK_REPORT_TYPE_LABEL,
+  };
+}
+
+export function yearForSelectedReport(
+  url: string,
+  hit?: Pick<Report, "reportYear" | "title"> | null,
+  fallbackYear?: string,
+): string {
+  const fromHit = hit?.reportYear?.trim();
+  if (fromHit && /^\d{4}$/.test(fromHit)) return fromHit;
+  const inferred = inferReportYearFromUrl(url, hit?.title);
+  if (/^\d{4}$/.test(inferred)) return inferred;
+  const fallback = fallbackYear?.trim() ?? "";
+  return /^\d{4}$/.test(fallback) ? fallback : "";
+}
+
+export function selectedReportFromHit(input: {
+  companyName: string;
+  url: string;
+  hit?: Report;
+  wikidataId?: string;
+  fallbackYear?: string;
+}): SelectedReport | null {
+  const reportYear = yearForSelectedReport(
+    input.url,
+    input.hit,
+    input.fallbackYear,
+  );
+  if (!/^\d{4}$/.test(reportYear)) return null;
+  return {
+    companyName: input.companyName,
+    reportYear,
+    url: input.url,
+    wikidataId: input.wikidataId,
+    reportTypeSlug: reportTypeSlugForManualSave(input.hit),
+    s3Url: input.hit?.s3Url ?? undefined,
+    s3Key: input.hit?.s3Key ?? undefined,
+    s3Bucket: input.hit?.s3Bucket ?? undefined,
+    sha256: input.hit?.sha256 ?? undefined,
   };
 }
 
@@ -171,7 +232,7 @@ export function labeledHitsToSelectedReports(
         hit,
         url,
         reportYear,
-        reportTypeSlug: fallbackReportTypeSlug(hit.reportTypeSlug),
+        reportTypeSlug: reportTypeSlugForAutoSave(hit),
       });
     }
   }
@@ -309,6 +370,20 @@ export const searchCompanyReports = async ({
         "Auto-save labeled search results retry failed:",
         retryError,
       );
+      const message =
+        retryError instanceof Error
+          ? retryError.message
+          : "Failed to save to registry";
+      onLabeledSaved?.({
+        message,
+        successes: [],
+        failed: reports.map((report) => ({
+          error: "unknown" as const,
+          companyName: report.companyName,
+          reportYear: report.reportYear,
+          message,
+        })),
+      });
     }
   }
 

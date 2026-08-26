@@ -19,7 +19,7 @@ import RegistryList from "@/tabs/crawler/components/RegistryList";
 import { addRegistryEntry } from "@/tabs/registry/lib/registry-api";
 import {
   searchCompanyReports,
-  fallbackReportTypeSlug,
+  selectedReportFromHit,
 } from "@/tabs/crawler/lib/crawler-utils";
 import type {
   CompanyReport,
@@ -138,17 +138,18 @@ export function CoverageFindReportDialog({
       return;
     }
     const hit = companyReport?.results.find((result) => result.url === url);
-    setSelectedReport({
+    const selected = selectedReportFromHit({
       companyName: name,
-      reportYear: hit?.reportYear?.trim() || reportYearLabel,
       url,
+      hit,
       wikidataId: entry.matchedCompany?.wikidataId,
-      reportTypeSlug: fallbackReportTypeSlug(hit?.reportTypeSlug),
-      s3Url: hit?.s3Url ?? undefined,
-      s3Key: hit?.s3Key ?? undefined,
-      s3Bucket: hit?.s3Bucket ?? undefined,
-      sha256: hit?.sha256 ?? undefined,
+      fallbackYear: reportYearLabel,
     });
+    if (!selected) {
+      setSelectedReport(null);
+      return;
+    }
+    setSelectedReport(selected);
   };
 
   const handleSearchOnline = async () => {

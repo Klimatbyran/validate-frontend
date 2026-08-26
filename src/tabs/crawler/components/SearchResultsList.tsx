@@ -1,12 +1,10 @@
 import { motion } from "framer-motion";
 import { CompanyReport } from "../lib/crawler-types";
 import type { SelectedReport } from "../lib/crawler-types";
-import {
-  fallbackReportTypeSlug,
-  inferReportYearFromUrl,
-} from "../lib/crawler-utils";
+import { selectedReportFromHit } from "../lib/crawler-utils";
 import SearchResultItem from "./SearchResultItem";
 import { useI18n } from "@/contexts/I18nContext";
+import { toast } from "sonner";
 
 interface SearchResultsListProps {
   companyReports: CompanyReport[] | null;
@@ -43,25 +41,22 @@ const SearchResultsList = ({
               ?.url
           }
           onSelect={(companyName, url) => {
+            if (!url) {
+              handleSelectReport(companyName, null);
+              return;
+            }
             const hit = report.results.find((result) => result.url === url);
-            handleSelectReport(
+            const selected = selectedReportFromHit({
               companyName,
-              url
-                ? {
-                    companyName,
-                    reportYear:
-                      hit?.reportYear?.trim() ||
-                      inferReportYearFromUrl(url, hit?.title),
-                    url,
-                    wikidataId: report.wikidataId,
-                    reportTypeSlug: fallbackReportTypeSlug(hit?.reportTypeSlug),
-                    s3Url: hit?.s3Url ?? undefined,
-                    s3Key: hit?.s3Key ?? undefined,
-                    s3Bucket: hit?.s3Bucket ?? undefined,
-                    sha256: hit?.sha256 ?? undefined,
-                  }
-                : null,
-            );
+              url,
+              hit,
+              wikidataId: report.wikidataId,
+            });
+            if (!selected) {
+              toast.error(t("crawler.selectedReportNeedsYear"));
+              return;
+            }
+            handleSelectReport(companyName, selected);
           }}
         />
       ))}

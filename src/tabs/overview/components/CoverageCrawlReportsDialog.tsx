@@ -25,11 +25,10 @@ import type {
 } from "@/tabs/crawler/lib/crawler-types";
 import {
   AUTO_SEARCH_CRAWL_CONCURRENCY,
-  fallbackReportTypeSlug,
-  inferReportYearFromUrl,
   labeledHitsToSelectedReports,
   saveLabeledSearchResults,
   searchCompanyReports,
+  selectedReportFromHit,
   type CrawlProgress,
 } from "@/tabs/crawler/lib/crawler-utils";
 import {
@@ -176,7 +175,12 @@ export function CoverageCrawlReportsDialog({
             setCrawlProgress(progress);
           },
           onLabeledSaved: (saved) => {
-            savedDuringCrawl = true;
+            const hardFails = saved.failed.filter(
+              (item) => item.error === "unknown",
+            );
+            if (saved.successes.length > 0 || hardFails.length === 0) {
+              savedDuringCrawl = true;
+            }
             if (runId !== runIdRef.current) return;
             emitSaved(saved);
           },
@@ -588,29 +592,24 @@ export function CoverageCrawlReportsDialog({
                       )?.url
                     }
                     onSelect={(companyName, url) => {
+                      if (!url) {
+                        handleSelectReport(companyName, null);
+                        return;
+                      }
                       const hit = report.results.find(
                         (result) => result.url === url,
                       );
-                      handleSelectReport(
+                      const selected = selectedReportFromHit({
                         companyName,
-                        url
-                          ? {
-                              companyName,
-                              reportYear:
-                                hit?.reportYear?.trim() ||
-                                inferReportYearFromUrl(url, hit?.title),
-                              url,
-                              wikidataId: report.wikidataId,
-                              reportTypeSlug: fallbackReportTypeSlug(
-                                hit?.reportTypeSlug,
-                              ),
-                              s3Url: hit?.s3Url ?? undefined,
-                              s3Key: hit?.s3Key ?? undefined,
-                              s3Bucket: hit?.s3Bucket ?? undefined,
-                              sha256: hit?.sha256 ?? undefined,
-                            }
-                          : null,
-                      );
+                        url,
+                        hit,
+                        wikidataId: report.wikidataId,
+                      });
+                      if (!selected) {
+                        toast.error(t("crawler.selectedReportNeedsYear"));
+                        return;
+                      }
+                      handleSelectReport(companyName, selected);
                     }}
                     initialExpanded={companyReports.length === 1}
                     variant="embedded"

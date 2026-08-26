@@ -1173,6 +1173,8 @@
     "registryFailureReason": "Orsak för misslyckande",
     "registryDuplicateFailure": "En rapport för detta företag och år finns redan i registret.",
     "unknownError": "Ett okänt fel uppstod.",
+    "autoSaveFailed": "Kunde inte spara crawlade rapporter i registret.",
+    "selectedReportNeedsYear": "Den här PDF:en har inget rapportår i filnamn eller titel, så den kan inte väljas.",
     "reportLink": "Rapport",
     "wikidataIdLabel": "Wikidata ID",
     "reportIdLabel": "Rapport ID",
