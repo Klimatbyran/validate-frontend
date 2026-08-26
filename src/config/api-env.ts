@@ -152,14 +152,24 @@ export function getProdUnearthUrl(path: string): string {
  * pipeline-api's own local dev port is also 3001 by default (garbo itself
  * may also be on a non-default port — check its own .env's API_PORT).
  * Must also be listed in garbo's ALLOWED_CALLBACK_URLS or the callback will
- * be rejected.
+ * be rejected. Falls back to jointMode()'s hostname detection like the rest
+ * of this file (rather than always defaulting to localhost), since a build
+ * deployed to stage/prod must send a real reachable URL, not one that only
+ * resolves on whoever's laptop is running validate locally. Production
+ * climate-plans-pipeline isn't deployed yet — the URL below is where it
+ * will live once it is, matching its own k8s/overlays/production/ingress.
  */
 export function getClimatePlansPipelineWebhookUrl(): string {
-  return (
-    (import.meta.env.VITE_CLIMATE_PLANS_PIPELINE_WEBHOOK_URL as
-      | string
-      | undefined) || "http://localhost:3003/api/webhook"
-  );
+  const override = import.meta.env.VITE_CLIMATE_PLANS_PIPELINE_WEBHOOK_URL as
+    | string
+    | undefined;
+  if (override) return override;
+  const target = jointMode();
+  if (target === "stage")
+    return "https://stage-climate-plans-api.klimatkollen.se/api/webhook";
+  if (target === "prod")
+    return "https://climate-plans-api.klimatkollen.se/api/webhook";
+  return "http://localhost:3003/api/webhook";
 }
 
 /** X-API-Key twin of staff GET /api/pipeline/companies — proxy injects the key. */
@@ -184,13 +194,20 @@ export function getProdPipelineCompaniesListUrl(): string {
 /**
  * climate-plans-pipeline's own API — read directly by the browser (unlike
  * the callbackUrl garbo posts to server-side), so this one genuinely needs
- * to be reachable from wherever validate is running. No stage/prod split
- * yet since climate-plans-pipeline isn't deployed anywhere but locally.
+ * to be reachable from wherever validate is running. Same jointMode()
+ * hostname detection as getClimatePlansPipelineWebhookUrl() above, for the
+ * same reason — see that function's comment. CORS is open on the API side
+ * (registered with @fastify/cors defaults), so a direct cross-origin browser
+ * call works without needing a same-origin proxy path like the rest of this
+ * file uses for pipeline-api/unearth.
  */
 export function getClimatePlansPipelineApiUrl(): string {
-  return (
-    (import.meta.env.VITE_CLIMATE_PLANS_PIPELINE_API_URL as
-      | string
-      | undefined) || "http://localhost:3003/api"
-  );
+  const override = import.meta.env.VITE_CLIMATE_PLANS_PIPELINE_API_URL as
+    | string
+    | undefined;
+  if (override) return override;
+  const target = jointMode();
+  if (target === "stage") return "https://stage-climate-plans-api.klimatkollen.se/api";
+  if (target === "prod") return "https://climate-plans-api.klimatkollen.se/api";
+  return "http://localhost:3003/api";
 }
