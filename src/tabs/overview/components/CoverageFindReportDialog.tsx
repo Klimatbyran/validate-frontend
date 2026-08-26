@@ -17,7 +17,10 @@ import SearchResultItem from "@/tabs/crawler/components/SearchResultItem";
 import ManuallyAddReportItem from "@/tabs/crawler/components/ManuallyAddReportItem";
 import RegistryList from "@/tabs/crawler/components/RegistryList";
 import { addRegistryEntry } from "@/tabs/registry/lib/registry-api";
-import { searchCompanyReports } from "@/tabs/crawler/lib/crawler-utils";
+import {
+  searchCompanyReports,
+  selectedReportFromHit,
+} from "@/tabs/crawler/lib/crawler-utils";
 import type {
   CompanyReport,
   SaveReportSuccess,
@@ -25,6 +28,7 @@ import type {
   SelectedReport,
 } from "@/tabs/crawler/lib/crawler-types";
 import type { CoverageEntry } from "@/tabs/overview/lib/coverage-types";
+import { CRAWLER_FEATURES } from "@/config/crawler-features";
 
 type CoverageFindReportDialogProps = {
   open: boolean;
@@ -67,7 +71,6 @@ export function CoverageFindReportDialog({
   const [registryResponse, setRegistryResponse] =
     useState<SaveReportsListResponse | null>(null);
   const [isRunModalOpen, setIsRunModalOpen] = useState(false);
-  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
 
   const {
     runForUrls,
@@ -95,7 +98,6 @@ export function CoverageFindReportDialog({
     setIsSaving(false);
     setRegistryResponse(null);
     setIsRunModalOpen(false);
-    setIsPdfPreviewOpen(false);
   }, [open, defaultYear, entry.id]);
 
   useEffect(() => {
@@ -126,14 +128,7 @@ export function CoverageFindReportDialog({
     ];
   }, [selectedReport]);
 
-  const blockDialogDismiss = (event: Event) => {
-    if (isPdfPreviewOpen) {
-      event.preventDefault();
-    }
-  };
-
   const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen && isPdfPreviewOpen) return;
     onOpenChange(nextOpen);
   };
 
@@ -142,12 +137,19 @@ export function CoverageFindReportDialog({
       setSelectedReport(null);
       return;
     }
-    setSelectedReport({
+    const hit = companyReport?.results.find((result) => result.url === url);
+    const selected = selectedReportFromHit({
       companyName: name,
-      reportYear: reportYearLabel,
       url,
+      hit,
       wikidataId: entry.matchedCompany?.wikidataId,
+      fallbackYear: reportYearLabel,
     });
+    if (!selected) {
+      setSelectedReport(null);
+      return;
+    }
+    setSelectedReport(selected);
   };
 
   const handleSearchOnline = async () => {
@@ -165,6 +167,11 @@ export function CoverageFindReportDialog({
             wikidataId: entry.matchedCompany?.wikidataId,
           },
         ],
+        onLabeledSaved: (saved) => {
+          for (const success of saved.successes) {
+            onSaved?.(success);
+          }
+        },
       });
       setCompanyReport(
         results[0] ?? {
@@ -197,6 +204,15 @@ export function CoverageFindReportDialog({
         ...(selectedReport.wikidataId
           ? { wikidataId: selectedReport.wikidataId }
           : {}),
+        ...(selectedReport.reportTypeSlug
+          ? { reportTypeSlug: selectedReport.reportTypeSlug }
+          : {}),
+        ...(selectedReport.s3Url ? { s3Url: selectedReport.s3Url } : {}),
+        ...(selectedReport.s3Key ? { s3Key: selectedReport.s3Key } : {}),
+        ...(selectedReport.s3Bucket
+          ? { s3Bucket: selectedReport.s3Bucket }
+          : {}),
+        ...(selectedReport.sha256 ? { sha256: selectedReport.sha256 } : {}),
       });
       if (!saved.id) {
         throw new Error(t("overview.coverage.findReportError"));
@@ -207,6 +223,7 @@ export function CoverageFindReportDialog({
         reportYear: saved.reportYear ?? selectedReport.reportYear,
         url: saved.url,
         wikidataId: saved.wikidataId ?? selectedReport.wikidataId ?? null,
+        reportTypeSlug: selectedReport.reportTypeSlug ?? null,
       };
       setRegistryResponse({
         message: "",
@@ -300,12 +317,7 @@ export function CoverageFindReportDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent
-          className="flex w-[min(100vw-2rem,52rem)] max-h-[min(88vh,52rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
-          onInteractOutside={blockDialogDismiss}
-          onPointerDownOutside={blockDialogDismiss}
-          onEscapeKeyDown={blockDialogDismiss}
-        >
+        <DialogContent className="flex w-[min(100vw-2rem,52rem)] max-h-[min(88vh,52rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
           <DialogHeader className="shrink-0 space-y-2 border-b border-gray-03/60 px-6 pb-4 pt-6 pr-12">
             <DialogTitle>{t("overview.coverage.findReportTitle")}</DialogTitle>
             <DialogDescription className="text-left leading-relaxed">
@@ -400,49 +412,50 @@ export function CoverageFindReportDialog({
                   />
                 </div>
 
-                <div className="space-y-3 border-t border-gray-03/60 pt-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm font-medium text-gray-01">
-                      {t("overview.coverage.findReportCrawlSection")}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="whitespace-nowrap"
-                      disabled={!isValidYear || isSearching || isSaving}
-                      onClick={() => void handleSearchOnline()}
-                    >
-                      {isSearching ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {t("overview.coverage.findReportSearching")}
-                        </>
-                      ) : (
-                        t("overview.coverage.findReportSearchOnline")
-                      )}
-                    </Button>
-                  </div>
-                  {searchError ? (
-                    <p className="text-sm text-pink-03">{searchError}</p>
-                  ) : null}
-                  {reportWithWikidata ? (
-                    crawlHasResults ? (
-                      <SearchResultItem
-                        companyReport={reportWithWikidata}
-                        selectedReport={selectedReport?.url}
-                        onSelect={handleSelectReport}
-                        initialExpanded
-                        variant="embedded"
-                        onPreviewOpenChange={setIsPdfPreviewOpen}
-                      />
-                    ) : (
-                      <p className="text-sm text-gray-02">
-                        {t("overview.coverage.findReportNoResults")}
+                {CRAWLER_FEATURES.coverageSearchOnline ? (
+                  <div className="space-y-3 border-t border-gray-03/60 pt-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm font-medium text-gray-01">
+                        {t("overview.coverage.findReportCrawlSection")}
                       </p>
-                    )
-                  ) : null}
-                </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="whitespace-nowrap"
+                        disabled={!isValidYear || isSearching || isSaving}
+                        onClick={() => void handleSearchOnline()}
+                      >
+                        {isSearching ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {t("overview.coverage.findReportSearching")}
+                          </>
+                        ) : (
+                          t("overview.coverage.findReportSearchOnline")
+                        )}
+                      </Button>
+                    </div>
+                    {searchError ? (
+                      <p className="text-sm text-pink-03">{searchError}</p>
+                    ) : null}
+                    {reportWithWikidata ? (
+                      crawlHasResults ? (
+                        <SearchResultItem
+                          companyReport={reportWithWikidata}
+                          selectedReport={selectedReport?.url}
+                          onSelect={handleSelectReport}
+                          initialExpanded
+                          variant="embedded"
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-02">
+                          {t("overview.coverage.findReportNoResults")}
+                        </p>
+                      )
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             )}
           </div>

@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
 import { CompanyReport } from "../lib/crawler-types";
 import type { SelectedReport } from "../lib/crawler-types";
+import { selectedReportFromHit } from "../lib/crawler-utils";
 import SearchResultItem from "./SearchResultItem";
 import { useI18n } from "@/contexts/I18nContext";
+import { toast } from "sonner";
 
 interface SearchResultsListProps {
   companyReports: CompanyReport[] | null;
-  reportYear: string;
   selectedReports: SelectedReport[];
   handleSelectReport: (
     companyName: string,
@@ -16,7 +17,6 @@ interface SearchResultsListProps {
 
 const SearchResultsList = ({
   companyReports,
-  reportYear,
   selectedReports,
   handleSelectReport,
 }: SearchResultsListProps) => {
@@ -40,19 +40,24 @@ const SearchResultsList = ({
             selectedReports.find((r) => r.companyName === report.companyName)
               ?.url
           }
-          onSelect={(companyName, url) =>
-            handleSelectReport(
+          onSelect={(companyName, url) => {
+            if (!url) {
+              handleSelectReport(companyName, null);
+              return;
+            }
+            const hit = report.results.find((result) => result.url === url);
+            const selected = selectedReportFromHit({
               companyName,
-              url
-                ? {
-                    companyName,
-                    reportYear,
-                    url,
-                    wikidataId: report.wikidataId,
-                  }
-                : null,
-            )
-          }
+              url,
+              hit,
+              wikidataId: report.wikidataId,
+            });
+            if (!selected) {
+              toast.error(t("crawler.selectedReportNeedsYear"));
+              return;
+            }
+            handleSelectReport(companyName, selected);
+          }}
         />
       ))}
     </motion.div>

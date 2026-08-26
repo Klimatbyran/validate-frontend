@@ -3,11 +3,9 @@ import type { SelectedReport } from "../lib/crawler-types";
 import { useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
+import { CRAWLER_FEATURES } from "@/config/crawler-features";
 
 interface DatabaseSearchControlsProps {
-  onReportYearChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => void;
   onSearch: () => void;
   onAutoSearch?: () => void;
   isAutoSearchRunning?: boolean;
@@ -18,7 +16,6 @@ interface DatabaseSearchControlsProps {
   setFilterEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   filterYear: number | null;
   setFilterYear: React.Dispatch<React.SetStateAction<number | null>>;
-  searchYear: string;
   handleAddToRegistryClick?: () => void;
   onRunSelectedReports?: () => void;
   tagOptions: string[];
@@ -27,7 +24,6 @@ interface DatabaseSearchControlsProps {
 }
 
 const DatabaseSearchControls = ({
-  onReportYearChange,
   onSearch,
   onAutoSearch,
   isAutoSearchRunning,
@@ -37,7 +33,6 @@ const DatabaseSearchControls = ({
   filterEnabled,
   setFilterEnabled,
   setFilterYear,
-  searchYear,
   handleAddToRegistryClick,
   onRunSelectedReports,
   tagOptions,
@@ -118,13 +113,6 @@ const DatabaseSearchControls = ({
       </h3>
       <div className="flex flex-col gap-2">
         <div className="flex items-center flex-wrap gap-4">
-          <input
-            required
-            onChange={onReportYearChange}
-            value={searchYear}
-            placeholder="Ex. 2025"
-            className="bg-gray-03/20 w-48 border p-2 flex items-center justify-center border-gray-03 rounded-lg text-gray-01 placeholder:text-gray-02 focus:outline-none focus:ring-2 focus:ring-orange-03"
-          />
           <ControlsBase
             onSearch={onSearch}
             onAutoSearch={onAutoSearch}
@@ -136,9 +124,11 @@ const DatabaseSearchControls = ({
             onRunSelectedReports={onRunSelectedReports}
           />
         </div>
-        <p className="text-xs text-gray-02 max-w-[750px]">
-          {t("crawler.autoSearchDisclaimer")}
-        </p>
+        {CRAWLER_FEATURES.autoSearch ? (
+          <p className="text-xs text-gray-02 max-w-[750px]">
+            {t("crawler.autoSearchDisclaimer")}
+          </p>
+        ) : null}
       </div>
     </>
   );

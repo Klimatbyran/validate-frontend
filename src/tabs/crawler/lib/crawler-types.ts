@@ -2,6 +2,14 @@ export type Report = {
   url: string | null;
   title?: string | null;
   description?: string | null;
+  reportYear?: string | null;
+  reportType?: string | null;
+  reportTypeSlug?: string | null;
+  fetchFailed?: boolean;
+  s3Url?: string | null;
+  s3Key?: string | null;
+  s3Bucket?: string | null;
+  sha256?: string | null;
   source?: "company_site" | "web_search" | "firecrawl_search";
 };
 
@@ -19,7 +27,7 @@ export interface ReportingPeriod {
 
 export interface CompanyReport {
   companyName: string;
-  reportYear: string;
+  reportYear?: string;
   results: Report[];
   wikidataId?: string;
   discoverySource?:
@@ -28,6 +36,8 @@ export interface CompanyReport {
     | "filing_feed"
     | "firecrawl_search";
   listingPageUrl?: string;
+  /** Set when the search-reports request itself failed (proxy/API down). */
+  crawlError?: string;
 }
 
 export interface CompanyDetails {
@@ -44,13 +54,18 @@ export type SelectedReport = {
   reportYear: string;
   url: string;
   wikidataId?: string;
+  reportTypeSlug?: string;
+  s3Url?: string;
+  s3Key?: string;
+  s3Bucket?: string;
+  sha256?: string;
 };
 
 export type CrawlerViewMode = "manual" | "database";
 
 export type crawlerSearchQuery = {
   name: string;
-  reportYear: string;
+  reportYear?: string;
   country?: string;
   wikidataId?: string;
   companyUrl?: string;
@@ -62,6 +77,9 @@ export type SaveReportSuccess = {
   wikidataId?: string | null;
   reportYear: string;
   url: string;
+  reportTypeId?: string | null;
+  reportTypeSlug?: string | null;
+  reportTypeLabel?: string | null;
 };
 
 export type SaveReportError = {

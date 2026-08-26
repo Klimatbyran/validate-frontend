@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import {
@@ -9,41 +9,61 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/dialog";
+import type { RegistryReportPill } from "@/tabs/overview/lib/coverage-types";
+import {
+  groupRegistryReportsByYear,
+  registryReportMenuLabel,
+} from "@/tabs/overview/lib/coverage-registry-report-run";
 
 type CoverageRunReportYearPromptProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   companyName: string;
-  yearOptions: number[];
-  onConfirm: (year: number) => void;
+  reports: RegistryReportPill[];
+  onConfirm: (report: RegistryReportPill) => void;
 };
 
 export function CoverageRunReportYearPrompt({
   open,
   onOpenChange,
   companyName,
-  yearOptions,
+  reports,
   onConfirm,
 }: CoverageRunReportYearPromptProps) {
   const { t } = useI18n();
-  const yearOptionsKey = yearOptions.join(",");
-  const defaultYear = yearOptions[0] ?? null;
-  const [selectedYear, setSelectedYear] = useState(() =>
-    String(defaultYear ?? ""),
-  );
+  const groups = useMemo(() => groupRegistryReportsByYear(reports), [reports]);
+  const defaultYear = groups[0]?.year ?? null;
+  const [selectedYear, setSelectedYear] = useState<number | null>(defaultYear);
+  const selectedGroup =
+    groups.find((group) => group.year === selectedYear) ?? groups[0] ?? null;
+  const defaultReportId = selectedGroup?.reports[0]?.reportId ?? "";
+  const [selectedReportId, setSelectedReportId] = useState(defaultReportId);
+
+  const yearOptionsKey = groups.map((group) => group.year ?? "?").join(",");
+  const reportIdsKey = (selectedGroup?.reports ?? [])
+    .map((report) => report.reportId)
+    .join(",");
 
   useEffect(() => {
     if (!open || defaultYear == null) return;
-    setSelectedYear(String(defaultYear));
+    setSelectedYear(defaultYear);
   }, [open, yearOptionsKey, defaultYear]);
 
-  const parsedYear = Number.parseInt(selectedYear, 10);
-  const isValidYear =
-    Number.isFinite(parsedYear) && yearOptions.includes(parsedYear);
+  useEffect(() => {
+    if (!open) return;
+    setSelectedReportId(selectedGroup?.reports[0]?.reportId ?? "");
+  }, [open, reportIdsKey, selectedGroup]);
+
+  const selectedReport =
+    selectedGroup?.reports.find(
+      (report) => report.reportId === selectedReportId,
+    ) ??
+    selectedGroup?.reports[0] ??
+    null;
 
   const handleConfirm = () => {
-    if (!isValidYear) return;
-    onConfirm(parsedYear);
+    if (!selectedReport) return;
+    onConfirm(selectedReport);
   };
 
   return (
@@ -63,24 +83,56 @@ export function CoverageRunReportYearPrompt({
             {t("crawler.reportYear")}
           </label>
           <div className="flex flex-wrap gap-2">
-            {yearOptions.map((year) => {
-              const active = selectedYear === String(year);
+            {groups.map((group) => {
+              const year = group.year;
+              const active = selectedYear === year;
               return (
                 <button
-                  key={year}
+                  key={year ?? "unknown"}
                   type="button"
-                  onClick={() => setSelectedYear(String(year))}
+                  onClick={() => setSelectedYear(year)}
                   className={`rounded-full border px-3 py-1 text-sm transition-colors ${
                     active
                       ? "border-orange-03 bg-orange-03/20 text-orange-03"
                       : "border-gray-03 text-gray-02 hover:border-gray-02 hover:text-gray-01"
                   }`}
                 >
-                  {year}
+                  {year ?? "?"}
                 </button>
               );
             })}
           </div>
+
+          {selectedGroup && selectedGroup.reports.length > 0 ? (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-01">
+                {t("crawler.reportType")}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {selectedGroup.reports.map((report) => {
+                  const active = selectedReportId === report.reportId;
+                  return (
+                    <button
+                      key={report.reportId}
+                      type="button"
+                      onClick={() => setSelectedReportId(report.reportId)}
+                      className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                        active
+                          ? "border-orange-03 bg-orange-03/20 text-orange-03"
+                          : "border-gray-03 text-gray-02 hover:border-gray-02 hover:text-gray-01"
+                      }`}
+                    >
+                      {registryReportMenuLabel(
+                        report,
+                        selectedGroup.reports,
+                        t("overview.coverage.reports.unknownType"),
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <DialogFooter className="gap-2 sm:justify-end">
@@ -95,7 +147,7 @@ export function CoverageRunReportYearPrompt({
           <Button
             type="button"
             className="whitespace-nowrap"
-            disabled={!isValidYear}
+            disabled={!selectedReport}
             onClick={handleConfirm}
           >
             {t("overview.coverage.runReportContinue")}

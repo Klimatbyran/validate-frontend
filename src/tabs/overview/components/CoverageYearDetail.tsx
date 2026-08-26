@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Loader2, Pencil, Trash2 } from "lucide-react";
+import { Check, Loader2, Minus, WandIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { RunReportsModal } from "@/components/RunReportsModal";
@@ -9,7 +9,8 @@ import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { editorCompanyPath } from "@/tabs/editor/lib/editor-routes";
 import { Button } from "@/ui/button";
 import { ViewModePills } from "@/ui/view-mode-pills";
-import { ReportYearPill } from "./ReportYearPill";
+import { ReportYearTypeDropdown } from "./ReportYearTypeDropdown";
+import { CoverageCrawlReportsDialog } from "./CoverageCrawlReportsDialog";
 import { CoverageFindReportDialog } from "./CoverageFindReportDialog";
 import { CoverageReplaceReportUrlDialog } from "./CoverageReplaceReportUrlDialog";
 import { CoverageRunReportYearPrompt } from "./CoverageRunReportYearPrompt";
@@ -17,8 +18,8 @@ import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
 import type { RunReportListItem } from "@/lib/run-reports-types";
 import { fetchCoverageYearNames } from "@/tabs/overview/lib/coverage-api";
 import {
-  pickRegistryReportForYear,
-  registryReportYears,
+  coverageEntryForSavedReport,
+  groupRegistryReportsByYear,
   toRunReportListItem,
 } from "@/tabs/overview/lib/coverage-registry-report-run";
 import { coveragePercentCardClass } from "@/tabs/overview/lib/coverage-overview-styles";
@@ -37,6 +38,7 @@ import type {
 
 const COVERAGE_ROW_HEIGHT_PX = 56;
 const COVERAGE_TABLE_MAX_HEIGHT_PX = 560;
+const COVERAGE_TABLE_COL_SPAN = 6;
 
 type CoverageYearDetailProps = {
   listId: string;
@@ -113,7 +115,12 @@ export function CoverageYearDetailView({
     useState<RunReportSession | null>(null);
   const [isRunModalOpen, setIsRunModalOpen] = useState(false);
   const [isLoadingRegistryNames, setIsLoadingRegistryNames] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [crawlEntries, setCrawlEntries] = useState<CoverageEntry[] | null>(
+    null,
+  );
   const tableScrollRef = useRef<HTMLDivElement>(null);
+  const entryByIdRef = useRef<Map<string, CoverageEntry>>(new Map());
   const runPipeline = useRunReportsPipeline(
     getRegistryRunReportsPipelineConfig(),
   );
@@ -129,6 +136,57 @@ export function CoverageYearDetailView({
     detail.totalNames - detail.matchedCount - detail.ambiguousCount;
   const filteredCount = detail.filteredCount ?? detail.entries.length;
   const entries = detail.entries;
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+    entryByIdRef.current = new Map();
+    setCrawlEntries(null);
+  }, [listId, year]);
+
+  useEffect(() => {
+    for (const entry of entries) {
+      entryByIdRef.current.set(entry.id, entry);
+    }
+  }, [entries]);
+
+  const loadedSelectedCount = entries.filter((entry) =>
+    selectedIds.has(entry.id),
+  ).length;
+  const allLoadedSelected =
+    entries.length > 0 && loadedSelectedCount === entries.length;
+  const someLoadedSelected = loadedSelectedCount > 0 && !allLoadedSelected;
+
+  const selectedCount = selectedIds.size;
+  const selectedEntries = [...selectedIds]
+    .map((id) => entryByIdRef.current.get(id))
+    .filter((entry): entry is CoverageEntry => entry != null);
+
+  const toggleEntrySelected = (entry: CoverageEntry) => {
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(entry.id)) next.delete(entry.id);
+      else next.add(entry.id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllLoaded = () => {
+    setSelectedIds((previous) => {
+      if (allLoadedSelected) {
+        const next = new Set(previous);
+        for (const entry of entries) next.delete(entry.id);
+        return next;
+      }
+      const next = new Set(previous);
+      for (const entry of entries) next.add(entry.id);
+      return next;
+    });
+  };
+
+  const handleCrawlReports = () => {
+    if (selectedEntries.length === 0) return;
+    setCrawlEntries(selectedEntries);
+  };
 
   const rowVirtualizer = useVirtualizer({
     count: entries.length,
@@ -162,25 +220,15 @@ export function CoverageYearDetailView({
       ? (entries.find((entry) => entry.id === runReportYearEntryId) ?? null)
       : null;
 
-  const runReportYearOptions = useMemo(
-    () =>
-      runReportYearEntry
-        ? registryReportYears(runReportYearEntry.registryReports)
-        : [],
-    [runReportYearEntry],
-  );
-
   const runModalItems = useMemo((): RunReportListItem[] => {
     if (!runReportSession) return [];
     return [runReportSession.runItem];
   }, [runReportSession]);
 
-  const openRunReportModal = (entry: CoverageEntry, reportYear: number) => {
-    const report = pickRegistryReportForYear(entry.registryReports, reportYear);
-    if (!report) {
-      toast.error(t("overview.coverage.runReportMissing"));
-      return;
-    }
+  const openRunReportModal = (
+    entry: CoverageEntry,
+    report: RegistryReportPill,
+  ) => {
     setRunReportSession({
       entry,
       runItem: toRunReportListItem(entry, report),
@@ -189,10 +237,10 @@ export function CoverageYearDetailView({
   };
 
   const handleRunReportClick = (entry: CoverageEntry) => {
-    const years = registryReportYears(entry.registryReports);
-    if (years.length === 0) return;
-    if (years.length === 1) {
-      openRunReportModal(entry, years[0]!);
+    const reports = entry.registryReports ?? [];
+    if (reports.length === 0) return;
+    if (reports.length === 1) {
+      openRunReportModal(entry, reports[0]!);
       return;
     }
     setRunReportYearEntryId(entry.id);
@@ -200,10 +248,10 @@ export function CoverageYearDetailView({
 
   const handleRunReportYearConfirm = (
     entry: CoverageEntry,
-    reportYear: number,
+    report: RegistryReportPill,
   ) => {
     setRunReportYearEntryId(null);
-    openRunReportModal(entry, reportYear);
+    openRunReportModal(entry, report);
   };
 
   const handleRunReportModalRun = () => {
@@ -398,6 +446,14 @@ export function CoverageYearDetailView({
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={t("overview.coverage.searchPlaceholder")}
         />
+        <Button
+          size="sm"
+          onClick={handleCrawlReports}
+          disabled={selectedCount === 0 || crawlEntries != null}
+        >
+          {t("overview.coverage.crawlReports", { count: selectedCount })}
+          <WandIcon className="ml-2 h-4 w-4" />
+        </Button>
         <p className="text-sm text-gray-02 tabular-nums">
           {t("overview.coverage.filteredCount", {
             shown: entries.length,
@@ -414,13 +470,22 @@ export function CoverageYearDetailView({
         <table className="min-w-full text-sm table-fixed">
           <thead className="sticky top-0 z-10 bg-gray-05/95 text-left text-gray-02 backdrop-blur-sm">
             <tr>
-              <th className="w-[24%] px-4 py-2 font-medium">
-                {t("overview.coverage.columns.listName")}
-              </th>
-              <th className="w-[14%] px-4 py-2 font-medium">
-                {t("overview.coverage.columns.status")}
+              <th className="w-10 px-3 py-2">
+                <CoverageSelectCheckbox
+                  checked={allLoadedSelected}
+                  indeterminate={someLoadedSelected}
+                  onChange={toggleSelectAllLoaded}
+                  disabled={entries.length === 0}
+                  ariaLabel={t("overview.coverage.selectAllLoaded")}
+                />
               </th>
               <th className="w-[22%] px-4 py-2 font-medium">
+                {t("overview.coverage.columns.listName")}
+              </th>
+              <th className="w-[13%] px-4 py-2 font-medium">
+                {t("overview.coverage.columns.status")}
+              </th>
+              <th className="w-[21%] px-4 py-2 font-medium">
                 {t("overview.coverage.columns.dbMatch")}
               </th>
               <th className="w-[18%] px-4 py-2 font-medium">
@@ -434,7 +499,10 @@ export function CoverageYearDetailView({
           <tbody>
             {entries.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-02">
+                <td
+                  colSpan={COVERAGE_TABLE_COL_SPAN}
+                  className="px-4 py-8 text-center text-gray-02"
+                >
                   {t("overview.coverage.noEntries")}
                 </td>
               </tr>
@@ -443,7 +511,7 @@ export function CoverageYearDetailView({
                 {rowVirtualizer.getVirtualItems().length > 0 ? (
                   <tr aria-hidden="true">
                     <td
-                      colSpan={5}
+                      colSpan={COVERAGE_TABLE_COL_SPAN}
                       style={{
                         height: rowVirtualizer.getVirtualItems()[0]?.start ?? 0,
                         padding: 0,
@@ -460,11 +528,16 @@ export function CoverageYearDetailView({
                     <CoverageEntryRow
                       key={entry.id}
                       entry={entry}
+                      selected={selectedIds.has(entry.id)}
+                      onToggleSelect={() => toggleEntrySelected(entry)}
                       rowRef={rowVirtualizer.measureElement}
                       dataIndex={virtualRow.index}
                       onEditEntry={onEditEntry}
                       onFindReportClick={() => setFindReportSession({ entry })}
                       onRunReportClick={() => handleRunReportClick(entry)}
+                      onRunReport={(report) =>
+                        openRunReportModal(entry, report)
+                      }
                       onReplaceReport={(report) =>
                         setReplaceReportTarget({ entryId: entry.id, report })
                       }
@@ -477,7 +550,7 @@ export function CoverageYearDetailView({
                 {rowVirtualizer.getVirtualItems().length > 0 ? (
                   <tr aria-hidden="true">
                     <td
-                      colSpan={5}
+                      colSpan={COVERAGE_TABLE_COL_SPAN}
                       style={{
                         height:
                           rowVirtualizer.getTotalSize() -
@@ -514,6 +587,24 @@ export function CoverageYearDetailView({
             )}
           </Button>
         </div>
+      ) : null}
+
+      {crawlEntries ? (
+        <CoverageCrawlReportsDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setCrawlEntries(null);
+              onRefreshRegistry();
+            }
+          }}
+          entries={crawlEntries}
+          runPipeline={runPipeline}
+          onSaved={(saved) => {
+            const entry = coverageEntryForSavedReport(crawlEntries, saved);
+            if (entry) onRegistryReportSaved?.(entry.id, saved);
+          }}
+        />
       ) : null}
 
       {findReportSession ? (
@@ -566,9 +657,9 @@ export function CoverageYearDetailView({
             setRunReportYearEntryId(open ? runReportYearEntry.id : null);
           }}
           companyName={runReportYearEntry.name}
-          yearOptions={runReportYearOptions}
-          onConfirm={(reportYear) =>
-            handleRunReportYearConfirm(runReportYearEntry, reportYear)
+          reports={runReportYearEntry.registryReports}
+          onConfirm={(report) =>
+            handleRunReportYearConfirm(runReportYearEntry, report)
           }
         />
       ) : null}
@@ -607,22 +698,73 @@ function CoverageStatCard({
   );
 }
 
+function CoverageSelectCheckbox({
+  checked,
+  indeterminate = false,
+  onChange,
+  disabled = false,
+  ariaLabel,
+}: {
+  checked: boolean;
+  indeterminate?: boolean;
+  onChange: () => void;
+  disabled?: boolean;
+  ariaLabel: string;
+}) {
+  return (
+    <label
+      className={`flex items-center justify-center ${
+        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        disabled={disabled}
+        className="sr-only"
+        aria-label={ariaLabel}
+      />
+      <span
+        className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
+          checked || indeterminate
+            ? "bg-blue-03 border-blue-03"
+            : "border-gray-03"
+        }`}
+        aria-hidden
+      >
+        {checked ? (
+          <Check className="w-3 h-3 text-white" />
+        ) : indeterminate ? (
+          <Minus className="w-3 h-3 text-white" />
+        ) : null}
+      </span>
+    </label>
+  );
+}
+
 function CoverageEntryRow({
   entry,
+  selected,
+  onToggleSelect,
   rowRef,
   dataIndex,
   onEditEntry,
   onFindReportClick,
   onRunReportClick,
+  onRunReport,
   onReplaceReport,
   onRemoveReport,
 }: {
   entry: CoverageEntry;
+  selected: boolean;
+  onToggleSelect: () => void;
   rowRef: (element: HTMLTableRowElement | null) => void;
   dataIndex: number;
   onEditEntry: (entry: CoverageEntry) => void;
   onFindReportClick: () => void;
   onRunReportClick: () => void;
+  onRunReport: (report: RegistryReportPill) => void;
   onReplaceReport: (report: RegistryReportPill) => void;
   onRemoveReport: (report: RegistryReportPill) => void;
 }) {
@@ -643,14 +785,24 @@ function CoverageEntryRow({
         : "text-yellow-400";
 
   const reports = entry.registryReports ?? [];
-  const canRunReport = registryReportYears(reports).length > 0;
+  const yearGroups = groupRegistryReportsByYear(reports);
+  const canRunReport = reports.length > 0;
 
   return (
     <tr
       ref={rowRef}
       data-index={dataIndex}
-      className="border-t border-gray-03/60"
+      className={`border-t border-gray-03/60 ${selected ? "bg-blue-03/5" : ""}`}
     >
+      <td className="px-3 py-2 align-top">
+        <CoverageSelectCheckbox
+          checked={selected}
+          onChange={onToggleSelect}
+          ariaLabel={t("overview.coverage.selectCompany", {
+            name: entry.name,
+          })}
+        />
+      </td>
       <td
         className="px-4 py-2 text-gray-01 align-top truncate"
         title={entry.name}
@@ -680,31 +832,16 @@ function CoverageEntryRow({
         )}
       </td>
       <td className="px-4 py-2 align-top">
-        {reports.length > 0 ? (
+        {yearGroups.length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            {reports.map((report) => (
-              <div
-                key={report.reportId}
-                className="inline-flex items-center gap-0.5"
-              >
-                <ReportYearPill report={report} />
-                <button
-                  type="button"
-                  className="rounded-full p-1 text-gray-02 transition-colors hover:bg-gray-03/60 hover:text-gray-01"
-                  title={t("overview.coverage.replaceReportUrl")}
-                  onClick={() => onReplaceReport(report)}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  className="rounded-full p-1 text-gray-02 transition-colors hover:bg-pink-03/20 hover:text-pink-03"
-                  title={t("overview.coverage.removeReport")}
-                  onClick={() => onRemoveReport(report)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
+            {yearGroups.map((group) => (
+              <ReportYearTypeDropdown
+                key={group.year ?? "unknown"}
+                group={group}
+                onRun={onRunReport}
+                onReplace={onReplaceReport}
+                onRemove={onRemoveReport}
+              />
             ))}
           </div>
         ) : (

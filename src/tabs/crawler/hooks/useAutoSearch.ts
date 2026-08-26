@@ -293,7 +293,8 @@ export function useAutoSearch() {
       for (const failed of resultStats.failed) {
         if (
           failed.error === "duplicate" &&
-          failed.message?.includes("company and year") &&
+          (failed.message?.includes("company and year") ||
+            failed.message?.includes("year, and type")) &&
           !resultStats.skippedAlreadyInRegistry.some(
             (s) => s.companyName === failed.companyName,
           )
@@ -306,7 +307,11 @@ export function useAutoSearch() {
 
       resultStats.failed = resultStats.failed.filter(
         (f) =>
-          !(f.error === "duplicate" && f.message?.includes("company and year")),
+          !(
+            f.error === "duplicate" &&
+            (f.message?.includes("company and year") ||
+              f.message?.includes("year, and type"))
+          ),
       );
 
       for (const detail of resultStats.companyDetails) {

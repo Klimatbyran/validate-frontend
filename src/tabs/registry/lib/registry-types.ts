@@ -46,6 +46,8 @@ export interface RegistryNewEntry {
   sha256?: string;
   /** Garbo Batch.id stored on the registry report row. */
   batchId?: string;
+  reportTypeId?: string;
+  reportTypeSlug?: string;
 }
 
 export type RegistryBulkProgress = {

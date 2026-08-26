@@ -13,14 +13,21 @@ import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 /** Crawler uses Unearth API. Base follows VITE_UNEARTH_TARGET / VITE_API_MODE. */
 
 const TRANSIENT_HTTP_STATUSES = new Set([500, 502, 503, 504]);
-const TRANSIENT_FETCH_ATTEMPTS = 4;
+const TRANSIENT_FETCH_ATTEMPTS = 6;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function transientRetryDelayMs(attempt: number): number {
-  return Math.min(8000, 500 * 2 ** (attempt - 1));
+  return Math.min(12000, 500 * 2 ** (attempt - 1));
+}
+
+function isAbortError(error: unknown): boolean {
+  return (
+    (error instanceof DOMException || error instanceof Error) &&
+    (error.name === "AbortError" || error.name === "TimeoutError")
+  );
 }
 
 /** Retry when Vite proxy or API dev restart drops in-flight requests (ECONNREFUSED → 500). */
@@ -40,8 +47,10 @@ async function fetchWithTransientRetry(
       ) {
         return response;
       }
-    } catch {
-      if (attempt === TRANSIENT_FETCH_ATTEMPTS) return null;
+    } catch (error) {
+      if (isAbortError(error) || attempt === TRANSIENT_FETCH_ATTEMPTS) {
+        return lastResponse;
+      }
     }
     await sleep(transientRetryDelayMs(attempt));
   }
@@ -64,8 +73,10 @@ async function authFetchWithTransientRetry(
       ) {
         return response;
       }
-    } catch {
-      if (attempt === TRANSIENT_FETCH_ATTEMPTS) return null;
+    } catch (error) {
+      if (isAbortError(error) || attempt === TRANSIENT_FETCH_ATTEMPTS) {
+        return lastResponse;
+      }
     }
     await sleep(transientRetryDelayMs(attempt));
   }
@@ -80,29 +91,29 @@ export function reportsUrl(path: string): string {
 }
 
 export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
-  try {
-    const response = await garboAuthFetch(
-      reportsUrl("internal-companies/reports/search-reports"),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify([searchQuery]),
+  const response = await authFetchWithTransientRetry(
+    reportsUrl("internal-companies/reports/search-reports"),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify([searchQuery]),
+    },
+  );
 
-    if (response.ok) {
-      const data = await response.json();
-      return data;
-    } else {
-      console.error("Failed to fetch company report:", response.statusText);
-      throw new Error(`Failed to fetch report: ${response.statusText}`);
-    }
-  } catch (error) {
-    console.error("Error fetching company report:", error);
-    throw error instanceof Error ? error : new Error("Failed to fetch report");
+  if (!response) {
+    throw new Error("Could not reach the reports API");
   }
+
+  if (response.ok) {
+    return response.json();
+  }
+
+  console.error("Failed to fetch company report:", response.statusText);
+  throw new Error(
+    `Failed to fetch report: ${response.status} ${response.statusText}`,
+  );
 };
 
 export const fetchCompanyNamesList = async () => {
@@ -203,7 +214,7 @@ export const saveToRegistry = async (
   reports: SelectedReport[],
 ): Promise<SaveReportsListResponse> => {
   try {
-    const response = await garboAuthFetch(
+    const response = await authFetchWithTransientRetry(
       reportsUrl("internal-companies/reports/save-reports"),
       {
         method: "POST",
@@ -213,6 +224,10 @@ export const saveToRegistry = async (
         body: JSON.stringify(reports),
       },
     );
+
+    if (!response) {
+      throw new Error("Could not reach the reports API");
+    }
 
     let responseBody: SaveReportsListResponse | { message?: string } | null =
       null;
