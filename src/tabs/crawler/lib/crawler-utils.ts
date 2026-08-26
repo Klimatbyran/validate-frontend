@@ -378,7 +378,7 @@ export const searchCompanyReports = async ({
         onLabeledSaved({
           message,
           successes: [],
-          failed: reports.map((report) => ({
+          failed: labeledHitsToSelectedReports(reports).map((report) => ({
             error: "unknown" as const,
             companyName: report.companyName,
             reportYear: report.reportYear,
