@@ -621,7 +621,7 @@
     "runPartial": "Partial",
     "runOnly": "Run only:",
     "forceReindex": "Force reindex",
-    "forceReindexDescription": "When on: run docling even if the report already exists in the vector DB (use after docling/OCR upgrade).",
+    "forceReindexDescription": "When on: run docling even if the report already exists in the vector DB (use after docling/OCR upgrade). For URL uploads with PDF caching, also bypasses the 14-day cached copy so the source PDF is re-fetched — use this when re-adding a document whose content may have changed.",
     "useClimatePlansPipeline": "Use climate plans pipeline",
     "useClimatePlansPipelineDescription": "When on: stop after Docling + indexing (skip precheck/emissions extraction) and hand the url off to the climate plans pipeline instead.",
     "companyWithName": "Company: {{name}}",
