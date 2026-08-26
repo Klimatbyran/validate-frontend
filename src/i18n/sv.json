@@ -49,13 +49,16 @@
     "crawler": "Crawler",
     "climatePlans": "Utforska klimatplaner",
     "climatePipeline": "Klimatpipeline",
-    "editor": "Redigerare"
+    "editor": "Redigerare",
+    "pipelineChoice": "Pipeline",
+    "pipelineEmissions": "Företagsutsläpp",
+    "pipelineClimatePlans": "Klimatplaner"
   },
   "climatePipeline": {
     "title": "Klimatplanspipeline",
     "subtitle": "Live-status för åtagande-/åtgärdsextraktionspipelinen, per plan",
     "refresh": "Uppdatera",
-    "empty": "Inga planer än — skicka in en PDF eller URL från Ladda upp med \"Använd klimatplanspipelinen\" ikryssad.",
+    "empty": "Inga planer än — skicka in en PDF eller URL från Ladda upp medan Klimatplaner-pipelinen är vald.",
     "error": "Kunde inte läsa in planer: {{error}}",
     "pollError": "Visar senast kända status — kunde inte uppdatera: {{error}}"
   },
@@ -628,8 +631,8 @@
     "runOnly": "Kör endast:",
     "forceReindex": "Tvinga omindexering",
     "forceReindexDescription": "Om på: kör docling även om rapporten redan finns i vektordatabasen (använd efter uppgradering av docling/OCR).",
-    "useClimatePlansPipeline": "Använd klimatplanspipelinen",
-    "useClimatePlansPipelineDescription": "Om på: stanna efter Docling + indexering (hoppa över precheck/utsläppsextraktion) och lämna över url:en till klimatplanspipelinen istället.",
+    "climatePlansPipelineActive": "Klimatplanspipeline",
+    "climatePlansPipelineActiveDescription": "Uppladdningar stannar efter Docling + indexering och lämnar över url:en till klimatplanspipelinen (precheck och utsläppsextraktion hoppas över).",
     "companyWithName": "Företag: {{name}}",
     "fileSizeMb": "{{size}} MB",
     "storageDeduplicated": "{{count}} befintlig(a) PDF:er återanvändes från lagring (ingen dubbeluppladdning).",
