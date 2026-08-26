@@ -469,11 +469,11 @@ export function CrawlerTab() {
             {CRAWLER_FEATURES.autoSearch &&
               autoSearchStats &&
               !isAutoSearchRunning && (
-              <AutoSearchLogButton
-                stats={autoSearchStats}
-                reportYear={lastAutoSearchYear}
-              />
-            )}
+                <AutoSearchLogButton
+                  stats={autoSearchStats}
+                  reportYear={lastAutoSearchYear}
+                />
+              )}
             <ViewModePills
               options={viewModeOptions}
               value={viewMode}
@@ -491,7 +491,9 @@ export function CrawlerTab() {
                 onCountryChange={handleCountryInputChange}
                 onSearch={handleManualSearchClick}
                 onAutoSearch={
-                  CRAWLER_FEATURES.autoSearch ? handleAutoSearchClick : undefined
+                  CRAWLER_FEATURES.autoSearch
+                    ? handleAutoSearchClick
+                    : undefined
                 }
                 isAutoSearchRunning={
                   isAutoSearchRunning || isRegistryCheckLoading
@@ -515,7 +517,9 @@ export function CrawlerTab() {
               <DatabaseSearchControls
                 onSearch={handleDatabaseSearchClick}
                 onAutoSearch={
-                  CRAWLER_FEATURES.autoSearch ? handleAutoSearchClick : undefined
+                  CRAWLER_FEATURES.autoSearch
+                    ? handleAutoSearchClick
+                    : undefined
                 }
                 isAutoSearchRunning={
                   isAutoSearchRunning || isRegistryCheckLoading

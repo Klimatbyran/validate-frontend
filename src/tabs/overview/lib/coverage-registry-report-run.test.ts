@@ -157,12 +157,12 @@ describe("coverage-registry-report-run", () => {
         reportTypeLabel: "Sustainability report",
       },
     ];
-    expect(
-      registryReportMenuLabel(reports[0]!, reports, "Unknown type"),
-    ).toBe("Sustainability report · sustainability-2025.pdf");
-    expect(
-      registryReportMenuLabel(reports[1]!, reports, "Unknown type"),
-    ).toBe("Sustainability report · sustainability-2025-summary.pdf");
+    expect(registryReportMenuLabel(reports[0]!, reports, "Unknown type")).toBe(
+      "Sustainability report · sustainability-2025.pdf",
+    );
+    expect(registryReportMenuLabel(reports[1]!, reports, "Unknown type")).toBe(
+      "Sustainability report · sustainability-2025-summary.pdf",
+    );
   });
 
   it("does not drop locally saved reports when a reload returns fewer pills", () => {
@@ -191,9 +191,9 @@ describe("coverage-registry-report-run", () => {
       "r-annual",
       "r-sust",
     ]);
-    expect(merged.find((report) => report.reportId === "r-sust")?.prodReady).toBe(
-      true,
-    );
+    expect(
+      merged.find((report) => report.reportId === "r-sust")?.prodReady,
+    ).toBe(true);
   });
 });
 

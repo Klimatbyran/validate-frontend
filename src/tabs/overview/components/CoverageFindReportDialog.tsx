@@ -17,7 +17,10 @@ import SearchResultItem from "@/tabs/crawler/components/SearchResultItem";
 import ManuallyAddReportItem from "@/tabs/crawler/components/ManuallyAddReportItem";
 import RegistryList from "@/tabs/crawler/components/RegistryList";
 import { addRegistryEntry } from "@/tabs/registry/lib/registry-api";
-import { searchCompanyReports, fallbackReportTypeSlug } from "@/tabs/crawler/lib/crawler-utils";
+import {
+  searchCompanyReports,
+  fallbackReportTypeSlug,
+} from "@/tabs/crawler/lib/crawler-utils";
 import type {
   CompanyReport,
   SaveReportSuccess,

@@ -20,9 +20,7 @@ const CRAWL_CONCURRENCY = AUTO_SEARCH_CRAWL_CONCURRENCY;
 export const FALLBACK_REPORT_TYPE_SLUG = "other";
 export const FALLBACK_REPORT_TYPE_LABEL = "Other";
 
-export function fallbackReportTypeSlug(
-  slug?: string | null,
-): string {
+export function fallbackReportTypeSlug(slug?: string | null): string {
   return slug?.trim() || FALLBACK_REPORT_TYPE_SLUG;
 }
 
@@ -81,42 +79,42 @@ interface SearchCompanyReportsParams {
   onLabeledSaved?: (response: SaveReportsListResponse) => void;
 }
 
-const AUTO_SAVE_YEAR_LOOKBACK = 4
+const AUTO_SAVE_YEAR_LOOKBACK = 4;
 
 function isRecentEnoughToAutoSave(
   year: string,
   requestedYear?: string,
 ): boolean {
   if (requestedYear && /^\d{4}$/.test(requestedYear)) {
-    return year === requestedYear
+    return year === requestedYear;
   }
-  const n = Number(year)
-  const now = new Date().getFullYear()
-  return n >= now - AUTO_SAVE_YEAR_LOOKBACK && n <= now + 1
+  const n = Number(year);
+  const now = new Date().getFullYear();
+  return n >= now - AUTO_SAVE_YEAR_LOOKBACK && n <= now + 1;
 }
 
 const SUPPORTING_AUTO_SAVE =
-  /\b(?:cdp|questionnaire|survey[\s_-]?response|gri[\s_-]*(?:content[\s_-]*)?index|sasb[\s_-]*index|tcfd[\s_-]*index|content[\s_-]*index|assurance[\s_-]?statement|independent[\s_-]?assurance|limited[\s_-]?assurance|iso[\s_-]?14001|conflict[\s_-]?minerals|data[\s_-]?tables?|calculation[\s_-]?methodology|performance[\s_-]?metrics|basis[\s_-]?of[\s_-]?reporting|supplier[\s_-]?code|form[\s_-]*10[\s_-]*k|form[\s_-]*20[\s_-]*f|annual[\s_-]*report[\s_-]*on[\s_-]*form[\s_-]*10[\s_-]*k)\b/i
+  /\b(?:cdp|questionnaire|survey[\s_-]?response|gri[\s_-]*(?:content[\s_-]*)?index|sasb[\s_-]*index|tcfd[\s_-]*index|content[\s_-]*index|assurance[\s_-]?statement|independent[\s_-]?assurance|limited[\s_-]?assurance|iso[\s_-]?14001|conflict[\s_-]?minerals|data[\s_-]?tables?|calculation[\s_-]?methodology|performance[\s_-]?metrics|basis[\s_-]?of[\s_-]?reporting|supplier[\s_-]?code|form[\s_-]*10[\s_-]*k|form[\s_-]*20[\s_-]*f|annual[\s_-]*report[\s_-]*on[\s_-]*form[\s_-]*10[\s_-]*k)\b/i;
 
 function haystackForAutoSave(url: string, title?: string | null): string {
-  return `${title ?? ""} ${url}`.toLowerCase().replace(/[_\-./+]/g, " ")
+  return `${title ?? ""} ${url}`.toLowerCase().replace(/[_\-./+]/g, " ");
 }
 
 function isSupportingAutoSaveDocument(
   url: string,
   title?: string | null,
 ): boolean {
-  const haystack = haystackForAutoSave(url, title)
-  if (SUPPORTING_AUTO_SAVE.test(haystack)) return true
+  const haystack = haystackForAutoSave(url, title);
+  if (SUPPORTING_AUTO_SAVE.test(haystack)) return true;
   if (
     /\bpolic(?:y|ies)\b/.test(haystack) &&
     !/\b(?:sustainability|annual|citizenship|responsibility)[\s_-]*report\b/.test(
       haystack,
     )
   ) {
-    return true
+    return true;
   }
-  return false
+  return false;
 }
 
 function looksLikeOtherLegalEntity(
@@ -124,25 +122,22 @@ function looksLikeOtherLegalEntity(
   companyName: string,
   title?: string | null,
 ): boolean {
-  const haystack = haystackForAutoSave(url, title)
-  const company = companyName.toLowerCase()
-  if (
-    /\bbrsr\b/.test(haystack) &&
-    !company.includes("india")
-  ) {
-    return true
+  const haystack = haystackForAutoSave(url, title);
+  const company = companyName.toLowerCase();
+  if (/\bbrsr\b/.test(haystack) && !company.includes("india")) {
+    return true;
   }
   if (/\bishares\b/.test(haystack) && !company.includes("ishares")) {
-    return true
+    return true;
   }
   if (
     /\bindia\b/.test(haystack) &&
     !company.includes("india") &&
     /\b(?:limited|ltd)\b/.test(haystack)
   ) {
-    return true
+    return true;
   }
-  return false
+  return false;
 }
 
 export function labeledHitsToSelectedReports(
@@ -302,17 +297,13 @@ export const searchCompanyReports = async ({
 
   try {
     const saved = await saveLabeledSearchResults(reports);
-    onLabeledSaved?.(
-      saved ?? { message: "", successes: [], failed: [] },
-    );
+    onLabeledSaved?.(saved ?? { message: "", successes: [], failed: [] });
   } catch (error) {
     console.error("Auto-save labeled search results failed:", error);
     await new Promise((resolve) => setTimeout(resolve, 2000));
     try {
       const saved = await saveLabeledSearchResults(reports);
-      onLabeledSaved?.(
-        saved ?? { message: "", successes: [], failed: [] },
-      );
+      onLabeledSaved?.(saved ?? { message: "", successes: [], failed: [] });
     } catch (retryError) {
       console.error(
         "Auto-save labeled search results retry failed:",

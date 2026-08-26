@@ -55,7 +55,9 @@ export function CoverageRunReportYearPrompt({
   }, [open, reportIdsKey, selectedGroup]);
 
   const selectedReport =
-    selectedGroup?.reports.find((report) => report.reportId === selectedReportId) ??
+    selectedGroup?.reports.find(
+      (report) => report.reportId === selectedReportId,
+    ) ??
     selectedGroup?.reports[0] ??
     null;
 

@@ -282,8 +282,7 @@ export function CoverageCrawlReportsDialog({
   };
 
   const allFetchedToSave = useMemo(
-    () =>
-      companyReports ? labeledHitsToSelectedReports(companyReports) : [],
+    () => (companyReports ? labeledHitsToSelectedReports(companyReports) : []),
     [companyReports],
   );
 
@@ -357,16 +356,16 @@ export function CoverageCrawlReportsDialog({
       withPdfs: companyReports.filter((report) =>
         report.results.some(accessible),
       ).length,
-      apiFailed: companyReports.filter((report) =>
-        Boolean(report.crawlError),
-      ).length,
+      apiFailed: companyReports.filter((report) => Boolean(report.crawlError))
+        .length,
       pdfCount: companyReports.reduce(
         (count, report) => count + report.results.filter(accessible).length,
         0,
       ),
     };
   }, [companyReports]);
-  const runFinished = phase === "crawl" && !isCrawling && companyReports != null;
+  const runFinished =
+    phase === "crawl" && !isCrawling && companyReports != null;
 
   return (
     <>

@@ -49,7 +49,9 @@ export function registryReportTypeLabel(
 export function registryReportFilename(report: RegistryReportPill): string {
   const href = report.sourceUrl?.trim() || report.url;
   try {
-    const name = decodeURIComponent(new URL(href).pathname.split("/").pop() ?? "");
+    const name = decodeURIComponent(
+      new URL(href).pathname.split("/").pop() ?? "",
+    );
     return name.replace(/[#?].*$/, "") || "";
   } catch {
     return "";
