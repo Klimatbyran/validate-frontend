@@ -31,6 +31,12 @@ export function companyMatchesSearch(
 
 export type FilterUnverifiedOption = "" | "emissions" | "all";
 
+/** Missing economy/emissions data on a company-report row. */
+export type FilterMissingDataOption =
+  | ""
+  | "no-emissions"
+  | "no-reporting-period-data";
+
 export type OverviewListFilterInput = {
   searchQuery: string;
   filterTags: string[];
@@ -40,7 +46,19 @@ export type OverviewListFilterInput = {
   filterSector: string;
   filterUnverified: FilterUnverifiedOption;
   filterApplyUnverifiedToSelectedYears: boolean;
+  filterMissingData: FilterMissingDataOption;
 };
+
+export function reportRowHasNoEmissionsData(row: CompanyReportRow): boolean {
+  return row.overview.emissions === "none";
+}
+
+/** No emissions and no economy data across any reporting period on this report. */
+export function reportRowHasNoReportingPeriodData(
+  row: CompanyReportRow,
+): boolean {
+  return row.overview.emissions === "none" && row.overview.economy === "none";
+}
 
 export function reportRowPassesOverviewFilters(
   row: CompanyReportRow,
@@ -86,6 +104,13 @@ export function reportRowPassesOverviewFilters(
       if (f.filterUnverified === "all" && !overview.hasUnverifiedData)
         return false;
     }
+  }
+
+  if (f.filterMissingData === "no-emissions") {
+    if (!reportRowHasNoEmissionsData(row)) return false;
+  }
+  if (f.filterMissingData === "no-reporting-period-data") {
+    if (!reportRowHasNoReportingPeriodData(row)) return false;
   }
 
   return true;
