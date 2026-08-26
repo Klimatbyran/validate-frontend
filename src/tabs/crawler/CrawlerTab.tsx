@@ -326,6 +326,7 @@ export function CrawlerTab() {
       );
 
       if (withMatches.length > 0) {
+        setLastAutoSearchYear(reportYear);
         setPendingAutoSearchParams(searchParams);
         setRegistryCheckMatches(withMatches);
         setRegistryCheckExcluded(new Set());
@@ -565,7 +566,9 @@ export function CrawlerTab() {
           <>
             <AutoSearchRegistryCheckModal
               open={isRegistryCheckModalOpen}
-              reportYear={lastAutoSearchYear}
+              reportYear={
+                pendingAutoSearchParams?.reportYear || lastAutoSearchYear
+              }
               matches={registryCheckMatches}
               remainingCompanyCount={
                 pendingAutoSearchParams?.companies.filter(
