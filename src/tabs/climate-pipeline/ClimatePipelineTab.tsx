@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { ChevronsDown, ChevronsUp, Loader2, RefreshCw } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { StatusPill } from "@/components/StatusPill";
-import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
+import { Button } from "@/ui/button";
 import {
   useClimatePipelinePlans,
   toSwimlaneStatus,
@@ -10,8 +10,6 @@ import {
   type PipelineStepRun,
 } from "./hooks/useClimatePipelinePlans";
 import { StepResultDialog } from "./components/StepResultDialog";
-
-const LATEST_RUN = "latest";
 
 const COMMITMENT_STEPS = [
   "extractMunicipality",
@@ -66,8 +64,14 @@ function formatRunLabel(run: PipelineStepRun[]): string {
   return new Date(earliest.startedAt).toLocaleString();
 }
 
+function stepsByRun(rows: PipelineStepRun[]): Map<string, PipelineStepRun[]> {
+  const map = new Map<string, PipelineStepRun[]>();
+  for (const r of rows) map.set(r.step, [r]);
+  return map;
+}
+
 function PlanRow({ plan, onStepClick }: PlanRowProps) {
-  const [selectedRunId, setSelectedRunId] = useState<string>(LATEST_RUN);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // pipelineSteps is ordered newest-first per step. Group all runs per step
   // so the pill can show the latest status plus an isRerun flag when a step
@@ -80,9 +84,10 @@ function PlanRow({ plan, onStepClick }: PlanRowProps) {
   }
 
   // Rows sharing a runId were all triggered by the same cascade (a single
-  // upload or rerun) — group by that to offer "view this past run as a
-  // whole swimlane" instead of only per-step history. Rows from before
-  // runId existed have no group and are excluded from the picker.
+  // upload or rerun) — group by that to offer previous runs as their own
+  // dimmed sub-sections below, same pattern as jobbstatus's YearRow "Visa
+  // fler" expand. Rows from before runId existed have no group and are
+  // excluded.
   const byRunId = new Map<string, PipelineStepRun[]>();
   for (const s of plan.pipelineSteps) {
     if (!s.runId) continue;
@@ -90,18 +95,12 @@ function PlanRow({ plan, onStepClick }: PlanRowProps) {
     list.push(s);
     byRunId.set(s.runId, list);
   }
-  const runOptions = [...byRunId.entries()].sort(
+  const runsNewestFirst = [...byRunId.entries()].sort(
     ([, a], [, b]) =>
       new Date(b[0].startedAt).getTime() - new Date(a[0].startedAt).getTime(),
   );
-
-  const viewingRunsByStep = (() => {
-    if (selectedRunId === LATEST_RUN) return runsByStep;
-    const rows = byRunId.get(selectedRunId) ?? [];
-    const map = new Map<string, PipelineStepRun[]>();
-    for (const r of rows) map.set(r.step, [r]);
-    return map;
-  })();
+  const previousRuns = runsNewestFirst.slice(1);
+  const hasPreviousRuns = previousRuns.length > 0;
 
   const name =
     plan.municipality?.name ?? plan.extractedMunicipalityName ?? plan.url;
@@ -109,37 +108,40 @@ function PlanRow({ plan, onStepClick }: PlanRowProps) {
   return (
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] p-4 space-y-3">
       <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <h3 className="font-bold text-gray-01 truncate">{name}</h3>
-          <p className="text-xs text-gray-02 truncate">{plan.url}</p>
+        <div className="min-w-0 flex-1 flex items-center gap-3">
+          <div className="min-w-0">
+            <h3 className="font-bold text-gray-01 truncate">{name}</h3>
+            <p className="text-xs text-gray-02 truncate">{plan.url}</p>
+          </div>
+          {hasPreviousRuns && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded((v) => !v)}
+              className="h-6 px-2 text-xs text-blue-03 hover:text-blue-04 hover:bg-blue-03/10 shrink-0 w-auto min-w-0"
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronsUp className="w-3 h-3 mr-1" />
+                  Visa färre
+                </>
+              ) : (
+                <>
+                  <ChevronsDown className="w-3 h-3 mr-1" />
+                  Visa fler ({previousRuns.length} tidigare)
+                </>
+              )}
+            </Button>
+          )}
         </div>
-        {runOptions.length > 1 && (
-          <SingleSelectDropdown
-            options={[LATEST_RUN, ...runOptions.map(([id]) => id)]}
-            value={selectedRunId}
-            onChange={setSelectedRunId}
-            getOptionLabel={(id) =>
-              id === LATEST_RUN
-                ? "Latest"
-                : formatRunLabel(byRunId.get(id) ?? [])
-            }
-            triggerClassName="h-7 text-xs px-2"
-          />
-        )}
         <span className="text-xs text-gray-02 shrink-0">{plan.status}</span>
       </div>
-      {selectedRunId !== LATEST_RUN && (
-        <p className="text-xs text-blue-03">
-          Viewing a past run — step status/timing only; commitment and measure
-          content below always reflects the current data.
-        </p>
-      )}
       <div className="flex flex-wrap gap-1.5">
         {COMMITMENT_STEPS.map((step) => (
           <StepStatusPill
             key={step}
             step={step}
-            run={viewingRunsByStep.get(step)?.[0]}
+            run={runsByStep.get(step)?.[0]}
             isRerun={(runsByStep.get(step)?.length ?? 0) > 1}
             onClick={() => onStepClick(plan, step)}
           />
@@ -150,12 +152,49 @@ function PlanRow({ plan, onStepClick }: PlanRowProps) {
           <StepStatusPill
             key={step}
             step={step}
-            run={viewingRunsByStep.get(step)?.[0]}
+            run={runsByStep.get(step)?.[0]}
             isRerun={(runsByStep.get(step)?.length ?? 0) > 1}
             onClick={() => onStepClick(plan, step)}
           />
         ))}
       </div>
+
+      {isExpanded && hasPreviousRuns && (
+        <div className="border-t border-gray-03 bg-gray-04/30 -mx-4 -mb-4 px-4 pb-4 pt-3 space-y-3 rounded-b-[20px]">
+          <p className="text-xs text-gray-02 font-medium">
+            Tidigare körningar:
+          </p>
+          {previousRuns.map(([runId, rows]) => {
+            const runStepMap = stepsByRun(rows);
+            return (
+              <div
+                key={runId}
+                className="border-t border-gray-03/50 pt-3 space-y-2"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-02">Tidigare körning</span>
+                  <span className="text-xs text-gray-02 font-mono bg-gray-04 px-1.5 py-0.5 rounded">
+                    {runId.slice(0, 8)}
+                  </span>
+                  <span className="text-xs text-gray-02">
+                    {formatRunLabel(rows)}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 p-3 bg-gray-05/50 opacity-75 rounded-lg">
+                  {[...COMMITMENT_STEPS, ...MEASURE_STEPS].map((step) => (
+                    <StepStatusPill
+                      key={step}
+                      step={step}
+                      run={runStepMap.get(step)?.[0]}
+                      onClick={() => onStepClick(plan, step)}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
