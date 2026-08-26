@@ -41,6 +41,9 @@ export const registryReportPillSchema = z.object({
   sourceUrl: z.string().nullable(),
   matchMethod: z.enum(["wikidata", "name"]),
   prodReady: z.boolean(),
+  reportTypeId: z.string().nullable().optional(),
+  reportTypeSlug: z.string().nullable().optional(),
+  reportTypeLabel: z.string().nullable().optional(),
 });
 
 export const coverageEntrySchema = z.object({

@@ -2,10 +2,11 @@ import type {
   CompanyReport,
   LockedReport,
   Report,
+  SaveReportsListResponse,
+  SelectedReport,
   crawlerSearchQuery,
 } from "./crawler-types";
-import { updateCompanyReports } from "./crawler-api";
-import { reportsUrl } from "./crawler-api";
+import { saveToRegistry, updateCompanyReports } from "./crawler-api";
 import { mapWithConcurrency } from "./map-with-concurrency";
 
 /** Parallel crawl cap — tune via VITE_AUTO_SEARCH_CRAWL_CONCURRENCY (default 6). */
@@ -15,17 +16,54 @@ export const AUTO_SEARCH_CRAWL_CONCURRENCY = Math.max(
 );
 const CRAWL_CONCURRENCY = AUTO_SEARCH_CRAWL_CONCURRENCY;
 
-export interface ReportWithPreview extends Report {
-  previewUrl: string;
+/** Seeded report type used when the classifier does not match a known catalog type. */
+export const FALLBACK_REPORT_TYPE_SLUG = "other";
+export const FALLBACK_REPORT_TYPE_LABEL = "Other";
+
+export function fallbackReportTypeSlug(
+  slug?: string | null,
+): string {
+  return slug?.trim() || FALLBACK_REPORT_TYPE_SLUG;
+}
+
+export function withFallbackReportType(hit: Report): Report {
+  if (hit.fetchFailed) return hit;
+  const slug = hit.reportTypeSlug?.trim();
+  const label = hit.reportType?.trim();
+  if (slug && label) return hit;
+  return {
+    ...hit,
+    reportTypeSlug: slug || FALLBACK_REPORT_TYPE_SLUG,
+    reportType: label || FALLBACK_REPORT_TYPE_LABEL,
+  };
 }
 
 export type AutoSearchCompanyInput = {
   name: string;
-  reportYear: string;
+  reportYear?: string;
   country?: string;
   wikidataId?: string;
   companyUrl?: string;
 };
+
+const REPORT_CATALOG_YEAR_MIN = 1990;
+
+/** Best-effort year from PDF URL or title (e.g. for registry save after manual pick). */
+export function inferReportYearFromUrl(
+  url: string,
+  title?: string | null,
+): string {
+  const haystack = `${title ?? ""} ${url}`;
+  const maxYear = new Date().getFullYear() + 1;
+  const years = [...haystack.matchAll(/\b((?:19|20)\d{2})\b/g)]
+    .map((m) => m[1])
+    .filter((year) => {
+      const n = Number(year);
+      return n >= REPORT_CATALOG_YEAR_MIN && n <= maxYear;
+    });
+  if (years.length === 0) return "";
+  return years.sort().at(-1) ?? "";
+}
 
 export type CrawlProgress = {
   /** During crawl: number finished (not queue position). During analyze: company index. */
@@ -40,6 +78,142 @@ interface SearchCompanyReportsParams {
   companies: AutoSearchCompanyInput[];
   country?: string;
   onProgress?: (progress: CrawlProgress) => void;
+  onLabeledSaved?: (response: SaveReportsListResponse) => void;
+}
+
+const AUTO_SAVE_YEAR_LOOKBACK = 4
+
+function isRecentEnoughToAutoSave(
+  year: string,
+  requestedYear?: string,
+): boolean {
+  if (requestedYear && /^\d{4}$/.test(requestedYear)) {
+    return year === requestedYear
+  }
+  const n = Number(year)
+  const now = new Date().getFullYear()
+  return n >= now - AUTO_SAVE_YEAR_LOOKBACK && n <= now + 1
+}
+
+const SUPPORTING_AUTO_SAVE =
+  /\b(?:cdp|questionnaire|survey[\s_-]?response|gri[\s_-]*(?:content[\s_-]*)?index|sasb[\s_-]*index|tcfd[\s_-]*index|content[\s_-]*index|assurance[\s_-]?statement|independent[\s_-]?assurance|limited[\s_-]?assurance|iso[\s_-]?14001|conflict[\s_-]?minerals|data[\s_-]?tables?|calculation[\s_-]?methodology|performance[\s_-]?metrics|basis[\s_-]?of[\s_-]?reporting|supplier[\s_-]?code|form[\s_-]*10[\s_-]*k|form[\s_-]*20[\s_-]*f|annual[\s_-]*report[\s_-]*on[\s_-]*form[\s_-]*10[\s_-]*k)\b/i
+
+function haystackForAutoSave(url: string, title?: string | null): string {
+  return `${title ?? ""} ${url}`.toLowerCase().replace(/[_\-./+]/g, " ")
+}
+
+function isSupportingAutoSaveDocument(
+  url: string,
+  title?: string | null,
+): boolean {
+  const haystack = haystackForAutoSave(url, title)
+  if (SUPPORTING_AUTO_SAVE.test(haystack)) return true
+  if (
+    /\bpolic(?:y|ies)\b/.test(haystack) &&
+    !/\b(?:sustainability|annual|citizenship|responsibility)[\s_-]*report\b/.test(
+      haystack,
+    )
+  ) {
+    return true
+  }
+  return false
+}
+
+function looksLikeOtherLegalEntity(
+  url: string,
+  companyName: string,
+  title?: string | null,
+): boolean {
+  const haystack = haystackForAutoSave(url, title)
+  const company = companyName.toLowerCase()
+  if (
+    /\bbrsr\b/.test(haystack) &&
+    !company.includes("india")
+  ) {
+    return true
+  }
+  if (/\bishares\b/.test(haystack) && !company.includes("ishares")) {
+    return true
+  }
+  if (
+    /\bindia\b/.test(haystack) &&
+    !company.includes("india") &&
+    /\b(?:limited|ltd)\b/.test(haystack)
+  ) {
+    return true
+  }
+  return false
+}
+
+export function labeledHitsToSelectedReports(
+  companyReports: CompanyReport[],
+): SelectedReport[] {
+  const selected: SelectedReport[] = [];
+  const seenUrl = new Set<string>();
+
+  const hits: Array<{
+    company: CompanyReport;
+    hit: CompanyReport["results"][number];
+    url: string;
+    reportYear: string;
+    reportTypeSlug?: string;
+  }> = [];
+
+  for (const company of companyReports) {
+    for (const hit of company.results) {
+      const url = hit.url?.trim();
+      if (hit.fetchFailed || !url) continue;
+      if (isSupportingAutoSaveDocument(url, hit.title)) continue;
+      if (looksLikeOtherLegalEntity(url, company.companyName, hit.title)) {
+        continue;
+      }
+      const reportYear =
+        hit.reportYear?.trim() || inferReportYearFromUrl(url, hit.title);
+      if (!/^\d{4}$/.test(reportYear)) continue;
+      if (!isRecentEnoughToAutoSave(reportYear, company.reportYear)) continue;
+      hits.push({
+        company,
+        hit,
+        url,
+        reportYear,
+        reportTypeSlug: fallbackReportTypeSlug(hit.reportTypeSlug),
+      });
+    }
+  }
+
+  hits.sort((a, b) => {
+    const aTyped = a.reportTypeSlug === FALLBACK_REPORT_TYPE_SLUG ? 1 : 0;
+    const bTyped = b.reportTypeSlug === FALLBACK_REPORT_TYPE_SLUG ? 1 : 0;
+    if (aTyped !== bTyped) return aTyped - bTyped;
+    return b.reportYear.localeCompare(a.reportYear);
+  });
+
+  for (const item of hits) {
+    const urlKey = item.url.toLowerCase();
+    if (seenUrl.has(urlKey)) continue;
+    seenUrl.add(urlKey);
+    selected.push({
+      companyName: item.company.companyName,
+      reportYear: item.reportYear,
+      url: item.url,
+      wikidataId: item.company.wikidataId,
+      reportTypeSlug: item.reportTypeSlug,
+      s3Url: item.hit.s3Url ?? undefined,
+      s3Key: item.hit.s3Key ?? undefined,
+      s3Bucket: item.hit.s3Bucket ?? undefined,
+      sha256: item.hit.sha256 ?? undefined,
+    });
+  }
+
+  return selected;
+}
+
+export async function saveLabeledSearchResults(
+  companyReports: CompanyReport[],
+): Promise<SaveReportsListResponse | null> {
+  const toSave = labeledHitsToSelectedReports(companyReports);
+  if (toSave.length === 0) return null;
+  return saveToRegistry(toSave);
 }
 
 function normalizeCompanyReport(
@@ -48,10 +222,11 @@ function normalizeCompanyReport(
 ): CompanyReport {
   return {
     companyName: item?.companyName || fallback.name || "Unknown",
-    reportYear: item?.reportYear || fallback.reportYear || "Unknown",
-    results: item?.results ?? [],
+    reportYear: item?.reportYear || fallback.reportYear,
+    results: (item?.results ?? []).map(withFallbackReportType),
     discoverySource: item?.discoverySource,
     listingPageUrl: item?.listingPageUrl,
+    wikidataId: item?.wikidataId || fallback.wikidataId,
   };
 }
 
@@ -64,18 +239,13 @@ async function crawlSingleCompany(
     return normalizeCompanyReport(row as CompanyReport | undefined, query);
   } catch (error) {
     console.error(`Crawl failed for ${query.name}:`, error);
-    return normalizeCompanyReport(undefined, query);
+    return {
+      ...normalizeCompanyReport(undefined, query),
+      crawlError:
+        error instanceof Error ? error.message : "Crawl request failed",
+    };
   }
 }
-
-export const generateReportPreviews = (
-  results: Report[],
-): ReportWithPreview[] => {
-  return results.map((result) => {
-    const previewUrl = result.url ? generateReportPreview(result.url) : "";
-    return { ...result, previewUrl };
-  });
-};
 
 /**
  * Fetches company reports for given companies and year.
@@ -85,6 +255,7 @@ export const searchCompanyReports = async ({
   companies,
   country,
   onProgress,
+  onLabeledSaved,
 }: SearchCompanyReportsParams): Promise<CompanyReport[]> => {
   if (!companies?.length) {
     return [];
@@ -95,9 +266,10 @@ export const searchCompanyReports = async ({
   const searchQueries: crawlerSearchQuery[] = companies.map((company) => {
     const companyCountry =
       (company.country ?? "").trim() || trimmedCountry || undefined;
+    const reportYear = company.reportYear?.trim();
     return {
       name: company.name,
-      reportYear: company.reportYear,
+      ...(reportYear ? { reportYear } : {}),
       ...(companyCountry ? { country: companyCountry } : {}),
       wikidataId: company.wikidataId,
       companyUrl: company.companyUrl,
@@ -112,17 +284,44 @@ export const searchCompanyReports = async ({
     parallel: CRAWL_CONCURRENCY,
   });
 
-  return mapWithConcurrency(searchQueries, CRAWL_CONCURRENCY, async (query) => {
-    const result = await crawlSingleCompany(query);
-    completed += 1;
-    onProgress?.({
-      companyIndex: completed,
-      companyTotal: searchQueries.length,
-      companyName: query.name,
-      parallel: CRAWL_CONCURRENCY,
-    });
-    return result;
-  });
+  const reports = await mapWithConcurrency(
+    searchQueries,
+    CRAWL_CONCURRENCY,
+    async (query) => {
+      const result = await crawlSingleCompany(query);
+      completed += 1;
+      onProgress?.({
+        companyIndex: completed,
+        companyTotal: searchQueries.length,
+        companyName: query.name,
+        parallel: CRAWL_CONCURRENCY,
+      });
+      return result;
+    },
+  );
+
+  try {
+    const saved = await saveLabeledSearchResults(reports);
+    onLabeledSaved?.(
+      saved ?? { message: "", successes: [], failed: [] },
+    );
+  } catch (error) {
+    console.error("Auto-save labeled search results failed:", error);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const saved = await saveLabeledSearchResults(reports);
+      onLabeledSaved?.(
+        saved ?? { message: "", successes: [], failed: [] },
+      );
+    } catch (retryError) {
+      console.error(
+        "Auto-save labeled search results retry failed:",
+        retryError,
+      );
+    }
+  }
+
+  return reports;
 };
 
 /** @deprecated Prefer searchCompanyReports with full company objects. */
@@ -131,15 +330,22 @@ export const searchCompanyReportsByNames = async ({
   reportYear,
   country,
   onProgress,
+  onLabeledSaved,
 }: {
   companyNames: string[];
-  reportYear: string;
+  reportYear?: string;
   country?: string;
   onProgress?: (progress: CrawlProgress) => void;
+  onLabeledSaved?: (response: SaveReportsListResponse) => void;
 }): Promise<CompanyReport[]> =>
   searchCompanyReports({
-    companies: companyNames.map((name) => ({ name, reportYear, country })),
+    companies: companyNames.map((name) => ({
+      name,
+      ...(reportYear?.trim() ? { reportYear: reportYear.trim() } : {}),
+      country,
+    })),
     onProgress,
+    onLabeledSaved,
   });
 
 /**
@@ -171,16 +377,4 @@ export const writeCrawledReportsToCsv = (
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-};
-
-/**
- * Returns the direct preview image URL for a report.
- */
-export const generateReportPreview = (reportUrl: string): string => {
-  if (!reportUrl) return "";
-
-  const url =
-    reportsUrl("/internal-companies/reports/preview?pdfUrl=") +
-    encodeURIComponent(reportUrl);
-  return url;
 };

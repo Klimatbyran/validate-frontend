@@ -1,12 +1,15 @@
 import { motion } from "framer-motion";
 import { CompanyReport } from "../lib/crawler-types";
 import type { SelectedReport } from "../lib/crawler-types";
+import {
+  fallbackReportTypeSlug,
+  inferReportYearFromUrl,
+} from "../lib/crawler-utils";
 import SearchResultItem from "./SearchResultItem";
 import { useI18n } from "@/contexts/I18nContext";
 
 interface SearchResultsListProps {
   companyReports: CompanyReport[] | null;
-  reportYear: string;
   selectedReports: SelectedReport[];
   handleSelectReport: (
     companyName: string,
@@ -16,7 +19,6 @@ interface SearchResultsListProps {
 
 const SearchResultsList = ({
   companyReports,
-  reportYear,
   selectedReports,
   handleSelectReport,
 }: SearchResultsListProps) => {
@@ -40,19 +42,27 @@ const SearchResultsList = ({
             selectedReports.find((r) => r.companyName === report.companyName)
               ?.url
           }
-          onSelect={(companyName, url) =>
+          onSelect={(companyName, url) => {
+            const hit = report.results.find((result) => result.url === url);
             handleSelectReport(
               companyName,
               url
                 ? {
                     companyName,
-                    reportYear,
+                    reportYear:
+                      hit?.reportYear?.trim() ||
+                      inferReportYearFromUrl(url, hit?.title),
                     url,
                     wikidataId: report.wikidataId,
+                    reportTypeSlug: fallbackReportTypeSlug(hit?.reportTypeSlug),
+                    s3Url: hit?.s3Url ?? undefined,
+                    s3Key: hit?.s3Key ?? undefined,
+                    s3Bucket: hit?.s3Bucket ?? undefined,
+                    sha256: hit?.sha256 ?? undefined,
                   }
                 : null,
-            )
-          }
+            );
+          }}
         />
       ))}
     </motion.div>

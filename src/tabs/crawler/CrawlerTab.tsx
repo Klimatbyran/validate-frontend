@@ -55,7 +55,6 @@ export function CrawlerTab() {
     CompanyReport[] | null
   >(null);
   const [companyNameInput, setCompanyNameInput] = useState<string>("");
-  const [reportYearInput, setReportYearInput] = useState<string>("");
   const [countryInput, setCountryInput] = useState<string>("");
   const [filterEnabled, setFilterEnabled] = useState<boolean>(false);
   const [filterYear, setFilterYear] = useState<number | null>(null);
@@ -148,10 +147,17 @@ export function CrawlerTab() {
     }
   };
 
+  const handleLabeledSaved = (response: SaveReportsListResponse) => {
+    const failed = response.failed.filter((item) => item.error !== "duplicate");
+    if (response.successes.length === 0 && failed.length === 0) return;
+    setRegistryResponse({ ...response, failed });
+  };
+
   const handleManualSearchClick = async () => {
-    if (!companyNameInput || !reportYearInput) return;
+    if (!companyNameInput) return;
 
     resetSearchSlate();
+    setRegistryResponse(null);
     setIsLoading(true);
     setCrawlProgress(null);
     const companyNames = companyNameInput
@@ -162,9 +168,9 @@ export function CrawlerTab() {
     try {
       const transformedData = await searchCompanyReportsByNames({
         companyNames,
-        reportYear: reportYearInput,
         country: countryInput,
         onProgress: setCrawlProgress,
+        onLabeledSaved: handleLabeledSaved,
       });
 
       setManualReports(transformedData);
@@ -226,20 +232,15 @@ export function CrawlerTab() {
     setCompanyNameInput(e.target.value);
   };
 
-  const handleReportYearInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    setReportYearInput(e.target.value);
-  };
-
   const handleCountryInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCountryInput(e.target.value);
   };
 
   const handleDatabaseSearchClick = async () => {
-    if (!selectedCompanies.length || !reportYearInput) return;
+    if (!selectedCompanies.length) return;
 
     resetSearchSlate();
+    setRegistryResponse(null);
     setIsLoading(true);
     setCrawlProgress(null);
 
@@ -247,12 +248,12 @@ export function CrawlerTab() {
       const transformedData = await searchCompanyReports({
         companies: selectedCompanies.map((c) => ({
           name: c.name,
-          reportYear: reportYearInput,
           wikidataId: c.wikidataId,
           companyUrl: c.url,
         })),
         country: countryInput.trim() || undefined,
         onProgress: setCrawlProgress,
+        onLabeledSaved: handleLabeledSaved,
       });
 
       setDatabaseReports(
@@ -294,14 +295,14 @@ export function CrawlerTab() {
   };
 
   const handleAutoSearchClick = async () => {
-    if (!reportYearInput) return;
+    const reportYear = String(new Date().getFullYear());
 
     const companies = buildAutoSearchCompanies();
     if (companies.length === 0) return;
 
     const searchParams: AutoSearchRunParams = {
       companies,
-      reportYear: reportYearInput,
+      reportYear,
       country: countryInput.trim() || undefined,
     };
 
@@ -309,7 +310,7 @@ export function CrawlerTab() {
     try {
       const checkResults = await findRegistryMatchesForAutoSearch({
         companyNames: companies.map((c) => c.name),
-        reportYear: reportYearInput,
+        reportYear,
         wikidataByCompany: Object.fromEntries(
           companies
             .filter((c) => c.wikidataId)
@@ -487,7 +488,6 @@ export function CrawlerTab() {
             <>
               <ManualSearchControls
                 onCompanyNamesChange={handleSearchInputChange}
-                onReportYearChange={handleReportYearInputChange}
                 onCountryChange={handleCountryInputChange}
                 onSearch={handleManualSearchClick}
                 onAutoSearch={
@@ -497,12 +497,12 @@ export function CrawlerTab() {
                   isAutoSearchRunning || isRegistryCheckLoading
                 }
                 onExport={handleExportClick}
-                isSearchDisabled={!companyNameInput || !reportYearInput}
+                isSearchDisabled={!companyNameInput}
                 selectedReports={selectedReports}
                 handleAddToRegistryClick={handleAddToRegistryClick}
                 onRunSelectedReports={() => setIsRunReportsOpen(true)}
               />
-              {(!companyNameInput || !reportYearInput) && (
+              {!companyNameInput && (
                 <p className="text-sm text-gray-02 mt-4">
                   {t("crawler.manualSearchGuard")}
                 </p>
@@ -513,7 +513,6 @@ export function CrawlerTab() {
           {viewMode === "database" && (
             <>
               <DatabaseSearchControls
-                onReportYearChange={handleReportYearInputChange}
                 onSearch={handleDatabaseSearchClick}
                 onAutoSearch={
                   CRAWLER_FEATURES.autoSearch ? handleAutoSearchClick : undefined
@@ -521,21 +520,20 @@ export function CrawlerTab() {
                 isAutoSearchRunning={
                   isAutoSearchRunning || isRegistryCheckLoading
                 }
-                isSearchDisabled={!selectedCompanies.length || !reportYearInput}
+                isSearchDisabled={!selectedCompanies.length}
                 selectedReports={selectedReports}
                 onExport={handleExportClick}
                 filterEnabled={filterEnabled}
                 setFilterEnabled={setFilterEnabled}
                 filterYear={filterYear}
                 setFilterYear={setFilterYear}
-                searchYear={reportYearInput}
                 handleAddToRegistryClick={handleAddToRegistryClick}
                 onRunSelectedReports={() => setIsRunReportsOpen(true)}
                 tagOptions={tagOptions}
                 selectedTags={selectedTags}
                 onTagsChange={setSelectedTags}
               />
-              {(!reportYearInput || !selectedCompanies.length) && (
+              {!selectedCompanies.length && (
                 <p className="text-sm text-gray-02 mt-4">
                   {t("crawler.databaseSearchGuard")}
                 </p>
@@ -559,7 +557,7 @@ export function CrawlerTab() {
           <>
             <AutoSearchRegistryCheckModal
               open={isRegistryCheckModalOpen}
-              reportYear={reportYearInput}
+              reportYear={lastAutoSearchYear}
               matches={registryCheckMatches}
               remainingCompanyCount={
                 pendingAutoSearchParams?.companies.filter(
@@ -577,7 +575,7 @@ export function CrawlerTab() {
               phase={autoSearchPhase}
               progress={autoSearchProgress}
               stats={autoSearchStats}
-              reportYear={reportYearInput}
+              reportYear={lastAutoSearchYear}
               errorMessage={autoSearchError}
               runStartedAt={autoSearchStartedAt}
               runFinishedAt={autoSearchFinishedAt}
@@ -618,7 +616,6 @@ export function CrawlerTab() {
       {viewMode === "manual" && manualReports && (
         <SearchResultsList
           companyReports={manualReports}
-          reportYear={reportYearInput}
           selectedReports={selectedReports}
           handleSelectReport={handleSelectReport}
         />
@@ -627,7 +624,6 @@ export function CrawlerTab() {
       {viewMode === "database" && databaseReports && (
         <SearchResultsList
           companyReports={databaseReports}
-          reportYear={reportYearInput}
           selectedReports={selectedReports}
           handleSelectReport={handleSelectReport}
         />

@@ -22,6 +22,7 @@ import type {
   RegistryReportPill,
 } from "../lib/coverage-types";
 import type { SaveReportSuccess } from "@/tabs/crawler/lib/crawler-types";
+import { unionRegistryReportPills } from "../lib/coverage-registry-report-run";
 
 const REGISTRY_REFRESH_POLL_MS = 2000;
 const REGISTRY_REFRESH_MAX_POLLS = 120;
@@ -172,6 +173,9 @@ function savedReportToPill(saved: SaveReportSuccess): RegistryReportPill {
     sourceUrl: saved.url,
     matchMethod: saved.wikidataId ? "wikidata" : "name",
     prodReady: false,
+    reportTypeId: saved.reportTypeId ?? null,
+    reportTypeSlug: saved.reportTypeSlug ?? null,
+    reportTypeLabel: saved.reportTypeLabel ?? null,
   };
 }
 
@@ -416,10 +420,28 @@ export function useCoverageYearDetail(
         if (requestId !== requestRef.current) return;
 
         setDetail((previous) => {
-          if (!append || !previous) return page;
+          if (append && previous) {
+            return {
+              ...page,
+              entries: [...previous.entries, ...page.entries],
+            };
+          }
+          if (!previous) return page;
+          const priorById = new Map(
+            previous.entries.map((entry) => [entry.id, entry] as const),
+          );
           return {
             ...page,
-            entries: [...previous.entries, ...page.entries],
+            entries: page.entries.map((entry) => {
+              const prior = priorById.get(entry.id);
+              return {
+                ...entry,
+                registryReports: unionRegistryReportPills(
+                  prior?.registryReports,
+                  entry.registryReports,
+                ),
+              };
+            }),
           };
         });
       } catch (err) {

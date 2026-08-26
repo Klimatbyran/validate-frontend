@@ -6,12 +6,9 @@ import {
   ExternalLink,
   CheckCircle2,
 } from "lucide-react";
-import { CompanyReport } from "../lib/crawler-types";
+import { CompanyReport, Report } from "../lib/crawler-types";
 import { useI18n } from "@/contexts/I18nContext";
-import { generateReportPreviews } from "../lib/crawler-utils";
-import { LoadingSpinner } from "@/ui/loading-spinner";
 import { CopyButton } from "@/ui/copy-button";
-import ReactDOM from "react-dom";
 import ManuallyAddReportItem from "./ManuallyAddReportItem";
 
 interface SearchResultItemProps {
@@ -22,8 +19,18 @@ interface SearchResultItemProps {
   initialExpanded?: boolean;
   /** Flatter layout for use inside dialogs (no nested cards). */
   variant?: "default" | "embedded";
-  /** Notifies parent when the full-page PDF preview overlay opens or closes. */
-  onPreviewOpenChange?: (open: boolean) => void;
+}
+
+function reportLabel(
+  result: Report,
+  unknownType: string,
+  unknownYear: string,
+  accessFailed: string,
+) {
+  if (result.fetchFailed) return accessFailed;
+  const type = result.reportType?.trim() || unknownType;
+  const year = result.reportYear?.trim() || unknownYear;
+  return `${type} · ${year}`;
 }
 
 const SearchResultItem = ({
@@ -32,61 +39,18 @@ const SearchResultItem = ({
   onSelect,
   initialExpanded = false,
   variant = "default",
-  onPreviewOpenChange,
 }: SearchResultItemProps) => {
   const { t } = useI18n();
   const { companyName, results } = companyReport;
-  const [resultsWithPreview, setResultsWithPreview] = useState<any[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(
     initialExpanded || variant === "embedded",
   );
-  const [previewOpenIndex, setPreviewOpenIndex] = useState<number | null>(null);
-  const [imgStatus, setImgStatus] = useState<
-    { loading: boolean; error: boolean }[]
-  >([]);
 
   useEffect(() => {
     if ((results?.length ?? 0) > 0) {
       setIsDialogOpen(true);
     }
   }, [results?.length]);
-
-  useEffect(() => {
-    onPreviewOpenChange?.(previewOpenIndex !== null);
-  }, [previewOpenIndex, onPreviewOpenChange]);
-
-  useEffect(() => {
-    if (previewOpenIndex === null) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPreviewOpenIndex(null);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [previewOpenIndex]);
-
-  const handlePreviewOpen = (index: number) => {
-    setPreviewOpenIndex(index);
-  };
-
-  const handlePreviewClose = () => {
-    setPreviewOpenIndex(null);
-  };
-
-  useEffect(() => {
-    if (results && results.length > 0) {
-      setResultsWithPreview(generateReportPreviews(results as Report[]));
-    } else {
-      setResultsWithPreview([]);
-    }
-  }, [results]);
-
-  useEffect(() => {
-    if (resultsWithPreview.length > 0) {
-      setImgStatus(
-        Array(resultsWithPreview.length).fill({ loading: true, error: false }),
-      );
-    }
-  }, [resultsWithPreview.length]);
 
   const handleReportSelect = (url: string) => {
     if (selectedReport === url) {
@@ -105,7 +69,7 @@ const SearchResultItem = ({
         variant={variant}
       />
 
-      {resultsWithPreview.map((result, index) => (
+      {(results ?? []).map((result, index) => (
         <div
           key={`${result.url}-${index}`}
           className={
@@ -117,155 +81,61 @@ const SearchResultItem = ({
           <div
             className={
               variant === "embedded"
-                ? "flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-start"
-                : "relative flex items-center gap-4"
-            }
-            style={
-              variant === "embedded"
-                ? undefined
-                : { minWidth: 50, minHeight: 50 }
+                ? "flex min-w-0 flex-1 items-start gap-2"
+                : "flex min-w-0 flex-1 items-center gap-2 text-sm text-gray-02"
             }
           >
-            <div
-              className="relative shrink-0"
-              style={{ width: 50, height: 50 }}
-            >
-              <img
-                src={result.previewUrl}
-                height={50}
-                width={50}
-                className="cursor-pointer rounded shadow"
-                onClick={() => handlePreviewOpen(index)}
-                alt="Preview"
-                style={{
-                  visibility:
-                    imgStatus[index]?.loading || imgStatus[index]?.error
-                      ? "hidden"
-                      : "visible",
-                  transition: "visibility 0.2s",
-                  width: 50,
-                  height: 50,
-                  objectFit: "cover",
-                }}
-                onLoad={() => {
-                  setImgStatus((prev) => {
-                    const arr = [...prev];
-                    arr[index] = { loading: false, error: false };
-                    return arr;
-                  });
-                }}
-                onError={() => {
-                  setImgStatus((prev) => {
-                    const arr = [...prev];
-                    arr[index] = { loading: false, error: true };
-                    return arr;
-                  });
-                }}
-              />
-              {imgStatus[index]?.loading && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <LoadingSpinner size={6} />
-                </div>
-              )}
-              {imgStatus[index]?.error && (
-                <div className="absolute inset-0 flex items-center justify-center px-1 text-center">
-                  <span className="text-xs text-red-04">
-                    Image failed to load
-                  </span>
-                </div>
-              )}
-            </div>
-            <div
-              className={
-                variant === "embedded"
-                  ? "flex min-w-0 flex-1 items-start gap-2"
-                  : "flex gap-2 text-sm text-gray-02"
-              }
-            >
-              <span className="shrink-0 text-sm text-gray-02">
-                {index + 1}.
-              </span>
-              {variant === "embedded" ? (
-                <div className="min-w-0 flex-1">
-                  <a
-                    href={result.url as string}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="break-all text-sm text-gray-01 hover:text-blue-04"
-                  >
-                    {result.url}
-                  </a>
-                  <div className="mt-1.5 flex flex-nowrap items-center gap-2">
-                    <a
-                      href={result.url as string}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex shrink-0 items-center text-gray-02 hover:text-blue-04"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                    <CopyButton
-                      getText={() => String(result.url ?? "")}
-                      className="shrink-0 whitespace-nowrap border-gray-03/70 bg-gray-03/20 px-2 py-0.5 text-gray-02 hover:bg-gray-03/40"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <a
-                    href={result.url as string}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center text-gray-02 hover:text-blue-04"
-                  >
-                    {`${result?.url?.substring(0, 100)}...`}
-                    <ExternalLink className="ml-2 inline h-4 w-4 shrink-0" />
-                  </a>
-                  <CopyButton
-                    getText={() => String(result.url ?? "")}
-                    className="border-gray-03/70 bg-gray-03/20 px-2 py-0.5 text-gray-02 hover:bg-gray-03/40"
-                  />
-                </>
-              )}
+            <span className="shrink-0 text-sm text-gray-02">{index + 1}.</span>
+            <div className="min-w-0 flex-1">
+              <p
+                className={`text-sm font-medium ${
+                  result.fetchFailed ? "text-orange-03" : "text-gray-01"
+                }`}
+              >
+                {reportLabel(
+                  result,
+                  t("crawler.otherReport"),
+                  t("crawler.unknownYear"),
+                  t("crawler.accessFailed"),
+                )}
+              </p>
+              <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2">
+                <a
+                  href={result.url as string}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-w-0 break-all text-xs text-gray-02 hover:text-blue-04"
+                >
+                  {variant === "embedded"
+                    ? result.url
+                    : `${result?.url?.substring(0, 100) ?? ""}...`}
+                </a>
+                <a
+                  href={result.url as string}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex shrink-0 items-center text-gray-02 hover:text-blue-04"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+                <CopyButton
+                  getText={() => String(result.url ?? "")}
+                  className="shrink-0 whitespace-nowrap border-gray-03/70 bg-gray-03/20 px-2 py-0.5 text-gray-02 hover:bg-gray-03/40"
+                />
+              </div>
             </div>
           </div>
-          <button
-            type="button"
-            className="shrink-0 self-start sm:self-center"
-            onClick={() => handleReportSelect(result.url as string)}
-          >
-            <CheckCircle2
-              className={`${selectedReport === result.url ? "text-green-03" : "text-gray-02"} h-6 w-6`}
-            />
-          </button>
-          {previewOpenIndex === index &&
-            ReactDOM.createPortal(
-              <div
-                style={{
-                  position: "fixed",
-                  left: 0,
-                  top: 0,
-                  width: "100vw",
-                  height: "100vh",
-                  zIndex: 10000,
-                  background: "rgba(0,0,0,0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={handlePreviewClose}
-              >
-                <img
-                  src={result.previewUrl}
-                  className="max-h-[90vh] max-w-[90vw] rounded border border-gray-200 bg-white shadow-lg"
-                  alt="Full Preview"
-                  style={{ objectFit: "contain" }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>,
-              document.body,
-            )}
+          {!result.fetchFailed ? (
+            <button
+              type="button"
+              className="shrink-0 self-start sm:self-center"
+              onClick={() => handleReportSelect(result.url as string)}
+            >
+              <CheckCircle2
+                className={`${selectedReport === result.url ? "text-green-03" : "text-gray-02"} h-6 w-6`}
+              />
+            </button>
+          ) : null}
         </div>
       ))}
     </>
@@ -278,8 +148,14 @@ const SearchResultItem = ({
           <Book className="h-4 w-4 text-gray-02" />
           <div>
             <h3 className="font-semibold text-gray-01">{companyName}</h3>
-            <p className="text-xs text-gray-02">
-              {t("crawler.foundReportLinks", { count: results.length })}
+            <p
+              className={`text-xs ${
+                companyReport.crawlError ? "text-pink-03" : "text-gray-02"
+              }`}
+            >
+              {companyReport.crawlError
+                ? t("crawler.crawlRequestFailed")
+                : t("crawler.foundReportLinks", { count: results.length })}
             </p>
           </div>
         </div>
@@ -289,37 +165,41 @@ const SearchResultItem = ({
   }
 
   return (
-    <>
-      <div className="mt-4 overflow-hidden rounded-[20px] bg-gray-04/80 backdrop-blur-sm hover:shadow-md transition-shadow">
-        <div className="flex w-full items-center justify-between border-b border-gray-03 bg-gray-03/50 px-4 py-3">
-          <button
-            onClick={() => setIsDialogOpen(!isDialogOpen)}
-            className="flex w-full items-center gap-3 transition-opacity hover:opacity-70"
-          >
-            {isDialogOpen ? (
-              <ChevronDown className="h-5 w-5 text-gray-02" />
-            ) : (
-              <ChevronRight className="h-5 w-5 text-gray-02" />
-            )}
+    <div className="mt-4 overflow-hidden rounded-[20px] bg-gray-04/80 backdrop-blur-sm hover:shadow-md transition-shadow">
+      <div className="flex w-full items-center justify-between border-b border-gray-03 bg-gray-03/50 px-4 py-3">
+        <button
+          onClick={() => setIsDialogOpen(!isDialogOpen)}
+          className="flex w-full items-center gap-3 transition-opacity hover:opacity-70"
+        >
+          {isDialogOpen ? (
+            <ChevronDown className="h-5 w-5 text-gray-02" />
+          ) : (
+            <ChevronRight className="h-5 w-5 text-gray-02" />
+          )}
 
-            <div className="w-full text-left">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Book className="h-4 w-4 text-white" />
-                  <h3 className="font-bold text-gray-01">{companyName}</h3>
-                </div>
-              </div>
-              <div className="mt-1 flex items-center gap-2 text-xs text-gray-02">
-                {t("crawler.foundReportLinks", { count: results.length })}
+          <div className="w-full text-left">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Book className="h-4 w-4 text-white" />
+                <h3 className="font-bold text-gray-01">{companyName}</h3>
               </div>
             </div>
-          </button>
-        </div>
-        <div className="overflow-hidden rounded-[20px] bg-gray-04/80 backdrop-blur-sm hover:shadow-md transition-shadow">
-          {isDialogOpen && resultRows}
-        </div>
+            <div
+              className={`mt-1 flex items-center gap-2 text-xs ${
+                companyReport.crawlError ? "text-pink-03" : "text-gray-02"
+              }`}
+            >
+              {companyReport.crawlError
+                ? t("crawler.crawlRequestFailed")
+                : t("crawler.foundReportLinks", { count: results.length })}
+            </div>
+          </div>
+        </button>
       </div>
-    </>
+      <div className="overflow-hidden rounded-[20px] bg-gray-04/80 backdrop-blur-sm hover:shadow-md transition-shadow">
+        {isDialogOpen && resultRows}
+      </div>
+    </div>
   );
 };
 
