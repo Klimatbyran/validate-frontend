@@ -119,7 +119,9 @@ function PlanRow({ plan, onStepClick }: PlanRowProps) {
             value={selectedRunId}
             onChange={setSelectedRunId}
             getOptionLabel={(id) =>
-              id === LATEST_RUN ? "Latest" : formatRunLabel(byRunId.get(id) ?? [])
+              id === LATEST_RUN
+                ? "Latest"
+                : formatRunLabel(byRunId.get(id) ?? [])
             }
             triggerClassName="h-7 text-xs px-2"
           />
@@ -128,8 +130,8 @@ function PlanRow({ plan, onStepClick }: PlanRowProps) {
       </div>
       {selectedRunId !== LATEST_RUN && (
         <p className="text-xs text-blue-03">
-          Viewing a past run — step status/timing only; commitment and
-          measure content below always reflects the current data.
+          Viewing a past run — step status/timing only; commitment and measure
+          content below always reflects the current data.
         </p>
       )}
       <div className="flex flex-wrap gap-1.5">
