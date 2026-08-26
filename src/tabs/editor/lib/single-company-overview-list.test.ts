@@ -24,7 +24,9 @@ function overview(
   };
 }
 
-function row(overviewPartial: Partial<CompanyVerificationOverview>): CompanyReportRow {
+function row(
+  overviewPartial: Partial<CompanyVerificationOverview>,
+): CompanyReportRow {
   const company: GarboCompanyListItem = {
     id: "c1",
     name: "Acme",
@@ -56,7 +58,9 @@ const emptyFilters: OverviewListFilterInput = {
 describe("missing data filters", () => {
   it("detects no emissions when overview emissions is none", () => {
     expect(
-      reportRowHasNoEmissionsData(row({ emissions: "none", economy: "verified" })),
+      reportRowHasNoEmissionsData(
+        row({ emissions: "none", economy: "verified" }),
+      ),
     ).toBe(true);
     expect(
       reportRowHasNoEmissionsData(

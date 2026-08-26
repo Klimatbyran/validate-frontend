@@ -27,7 +27,8 @@ export function computePerformanceMetrics(
   // report-extra reflect coverage gaps, not extraction accuracy, and must never
   // dilute the accuracy percentages.
   const bothExist = comparisonRows.filter(
-    (r) => r.inStage && r.inProd && isExtractionComparisonDiscrepancy(r.discrepancy),
+    (r) =>
+      r.inStage && r.inProd && isExtractionComparisonDiscrepancy(r.discrepancy),
   );
   const rows = verifiedOnly
     ? bothExist.filter((r) => r.prodVerified)
@@ -174,7 +175,8 @@ export function calculateOverviewAggregates(
   // Denominator for zeroInclusive: only slots where the report year exists on both
   // sides (totalCompanies also counts reportAbsent/reportExtra, which are coverage
   // gaps, not extraction outcomes, and must never dilute accuracy).
-  const comparableSlots = totals.totalCompanies - totals.reportAbsent - totals.reportExtra;
+  const comparableSlots =
+    totals.totalCompanies - totals.reportAbsent - totals.reportExtra;
 
   return {
     exactMatch:

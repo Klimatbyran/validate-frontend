@@ -241,7 +241,8 @@ export async function resolveStageDatapoint(
       wikidataId: row.wikidataId,
       companyReportId: row.companyReportId,
       dataYear: String(dataYear),
-      category: target.datapointType === "category" ? target.category : undefined,
+      category:
+        target.datapointType === "category" ? target.category : undefined,
       statedTotalLocation:
         target.datapointType === "statedTotalEmissions"
           ? target.statedTotalLocation
