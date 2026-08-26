@@ -172,6 +172,14 @@ export function getClimatePlansPipelineWebhookUrl(): string {
   return "http://localhost:3003/api/webhook";
 }
 
+/**
+ * ReportType.slug garbo tags persisted markdown with when the climate plans
+ * pipeline checkbox is on — an explicit opt-in sent alongside callbackUrl,
+ * not inferred from callbackUrl's mere presence, since callbackUrl is a
+ * generic hand-off mechanism other future consumers could use too.
+ */
+export const CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG = "municipal-climate-plan";
+
 /** X-API-Key twin of staff GET /api/pipeline/companies — proxy injects the key. */
 export const PIPELINE_COMPANIES_LIST_PATH = "/internal-pipeline/companies";
 
@@ -207,7 +215,8 @@ export function getClimatePlansPipelineApiUrl(): string {
     | undefined;
   if (override) return override;
   const target = jointMode();
-  if (target === "stage") return "https://stage-climate-plans-api.klimatkollen.se/api";
+  if (target === "stage")
+    return "https://stage-climate-plans-api.klimatkollen.se/api";
   if (target === "prod") return "https://climate-plans-api.klimatkollen.se/api";
   return "http://localhost:3003/api";
 }

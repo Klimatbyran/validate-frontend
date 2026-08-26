@@ -15,7 +15,10 @@ import { UploadedFile, UrlInput } from "./types";
 import { collectPdfFilesFromDataTransfer } from "@/lib/drag-drop-pdf-files";
 import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
-import { getClimatePlansPipelineWebhookUrl } from "@/config/api-env";
+import {
+  getClimatePlansPipelineWebhookUrl,
+  CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
+} from "@/config/api-env";
 import { NEW_BATCH_DROPDOWN_VALUE } from "@/lib/garbo-batch-types";
 import { resolvePipelineBatchId } from "@/lib/resolve-pipeline-batch-id";
 import {
@@ -50,8 +53,7 @@ export function UploadTab() {
   const [selectedWorkers, setSelectedWorkers] =
     useState<RunOnlyWorkerId[]>(DEFAULT_RUN_ONLY);
   const [forceReindex, setForceReindex] = useState(false);
-  const [useClimatePlansPipeline, setUseClimatePlansPipeline] =
-    useState(false);
+  const [useClimatePlansPipeline, setUseClimatePlansPipeline] = useState(false);
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState("");
   const {
@@ -82,6 +84,9 @@ export function UploadTab() {
   const tags = selectedTags.length > 0 ? selectedTags : undefined;
   const callbackUrl = useClimatePlansPipeline
     ? getClimatePlansPipelineWebhookUrl()
+    : undefined;
+  const reportTypeSlug = useClimatePlansPipeline
+    ? CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG
     : undefined;
 
   const handleFileSubmit = useCallback(async () => {
@@ -127,6 +132,7 @@ export function UploadTab() {
         runOnly,
         tags,
         callbackUrl,
+        reportTypeSlug,
       });
 
       const reusedCount = isUploadPdfsEnvelope(result)
@@ -172,6 +178,7 @@ export function UploadTab() {
     runOnly,
     tags,
     callbackUrl,
+    reportTypeSlug,
     t,
     refetchBatches,
   ]);
@@ -294,6 +301,7 @@ export function UploadTab() {
         runOnly,
         tags,
         callbackUrl,
+        reportTypeSlug,
       });
       console.log("Jobs created successfully:", result);
 
@@ -373,6 +381,7 @@ export function UploadTab() {
     runOnly,
     tags,
     callbackUrl,
+    reportTypeSlug,
     t,
     refetchBatches,
   ]);

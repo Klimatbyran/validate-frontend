@@ -53,6 +53,8 @@ export interface UploadPdfsOptions {
   /** When set, garbo stops after indexMarkdown and POSTs {url} here instead
    * of continuing into precheck. Must be in garbo's ALLOWED_CALLBACK_URLS. */
   callbackUrl?: string;
+  /** Explicit ReportType.slug for garbo to tag persisted markdown with. */
+  reportTypeSlug?: string;
 }
 
 export type UploadPdfUploadMeta = {
@@ -107,6 +109,8 @@ export interface CreateJobsFromUrlsOptions {
   /** When set, garbo stops after indexMarkdown and POSTs {url} here instead
    * of continuing into precheck. Must be in garbo's ALLOWED_CALLBACK_URLS. */
   callbackUrl?: string;
+  /** Explicit ReportType.slug for garbo to tag persisted markdown with. */
+  reportTypeSlug?: string;
 }
 
 export async function uploadPdfsToParsePdf({
@@ -117,6 +121,7 @@ export async function uploadPdfsToParsePdf({
   runOnly,
   tags,
   callbackUrl,
+  reportTypeSlug,
 }: UploadPdfsOptions): Promise<UploadPdfsResponse> {
   const formData = new FormData();
   for (const file of files) formData.append("files", file);
@@ -128,6 +133,7 @@ export async function uploadPdfsToParsePdf({
     formData.append("runOnly", JSON.stringify(runOnly));
   if (tags && tags.length > 0) formData.append("tags", JSON.stringify(tags));
   if (callbackUrl) formData.append("callbackUrl", callbackUrl);
+  if (reportTypeSlug) formData.append("reportTypeSlug", reportTypeSlug);
 
   const response = await authenticatedFetch(PARSE_PDF_UPLOAD_ENDPOINT, {
     method: "POST",
@@ -157,6 +163,7 @@ export async function createJobsFromUrls({
   pipelineCompany,
   urlContexts,
   callbackUrl,
+  reportTypeSlug,
 }: CreateJobsFromUrlsOptions): Promise<CreateJobsFromUrlsResult> {
   const body = {
     autoApprove: Boolean(autoApprove),
@@ -169,6 +176,7 @@ export async function createJobsFromUrls({
     ...(pipelineCompany ? { pipelineCompany } : {}),
     ...(urlContexts && urlContexts.length > 0 ? { urlContexts } : {}),
     ...(callbackUrl ? { callbackUrl } : {}),
+    ...(reportTypeSlug ? { reportTypeSlug } : {}),
     urls,
   };
 
