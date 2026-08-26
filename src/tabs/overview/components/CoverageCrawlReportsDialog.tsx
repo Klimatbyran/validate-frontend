@@ -120,7 +120,8 @@ export function CoverageCrawlReportsDialog({
   } = runPipeline;
 
   const emitSaved = (response: SaveReportsListResponse) => {
-    setRegistryResponse(response);
+    const failed = response.failed.filter((item) => item.error !== "duplicate");
+    setRegistryResponse({ ...response, failed });
     for (const success of response.successes) {
       onSaved?.(success);
     }

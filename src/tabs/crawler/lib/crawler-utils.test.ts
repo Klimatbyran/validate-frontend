@@ -17,30 +17,34 @@ const company = (
 });
 
 describe("labeledHitsToSelectedReports", () => {
+  const now = new Date().getFullYear();
+  const recent = String(now);
+  const lastYear = String(now - 1);
+
   it("saves fetched PDFs with a year even when type or S3 is missing", () => {
     const selected = labeledHitsToSelectedReports([
       company("Acme", [
         {
-          url: "https://example.com/csr-2024.pdf",
-          reportYear: "2024",
+          url: `https://example.com/csr-${recent}.pdf`,
+          reportYear: recent,
           reportTypeSlug: "csr-report",
         },
         {
-          url: "https://example.com/cdp-2025.pdf",
-          reportYear: "2025",
+          url: `https://example.com/cdp-${recent}.pdf`,
+          reportYear: recent,
         },
         {
-          url: "https://example.com/report-2023.pdf",
-          title: "Something 2023",
+          url: `https://example.com/report-${lastYear}.pdf`,
+          title: `Something ${lastYear}`,
         },
       ]),
     ]);
 
     expect(selected.map((item) => item.url)).toEqual([
-      "https://example.com/csr-2024.pdf",
-      "https://example.com/report-2023.pdf",
+      `https://example.com/csr-${recent}.pdf`,
+      `https://example.com/report-${lastYear}.pdf`,
     ]);
-    expect(selected[1]?.reportYear).toBe("2023");
+    expect(selected[1]?.reportYear).toBe(lastYear);
     expect(selected[1]?.reportTypeSlug).toBe("other");
   });
 
@@ -120,6 +124,67 @@ describe("labeledHitsToSelectedReports", () => {
     expect(selected.map((item) => item.url)).toEqual([
       "https://example.com/csr-2024.pdf",
       "https://example.com/csr-2024-summary.pdf",
+    ]);
+  });
+
+  it("keeps a parent company's own BRSR filing", () => {
+    const selected = labeledHitsToSelectedReports([
+      company("Infosys", [
+        {
+          url: "https://example.com/infosys-brsr-2025.pdf",
+          reportYear: "2025",
+          reportTypeSlug: "sustainability-report",
+        },
+      ]),
+    ]);
+
+    expect(selected.map((item) => item.url)).toEqual([
+      "https://example.com/infosys-brsr-2025.pdf",
+    ]);
+  });
+
+  it("infers a four-digit year from the URL when the hit year is not YYYY", () => {
+    const selected = labeledHitsToSelectedReports([
+      company("Acme", [
+        {
+          url: `https://example.com/csr-${recent}.pdf`,
+          reportYear: `${recent}-${Number(recent) + 1}`,
+          title: `FY${recent} CSR`,
+        },
+      ]),
+    ]);
+
+    expect(selected).toEqual([
+      expect.objectContaining({
+        url: `https://example.com/csr-${recent}.pdf`,
+        reportYear: recent,
+      }),
+    ]);
+  });
+
+  it("pins auto-save to a requested crawl year instead of the recency window", () => {
+    const selected = labeledHitsToSelectedReports([
+      {
+        companyName: "Acme",
+        wikidataId: "Q1",
+        reportYear: recent,
+        results: [
+          {
+            url: `https://example.com/csr-${recent}.pdf`,
+            reportYear: recent,
+            reportTypeSlug: "csr-report",
+          },
+          {
+            url: `https://example.com/csr-${lastYear}.pdf`,
+            reportYear: lastYear,
+            reportTypeSlug: "csr-report",
+          },
+        ],
+      },
+    ]);
+
+    expect(selected.map((item) => item.url)).toEqual([
+      `https://example.com/csr-${recent}.pdf`,
     ]);
   });
 });

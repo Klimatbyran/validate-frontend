@@ -186,9 +186,6 @@ function looksLikeOtherLegalEntity(
 ): boolean {
   const haystack = haystackForAutoSave(url, title);
   const company = companyName.toLowerCase();
-  if (/\bbrsr\b/.test(haystack) && !company.includes("india")) {
-    return true;
-  }
   if (/\bishares\b/.test(haystack) && !company.includes("ishares")) {
     return true;
   }
@@ -224,8 +221,7 @@ export function labeledHitsToSelectedReports(
       if (looksLikeOtherLegalEntity(url, company.companyName, hit.title)) {
         continue;
       }
-      const reportYear =
-        hit.reportYear?.trim() || inferReportYearFromUrl(url, hit.title);
+      const reportYear = yearForSelectedReport(url, hit);
       if (!/^\d{4}$/.test(reportYear)) continue;
       if (!isRecentEnoughToAutoSave(reportYear, company.reportYear)) continue;
       hits.push({
@@ -279,7 +275,9 @@ function normalizeCompanyReport(
 ): CompanyReport {
   return {
     companyName: item?.companyName || fallback.name || "Unknown",
-    reportYear: item?.reportYear || fallback.reportYear,
+    // Only the year this crawl requested. Do not copy a classified hit year
+    // from the API row — that would collapse the recency auto-save window.
+    reportYear: fallback.reportYear,
     results: (item?.results ?? []).map(withFallbackReportType),
     discoverySource: item?.discoverySource,
     listingPageUrl: item?.listingPageUrl,
