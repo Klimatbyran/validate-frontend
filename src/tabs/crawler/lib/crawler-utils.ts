@@ -9,10 +9,10 @@ import type {
 import { saveToRegistry, updateCompanyReports } from "./crawler-api";
 import { mapWithConcurrency } from "./map-with-concurrency";
 
-/** Parallel crawl cap — tune via VITE_AUTO_SEARCH_CRAWL_CONCURRENCY (default 6). */
+/** Parallel crawl cap — keep this low; each company holds Firecrawl for minutes. */
 export const AUTO_SEARCH_CRAWL_CONCURRENCY = Math.max(
   1,
-  Math.min(12, Number(import.meta.env.VITE_AUTO_SEARCH_CRAWL_CONCURRENCY ?? 6)),
+  Math.min(12, Number(import.meta.env.VITE_AUTO_SEARCH_CRAWL_CONCURRENCY ?? 2)),
 );
 const CRAWL_CONCURRENCY = AUTO_SEARCH_CRAWL_CONCURRENCY;
 
@@ -269,6 +269,50 @@ export async function saveLabeledSearchResults(
   return saveToRegistry(toSave);
 }
 
+export function mergeSaveReportsResponses(
+  current: SaveReportsListResponse,
+  next: SaveReportsListResponse,
+): SaveReportsListResponse {
+  return {
+    message: next.message?.trim() || current.message,
+    successes: [...current.successes, ...next.successes],
+    failed: [...current.failed, ...next.failed],
+  };
+}
+
+async function saveLabeledSearchResultsWithRetry(
+  companyReports: CompanyReport[],
+): Promise<SaveReportsListResponse | null> {
+  try {
+    return await saveLabeledSearchResults(companyReports);
+  } catch (error) {
+    console.error("Auto-save labeled search results failed:", error);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      return await saveLabeledSearchResults(companyReports);
+    } catch (retryError) {
+      console.error(
+        "Auto-save labeled search results retry failed:",
+        retryError,
+      );
+      const message =
+        retryError instanceof Error
+          ? retryError.message
+          : "Failed to save to registry";
+      return {
+        message,
+        successes: [],
+        failed: labeledHitsToSelectedReports(companyReports).map((report) => ({
+          error: "unknown" as const,
+          companyName: report.companyName,
+          reportYear: report.reportYear,
+          message,
+        })),
+      };
+    }
+  }
+}
+
 function normalizeCompanyReport(
   item: CompanyReport | undefined,
   fallback: crawlerSearchQuery,
@@ -304,8 +348,9 @@ async function crawlSingleCompany(
 
 /**
  * Fetches company reports for given companies and year.
- * Auto-saves labeled hits only when `onLabeledSaved` is provided so LLM
- * auto-search can crawl without writing every candidate to the registry.
+ * When `onLabeledSaved` is set, each finished company is labeled and written
+ * to the registry before the next one starts in that slot, so a later timeout
+ * does not drop companies that already completed.
  */
 export const searchCompanyReports = async ({
   companies,
@@ -333,6 +378,17 @@ export const searchCompanyReports = async ({
   });
 
   let completed = 0;
+  let accumulated: SaveReportsListResponse = {
+    message: "",
+    successes: [],
+    failed: [],
+  };
+  let saveChain = Promise.resolve();
+  const enqueueSave = (work: () => Promise<void>) => {
+    saveChain = saveChain.then(work, work);
+    return saveChain;
+  };
+
   onProgress?.({
     companyIndex: 0,
     companyTotal: searchQueries.length,
@@ -352,42 +408,17 @@ export const searchCompanyReports = async ({
         companyName: query.name,
         parallel: CRAWL_CONCURRENCY,
       });
+      if (onLabeledSaved) {
+        await enqueueSave(async () => {
+          const saved = await saveLabeledSearchResultsWithRetry([result]);
+          if (!saved) return;
+          accumulated = mergeSaveReportsResponses(accumulated, saved);
+          onLabeledSaved(accumulated);
+        });
+      }
       return result;
     },
   );
-
-  if (onLabeledSaved) {
-    try {
-      const saved = await saveLabeledSearchResults(reports);
-      onLabeledSaved(saved ?? { message: "", successes: [], failed: [] });
-    } catch (error) {
-      console.error("Auto-save labeled search results failed:", error);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      try {
-        const saved = await saveLabeledSearchResults(reports);
-        onLabeledSaved(saved ?? { message: "", successes: [], failed: [] });
-      } catch (retryError) {
-        console.error(
-          "Auto-save labeled search results retry failed:",
-          retryError,
-        );
-        const message =
-          retryError instanceof Error
-            ? retryError.message
-            : "Failed to save to registry";
-        onLabeledSaved({
-          message,
-          successes: [],
-          failed: labeledHitsToSelectedReports(reports).map((report) => ({
-            error: "unknown" as const,
-            companyName: report.companyName,
-            reportYear: report.reportYear,
-            message,
-          })),
-        });
-      }
-    }
-  }
 
   return reports;
 };

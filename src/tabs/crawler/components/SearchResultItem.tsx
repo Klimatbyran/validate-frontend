@@ -33,6 +33,16 @@ function reportLabel(
   return `${type} · ${year}`;
 }
 
+function crawlStatusText(
+  t: (key: string, params?: Record<string, string | number>) => string,
+  crawlError: string | undefined,
+  resultCount: number,
+): string {
+  if (!crawlError) return t("crawler.foundReportLinks", { count: resultCount });
+  if (/timed out/i.test(crawlError)) return t("crawler.crawlTimedOut");
+  return t("crawler.crawlRequestFailed");
+}
+
 const SearchResultItem = ({
   companyReport,
   selectedReport,
@@ -153,9 +163,11 @@ const SearchResultItem = ({
                 companyReport.crawlError ? "text-pink-03" : "text-gray-02"
               }`}
             >
-              {companyReport.crawlError
-                ? t("crawler.crawlRequestFailed")
-                : t("crawler.foundReportLinks", { count: results.length })}
+              {crawlStatusText(
+                t,
+                companyReport.crawlError,
+                results.length,
+              )}
             </p>
           </div>
         </div>
@@ -189,9 +201,11 @@ const SearchResultItem = ({
                 companyReport.crawlError ? "text-pink-03" : "text-gray-02"
               }`}
             >
-              {companyReport.crawlError
-                ? t("crawler.crawlRequestFailed")
-                : t("crawler.foundReportLinks", { count: results.length })}
+              {crawlStatusText(
+                t,
+                companyReport.crawlError,
+                results.length,
+              )}
             </div>
           </div>
         </button>
