@@ -10,6 +10,7 @@ import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/ui/button";
+import { gicsPanelSize, gicsRowNaturalWidth } from "./gics-tree-select-layout";
 
 export type GicsTreeOption = {
   code: string;
@@ -36,68 +37,6 @@ function optionLabel(opt: GicsTreeOption): string {
 
 function sortText(a: string, b: string) {
   return a.localeCompare(b, undefined, { sensitivity: "base" });
-}
-
-/** Panel padding (p-1.5 on both sides). */
-const GICS_PANEL_PAD_X = 12;
-/** Keep names clear of the vertical scrollbar. */
-const GICS_SCROLLBAR_GUTTER = 16;
-/** Option/heading px-3. */
-const GICS_ROW_PAD_X = 12;
-const GICS_DEPTH_STEP = 12;
-/** Checkbox (w-4) + gap-2. */
-const GICS_CHECKBOX_AND_GAP = 24;
-/** Generous text-sm character width so full names fit on one line. */
-const GICS_OPTION_CHAR_PX = 9;
-/** 11px uppercase heading character width. */
-const GICS_HEADING_CHAR_PX = 7.5;
-const GICS_VIEWPORT_MARGIN = 8;
-
-export function gicsRowNaturalWidth(row: {
-  kind: "heading" | "option";
-  depth: number;
-  label: string;
-}): number {
-  const charPx =
-    row.kind === "heading" ? GICS_HEADING_CHAR_PX : GICS_OPTION_CHAR_PX;
-  const textWidth = Math.ceil(row.label.length * charPx);
-  const leftPad = GICS_ROW_PAD_X + row.depth * GICS_DEPTH_STEP;
-  const extras =
-    row.kind === "option"
-      ? GICS_CHECKBOX_AND_GAP + GICS_ROW_PAD_X
-      : GICS_ROW_PAD_X;
-  return leftPad + extras + textWidth;
-}
-
-export function gicsPanelSize({
-  triggerLeft,
-  triggerWidth,
-  minWidth,
-  rowNaturalWidths,
-  viewportWidth,
-  margin = GICS_VIEWPORT_MARGIN,
-}: {
-  triggerLeft: number;
-  triggerWidth: number;
-  minWidth: number;
-  rowNaturalWidths: number[];
-  viewportWidth: number;
-  margin?: number;
-}): { width: number; left: number } {
-  const contentWidth = Math.max(
-    minWidth,
-    triggerWidth,
-    Math.max(0, ...rowNaturalWidths) +
-      GICS_PANEL_PAD_X +
-      GICS_SCROLLBAR_GUTTER,
-  );
-  const maxWidth = Math.max(minWidth, viewportWidth - 2 * margin);
-  const width = Math.min(contentWidth, maxWidth);
-  let left = triggerLeft;
-  if (left + width > viewportWidth - margin) {
-    left = Math.max(margin, viewportWidth - margin - width);
-  }
-  return { width, left };
 }
 
 function buildRows(options: GicsTreeOption[], query: string): Row[] {
@@ -339,6 +278,29 @@ export function GicsTreeSelect({
     };
   }, [open, panelMaxHeight, panelMinWidth, rows]);
 
+  useLayoutEffect(() => {
+    if (!open || !panelRef.current || !panelPosition) return;
+    const panel = panelRef.current;
+    let overflow = 0;
+    for (const label of panel.querySelectorAll<HTMLElement>(
+      "[data-gics-label]",
+    )) {
+      overflow = Math.max(overflow, label.scrollWidth - label.clientWidth);
+    }
+    if (overflow <= 1) return;
+
+    const viewportW = window.innerWidth || 0;
+    const maxWidth = Math.max(panelMinWidth, viewportW - 16);
+    const width = Math.min(panelPosition.width + overflow + 16, maxWidth);
+    if (width <= panelPosition.width + 1) return;
+
+    let left = panelPosition.left;
+    if (left + width > viewportW - 8) {
+      left = Math.max(8, viewportW - 8 - width);
+    }
+    setPanelPosition((prev) => (prev ? { ...prev, width, left } : prev));
+  }, [open, panelPosition, panelMinWidth]);
+
   const hasAnyOptions = options.length > 0;
   const hasAnyRows = rows.some((r) => r.kind === "option");
 
@@ -346,6 +308,11 @@ export function GicsTreeSelect({
     onChange(next);
     setOpen(false);
   };
+
+  const viewportCapped =
+    panelPosition != null &&
+    panelPosition.width >=
+      Math.max(panelMinWidth, (window.innerWidth || 0) - 16) - 1;
 
   return (
     <div className="relative shrink-0" ref={wrapperRef}>
@@ -419,8 +386,10 @@ export function GicsTreeSelect({
                       <div
                         key={row.key}
                         className={cn(
-                          "px-3 py-1 text-[11px] font-semibold text-gray-02 uppercase tracking-wider break-words",
+                          "px-3 py-1 text-[11px] font-semibold text-gray-02 uppercase tracking-wider",
+                          viewportCapped ? "break-words" : "whitespace-nowrap",
                         )}
+                        data-gics-label
                         style={{ paddingLeft: 12 + row.depth * 12 }}
                         aria-hidden
                       >
@@ -453,7 +422,13 @@ export function GicsTreeSelect({
                           <Check className="w-3.5 h-3.5 text-white" />
                         ) : null}
                       </span>
-                      <span className="min-w-0 flex-1 break-words">
+                      <span
+                        className={cn(
+                          "min-w-0 flex-1",
+                          viewportCapped ? "break-words" : "whitespace-nowrap",
+                        )}
+                        data-gics-label
+                      >
                         {row.label}
                       </span>
                     </button>

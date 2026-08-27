@@ -1,14 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import {
-  GicsTreeSelect,
-  gicsPanelSize,
-  gicsRowNaturalWidth,
-} from "./gics-tree-select";
+import { GicsTreeSelect } from "./gics-tree-select";
+import { gicsPanelSize, gicsRowNaturalWidth } from "./gics-tree-select-layout";
 
-const LONG_NAME =
-  "Independent Power Producers & Energy Traders";
+const LONG_NAME = "Independent Power Producers & Energy Traders";
 const LONG_OPTION_LABEL = `${LONG_NAME} (55105020)`;
 
 describe("gicsRowNaturalWidth / gicsPanelSize", () => {
@@ -58,8 +54,7 @@ describe("GicsTreeSelect", () => {
             code: "55105020",
             label: LONG_NAME,
             sector: "Utilities",
-            group:
-              "Independent Power and Renewable Electricity Producers",
+            group: "Independent Power and Renewable Electricity Producers",
             industry: LONG_NAME,
           },
         ]}
@@ -71,19 +66,18 @@ describe("GicsTreeSelect", () => {
       />,
     );
 
-    await user.click(
-      screen.getByRole("button", { name: "Select industry" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Select industry" }));
 
     const option = await screen.findByRole("option", {
       name: LONG_OPTION_LABEL,
     });
     expect(option).toHaveTextContent(LONG_OPTION_LABEL);
 
-    const label = option.querySelector("span:last-child");
+    const label = option.querySelector("[data-gics-label]");
     expect(label).toBeTruthy();
     expect(label?.className).not.toMatch(/overflow-x-auto/);
     expect(label?.className).not.toMatch(/truncate/);
+    expect(label?.className).toMatch(/whitespace-nowrap/);
 
     const panel = screen.getByRole("listbox");
     expect(panel.className).toMatch(/overflow-x-hidden/);
