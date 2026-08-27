@@ -18,6 +18,7 @@ const TRANSIENT_FETCH_ATTEMPTS = 6;
 /** Safety cap so a hung Firecrawl job cannot block a 100-company run forever. */
 const SEARCH_REPORT_JOB_MAX_MS = 45 * 60 * 1000;
 const SEARCH_REPORT_JOB_POLL_MS = 3000;
+const SEARCH_REPORT_JOB_MAX_POLL_FAILURES = 5;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -134,6 +135,7 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
   }
 
   const deadline = Date.now() + SEARCH_REPORT_JOB_MAX_MS;
+  let consecutivePollFailures = 0;
   while (Date.now() < deadline) {
     await sleep(SEARCH_REPORT_JOB_POLL_MS);
     const pollResponse = await authFetchWithTransientRetry(
@@ -141,7 +143,32 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
       { method: "GET" },
       { attempts: 2 },
     );
-    if (!pollResponse?.ok) continue;
+    if (!pollResponse) {
+      consecutivePollFailures += 1;
+      if (consecutivePollFailures >= SEARCH_REPORT_JOB_MAX_POLL_FAILURES) {
+        throw new Error("Could not reach the reports API");
+      }
+      continue;
+    }
+    if (
+      pollResponse.status >= 400 &&
+      pollResponse.status < 500 &&
+      pollResponse.status !== 429
+    ) {
+      throw new Error(
+        `Failed to fetch report: ${pollResponse.status} ${pollResponse.statusText}`,
+      );
+    }
+    if (!pollResponse.ok) {
+      consecutivePollFailures += 1;
+      if (consecutivePollFailures >= SEARCH_REPORT_JOB_MAX_POLL_FAILURES) {
+        throw new Error(
+          `Failed to fetch report: ${pollResponse.status} ${pollResponse.statusText}`,
+        );
+      }
+      continue;
+    }
+    consecutivePollFailures = 0;
     const job = (await pollResponse.json()) as {
       status?: string;
       results?: unknown;
