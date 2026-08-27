@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import type { CompanyReport } from "./crawler-types";
 import {
+  CRAWL_UNREACHABLE_MESSAGE,
+  SEARCH_REPORT_JOB_TIMEOUT_MESSAGE,
+  sanitizeCrawlErrorMessage,
+} from "./crawler-types";
+import {
   labeledHitsToSelectedReports,
   mergeSaveReportsResponses,
   selectedReportFromHit,
@@ -297,5 +302,19 @@ describe("mergeSaveReportsResponses", () => {
     expect(merged.successes).toHaveLength(1);
     expect(merged.failed).toHaveLength(1);
     expect(merged.successes[0]?.companyName).toBe("Acme");
+  });
+});
+
+describe("sanitizeCrawlErrorMessage", () => {
+  it("keeps a 404 poll error readable and strips control characters", () => {
+    expect(sanitizeCrawlErrorMessage("Search job not found (404)\n")).toBe(
+      "Search job not found (404)",
+    );
+  });
+
+  it("does not collapse timeout and unreachable copy into one string", () => {
+    expect(SEARCH_REPORT_JOB_TIMEOUT_MESSAGE).not.toBe(
+      CRAWL_UNREACHABLE_MESSAGE,
+    );
   });
 });

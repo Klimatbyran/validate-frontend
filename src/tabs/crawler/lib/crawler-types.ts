@@ -43,6 +43,16 @@ export interface CompanyReport {
 export const SEARCH_REPORT_JOB_TIMEOUT_MESSAGE =
   "Crawl timed out after 45 minutes";
 
+export const CRAWL_UNREACHABLE_MESSAGE = "Could not reach the reports API";
+
+export function sanitizeCrawlErrorMessage(error: string): string {
+  return error
+    .replace(/[\u0000-\u001f\u007f]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 180);
+}
+
 export interface CompanyDetails {
   id: string;
   name: string;
