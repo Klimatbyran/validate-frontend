@@ -30,10 +30,25 @@ export function derivePdfJobStatus(job: PdfParsingJob): SwimlaneStatusType {
   return "waiting";
 }
 
+/** BullMQ status vocabulary ("failed"/"completed"/"active"/"waiting"), as
+ * opposed to derivePdfJobStatus's SwimlaneStatusType — JobDetailsDialog and
+ * its children (ErrorSection, the retry button) key error display and
+ * retry off job.status/job.isFailed using these exact strings. */
+function deriveBullMQStatus(job: PdfParsingJob): string {
+  if (job.failedReason) return "failed";
+  if (job.finishedOn) return "completed";
+  if (job.processedOn) return "active";
+  return "waiting";
+}
+
 /** Builds a placeholder QueueJob from the lean baseJobSchema shape so it
  * can be handed to JobDetailsDialog — that dialog immediately re-fetches
- * the full job via GET /queues/{queueId}/{id} once opened, so this only
- * needs to satisfy the type and render a reasonable header until then. */
+ * the full job via GET /queues/{queueId}/{id} once opened, so most of this
+ * only needs to satisfy the type and render a reasonable header until
+ * then. status/isFailed are the exception: the full-detail refetch's
+ * response (pipeline-api's DataJob/baseJobSchema) doesn't carry isFailed
+ * either, so retry and error display would stay broken even after that
+ * resolves unless they're set correctly here. */
 export function toQueueJobPlaceholder(job: PdfParsingJob): QueueJob {
   return {
     id: job.id ?? "",
@@ -49,6 +64,8 @@ export function toQueueJobPlaceholder(job: PdfParsingJob): QueueJob {
     parent: undefined,
     queueId: job.queue,
     failedReason: job.failedReason,
+    status: deriveBullMQStatus(job),
+    isFailed: Boolean(job.failedReason),
   };
 }
 
