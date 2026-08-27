@@ -9,10 +9,10 @@ import type {
 import { saveToRegistry, updateCompanyReports } from "./crawler-api";
 import { mapWithConcurrency } from "./map-with-concurrency";
 
-/** Parallel crawl cap — keep this low; each company holds Firecrawl for minutes. */
+/** Parallel crawl cap — each company holds Firecrawl for minutes. */
 export const AUTO_SEARCH_CRAWL_CONCURRENCY = Math.max(
   1,
-  Math.min(12, Number(import.meta.env.VITE_AUTO_SEARCH_CRAWL_CONCURRENCY ?? 2)),
+  Math.min(12, Number(import.meta.env.VITE_AUTO_SEARCH_CRAWL_CONCURRENCY ?? 4)),
 );
 const CRAWL_CONCURRENCY = AUTO_SEARCH_CRAWL_CONCURRENCY;
 
