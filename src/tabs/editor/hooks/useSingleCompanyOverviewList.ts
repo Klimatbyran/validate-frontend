@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { loadCompaniesAndTagOptions } from "../lib/load-companies-and-tags";
 import { listCompanies } from "../lib/companies-api";
-import { fetchTagOptions } from "../lib/tag-options-api";
 import type { GarboCompanyListItem, TagOption } from "../lib/types";
 import { buildTagLabelBySlug } from "../lib/editor-tag-and-payload-utils";
 import {
@@ -52,11 +52,11 @@ export function useSingleCompanyOverviewList() {
     let cancelled = false;
     setLoadingList(true);
     setListError(null);
-    Promise.all([listCompanies(), fetchTagOptions()])
-      .then(([list, tags]) => {
+    loadCompaniesAndTagOptions()
+      .then(({ companies, tagOptions }) => {
         if (!cancelled) {
-          setCompanyList(list);
-          setTagOptions(tags);
+          setCompanyList(companies);
+          setTagOptions(tagOptions);
         }
       })
       .catch((e) => {

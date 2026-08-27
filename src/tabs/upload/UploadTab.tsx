@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { useBatches } from "@/hooks/useBatches";
 import { useAuth } from "@/hooks/useAuth";
+import { allowUnauthenticatedReads } from "@/lib/auth-constants";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { FileUploadZone } from "./components/FileUploadZone";
@@ -65,8 +66,9 @@ export function UploadTab() {
   const [removeConfirm, setRemoveConfirm] =
     useState<RemoveConfirmTarget | null>(null);
 
-  // Upload is the main entrypoint and performs write operations; require auth here.
+  // Upload performs write operations; require GitHub login outside Vite dev.
   useEffect(() => {
+    if (allowUnauthenticatedReads()) return;
     if (authLoading) return;
     if (isAuthenticated) return;
     if (hasTriggeredLoginRef.current) return;
@@ -433,7 +435,7 @@ export function UploadTab() {
         : t("upload.confirmRemoveLink", { name: removeConfirm.name })
     : "";
 
-  if (authLoading || !isAuthenticated) {
+  if (!allowUnauthenticatedReads() && (authLoading || !isAuthenticated)) {
     return (
       <div className="flex justify-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
         <LoadingSpinner label={t("auth.loginRequired")} />
