@@ -28,7 +28,11 @@ const MEASURE_STEPS = [
 
 interface PlanRowProps {
   plan: ClimatePipelinePlan;
-  onStepClick: (plan: ClimatePipelinePlan, step: string) => void;
+  onStepClick: (
+    plan: ClimatePipelinePlan,
+    step: string,
+    runId?: string,
+  ) => void;
 }
 
 function StepStatusPill({
@@ -186,7 +190,7 @@ function PlanRow({ plan, onStepClick }: PlanRowProps) {
                       key={step}
                       step={step}
                       run={runStepMap.get(step)?.[0]}
-                      onClick={() => onStepClick(plan, step)}
+                      onClick={() => onStepClick(plan, step, runId)}
                     />
                   ))}
                 </div>
@@ -207,11 +211,17 @@ export function ClimatePipelineTab() {
   // showing whatever pipelineSteps looked like at the moment it was opened.
   const [dialogPlanId, setDialogPlanId] = useState<string | null>(null);
   const [dialogStep, setDialogStep] = useState<string | null>(null);
+  const [dialogRunId, setDialogRunId] = useState<string | null>(null);
   const dialogPlan = plans.find((p) => p.id === dialogPlanId) ?? null;
 
-  const handleStepClick = (plan: ClimatePipelinePlan, step: string) => {
+  const handleStepClick = (
+    plan: ClimatePipelinePlan,
+    step: string,
+    runId?: string,
+  ) => {
     setDialogPlanId(plan.id);
     setDialogStep(step);
+    setDialogRunId(runId ?? null);
   };
 
   return (
@@ -264,11 +274,13 @@ export function ClimatePipelineTab() {
       <StepResultDialog
         plan={dialogPlan}
         step={dialogStep}
+        runId={dialogRunId}
         open={dialogPlan !== null && dialogStep !== null}
         onOpenChange={(open) => {
           if (!open) {
             setDialogPlanId(null);
             setDialogStep(null);
+            setDialogRunId(null);
           }
         }}
         onRerun={refresh}

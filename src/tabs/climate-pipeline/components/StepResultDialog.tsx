@@ -216,6 +216,9 @@ function RerunButton({
 interface StepResultDialogProps {
   plan: ClimatePipelinePlan | null;
   step: string | null;
+  /** Set when opened from a previous-run pill — shows that specific run's
+   * status/timestamps instead of defaulting to the latest. */
+  runId?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRerun?: () => void;
@@ -467,6 +470,7 @@ function MeasuresTable({
 export function StepResultDialog({
   plan,
   step,
+  runId,
   open,
   onOpenChange,
   onRerun,
@@ -478,11 +482,16 @@ export function StepResultDialog({
   if (!plan || !step) return null;
 
   // pipelineSteps is ordered newest-first, so the first match for this step
-  // is its latest run — everything after that is history.
+  // is its latest run — everything after that is history. When opened from
+  // a previous-run pill (runId set), show that specific run instead of
+  // always defaulting to the latest.
   const stepRuns = plan.pipelineSteps.filter((s) => s.step === step);
-  const run = stepRuns[0];
+  const run = runId
+    ? (stepRuns.find((s) => s.runId === runId) ?? stepRuns[0])
+    : stepRuns[0];
   const previousRuns = stepRuns.slice(1);
   const itemCount = detail ? getStepItemCount(step, detail) : null;
+  const viewingPastRun = Boolean(runId) && run !== stepRuns[0];
 
   const content = (() => {
     if (isLoading || !detail) {
@@ -613,6 +622,12 @@ export function StepResultDialog({
                 <span className="block text-pink-03 mt-1">{run.error}</span>
               )}
             </span>
+            {viewingPastRun && (
+              <span className="block text-xs text-blue-03 mt-1">
+                Viewing a past run — status/timing only; commitment and measure
+                content below always reflects the current data.
+              </span>
+            )}
             <PreviousStepRuns runs={previousRuns} />
           </div>
         ) : (
