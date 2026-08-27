@@ -585,7 +585,7 @@
     "orClickToSelect": "or click to select files",
     "pastePdfLinks": "Paste PDF links (one per line)",
     "autoApprove": "Auto-approve",
-    "autoApproveHint": "Auto-approves the Wikidata match only. It does not merge or deduplicate companies — existing companies are linked by Wikidata, LEI, or exact name when known.",
+    "autoApproveHint": "Auto-approves the Wikidata match only when that Q-id is not already linked to another company. Conflicts still need staff review. It does not merge or deduplicate companies — existing companies are linked by Wikidata, LEI, or exact name when known.",
     "addLinks": "Add links",
     "uploadedFiles": "Uploaded files ({{count}})",
     "addedLinks": "Added links ({{count}})",
