@@ -1,12 +1,13 @@
 import { getUnearthApiBaseUrl } from "@/config/api-env";
-import type {
-  crawlerSearchQuery,
-  LlmSelectionCandidate,
-  LlmSelectionResult,
-  PdfTextResponse,
-  PrefilterReportResult,
-  SaveReportsListResponse,
-  SelectedReport,
+import {
+  SEARCH_REPORT_JOB_TIMEOUT_MESSAGE,
+  type crawlerSearchQuery,
+  type LlmSelectionCandidate,
+  type LlmSelectionResult,
+  type PdfTextResponse,
+  type PrefilterReportResult,
+  type SaveReportsListResponse,
+  type SelectedReport,
 } from "./crawler-types";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 
@@ -154,7 +155,7 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
     }
   }
 
-  throw new Error("Crawl timed out after 45 minutes");
+  throw new Error(SEARCH_REPORT_JOB_TIMEOUT_MESSAGE);
 };
 
 export const fetchCompanyNamesList = async () => {

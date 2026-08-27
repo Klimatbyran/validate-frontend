@@ -6,7 +6,11 @@ import {
   ExternalLink,
   CheckCircle2,
 } from "lucide-react";
-import { CompanyReport, Report } from "../lib/crawler-types";
+import {
+  CompanyReport,
+  Report,
+  SEARCH_REPORT_JOB_TIMEOUT_MESSAGE,
+} from "../lib/crawler-types";
 import { useI18n } from "@/contexts/I18nContext";
 import { CopyButton } from "@/ui/copy-button";
 import ManuallyAddReportItem from "./ManuallyAddReportItem";
@@ -39,7 +43,9 @@ function crawlStatusText(
   resultCount: number,
 ): string {
   if (!crawlError) return t("crawler.foundReportLinks", { count: resultCount });
-  if (/timed out/i.test(crawlError)) return t("crawler.crawlTimedOut");
+  if (crawlError === SEARCH_REPORT_JOB_TIMEOUT_MESSAGE) {
+    return t("crawler.crawlTimedOut");
+  }
   return t("crawler.crawlRequestFailed");
 }
 
@@ -163,11 +169,7 @@ const SearchResultItem = ({
                 companyReport.crawlError ? "text-pink-03" : "text-gray-02"
               }`}
             >
-              {crawlStatusText(
-                t,
-                companyReport.crawlError,
-                results.length,
-              )}
+              {crawlStatusText(t, companyReport.crawlError, results.length)}
             </p>
           </div>
         </div>
@@ -201,11 +203,7 @@ const SearchResultItem = ({
                 companyReport.crawlError ? "text-pink-03" : "text-gray-02"
               }`}
             >
-              {crawlStatusText(
-                t,
-                companyReport.crawlError,
-                results.length,
-              )}
+              {crawlStatusText(t, companyReport.crawlError, results.length)}
             </div>
           </div>
         </button>
