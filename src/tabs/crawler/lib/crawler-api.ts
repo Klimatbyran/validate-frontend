@@ -161,13 +161,13 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
       );
     }
     if (pollResponse.status === 404) {
+      consecutivePollFailures = 0;
       if (notFoundSince == null) notFoundSince = Date.now();
       if (Date.now() - notFoundSince >= SEARCH_REPORT_JOB_NOT_FOUND_GRACE_MS) {
         throw new Error("Search job not found (404)");
       }
       continue;
     }
-    notFoundSince = null;
     if (!pollResponse.ok) {
       consecutivePollFailures += 1;
       if (consecutivePollFailures >= SEARCH_REPORT_JOB_MAX_POLL_FAILURES) {
@@ -177,6 +177,7 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
       }
       continue;
     }
+    notFoundSince = null;
     consecutivePollFailures = 0;
     const job = (await pollResponse.json()) as {
       status?: string;
