@@ -26,7 +26,6 @@ import type {
 import {
   AUTO_SEARCH_CRAWL_CONCURRENCY,
   labeledHitsToSelectedReports,
-  saveLabeledSearchResults,
   searchCompanyReports,
   selectedReportFromHit,
   type CrawlProgress,
@@ -110,6 +109,7 @@ export function CoverageCrawlReportsDialog({
   const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
   const [runFinishedAt, setRunFinishedAt] = useState<number | null>(null);
   const runIdRef = useRef(0);
+  const autoSavedCountRef = useRef(0);
 
   const {
     runForUrls,
@@ -119,16 +119,26 @@ export function CoverageCrawlReportsDialog({
     runOptions,
   } = runPipeline;
 
-  const emitSaved = (response: SaveReportsListResponse) => {
+  const emitSaved = (
+    response: SaveReportsListResponse,
+    { incremental = false }: { incremental?: boolean } = {},
+  ) => {
     const failed = response.failed.filter((item) => item.error !== "duplicate");
     setRegistryResponse({ ...response, failed });
-    for (const success of response.successes) {
+    const previousCount = incremental ? autoSavedCountRef.current : 0;
+    const newSuccesses = incremental
+      ? response.successes.slice(previousCount)
+      : response.successes;
+    if (incremental) {
+      autoSavedCountRef.current = response.successes.length;
+    }
+    for (const success of newSuccesses) {
       onSaved?.(success);
     }
-    if (response.successes.length > 0) {
+    if (newSuccesses.length > 0) {
       toast.success(
         t("overview.coverage.crawlReportsSaved", {
-          count: response.successes.length,
+          count: newSuccesses.length,
         }),
       );
     }
@@ -145,6 +155,7 @@ export function CoverageCrawlReportsDialog({
     setCompanyReports(null);
     setSelectedReports([]);
     setRegistryResponse(null);
+    autoSavedCountRef.current = 0;
     setIsSaving(false);
     setIsRunModalOpen(false);
     setRunStartedAt(null);
@@ -162,12 +173,12 @@ export function CoverageCrawlReportsDialog({
     setCompanyReports(null);
     setSelectedReports([]);
     setRegistryResponse(null);
+    autoSavedCountRef.current = 0;
     setRunStartedAt(Date.now());
     setRunFinishedAt(null);
 
     void (async () => {
       try {
-        let savedDuringCrawl = false;
         const results = await searchCompanyReports({
           companies: entries.map((entry) => coverageEntryCrawlCompany(entry)),
           country,
@@ -176,31 +187,13 @@ export function CoverageCrawlReportsDialog({
             setCrawlProgress(progress);
           },
           onLabeledSaved: (saved) => {
-            const hardFails = saved.failed.filter(
-              (item) => item.error === "unknown",
-            );
-            if (saved.successes.length > 0 || hardFails.length === 0) {
-              savedDuringCrawl = true;
-            }
             if (runId !== runIdRef.current) return;
-            emitSaved(saved);
+            emitSaved(saved, { incremental: true });
           },
         });
         if (runId !== runIdRef.current) return;
         const withWiki = applyWikidataFromEntries(results, entries);
         setCompanyReports(withWiki);
-        if (!savedDuringCrawl) {
-          try {
-            const saved = await saveLabeledSearchResults(withWiki);
-            emitSaved(saved ?? { message: "", successes: [], failed: [] });
-          } catch (saveError) {
-            toast.error(
-              saveError instanceof Error
-                ? saveError.message
-                : t("overview.coverage.crawlReportsSaveFailed"),
-            );
-          }
-        }
         if (
           results.length > 0 &&
           results.every((report) => Boolean(report.crawlError))

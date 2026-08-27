@@ -1158,6 +1158,7 @@
     "selectedCompanies": "{{count}} valda",
     "foundReportLinks": "Hittade {{count}} PDF-länk(ar) på företagets webbplats",
     "crawlRequestFailed": "Crawl-anropet misslyckades — kunde inte nå reports-API:t",
+    "crawlTimedOut": "Crawl timeout — reports-API:t blev inte klart inom 45 minuter",
     "reportType": "Rapporttyp",
     "unlabeledReport": "Oklassad",
     "otherReport": "Övrigt",

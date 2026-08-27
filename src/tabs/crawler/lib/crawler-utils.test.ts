@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { CompanyReport } from "./crawler-types";
 import {
   labeledHitsToSelectedReports,
+  mergeSaveReportsResponses,
   selectedReportFromHit,
   withFallbackReportType,
 } from "./crawler-utils";
@@ -261,5 +262,40 @@ describe("selectedReportFromHit", () => {
       reportYear: "2025",
       reportTypeSlug: undefined,
     });
+  });
+});
+
+describe("mergeSaveReportsResponses", () => {
+  it("keeps earlier successes when a later company save fails", () => {
+    const merged = mergeSaveReportsResponses(
+      {
+        message: "",
+        successes: [
+          {
+            id: "1",
+            companyName: "Acme",
+            reportYear: "2025",
+            url: "https://example.com/a.pdf",
+          },
+        ],
+        failed: [],
+      },
+      {
+        message: "Failed to save to registry",
+        successes: [],
+        failed: [
+          {
+            error: "unknown",
+            companyName: "Beta",
+            reportYear: "2025",
+            message: "Failed to save to registry",
+          },
+        ],
+      },
+    );
+
+    expect(merged.successes).toHaveLength(1);
+    expect(merged.failed).toHaveLength(1);
+    expect(merged.successes[0]?.companyName).toBe("Acme");
   });
 });

@@ -1158,6 +1158,7 @@
     "selectedCompanies": "{{count}} selected",
     "foundReportLinks": "Found {{count}} PDF link(s) on company site",
     "crawlRequestFailed": "Crawl request failed — could not reach the reports API",
+    "crawlTimedOut": "Crawl timed out — the reports API did not finish in 45 minutes",
     "reportType": "Report type",
     "unlabeledReport": "Unlabeled",
     "otherReport": "Other",

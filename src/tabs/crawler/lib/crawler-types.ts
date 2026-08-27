@@ -40,6 +40,9 @@ export interface CompanyReport {
   crawlError?: string;
 }
 
+export const SEARCH_REPORT_JOB_TIMEOUT_MESSAGE =
+  "Crawl timed out after 45 minutes";
+
 export interface CompanyDetails {
   id: string;
   name: string;

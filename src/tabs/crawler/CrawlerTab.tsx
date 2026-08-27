@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
@@ -71,6 +71,9 @@ export function CrawlerTab() {
   );
   const [registryResponse, setRegistryResponse] =
     useState<SaveReportsListResponse | null>(null);
+  const pendingRegistryResponseRef = useRef<SaveReportsListResponse | null>(
+    null,
+  );
 
   const [isRunReportsOpen, setIsRunReportsOpen] = useState(false);
   const [isAutoSearchModalOpen, setIsAutoSearchModalOpen] = useState(false);
@@ -148,13 +151,20 @@ export function CrawlerTab() {
     }
   };
 
+  const openPendingRegistryDialog = () => {
+    const pending = pendingRegistryResponseRef.current;
+    pendingRegistryResponseRef.current = null;
+    if (!pending) return;
+    setRegistryResponse(pending);
+    if (pending.failed.length > 0 && pending.successes.length === 0) {
+      toast.error(pending.message?.trim() || t("crawler.autoSaveFailed"));
+    }
+  };
+
   const handleLabeledSaved = (response: SaveReportsListResponse) => {
     const failed = response.failed.filter((item) => item.error !== "duplicate");
     if (response.successes.length === 0 && failed.length === 0) return;
-    setRegistryResponse({ ...response, failed });
-    if (failed.length > 0 && response.successes.length === 0) {
-      toast.error(response.message?.trim() || t("crawler.autoSaveFailed"));
-    }
+    pendingRegistryResponseRef.current = { ...response, failed };
   };
 
   const handleManualSearchClick = async () => {
@@ -162,6 +172,7 @@ export function CrawlerTab() {
 
     resetSearchSlate();
     setRegistryResponse(null);
+    pendingRegistryResponseRef.current = null;
     setIsLoading(true);
     setCrawlProgress(null);
     const companyNames = companyNameInput
@@ -181,6 +192,7 @@ export function CrawlerTab() {
     } finally {
       setIsLoading(false);
       setCrawlProgress(null);
+      openPendingRegistryDialog();
     }
   };
 
@@ -245,6 +257,7 @@ export function CrawlerTab() {
 
     resetSearchSlate();
     setRegistryResponse(null);
+    pendingRegistryResponseRef.current = null;
     setIsLoading(true);
     setCrawlProgress(null);
 
@@ -270,6 +283,7 @@ export function CrawlerTab() {
     } finally {
       setIsLoading(false);
       setCrawlProgress(null);
+      openPendingRegistryDialog();
     }
   };
 

@@ -1,12 +1,13 @@
 import { getUnearthApiBaseUrl } from "@/config/api-env";
-import type {
-  crawlerSearchQuery,
-  LlmSelectionCandidate,
-  LlmSelectionResult,
-  PdfTextResponse,
-  PrefilterReportResult,
-  SaveReportsListResponse,
-  SelectedReport,
+import {
+  SEARCH_REPORT_JOB_TIMEOUT_MESSAGE,
+  type crawlerSearchQuery,
+  type LlmSelectionCandidate,
+  type LlmSelectionResult,
+  type PdfTextResponse,
+  type PrefilterReportResult,
+  type SaveReportsListResponse,
+  type SelectedReport,
 } from "./crawler-types";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 
@@ -14,6 +15,10 @@ import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 
 const TRANSIENT_HTTP_STATUSES = new Set([500, 502, 503, 504]);
 const TRANSIENT_FETCH_ATTEMPTS = 6;
+/** Safety cap so a hung Firecrawl job cannot block a 100-company run forever. */
+const SEARCH_REPORT_JOB_MAX_MS = 45 * 60 * 1000;
+const SEARCH_REPORT_JOB_POLL_MS = 3000;
+const SEARCH_REPORT_JOB_MAX_POLL_FAILURES = 5;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -30,27 +35,32 @@ function isAbortError(error: unknown): boolean {
   );
 }
 
+type TransientRetryOptions = {
+  attempts?: number;
+};
+
 /** Retry when Vite proxy or API dev restart drops in-flight requests (ECONNREFUSED → 500). */
 async function fetchWithTransientRetry(
   url: string,
   init?: RequestInit,
+  options?: TransientRetryOptions,
 ): Promise<Response | null> {
+  const attempts = options?.attempts ?? TRANSIENT_FETCH_ATTEMPTS;
   let lastResponse: Response | null = null;
-  for (let attempt = 1; attempt <= TRANSIENT_FETCH_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       const response = await fetch(url, init);
       lastResponse = response;
       if (
         response.ok ||
         !TRANSIENT_HTTP_STATUSES.has(response.status) ||
-        attempt === TRANSIENT_FETCH_ATTEMPTS
+        attempt === attempts
       ) {
         return response;
       }
     } catch (error) {
-      if (isAbortError(error) || attempt === TRANSIENT_FETCH_ATTEMPTS) {
-        return lastResponse;
-      }
+      if (isAbortError(error)) throw error;
+      if (attempt === attempts) return lastResponse;
     }
     await sleep(transientRetryDelayMs(attempt));
   }
@@ -60,23 +70,24 @@ async function fetchWithTransientRetry(
 async function authFetchWithTransientRetry(
   url: string,
   init?: RequestInit,
+  options?: TransientRetryOptions,
 ): Promise<Response | null> {
+  const attempts = options?.attempts ?? TRANSIENT_FETCH_ATTEMPTS;
   let lastResponse: Response | null = null;
-  for (let attempt = 1; attempt <= TRANSIENT_FETCH_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       const response = await garboAuthFetch(url, init);
       lastResponse = response;
       if (
         response.ok ||
         !TRANSIENT_HTTP_STATUSES.has(response.status) ||
-        attempt === TRANSIENT_FETCH_ATTEMPTS
+        attempt === attempts
       ) {
         return response;
       }
     } catch (error) {
-      if (isAbortError(error) || attempt === TRANSIENT_FETCH_ATTEMPTS) {
-        return lastResponse;
-      }
+      if (isAbortError(error)) throw error;
+      if (attempt === attempts) return lastResponse;
     }
     await sleep(transientRetryDelayMs(attempt));
   }
@@ -91,8 +102,8 @@ export function reportsUrl(path: string): string {
 }
 
 export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
-  const response = await authFetchWithTransientRetry(
-    reportsUrl("internal-companies/reports/search-reports"),
+  const startResponse = await authFetchWithTransientRetry(
+    reportsUrl("internal-companies/reports/search-report-jobs"),
     {
       method: "POST",
       headers: {
@@ -100,20 +111,78 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
       },
       body: JSON.stringify([searchQuery]),
     },
+    { attempts: 2 },
   );
 
-  if (!response) {
+  if (!startResponse) {
     throw new Error("Could not reach the reports API");
   }
 
-  if (response.ok) {
-    return response.json();
+  if (startResponse.status !== 202 && !startResponse.ok) {
+    console.error("Failed to start report search:", startResponse.statusText);
+    throw new Error(
+      `Failed to fetch report: ${startResponse.status} ${startResponse.statusText}`,
+    );
   }
 
-  console.error("Failed to fetch company report:", response.statusText);
-  throw new Error(
-    `Failed to fetch report: ${response.status} ${response.statusText}`,
-  );
+  const started = (await startResponse.json()) as {
+    jobId?: string;
+    status?: string;
+  };
+  const jobId = started.jobId?.trim();
+  if (!jobId) {
+    throw new Error("Reports API did not return a search job id");
+  }
+
+  const deadline = Date.now() + SEARCH_REPORT_JOB_MAX_MS;
+  let consecutivePollFailures = 0;
+  while (Date.now() < deadline) {
+    await sleep(SEARCH_REPORT_JOB_POLL_MS);
+    const pollResponse = await authFetchWithTransientRetry(
+      reportsUrl(`internal-companies/reports/search-report-jobs/${jobId}`),
+      { method: "GET" },
+      { attempts: 2 },
+    );
+    if (!pollResponse) {
+      consecutivePollFailures += 1;
+      if (consecutivePollFailures >= SEARCH_REPORT_JOB_MAX_POLL_FAILURES) {
+        throw new Error("Could not reach the reports API");
+      }
+      continue;
+    }
+    if (
+      pollResponse.status >= 400 &&
+      pollResponse.status < 500 &&
+      pollResponse.status !== 429
+    ) {
+      throw new Error(
+        `Failed to fetch report: ${pollResponse.status} ${pollResponse.statusText}`,
+      );
+    }
+    if (!pollResponse.ok) {
+      consecutivePollFailures += 1;
+      if (consecutivePollFailures >= SEARCH_REPORT_JOB_MAX_POLL_FAILURES) {
+        throw new Error(
+          `Failed to fetch report: ${pollResponse.status} ${pollResponse.statusText}`,
+        );
+      }
+      continue;
+    }
+    consecutivePollFailures = 0;
+    const job = (await pollResponse.json()) as {
+      status?: string;
+      results?: unknown;
+      error?: string;
+    };
+    if (job.status === "done") {
+      return job.results;
+    }
+    if (job.status === "error") {
+      throw new Error(job.error?.trim() || "Report search job failed");
+    }
+  }
+
+  throw new Error(SEARCH_REPORT_JOB_TIMEOUT_MESSAGE);
 };
 
 export const fetchCompanyNamesList = async () => {
