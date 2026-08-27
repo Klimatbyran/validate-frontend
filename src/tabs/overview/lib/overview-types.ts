@@ -1,128 +1,11 @@
-import type { RegistryEntry } from "@/tabs/registry/lib/registry-types";
-
 export const OVERVIEW_YEAR_RANGE_START = 2020;
 
-export type OverviewViewMode =
-  | "companyYears"
-  | "registryReports"
-  | "prodToStage"
-  | "coverage";
+export type OverviewViewMode = "summary" | "prodToStage" | "coverage";
 
-export type OverviewStatusKind =
-  | "ok"
-  | "missing"
-  | "warning"
-  | "error"
-  | "progress"
-  | "partial";
-
-export type CompanyYearStatusColumn =
-  | "report"
-  | "pipeline"
-  | "pipelineErrors"
-  | "stageData"
-  | "prodData"
-  | "prodVerified";
-
-export type RegistryReportStatusColumn =
-  | "wikidata"
-  | "registryFile"
-  | "companyReport"
-  | "pipeline"
-  | "pipelineErrors";
-
-export type OverviewStatusColumn =
-  | CompanyYearStatusColumn
-  | RegistryReportStatusColumn;
-
-export const COMPANY_YEAR_STATUS_COLUMNS: CompanyYearStatusColumn[] = [
-  "report",
-  "pipeline",
-  "pipelineErrors",
-  "stageData",
-  "prodData",
-  "prodVerified",
-];
-
-export const REGISTRY_REPORT_STATUS_COLUMNS: RegistryReportStatusColumn[] = [
-  "wikidata",
-  "registryFile",
-  "companyReport",
-  "pipeline",
-  "pipelineErrors",
-];
-
-export type OverviewStatusLink = {
-  label: string;
-  href: string;
-  external?: boolean;
+export type OverviewWarning = {
+  code: string;
+  message: string;
 };
-
-export type OverviewStatusDetail = {
-  kind: OverviewStatusKind;
-  summary: string;
-  details: string[];
-  links?: OverviewStatusLink[];
-};
-
-export type OverviewRow = {
-  key: string;
-  viewMode: OverviewViewMode;
-  companyName: string;
-  wikidataId: string | null;
-  companyId: string | null;
-  reportYear: string | null;
-  companyReportId: string | null;
-  tags: string[];
-  registryEntry: RegistryEntry | null;
-  /** url → sourceUrl → s3Url for display in the overview table. */
-  reportDisplayUrl: string | null;
-  runUrl: string | null;
-  statuses: Partial<Record<OverviewStatusColumn, OverviewStatusDetail>>;
-};
-
-export type OverviewFilters = {
-  searchQuery: string;
-  reportYears: string[];
-  tagSlugs: string[];
-  statusFilters: OverviewStatusColumn[];
-  missingRegistryOnly: boolean;
-  missingCompanyReportOnly: boolean;
-  notRunInPipelineOnly: boolean;
-};
-
-export function defaultOverviewFilters(): OverviewFilters {
-  return {
-    searchQuery: "",
-    reportYears: [],
-    tagSlugs: [],
-    statusFilters: [],
-    missingRegistryOnly: false,
-    missingCompanyReportOnly: false,
-    notRunInPipelineOnly: false,
-  };
-}
-
-/** Registry-reports view: all Report rows, default to gaps missing a CompanyReport link. */
-export function defaultRegistryOverviewFilters(): OverviewFilters {
-  return {
-    searchQuery: "",
-    reportYears: [],
-    tagSlugs: [],
-    statusFilters: [],
-    missingRegistryOnly: false,
-    missingCompanyReportOnly: true,
-    notRunInPipelineOnly: false,
-  };
-}
-
-export function defaultFiltersForView(
-  viewMode: OverviewViewMode,
-): OverviewFilters {
-  if (viewMode === "registryReports") return defaultRegistryOverviewFilters();
-  if (viewMode === "coverage") return defaultOverviewFilters();
-  return defaultOverviewFilters();
-}
 
 export type ProdToStageFilters = {
   searchQuery: string;
@@ -140,23 +23,6 @@ export function defaultProdToStageFilters(): ProdToStageFilters {
   };
 }
 
-export type OverviewWarning = {
-  code: string;
-  message: string;
-};
-
-export type OverviewStats = {
-  totalRows: number;
-  withReport?: number;
-  pipelineCompleted: number;
-  pipelineFailed: number;
-  inStage?: number;
-  inProd?: number;
-  prodVerified?: number;
-  missingWikidata?: number;
-  linkedCompanyReport?: number;
-};
-
 export function overviewYearRange(): string[] {
   const currentYear = new Date().getFullYear();
   const years: string[] = [];
@@ -164,14 +30,6 @@ export function overviewYearRange(): string[] {
     years.push(String(year));
   }
   return years;
-}
-
-export function statusColumnsForView(
-  viewMode: OverviewViewMode,
-): OverviewStatusColumn[] {
-  return viewMode === "companyYears"
-    ? COMPANY_YEAR_STATUS_COLUMNS
-    : REGISTRY_REPORT_STATUS_COLUMNS;
 }
 
 export type ProdToStageRow = {
@@ -188,28 +46,91 @@ export type ProdToStageRow = {
   tags: string[];
 };
 
-export function overviewFiltersAreActive(filters: OverviewFilters): boolean {
-  return (
-    Boolean(filters.searchQuery.trim()) ||
-    filters.reportYears.length > 0 ||
-    filters.tagSlugs.length > 0 ||
-    filters.statusFilters.length > 0 ||
-    filters.missingRegistryOnly ||
-    filters.missingCompanyReportOnly ||
-    filters.notRunInPipelineOnly
-  );
-}
+export type OverviewSummaryCompanyRef = {
+  companyId: string;
+  name: string;
+  wikidataId: string | null;
+  tags: string[];
+  emissionsYearCount: number;
+  emissionsYears: string[];
+  companyReportCount: number;
+};
 
-export function registryOverviewFiltersAreActive(
-  filters: OverviewFilters,
-): boolean {
-  return (
-    Boolean(filters.searchQuery.trim()) ||
-    filters.reportYears.length > 0 ||
-    filters.tagSlugs.length > 0 ||
-    filters.statusFilters.length > 0 ||
-    filters.missingRegistryOnly ||
-    !filters.missingCompanyReportOnly ||
-    filters.notRunInPipelineOnly
-  );
-}
+export type OverviewSummaryResponse = {
+  localEnv: "stage" | "prod";
+  generatedAt: string;
+  totals: {
+    companies: number;
+    withWikidata: number;
+    withoutWikidata: number;
+    withWebsiteUrl: number;
+    withIndustry: number;
+    withTags: number;
+    withoutTags: number;
+    withAnyReportingPeriod: number;
+    withAnyEmissionsData: number;
+    withoutEmissionsData: number;
+    withAnyCompanyReport: number;
+    companyReports: number;
+    companyReportsLinkedToRegistry: number;
+    companyReportsUnlinkedToRegistry: number;
+    reportingPeriods: number;
+    registryReports: number;
+    registryReportsWithWikidata: number;
+    registryReportsLinkedToCompanyReport: number;
+  };
+  emissionsCoverageByYear: Array<{
+    year: string;
+    companiesWithPeriod: number;
+    companiesWithEmissions: number;
+    companiesWithScope1: number;
+    companiesWithScope2: number;
+    companiesWithScope3: number;
+    companiesWithStatedTotal: number;
+  }>;
+  companyReportsByYear: Array<{ year: string; count: number }>;
+  registryReportsByYear: Array<{
+    year: string;
+    count: number;
+    withWikidata: number;
+    linkedToCompanyReport: number;
+  }>;
+  companiesByEmissionsYearCount: Array<{
+    yearCount: number;
+    companyCount: number;
+  }>;
+  companiesByCompanyReportCount: Array<{
+    reportCount: number;
+    companyCount: number;
+  }>;
+  companiesByTag: Array<{
+    slug: string;
+    label: string | null;
+    companyCount: number;
+  }>;
+  yearDropoffs: Array<{
+    fromYear: string;
+    toYear: string;
+    companiesLost: number;
+  }>;
+  gaps: {
+    fewEmissionsYears: {
+      maxYears: number;
+      totalMatching: number;
+      companies: OverviewSummaryCompanyRef[];
+    };
+    reportsWithoutEmissions: {
+      totalMatching: number;
+      companies: OverviewSummaryCompanyRef[];
+    };
+    missingLatestYear: {
+      year: string;
+      totalMatching: number;
+      companies: OverviewSummaryCompanyRef[];
+    };
+    untagged: {
+      totalMatching: number;
+      companies: OverviewSummaryCompanyRef[];
+    };
+  };
+};
