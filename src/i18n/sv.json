@@ -48,7 +48,16 @@
     "errorBrowser": "Felutforskare",
     "crawler": "Crawler",
     "climatePlans": "Utforska klimatplaner",
+    "climatePipeline": "Klimatpipeline",
     "editor": "Redigerare"
+  },
+  "climatePipeline": {
+    "title": "Klimatplanspipeline",
+    "subtitle": "Live-status för åtagande-/åtgärdsextraktionspipelinen, per plan",
+    "refresh": "Uppdatera",
+    "empty": "Inga planer än — skicka in en PDF eller URL från Ladda upp med \"Använd klimatplanspipelinen\" ikryssad.",
+    "error": "Kunde inte läsa in planer: {{error}}",
+    "pollError": "Visar senast kända status — kunde inte uppdatera: {{error}}"
   },
   "apiAccess": {
     "title": "API Access",
@@ -618,6 +627,8 @@
     "runOnly": "Kör endast:",
     "forceReindex": "Tvinga omindexering",
     "forceReindexDescription": "Om på: kör docling även om rapporten redan finns i vektordatabasen (använd efter uppgradering av docling/OCR).",
+    "useClimatePlansPipeline": "Använd klimatplanspipelinen",
+    "useClimatePlansPipelineDescription": "Om på: stanna efter Docling + indexering (hoppa över precheck/utsläppsextraktion) och lämna över url:en till klimatplanspipelinen istället.",
     "companyWithName": "Företag: {{name}}",
     "fileSizeMb": "{{size}} MB",
     "storageDeduplicated": "{{count}} befintlig(a) PDF:er återanvändes från lagring (ingen dubbeluppladdning).",

@@ -140,6 +140,46 @@ export function getProdUnearthUrl(path: string): string {
   return `/unearth-prod-api${p}`;
 }
 
+/**
+ * climate-plans-pipeline's /api/webhook (routes are mounted under /api —
+ * see its src/api/app.ts), sent as the upload's callbackUrl so garbo POSTs
+ * {url, markdown} there once Docling parsing completes, instead of
+ * continuing into precheck. This is a plain absolute URL, not proxied
+ * through Vite/nginx like the other targets above — garbo's worker calls it
+ * server-to-server, so the browser never needs to reach it directly (only
+ * pipeline-api needs to receive the string and pass it through as job data).
+ * Locally, climate-plans-pipeline must run on a port other than 3001, since
+ * pipeline-api's own local dev port is also 3001 by default (garbo itself
+ * may also be on a non-default port — check its own .env's API_PORT).
+ * Must also be listed in garbo's ALLOWED_CALLBACK_URLS or the callback will
+ * be rejected. Falls back to jointMode()'s hostname detection like the rest
+ * of this file (rather than always defaulting to localhost), since a build
+ * deployed to stage/prod must send a real reachable URL, not one that only
+ * resolves on whoever's laptop is running validate locally. Production
+ * climate-plans-pipeline isn't deployed yet — the URL below is where it
+ * will live once it is, matching its own k8s/overlays/production/ingress.
+ */
+export function getClimatePlansPipelineWebhookUrl(): string {
+  const override = import.meta.env.VITE_CLIMATE_PLANS_PIPELINE_WEBHOOK_URL as
+    | string
+    | undefined;
+  if (override) return override;
+  const target = jointMode();
+  if (target === "stage")
+    return "https://stage-climate-plans-api.klimatkollen.se/api/webhook";
+  if (target === "prod")
+    return "https://climate-plans-api.klimatkollen.se/api/webhook";
+  return "http://localhost:3003/api/webhook";
+}
+
+/**
+ * ReportType.slug garbo tags persisted markdown with when the climate plans
+ * pipeline checkbox is on — an explicit opt-in sent alongside callbackUrl,
+ * not inferred from callbackUrl's mere presence, since callbackUrl is a
+ * generic hand-off mechanism other future consumers could use too.
+ */
+export const CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG = "municipal-climate-plan";
+
 /** X-API-Key twin of staff GET /api/pipeline/companies — proxy injects the key. */
 export const PIPELINE_COMPANIES_LIST_PATH = "/internal-pipeline/companies";
 
@@ -157,4 +197,26 @@ export function getStagePipelineCompaniesListUrl(): string {
 /** Error Browser: staff pipeline list on fixed prod Unearth host. */
 export function getProdPipelineCompaniesListUrl(): string {
   return joinApiPath(getProdUnearthUrl("/api"), PIPELINE_COMPANIES_LIST_PATH);
+}
+
+/**
+ * climate-plans-pipeline's own API — read directly by the browser (unlike
+ * the callbackUrl garbo posts to server-side), so this one genuinely needs
+ * to be reachable from wherever validate is running. Same jointMode()
+ * hostname detection as getClimatePlansPipelineWebhookUrl() above, for the
+ * same reason — see that function's comment. CORS is open on the API side
+ * (registered with @fastify/cors defaults), so a direct cross-origin browser
+ * call works without needing a same-origin proxy path like the rest of this
+ * file uses for pipeline-api/unearth.
+ */
+export function getClimatePlansPipelineApiUrl(): string {
+  const override = import.meta.env.VITE_CLIMATE_PLANS_PIPELINE_API_URL as
+    | string
+    | undefined;
+  if (override) return override;
+  const target = jointMode();
+  if (target === "stage")
+    return "https://stage-climate-plans-api.klimatkollen.se/api";
+  if (target === "prod") return "https://climate-plans-api.klimatkollen.se/api";
+  return "http://localhost:3003/api";
 }

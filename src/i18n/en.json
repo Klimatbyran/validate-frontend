@@ -48,7 +48,16 @@
     "errorBrowser": "Error Browser",
     "crawler": "Crawler",
     "climatePlans": "Explore climate plans",
+    "climatePipeline": "Climate Pipeline",
     "editor": "Editor"
+  },
+  "climatePipeline": {
+    "title": "Climate Plans Pipeline",
+    "subtitle": "Live status of the commitment/measure extraction pipeline, per plan",
+    "refresh": "Refresh",
+    "empty": "No plans yet — submit a PDF or URL from Upload with \"Use climate plans pipeline\" checked.",
+    "error": "Could not load plans: {{error}}",
+    "pollError": "Showing last known status — could not refresh: {{error}}"
   },
   "apiAccess": {
     "title": "API Access",
@@ -618,6 +627,8 @@
     "runOnly": "Run only:",
     "forceReindex": "Force reindex",
     "forceReindexDescription": "When on: run docling even if the report already exists in the vector DB (use after docling/OCR upgrade).",
+    "useClimatePlansPipeline": "Use climate plans pipeline",
+    "useClimatePlansPipelineDescription": "When on: stop after Docling + indexing (skip precheck/emissions extraction) and hand the url off to the climate plans pipeline instead.",
     "companyWithName": "Company: {{name}}",
     "fileSizeMb": "{{size}} MB",
     "storageDeduplicated": "Reused {{count}} existing PDF(s) from storage (no duplicate upload).",
