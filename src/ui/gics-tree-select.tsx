@@ -38,6 +38,68 @@ function sortText(a: string, b: string) {
   return a.localeCompare(b, undefined, { sensitivity: "base" });
 }
 
+/** Panel padding (p-1.5 on both sides). */
+const GICS_PANEL_PAD_X = 12;
+/** Keep names clear of the vertical scrollbar. */
+const GICS_SCROLLBAR_GUTTER = 16;
+/** Option/heading px-3. */
+const GICS_ROW_PAD_X = 12;
+const GICS_DEPTH_STEP = 12;
+/** Checkbox (w-4) + gap-2. */
+const GICS_CHECKBOX_AND_GAP = 24;
+/** Generous text-sm character width so full names fit on one line. */
+const GICS_OPTION_CHAR_PX = 9;
+/** 11px uppercase heading character width. */
+const GICS_HEADING_CHAR_PX = 7.5;
+const GICS_VIEWPORT_MARGIN = 8;
+
+export function gicsRowNaturalWidth(row: {
+  kind: "heading" | "option";
+  depth: number;
+  label: string;
+}): number {
+  const charPx =
+    row.kind === "heading" ? GICS_HEADING_CHAR_PX : GICS_OPTION_CHAR_PX;
+  const textWidth = Math.ceil(row.label.length * charPx);
+  const leftPad = GICS_ROW_PAD_X + row.depth * GICS_DEPTH_STEP;
+  const extras =
+    row.kind === "option"
+      ? GICS_CHECKBOX_AND_GAP + GICS_ROW_PAD_X
+      : GICS_ROW_PAD_X;
+  return leftPad + extras + textWidth;
+}
+
+export function gicsPanelSize({
+  triggerLeft,
+  triggerWidth,
+  minWidth,
+  rowNaturalWidths,
+  viewportWidth,
+  margin = GICS_VIEWPORT_MARGIN,
+}: {
+  triggerLeft: number;
+  triggerWidth: number;
+  minWidth: number;
+  rowNaturalWidths: number[];
+  viewportWidth: number;
+  margin?: number;
+}): { width: number; left: number } {
+  const contentWidth = Math.max(
+    minWidth,
+    triggerWidth,
+    Math.max(0, ...rowNaturalWidths) +
+      GICS_PANEL_PAD_X +
+      GICS_SCROLLBAR_GUTTER,
+  );
+  const maxWidth = Math.max(minWidth, viewportWidth - 2 * margin);
+  const width = Math.min(contentWidth, maxWidth);
+  let left = triggerLeft;
+  if (left + width > viewportWidth - margin) {
+    left = Math.max(margin, viewportWidth - margin - width);
+  }
+  return { width, left };
+}
+
 function buildRows(options: GicsTreeOption[], query: string): Row[] {
   const q = query.trim().toLowerCase();
   const matches = (opt: GicsTreeOption) => {
@@ -222,6 +284,19 @@ export function GicsTreeSelect({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
+  const selected = useMemo(
+    () => options.find((o) => o.code === value) ?? null,
+    [options, value],
+  );
+  const triggerDisplay = selected
+    ? `${optionLabel(selected)} (${selected.code})`
+    : placeholder;
+
+  const rows = useMemo(
+    () => (loading ? [] : buildRows(options, query)),
+    [loading, options, query],
+  );
+
   useLayoutEffect(() => {
     if (!open) return;
     const updatePosition = () => {
@@ -230,6 +305,7 @@ export function GicsTreeSelect({
       const rect = triggerEl.getBoundingClientRect();
       const offset = 6;
       const viewportH = window.innerHeight || 0;
+      const viewportW = window.innerWidth || 0;
       const availableBelow = Math.max(0, viewportH - rect.bottom - offset);
       const availableAbove = Math.max(0, rect.top - offset);
 
@@ -245,7 +321,14 @@ export function GicsTreeSelect({
       const top = placeAbove
         ? rect.top - offset - maxHeight
         : rect.bottom + offset;
-      setPanelPosition({ top, left: rect.left, width: rect.width, maxHeight });
+      const { width, left } = gicsPanelSize({
+        triggerLeft: rect.left,
+        triggerWidth: rect.width,
+        minWidth: panelMinWidth,
+        rowNaturalWidths: rows.map(gicsRowNaturalWidth),
+        viewportWidth: viewportW,
+      });
+      setPanelPosition({ top, left, width, maxHeight });
     };
     updatePosition();
     window.addEventListener("resize", updatePosition);
@@ -254,20 +337,8 @@ export function GicsTreeSelect({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [open]);
+  }, [open, panelMaxHeight, panelMinWidth, rows]);
 
-  const selected = useMemo(
-    () => options.find((o) => o.code === value) ?? null,
-    [options, value],
-  );
-  const triggerDisplay = selected
-    ? `${optionLabel(selected)} (${selected.code})`
-    : placeholder;
-
-  const rows = useMemo(
-    () => (loading ? [] : buildRows(options, query)),
-    [loading, options, query],
-  );
   const hasAnyOptions = options.length > 0;
   const hasAnyRows = rows.some((r) => r.kind === "option");
 
@@ -287,14 +358,14 @@ export function GicsTreeSelect({
         }}
         ref={triggerRef}
         className={cn(
-          "!w-auto !min-w-0 h-9 px-4 text-sm rounded-md border border-gray-03 bg-gray-05 text-gray-01 hover:bg-gray-03/40 flex items-center gap-2",
+          "!min-w-0 !max-w-none h-9 px-4 text-sm rounded-md border border-gray-03 bg-gray-05 text-gray-01 hover:bg-gray-03/40 flex items-center gap-2",
           triggerClassName,
         )}
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={ariaLabel ?? placeholder}
       >
-        <span className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap">
+        <span className="min-w-0 flex-1 truncate" title={triggerDisplay}>
           {triggerDisplay}
         </span>
         <ChevronDown className="w-4 h-4 shrink-0 text-gray-02" />
@@ -304,12 +375,12 @@ export function GicsTreeSelect({
         ? createPortal(
             <div
               ref={panelRef}
-              className="z-[99999] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto"
+              className="z-[99999] bg-gray-04 border border-gray-03 rounded-md shadow-md p-1.5 overflow-y-auto overflow-x-hidden"
               style={{
                 position: "fixed",
                 top: panelPosition.top,
                 left: panelPosition.left,
-                width: Math.max(panelMinWidth, panelPosition.width),
+                width: panelPosition.width,
                 maxHeight: panelPosition.maxHeight,
               }}
               role="listbox"
@@ -348,7 +419,7 @@ export function GicsTreeSelect({
                       <div
                         key={row.key}
                         className={cn(
-                          "px-3 py-1 text-[11px] font-semibold text-gray-02 uppercase tracking-wider",
+                          "px-3 py-1 text-[11px] font-semibold text-gray-02 uppercase tracking-wider break-words",
                         )}
                         style={{ paddingLeft: 12 + row.depth * 12 }}
                         aria-hidden
@@ -382,7 +453,7 @@ export function GicsTreeSelect({
                           <Check className="w-3.5 h-3.5 text-white" />
                         ) : null}
                       </span>
-                      <span className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap">
+                      <span className="min-w-0 flex-1 break-words">
                         {row.label}
                       </span>
                     </button>
