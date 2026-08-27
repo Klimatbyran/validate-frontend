@@ -297,7 +297,9 @@ export function OverviewSummaryView({ summary }: Props) {
       <div className="grid gap-8 lg:grid-cols-2">
         <SummarySection
           title={t("overview.summary.sections.emissionsYearHistogram")}
-          description={t("overview.summary.sections.emissionsYearHistogramHint")}
+          description={t(
+            "overview.summary.sections.emissionsYearHistogramHint",
+          )}
         >
           <CountTable
             headers={[
@@ -417,9 +419,7 @@ export function OverviewSummaryView({ summary }: Props) {
           />
           <GapCompanyList
             title={t("overview.summary.gaps.reportsWithoutEmissions")}
-            description={t(
-              "overview.summary.gaps.reportsWithoutEmissionsHint",
-            )}
+            description={t("overview.summary.gaps.reportsWithoutEmissionsHint")}
             totalMatching={summary.gaps.reportsWithoutEmissions.totalMatching}
             companies={summary.gaps.reportsWithoutEmissions.companies}
             emptyLabel={t("overview.summary.gaps.empty")}
