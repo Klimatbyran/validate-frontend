@@ -1,5 +1,6 @@
 import { getUnearthApiBaseUrl } from "@/config/api-env";
 import {
+  CRAWL_UNREACHABLE_MESSAGE,
   SEARCH_REPORT_JOB_TIMEOUT_MESSAGE,
   type crawlerSearchQuery,
   type LlmSelectionCandidate,
@@ -19,6 +20,9 @@ const TRANSIENT_FETCH_ATTEMPTS = 6;
 const SEARCH_REPORT_JOB_MAX_MS = 45 * 60 * 1000;
 const SEARCH_REPORT_JOB_POLL_MS = 3000;
 const SEARCH_REPORT_JOB_MAX_POLL_FAILURES = 5;
+/** Other replica 404s are expected until Redis has the job; do not fail the company on the first miss. */
+const SEARCH_REPORT_JOB_NOT_FOUND_GRACE_MS = 2 * 60 * 1000;
+const SEARCH_REPORT_JOB_FATAL_CLIENT_STATUSES = new Set([400, 401, 403, 422]);
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -115,7 +119,7 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
   );
 
   if (!startResponse) {
-    throw new Error("Could not reach the reports API");
+    throw new Error(CRAWL_UNREACHABLE_MESSAGE);
   }
 
   if (startResponse.status !== 202 && !startResponse.ok) {
@@ -136,6 +140,7 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
 
   const deadline = Date.now() + SEARCH_REPORT_JOB_MAX_MS;
   let consecutivePollFailures = 0;
+  let notFoundSince: number | null = null;
   while (Date.now() < deadline) {
     await sleep(SEARCH_REPORT_JOB_POLL_MS);
     const pollResponse = await authFetchWithTransientRetry(
@@ -146,18 +151,22 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
     if (!pollResponse) {
       consecutivePollFailures += 1;
       if (consecutivePollFailures >= SEARCH_REPORT_JOB_MAX_POLL_FAILURES) {
-        throw new Error("Could not reach the reports API");
+        throw new Error(CRAWL_UNREACHABLE_MESSAGE);
       }
       continue;
     }
-    if (
-      pollResponse.status >= 400 &&
-      pollResponse.status < 500 &&
-      pollResponse.status !== 429
-    ) {
+    if (SEARCH_REPORT_JOB_FATAL_CLIENT_STATUSES.has(pollResponse.status)) {
       throw new Error(
         `Failed to fetch report: ${pollResponse.status} ${pollResponse.statusText}`,
       );
+    }
+    if (pollResponse.status === 404) {
+      consecutivePollFailures = 0;
+      if (notFoundSince == null) notFoundSince = Date.now();
+      if (Date.now() - notFoundSince >= SEARCH_REPORT_JOB_NOT_FOUND_GRACE_MS) {
+        throw new Error("Search job not found (404)");
+      }
+      continue;
     }
     if (!pollResponse.ok) {
       consecutivePollFailures += 1;
@@ -168,6 +177,7 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
       }
       continue;
     }
+    notFoundSince = null;
     consecutivePollFailures = 0;
     const job = (await pollResponse.json()) as {
       status?: string;
@@ -295,7 +305,7 @@ export const saveToRegistry = async (
     );
 
     if (!response) {
-      throw new Error("Could not reach the reports API");
+      throw new Error(CRAWL_UNREACHABLE_MESSAGE);
     }
 
     let responseBody: SaveReportsListResponse | { message?: string } | null =

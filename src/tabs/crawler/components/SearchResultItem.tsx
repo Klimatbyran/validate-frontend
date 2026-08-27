@@ -8,7 +8,9 @@ import {
 } from "lucide-react";
 import {
   CompanyReport,
+  CRAWL_UNREACHABLE_MESSAGE,
   Report,
+  sanitizeCrawlErrorMessage,
   SEARCH_REPORT_JOB_TIMEOUT_MESSAGE,
 } from "../lib/crawler-types";
 import { useI18n } from "@/contexts/I18nContext";
@@ -46,7 +48,12 @@ function crawlStatusText(
   if (crawlError === SEARCH_REPORT_JOB_TIMEOUT_MESSAGE) {
     return t("crawler.crawlTimedOut");
   }
-  return t("crawler.crawlRequestFailed");
+  if (crawlError === CRAWL_UNREACHABLE_MESSAGE) {
+    return t("crawler.crawlRequestFailed");
+  }
+  return t("crawler.crawlFailedDetail", {
+    error: sanitizeCrawlErrorMessage(crawlError),
+  });
 }
 
 const SearchResultItem = ({
