@@ -4,6 +4,7 @@
  */
 
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
+import { allowUnauthenticatedReads } from "@/lib/auth-constants";
 import type {
   TagOption,
   CreateTagOptionBody,
@@ -11,13 +12,14 @@ import type {
 } from "./types";
 import { apiUrl } from "./api-utils";
 
-/** List all tag options (ordered by slug). Requires auth. */
+/** List all tag options (ordered by slug). Auth required in production; Vite dev allows empty list. */
 export async function fetchTagOptions(): Promise<TagOption[]> {
   const res = await garboAuthFetch(apiUrl("/tag-options"), {
     method: "GET",
     headers: { Accept: "application/json" },
   });
   if (res.status === 401) {
+    if (allowUnauthenticatedReads()) return [];
     throw new Error("Please log in to view tag options.");
   }
   if (!res.ok) {

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { listCompanies } from "../lib/companies-api";
-import { fetchTagOptions } from "../lib/tag-options-api";
+import { loadCompaniesAndTagOptions } from "../lib/load-companies-and-tags";
 import type { GarboCompanyListItem, TagOption } from "../lib/types";
 import { buildTagLabelBySlug } from "../lib/editor-tag-and-payload-utils";
 
@@ -14,10 +13,8 @@ export function useMultiCompanyData() {
     setLoading(true);
     setError(null);
     try {
-      const [companyList, availableTagOptions] = await Promise.all([
-        listCompanies(),
-        fetchTagOptions(),
-      ]);
+      const { companies: companyList, tagOptions: availableTagOptions } =
+        await loadCompaniesAndTagOptions();
       setCompanies(companyList);
       setTagOptions(availableTagOptions);
     } catch (e) {

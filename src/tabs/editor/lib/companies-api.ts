@@ -1,6 +1,7 @@
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
+import { allowUnauthenticatedReads } from "@/lib/auth-constants";
+import { PIPELINE_COMPANIES_LIST_PATH } from "@/config/api-env";
 import {
-  WIKIDATA_ID_REGEX,
   type GarboCompanyListItem,
   type GarboCompanyDetail,
   type GarboCompanyReportSummary,
@@ -8,10 +9,7 @@ import {
   type GarboRegistryReportSummary,
   type ReportingPeriodWritePayload,
 } from "./types";
-import {
-  parseGarboCompanyDetail,
-  garboCompanyIdSchema,
-} from "./companies-schemas";
+import { parseGarboCompanyDetail } from "./companies-schemas";
 import { apiUrl } from "./api-utils";
 
 function normalizeReportingPeriodUrls(
@@ -101,6 +99,15 @@ function pipelineCompaniesPath(segment = ""): string {
   return seg ? `${path}/${seg}` : path;
 }
 
+/** Staff JWT path, or the X-API-Key twin in Vite dev (no GitHub login). */
+function companiesReadPath(segment = ""): string {
+  const path = allowUnauthenticatedReads()
+    ? PIPELINE_COMPANIES_LIST_PATH
+    : pipelineCompaniesPath();
+  const seg = segment.replace(/^\//, "");
+  return seg ? `${path}/${seg}` : path;
+}
+
 function reportingPeriodPath(segment = ""): string {
   const path = "/reporting-period";
   const seg = segment.replace(/^\//, "");
@@ -110,12 +117,16 @@ function reportingPeriodPath(segment = ""): string {
 export async function listCompanies(
   signal?: AbortSignal,
 ): Promise<GarboCompanyListItem[]> {
-  const res = await garboAuthFetch(apiUrl(pipelineCompaniesPath()), {
+  const res = await garboAuthFetch(apiUrl(companiesReadPath()), {
     method: "GET",
     headers: { Accept: "application/json" },
     signal,
   });
   if (res.status === 401) {
+    if (allowUnauthenticatedReads()) {
+      const text = await res.text();
+      throw new Error(`Failed to list companies: ${res.status} ${text}`);
+    }
     throw new Error("Please log in to list companies.");
   }
   if (!res.ok) {
@@ -148,7 +159,7 @@ async function fetchPipelineCompanyByRefIfExists(
   signal?: AbortSignal,
 ): Promise<GarboCompanyDetail | null> {
   const res = await garboAuthFetch(
-    apiUrl(pipelineCompaniesPath(encodeURIComponent(pipelineRef))),
+    apiUrl(companiesReadPath(encodeURIComponent(pipelineRef))),
     {
       method: "GET",
       headers: { Accept: "application/json" },
@@ -156,6 +167,7 @@ async function fetchPipelineCompanyByRefIfExists(
     },
   );
   if (res.status === 401) {
+    if (allowUnauthenticatedReads()) return null;
     throw new Error("Please log in to view company.");
   }
   if (res.status === 404) {
@@ -169,33 +181,18 @@ async function fetchPipelineCompanyByRefIfExists(
   return normalizeCompany(data as GarboCompanyDetail);
 }
 
-async function fetchPipelineCompanyByRef(
-  pipelineRef: string,
-  signal?: AbortSignal,
-): Promise<GarboCompanyDetail> {
-  const company = await fetchPipelineCompanyByRefIfExists(pipelineRef, signal);
-  if (!company) {
-    throw new Error("Company not found.");
-  }
-  return company;
-}
-
 /**
  * Pipeline GET /:ref accepts Wikidata IDs and internal company UUIDs (Phase 3+).
+ * In Vite dev, a missing/unauthorized detail fetch falls back to the internal
+ * company list so search-and-open still works without GitHub login.
  */
 export async function getCompany(
   identifier: string,
   signal?: AbortSignal,
 ): Promise<GarboCompanyDetail> {
   const ref = identifier.trim();
-  if (WIKIDATA_ID_REGEX.test(ref)) {
-    return fetchPipelineCompanyByRef(ref, signal);
-  }
-
-  if (garboCompanyIdSchema.safeParse(ref).success) {
-    const byId = await fetchPipelineCompanyByRefIfExists(ref, signal);
-    if (byId) return byId;
-  }
+  const byRef = await fetchPipelineCompanyByRefIfExists(ref, signal);
+  if (byRef) return byRef;
 
   const companies = await listCompanies(signal);
   const match = companies.find((company) =>
