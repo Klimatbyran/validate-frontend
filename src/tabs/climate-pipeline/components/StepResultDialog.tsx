@@ -30,10 +30,13 @@ function getStepItemCount(
 ): number | null {
   switch (step) {
     case "extractCommitments":
+      // Table shows every commitment (review/audit view of what got
+      // filtered and why), so the count matches that, not the pass count.
       return detail.commitments.length;
     case "filterCommitmentsClimate":
-      return detail.commitments.filter((c) => c.climateRelevant).length;
+      return detail.commitments.length;
     case "filterCommitmentsActionable":
+      return detail.commitments.filter((c) => c.climateRelevant).length;
     case "groupCommitmentsSimilar":
     case "groupCommitmentsThemes":
       return detail.commitments.filter((c) => c.climateRelevant && c.actionable)
@@ -41,7 +44,7 @@ function getStepItemCount(
     case "extractMeasures":
       return detail.extractedMeasures.length;
     case "scoreMeasures":
-      return detail.extractedMeasures.filter((m) => m.score).length;
+      return detail.extractedMeasures.length;
     case "matchTransitionElements":
       return detail.extractedMeasures.filter(
         (m) => m.score && m.score.activityShifts.length > 0,
