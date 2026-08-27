@@ -16,7 +16,6 @@ import { CoverageReplaceReportUrlDialog } from "./CoverageReplaceReportUrlDialog
 import { CoverageRunReportYearPrompt } from "./CoverageRunReportYearPrompt";
 import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
 import type { RunReportListItem } from "@/lib/run-reports-types";
-import { fetchCoverageYearNames } from "@/tabs/overview/lib/coverage-api";
 import {
   coverageEntryForSavedReport,
   groupRegistryReportsByYear,
@@ -55,7 +54,6 @@ type CoverageYearDetailProps = {
   onRefreshRegistry: () => void;
   onEdit: () => void;
   onEditEntry: (entry: CoverageEntry) => void;
-  onViewRegistryReports?: (names: string[]) => void;
   onRegistryReportSaved?: (entryId: string, saved: SaveReportSuccess) => void;
   onRegistryReportRemoved?: (entryId: string, reportId: string) => void;
   onRegistryReportUpdated?: (
@@ -94,7 +92,6 @@ export function CoverageYearDetailView({
   onRefreshRegistry,
   onEdit,
   onEditEntry,
-  onViewRegistryReports,
   onRegistryReportSaved,
   onRegistryReportRemoved,
   onRegistryReportUpdated,
@@ -114,7 +111,6 @@ export function CoverageYearDetailView({
   const [runReportSession, setRunReportSession] =
     useState<RunReportSession | null>(null);
   const [isRunModalOpen, setIsRunModalOpen] = useState(false);
-  const [isLoadingRegistryNames, setIsLoadingRegistryNames] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [crawlEntries, setCrawlEntries] = useState<CoverageEntry[] | null>(
     null,
@@ -321,23 +317,6 @@ export function CoverageYearDetailView({
     }
   };
 
-  const handleViewInRegistry = async () => {
-    if (!onViewRegistryReports) return;
-    setIsLoadingRegistryNames(true);
-    try {
-      const response = await fetchCoverageYearNames(listId, year);
-      onViewRegistryReports(response.names);
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : t("overview.coverage.errorTitle"),
-      );
-    } finally {
-      setIsLoadingRegistryNames(false);
-    }
-  };
-
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-gray-03 bg-gray-05/50 p-4 space-y-4">
@@ -346,20 +325,6 @@ export function CoverageYearDetailView({
             {detail.listName} — {detail.year}
           </h3>
           <div className="flex flex-wrap gap-2">
-            {onViewRegistryReports ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void handleViewInRegistry()}
-                disabled={isLoadingRegistryNames}
-              >
-                {isLoadingRegistryNames ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  t("overview.coverage.reports.viewInRegistry")
-                )}
-              </Button>
-            ) : null}
             <Button variant="secondary" size="sm" onClick={onEdit}>
               {t("overview.coverage.editYear")}
             </Button>

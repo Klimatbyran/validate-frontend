@@ -1,8 +1,6 @@
 import { getUnearthApiBaseUrl } from "@/config/api-env";
 import type {
-  OverviewFilters,
-  OverviewRow,
-  OverviewStats,
+  OverviewSummaryResponse,
   OverviewWarning,
   ProdToStageFilters,
   ProdToStageRow,
@@ -17,24 +15,6 @@ export type OverviewPageMeta = {
   page: number;
   pageSize: number;
   totalPages: number;
-};
-
-export type CompanyYearsOverviewResponse = OverviewPageMeta & {
-  viewMode: "companyYears";
-  rows: OverviewRow[];
-  stats: OverviewStats;
-  reportYears: string[];
-  warnings?: OverviewWarning[];
-  localEnv?: "stage" | "prod";
-};
-
-export type RegistryReportsOverviewResponse = OverviewPageMeta & {
-  viewMode: "registryReports";
-  rows: OverviewRow[];
-  stats: OverviewStats;
-  reportYears: string[];
-  warnings?: OverviewWarning[];
-  localEnv?: "stage" | "prod";
 };
 
 export type ProdToStageBuildDiagnostics = {
@@ -77,24 +57,6 @@ function appendCsv(
   if (values.length > 0) params.set(key, values.join(","));
 }
 
-function sharedOverviewParams(
-  filters: { searchQuery: string; reportYears: string[] },
-  page: number,
-  pageSize: number,
-): URLSearchParams {
-  const params = new URLSearchParams({
-    page: String(page),
-    pageSize: String(pageSize),
-  });
-  appendQuery(params, "searchQuery", filters.searchQuery);
-  if (filters.reportYears.length > 0) {
-    appendCsv(params, "reportYears", filters.reportYears);
-  } else {
-    params.set("allYears", "true");
-  }
-  return params;
-}
-
 async function fetchOverviewJson<T>(url: string): Promise<T> {
   const response = await fetch(url, {
     headers: { Accept: "application/json" },
@@ -109,41 +71,8 @@ async function fetchOverviewJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export async function fetchCompanyYearsOverview(
-  filters: OverviewFilters,
-  page: number,
-  pageSize = OVERVIEW_PAGE_SIZE,
-): Promise<CompanyYearsOverviewResponse> {
-  const params = sharedOverviewParams(filters, page, pageSize);
-  appendCsv(params, "tagSlugs", filters.tagSlugs);
-  appendCsv(params, "statusFilters", filters.statusFilters);
-  if (filters.missingRegistryOnly) params.set("missingRegistryOnly", "true");
-  if (filters.missingCompanyReportOnly) {
-    params.set("missingCompanyReportOnly", "true");
-  }
-  if (filters.notRunInPipelineOnly) params.set("notRunInPipelineOnly", "true");
-
-  return fetchOverviewJson(
-    `${overviewBaseUrl()}/company-years?${params.toString()}`,
-  );
-}
-
-export async function fetchRegistryReportsOverview(
-  filters: OverviewFilters,
-  page: number,
-  pageSize = OVERVIEW_PAGE_SIZE,
-): Promise<RegistryReportsOverviewResponse> {
-  const params = sharedOverviewParams(filters, page, pageSize);
-  appendCsv(params, "statusFilters", filters.statusFilters);
-  if (filters.missingRegistryOnly) params.set("missingRegistryOnly", "true");
-  if (filters.missingCompanyReportOnly) {
-    params.set("missingCompanyReportOnly", "true");
-  }
-  if (filters.notRunInPipelineOnly) params.set("notRunInPipelineOnly", "true");
-
-  return fetchOverviewJson(
-    `${overviewBaseUrl()}/registry-reports?${params.toString()}`,
-  );
+export async function fetchOverviewSummary(): Promise<OverviewSummaryResponse> {
+  return fetchOverviewJson(`${overviewBaseUrl()}/summary`);
 }
 
 export async function fetchProdToStageOverview(
@@ -151,7 +80,16 @@ export async function fetchProdToStageOverview(
   page: number,
   pageSize = OVERVIEW_PAGE_SIZE,
 ): Promise<ProdToStageOverviewResponse> {
-  const params = sharedOverviewParams(filters, page, pageSize);
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  appendQuery(params, "searchQuery", filters.searchQuery);
+  if (filters.reportYears.length > 0) {
+    appendCsv(params, "reportYears", filters.reportYears);
+  } else {
+    params.set("allYears", "true");
+  }
   appendCsv(params, "tagSlugs", filters.tagSlugs);
   if (filters.runnableOnly) params.set("runnableOnly", "true");
 

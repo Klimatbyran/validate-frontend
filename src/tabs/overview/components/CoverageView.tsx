@@ -34,11 +34,7 @@ type DeleteConfirmState =
   | { kind: "year"; listId: string; listName: string; year: number }
   | { kind: "list"; listId: string; listName: string };
 
-type CoverageViewProps = {
-  onViewRegistryReports?: (names: string[]) => void;
-};
-
-export function CoverageView({ onViewRegistryReports }: CoverageViewProps) {
+export function CoverageView() {
   const { t } = useI18n();
   const coverage = useCoverageLists();
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
@@ -343,7 +339,6 @@ export function CoverageView({ onViewRegistryReports }: CoverageViewProps) {
                   onLoadMore={() => void yearDetail.loadMore()}
                   isRefreshingRegistry={yearDetail.isRefreshingRegistry}
                   onRefreshRegistry={() => void yearDetail.refreshRegistry()}
-                  onViewRegistryReports={onViewRegistryReports}
                   onRegistryReportSaved={(entryId, saved) => {
                     yearDetail.addEntryRegistryReport(entryId, saved);
                   }}

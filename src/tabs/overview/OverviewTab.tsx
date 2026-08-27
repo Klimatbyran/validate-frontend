@@ -12,21 +12,14 @@ import { LoadingSpinner } from "@/ui/loading-spinner";
 import { MetricCard, MetricCardGrid } from "@/ui/metric-card";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { useOverviewData } from "./hooks/useOverviewData";
-import { OverviewFilters } from "./components/OverviewFilters";
 import { ProdToStageFilters } from "./components/ProdToStageFilters";
-import { OverviewStatsBar } from "./components/OverviewStatsBar";
-import { OverviewTable } from "./components/OverviewTable";
 import { ProdToStageTable } from "./components/ProdToStageTable";
 import { CoverageView } from "./components/CoverageView";
-import type {
-  OverviewRow,
-  OverviewViewMode,
-  ProdToStageRow,
-} from "./lib/overview-types";
+import { OverviewSummaryView } from "./components/OverviewSummaryView";
+import type { OverviewViewMode, ProdToStageRow } from "./lib/overview-types";
 
 const VIEW_MODES: { value: OverviewViewMode; labelKey: string }[] = [
-  { value: "companyYears", labelKey: "overview.views.companyYears" },
-  { value: "registryReports", labelKey: "overview.views.registryReports" },
+  { value: "summary", labelKey: "overview.views.summary" },
   { value: "prodToStage", labelKey: "overview.views.prodToStage" },
   { value: "coverage", labelKey: "overview.views.coverage" },
 ];
@@ -42,19 +35,13 @@ export function OverviewTab() {
     selectedFrom,
   } = useKeySetSelection({ resetWhen: data.viewMode });
   const [isRunReportsOpen, setIsRunReportsOpen] = useState(false);
-  const envPipeline = useRunReportsPipeline();
   const stagePipeline = useRunReportsPipeline(
     STAGE_RUN_REPORTS_PIPELINE_CONFIG,
   );
 
   const isProdToStage = data.viewMode === "prodToStage";
   const isCoverage = data.viewMode === "coverage";
-  const activePipeline = isProdToStage ? stagePipeline : envPipeline;
-
-  const selectedOverviewRows = useMemo(
-    () => selectedFrom(data.rows),
-    [selectedFrom, data.rows],
-  );
+  const isSummary = data.viewMode === "summary";
 
   const selectedProdToStageRows = useMemo(
     () => selectedFrom(data.prodToStageRows),
@@ -62,48 +49,23 @@ export function OverviewTab() {
   );
 
   const runItems = useMemo(() => {
-    if (isProdToStage) {
-      return selectedProdToStageRows
-        .filter((row) => row.reportUrl)
-        .map((row) => ({
-          url: row.reportUrl!,
-          companyId: row.stageCompanyId ?? undefined,
-          companyName: row.companyName,
-          wikidataId: row.wikidataId,
-          reportYear: row.reportYear,
-        }));
-    }
-    return selectedOverviewRows
-      .filter((row) => row.runUrl)
+    if (!isProdToStage) return [];
+    return selectedProdToStageRows
+      .filter((row) => row.reportUrl)
       .map((row) => ({
-        id: row.registryEntry?.id,
-        url: row.runUrl!,
-        companyId: row.companyId,
+        url: row.reportUrl!,
+        companyId: row.stageCompanyId ?? undefined,
         companyName: row.companyName,
         wikidataId: row.wikidataId,
         reportYear: row.reportYear,
       }));
-  }, [isProdToStage, selectedProdToStageRows, selectedOverviewRows]);
-
-  const toggleSelectOverview = useCallback(
-    (row: OverviewRow) => {
-      toggleSelect(row);
-    },
-    [toggleSelect],
-  );
+  }, [isProdToStage, selectedProdToStageRows]);
 
   const toggleSelectProdToStage = useCallback(
     (row: ProdToStageRow) => {
       toggleSelect(row);
     },
     [toggleSelect],
-  );
-
-  const toggleSelectAllOverview = useCallback(
-    (rows: OverviewRow[]) => {
-      toggleSelectAll(rows);
-    },
-    [toggleSelectAll],
   );
 
   const toggleSelectAllProdToStage = useCallback(
@@ -115,7 +77,7 @@ export function OverviewTab() {
 
   const handleRunReports = useCallback(() => {
     const urls = runItems.map((item) => item.url);
-    void activePipeline.runForUrls(urls, {
+    void stagePipeline.runForUrls(urls, {
       runItems,
       onSuccess: () => {
         setIsRunReportsOpen(false);
@@ -123,20 +85,17 @@ export function OverviewTab() {
         data.refresh();
       },
     });
-  }, [activePipeline, runItems, data, clearSelection]);
+  }, [stagePipeline, runItems, data, clearSelection]);
 
-  const viewSubtitle =
-    data.viewMode === "companyYears"
-      ? t("overview.subtitleCompanyYears")
-      : data.viewMode === "registryReports"
-        ? t("overview.subtitleRegistryReports")
-        : data.viewMode === "coverage"
-          ? t("overview.subtitleCoverage")
-          : t("overview.subtitleProdToStage");
+  const viewSubtitle = isSummary
+    ? t("overview.subtitleSummary")
+    : isCoverage
+      ? t("overview.subtitleCoverage")
+      : t("overview.subtitleProdToStage");
 
-  const selectedCount = isProdToStage
-    ? selectedProdToStageRows.length
-    : selectedOverviewRows.length;
+  const selectedCount = selectedProdToStageRows.length;
+  const showRefresh = !isCoverage;
+  const showRunSelected = isProdToStage;
 
   return (
     <motion.div
@@ -166,38 +125,36 @@ export function OverviewTab() {
             />
           </div>
           <div className="flex flex-wrap gap-2">
-            {!isCoverage ? (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => data.refresh()}
-                  disabled={data.isRefreshing}
-                >
-                  {data.isRefreshing ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                  )}
-                  {t("common.refresh")}
-                </Button>
-                <Button
-                  onClick={() => setIsRunReportsOpen(true)}
-                  disabled={
-                    runItems.length === 0 || activePipeline.isRunningReports
-                  }
-                >
-                  {activePipeline.isRunningReports ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Play className="w-4 h-4 mr-2" />
-                  )}
-                  {isProdToStage
-                    ? t("overview.prodToStage.runOnStage", {
-                        count: runItems.length,
-                      })
-                    : t("overview.runSelected", { count: runItems.length })}
-                </Button>
-              </>
+            {showRefresh ? (
+              <Button
+                variant="outline"
+                onClick={() => data.refresh()}
+                disabled={data.isRefreshing}
+              >
+                {data.isRefreshing ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                )}
+                {t("common.refresh")}
+              </Button>
+            ) : null}
+            {showRunSelected ? (
+              <Button
+                onClick={() => setIsRunReportsOpen(true)}
+                disabled={
+                  runItems.length === 0 || stagePipeline.isRunningReports
+                }
+              >
+                {stagePipeline.isRunningReports ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Play className="w-4 h-4 mr-2" />
+                )}
+                {t("overview.prodToStage.runOnStage", {
+                  count: runItems.length,
+                })}
+              </Button>
             ) : null}
           </div>
         </div>
@@ -266,42 +223,28 @@ export function OverviewTab() {
                 </p>
               </div>
             ) : null}
-          </div>
-        ) : null}
-
-        {!isProdToStage && !isCoverage ? (
-          <OverviewStatsBar
-            stats={data.stats}
-            selectedCount={selectedCount}
-            viewMode={data.viewMode}
-          />
-        ) : isProdToStage ? (
-          <MetricCardGrid className="grid-cols-2 sm:grid-cols-4">
-            <MetricCard
-              label={t("overview.prodToStage.stats.total")}
-              value={data.prodToStageRows.length}
-            />
-            <MetricCard
-              label={t("overview.prodToStage.stats.runnable")}
-              value={data.prodToStageRows.filter((row) => row.reportUrl).length}
-            />
-            <MetricCard
-              label={t("overview.prodToStage.stats.selected")}
-              value={selectedCount}
-            />
-            <MetricCard
-              label={t("overview.prodToStage.stats.allCandidates")}
-              value={data.pagination.totalRows}
-            />
-          </MetricCardGrid>
-        ) : null}
-
-        {!isCoverage ? (
-          isProdToStage ? (
+            <MetricCardGrid className="grid-cols-2 sm:grid-cols-4">
+              <MetricCard
+                label={t("overview.prodToStage.stats.total")}
+                value={data.prodToStageRows.length}
+              />
+              <MetricCard
+                label={t("overview.prodToStage.stats.runnable")}
+                value={
+                  data.prodToStageRows.filter((row) => row.reportUrl).length
+                }
+              />
+              <MetricCard
+                label={t("overview.prodToStage.stats.selected")}
+                value={selectedCount}
+              />
+              <MetricCard
+                label={t("overview.prodToStage.stats.allCandidates")}
+                value={data.pagination.totalRows}
+              />
+            </MetricCardGrid>
             <ProdToStageFilters data={data} />
-          ) : (
-            <OverviewFilters data={data} />
-          )
+          </div>
         ) : null}
 
         {!isCoverage && data.error ? (
@@ -339,11 +282,9 @@ export function OverviewTab() {
             <LoadingSpinner />
           </div>
         ) : data.error && !isCoverage ? null : isCoverage ? (
-          <CoverageView
-            onViewRegistryReports={(names) =>
-              data.openRegistryReportsWithSearch(names.join("\n"))
-            }
-          />
+          <CoverageView />
+        ) : isSummary && data.summary ? (
+          <OverviewSummaryView summary={data.summary} />
         ) : isProdToStage ? (
           <ProdToStageTable
             data={data}
@@ -352,16 +293,9 @@ export function OverviewTab() {
             onToggleSelect={toggleSelectProdToStage}
             onToggleSelectAll={toggleSelectAllProdToStage}
           />
-        ) : (
-          <OverviewTable
-            data={data}
-            selectedKeys={selectedKeys}
-            onToggleSelect={toggleSelectOverview}
-            onToggleSelectAll={toggleSelectAllOverview}
-          />
-        )}
+        ) : null}
 
-        {!isCoverage ? (
+        {isProdToStage ? (
           <div className="flex flex-wrap gap-2 pt-2">
             <Button
               variant="ghost"
@@ -379,11 +313,11 @@ export function OverviewTab() {
         open={isRunReportsOpen}
         onOpenChange={setIsRunReportsOpen}
         items={runItems}
-        autoApprove={activePipeline.autoApprove}
-        onAutoApproveChange={activePipeline.setAutoApprove}
-        runOptions={activePipeline.runOptions}
+        autoApprove={stagePipeline.autoApprove}
+        onAutoApproveChange={stagePipeline.setAutoApprove}
+        runOptions={stagePipeline.runOptions}
         onRunReports={handleRunReports}
-        isRunning={activePipeline.isRunningReports}
+        isRunning={stagePipeline.isRunningReports}
       />
     </motion.div>
   );

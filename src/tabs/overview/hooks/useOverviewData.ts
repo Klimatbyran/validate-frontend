@@ -3,39 +3,20 @@ import { useSearchParams } from "react-router-dom";
 import { buildTagLabelBySlug } from "@/tabs/editor/lib/editor-tag-and-payload-utils";
 import { useTagOptions } from "@/tabs/upload/hooks/useTagOptions";
 import {
-  fetchCompanyYearsOverview,
+  fetchOverviewSummary,
   fetchProdToStageOverview,
-  fetchRegistryReportsOverview,
   OVERVIEW_PAGE_SIZE,
   type ProdToStageBuildDiagnostics,
 } from "../lib/overview-api";
 import {
-  defaultFiltersForView,
   defaultProdToStageFilters,
-  defaultRegistryOverviewFilters,
-  overviewFiltersAreActive,
-  registryOverviewFiltersAreActive,
   overviewYearRange,
-  type OverviewFilters,
-  type OverviewRow,
-  type OverviewStats,
+  type OverviewSummaryResponse,
   type OverviewWarning,
   type OverviewViewMode,
   type ProdToStageFilters,
   type ProdToStageRow,
 } from "../lib/overview-types";
-
-function overviewRowsForView(
-  rows: OverviewRow[],
-  viewMode: "companyYears" | "registryReports",
-): OverviewRow[] {
-  if (viewMode === "registryReports") {
-    return rows.filter(
-      (row) => row.viewMode === "registryReports" && row.registryEntry != null,
-    );
-  }
-  return rows.filter((row) => row.viewMode === "companyYears");
-}
 
 const OVERVIEW_VIEW_QUERY = "view";
 
@@ -43,24 +24,16 @@ function overviewViewFromSearchParams(
   searchParams: URLSearchParams,
 ): OverviewViewMode {
   const view = searchParams.get(OVERVIEW_VIEW_QUERY);
-  if (view === "registry") return "registryReports";
   if (view === "prod-to-stage") return "prodToStage";
   if (view === "coverage") return "coverage";
-  return "companyYears";
+  return "summary";
 }
 
 function viewModeToQuery(mode: OverviewViewMode): string | null {
-  if (mode === "registryReports") return "registry";
   if (mode === "prodToStage") return "prod-to-stage";
   if (mode === "coverage") return "coverage";
   return null;
 }
-
-const EMPTY_STATS: OverviewStats = {
-  totalRows: 0,
-  pipelineCompleted: 0,
-  pipelineFailed: 0,
-};
 
 const EMPTY_DIAGNOSTICS: ProdToStageBuildDiagnostics = {
   prodShells: 0,
@@ -75,9 +48,8 @@ export function useOverviewData() {
   const [searchParams, setSearchParams] = useSearchParams();
   const viewMode = overviewViewFromSearchParams(searchParams);
 
-  const [rows, setRows] = useState<OverviewRow[]>([]);
+  const [summary, setSummary] = useState<OverviewSummaryResponse | null>(null);
   const [prodToStageRows, setProdToStageRows] = useState<ProdToStageRow[]>([]);
-  const [stats, setStats] = useState<OverviewStats>(EMPTY_STATS);
   const [prodToStageDiagnostics, setProdToStageDiagnostics] =
     useState<ProdToStageBuildDiagnostics>(EMPTY_DIAGNOSTICS);
   const [stageCompanyCount, setStageCompanyCount] = useState(0);
@@ -93,16 +65,12 @@ export function useOverviewData() {
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<OverviewWarning[]>([]);
   const [localEnv, setLocalEnv] = useState<"stage" | "prod" | null>(null);
-  const [filters, setFilters] = useState<OverviewFilters>(() =>
-    defaultFiltersForView(overviewViewFromSearchParams(searchParams)),
-  );
   const [prodToStageFilters, setProdToStageFilters] = useState(
     defaultProdToStageFilters(),
   );
 
   const setViewMode = useCallback(
     (mode: OverviewViewMode) => {
-      setFilters(defaultFiltersForView(mode));
       setProdToStageFilters(defaultProdToStageFilters());
       setPage(1);
       setShowAll(false);
@@ -112,26 +80,6 @@ export function useOverviewData() {
           const query = viewModeToQuery(mode);
           if (query) next.set(OVERVIEW_VIEW_QUERY, query);
           else next.delete(OVERVIEW_VIEW_QUERY);
-          return next;
-        },
-        { replace: true },
-      );
-    },
-    [setSearchParams],
-  );
-
-  const openRegistryReportsWithSearch = useCallback(
-    (searchQuery: string) => {
-      setPage(1);
-      setShowAll(false);
-      setFilters({
-        ...defaultRegistryOverviewFilters(),
-        searchQuery: searchQuery.trim(),
-      });
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          next.set(OVERVIEW_VIEW_QUERY, "registry");
           return next;
         },
         { replace: true },
@@ -156,77 +104,39 @@ export function useOverviewData() {
       setLocalEnv(null);
 
       try {
+        if (viewMode === "summary") {
+          const response = await fetchOverviewSummary();
+          setSummary(response);
+          setProdToStageRows([]);
+          setTotalRows(0);
+          setTotalPages(1);
+          setLocalEnv(response.localEnv);
+          setWarnings([]);
+          return;
+        }
+
         const requestPage = showAll ? 1 : page;
         const pageSize = showAll ? 200 : OVERVIEW_PAGE_SIZE;
-
-        if (viewMode === "prodToStage") {
-          const response = await fetchProdToStageOverview(
-            prodToStageFilters,
-            requestPage,
-            pageSize,
-          );
-          setProdToStageRows(response.rows);
-          setRows([]);
-          setStats({
-            totalRows: response.stats.totalRows,
-            pipelineCompleted: 0,
-            pipelineFailed: 0,
-          });
-          setProdToStageDiagnostics(response.diagnostics);
-          setStageCompanyCount(response.stageCompanyCount);
-          setProdCompanyCount(response.prodCompanyCount);
-          setTotalRows(response.total);
-          setTotalPages(
-            showAll ? 1 : Math.max(1, Math.ceil(response.total / pageSize)),
-          );
-          setWarnings(response.warnings ?? []);
-          setLocalEnv(response.localEnv ?? null);
-        } else if (viewMode === "registryReports") {
-          const response = await fetchRegistryReportsOverview(
-            filters,
-            requestPage,
-            pageSize,
-          );
-          if (response.viewMode !== "registryReports") {
-            throw new Error(
-              "Registry overview returned the wrong viewMode — expected registryReports.",
-            );
-          }
-          setRows(overviewRowsForView(response.rows, "registryReports"));
-          setProdToStageRows([]);
-          setStats(response.stats);
-          setTotalRows(response.total);
-          setTotalPages(
-            showAll ? 1 : Math.max(1, Math.ceil(response.total / pageSize)),
-          );
-          setWarnings(response.warnings ?? []);
-          setLocalEnv(response.localEnv ?? null);
-        } else {
-          const response = await fetchCompanyYearsOverview(
-            filters,
-            requestPage,
-            pageSize,
-          );
-          if (response.viewMode !== "companyYears") {
-            throw new Error(
-              "Company years overview returned the wrong viewMode — expected companyYears.",
-            );
-          }
-          setRows(overviewRowsForView(response.rows, "companyYears"));
-          setProdToStageRows([]);
-          setStats(response.stats);
-          setTotalRows(response.total);
-          setTotalPages(
-            showAll ? 1 : Math.max(1, Math.ceil(response.total / pageSize)),
-          );
-          setWarnings(response.warnings ?? []);
-          setLocalEnv(response.localEnv ?? null);
-        }
+        const response = await fetchProdToStageOverview(
+          prodToStageFilters,
+          requestPage,
+          pageSize,
+        );
+        setProdToStageRows(response.rows);
+        setSummary(null);
+        setProdToStageDiagnostics(response.diagnostics);
+        setStageCompanyCount(response.stageCompanyCount);
+        setProdCompanyCount(response.prodCompanyCount);
+        setTotalRows(response.total);
+        setTotalPages(
+          showAll ? 1 : Math.max(1, Math.ceil(response.total / pageSize)),
+        );
+        setWarnings(response.warnings ?? []);
+        setLocalEnv(response.localEnv ?? null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
-        setRows([]);
+        setSummary(null);
         setProdToStageRows([]);
-        setStats(EMPTY_STATS);
         setWarnings([]);
         setLocalEnv(null);
         setTotalRows(0);
@@ -236,18 +146,17 @@ export function useOverviewData() {
         setIsRefreshing(false);
       }
     },
-    [viewMode, filters, prodToStageFilters, page, showAll],
+    [viewMode, prodToStageFilters, page, showAll],
   );
 
   useEffect(() => {
     void loadData(false);
   }, [loadData]);
 
-  // TODO: merging page reset into the load effect avoids a double fetch when filters change off page 1.
   useEffect(() => {
     setPage(1);
     setShowAll(false);
-  }, [viewMode, filters, prodToStageFilters]);
+  }, [viewMode, prodToStageFilters]);
 
   const distinctReportYears = useMemo(() => overviewYearRange(), []);
   const prodToStageDistinctYears = distinctReportYears;
@@ -257,10 +166,6 @@ export function useOverviewData() {
     [tagOptions],
   );
 
-  const patchFilters = useCallback((patch: Partial<OverviewFilters>) => {
-    setFilters((prev) => ({ ...prev, ...patch }));
-  }, []);
-
   const patchProdToStageFilters = useCallback(
     (patch: Partial<ProdToStageFilters>) => {
       setProdToStageFilters((prev) => ({ ...prev, ...patch }));
@@ -269,19 +174,14 @@ export function useOverviewData() {
   );
 
   const clearFilters = useCallback(() => {
-    setFilters(defaultFiltersForView(viewMode));
     setProdToStageFilters(defaultProdToStageFilters());
-  }, [viewMode]);
+  }, []);
 
   const filtersAreActive =
-    viewMode === "prodToStage"
-      ? Boolean(prodToStageFilters.searchQuery.trim()) ||
-        prodToStageFilters.reportYears.length > 0 ||
-        prodToStageFilters.tagSlugs.length > 0 ||
-        prodToStageFilters.runnableOnly
-      : viewMode === "registryReports"
-        ? registryOverviewFiltersAreActive(filters)
-        : overviewFiltersAreActive(filters);
+    Boolean(prodToStageFilters.searchQuery.trim()) ||
+    prodToStageFilters.reportYears.length > 0 ||
+    prodToStageFilters.tagSlugs.length > 0 ||
+    prodToStageFilters.runnableOnly;
 
   const paginationFrom =
     totalRows === 0 ? 0 : showAll ? 1 : (page - 1) * OVERVIEW_PAGE_SIZE + 1;
@@ -292,17 +192,14 @@ export function useOverviewData() {
   return {
     viewMode,
     setViewMode,
-    rows,
+    summary,
     prodToStageRows,
     warnings,
     localEnv,
     prodToStageDiagnostics,
     stageCompanyCount,
     prodCompanyCount,
-    stats,
-    filters,
     prodToStageFilters,
-    patchFilters,
     patchProdToStageFilters,
     clearFilters,
     distinctReportYears,
@@ -313,7 +210,6 @@ export function useOverviewData() {
     isRefreshing,
     error,
     refresh: () => loadData(true),
-    openRegistryReportsWithSearch,
     filtersAreActive,
     pagination: {
       page,
@@ -332,9 +228,7 @@ export function useOverviewData() {
 export type OverviewData = ReturnType<typeof useOverviewData>;
 
 export type {
-  OverviewRow,
-  OverviewStats,
-  OverviewFilters,
+  OverviewSummaryResponse,
   OverviewViewMode,
   ProdToStageFilters,
   ProdToStageRow,
