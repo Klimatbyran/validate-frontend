@@ -56,7 +56,8 @@
     "subtitle": "Live status of the commitment/measure extraction pipeline, per plan",
     "refresh": "Refresh",
     "empty": "No plans yet — submit a PDF or URL from Upload with \"Use climate plans pipeline\" checked.",
-    "error": "Could not load plans: {{error}}"
+    "error": "Could not load plans: {{error}}",
+    "pollError": "Showing last known status — could not refresh: {{error}}"
   },
   "apiAccess": {
     "title": "API Access",

@@ -56,7 +56,8 @@
     "subtitle": "Live-status för åtagande-/åtgärdsextraktionspipelinen, per plan",
     "refresh": "Uppdatera",
     "empty": "Inga planer än — skicka in en PDF eller URL från Ladda upp med \"Använd klimatplanspipelinen\" ikryssad.",
-    "error": "Kunde inte läsa in planer: {{error}}"
+    "error": "Kunde inte läsa in planer: {{error}}",
+    "pollError": "Visar senast kända status — kunde inte uppdatera: {{error}}"
   },
   "apiAccess": {
     "title": "API Access",

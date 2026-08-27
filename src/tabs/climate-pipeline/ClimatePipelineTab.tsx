@@ -238,7 +238,7 @@ export function ClimatePipelineTab() {
         <div className="flex items-center justify-center p-8">
           <Loader2 className="w-8 h-8 text-blue-03 animate-spin" />
         </div>
-      ) : error ? (
+      ) : error && plans.length === 0 ? (
         <p className="text-red-03 text-sm">
           {t("climatePipeline.error", { error })}
         </p>
@@ -246,6 +246,15 @@ export function ClimatePipelineTab() {
         <p className="text-gray-02 text-sm">{t("climatePipeline.empty")}</p>
       ) : (
         <div className="space-y-3">
+          {/* A poll failure while we still have a last-known-good payload
+              shouldn't blank the swimlane — just flag it non-blockingly.
+              With a 5s poll interval, a transient network blip would
+              otherwise hide working data on every hiccup. */}
+          {error && (
+            <p className="text-orange-03 text-xs">
+              {t("climatePipeline.pollError", { error })}
+            </p>
+          )}
           {plans.map((plan) => (
             <PlanRow key={plan.id} plan={plan} onStepClick={handleStepClick} />
           ))}
