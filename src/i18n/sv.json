@@ -585,7 +585,7 @@
     "orClickToSelect": "eller klicka för att välja filer",
     "pastePdfLinks": "Klistra in PDF-länkar (en per rad)",
     "autoApprove": "Auto-godkänn",
-    "autoApproveHint": "Auto-godkänner endast Wikidata-matchningen. Det slår inte ihop eller deduplicerar bolag — befintliga bolag kopplas via Wikidata, LEI eller exakt namn när det är känt.",
+    "autoApproveHint": "Auto-godkänner endast Wikidata-matchningen när det Q-id:t inte redan är kopplat till ett annat bolag. Konflikter kräver fortfarande manuell granskning. Det slår inte ihop eller deduplicerar bolag — befintliga bolag kopplas via Wikidata, LEI eller exakt namn när det är känt.",
     "addLinks": "Lägg till länkar",
     "uploadedFiles": "Uppladdade filer ({{count}})",
     "addedLinks": "Tillagda länkar ({{count}})",
