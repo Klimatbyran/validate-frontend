@@ -1,0 +1,11 @@
+{
+  "name": "Garbo Validation Tool",
+  "install": "npm ci",
+  "terminals": [
+    {
+      "name": "dev",
+      "command": "npm run dev"
+    }
+  ],
+  "ports": [5173]
+}
