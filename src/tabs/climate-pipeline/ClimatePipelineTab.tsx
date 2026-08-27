@@ -3,6 +3,9 @@ import { ChevronsDown, ChevronsUp, Loader2, RefreshCw } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { StatusPill } from "@/components/StatusPill";
 import { Button } from "@/ui/button";
+import type { QueueJob } from "@/lib/types";
+import { getQueueDisplayName } from "@/lib/workflow-config";
+import { JobDetailsDialog } from "@/tabs/jobbstatus/components/job-details/JobDetailsDialog";
 import {
   useClimatePipelinePlans,
   toSwimlaneStatus,
@@ -10,6 +13,12 @@ import {
   type PipelineStepRun,
 } from "./hooks/useClimatePipelinePlans";
 import { StepResultDialog } from "./components/StepResultDialog";
+import {
+  usePdfParsingJobs,
+  derivePdfJobStatus,
+  toQueueJobPlaceholder,
+  PDF_PARSING_QUEUES,
+} from "./hooks/usePdfParsingJobs";
 
 const COMMITMENT_STEPS = [
   "extractMunicipality",
@@ -33,6 +42,7 @@ interface PlanRowProps {
     step: string,
     runId?: string,
   ) => void;
+  onPdfJobClick: (job: QueueJob) => void;
 }
 
 function StepStatusPill({
@@ -74,8 +84,9 @@ function stepsByRun(rows: PipelineStepRun[]): Map<string, PipelineStepRun[]> {
   return map;
 }
 
-function PlanRow({ plan, onStepClick }: PlanRowProps) {
+function PlanRow({ plan, onStepClick, onPdfJobClick }: PlanRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { jobsByQueue: pdfJobsByQueue } = usePdfParsingJobs(plan.garboThreadId);
 
   // pipelineSteps is ordered newest-first per step. Group all runs per step
   // so the pill can show the latest status plus an isRerun flag when a step
@@ -140,6 +151,25 @@ function PlanRow({ plan, onStepClick }: PlanRowProps) {
         </div>
         <span className="text-xs text-gray-02 shrink-0">{plan.status}</span>
       </div>
+      {plan.garboThreadId && (
+        <div className="flex flex-wrap gap-1.5 pb-2 border-b border-gray-03/50">
+          {PDF_PARSING_QUEUES.map((queueId) => {
+            const job = pdfJobsByQueue.get(queueId);
+            return (
+              <StatusPill
+                key={queueId}
+                label={getQueueDisplayName(queueId)}
+                status={job ? derivePdfJobStatus(job) : "waiting"}
+                isActive={
+                  job ? derivePdfJobStatus(job) === "processing" : false
+                }
+                jobExists={job !== undefined}
+                onClick={() => job && onPdfJobClick(toQueueJobPlaceholder(job))}
+              />
+            );
+          })}
+        </div>
+      )}
       <div className="flex flex-wrap gap-1.5">
         {COMMITMENT_STEPS.map((step) => (
           <StepStatusPill
@@ -214,6 +244,11 @@ export function ClimatePipelineTab() {
   const [dialogRunId, setDialogRunId] = useState<string | null>(null);
   const dialogPlan = plans.find((p) => p.id === dialogPlanId) ?? null;
 
+  // Separate dialog for PDF-parsing pills — these are raw garbo BullMQ jobs,
+  // not climate-plans-pipeline's own PipelineStepRun rows, so they reuse
+  // jobbstatus's JobDetailsDialog directly instead of StepResultDialog.
+  const [pdfJob, setPdfJob] = useState<QueueJob | null>(null);
+
   const handleStepClick = (
     plan: ClimatePipelinePlan,
     step: string,
@@ -266,7 +301,12 @@ export function ClimatePipelineTab() {
             </p>
           )}
           {plans.map((plan) => (
-            <PlanRow key={plan.id} plan={plan} onStepClick={handleStepClick} />
+            <PlanRow
+              key={plan.id}
+              plan={plan}
+              onStepClick={handleStepClick}
+              onPdfJobClick={setPdfJob}
+            />
           ))}
         </div>
       )}
@@ -284,6 +324,14 @@ export function ClimatePipelineTab() {
           }
         }}
         onRerun={refresh}
+      />
+
+      <JobDetailsDialog
+        job={pdfJob}
+        isOpen={pdfJob !== null}
+        onOpenChange={(open) => {
+          if (!open) setPdfJob(null);
+        }}
       />
     </div>
   );

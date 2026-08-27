@@ -39,6 +39,10 @@ export interface ClimatePipelinePlan {
   createdAt: string;
   updatedAt: string;
   pipelineSteps: PipelineStepRun[];
+  /** garbo's threadId for the parsePdf/doclingParsePDF job that produced
+   * this plan's document — lets the tab look up and show PDF-parsing
+   * status alongside this plan's own pipeline steps. */
+  garboThreadId: string | null;
 }
 
 const POLL_MS = 5000;
