@@ -12,6 +12,8 @@ export interface RegistryEntry {
   batchId?: string | null;
   batchName?: string | null;
   reportTypeId?: string | null;
+  reportTypeSlug?: string | null;
+  reportTypeLabel?: string | null;
   reportType?: {
     id: string;
     slug: string;

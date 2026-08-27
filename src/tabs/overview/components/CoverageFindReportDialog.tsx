@@ -223,7 +223,14 @@ export function CoverageFindReportDialog({
         reportYear: saved.reportYear ?? selectedReport.reportYear,
         url: saved.url,
         wikidataId: saved.wikidataId ?? selectedReport.wikidataId ?? null,
-        reportTypeSlug: selectedReport.reportTypeSlug ?? null,
+        reportTypeId: saved.reportTypeId ?? saved.reportType?.id ?? null,
+        reportTypeSlug:
+          saved.reportTypeSlug ??
+          saved.reportType?.slug ??
+          selectedReport.reportTypeSlug ??
+          null,
+        reportTypeLabel:
+          saved.reportTypeLabel ?? saved.reportType?.label ?? null,
       };
       setRegistryResponse({
         message: "",
