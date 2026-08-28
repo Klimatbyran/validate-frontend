@@ -693,19 +693,21 @@ function CoverageSelectCheckbox({
   ariaLabel: string;
 }) {
   return (
-    <label
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={indeterminate ? "mixed" : checked}
+      aria-label={ariaLabel}
+      disabled={disabled}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onChange();
+      }}
       className={`flex items-center justify-center ${
         disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
       }`}
     >
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        disabled={disabled}
-        className="sr-only"
-        aria-label={ariaLabel}
-      />
       <span
         className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
           checked || indeterminate
@@ -720,7 +722,7 @@ function CoverageSelectCheckbox({
           <Minus className="w-3 h-3 text-white" />
         ) : null}
       </span>
-    </label>
+    </button>
   );
 }
 
