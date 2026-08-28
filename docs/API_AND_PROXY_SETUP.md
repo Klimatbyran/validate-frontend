@@ -62,7 +62,7 @@ Requires JWT from Unearth login (`garboAuthFetch`). Garbo also exposes the **sam
 
 ### 5. Overview tab
 
-`getUnearthApiBaseUrl()` + `/internal-validate-overview/{summary|prod-to-stage}` (X-API-Key via proxy). Overview aggregation is internal-only (no staff JWT route). Summary returns DB coverage stats and gap lists. Prod → Stage requires `reportYears` or `allYears`; default page size 50. Prod → Stage runs use `STAGE_RUN_REPORTS_PIPELINE_CONFIG` (stage pipeline + Garbo batches only).
+`getUnearthApiBaseUrl()` + `/internal-validate-overview/{summary|summary/activity|prod-to-stage}` (X-API-Key via proxy). Overview aggregation is internal-only (no staff JWT route). Summary returns DB coverage stats and gap lists. `summary/activity?day=YYYY-MM-DD` returns day-scoped pipeline/archive activity (Europe/Stockholm). Prod → Stage requires `reportYears` or `allYears`; default page size 50. Prod → Stage runs use `STAGE_RUN_REPORTS_PIPELINE_CONFIG` (stage pipeline + Garbo batches only).
 
 The Unearth API loads companies for Prod → Stage via `GET /internal-pipeline/companies-overview` (local + peer). Deploy **stage and prod Unearth API together** so peer fetch does not 404.
 

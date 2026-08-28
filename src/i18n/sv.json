@@ -1290,6 +1290,8 @@
       "none": "—",
       "showingOf": "Visar {{shown}} av {{total}}",
       "sections": {
+        "dailyActivity": "Aktivitet per dag",
+        "dailyActivityHint": "Pipeline-körningar och jobb från kö-arkivet för valt kalenderdatum, plus skapade CompanyReports/batchar och ungefärliga verifieringsuppdateringar.",
         "totals": "Databasöversikt",
         "totalsHint": "Siffror från denna Unearth-instans (stage eller prod beroende på vilken API Validate pekar mot).",
         "emissionsByYear": "Företag med utsläppsdata per år",
@@ -1307,6 +1309,29 @@
         "yearDropoffsHint": "Företag som hade icke-null utsläpp året innan men inte året efter — användbart för churn eller saknade uppdateringar.",
         "gaps": "Gap-listor",
         "gapsHint": "Klicka på ett företagsnamn för att öppna det i editorn. Listorna är begränsade för läsbarhet; totalen visar hur många som matchar totalt."
+      },
+      "activity": {
+        "dayLabel": "Dag",
+        "timeZoneNote": "Dygnsgränser använder Europe/Stockholm.",
+        "runsStarted": "Körningar startade",
+        "runsCompleted": "Körningar klara",
+        "runsFailed": "Körningar misslyckade",
+        "runsRunning": "Körningar pågående",
+        "companiesWithRuns": "Företag med körningar",
+        "jobsFinished": "Jobb avslutade",
+        "jobsCompleted": "Jobb klara",
+        "jobsFailed": "Jobb misslyckade",
+        "companyReportsCreated": "CompanyReports skapade",
+        "companiesFirstReport": "Nya företag (första rapport)",
+        "batchesCreated": "Batchar skapade",
+        "verifiedUpdates": "Verifierade metadata-uppdateringar",
+        "jobsByQueue": "Avslutade jobb per kö",
+        "columns": {
+          "queue": "Kö",
+          "finished": "Avslutade",
+          "completed": "Klara",
+          "failed": "Misslyckade"
+        }
       },
       "metrics": {
         "companies": "Företag",

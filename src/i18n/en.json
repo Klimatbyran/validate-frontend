@@ -1290,6 +1290,8 @@
       "none": "—",
       "showingOf": "Showing {{shown}} of {{total}}",
       "sections": {
+        "dailyActivity": "Activity by day",
+        "dailyActivityHint": "Pipeline runs and jobs from the queue archive for the selected calendar day, plus CompanyReports/batches created and approximate verification updates.",
         "totals": "Database totals",
         "totalsHint": "Counts from this Unearth instance (stage or prod depending on which API Validate is pointed at).",
         "emissionsByYear": "Companies with emissions data by year",
@@ -1307,6 +1309,29 @@
         "yearDropoffsHint": "Companies that had non-null emissions in the earlier year but not in the later year — useful for spotting churn or missing updates.",
         "gaps": "Gap lists",
         "gapsHint": "Click a company name to open it in the editor. Lists are capped for readability; totals show how many match overall."
+      },
+      "activity": {
+        "dayLabel": "Day",
+        "timeZoneNote": "Day boundaries use Europe/Stockholm.",
+        "runsStarted": "Runs started",
+        "runsCompleted": "Runs completed",
+        "runsFailed": "Runs failed",
+        "runsRunning": "Runs still running",
+        "companiesWithRuns": "Companies with runs",
+        "jobsFinished": "Jobs finished",
+        "jobsCompleted": "Jobs completed",
+        "jobsFailed": "Jobs failed",
+        "companyReportsCreated": "CompanyReports created",
+        "companiesFirstReport": "New companies (first report)",
+        "batchesCreated": "Batches created",
+        "verifiedUpdates": "Verified metadata updates",
+        "jobsByQueue": "Jobs finished by queue",
+        "columns": {
+          "queue": "Queue",
+          "finished": "Finished",
+          "completed": "Completed",
+          "failed": "Failed"
+        }
       },
       "metrics": {
         "companies": "Companies",
