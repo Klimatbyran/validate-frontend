@@ -115,7 +115,8 @@
       "role": "Roll",
       "requests": "anrop",
       "lastRequest": "Senaste anrop",
-      "endpoints": "Endpoints"
+      "endpoints": "Endpoints",
+      "serviceUnknown": "okänd"
     },
     "roles": {
       "partner": "Partner",

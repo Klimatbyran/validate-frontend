@@ -114,7 +114,8 @@
       "role": "Role",
       "requests": "requests",
       "lastRequest": "Last request",
-      "endpoints": "Endpoints"
+      "endpoints": "Endpoints",
+      "serviceUnknown": "unknown"
     },
     "description": "Role description: ",
     "roles": {
