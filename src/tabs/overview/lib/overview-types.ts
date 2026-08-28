@@ -56,6 +56,35 @@ export type OverviewSummaryCompanyRef = {
   companyReportCount: number;
 };
 
+export type OverviewDailyActivityResponse = {
+  localEnv: "stage" | "prod";
+  day: string;
+  timeZone: "Europe/Stockholm";
+  generatedAt: string;
+  pipeline: {
+    runsStarted: number;
+    runsCompleted: number;
+    runsFailed: number;
+    runsStillRunning: number;
+    companiesWithRuns: number;
+    jobsFinished: number;
+    jobsCompleted: number;
+    jobsFailed: number;
+    jobsByQueue: Array<{
+      queueName: string;
+      finished: number;
+      completed: number;
+      failed: number;
+    }>;
+  };
+  data: {
+    companyReportsCreated: number;
+    companiesFirstReportCreated: number;
+    batchesCreated: number;
+    verifiedMetadataUpdates: number;
+  };
+};
+
 export type OverviewSummaryResponse = {
   localEnv: "stage" | "prod";
   generatedAt: string;

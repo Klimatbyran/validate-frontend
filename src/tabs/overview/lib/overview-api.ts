@@ -1,5 +1,6 @@
 import { getUnearthApiBaseUrl } from "@/config/api-env";
 import type {
+  OverviewDailyActivityResponse,
   OverviewSummaryResponse,
   OverviewWarning,
   ProdToStageFilters,
@@ -73,6 +74,16 @@ async function fetchOverviewJson<T>(url: string): Promise<T> {
 
 export async function fetchOverviewSummary(): Promise<OverviewSummaryResponse> {
   return fetchOverviewJson(`${overviewBaseUrl()}/summary`);
+}
+
+export async function fetchOverviewDailyActivity(
+  day: string,
+): Promise<OverviewDailyActivityResponse> {
+  const params = new URLSearchParams();
+  appendQuery(params, "day", day);
+  return fetchOverviewJson(
+    `${overviewBaseUrl()}/summary/activity?${params.toString()}`,
+  );
 }
 
 export async function fetchProdToStageOverview(
