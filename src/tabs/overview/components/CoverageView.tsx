@@ -339,6 +339,28 @@ export function CoverageView() {
                   onLoadMore={() => void yearDetail.loadMore()}
                   isRefreshingRegistry={yearDetail.isRefreshingRegistry}
                   onRefreshRegistry={() => void yearDetail.refreshRegistry()}
+                  isRematching={yearDetail.isRematching}
+                  onRematchCompanies={() => {
+                    void (async () => {
+                      try {
+                        const result = await yearDetail.rematchCompanies();
+                        if (!result) return;
+                        toast.success(
+                          t("overview.coverage.rematchCompaniesSuccess", {
+                            rematched: result.rematchedCount,
+                            skipped: result.skippedManualCount,
+                            reports: result.reportLinkCount,
+                          }),
+                        );
+                      } catch (error) {
+                        toast.error(
+                          error instanceof Error
+                            ? error.message
+                            : t("overview.coverage.rematchCompaniesError"),
+                        );
+                      }
+                    })();
+                  }}
                   onRegistryReportSaved={(entryId, saved) => {
                     yearDetail.addEntryRegistryReport(entryId, saved);
                   }}

@@ -90,6 +90,18 @@ export const coverageYearRegistryRefreshSchema = z.object({
   inProgress: z.boolean(),
 });
 
+export const coverageYearRematchSchema = z.object({
+  listId: z.string(),
+  year: z.number(),
+  totalNames: z.number(),
+  matchedCount: z.number(),
+  ambiguousCount: z.number(),
+  coveragePercent: z.number(),
+  rematchedCount: z.number(),
+  skippedManualCount: z.number(),
+  reportLinkCount: z.number(),
+});
+
 export const coverageYearNamesSchema = z.object({
   listId: z.string(),
   year: z.number(),
@@ -112,6 +124,7 @@ export type CoverageYearNames = z.infer<typeof coverageYearNamesSchema>;
 export type CoverageYearRegistryRefresh = z.infer<
   typeof coverageYearRegistryRefreshSchema
 >;
+export type CoverageYearRematch = z.infer<typeof coverageYearRematchSchema>;
 export type CoverageCompanySearchHit = z.infer<
   typeof coverageCompanySearchHitSchema
 >;
