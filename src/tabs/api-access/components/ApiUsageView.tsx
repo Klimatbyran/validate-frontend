@@ -108,7 +108,8 @@ export function ApiUsageView() {
                       >
                         <span className="font-mono text-gray-02 min-w-0 truncate">
                           <span className="text-gray-02/80">
-                            {ep.service ?? t("apiAccess.usage.serviceUnknown")}{" "}
+                            {ep.service ??
+                              t("apiAccess.usage.serviceUnknown")}{" "}
                           </span>
                           <span className="text-blue-300">{ep.method}</span>{" "}
                           {ep.path}
