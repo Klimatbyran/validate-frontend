@@ -31,7 +31,7 @@ export function FileUploadZone({
   const { t } = useI18n();
   return (
     <>
-      <div className="flex items-center justify-end mb-2">
+      <div className="mb-4">
         <AutoApproveToggle
           value={autoApprove}
           onChange={onAutoApproveChange}

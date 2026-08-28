@@ -3,6 +3,7 @@ import { FileText, Link2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
+import { usePipelineMode } from "@/contexts/PipelineModeContext";
 import { useBatches } from "@/hooks/useBatches";
 import { useAuth } from "@/hooks/useAuth";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
@@ -40,8 +41,10 @@ type RemoveConfirmTarget = {
 
 export function UploadTab() {
   const { t } = useI18n();
+  const { pipelineMode } = usePipelineMode();
   const { isAuthenticated, isLoading: authLoading, login } = useAuth();
   const hasTriggeredLoginRef = useRef(false);
+  const isClimatePlansPipeline = pipelineMode === "climate-plans";
 
   const [uploadMode, setUploadMode] = useState<"file" | "url">("url");
   const [isDragging, setIsDragging] = useState(false);
@@ -53,7 +56,6 @@ export function UploadTab() {
   const [selectedWorkers, setSelectedWorkers] =
     useState<RunOnlyWorkerId[]>(DEFAULT_RUN_ONLY);
   const [forceReindex, setForceReindex] = useState(false);
-  const [useClimatePlansPipeline, setUseClimatePlansPipeline] = useState(false);
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState("");
   const {
@@ -80,14 +82,20 @@ export function UploadTab() {
   }, [authLoading, isAuthenticated, login]);
 
   const runOnly =
-    !runAllWorkers && selectedWorkers.length > 0 ? selectedWorkers : undefined;
-  const tags = selectedTags.length > 0 ? selectedTags : undefined;
-  const callbackUrl = useClimatePlansPipeline
+    !isClimatePlansPipeline && !runAllWorkers && selectedWorkers.length > 0
+      ? selectedWorkers
+      : undefined;
+  const tags =
+    !isClimatePlansPipeline && selectedTags.length > 0
+      ? selectedTags
+      : undefined;
+  const callbackUrl = isClimatePlansPipeline
     ? getClimatePlansPipelineWebhookUrl()
     : undefined;
-  const reportTypeSlug = useClimatePlansPipeline
+  const reportTypeSlug = isClimatePlansPipeline
     ? CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG
     : undefined;
+  const effectiveForceReindex = isClimatePlansPipeline ? false : forceReindex;
 
   const handleFileSubmit = useCallback(async () => {
     if (uploadedFiles.length === 0) {
@@ -95,7 +103,11 @@ export function UploadTab() {
       return;
     }
 
-    if (!runAllWorkers && selectedWorkers.length === 0) {
+    if (
+      !isClimatePlansPipeline &&
+      !runAllWorkers &&
+      selectedWorkers.length === 0
+    ) {
       toast.error(t("upload.selectAtLeastOneWorker"));
       return;
     }
@@ -127,7 +139,7 @@ export function UploadTab() {
       const result = await uploadPdfsToParsePdf({
         files: uploadedFiles.map(({ file }) => file),
         autoApprove,
-        forceReindex,
+        forceReindex: effectiveForceReindex,
         batchId: pipelineBatchId,
         runOnly,
         tags,
@@ -170,9 +182,10 @@ export function UploadTab() {
   }, [
     uploadedFiles,
     autoApprove,
+    isClimatePlansPipeline,
     runAllWorkers,
     selectedWorkers,
-    forceReindex,
+    effectiveForceReindex,
     batchDropdownChoice,
     customBatchName,
     runOnly,
@@ -262,7 +275,11 @@ export function UploadTab() {
       return;
     }
 
-    if (!runAllWorkers && selectedWorkers.length === 0) {
+    if (
+      !isClimatePlansPipeline &&
+      !runAllWorkers &&
+      selectedWorkers.length === 0
+    ) {
       toast.error(t("upload.selectAtLeastOneWorker"));
       return;
     }
@@ -296,7 +313,7 @@ export function UploadTab() {
       const result = await createJobsFromUrls({
         urls,
         autoApprove,
-        forceReindex,
+        forceReindex: effectiveForceReindex,
         batchId: pipelineBatchId,
         runOnly,
         tags,
@@ -373,9 +390,10 @@ export function UploadTab() {
   }, [
     urlInput,
     autoApprove,
+    isClimatePlansPipeline,
     runAllWorkers,
     selectedWorkers,
-    forceReindex,
+    effectiveForceReindex,
     batchDropdownChoice,
     customBatchName,
     runOnly,
@@ -481,6 +499,7 @@ export function UploadTab() {
 
         <TabsContent value="url">
           <UploadRunOptions
+            pipelineMode={pipelineMode}
             batch={{
               existingBatches,
               batchesLoading,
@@ -503,8 +522,6 @@ export function UploadTab() {
               onSelectedWorkersChange: handleWorkerToggle,
               forceReindex,
               onForceReindexChange: setForceReindex,
-              useClimatePlansPipeline,
-              onUseClimatePlansPipelineChange: setUseClimatePlansPipeline,
             }}
           />
           <UrlUploadForm
@@ -518,6 +535,7 @@ export function UploadTab() {
 
         <TabsContent value="file">
           <UploadRunOptions
+            pipelineMode={pipelineMode}
             batch={{
               existingBatches,
               batchesLoading,
@@ -540,8 +558,6 @@ export function UploadTab() {
               onSelectedWorkersChange: handleWorkerToggle,
               forceReindex,
               onForceReindexChange: setForceReindex,
-              useClimatePlansPipeline,
-              onUseClimatePlansPipelineChange: setUseClimatePlansPipeline,
             }}
           />
           <FileUploadZone

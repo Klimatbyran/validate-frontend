@@ -12,9 +12,6 @@ export interface UploadWorkerRunOptionsProps {
   ) => void;
   forceReindex: boolean;
   onForceReindexChange: (value: boolean) => void;
-  /** Upload-tab only — Registry/Crawler/Overview's shared Run Reports modal doesn't offer this. */
-  useClimatePlansPipeline?: boolean;
-  onUseClimatePlansPipelineChange?: (value: boolean) => void;
   autoApprove?: boolean;
   onAutoApproveChange?: (value: boolean) => void;
 }
@@ -26,8 +23,6 @@ export function UploadWorkerRunOptions({
   onSelectedWorkersChange,
   forceReindex,
   onForceReindexChange,
-  useClimatePlansPipeline,
-  onUseClimatePlansPipelineChange,
   autoApprove,
   onAutoApproveChange,
 }: UploadWorkerRunOptionsProps) {
@@ -165,48 +160,10 @@ export function UploadWorkerRunOptions({
             />
           </button>
         </div>
-
-        {typeof useClimatePlansPipeline === "boolean" &&
-          onUseClimatePlansPipelineChange && (
-            <div className="flex items-center justify-between">
-              <label
-                htmlFor="use-climate-plans-pipeline"
-                className="text-sm text-gray-01 cursor-pointer"
-              >
-                {t("upload.useClimatePlansPipeline")}
-              </label>
-              <button
-                id="use-climate-plans-pipeline"
-                type="button"
-                role="switch"
-                aria-checked={useClimatePlansPipeline}
-                onClick={() =>
-                  onUseClimatePlansPipelineChange(!useClimatePlansPipeline)
-                }
-                className={cn(
-                  "relative inline-flex h-6 w-11 items-center rounded-full",
-                  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  useClimatePlansPipeline ? "bg-green-03" : "bg-gray-03",
-                )}
-              >
-                <span
-                  className={cn(
-                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                    useClimatePlansPipeline ? "translate-x-6" : "translate-x-1",
-                  )}
-                />
-              </button>
-            </div>
-          )}
       </div>
       <p className="text-xs text-gray-02">
         {t("upload.forceReindexDescription")}
       </p>
-      {typeof useClimatePlansPipeline === "boolean" && (
-        <p className="text-xs text-gray-02">
-          {t("upload.useClimatePlansPipelineDescription")}
-        </p>
-      )}
     </div>
   );
 }
