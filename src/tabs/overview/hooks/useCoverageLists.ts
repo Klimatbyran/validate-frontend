@@ -557,22 +557,23 @@ export function useCoverageYearDetail(
 
   const [isRematching, setIsRematching] = useState(false);
 
-  const rematchCompanies = useCallback(async (): Promise<CoverageYearRematch | null> => {
-    if (!listId || year === null) return null;
+  const rematchCompanies =
+    useCallback(async (): Promise<CoverageYearRematch | null> => {
+      if (!listId || year === null) return null;
 
-    setIsRematching(true);
-    setError(null);
-    try {
-      const result = await rematchCoverageYear(listId, year);
-      await loadPage(0, false);
-      return result;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-      throw err;
-    } finally {
-      setIsRematching(false);
-    }
-  }, [listId, year, loadPage]);
+      setIsRematching(true);
+      setError(null);
+      try {
+        const result = await rematchCoverageYear(listId, year);
+        await loadPage(0, false);
+        return result;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unknown error");
+        throw err;
+      } finally {
+        setIsRematching(false);
+      }
+    }, [listId, year, loadPage]);
 
   return {
     detail,
