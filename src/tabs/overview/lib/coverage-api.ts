@@ -6,11 +6,13 @@ import {
   coverageYearDetailSchema,
   coverageYearNamesSchema,
   coverageYearRegistryRefreshSchema,
+  coverageYearRematchSchema,
   coverageCompanySearchResponseSchema,
   type CoverageListSummary,
   type CoverageYearDetail,
   type CoverageYearNames,
   type CoverageYearRegistryRefresh,
+  type CoverageYearRematch,
   type CoverageCompanySearchHit,
   type CoverageEntryFilter,
 } from "./coverage-types";
@@ -119,6 +121,17 @@ export async function refreshCoverageYearRegistry(
   const response = await garboAuthFetch(url, { method: "POST" });
   return parseJson(response, url, (data) =>
     coverageYearRegistryRefreshSchema.parse(data),
+  );
+}
+
+export async function rematchCoverageYear(
+  listId: string,
+  year: number,
+): Promise<CoverageYearRematch> {
+  const url = coverageUrl(`${listId}/years/${year}/rematch`);
+  const response = await garboAuthFetch(url, { method: "POST" });
+  return parseJson(response, url, (data) =>
+    coverageYearRematchSchema.parse(data),
   );
 }
 

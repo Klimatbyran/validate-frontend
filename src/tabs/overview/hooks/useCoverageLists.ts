@@ -8,6 +8,7 @@ import {
   fetchCoverageLists,
   fetchCoverageYearDetail,
   refreshCoverageYearRegistry,
+  rematchCoverageYear,
   renameCoverageList,
   replaceCoverageYearNames,
   updateCoverageYearEdition,
@@ -19,6 +20,7 @@ import type {
   CoverageListSummary,
   CoverageYearDetail,
   CoverageMatchSaveAction,
+  CoverageYearRematch,
   RegistryReportPill,
 } from "../lib/coverage-types";
 import type { SaveReportSuccess } from "@/tabs/crawler/lib/crawler-types";
@@ -553,6 +555,25 @@ export function useCoverageYearDetail(
     }
   }, [listId, year, loadPage]);
 
+  const [isRematching, setIsRematching] = useState(false);
+
+  const rematchCompanies = useCallback(async (): Promise<CoverageYearRematch | null> => {
+    if (!listId || year === null) return null;
+
+    setIsRematching(true);
+    setError(null);
+    try {
+      const result = await rematchCoverageYear(listId, year);
+      await loadPage(0, false);
+      return result;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+      throw err;
+    } finally {
+      setIsRematching(false);
+    }
+  }, [listId, year, loadPage]);
+
   return {
     detail,
     filter,
@@ -562,9 +583,11 @@ export function useCoverageYearDetail(
     isLoading,
     isLoadingMore,
     isRefreshingRegistry,
+    isRematching,
     error,
     loadMore,
     refreshRegistry,
+    rematchCompanies,
     refresh: () => loadPage(0, false),
     addEntryRegistryReport: (entryId: string, saved: SaveReportSuccess) => {
       setDetail((previous) =>
@@ -599,7 +622,7 @@ export function useCoverageYearDetail(
               matchedCompanyId: action.companyId,
               matchConfirmedMissing: false,
             }
-          : action.type === "markMissing" || action.type === "clear"
+          : action.type === "markMissing"
             ? {
                 matchedCompanyId: null,
                 matchConfirmedMissing: true,

@@ -52,6 +52,8 @@ type CoverageYearDetailProps = {
   onLoadMore: () => void;
   isRefreshingRegistry: boolean;
   onRefreshRegistry: () => void;
+  isRematching: boolean;
+  onRematchCompanies: () => void;
   onEdit: () => void;
   onEditEntry: (entry: CoverageEntry) => void;
   onRegistryReportSaved?: (entryId: string, saved: SaveReportSuccess) => void;
@@ -90,6 +92,8 @@ export function CoverageYearDetailView({
   onLoadMore,
   isRefreshingRegistry,
   onRefreshRegistry,
+  isRematching,
+  onRematchCompanies,
   onEdit,
   onEditEntry,
   onRegistryReportSaved,
@@ -331,8 +335,20 @@ export function CoverageYearDetailView({
             <Button
               variant="outline"
               size="sm"
+              onClick={() => void onRematchCompanies()}
+              disabled={isRematching || isRefreshingRegistry}
+            >
+              {isRematching ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                t("overview.coverage.rematchCompanies")
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => void onRefreshRegistry()}
-              disabled={isRefreshingRegistry}
+              disabled={isRefreshingRegistry || isRematching}
             >
               {isRefreshingRegistry ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
