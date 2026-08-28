@@ -103,14 +103,18 @@ export function ApiUsageView() {
                   <ul className="space-y-0.5">
                     {item.endpoints.map((ep) => (
                       <li
-                        key={`${ep.method}:${ep.path}`}
-                        className="flex items-center justify-between text-xs"
+                        key={`${ep.service ?? "unknown"}:${ep.method}:${ep.path}`}
+                        className="flex items-center justify-between text-xs gap-2"
                       >
-                        <span className="font-mono text-gray-02">
+                        <span className="font-mono text-gray-02 min-w-0 truncate">
+                          <span className="text-gray-02/80">
+                            {ep.service ??
+                              t("apiAccess.usage.serviceUnknown")}{" "}
+                          </span>
                           <span className="text-blue-300">{ep.method}</span>{" "}
                           {ep.path}
                         </span>
-                        <span className="text-gray-02 tabular-nums">
+                        <span className="text-gray-02 tabular-nums shrink-0">
                           {ep.count.toLocaleString()}
                         </span>
                       </li>
