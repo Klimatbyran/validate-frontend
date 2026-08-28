@@ -47,9 +47,7 @@ export function isUniversalTab(tab: TopLevelTabSegment): boolean {
 export function pipelineModeForTab(
   tab: TopLevelTabSegment,
 ): PipelineMode | null {
-  if (
-    (PIPELINE_TAB_SEGMENTS.emissions as readonly string[]).includes(tab)
-  ) {
+  if ((PIPELINE_TAB_SEGMENTS.emissions as readonly string[]).includes(tab)) {
     return "emissions";
   }
   if (
@@ -81,8 +79,6 @@ export function resolveInitialPipelineMode(
   tab: TopLevelTabSegment,
 ): PipelineMode {
   return (
-    pipelineModeForTab(tab) ??
-    readStoredPipelineMode() ??
-    DEFAULT_PIPELINE_MODE
+    pipelineModeForTab(tab) ?? readStoredPipelineMode() ?? DEFAULT_PIPELINE_MODE
   );
 }

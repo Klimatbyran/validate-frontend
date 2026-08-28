@@ -82,9 +82,7 @@ export function UploadTab() {
   }, [authLoading, isAuthenticated, login]);
 
   const runOnly =
-    !isClimatePlansPipeline &&
-    !runAllWorkers &&
-    selectedWorkers.length > 0
+    !isClimatePlansPipeline && !runAllWorkers && selectedWorkers.length > 0
       ? selectedWorkers
       : undefined;
   const tags =
