@@ -32,6 +32,7 @@ const entry: CoverageEntry = {
       sourceUrl: null,
       matchMethod: "wikidata",
       prodReady: false,
+      runStatus: "not_run",
     },
     {
       reportId: "r2",
@@ -42,6 +43,7 @@ const entry: CoverageEntry = {
       sourceUrl: null,
       matchMethod: "wikidata",
       prodReady: true,
+      runStatus: "completed",
     },
   ],
 };

@@ -1541,8 +1541,11 @@
       },
       "reports": {
         "missing": "Saknas",
-        "pillInProd": "I prod — rapporten har körts",
-        "pillInRegistry": "I register — ej körd ännu",
+        "pillInProd": "År bearbetat — CompanyReport för året har perioddata",
+        "pillInRegistry": "År ej bearbetat — ingen CompanyReport med perioddata för året",
+        "pillRunCompleted": "Denna rapport har en lyckad arkivkörning",
+        "pillRunNotRun": "Denna rapport har inte körts ännu",
+        "pillRunFailed": "Senaste arkivkörningen för denna rapport misslyckades",
         "unknownType": "Okänd typ"
       },
       "columns": {
