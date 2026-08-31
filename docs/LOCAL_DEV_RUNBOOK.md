@@ -42,6 +42,7 @@ In production, Unearth API and Garbo share the same Postgres (`garbo` database).
 | Unearth API (`API`) | 3000 |
 | Pipeline API | 3001 |
 | Garbo HTTP API (`garbo npm run dev-api` / `dev-board`) | 3002 |
+| Climate-plans pipeline (optional Validate tab) | 3003 |
 | Validate | 5173 |
 
 ---
@@ -74,11 +75,11 @@ flowchart LR
   GA --> PG
   P --> R
   G --> R
-  G -->|"saveToAPI"| U
+  G -->|"saveToAPI"| GA
   G --> PG
 ```
 
-Validate proxies `/unearth-local` → `localhost:3000` and `/garbo-local` → `localhost:3002`. Garbo **workers** POST company data to Unearth API (`API_BASE_URL` in `garbo/.env`), not to Garbo’s HTTP port.
+Validate proxies `/unearth-local` → `localhost:3000` and `/garbo-local` → `localhost:3002`. Garbo **workers** call Garbo’s own HTTP API (`API_BASE_URL`, same host as `API_PORT`). Unearth API on :3000 serves the Validate editor/auth against the shared Postgres.
 
 ---
 
@@ -130,7 +131,7 @@ cd garbo
 npm run prisma migrate dev
 ```
 
-See also `API/doc/COMPANY_ID_MIGRATION.md` if you are on the `Company.id` migration branch.
+Schema migrations are owned by **Garbo**. If the backup is from the `Company.id` era, use a Garbo checkout on `feature/company-internal-id` (and a matching Unearth API checkout) — see the Unearth API README.
 
 ### 3. Start Unearth API
 
@@ -210,15 +211,23 @@ Only needed for `npm run dev:local-full`, or if you override `VITE_GARBO_ARCHIVE
 ```bash
 cd garbo
 cp .env.example .env
-# API_PORT=3002 — Garbo HTTP server
-# API_BASE_URL=http://localhost:3000/api — workers POST to Unearth (keep when both run)
+```
+
+Garbo’s `.env.example` defaults to port **3000**, which collides with Unearth. Set both:
+
+```env
+API_PORT=3002
+API_BASE_URL=http://localhost:3002/api
+```
+
+```bash
 npm run dev-api    # or npm run dev-board for /admin/queues
 ```
 
 - OpenAPI / queue archive: http://localhost:3002/api
 - BullMQ dashboard: http://localhost:3002/admin/queues
 
-Unearth API must still be running on :3000 for Validate editor and for Garbo workers (`saveToAPI`).
+Unearth API must still be running on :3000 for the Validate editor and auth. Workers talk to Garbo on :3002 (`API_BASE_URL`).
 
 ---
 
@@ -381,7 +390,7 @@ Unearth API → **3000**. Garbo HTTP API → **3002**. Both can run together.
 ### Prisma / schema errors after restore
 
 1. Migrations are owned by **Garbo** — run `npm run prisma migrate dev` in `garbo`, not `API`.
-2. Match code branch to backup era (`Company.id` migration: `API/doc/COMPANY_ID_MIGRATION.md`).
+2. Match Garbo/Unearth API branches to the backup era (for `Company.id`, Garbo `feature/company-internal-id` + matching Unearth API).
 3. Re-run `npm run seed:client-api` in `API` after adding new integration permissions.
 
 ### 401 on Validate API calls
@@ -517,7 +526,7 @@ Requires `API_SECRET` in `.env`. For local integration routes, prefer `ALLOW_ANO
 ## Related docs
 
 - [API and proxy setup](./API_AND_PROXY_SETUP.md) — Vite/nginx paths and API keys
-- [API repo README](https://github.com/UnearthData/api) — Unearth API local development
-- [Garbo README](https://github.com/Klimatbyran/garbo) — workers, containers, backup restore
+- [API repo README](https://github.com/UnearthData/API) — Unearth API local development
+- [Garbo README](https://github.com/Klimatbyran/garbo) — workers, containers, backup restore (owns shared Postgres migrations)
 - [Pipeline API README](https://github.com/Klimatbyran/pipeline-api) — live job API
-- `API/doc/COMPANY_ID_MIGRATION.md` — shared DB schema migration notes
+- Climate-plans pipeline (optional Validate tab) defaults to `http://localhost:3003` — see `getClimatePlansPipelineApiUrl()` in `src/config/api-env.ts`

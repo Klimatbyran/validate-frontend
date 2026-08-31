@@ -98,6 +98,8 @@ See `.env.development.example`.
 | `VITE_PIPELINE_TARGET`           | Pipeline API only                                                                                |
 | `VITE_UNEARTH_STAGE_URL`         | Override Unearth API stage host                                                                  |
 | `VITE_GARBO_STAGE_URL`           | Override Garbo API stage host                                                                    |
+| `VITE_UNEARTH_LOCAL_URL`         | Override local Unearth host (default `http://localhost:3000`)                                    |
+| `VITE_GARBO_LOCAL_URL`           | Override local Garbo host (default `http://localhost:3002`)                                      |
 | `UNEARTH_API_URL`                | nginx → Unearth API (includes `/api` suffix)                                                     |
 | `GARBO_API_URL`                  | nginx → Garbo API (includes `/api` suffix)                                                       |
 | `GARBO_ALL_ACCESS_API_KEY`       | `/unearth-api/` (primary deployment target)                                                      |
