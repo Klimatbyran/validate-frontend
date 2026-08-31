@@ -20,7 +20,8 @@ const URLS_BY_TARGET = {
     stage: "https://stage-pipeline-api.klimatkollen.se",
     prod: "https://pipeline-api.klimatkollen.se",
   },
-  apiBackendLocal: "http://localhost:3000",
+  unearthLocal: "http://localhost:3000",
+  garboLocal: "http://localhost:3002",
 } as const;
 
 function normalizeUrl(url: string): string {
@@ -48,15 +49,26 @@ function unearthTargetFromEnv(
   return v === "local" || v === "prod" ? v : "stage";
 }
 
+function garboArchiveTargetFromEnv(
+  env: Record<string, string>,
+  joint: string,
+): "local" | "stage" | "prod" {
+  const v = env.VITE_GARBO_ARCHIVE_TARGET;
+  if (v === "local" || v === "stage" || v === "prod") return v;
+  return unearthTargetFromEnv(env, joint);
+}
+
 /** Resolve proxy targets from env (joint mode or per-service overrides). */
 function getProxyTargets(env: Record<string, string>) {
   const joint = env.VITE_API_MODE || "stage";
   const pipelineTarget = targetFromEnv(env, "VITE_PIPELINE_TARGET", joint);
   const unearthTarget = unearthTargetFromEnv(env, joint);
+  const garboArchiveTarget = garboArchiveTargetFromEnv(env, joint);
 
   return {
     pipelineTarget,
     unearthTarget,
+    garboArchiveTarget,
     pipelineLocal: normalizeUrl(
       env.VITE_PIPELINE_API_URL ?? URLS_BY_TARGET.pipeline.local,
     ),
@@ -73,10 +85,11 @@ function getProxyTargets(env: Record<string, string>) {
     unearthProd: normalizeUrl(env.VITE_UNEARTH_PROD_URL ?? UNEARTH_PROD_API),
     garboStage: normalizeUrl(env.VITE_GARBO_STAGE_URL ?? GARBO_STAGE_API),
     garboProd: normalizeUrl(env.VITE_GARBO_PROD_URL ?? GARBO_PROD_API),
-    apiBackendLocal: normalizeUrl(
-      env.VITE_UNEARTH_LOCAL_URL ??
-        env.VITE_GARBO_LOCAL_URL ??
-        URLS_BY_TARGET.apiBackendLocal,
+    unearthLocal: normalizeUrl(
+      env.VITE_UNEARTH_LOCAL_URL ?? URLS_BY_TARGET.unearthLocal,
+    ),
+    garboLocal: normalizeUrl(
+      env.VITE_GARBO_LOCAL_URL ?? URLS_BY_TARGET.garboLocal,
     ),
   };
 }
@@ -218,16 +231,21 @@ export default defineConfig(({ mode }) => {
       "[vite] unearth target:",
       urls.unearthTarget,
       "->",
-      urls.unearthStage,
-      urls.unearthProd,
+      urls.unearthTarget === "local"
+        ? urls.unearthLocal
+        : urls.unearthTarget === "prod"
+          ? urls.unearthProd
+          : urls.unearthStage,
     );
     console.log(
       "[vite] garbo (queue-archive) target:",
-      urls.unearthTarget,
+      urls.garboArchiveTarget,
       "->",
-      urls.garboStage,
-      urls.garboProd,
-      urls.apiBackendLocal,
+      urls.garboArchiveTarget === "local"
+        ? urls.garboLocal
+        : urls.garboArchiveTarget === "prod"
+          ? urls.garboProd
+          : urls.garboStage,
     );
   }
 
@@ -346,9 +364,9 @@ export default defineConfig(({ mode }) => {
           },
         },
         "/garbo-local/api/queue-archive": {
-          target: urls.apiBackendLocal,
+          target: urls.garboLocal,
           changeOrigin: true,
-          secure: !urls.apiBackendLocal.startsWith("http://"),
+          secure: !urls.garboLocal.startsWith("http://"),
           rewrite: (path) => path.replace(/^\/garbo-local/, ""),
           timeout: PROXY_TIMEOUT_MS,
           proxyTimeout: PROXY_TIMEOUT_MS,
@@ -367,9 +385,9 @@ export default defineConfig(({ mode }) => {
           },
         },
         "/unearth-local": {
-          target: urls.apiBackendLocal,
+          target: urls.unearthLocal,
           changeOrigin: true,
-          secure: !urls.apiBackendLocal.startsWith("http://"),
+          secure: !urls.unearthLocal.startsWith("http://"),
           rewrite: (path) => path.replace(/^\/unearth-local/, ""),
           timeout: UNEARTH_PROXY_TIMEOUT_MS,
           proxyTimeout: UNEARTH_PROXY_TIMEOUT_MS,
