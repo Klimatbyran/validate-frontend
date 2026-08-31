@@ -115,9 +115,7 @@ function mergeCoverageMatchUpdate(
           registryReports:
             patch.registryReports.length > 0
               ? patch.registryReports
-              : entryMatchChanged(entry, patch)
-                ? []
-                : entry.registryReports,
+              : entry.registryReports,
         };
       }),
     };
