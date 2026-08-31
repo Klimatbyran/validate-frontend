@@ -529,6 +529,7 @@ export function UploadTab() {
             onUrlInputChange={setUrlInput}
             autoApprove={autoApprove}
             onAutoApproveChange={setAutoApprove}
+            pipelineMode={pipelineMode}
             onSubmit={handleUrlSubmit}
           />
         </TabsContent>
@@ -569,6 +570,7 @@ export function UploadTab() {
             uploadedFiles={uploadedFiles}
             autoApprove={autoApprove}
             onAutoApproveChange={setAutoApprove}
+            pipelineMode={pipelineMode}
             onFileSubmit={handleFileSubmit}
           />
         </TabsContent>
