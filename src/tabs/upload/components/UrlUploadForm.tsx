@@ -1,5 +1,6 @@
 import { Link2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
+import type { PipelineMode } from "@/lib/pipeline-mode";
 import { Button } from "@/ui/button";
 import { AutoApproveToggle } from "./AutoApproveToggle";
 
@@ -9,6 +10,7 @@ interface UrlUploadFormProps {
   autoApprove: boolean;
   onAutoApproveChange: (value: boolean) => void;
   onSubmit: () => void;
+  pipelineMode?: PipelineMode;
 }
 
 export function UrlUploadForm({
@@ -17,8 +19,14 @@ export function UrlUploadForm({
   autoApprove,
   onAutoApproveChange,
   onSubmit,
+  pipelineMode = "emissions",
 }: UrlUploadFormProps) {
   const { t } = useI18n();
+  const submitLabel =
+    pipelineMode === "climate-plans"
+      ? t("upload.addLinksClimatePlans")
+      : t("upload.addLinksEmissions");
+
   return (
     <div className="space-y-4">
       <div className="bg-gray-04/50 backdrop-blur-sm rounded-lg p-6 space-y-4">
@@ -39,7 +47,7 @@ export function UrlUploadForm({
         <div className="flex justify-end">
           <Button onClick={onSubmit} disabled={!urlInput.trim()}>
             <Link2 className="w-4 h-4 mr-2" />
-            {t("upload.addLinks")}
+            {submitLabel}
           </Button>
         </div>
       </div>

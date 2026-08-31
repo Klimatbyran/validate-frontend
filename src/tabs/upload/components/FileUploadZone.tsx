@@ -1,5 +1,6 @@
 import { FileUp } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
+import type { PipelineMode } from "@/lib/pipeline-mode";
 import { Button } from "@/ui/button";
 import { FileDropZone } from "@/components/FileDropZone";
 import { UploadedFile } from "../types";
@@ -15,6 +16,7 @@ interface FileUploadZoneProps {
   autoApprove: boolean;
   onAutoApproveChange: (value: boolean) => void;
   onFileSubmit: () => void;
+  pipelineMode?: PipelineMode;
 }
 
 export function FileUploadZone({
@@ -27,8 +29,14 @@ export function FileUploadZone({
   autoApprove,
   onAutoApproveChange,
   onFileSubmit,
+  pipelineMode = "emissions",
 }: FileUploadZoneProps) {
   const { t } = useI18n();
+  const submitLabel =
+    pipelineMode === "climate-plans"
+      ? t("upload.uploadAndProcessClimatePlans")
+      : t("upload.uploadAndProcessEmissions");
+
   return (
     <>
       <div className="mb-4">
@@ -51,7 +59,7 @@ export function FileUploadZone({
         <div className="mt-4 flex justify-end">
           <Button onClick={onFileSubmit}>
             <FileUp className="w-4 h-4 mr-2" />
-            {t("upload.uploadAndProcess")}
+            {submitLabel}
           </Button>
         </div>
       )}
