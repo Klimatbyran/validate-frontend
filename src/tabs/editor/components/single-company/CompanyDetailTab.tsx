@@ -58,6 +58,9 @@ export function CompanyDetailTab({
   const [selectedTags, setSelectedTags] = useState<string[]>(
     company.tags ?? [],
   );
+  const [alternativeNamesText, setAlternativeNamesText] = useState(() =>
+    (company.alternativeNames ?? []).join("\n"),
+  );
 
   const [subIndustryCode, setSubIndustryCode] = useState(
     company.industry?.subIndustryCode ?? "",
@@ -85,6 +88,7 @@ export function CompanyDetailTab({
     setUrl(company.url ?? "");
     setInternalComment(company.internalComment ?? "");
     setSelectedTags(company.tags ?? []);
+    setAlternativeNamesText((company.alternativeNames ?? []).join("\n"));
     setSubIndustryCode(company.industry?.subIndustryCode ?? "");
     setBaseYear(displayBaseYear(company.baseYear, dash));
   }, [
@@ -93,6 +97,7 @@ export function CompanyDetailTab({
     company.url,
     company.internalComment,
     company.tags,
+    company.alternativeNames,
     company.industry?.subIndustryCode,
     company.baseYear,
     company.descriptions,
@@ -120,6 +125,17 @@ export function CompanyDetailTab({
   }) => {
     setSavingCore(true);
     try {
+      const nextAlternativeNames = alternativeNamesText
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const previousAlternativeNames = company.alternativeNames ?? [];
+      const alternativeNamesChanged =
+        nextAlternativeNames.length !== previousAlternativeNames.length ||
+        nextAlternativeNames.some(
+          (value, index) => value !== previousAlternativeNames[index],
+        );
+
       await updateCompany(company.id, {
         name,
         descriptions: [
@@ -129,6 +145,9 @@ export function CompanyDetailTab({
         url: url || undefined,
         internalComment: internalComment || undefined,
         tags: selectedTags,
+        ...(alternativeNamesChanged
+          ? { alternativeNames: nextAlternativeNames }
+          : {}),
         metadata:
           meta?.comment?.trim() || meta?.source?.trim()
             ? {
@@ -297,6 +316,21 @@ export function CompanyDetailTab({
                 rows={2}
                 className={inputClassName + " resize-y !max-w-none"}
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-01 mb-1">
+                {t("editor.singleCompanyView.fields.alternativeNames")}
+              </label>
+              <textarea
+                value={alternativeNamesText}
+                onChange={(e) => setAlternativeNamesText(e.target.value)}
+                rows={4}
+                className={inputClassName + " resize-y !max-w-none font-mono"}
+              />
+              <p className="mt-1 text-xs text-gray-02">
+                {t("editor.singleCompanyView.fields.alternativeNamesHint")}
+              </p>
             </div>
           </div>
 

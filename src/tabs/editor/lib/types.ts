@@ -45,6 +45,7 @@ export interface GarboCompanyListItem {
   wikidataId?: string | null;
   name: string;
   tags?: string[];
+  alternativeNames?: string[];
   baseYear?:
     | number
     | { year?: number | null; metadata?: GarboMinimalMetadata | null }

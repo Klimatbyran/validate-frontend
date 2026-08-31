@@ -247,6 +247,7 @@ export async function updateCompany(
     descriptions?: Array<{ language: string; text: string; id?: string }>;
     internalComment?: string;
     tags?: string[];
+    alternativeNames?: string[];
     url?: string;
     logoUrl?: string | null;
     lei?: string;

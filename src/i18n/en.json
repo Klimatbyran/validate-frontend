@@ -422,6 +422,8 @@
         "descriptionEn": "Description (EN)",
         "descriptionSv": "Description (SV)",
         "internalComment": "Internal Comment",
+        "alternativeNames": "Alternative names",
+        "alternativeNamesHint": "One name per line. Used for search and match proposals — not the canonical display name.",
         "gicsSubIndustry": "GICS Sub-Industry"
       },
       "sections": {
