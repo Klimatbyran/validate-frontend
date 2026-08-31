@@ -329,12 +329,18 @@ export function CoverageYearDetailView({
             {detail.listName} — {detail.year}
           </h3>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" onClick={onEdit}>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="text-xs"
+              onClick={onEdit}
+            >
               {t("overview.coverage.editYear")}
             </Button>
             <Button
               variant="outline"
               size="sm"
+              className="text-xs"
               onClick={() => void onRematchCompanies()}
               disabled={isRematching || isRefreshingRegistry}
             >
@@ -347,6 +353,7 @@ export function CoverageYearDetailView({
             <Button
               variant="outline"
               size="sm"
+              className="text-xs"
               onClick={() => void onRefreshRegistry()}
               disabled={isRefreshingRegistry || isRematching}
             >
