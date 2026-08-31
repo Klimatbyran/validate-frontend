@@ -422,6 +422,8 @@
         "descriptionEn": "Beskrivning (EN)",
         "descriptionSv": "Beskrivning (SV)",
         "internalComment": "Intern kommentar",
+        "alternativeNames": "Alternativa namn",
+        "alternativeNamesHint": "Ett namn per rad. Används för sök- och matchningsförslag — inte det kanoniska visningsnamnet.",
         "gicsSubIndustry": "GICS subbransch"
       },
       "sections": {

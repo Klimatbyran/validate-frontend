@@ -33,6 +33,7 @@ export const garboCompanyListItemSchema = z
       .transform((value) => (value === "" ? null : value)),
     name: z.string(),
     tags: z.array(z.string()).optional(),
+    alternativeNames: z.array(z.string()).optional(),
     baseYear: z.unknown().optional(),
     industry: z.unknown().optional(),
     reportingPeriods: z.array(z.unknown()).optional(),
