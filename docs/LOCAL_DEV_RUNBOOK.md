@@ -8,12 +8,12 @@ For proxy paths and env vars, see [API and proxy setup](./API_AND_PROXY_SETUP.md
 
 ### Dev scripts
 
-| Script | What runs locally | Backends needed |
-|--------|-------------------|-----------------|
-| `npm run dev` / `dev:local` | Validate only | None (stage Unearth, stage pipeline, stage archive) |
-| `npm run dev:local-db` | Validate + Unearth API | Unearth on :3000 |
-| `npm run dev:local-db-pipeline` | Validate + Unearth + Pipeline | Unearth :3000, pipeline-api :3001 |
-| `npm run dev:local-full` | Everything local | Unearth :3000, pipeline :3001, Garbo HTTP :3002 |
+| Script                          | What runs locally             | Backends needed                                     |
+| ------------------------------- | ----------------------------- | --------------------------------------------------- |
+| `npm run dev` / `dev:local`     | Validate only                 | None (stage Unearth, stage pipeline, stage archive) |
+| `npm run dev:local-db`          | Validate + Unearth API        | Unearth on :3000                                    |
+| `npm run dev:local-db-pipeline` | Validate + Unearth + Pipeline | Unearth :3000, pipeline-api :3001                   |
+| `npm run dev:local-full`        | Everything local              | Unearth :3000, pipeline :3001, Garbo HTTP :3002     |
 
 Queue archive uses **stage** in `dev:local-db` and `dev:local-db-pipeline` (`VITE_GARBO_ARCHIVE_TARGET=stage`). Only `dev:local-full` points archive at local Garbo (:3002). Errors tab is always stage + prod regardless of script.
 
@@ -23,13 +23,13 @@ Scripts use `cross-env` so the same commands work on macOS, Linux, and Windows (
 
 ## Quick answers
 
-| Goal | What to run |
-|------|-------------|
-| Browse/edit companies against a restored prod DB | Postgres + Redis, **Unearth API** (`API` repo), Validate |
-| Use stage/prod data without local backends | Validate only (default `VITE_API_MODE=stage`) |
-| View/trigger **live** pipeline jobs | Above + **Pipeline API** + **Garbo workers** + Redis |
-| **Jobbstatus Archive** tab against local DB | **Garbo API** on :3002 (`garbo npm run dev-api`) alongside Unearth on :3000 |
-| Run a full report through Garbo locally | Containers (Postgres, Redis, Chroma, Docling), Garbo workers, Pipeline API, Unearth API for Validate UI |
+| Goal                                             | What to run                                                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Browse/edit companies against a restored prod DB | Postgres + Redis, **Unearth API** (`API` repo), Validate                                                |
+| Use stage/prod data without local backends       | Validate only (default `VITE_API_MODE=stage`)                                                           |
+| View/trigger **live** pipeline jobs              | Above + **Pipeline API** + **Garbo workers** + Redis                                                    |
+| **Jobbstatus Archive** tab against local DB      | **Garbo API** on :3002 (`garbo npm run dev-api`) alongside Unearth on :3000                             |
+| Run a full report through Garbo locally          | Containers (Postgres, Redis, Chroma, Docling), Garbo workers, Pipeline API, Unearth API for Validate UI |
 
 **Unearth API** (company editor, auth) runs on port **3000**. **Garbo HTTP API** (queue archive, BullMQ dashboard) runs on port **3002**. They can run at the same time.
 
@@ -37,13 +37,13 @@ In production, Unearth API and Garbo share the same Postgres (`garbo` database).
 
 ### Local ports
 
-| Service | Port |
-|---------|------|
-| Unearth API (`API`) | 3000 |
-| Pipeline API | 3001 |
+| Service                                                | Port |
+| ------------------------------------------------------ | ---- |
+| Unearth API (`API`)                                    | 3000 |
+| Pipeline API                                           | 3001 |
 | Garbo HTTP API (`garbo npm run dev-api` / `dev-board`) | 3002 |
-| Climate-plans pipeline (optional Validate tab) | 3003 |
-| Validate | 5173 |
+| Climate-plans pipeline (optional Validate tab)         | 3003 |
+| Validate                                               | 5173 |
 
 ---
 
@@ -333,27 +333,27 @@ npm run dev:local-db
 
 ### Validate (`.env.development`)
 
-| Variable | Purpose |
-|----------|---------|
-| `VITE_API_MODE` | `local` \| `stage` \| `prod` — default for Unearth + Garbo archive target |
-| `VITE_UNEARTH_TARGET` | Override Unearth API target only |
-| `VITE_PIPELINE_TARGET` | Override Pipeline API target only |
-| `VITE_GARBO_ARCHIVE_TARGET` | Override queue-archive target only (defaults to Unearth target) |
-| `VITE_UNEARTH_LOCAL_URL` | Override local Unearth host (default `http://localhost:3000`) |
-| `VITE_GARBO_LOCAL_URL` | Override local Garbo host (default `http://localhost:3002`) |
+| Variable                    | Purpose                                                                   |
+| --------------------------- | ------------------------------------------------------------------------- |
+| `VITE_API_MODE`             | `local` \| `stage` \| `prod` — default for Unearth + Garbo archive target |
+| `VITE_UNEARTH_TARGET`       | Override Unearth API target only                                          |
+| `VITE_PIPELINE_TARGET`      | Override Pipeline API target only                                         |
+| `VITE_GARBO_ARCHIVE_TARGET` | Override queue-archive target only (defaults to Unearth target)           |
+| `VITE_UNEARTH_LOCAL_URL`    | Override local Unearth host (default `http://localhost:3000`)             |
+| `VITE_GARBO_LOCAL_URL`      | Override local Garbo host (default `http://localhost:3002`)               |
 
 API key vars (`GARBO_*_ALL_ACCESS_API_KEY`, `ALLOW_ANONYMOUS_CLIENT_API`, seeding): [Authentication & API keys](#authentication--api-keys).
 
 ### Unearth API (`.env`)
 
-| Variable | Purpose |
-|----------|---------|
-| `DATABASE_URL` | Points at `garbo` Postgres |
-| `API_SECRET` | App secrets + API key hashing pepper |
-| `JWT_SECRET` | Staff Bearer tokens; must match pipeline-api for writes |
+| Variable                     | Purpose                                                          |
+| ---------------------------- | ---------------------------------------------------------------- |
+| `DATABASE_URL`               | Points at `garbo` Postgres                                       |
+| `API_SECRET`                 | App secrets + API key hashing pepper                             |
+| `JWT_SECRET`                 | Staff Bearer tokens; must match pipeline-api for writes          |
 | `ALLOW_ANONYMOUS_CLIENT_API` | `true` = skip `X-API-Key` on integration routes (local dev only) |
-| `GITHUB_*` | OAuth — required by config validation |
-| `OPENAPI_PREFIX` | Use `reference` locally (not `api`) |
+| `GITHUB_*`                   | OAuth — required by config validation                            |
+| `OPENAPI_PREFIX`             | Use `reference` locally (not `api`)                              |
 
 Full proxy table: [API_AND_PROXY_SETUP.md](./API_AND_PROXY_SETUP.md).
 
@@ -442,10 +442,10 @@ Reference for stage/prod targets, the Errors tab, key seeding, and troubleshooti
 
 Validate uses **two auth mechanisms** — not interchangeable:
 
-| Mechanism | Header | Used for | Where configured |
-|-----------|--------|----------|------------------|
-| **Staff JWT** | `Authorization: Bearer <token>` | Company editor, registry, crawler mutations, queue archive (staff path) | GitHub OAuth via Unearth API |
-| **Client API key** | `X-API-Key: garb_<lookup>.<secret>` | Overview, Errors tab, integration routes (`/internal-*`) | Validate Vite proxy (stage/prod paths only) |
+| Mechanism          | Header                              | Used for                                                                | Where configured                            |
+| ------------------ | ----------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------- |
+| **Staff JWT**      | `Authorization: Bearer <token>`     | Company editor, registry, crawler mutations, queue archive (staff path) | GitHub OAuth via Unearth API                |
+| **Client API key** | `X-API-Key: garb_<lookup>.<secret>` | Overview, Errors tab, integration routes (`/internal-*`)                | Validate Vite proxy (stage/prod paths only) |
 
 ### `ALLOW_ANONYMOUS_CLIENT_API` (Unearth API only)
 
@@ -455,35 +455,35 @@ Set in **`API/.env`**, not Validate:
 ALLOW_ANONYMOUS_CLIENT_API=true
 ```
 
-| Effect | Detail |
-|--------|--------|
-| **Does** | Bypasses `X-API-Key` on **integration** routes |
+| Effect       | Detail                                          |
+| ------------ | ----------------------------------------------- |
+| **Does**     | Bypasses `X-API-Key` on **integration** routes  |
 | **Does not** | Replace staff JWT — still log in for the editor |
-| **When** | Local dev with `VITE_UNEARTH_TARGET=local` |
-| **Never** | Production |
+| **When**     | Local dev with `VITE_UNEARTH_TARGET=local`      |
+| **Never**    | Production                                      |
 
 `/unearth-local` does not inject `X-API-Key`. Without this flag, Overview and other `/unearth-local/api/internal-*` routes return **401**.
 
 ### Validate proxy: which paths inject `X-API-Key`
 
-| Dev proxy path | Injects key? | Env var (Validate `.env.development`) |
-|----------------|--------------|---------------------------------------|
-| `/unearth-local` | **No** | — (use `ALLOW_ANONYMOUS_CLIENT_API` on API) |
-| `/unearth-stage` | Yes | `GARBO_STAGE_ALL_ACCESS_API_KEY` |
-| `/unearth` (prod) | Yes | `GARBO_PROD_ALL_ACCESS_API_KEY` |
-| `/garbo-local/api/queue-archive` | **No** | — (Garbo on :3002; staff JWT or `ALLOW_ANONYMOUS` on Garbo API) |
-| `/garbo-stage/api/queue-archive` | Yes | `GARBO_STAGE_ALL_ACCESS_API_KEY` |
-| `/pipeline-local` | No | Pipeline uses JWT for writes, not API keys |
+| Dev proxy path                   | Injects key? | Env var (Validate `.env.development`)                           |
+| -------------------------------- | ------------ | --------------------------------------------------------------- |
+| `/unearth-local`                 | **No**       | — (use `ALLOW_ANONYMOUS_CLIENT_API` on API)                     |
+| `/unearth-stage`                 | Yes          | `GARBO_STAGE_ALL_ACCESS_API_KEY`                                |
+| `/unearth` (prod)                | Yes          | `GARBO_PROD_ALL_ACCESS_API_KEY`                                 |
+| `/garbo-local/api/queue-archive` | **No**       | — (Garbo on :3002; staff JWT or `ALLOW_ANONYMOUS` on Garbo API) |
+| `/garbo-stage/api/queue-archive` | Yes          | `GARBO_STAGE_ALL_ACCESS_API_KEY`                                |
+| `/pipeline-local`                | No           | Pipeline uses JWT for writes, not API keys                      |
 
 **Errors tab** always calls `/unearth-stage` and `/unearth` (prod), regardless of `VITE_UNEARTH_TARGET`. Needs both `GARBO_STAGE_ALL_ACCESS_API_KEY` and `GARBO_PROD_ALL_ACCESS_API_KEY` even when browsing a local DB.
 
 ### Validate `.env.development` API key vars
 
-| Variable | Proxied routes (dev) |
-|----------|----------------------|
-| `GARBO_ALL_ACCESS_API_KEY` | Deployed `/unearth-api/` only (not Vite dev) |
+| Variable                         | Proxied routes (dev)                               |
+| -------------------------------- | -------------------------------------------------- |
+| `GARBO_ALL_ACCESS_API_KEY`       | Deployed `/unearth-api/` only (not Vite dev)       |
 | `GARBO_STAGE_ALL_ACCESS_API_KEY` | `/unearth-stage`, `/garbo-stage/api/queue-archive` |
-| `GARBO_PROD_ALL_ACCESS_API_KEY` | `/unearth` (prod), Errors tab |
+| `GARBO_PROD_ALL_ACCESS_API_KEY`  | `/unearth` (prod), Errors tab                      |
 
 Values can be the same string if that key exists in both databases. `GARBO_PROXY_CLIENT_API_KEY` (older Garbo docs) is **not** read by current Validate `vite.config.ts`.
 
@@ -491,10 +491,10 @@ Values can be the same string if that key exists in both databases. `GARBO_PROXY
 
 Used by `npm run seed:client-api` to write keys into Postgres:
 
-| Variable | Role seeded |
-|----------|-------------|
-| `GARBO_ALL_ACCESS_API_KEY` | `all-access` |
-| `GARBO_BASE_API_KEY` | `integration` |
+| Variable                   | Role seeded   |
+| -------------------------- | ------------- |
+| `GARBO_ALL_ACCESS_API_KEY` | `all-access`  |
+| `GARBO_BASE_API_KEY`       | `integration` |
 
 Requires `API_SECRET` in `.env`. For local integration routes, prefer `ALLOW_ANONYMOUS_CLIENT_API=true` over seeding — `/unearth-local` does not send keys anyway.
 
@@ -502,24 +502,24 @@ Requires `API_SECRET` in `.env`. For local integration routes, prefer `ALLOW_ANO
 
 ### API keys by scenario
 
-| Scenario | Unearth API `.env` | Validate `.env.development` | Login |
-|----------|-------------------|----------------------------|-------|
-| **A — Local DB browse** | `ALLOW_ANONYMOUS_CLIENT_API=true` | `npm run dev:local-db` | GitHub OAuth |
-| **B — Stage only** | (no local API) | `npm run dev:local` | GitHub OAuth |
-| **Local DB + pipeline** | `ALLOW_ANONYMOUS_CLIENT_API=true` | `npm run dev:local-db-pipeline` | GitHub OAuth |
-| **Full local** | anonymous on Unearth; keys on Garbo if archive anonymous off | `npm run dev:local-full` | GitHub OAuth |
-| **Local without anonymous** | `seed:client-api`; anonymous `false` | Overview on `/unearth-local` won’t work — use anonymous or stage target | GitHub OAuth |
+| Scenario                    | Unearth API `.env`                                           | Validate `.env.development`                                             | Login        |
+| --------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------- | ------------ |
+| **A — Local DB browse**     | `ALLOW_ANONYMOUS_CLIENT_API=true`                            | `npm run dev:local-db`                                                  | GitHub OAuth |
+| **B — Stage only**          | (no local API)                                               | `npm run dev:local`                                                     | GitHub OAuth |
+| **Local DB + pipeline**     | `ALLOW_ANONYMOUS_CLIENT_API=true`                            | `npm run dev:local-db-pipeline`                                         | GitHub OAuth |
+| **Full local**              | anonymous on Unearth; keys on Garbo if archive anonymous off | `npm run dev:local-full`                                                | GitHub OAuth |
+| **Local without anonymous** | `seed:client-api`; anonymous `false`                         | Overview on `/unearth-local` won’t work — use anonymous or stage target | GitHub OAuth |
 
 ### Quick diagnosis
 
-| Symptom | Likely cause | Fix |
-|---------|--------------|-----|
-| 401 on company editor | Not logged in | GitHub OAuth login in Validate |
-| 401 on Overview (local) | No key on `/unearth-local` | `ALLOW_ANONYMOUS_CLIENT_API=true` on Unearth API |
-| 401 on Overview (stage) | Missing/wrong proxy key | `GARBO_STAGE_ALL_ACCESS_API_KEY` in Validate |
-| 401 on Errors tab | Missing stage or prod key | Both `GARBO_STAGE_*` and `GARBO_PROD_*` in Validate |
-| 403 on API route | Key valid, wrong role | Re-run `seed:client-api` with `GARBO_ALL_ACCESS_API_KEY` |
-| 401 on pipeline upload/rerun | JWT mismatch | Match `JWT_SECRET` in Unearth API and pipeline-api; log in |
+| Symptom                      | Likely cause               | Fix                                                        |
+| ---------------------------- | -------------------------- | ---------------------------------------------------------- |
+| 401 on company editor        | Not logged in              | GitHub OAuth login in Validate                             |
+| 401 on Overview (local)      | No key on `/unearth-local` | `ALLOW_ANONYMOUS_CLIENT_API=true` on Unearth API           |
+| 401 on Overview (stage)      | Missing/wrong proxy key    | `GARBO_STAGE_ALL_ACCESS_API_KEY` in Validate               |
+| 401 on Errors tab            | Missing stage or prod key  | Both `GARBO_STAGE_*` and `GARBO_PROD_*` in Validate        |
+| 403 on API route             | Key valid, wrong role      | Re-run `seed:client-api` with `GARBO_ALL_ACCESS_API_KEY`   |
+| 401 on pipeline upload/rerun | JWT mismatch               | Match `JWT_SECRET` in Unearth API and pipeline-api; log in |
 
 ---
 

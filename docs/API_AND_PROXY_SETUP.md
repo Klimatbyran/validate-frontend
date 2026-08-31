@@ -23,17 +23,17 @@ In **development**, Vite proxies same-origin paths (see network tab table below)
 
 ## Network tab paths (dev)
 
-| Path                             | Backend                                  |
-| -------------------------------- | ---------------------------------------- |
-| `/pipeline-local`                | Pipeline API on this machine             |
-| `/pipeline-stage`                | Stage Pipeline API                       |
-| `/pipeline`                      | Prod Pipeline API                        |
-| `/unearth-local`                 | Local Unearth API (`localhost:3000`)     |
-| `/unearth-stage`                 | Stage Unearth API                        |
-| `/unearth`                       | Prod Unearth API                         |
-| `/garbo-local/api/queue-archive` | Local Garbo API (`localhost:3002`)       |
-| `/garbo-stage/api/queue-archive` | Stage Garbo API                          |
-| `/garbo/api/queue-archive`       | Prod Garbo API                           |
+| Path                             | Backend                              |
+| -------------------------------- | ------------------------------------ |
+| `/pipeline-local`                | Pipeline API on this machine         |
+| `/pipeline-stage`                | Stage Pipeline API                   |
+| `/pipeline`                      | Prod Pipeline API                    |
+| `/unearth-local`                 | Local Unearth API (`localhost:3000`) |
+| `/unearth-stage`                 | Stage Unearth API                    |
+| `/unearth`                       | Prod Unearth API                     |
+| `/garbo-local/api/queue-archive` | Local Garbo API (`localhost:3002`)   |
+| `/garbo-stage/api/queue-archive` | Stage Garbo API                      |
+| `/garbo/api/queue-archive`       | Prod Garbo API                       |
 
 Deployed builds use `/unearth-api` and `/garbo-api/queue-archive` instead.
 
@@ -92,9 +92,9 @@ See `.env.development.example`.
 | Variable                         | Purpose                                                                                          |
 | -------------------------------- | ------------------------------------------------------------------------------------------------ |
 | `VITE_API_MODE`                  | Joint default for Pipeline API + Unearth/Garbo API                                               |
-| `VITE_UNEARTH_TARGET`            | Unearth API target (`local` \| `stage` \| `prod`)                            |
-| `VITE_GARBO_ARCHIVE_TARGET`      | Queue-archive only; defaults to Unearth target if unset                      |
-| `VITE_GARBO_TARGET`              | Legacy alias for `VITE_UNEARTH_TARGET` when `UNEARTH_TARGET` unset           |
+| `VITE_UNEARTH_TARGET`            | Unearth API target (`local` \| `stage` \| `prod`)                                                |
+| `VITE_GARBO_ARCHIVE_TARGET`      | Queue-archive only; defaults to Unearth target if unset                                          |
+| `VITE_GARBO_TARGET`              | Legacy alias for `VITE_UNEARTH_TARGET` when `UNEARTH_TARGET` unset                               |
 | `VITE_PIPELINE_TARGET`           | Pipeline API only                                                                                |
 | `VITE_UNEARTH_STAGE_URL`         | Override Unearth API stage host                                                                  |
 | `VITE_GARBO_STAGE_URL`           | Override Garbo API stage host                                                                    |
