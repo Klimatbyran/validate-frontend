@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
+import type { PipelineReview } from "./usePipelineReviews";
 
 export interface Commitment {
   id: string;
@@ -28,6 +29,14 @@ export interface TransitionElementMatch {
   matchConfidence: "high" | "mid" | "low";
 }
 
+/** Cosine candidates from the TE picker — may lack matchConfidence. */
+export interface TransitionElementCandidate {
+  stableId: string;
+  shortLabel: string;
+  sectorPath?: string;
+  score: number;
+}
+
 export interface ActivityShift {
   id: string;
   activity: string;
@@ -39,6 +48,11 @@ export interface ActivityShift {
   score: number;
   reasoning: string;
   transitionElementMatches: TransitionElementMatch[];
+  transitionElementCandidates?: TransitionElementCandidate[] | null;
+  transitionElementSuggestedNew?: {
+    shortLabel: string;
+    description: string;
+  } | null;
 }
 
 export interface MeasureScore {
@@ -70,6 +84,7 @@ export interface ClimatePlanDetail {
   status: string;
   commitments: Commitment[];
   extractedMeasures: ExtractedMeasure[];
+  reviews?: PipelineReview[];
 }
 
 export function useClimatePlanDetail(planId: string | null) {

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ChevronsDown, ChevronsUp, Loader2, RefreshCw } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { StatusPill } from "@/components/StatusPill";
@@ -19,6 +20,7 @@ import {
   toQueueJobPlaceholder,
   PDF_PARSING_QUEUES,
 } from "./hooks/usePdfParsingJobs";
+import { ReviewingAsField } from "./components/ReviewingAsField";
 
 const COMMITMENT_STEPS = [
   "extractMunicipality",
@@ -235,6 +237,7 @@ function PlanRow({ plan, onStepClick, onPdfJobClick }: PlanRowProps) {
 
 export function ClimatePipelineTab() {
   const { t } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { plans, isLoading, error, refresh } = useClimatePipelinePlans();
   // Looked up live from `plans` (rather than storing the plan object itself)
   // so an already-open dialog picks up polling/rerun updates instead of
@@ -248,6 +251,35 @@ export function ClimatePipelineTab() {
   // not climate-plans-pipeline's own PipelineStepRun rows, so they reuse
   // jobbstatus's JobDetailsDialog directly instead of StepResultDialog.
   const [pdfJob, setPdfJob] = useState<QueueJob | null>(null);
+  const appliedDeepLinkRef = useRef<string | null>(null);
+
+  // Apply ?planId=&step= once per deep-link value. Do not re-apply on every
+  // plans poll (5s), or the open dialog gets yanked back to the URL step.
+  useEffect(() => {
+    const planId = searchParams.get("planId");
+    const step = searchParams.get("step");
+    if (!planId || !step) {
+      appliedDeepLinkRef.current = null;
+      return;
+    }
+    const key = `${planId}::${step}`;
+    if (appliedDeepLinkRef.current === key) return;
+    if (plans.length === 0) return;
+    if (!plans.some((p) => p.id === planId)) return;
+    appliedDeepLinkRef.current = key;
+    setDialogPlanId(planId);
+    setDialogStep(step);
+    setDialogRunId(null);
+  }, [searchParams, plans]);
+
+  const clearDeepLinkParams = () => {
+    if (!searchParams.has("planId") && !searchParams.has("step")) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete("planId");
+    next.delete("step");
+    setSearchParams(next, { replace: true });
+    appliedDeepLinkRef.current = null;
+  };
 
   const handleStepClick = (
     plan: ClimatePipelinePlan,
@@ -257,6 +289,7 @@ export function ClimatePipelineTab() {
     setDialogPlanId(plan.id);
     setDialogStep(step);
     setDialogRunId(runId ?? null);
+    clearDeepLinkParams();
   };
 
   return (
@@ -270,13 +303,16 @@ export function ClimatePipelineTab() {
             {t("climatePipeline.subtitle")}
           </p>
         </div>
-        <button
-          onClick={refresh}
-          className="p-2 rounded-full hover:bg-gray-03/40 text-gray-02"
-          aria-label={t("climatePipeline.refresh")}
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-3">
+          <ReviewingAsField />
+          <button
+            onClick={refresh}
+            className="p-2 rounded-full hover:bg-gray-03/40 text-gray-02"
+            aria-label={t("climatePipeline.refresh")}
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -321,6 +357,7 @@ export function ClimatePipelineTab() {
             setDialogPlanId(null);
             setDialogStep(null);
             setDialogRunId(null);
+            clearDeepLinkParams();
           }
         }}
         onRerun={refresh}

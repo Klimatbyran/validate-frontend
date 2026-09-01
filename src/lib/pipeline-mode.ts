@@ -28,7 +28,7 @@ export const PIPELINE_TAB_SEGMENTS = {
     "errors",
     "editor",
   ],
-  "climate-plans": ["climate-plans", "climate-pipeline"],
+  "climate-plans": ["climate-plans", "climate-pipeline", "climate-qa-reviews"],
 } as const satisfies Record<PipelineMode, readonly TopLevelTabSegment[]>;
 
 export const DEFAULT_TAB_FOR_PIPELINE_MODE = {

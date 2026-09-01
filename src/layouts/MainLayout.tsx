@@ -62,6 +62,8 @@ function tabLabelKey(tab: TopLevelTabSegment): string {
       return "nav.climatePlans";
     case "climate-pipeline":
       return "nav.climatePipeline";
+    case "climate-qa-reviews":
+      return "nav.climateQaReviews";
   }
 }
 
