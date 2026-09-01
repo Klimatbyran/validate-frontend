@@ -73,6 +73,12 @@ export interface ExtractedMeasure {
   id: string;
   measureText: string;
   climateRelevanceScore: "high" | "mid" | "low";
+  sourceCommitmentId: string | null;
+  sourceCommitment: {
+    id: string;
+    stableId: string;
+    unverified: boolean;
+  } | null;
   score: MeasureScore | null;
 }
 

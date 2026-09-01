@@ -557,6 +557,16 @@ function TransitionElementsView({
           key={m.id}
           className="bg-gray-03/30 rounded-lg p-3 space-y-3 min-w-0"
         >
+          <div className="flex flex-wrap items-center gap-2">
+            {m.sourceCommitment && (
+              <FoundInDocumentFlag unverified={m.sourceCommitment.unverified} />
+            )}
+            {m.sourceCommitment && (
+              <span className="text-[11px] font-mono text-gray-02">
+                {m.sourceCommitment.stableId}
+              </span>
+            )}
+          </div>
           <p className="text-sm text-gray-01 break-words">{m.measureText}</p>
           {m.score!.activityShifts.map((shift) => (
             <ActivityShiftTeBlock
@@ -1084,12 +1094,16 @@ function MeasuresList({
             ? {
                 measureText: m.measureText,
                 climateRelevanceScore: m.climateRelevanceScore,
+                sourceCommitmentId: m.sourceCommitmentId,
+                sourceCommitment: m.sourceCommitment,
               }
             : {
                 measureText: m.measureText,
                 activityShiftScore: m.score?.activityShiftScore ?? null,
                 interventionScore: m.score?.interventionScore ?? null,
                 interventionType: m.score?.interventionType ?? null,
+                sourceCommitmentId: m.sourceCommitmentId,
+                sourceCommitment: m.sourceCommitment,
               };
         return (
           <article
@@ -1097,6 +1111,11 @@ function MeasuresList({
             className="rounded-lg border border-gray-03/50 bg-gray-03/20 p-3 min-w-0 space-y-2"
           >
             <div className="flex flex-wrap items-center gap-2">
+              {m.sourceCommitment && (
+                <FoundInDocumentFlag
+                  unverified={m.sourceCommitment.unverified}
+                />
+              )}
               {columns === "extract" && (
                 <MetaChip label="Relevance" tone="relevance">
                   {m.climateRelevanceScore}
@@ -1118,6 +1137,11 @@ function MeasuresList({
                 </>
               )}
             </div>
+            {m.sourceCommitment && (
+              <p className="text-[11px] font-mono text-gray-02">
+                Source: {m.sourceCommitment.stableId}
+              </p>
+            )}
             <p className="text-sm text-gray-01 break-words whitespace-pre-wrap">
               {m.measureText}
             </p>
