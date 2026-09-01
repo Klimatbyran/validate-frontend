@@ -20,6 +20,7 @@ import {
   toQueueJobPlaceholder,
   PDF_PARSING_QUEUES,
 } from "./hooks/usePdfParsingJobs";
+import { ReviewingAsField } from "./components/ReviewingAsField";
 
 const COMMITMENT_STEPS = [
   "extractMunicipality",
@@ -283,13 +284,16 @@ export function ClimatePipelineTab() {
             {t("climatePipeline.subtitle")}
           </p>
         </div>
-        <button
-          onClick={refresh}
-          className="p-2 rounded-full hover:bg-gray-03/40 text-gray-02"
-          aria-label={t("climatePipeline.refresh")}
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-3">
+          <ReviewingAsField />
+          <button
+            onClick={refresh}
+            className="p-2 rounded-full hover:bg-gray-03/40 text-gray-02"
+            aria-label={t("climatePipeline.refresh")}
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {isLoading ? (

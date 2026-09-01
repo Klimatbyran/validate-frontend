@@ -1,13 +1,27 @@
-import { useState } from "react";
-import { Check, MessageSquare, Pencil, Loader2, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Check, MessageSquare, Pencil, Plus, Loader2, X } from "lucide-react";
 import { Button } from "@/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 import {
   deletePipelineReview,
   upsertPipelineReview,
   type PipelineReview,
   type ReviewStatus,
 } from "../hooks/usePipelineReviews";
+import { resolveQaReviewerForSave } from "../lib/qaReviewerIdentity";
+
+export interface SuggestEditorConfig {
+  title: string;
+  getInitialDraft: (
+    review: PipelineReview | undefined,
+    defaultSuggestedValue: unknown,
+  ) => unknown;
+  render: (args: {
+    draft: unknown;
+    setDraft: (value: unknown) => void;
+  }) => ReactNode;
+}
 
 interface ReviewControlsProps {
   planId: string;
@@ -16,8 +30,17 @@ interface ReviewControlsProps {
   entityId: string;
   reviewedSnapshot: unknown;
   review: PipelineReview | undefined;
-  /** Optional starter JSON for the suggestion editor (step-specific). */
+  /** Optional starter value for the suggestion editor (step-specific). */
   defaultSuggestedValue?: unknown;
+  /** When set, pencil opens this structured editor instead of raw JSON. */
+  suggestEditor?: SuggestEditorConfig;
+  /** Optional fourth control — e.g. add another TE match on this shift. */
+  onAdd?: () => void;
+  addTitle?: string;
+  addActive?: boolean;
+  addDisabled?: boolean;
+  /** Open comment/suggest panel on mount (e.g. newly added TE slot). */
+  initialPanel?: "comment" | "suggest" | null;
   onChanged: (review: PipelineReview | null) => void;
 }
 
@@ -42,9 +65,15 @@ export function ReviewControls({
   reviewedSnapshot,
   review,
   defaultSuggestedValue,
+  suggestEditor,
+  onAdd,
+  addTitle = "Add another",
+  addActive = false,
+  addDisabled = false,
+  initialPanel = null,
   onChanged,
 }: ReviewControlsProps) {
-  const [panel, setPanel] = useState<"comment" | "suggest" | null>(null);
+  const [panel, setPanel] = useState<"comment" | "suggest" | null>(initialPanel);
   const [comment, setComment] = useState(review?.comment ?? "");
   const [suggestedText, setSuggestedText] = useState(() =>
     JSON.stringify(
@@ -53,8 +82,12 @@ export function ReviewControls({
       2,
     ),
   );
+  const [suggestDraft, setSuggestDraft] = useState<unknown>(
+    () => review?.suggestedValue ?? defaultSuggestedValue ?? {},
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const save = async (input: {
     status: ReviewStatus;
@@ -72,6 +105,7 @@ export function ReviewControls({
         status: input.status,
         comment: input.comment ?? null,
         suggestedValue: input.suggestedValue,
+        reviewedBy: resolveQaReviewerForSave(user),
       });
       onChanged(saved);
       setPanel(null);
@@ -124,6 +158,14 @@ export function ReviewControls({
   };
 
   const saveSuggestion = async () => {
+    if (suggestEditor) {
+      await save({
+        status: "SUGGESTED_FIX",
+        comment: comment.trim() || review?.comment || null,
+        suggestedValue: suggestDraft,
+      });
+      return;
+    }
     let parsed: unknown;
     try {
       parsed = JSON.parse(suggestedText);
@@ -138,9 +180,30 @@ export function ReviewControls({
     });
   };
 
+  const openSuggest = () => {
+    setComment(review?.comment ?? "");
+    if (suggestEditor) {
+      setSuggestDraft(
+        suggestEditor.getInitialDraft(review, defaultSuggestedValue),
+      );
+    } else {
+      setSuggestedText(
+        JSON.stringify(
+          review?.suggestedValue ?? defaultSuggestedValue ?? {},
+          null,
+          2,
+        ),
+      );
+    }
+    setPanel((p) => (p === "suggest" ? null : "suggest"));
+  };
+
   return (
-    <div className="flex flex-col items-end gap-1 shrink-0">
-      <div className="flex items-center gap-0.5">
+    <div className="w-full min-w-0 space-y-2">
+      <div className="flex flex-wrap items-center gap-1">
+        <span className="text-[10px] uppercase tracking-wide text-gray-02 mr-1">
+          QA
+        </span>
         <Button
           type="button"
           variant="ghost"
@@ -192,39 +255,58 @@ export function ReviewControls({
           )}
           title="Suggest a fix"
           disabled={isSaving}
-          onClick={() => {
-            setSuggestedText(
-              JSON.stringify(
-                review?.suggestedValue ?? defaultSuggestedValue ?? {},
-                null,
-                2,
-              ),
-            );
-            setComment(review?.comment ?? "");
-            setPanel((p) => (p === "suggest" ? null : "suggest"));
-          }}
+          onClick={openSuggest}
         >
           <Pencil className="w-3.5 h-3.5" />
         </Button>
+        {onAdd && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-7 w-7 p-0",
+              addActive
+                ? "text-blue-03 bg-blue-03/10"
+                : "text-gray-02 hover:text-blue-03",
+            )}
+            title={addTitle}
+            disabled={isSaving || addDisabled}
+            onClick={onAdd}
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </Button>
+        )}
+        {review && (
+          <span
+            className={cn(
+              "text-[10px] uppercase tracking-wide ml-1",
+              statusTone(review.status),
+            )}
+          >
+            {review.status.replace("_", " ")}
+          </span>
+        )}
+        {review?.comment && !panel && (
+          <span className="text-xs text-gray-02 truncate max-w-full basis-full sm:basis-auto sm:max-w-md">
+            “{review.comment}”
+          </span>
+        )}
       </div>
 
-      {review && (
-        <span className={cn("text-[10px] uppercase tracking-wide", statusTone(review.status))}>
-          {review.status.replace("_", " ")}
-        </span>
-      )}
-
       {panel && (
-        <div className="mt-1 w-72 rounded-md border border-gray-03 bg-gray-05 p-2 space-y-2 shadow-sm">
-          <div className="flex items-center justify-between">
+        <div className="w-full rounded-md border border-gray-03 bg-gray-05 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-medium text-gray-01">
-              {panel === "comment" ? "Comment" : "Suggested fix (JSON)"}
+              {panel === "comment"
+                ? "Comment"
+                : (suggestEditor?.title ?? "Suggested fix (JSON)")}
             </span>
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0 text-gray-02"
+              className="h-6 w-6 p-0 text-gray-02 shrink-0"
               onClick={() => setPanel(null)}
             >
               <X className="w-3.5 h-3.5" />
@@ -238,13 +320,19 @@ export function ReviewControls({
               placeholder="Optional note for pipeline improvement"
             />
           )}
-          {panel === "suggest" && (
-            <textarea
-              className="w-full min-h-[6rem] rounded border border-gray-03 bg-gray-04/40 px-2 py-1 font-mono text-xs text-gray-01"
-              value={suggestedText}
-              onChange={(e) => setSuggestedText(e.target.value)}
-            />
-          )}
+          {panel === "suggest" &&
+            (suggestEditor ? (
+              suggestEditor.render({
+                draft: suggestDraft,
+                setDraft: setSuggestDraft,
+              })
+            ) : (
+              <textarea
+                className="w-full min-h-[6rem] rounded border border-gray-03 bg-gray-04/40 px-2 py-1 font-mono text-xs text-gray-01"
+                value={suggestedText}
+                onChange={(e) => setSuggestedText(e.target.value)}
+              />
+            ))}
           {error && <p className="text-xs text-pink-03">{error}</p>}
           <div className="flex justify-end gap-1">
             {review && (

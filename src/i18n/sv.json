@@ -81,7 +81,10 @@
     "colSnapshot": "Snapshot",
     "colSuggestion": "Förslag",
     "colComment": "Kommentar",
-    "colWhen": "Granskad"
+    "colReviewedBy": "Granskad av",
+    "colWhen": "Granskad",
+    "reviewingAs": "Granskar som",
+    "reviewingAsPlaceholder": "Ditt namn"
   },
   "apiAccess": {
     "title": "API Access",

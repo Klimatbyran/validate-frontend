@@ -13,6 +13,7 @@ import {
   usePipelineReviewsBoard,
   type ReviewStatus,
 } from "@/tabs/climate-pipeline/hooks/usePipelineReviews";
+import { ReviewingAsField } from "@/tabs/climate-pipeline/components/ReviewingAsField";
 
 const PIPELINE_STEPS = [
   "extractMunicipality",
@@ -26,11 +27,20 @@ const PIPELINE_STEPS = [
   "matchTransitionElements",
 ] as const;
 
-function previewJson(value: unknown, max = 120): string {
+function formatJsonCompact(value: unknown): string {
   try {
     const text = JSON.stringify(value);
-    if (!text) return "—";
-    return text.length > max ? `${text.slice(0, max)}…` : text;
+    if (!text || text === "null" || text === "undefined") return "—";
+    return text;
+  } catch {
+    return "—";
+  }
+}
+
+function formatJsonPretty(value: unknown): string {
+  try {
+    if (value === null || value === undefined) return "—";
+    return JSON.stringify(value, null, 2);
   } catch {
     return "—";
   }
@@ -45,6 +55,59 @@ function planLabel(plan: {
     plan.municipality?.name ??
     plan.extractedMunicipalityName ??
     plan.url.replace(/^https?:\/\//, "").slice(0, 40)
+  );
+}
+
+/** Keeps long text inside the column; expands in-row on hover. */
+function WrappingCell({
+  children,
+  title,
+  className = "",
+}: {
+  children: string;
+  title?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`break-words whitespace-pre-wrap line-clamp-2 hover:line-clamp-none ${className}`}
+      title={title ?? children}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Compact preview; click to toggle pretty-printed JSON in-row. */
+function JsonPreviewCell({ value }: { value: unknown }) {
+  const [expanded, setExpanded] = useState(false);
+  const compact = formatJsonCompact(value);
+  const pretty = formatJsonPretty(value);
+  const isEmpty = compact === "—";
+
+  if (isEmpty) {
+    return <span className="text-gray-02">—</span>;
+  }
+
+  return (
+    <button
+      type="button"
+      className="w-full text-left text-xs text-gray-02 font-mono hover:text-gray-01 focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-03 rounded-sm"
+      onClick={() => setExpanded((open) => !open)}
+      title={expanded ? "Click to collapse" : "Click to expand (pretty JSON)"}
+      aria-expanded={expanded}
+    >
+      <pre
+        className={`m-0 whitespace-pre-wrap break-all ${
+          expanded ? "max-h-80 overflow-auto" : "line-clamp-2"
+        }`}
+      >
+        {expanded ? pretty : compact}
+      </pre>
+      <span className="mt-0.5 block text-[10px] font-sans text-blue-03">
+        {expanded ? "Collapse" : "Expand"}
+      </span>
+    </button>
   );
 }
 
@@ -141,6 +204,7 @@ export function ClimateQaReviewsTab() {
         <span className="text-xs text-gray-02">
           {t("climateQaReviews.count", { count: total })}
         </span>
+        <ReviewingAsField />
       </div>
 
       {isLoading && (
@@ -158,52 +222,77 @@ export function ClimateQaReviewsTab() {
       )}
       {!isLoading && reviews.length > 0 && (
         <DataTableShell>
-          <DataTable>
+          <DataTable className="table-fixed w-full min-w-[64rem]">
             <DataTableHead>
               <tr>
-                <th className="px-3 py-2">{t("climateQaReviews.colPlan")}</th>
-                <th className="px-3 py-2">{t("climateQaReviews.colStep")}</th>
-                <th className="px-3 py-2">{t("climateQaReviews.colStatus")}</th>
-                <th className="px-3 py-2">{t("climateQaReviews.colSnapshot")}</th>
-                <th className="px-3 py-2">
+                <th className="px-3 py-2 w-[12%]">
+                  {t("climateQaReviews.colPlan")}
+                </th>
+                <th className="px-3 py-2 w-[12%]">
+                  {t("climateQaReviews.colStep")}
+                </th>
+                <th className="px-3 py-2 w-[8%]">
+                  {t("climateQaReviews.colStatus")}
+                </th>
+                <th className="px-3 py-2 w-[16%]">
+                  {t("climateQaReviews.colSnapshot")}
+                </th>
+                <th className="px-3 py-2 w-[16%]">
                   {t("climateQaReviews.colSuggestion")}
                 </th>
-                <th className="px-3 py-2">{t("climateQaReviews.colComment")}</th>
-                <th className="px-3 py-2">{t("climateQaReviews.colWhen")}</th>
+                <th className="px-3 py-2 w-[14%]">
+                  {t("climateQaReviews.colComment")}
+                </th>
+                <th className="px-3 py-2 w-[10%]">
+                  {t("climateQaReviews.colReviewedBy")}
+                </th>
+                <th className="px-3 py-2 w-[12%]">
+                  {t("climateQaReviews.colWhen")}
+                </th>
               </tr>
             </DataTableHead>
             <DataTableBody>
-              {reviews.map((review) => (
-                <tr key={review.id}>
-                  <td className="px-3 py-2 text-sm">
-                    <Link
-                      className="text-blue-03 hover:underline"
-                      to={`/climate-pipeline?planId=${review.plan.id}&step=${review.step}`}
-                    >
-                      {planLabel(review.plan)}
-                    </Link>
-                    <div className="text-[10px] text-gray-02 font-mono mt-0.5">
-                      {review.entityType}/{review.entityId.slice(0, 12)}
-                    </div>
-                  </td>
-                  <td className="px-3 py-2 text-xs font-mono text-gray-02">
-                    {review.step}
-                  </td>
-                  <td className="px-3 py-2 text-xs">{review.status}</td>
-                  <td className="px-3 py-2 text-xs text-gray-02 font-mono max-w-xs">
-                    {previewJson(review.reviewedSnapshot)}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-gray-02 font-mono max-w-xs">
-                    {previewJson(review.suggestedValue)}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-gray-01 max-w-xs whitespace-pre-wrap">
-                    {review.comment ?? "—"}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-gray-02 whitespace-nowrap">
-                    {new Date(review.reviewedAt).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
+              {reviews.map((review) => {
+                const commentText = review.comment ?? "—";
+                return (
+                  <tr key={review.id}>
+                    <td className="px-3 py-2 text-sm align-top overflow-hidden">
+                      <Link
+                        className="text-blue-03 hover:underline break-words"
+                        to={`/climate-pipeline?planId=${review.plan.id}&step=${review.step}`}
+                      >
+                        {planLabel(review.plan)}
+                      </Link>
+                      <div className="text-[10px] text-gray-02 font-mono mt-0.5 break-all">
+                        {review.entityType}/{review.entityId.slice(0, 12)}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 text-xs font-mono text-gray-02 align-top overflow-hidden">
+                      <WrappingCell>{review.step}</WrappingCell>
+                    </td>
+                    <td className="px-3 py-2 text-xs align-top whitespace-nowrap">
+                      {review.status}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-02 font-mono align-top overflow-hidden">
+                      <JsonPreviewCell value={review.reviewedSnapshot} />
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-02 font-mono align-top overflow-hidden">
+                      <JsonPreviewCell value={review.suggestedValue} />
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-01 align-top overflow-hidden">
+                      <WrappingCell>{commentText}</WrappingCell>
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-01 align-top overflow-hidden">
+                      <WrappingCell>
+                        {review.reviewedBy?.trim() || "—"}
+                      </WrappingCell>
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-02 align-top whitespace-nowrap">
+                      {new Date(review.reviewedAt).toLocaleString()}
+                    </td>
+                  </tr>
+                );
+              })}
             </DataTableBody>
           </DataTable>
         </DataTableShell>

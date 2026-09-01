@@ -81,7 +81,10 @@
     "colSnapshot": "Snapshot",
     "colSuggestion": "Suggestion",
     "colComment": "Comment",
-    "colWhen": "Reviewed"
+    "colReviewedBy": "Reviewed by",
+    "colWhen": "Reviewed",
+    "reviewingAs": "Reviewing as",
+    "reviewingAsPlaceholder": "Your name"
   },
   "apiAccess": {
     "title": "API Access",
