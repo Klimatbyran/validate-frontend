@@ -3,11 +3,14 @@ import {
   Loader2,
   ChevronsDown,
   ChevronsUp,
+  FileCheck,
+  FileWarning,
   Plus,
   RotateCw,
 } from "lucide-react";
 import { Modal } from "@/ui/modal";
 import { Button } from "@/ui/button";
+import { cn } from "@/lib/utils";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
 import { StatusPill } from "@/components/StatusPill";
 import {
@@ -685,6 +688,33 @@ function YesNo({ value }: { value: boolean | null }) {
   );
 }
 
+/** Compact groundedness flag — visible on every commitment step. */
+function FoundInDocumentFlag({ unverified }: { unverified: boolean }) {
+  const found = !unverified;
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium",
+        found
+          ? "border-green-03/40 bg-green-03/10 text-green-03"
+          : "border-orange-03/40 bg-orange-03/10 text-orange-03",
+      )}
+      title={
+        found
+          ? "Found in document — quote grounded in plan markdown"
+          : "Not found in document — may be invented or unfindable"
+      }
+    >
+      {found ? (
+        <FileCheck className="h-3 w-3" aria-hidden />
+      ) : (
+        <FileWarning className="h-3 w-3" aria-hidden />
+      )}
+      <span>{found ? "In doc" : "Not in doc"}</span>
+    </span>
+  );
+}
+
 function CommitmentReviewControls({
   commitment,
   columns,
@@ -787,12 +817,13 @@ function CommitmentsList({
       );
       return (
         <li key={c.id} className="min-w-0 space-y-1.5 px-3 py-2.5">
-          <p className="text-sm text-gray-01 break-words">
-            <span className="mr-2 font-mono text-[11px] text-gray-02">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[11px] text-gray-02">
               {c.stableId}
             </span>
-            {c.text}
-          </p>
+            <FoundInDocumentFlag unverified={c.unverified} />
+          </div>
+          <p className="text-sm text-gray-01 break-words">{c.text}</p>
           <QaFooter>
             <ReviewControls
               planId={reviewCtx.planId}
@@ -804,6 +835,8 @@ function CommitmentsList({
                 stableId: c.stableId,
                 text: c.text,
                 similarGroupId: c.similarGroupId,
+                unverified: c.unverified,
+                foundInDocument: !c.unverified,
               }}
               review={reviewCtx.reviewsByEntity.get(entityKey)}
               defaultSuggestedValue={{ similarGroupId: c.similarGroupId }}
@@ -909,14 +942,17 @@ function CommitmentsList({
                   const entityKey = reviewKey(
                     reviewCtx.step,
                     "commitment",
-                    c.id,
+                    commitmentEntityId(c),
                   );
                   return (
                     <li key={c.id} className="min-w-0 space-y-1.5 px-3 py-2.5">
-                      <p className="text-sm text-gray-01 break-words">
-                        <span className="mr-2 font-mono text-[11px] text-gray-02">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-[11px] text-gray-02">
                           {c.stableId}
                         </span>
+                        <FoundInDocumentFlag unverified={c.unverified} />
+                      </div>
+                      <p className="text-sm text-gray-01 break-words">
                         {c.text}
                       </p>
                       <QaFooter>
@@ -930,6 +966,8 @@ function CommitmentsList({
                             stableId: c.stableId,
                             text: c.text,
                             theme: c.theme,
+                            unverified: c.unverified,
+                            foundInDocument: !c.unverified,
                           }}
                           review={reviewCtx.reviewsByEntity.get(entityKey)}
                           defaultSuggestedValue={{
@@ -958,10 +996,9 @@ function CommitmentsList({
     <div className="space-y-3">
       {columns === "extract" && (
         <p className="text-xs text-gray-02">
-          Pipeline checks whether each extracted quote can be found in the plan
-          markdown. Review{" "}
-          <span className="text-gray-01">Found in document</span> — Yes means
-          the extraction is grounded; No means it looks invented or unfindable.
+          <span className="text-gray-01">In doc / Not in doc</span> shows
+          whether the quote was found in the plan markdown. That flag stays on
+          the commitment through later steps.
         </p>
       )}
       {commitments.map((c) => (
@@ -969,18 +1006,11 @@ function CommitmentsList({
           key={c.id}
           className="rounded-lg border border-gray-03/50 bg-gray-03/20 p-3 min-w-0 space-y-2"
         >
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="font-mono text-xs text-gray-02">{c.stableId}</span>
+            <FoundInDocumentFlag unverified={c.unverified} />
             {columns === "extract" && (
-              <>
-                <MetaChip label="Type">{c.type}</MetaChip>
-                <MetaChip
-                  label="Found in document"
-                  tone={c.unverified ? "type" : "relevance"}
-                >
-                  <YesNo value={!c.unverified} />
-                </MetaChip>
-              </>
+              <MetaChip label="Type">{c.type}</MetaChip>
             )}
             {columns === "climate" && (
               <>
