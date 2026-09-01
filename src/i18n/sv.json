@@ -252,6 +252,9 @@
       "verifiedBy": "Verifierad av",
       "source": "Källa",
       "openSource": "Öppna källa",
+      "sourceReference": "Sida / referens",
+      "sourcePage": "Rapportsida",
+      "openSourcePage": "Öppna rapportsida",
       "comment": "Kommentar",
       "verifiedYes": "Ja"
     },

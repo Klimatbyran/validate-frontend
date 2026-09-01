@@ -227,6 +227,9 @@
       "verifiedBy": "Verified by",
       "source": "Source",
       "openSource": "Open source",
+      "sourceReference": "Page / reference",
+      "sourcePage": "Report page",
+      "openSourcePage": "Open report page",
       "comment": "Comment",
       "verifiedYes": "Yes"
     },

@@ -1,4 +1,4 @@
-import { Info, ExternalLink } from "lucide-react";
+import { Info, ExternalLink, FileText } from "lucide-react";
 import { useMemo } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
@@ -9,6 +9,8 @@ function hasAnyMetadata(metadata: GarboFieldMetadata | null | undefined) {
   if (!metadata) return false;
   return Boolean(
     metadata.source?.trim() ||
+      metadata.sourceReference?.trim() ||
+      metadata.sourcePageUrl?.trim() ||
       metadata.comment?.trim() ||
       metadata.verifiedBy?.name?.trim() ||
       metadata.verifiedBy ||
@@ -44,6 +46,8 @@ export function MetadataDetailsDialog({
     | null
     | undefined;
   const source = metadata?.source?.trim() || null;
+  const sourceReference = metadata?.sourceReference?.trim() || null;
+  const sourcePageUrl = metadata?.sourcePageUrl?.trim() || null;
   const comment = metadata?.comment?.trim() || null;
   const verifiedBy =
     metadata?.verifiedBy?.name?.trim() ||
@@ -55,90 +59,162 @@ export function MetadataDetailsDialog({
   if (!openable) return null;
 
   return (
-    <Modal
-      trigger={
-        <button
-          type="button"
+    <span className="inline-flex items-center gap-0.5">
+      {sourcePageUrl && (
+        <a
+          href={sourcePageUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center justify-center rounded-full text-blue-03 hover:bg-gray-03/40 h-6 w-6"
-          aria-label={
-            triggerAriaLabel ??
-            t("editor.metadataDetails.openFieldMetadata", { field: fieldLabel })
-          }
-          title={t("editor.metadataDetails.viewDetails")}
+          aria-label={t("editor.metadataDetails.openSourcePage")}
+          title={t("editor.metadataDetails.openSourcePage")}
         >
-          <Info className="w-3.5 h-3.5" />
-        </button>
-      }
-      size="xl"
-      title={t("editor.metadataDetails.titleWithField", { field: fieldLabel })}
-      description={t("editor.metadataDetails.description")}
-    >
-      <div className="grid gap-4 max-h-[70vh] overflow-auto pr-1">
-        {(updatedAt || verifiedBy) && (
-          <section className="rounded-lg bg-gray-05 p-3">
-            <div className="text-xs font-medium text-gray-02 mb-2">
-              {t("editor.metadataDetails.sectionDetails")}
-            </div>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {updatedAt && (
-                <div>
-                  <dt className="text-xs text-gray-03">
-                    {t("editor.metadataDetails.updated")}
-                  </dt>
-                  <dd className="text-sm text-gray-01 break-words">
-                    {updatedAt}
-                  </dd>
-                </div>
-              )}
-              {verifiedBy && (
-                <div>
-                  <dt className="text-xs text-gray-03">
-                    {t("editor.metadataDetails.verifiedBy")}
-                  </dt>
-                  <dd className="text-sm text-gray-01 break-words">
-                    {verifiedBy}
-                  </dd>
-                </div>
-              )}
-            </dl>
-          </section>
-        )}
+          <FileText className="w-3.5 h-3.5" />
+        </a>
+      )}
+      <Modal
+        trigger={
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-full text-blue-03 hover:bg-gray-03/40 h-6 w-6"
+            aria-label={
+              triggerAriaLabel ??
+              t("editor.metadataDetails.openFieldMetadata", {
+                field: fieldLabel,
+              })
+            }
+            title={t("editor.metadataDetails.viewDetails")}
+          >
+            <Info className="w-3.5 h-3.5" />
+          </button>
+        }
+        size="xl"
+        title={t("editor.metadataDetails.titleWithField", {
+          field: fieldLabel,
+        })}
+        description={t("editor.metadataDetails.description")}
+      >
+        <div className="grid gap-4 max-h-[70vh] overflow-auto pr-1">
+          {(updatedAt || verifiedBy) && (
+            <section className="rounded-lg bg-gray-05 p-3">
+              <div className="text-xs font-medium text-gray-02 mb-2">
+                {t("editor.metadataDetails.sectionDetails")}
+              </div>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {updatedAt && (
+                  <div>
+                    <dt className="text-xs text-gray-03">
+                      {t("editor.metadataDetails.updated")}
+                    </dt>
+                    <dd className="text-sm text-gray-01 break-words">
+                      {updatedAt}
+                    </dd>
+                  </div>
+                )}
+                {verifiedBy && (
+                  <div>
+                    <dt className="text-xs text-gray-03">
+                      {t("editor.metadataDetails.verifiedBy")}
+                    </dt>
+                    <dd className="text-sm text-gray-01 break-words">
+                      {verifiedBy}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </section>
+          )}
 
-        {source && (
-          <section className="rounded-lg bg-gray-05 p-3">
-            <div className="text-xs font-medium text-gray-02 mb-1">
-              {t("editor.metadataDetails.source")}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <a
-                href={source}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-blue-02 underline break-all"
-              >
-                {source}
-              </a>
-              <Button asChild size="sm" variant="secondary" className="min-w-0">
-                <a href={source} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  {t("editor.metadataDetails.openSource")}
+          {(sourceReference || sourcePageUrl) && (
+            <section className="rounded-lg bg-gray-05 p-3">
+              <div className="text-xs font-medium text-gray-02 mb-2">
+                {t("editor.metadataDetails.sourcePage")}
+              </div>
+              <dl className="grid gap-3">
+                {sourceReference && (
+                  <div>
+                    <dt className="text-xs text-gray-03">
+                      {t("editor.metadataDetails.sourceReference")}
+                    </dt>
+                    <dd className="text-sm text-gray-01 break-words">
+                      {sourceReference}
+                    </dd>
+                  </div>
+                )}
+                {sourcePageUrl && (
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a
+                        href={sourcePageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-02 underline break-all"
+                      >
+                        {sourcePageUrl}
+                      </a>
+                      <Button
+                        asChild
+                        size="sm"
+                        variant="secondary"
+                        className="min-w-0"
+                      >
+                        <a
+                          href={sourcePageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          {t("editor.metadataDetails.openSourcePage")}
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </dl>
+            </section>
+          )}
+
+          {source && (
+            <section className="rounded-lg bg-gray-05 p-3">
+              <div className="text-xs font-medium text-gray-02 mb-1">
+                {t("editor.metadataDetails.source")}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={source}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-02 underline break-all"
+                >
+                  {source}
                 </a>
-              </Button>
-            </div>
-          </section>
-        )}
+                <Button
+                  asChild
+                  size="sm"
+                  variant="secondary"
+                  className="min-w-0"
+                >
+                  <a href={source} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    {t("editor.metadataDetails.openSource")}
+                  </a>
+                </Button>
+              </div>
+            </section>
+          )}
 
-        {comment && (
-          <section className="rounded-lg bg-gray-05 p-3">
-            <div className="text-xs font-medium text-gray-02 mb-1">
-              {t("editor.metadataDetails.comment")}
-            </div>
-            <div className="text-sm text-gray-01 whitespace-pre-wrap break-words">
-              {comment}
-            </div>
-          </section>
-        )}
-      </div>
-    </Modal>
+          {comment && (
+            <section className="rounded-lg bg-gray-05 p-3">
+              <div className="text-xs font-medium text-gray-02 mb-1">
+                {t("editor.metadataDetails.comment")}
+              </div>
+              <div className="text-sm text-gray-01 whitespace-pre-wrap break-words">
+                {comment}
+              </div>
+            </section>
+          )}
+        </div>
+      </Modal>
+    </span>
   );
 }
