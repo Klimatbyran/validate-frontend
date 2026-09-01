@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ChevronsDown, ChevronsUp, Loader2, RefreshCw } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { StatusPill } from "@/components/StatusPill";
@@ -235,6 +236,7 @@ function PlanRow({ plan, onStepClick, onPdfJobClick }: PlanRowProps) {
 
 export function ClimatePipelineTab() {
   const { t } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { plans, isLoading, error, refresh } = useClimatePipelinePlans();
   // Looked up live from `plans` (rather than storing the plan object itself)
   // so an already-open dialog picks up polling/rerun updates instead of
@@ -248,6 +250,17 @@ export function ClimatePipelineTab() {
   // not climate-plans-pipeline's own PipelineStepRun rows, so they reuse
   // jobbstatus's JobDetailsDialog directly instead of StepResultDialog.
   const [pdfJob, setPdfJob] = useState<QueueJob | null>(null);
+
+  useEffect(() => {
+    const planId = searchParams.get("planId");
+    const step = searchParams.get("step");
+    if (!planId || !step) return;
+    if (plans.length === 0) return;
+    if (!plans.some((p) => p.id === planId)) return;
+    setDialogPlanId(planId);
+    setDialogStep(step);
+    setDialogRunId(null);
+  }, [searchParams, plans]);
 
   const handleStepClick = (
     plan: ClimatePipelinePlan,
@@ -321,6 +334,12 @@ export function ClimatePipelineTab() {
             setDialogPlanId(null);
             setDialogStep(null);
             setDialogRunId(null);
+            if (searchParams.has("planId") || searchParams.has("step")) {
+              const next = new URLSearchParams(searchParams);
+              next.delete("planId");
+              next.delete("step");
+              setSearchParams(next, { replace: true });
+            }
           }
         }}
         onRerun={refresh}

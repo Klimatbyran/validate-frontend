@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
+import type { PipelineReview } from "./usePipelineReviews";
 
 export interface Commitment {
   id: string;
@@ -70,6 +71,7 @@ export interface ClimatePlanDetail {
   status: string;
   commitments: Commitment[];
   extractedMeasures: ExtractedMeasure[];
+  reviews?: PipelineReview[];
 }
 
 export function useClimatePlanDetail(planId: string | null) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, ChevronsDown, ChevronsUp, RotateCw } from "lucide-react";
 import { Modal } from "@/ui/modal";
 import { Button } from "@/ui/button";
@@ -21,6 +21,12 @@ import {
   type ExtractedMeasure,
   type ClimatePlanDetail,
 } from "../hooks/useClimatePlanDetail";
+import {
+  indexReviewsByEntity,
+  reviewKey,
+  type PipelineReview,
+} from "../hooks/usePipelineReviews";
+import { ReviewControls } from "./ReviewControls";
 
 /** Count of items shown in each step's dialog — same filters the dialog
  * content itself applies, so the title badge always matches what's below. */
@@ -30,8 +36,6 @@ function getStepItemCount(
 ): number | null {
   switch (step) {
     case "extractCommitments":
-      // Table shows every commitment (review/audit view of what got
-      // filtered and why), so the count matches that, not the pass count.
       return detail.commitments.length;
     case "filterCommitmentsClimate":
       return detail.commitments.length;
@@ -54,10 +58,21 @@ function getStepItemCount(
   }
 }
 
+type ReviewLookup = Map<string, PipelineReview>;
+
+interface ReviewContext {
+  planId: string;
+  step: string;
+  reviewsByEntity: ReviewLookup;
+  onReviewChanged: (review: PipelineReview | null, key: string) => void;
+}
+
 function TransitionElementsView({
   measures,
+  reviewCtx,
 }: {
   measures: ExtractedMeasure[];
+  reviewCtx: ReviewContext;
 }) {
   const withShifts = measures.filter(
     (m) => m.score && m.score.activityShifts.length > 0,
@@ -74,42 +89,82 @@ function TransitionElementsView({
           <p className="text-sm text-gray-01">
             <WrappedText text={m.measureText} width="max-w-2xl" />
           </p>
-          {m.score!.activityShifts.map((shift) => (
-            <div
-              key={shift.id}
-              className="pl-3 border-l-2 border-gray-03 space-y-1"
-            >
-              <p className="text-xs text-gray-02">
-                <span className="font-medium">{shift.type}</span>:{" "}
-                {shift.shiftFrom} → {shift.shiftTo}{" "}
-                <span className="text-gray-02/70">(need: {shift.need})</span>
-              </p>
-              {shift.transitionElementMatches.length === 0 ? (
-                <p className="text-xs text-gray-02 italic">No matches</p>
-              ) : (
-                <ul className="text-xs space-y-0.5">
-                  {shift.transitionElementMatches.map((match) => (
-                    <li key={match.stableId} className="text-gray-01">
-                      <span
-                        className={
-                          match.matchConfidence === "high"
-                            ? "text-green-03"
-                            : match.matchConfidence === "mid"
-                              ? "text-blue-03"
-                              : "text-gray-02"
-                        }
-                      >
-                        {match.shortLabel}
-                      </span>{" "}
-                      <span className="text-gray-02">
-                        ({match.matchConfidence}, {match.score.toFixed(2)})
+          {m.score!.activityShifts.map((shift) => {
+            const entityKey = reviewKey(
+              reviewCtx.step,
+              "activityShift",
+              shift.id,
+            );
+            const snapshot = {
+              activity: shift.activity,
+              shiftFrom: shift.shiftFrom,
+              shiftTo: shift.shiftTo,
+              need: shift.need,
+              type: shift.type,
+              transitionElementMatches: shift.transitionElementMatches,
+            };
+            return (
+              <div
+                key={shift.id}
+                className="pl-3 border-l-2 border-gray-03 space-y-1"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-xs text-gray-02">
+                      <span className="font-medium">{shift.type}</span>:{" "}
+                      {shift.shiftFrom} → {shift.shiftTo}{" "}
+                      <span className="text-gray-02/70">
+                        (need: {shift.need})
                       </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ))}
+                    </p>
+                    {shift.transitionElementMatches.length === 0 ? (
+                      <p className="text-xs text-gray-02 italic">No matches</p>
+                    ) : (
+                      <ul className="text-xs space-y-0.5">
+                        {shift.transitionElementMatches.map((match) => (
+                          <li key={match.stableId} className="text-gray-01">
+                            <span
+                              className={
+                                match.matchConfidence === "high"
+                                  ? "text-green-03"
+                                  : match.matchConfidence === "mid"
+                                    ? "text-blue-03"
+                                    : "text-gray-02"
+                              }
+                            >
+                              {match.shortLabel}
+                            </span>{" "}
+                            <span className="text-gray-02">
+                              ({match.matchConfidence}, {match.score.toFixed(2)}
+                              )
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <ReviewControls
+                    planId={reviewCtx.planId}
+                    step={reviewCtx.step}
+                    entityType="activityShift"
+                    entityId={shift.id}
+                    reviewedSnapshot={snapshot}
+                    review={reviewCtx.reviewsByEntity.get(entityKey)}
+                    defaultSuggestedValue={{
+                      keepStableIds: shift.transitionElementMatches.map(
+                        (match) => match.stableId,
+                      ),
+                      removeStableIds: [] as string[],
+                      add: [] as string[],
+                    }}
+                    onChanged={(next) =>
+                      reviewCtx.onReviewChanged(next, entityKey)
+                    }
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       ))}
     </div>
@@ -247,12 +302,60 @@ function WrappedText({
   );
 }
 
+function CommitmentReviewCell({
+  commitment,
+  columns,
+  reviewCtx,
+}: {
+  commitment: Commitment;
+  columns: "extract" | "climate" | "actionable";
+  reviewCtx: ReviewContext;
+}) {
+  const entityKey = reviewKey(reviewCtx.step, "commitment", commitment.id);
+  const snapshot = {
+    stableId: commitment.stableId,
+    text: commitment.text,
+    climateRelevant: commitment.climateRelevant,
+    adaptation: commitment.adaptation,
+    climateFilterReason: commitment.climateFilterReason,
+    actionable: commitment.actionable,
+    actionableReason: commitment.actionableReason,
+    unverified: commitment.unverified,
+    section: commitment.section,
+    type: commitment.type,
+  };
+  const defaultSuggestedValue =
+    columns === "climate"
+      ? {
+          climateRelevant: !(commitment.climateRelevant ?? false),
+          adaptation: commitment.adaptation,
+        }
+      : columns === "actionable"
+        ? { actionable: !(commitment.actionable ?? false) }
+        : { text: commitment.text, shouldExist: true };
+
+  return (
+    <ReviewControls
+      planId={reviewCtx.planId}
+      step={reviewCtx.step}
+      entityType="commitment"
+      entityId={commitment.id}
+      reviewedSnapshot={snapshot}
+      review={reviewCtx.reviewsByEntity.get(entityKey)}
+      defaultSuggestedValue={defaultSuggestedValue}
+      onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
+    />
+  );
+}
+
 function CommitmentsTable({
   commitments,
   columns,
+  reviewCtx,
 }: {
   commitments: Commitment[];
   columns: "extract" | "climate" | "actionable" | "similar" | "themes";
+  reviewCtx: ReviewContext;
 }) {
   if (commitments.length === 0) {
     return <p className="text-sm text-gray-02">No commitments yet.</p>;
@@ -276,18 +379,96 @@ function CommitmentsTable({
           {groups.size} duplicate group(s), {singletons.length} unique
           commitment(s)
         </p>
-        {[...groups.entries()].map(([groupId, members]) => (
-          <div key={groupId} className="bg-gray-03/30 rounded-lg p-3 space-y-1">
-            {members.map((c) => (
-              <p key={c.id} className="text-sm text-gray-01">
-                <span className="text-gray-02 font-mono text-xs mr-2">
-                  {c.stableId}
-                </span>
-                {c.text}
-              </p>
-            ))}
+        {[...groups.entries()].map(([groupId, members]) => {
+          const entityKey = reviewKey(reviewCtx.step, "similarGroup", groupId);
+          const snapshot = {
+            similarGroupId: groupId,
+            members: members.map((m) => ({
+              id: m.id,
+              stableId: m.stableId,
+              text: m.text,
+            })),
+          };
+          return (
+            <div
+              key={groupId}
+              className="bg-gray-03/30 rounded-lg p-3 space-y-1"
+            >
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <p className="text-xs text-gray-02 font-mono">{groupId}</p>
+                <ReviewControls
+                  planId={reviewCtx.planId}
+                  step={reviewCtx.step}
+                  entityType="similarGroup"
+                  entityId={groupId}
+                  reviewedSnapshot={snapshot}
+                  review={reviewCtx.reviewsByEntity.get(entityKey)}
+                  defaultSuggestedValue={{
+                    action: "split",
+                    memberStableIds: members.map((m) => m.stableId),
+                  }}
+                  onChanged={(next) =>
+                    reviewCtx.onReviewChanged(next, entityKey)
+                  }
+                />
+              </div>
+              {members.map((c) => (
+                <p key={c.id} className="text-sm text-gray-01">
+                  <span className="text-gray-02 font-mono text-xs mr-2">
+                    {c.stableId}
+                  </span>
+                  {c.text}
+                </p>
+              ))}
+            </div>
+          );
+        })}
+        {singletons.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs text-gray-02">Unique commitments</p>
+            {singletons.map((c) => {
+              const entityKey = reviewKey(
+                reviewCtx.step,
+                "similarGroup",
+                c.stableId,
+              );
+              return (
+                <div
+                  key={c.id}
+                  className="flex items-start justify-between gap-2 bg-gray-03/20 rounded-lg p-2"
+                >
+                  <p className="text-sm text-gray-01">
+                    <span className="text-gray-02 font-mono text-xs mr-2">
+                      {c.stableId}
+                    </span>
+                    {c.text}
+                  </p>
+                  <ReviewControls
+                    planId={reviewCtx.planId}
+                    step={reviewCtx.step}
+                    entityType="similarGroup"
+                    entityId={c.stableId}
+                    reviewedSnapshot={{
+                      similarGroupId: null,
+                      members: [
+                        { id: c.id, stableId: c.stableId, text: c.text },
+                      ],
+                    }}
+                    review={reviewCtx.reviewsByEntity.get(entityKey)}
+                    defaultSuggestedValue={{
+                      action: "merge",
+                      memberStableIds: [c.stableId],
+                      targetGroupId: "",
+                    }}
+                    onChanged={(next) =>
+                      reviewCtx.onReviewChanged(next, entityKey)
+                    }
+                  />
+                </div>
+              );
+            })}
           </div>
-        ))}
+        )}
       </div>
     );
   }
@@ -302,23 +483,47 @@ function CommitmentsTable({
     }
     return (
       <div className="space-y-4">
-        {[...byTheme.entries()].map(([theme, members]) => (
-          <div key={theme}>
-            <p className="text-xs font-semibold text-gray-02 uppercase tracking-wide mb-1">
-              {theme} ({members.length})
-            </p>
-            <div className="bg-gray-03/30 rounded-lg p-3 space-y-1">
-              {members.map((c) => (
-                <p key={c.id} className="text-sm text-gray-01">
-                  <span className="text-gray-02 font-mono text-xs mr-2">
-                    {c.stableId}
-                  </span>
-                  {c.text}
+        {[...byTheme.entries()].map(([theme, members]) => {
+          const entityKey = reviewKey(reviewCtx.step, "theme", theme);
+          return (
+            <div key={theme}>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <p className="text-xs font-semibold text-gray-02 uppercase tracking-wide">
+                  {theme} ({members.length})
                 </p>
-              ))}
+                <ReviewControls
+                  planId={reviewCtx.planId}
+                  step={reviewCtx.step}
+                  entityType="theme"
+                  entityId={theme}
+                  reviewedSnapshot={{
+                    theme,
+                    members: members.map((m) => ({
+                      id: m.id,
+                      stableId: m.stableId,
+                      text: m.text,
+                    })),
+                  }}
+                  review={reviewCtx.reviewsByEntity.get(entityKey)}
+                  defaultSuggestedValue={{ theme }}
+                  onChanged={(next) =>
+                    reviewCtx.onReviewChanged(next, entityKey)
+                  }
+                />
+              </div>
+              <div className="bg-gray-03/30 rounded-lg p-3 space-y-1">
+                {members.map((c) => (
+                  <p key={c.id} className="text-sm text-gray-01">
+                    <span className="text-gray-02 font-mono text-xs mr-2">
+                      {c.stableId}
+                    </span>
+                    {c.text}
+                  </p>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   }
@@ -350,6 +555,7 @@ function CommitmentsTable({
                 <th className="px-3 py-2">Unverified</th>
               </>
             )}
+            <th className="px-3 py-2 text-right">QA</th>
           </tr>
         </DataTableHead>
         <DataTableBody>
@@ -401,6 +607,13 @@ function CommitmentsTable({
                   </td>
                 </>
               )}
+              <td className="px-3 py-2 align-top">
+                <CommitmentReviewCell
+                  commitment={c}
+                  columns={columns}
+                  reviewCtx={reviewCtx}
+                />
+              </td>
             </tr>
           ))}
         </DataTableBody>
@@ -412,9 +625,11 @@ function CommitmentsTable({
 function MeasuresTable({
   measures,
   columns,
+  reviewCtx,
 }: {
   measures: ExtractedMeasure[];
   columns: "extract" | "score";
+  reviewCtx: ReviewContext;
 }) {
   if (measures.length === 0) {
     return <p className="text-sm text-gray-02">No measures yet.</p>;
@@ -433,34 +648,64 @@ function MeasuresTable({
                 <th className="px-3 py-2">Type</th>
               </>
             )}
+            <th className="px-3 py-2 text-right">QA</th>
           </tr>
         </DataTableHead>
         <DataTableBody>
-          {measures.map((m) => (
-            <tr key={m.id}>
-              <td className="px-3 py-2">
-                <WrappedText text={m.measureText} />
-              </td>
-              {columns === "extract" && (
-                <td className="px-3 py-2 text-xs text-gray-02">
-                  {m.climateRelevanceScore}
+          {measures.map((m) => {
+            const entityKey = reviewKey(reviewCtx.step, "measure", m.id);
+            const snapshot =
+              columns === "extract"
+                ? {
+                    measureText: m.measureText,
+                    climateRelevanceScore: m.climateRelevanceScore,
+                  }
+                : {
+                    measureText: m.measureText,
+                    activityShiftScore: m.score?.activityShiftScore ?? null,
+                    interventionScore: m.score?.interventionScore ?? null,
+                    interventionType: m.score?.interventionType ?? null,
+                  };
+            return (
+              <tr key={m.id}>
+                <td className="px-3 py-2">
+                  <WrappedText text={m.measureText} />
                 </td>
-              )}
-              {columns === "score" && (
-                <>
+                {columns === "extract" && (
                   <td className="px-3 py-2 text-xs text-gray-02">
-                    {m.score?.activityShiftScore ?? "—"}
+                    {m.climateRelevanceScore}
                   </td>
-                  <td className="px-3 py-2 text-xs text-gray-02">
-                    {m.score?.interventionScore ?? "—"}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-gray-02">
-                    {m.score?.interventionType ?? "—"}
-                  </td>
-                </>
-              )}
-            </tr>
-          ))}
+                )}
+                {columns === "score" && (
+                  <>
+                    <td className="px-3 py-2 text-xs text-gray-02">
+                      {m.score?.activityShiftScore ?? "—"}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-02">
+                      {m.score?.interventionScore ?? "—"}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-02">
+                      {m.score?.interventionType ?? "—"}
+                    </td>
+                  </>
+                )}
+                <td className="px-3 py-2 align-top">
+                  <ReviewControls
+                    planId={reviewCtx.planId}
+                    step={reviewCtx.step}
+                    entityType="measure"
+                    entityId={m.id}
+                    reviewedSnapshot={snapshot}
+                    review={reviewCtx.reviewsByEntity.get(entityKey)}
+                    defaultSuggestedValue={snapshot}
+                    onChanged={(next) =>
+                      reviewCtx.onReviewChanged(next, entityKey)
+                    }
+                  />
+                </td>
+              </tr>
+            );
+          })}
         </DataTableBody>
       </DataTable>
     </DataTableShell>
@@ -478,13 +723,23 @@ export function StepResultDialog({
   const { detail, isLoading, error, refresh } = useClimatePlanDetail(
     open ? (plan?.id ?? null) : null,
   );
+  const [localReviews, setLocalReviews] = useState<
+    Map<string, PipelineReview> | null
+  >(null);
+
+  const reviewsByEntity = useMemo(() => {
+    if (localReviews) return localReviews;
+    return indexReviewsByEntity(detail?.reviews ?? []);
+  }, [detail?.reviews, localReviews]);
+
+  // Reset local overlay when the dialog reloads plan detail
+  const detailReviewsKey = detail?.reviews?.map((r) => r.id).join(",") ?? "";
+  useEffect(() => {
+    setLocalReviews(null);
+  }, [detail?.id, detailReviewsKey]);
 
   if (!plan || !step) return null;
 
-  // pipelineSteps is ordered newest-first, so the first match for this step
-  // is its latest run — everything after that is history. When opened from
-  // a previous-run pill (runId set), show that specific run instead of
-  // always defaulting to the latest.
   const stepRuns = plan.pipelineSteps.filter((s) => s.step === step);
   const run = runId
     ? (stepRuns.find((s) => s.runId === runId) ?? stepRuns[0])
@@ -492,6 +747,20 @@ export function StepResultDialog({
   const previousRuns = stepRuns.slice(1);
   const itemCount = detail ? getStepItemCount(step, detail) : null;
   const viewingPastRun = Boolean(runId) && run !== stepRuns[0];
+
+  const reviewCtx: ReviewContext = {
+    planId: plan.id,
+    step,
+    reviewsByEntity,
+    onReviewChanged: (next, key) => {
+      setLocalReviews((prev) => {
+        const base = new Map(prev ?? reviewsByEntity);
+        if (next) base.set(key, next);
+        else base.delete(key);
+        return base;
+      });
+    },
+  };
 
   const content = (() => {
     if (isLoading || !detail) {
@@ -506,28 +775,49 @@ export function StepResultDialog({
     }
 
     switch (step) {
-      case "extractMunicipality":
+      case "extractMunicipality": {
+        const entityKey = reviewKey(step, "municipality", plan.id);
+        const snapshot = {
+          extractedMunicipalityName: detail.extractedMunicipalityName,
+          approvedMunicipalityName: detail.municipality?.name ?? null,
+        };
         return (
-          <div className="space-y-1 text-sm">
-            <p>
-              <span className="text-gray-02">Extracted name: </span>
-              <span className="text-gray-01">
-                {detail.extractedMunicipalityName ?? "—"}
-              </span>
-            </p>
-            <p>
-              <span className="text-gray-02">Approved municipality: </span>
-              <span className="text-gray-01">
-                {detail.municipality?.name ?? "(not yet approved)"}
-              </span>
-            </p>
+          <div className="flex items-start justify-between gap-4 text-sm">
+            <div className="space-y-1">
+              <p>
+                <span className="text-gray-02">Extracted name: </span>
+                <span className="text-gray-01">
+                  {detail.extractedMunicipalityName ?? "—"}
+                </span>
+              </p>
+              <p>
+                <span className="text-gray-02">Approved municipality: </span>
+                <span className="text-gray-01">
+                  {detail.municipality?.name ?? "(not yet approved)"}
+                </span>
+              </p>
+            </div>
+            <ReviewControls
+              planId={plan.id}
+              step={step}
+              entityType="municipality"
+              entityId={plan.id}
+              reviewedSnapshot={snapshot}
+              review={reviewsByEntity.get(entityKey)}
+              defaultSuggestedValue={{
+                municipalityName: detail.extractedMunicipalityName ?? "",
+              }}
+              onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
+            />
           </div>
         );
+      }
       case "extractCommitments":
         return (
           <CommitmentsTable
             commitments={detail.commitments}
             columns="extract"
+            reviewCtx={reviewCtx}
           />
         );
       case "filterCommitmentsClimate":
@@ -535,6 +825,7 @@ export function StepResultDialog({
           <CommitmentsTable
             commitments={detail.commitments}
             columns="climate"
+            reviewCtx={reviewCtx}
           />
         );
       case "filterCommitmentsActionable":
@@ -542,6 +833,7 @@ export function StepResultDialog({
           <CommitmentsTable
             commitments={detail.commitments.filter((c) => c.climateRelevant)}
             columns="actionable"
+            reviewCtx={reviewCtx}
           />
         );
       case "groupCommitmentsSimilar":
@@ -551,6 +843,7 @@ export function StepResultDialog({
               (c) => c.climateRelevant && c.actionable,
             )}
             columns="similar"
+            reviewCtx={reviewCtx}
           />
         );
       case "groupCommitmentsThemes":
@@ -560,6 +853,7 @@ export function StepResultDialog({
               (c) => c.climateRelevant && c.actionable,
             )}
             columns="themes"
+            reviewCtx={reviewCtx}
           />
         );
       case "extractMeasures":
@@ -567,14 +861,24 @@ export function StepResultDialog({
           <MeasuresTable
             measures={detail.extractedMeasures}
             columns="extract"
+            reviewCtx={reviewCtx}
           />
         );
       case "scoreMeasures":
         return (
-          <MeasuresTable measures={detail.extractedMeasures} columns="score" />
+          <MeasuresTable
+            measures={detail.extractedMeasures}
+            columns="score"
+            reviewCtx={reviewCtx}
+          />
         );
       case "matchTransitionElements":
-        return <TransitionElementsView measures={detail.extractedMeasures} />;
+        return (
+          <TransitionElementsView
+            measures={detail.extractedMeasures}
+            reviewCtx={reviewCtx}
+          />
+        );
       default:
         return (
           <p className="text-sm text-gray-02">No details for this step.</p>
@@ -628,6 +932,11 @@ export function StepResultDialog({
                 content below always reflects the current data.
               </span>
             )}
+            <span className="block text-xs text-gray-02 mt-1">
+              QA marks are an overlay — they do not change live pipeline
+              outputs. Use the review board to export feedback for improving
+              the pipeline.
+            </span>
             <PreviousStepRuns runs={previousRuns} />
           </div>
         ) : (

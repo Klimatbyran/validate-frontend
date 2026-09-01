@@ -14,6 +14,7 @@ describe("pipelineModeForTab", () => {
   it("maps climate-plans tabs", () => {
     expect(pipelineModeForTab("climate-plans")).toBe("climate-plans");
     expect(pipelineModeForTab("climate-pipeline")).toBe("climate-plans");
+    expect(pipelineModeForTab("climate-qa-reviews")).toBe("climate-plans");
   });
 
   it("returns null for universal tabs", () => {
