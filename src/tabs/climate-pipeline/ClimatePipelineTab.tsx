@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ChevronsDown, ChevronsUp, Loader2, RefreshCw } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
@@ -251,17 +251,35 @@ export function ClimatePipelineTab() {
   // not climate-plans-pipeline's own PipelineStepRun rows, so they reuse
   // jobbstatus's JobDetailsDialog directly instead of StepResultDialog.
   const [pdfJob, setPdfJob] = useState<QueueJob | null>(null);
+  const appliedDeepLinkRef = useRef<string | null>(null);
 
+  // Apply ?planId=&step= once per deep-link value. Do not re-apply on every
+  // plans poll (5s), or the open dialog gets yanked back to the URL step.
   useEffect(() => {
     const planId = searchParams.get("planId");
     const step = searchParams.get("step");
-    if (!planId || !step) return;
+    if (!planId || !step) {
+      appliedDeepLinkRef.current = null;
+      return;
+    }
+    const key = `${planId}::${step}`;
+    if (appliedDeepLinkRef.current === key) return;
     if (plans.length === 0) return;
     if (!plans.some((p) => p.id === planId)) return;
+    appliedDeepLinkRef.current = key;
     setDialogPlanId(planId);
     setDialogStep(step);
     setDialogRunId(null);
   }, [searchParams, plans]);
+
+  const clearDeepLinkParams = () => {
+    if (!searchParams.has("planId") && !searchParams.has("step")) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete("planId");
+    next.delete("step");
+    setSearchParams(next, { replace: true });
+    appliedDeepLinkRef.current = null;
+  };
 
   const handleStepClick = (
     plan: ClimatePipelinePlan,
@@ -271,6 +289,7 @@ export function ClimatePipelineTab() {
     setDialogPlanId(plan.id);
     setDialogStep(step);
     setDialogRunId(runId ?? null);
+    clearDeepLinkParams();
   };
 
   return (
@@ -338,12 +357,7 @@ export function ClimatePipelineTab() {
             setDialogPlanId(null);
             setDialogStep(null);
             setDialogRunId(null);
-            if (searchParams.has("planId") || searchParams.has("step")) {
-              const next = new URLSearchParams(searchParams);
-              next.delete("planId");
-              next.delete("step");
-              setSearchParams(next, { replace: true });
-            }
+            clearDeepLinkParams();
           }
         }}
         onRerun={refresh}

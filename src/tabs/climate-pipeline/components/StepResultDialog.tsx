@@ -73,6 +73,27 @@ interface ReviewContext {
   onReviewChanged: (review: PipelineReview | null, key: string) => void;
 }
 
+/** Survive extractCommitments delete+recreate by keying on stableId. */
+function commitmentEntityId(commitment: Commitment): string {
+  return commitment.stableId;
+}
+
+/** Survive extractMeasures recreate when measure text is unchanged. */
+function measureEntityId(measure: ExtractedMeasure): string {
+  let hash = 0;
+  for (let i = 0; i < measure.measureText.length; i++) {
+    hash = (hash * 31 + measure.measureText.charCodeAt(i)) | 0;
+  }
+  return `measure:${(hash >>> 0).toString(36)}`;
+}
+
+/** Survive scoreMeasures recreate when shift content is unchanged. */
+function activityShiftEntityKey(shift: ActivityShift): string {
+  return [shift.type, shift.shiftFrom, shift.shiftTo, shift.need, shift.activity]
+    .join("|")
+    .slice(0, 200);
+}
+
 function QaFooter({ children }: { children: React.ReactNode }) {
   return (
     <div className="mt-3 pt-2 border-t border-gray-03/60 min-w-0">
@@ -331,6 +352,7 @@ function TeMatchAddSlots({
                   candidates: addableCandidates,
                   suggestedNew: canUseSuggestedNew ? suggestedNew : null,
                 })}
+                showOk={false}
                 onAdd={onRequestAddSlot}
                 addTitle="Add another TE match"
                 addDisabled={
@@ -358,6 +380,7 @@ function ActivityShiftTeBlock({
 }) {
   const [pendingAddSlotIds, setPendingAddSlotIds] = useState<string[]>([]);
 
+  const shiftKey = activityShiftEntityKey(shift);
   const matchedIds = new Set(
     shift.transitionElementMatches.map((match) => match.stableId),
   );
@@ -378,8 +401,8 @@ function ActivityShiftTeBlock({
       continue;
     }
     if (
-      review.entityId !== shift.id &&
-      !review.entityId.startsWith(`${shift.id}:add:`)
+      review.entityId !== shiftKey &&
+      !review.entityId.startsWith(`${shiftKey}:add:`)
     ) {
       continue;
     }
@@ -440,7 +463,7 @@ function ActivityShiftTeBlock({
       ) : (
         <div className="space-y-2">
           {shift.transitionElementMatches.map((match) => {
-            const entityId = `${shift.id}:${match.stableId}`;
+            const entityId = `${shiftKey}:${match.stableId}`;
             const entityKey = reviewKey(reviewCtx.step, "teMatch", entityId);
             return (
               <div
@@ -463,7 +486,7 @@ function ActivityShiftTeBlock({
                     entityType="teMatch"
                     entityId={entityId}
                     reviewedSnapshot={{
-                      activityShiftId: shift.id,
+                      activityShiftId: shiftKey,
                       match,
                       candidates: allCandidates,
                     }}
@@ -494,7 +517,7 @@ function ActivityShiftTeBlock({
         </div>
       )}
       <TeMatchAddSlots
-        shiftId={shift.id}
+        shiftId={shiftKey}
         matchedIds={matchedIds}
         allCandidates={allCandidates}
         suggestedNew={suggestedNew}
@@ -668,7 +691,7 @@ function CommitmentReviewControls({
   columns: "extract" | "climate" | "actionable";
   reviewCtx: ReviewContext;
 }) {
-  const entityKey = reviewKey(reviewCtx.step, "commitment", commitment.id);
+  const entityKey = reviewKey(reviewCtx.step, "commitment", commitmentEntityId(commitment));
   const snapshot = {
     stableId: commitment.stableId,
     text: commitment.text,
@@ -712,7 +735,7 @@ function CommitmentReviewControls({
       planId={reviewCtx.planId}
       step={reviewCtx.step}
       entityType="commitment"
-      entityId={commitment.id}
+      entityId={commitmentEntityId(commitment)}
       reviewedSnapshot={snapshot}
       review={reviewCtx.reviewsByEntity.get(entityKey)}
       defaultSuggestedValue={defaultSuggestedValue}
@@ -749,15 +772,12 @@ function CommitmentsList({
     }
     const groupOptions = [...groups.keys()];
 
-    const renderCommitment = (c: Commitment) => {
-      const entityKey = reviewKey(reviewCtx.step, "commitment", c.id);
+    const renderCommitmentRow = (c: Commitment) => {
+      const entityKey = reviewKey(reviewCtx.step, "commitment", commitmentEntityId(c));
       return (
-        <div
-          key={c.id}
-          className="rounded-md border border-gray-03/40 bg-gray-05/30 p-2 space-y-2 min-w-0"
-        >
+        <li key={c.id} className="min-w-0 space-y-1.5 px-3 py-2.5">
           <p className="text-sm text-gray-01 break-words">
-            <span className="text-gray-02 font-mono text-xs mr-2">
+            <span className="mr-2 font-mono text-[11px] text-gray-02">
               {c.stableId}
             </span>
             {c.text}
@@ -767,7 +787,7 @@ function CommitmentsList({
               planId={reviewCtx.planId}
               step={reviewCtx.step}
               entityType="commitment"
-              entityId={c.id}
+              entityId={commitmentEntityId(c)}
               reviewedSnapshot={{
                 id: c.id,
                 stableId: c.stableId,
@@ -783,33 +803,54 @@ function CommitmentsList({
               onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
             />
           </QaFooter>
-        </div>
+        </li>
       );
     };
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         <p className="text-xs text-gray-02">
           {groups.size} duplicate group(s), {singletons.length} unique
-          commitment(s) — QA is per commitment
+          commitment(s) — QA is still per commitment
         </p>
-        {[...groups.entries()].map(([groupId, members]) => (
-          <div key={groupId} className="space-y-2 min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <MetaChip label="Group" tone="type">
-                duplicate
-              </MetaChip>
-              <MetaChip label="Members">{members.length}</MetaChip>
-            </div>
-            <p className="text-xs text-gray-02 font-mono break-all">{groupId}</p>
-            <div className="space-y-2">{members.map(renderCommitment)}</div>
-          </div>
-        ))}
+        {[...groups.entries()]
+          .sort(([, a], [, b]) => b.length - a.length)
+          .map(([groupId, members]) => (
+            <section
+              key={groupId}
+              className="min-w-0 overflow-hidden rounded-lg border border-gray-03/60 bg-gray-03/15"
+            >
+              <header className="flex flex-wrap items-center gap-2 border-b border-gray-03/50 bg-gray-03/40 px-3 py-2">
+                <span className="text-sm font-semibold text-gray-01">
+                  Duplicate group
+                </span>
+                <span className="rounded-full bg-gray-04/60 px-2 py-0.5 text-[11px] tabular-nums text-gray-02">
+                  {members.length}
+                </span>
+                <span
+                  className="max-w-full truncate font-mono text-[10px] text-gray-02"
+                  title={groupId}
+                >
+                  {groupId}
+                </span>
+              </header>
+              <ul className="divide-y divide-gray-03/40">
+                {members.map(renderCommitmentRow)}
+              </ul>
+            </section>
+          ))}
         {singletons.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs text-gray-02">Unique commitments</p>
-            {singletons.map(renderCommitment)}
-          </div>
+          <section className="min-w-0 overflow-hidden rounded-lg border border-gray-03/60 bg-gray-03/15">
+            <header className="flex flex-wrap items-center gap-2 border-b border-gray-03/50 bg-gray-03/40 px-3 py-2">
+              <span className="text-sm font-semibold text-gray-01">Unique</span>
+              <span className="rounded-full bg-gray-04/60 px-2 py-0.5 text-[11px] tabular-nums text-gray-02">
+                {singletons.length}
+              </span>
+            </header>
+            <ul className="divide-y divide-gray-03/40">
+              {singletons.map(renderCommitmentRow)}
+            </ul>
+          </section>
         )}
       </div>
     );
@@ -872,7 +913,7 @@ function CommitmentsList({
                           planId={reviewCtx.planId}
                           step={reviewCtx.step}
                           entityType="commitment"
-                          entityId={c.id}
+                          entityId={commitmentEntityId(c)}
                           reviewedSnapshot={{
                             id: c.id,
                             stableId: c.stableId,
@@ -992,7 +1033,7 @@ function MeasuresList({
   return (
     <div className="space-y-3">
       {measures.map((m) => {
-        const entityKey = reviewKey(reviewCtx.step, "measure", m.id);
+        const entityKey = reviewKey(reviewCtx.step, "measure", measureEntityId(m));
         const snapshot =
           columns === "extract"
             ? {
@@ -1040,7 +1081,7 @@ function MeasuresList({
                 planId={reviewCtx.planId}
                 step={reviewCtx.step}
                 entityType="measure"
-                entityId={m.id}
+                entityId={measureEntityId(m)}
                 reviewedSnapshot={snapshot}
                 review={reviewCtx.reviewsByEntity.get(entityKey)}
                 defaultSuggestedValue={snapshot}

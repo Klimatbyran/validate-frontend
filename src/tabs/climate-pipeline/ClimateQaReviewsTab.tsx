@@ -13,6 +13,7 @@ import {
   usePipelineReviewsBoard,
   type ReviewStatus,
 } from "@/tabs/climate-pipeline/hooks/usePipelineReviews";
+import { useClimatePipelinePlans } from "@/tabs/climate-pipeline/hooks/useClimatePipelinePlans";
 import { ReviewingAsField } from "@/tabs/climate-pipeline/components/ReviewingAsField";
 
 const PIPELINE_STEPS = [
@@ -115,19 +116,37 @@ export function ClimateQaReviewsTab() {
   const { t } = useI18n();
   const [status, setStatus] = useState<ReviewStatus | "">("ISSUE");
   const [step, setStep] = useState("");
+  const [planId, setPlanId] = useState("");
   const filters = useMemo(
-    () => ({ status, step, planId: "" }),
-    [status, step],
+    () => ({ status, step, planId }),
+    [status, step, planId],
   );
   const { reviews, total, isLoading, error, refresh } =
     usePipelineReviewsBoard(filters);
+  const { plans } = useClimatePipelinePlans();
+
+  const planOptions = useMemo(
+    () =>
+      [...plans]
+        .map((plan) => ({ id: plan.id, label: planLabel(plan) }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [plans],
+  );
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
   const exportJson = () => {
-    const blob = new Blob([JSON.stringify({ total, reviews }, null, 2)], {
+    const truncated = reviews.length < total;
+    const payload = {
+      total,
+      exportedCount: reviews.length,
+      truncated,
+      filters: { status, step, planId },
+      reviews,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
@@ -136,6 +155,11 @@ export function ClimateQaReviewsTab() {
     anchor.download = `climate-plan-qa-reviews-${new Date().toISOString().slice(0, 10)}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
+    if (truncated) {
+      window.alert(
+        `Export includes ${reviews.length} of ${total} reviews (board limit). Narrow filters to export a complete set.`,
+      );
+    }
   };
 
   return (
@@ -173,6 +197,21 @@ export function ClimateQaReviewsTab() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
+        <label className="text-xs text-gray-02 flex items-center gap-2">
+          {t("climateQaReviews.filterPlan")}
+          <select
+            className="h-9 max-w-[16rem] rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
+            value={planId}
+            onChange={(e) => setPlanId(e.target.value)}
+          >
+            <option value="">{t("climateQaReviews.planAll")}</option>
+            {planOptions.map((plan) => (
+              <option key={plan.id} value={plan.id}>
+                {plan.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="text-xs text-gray-02 flex items-center gap-2">
           {t("climateQaReviews.filterStatus")}
           <select
@@ -259,7 +298,7 @@ export function ClimateQaReviewsTab() {
                     <td className="px-3 py-2 text-sm align-top overflow-hidden">
                       <Link
                         className="text-blue-03 hover:underline break-words"
-                        to={`/climate-pipeline?planId=${review.plan.id}&step=${review.step}`}
+                        to={`/climate-pipeline?planId=${encodeURIComponent(review.plan.id)}&step=${encodeURIComponent(review.step)}`}
                       >
                         {planLabel(review.plan)}
                       </Link>

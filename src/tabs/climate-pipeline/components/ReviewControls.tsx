@@ -10,6 +10,7 @@ import {
   type ReviewStatus,
 } from "../hooks/usePipelineReviews";
 import { resolveQaReviewerForSave } from "../lib/qaReviewerIdentity";
+import { isTeMatchAddSuggestion } from "./structuredSuggestEditors";
 
 export interface SuggestEditorConfig {
   title: string;
@@ -39,6 +40,8 @@ interface ReviewControlsProps {
   addTitle?: string;
   addActive?: boolean;
   addDisabled?: boolean;
+  /** When false, hide the OK/check control (e.g. TE add slots). Default true. */
+  showOk?: boolean;
   /** Open comment/suggest panel on mount (e.g. newly added TE slot). */
   initialPanel?: "comment" | "suggest" | null;
   onChanged: (review: PipelineReview | null) => void;
@@ -70,6 +73,7 @@ export function ReviewControls({
   addTitle = "Add another",
   addActive = false,
   addDisabled = false,
+  showOk = true,
   initialPanel = null,
   onChanged,
 }: ReviewControlsProps) {
@@ -137,21 +141,37 @@ export function ReviewControls({
       await clearReview();
       return;
     }
-    await save({ status: "OK", comment: review?.comment ?? null });
+    // Keep any existing suggestion — marking OK must not wipe SUGGESTED_FIX data.
+    await save({
+      status: "OK",
+      comment: review?.comment ?? null,
+      suggestedValue: review?.suggestedValue,
+    });
   };
 
   const saveComment = async () => {
     const trimmed = comment.trim();
-    if (!trimmed && review?.status === "OK") {
-      await save({ status: "OK", comment: null });
-      return;
-    }
     if (!trimmed) {
-      setError("Comment cannot be empty for an issue");
+      if (!review) {
+        setError("Comment cannot be empty for an issue");
+        return;
+      }
+      // Allow clearing notes on existing reviews without deleting the judgment.
+      await save({
+        status: review.status,
+        comment: null,
+        suggestedValue: review.suggestedValue,
+      });
       return;
     }
+    const nextStatus: ReviewStatus =
+      review?.status === "SUGGESTED_FIX"
+        ? "SUGGESTED_FIX"
+        : review?.status === "OK"
+          ? "OK"
+          : "ISSUE";
     await save({
-      status: review?.status === "SUGGESTED_FIX" ? "SUGGESTED_FIX" : "ISSUE",
+      status: nextStatus,
       comment: trimmed,
       suggestedValue: review?.suggestedValue,
     });
@@ -159,6 +179,14 @@ export function ReviewControls({
 
   const saveSuggestion = async () => {
     if (suggestEditor) {
+      if (
+        isTeMatchAddSuggestion(suggestDraft) &&
+        !suggestDraft.selectedStableId &&
+        !suggestDraft.isSuggestedNew
+      ) {
+        setError("Select a transition element to add");
+        return;
+      }
       await save({
         status: "SUGGESTED_FIX",
         comment: comment.trim() || review?.comment || null,
@@ -204,26 +232,28 @@ export function ReviewControls({
         <span className="text-[10px] uppercase tracking-wide text-gray-02 mr-1">
           QA
         </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "h-7 w-7 p-0",
-            review?.status === "OK"
-              ? "text-green-03 bg-green-03/10"
-              : "text-gray-02 hover:text-green-03",
-          )}
-          title={review?.status === "OK" ? "Clear OK mark" : "Mark as OK"}
-          disabled={isSaving}
-          onClick={markOk}
-        >
-          {isSaving && panel === null ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Check className="w-3.5 h-3.5" />
-          )}
-        </Button>
+        {showOk && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-7 w-7 p-0",
+              review?.status === "OK"
+                ? "text-green-03 bg-green-03/10"
+                : "text-gray-02 hover:text-green-03",
+            )}
+            title={review?.status === "OK" ? "Clear OK mark" : "Mark as OK"}
+            disabled={isSaving}
+            onClick={markOk}
+          >
+            {isSaving && panel === null ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Check className="w-3.5 h-3.5" />
+            )}
+          </Button>
+        )}
         <Button
           type="button"
           variant="ghost"
