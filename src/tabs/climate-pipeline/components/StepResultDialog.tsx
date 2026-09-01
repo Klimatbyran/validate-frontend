@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, ChevronsDown, ChevronsUp, Plus, RotateCw } from "lucide-react";
+import {
+  Loader2,
+  ChevronsDown,
+  ChevronsUp,
+  Plus,
+  RotateCw,
+} from "lucide-react";
 import { Modal } from "@/ui/modal";
 import { Button } from "@/ui/button";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
@@ -89,7 +95,13 @@ function measureEntityId(measure: ExtractedMeasure): string {
 
 /** Survive scoreMeasures recreate when shift content is unchanged. */
 function activityShiftEntityKey(shift: ActivityShift): string {
-  return [shift.type, shift.shiftFrom, shift.shiftTo, shift.need, shift.activity]
+  return [
+    shift.type,
+    shift.shiftFrom,
+    shift.shiftTo,
+    shift.need,
+    shift.activity,
+  ]
     .join("|")
     .slice(0, 200);
 }
@@ -190,8 +202,7 @@ function teConfidenceChipClass(
     Math.max(
       1,
       Math.round(
-        (confidence === "high" ? 5 : confidence === "mid" ? 3 : 1) +
-          score * 2,
+        (confidence === "high" ? 5 : confidence === "mid" ? 3 : 1) + score * 2,
       ),
     ),
   );
@@ -241,10 +252,7 @@ function TeMatchAddSlots({
 }) {
   const existingEntityIds: string[] = [];
   for (const review of reviewCtx.reviewsByEntity.values()) {
-    if (
-      review.step !== reviewCtx.step ||
-      review.entityType !== "teMatchAdd"
-    ) {
+    if (review.step !== reviewCtx.step || review.entityType !== "teMatchAdd") {
       continue;
     }
     const isLegacy = review.entityId === shiftId;
@@ -359,9 +367,7 @@ function TeMatchAddSlots({
                   addableCandidates.filter((c) => c.stableId !== selectedInThis)
                     .length === 0 && !canUseSuggestedNew
                 }
-                onChanged={(next) =>
-                  reviewCtx.onReviewChanged(next, entityKey)
-                }
+                onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
               />
             </QaFooter>
           </div>
@@ -394,10 +400,7 @@ function ActivityShiftTeBlock({
   const claimedByAdds = new Set<string>();
   let hasSuggestedNewClaim = false;
   for (const review of reviewCtx.reviewsByEntity.values()) {
-    if (
-      review.step !== reviewCtx.step ||
-      review.entityType !== "teMatchAdd"
-    ) {
+    if (review.step !== reviewCtx.step || review.entityType !== "teMatchAdd") {
       continue;
     }
     if (
@@ -691,7 +694,11 @@ function CommitmentReviewControls({
   columns: "extract" | "climate" | "actionable";
   reviewCtx: ReviewContext;
 }) {
-  const entityKey = reviewKey(reviewCtx.step, "commitment", commitmentEntityId(commitment));
+  const entityKey = reviewKey(
+    reviewCtx.step,
+    "commitment",
+    commitmentEntityId(commitment),
+  );
   const snapshot = {
     stableId: commitment.stableId,
     text: commitment.text,
@@ -773,7 +780,11 @@ function CommitmentsList({
     const groupOptions = [...groups.keys()];
 
     const renderCommitmentRow = (c: Commitment) => {
-      const entityKey = reviewKey(reviewCtx.step, "commitment", commitmentEntityId(c));
+      const entityKey = reviewKey(
+        reviewCtx.step,
+        "commitment",
+        commitmentEntityId(c),
+      );
       return (
         <li key={c.id} className="min-w-0 space-y-1.5 px-3 py-2.5">
           <p className="text-sm text-gray-01 break-words">
@@ -1033,7 +1044,11 @@ function MeasuresList({
   return (
     <div className="space-y-3">
       {measures.map((m) => {
-        const entityKey = reviewKey(reviewCtx.step, "measure", measureEntityId(m));
+        const entityKey = reviewKey(
+          reviewCtx.step,
+          "measure",
+          measureEntityId(m),
+        );
         const snapshot =
           columns === "extract"
             ? {
@@ -1085,9 +1100,7 @@ function MeasuresList({
                 reviewedSnapshot={snapshot}
                 review={reviewCtx.reviewsByEntity.get(entityKey)}
                 defaultSuggestedValue={snapshot}
-                onChanged={(next) =>
-                  reviewCtx.onReviewChanged(next, entityKey)
-                }
+                onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
               />
             </QaFooter>
           </article>
@@ -1108,9 +1121,10 @@ export function StepResultDialog({
   const { detail, isLoading, error, refresh } = useClimatePlanDetail(
     open ? (plan?.id ?? null) : null,
   );
-  const [localReviews, setLocalReviews] = useState<
-    Map<string, PipelineReview> | null
-  >(null);
+  const [localReviews, setLocalReviews] = useState<Map<
+    string,
+    PipelineReview
+  > | null>(null);
 
   const reviewsByEntity = useMemo(() => {
     if (localReviews) return localReviews;
@@ -1320,8 +1334,8 @@ export function StepResultDialog({
             )}
             <span className="block text-xs text-gray-02 mt-1">
               QA marks are an overlay — they do not change live pipeline
-              outputs. Use the review board to export feedback for improving
-              the pipeline.
+              outputs. Use the review board to export feedback for improving the
+              pipeline.
             </span>
             <PreviousStepRuns runs={previousRuns} />
           </div>

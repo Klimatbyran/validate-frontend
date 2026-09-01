@@ -77,7 +77,9 @@ export function ReviewControls({
   initialPanel = null,
   onChanged,
 }: ReviewControlsProps) {
-  const [panel, setPanel] = useState<"comment" | "suggest" | null>(initialPanel);
+  const [panel, setPanel] = useState<"comment" | "suggest" | null>(
+    initialPanel,
+  );
   const [comment, setComment] = useState(review?.comment ?? "");
   const [suggestedText, setSuggestedText] = useState(() =>
     JSON.stringify(

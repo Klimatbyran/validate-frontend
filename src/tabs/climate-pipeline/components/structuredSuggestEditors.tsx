@@ -219,8 +219,7 @@ export function climateFilterSuggestEditor(args: {
                 const value = e.target.value;
                 setDraft({
                   ...suggestion,
-                  adaptation:
-                    value === "unset" ? null : value === "yes",
+                  adaptation: value === "unset" ? null : value === "yes",
                 } satisfies ClimateFilterSuggestion);
               }}
             >
@@ -332,14 +331,19 @@ export function similarGroupSuggestEditor(
 
   return {
     title: "Suggested group for this commitment",
-    getInitialDraft: (review: PipelineReview | undefined, defaultSuggestedValue) => {
+    getInitialDraft: (
+      review: PipelineReview | undefined,
+      defaultSuggestedValue,
+    ) => {
       if (isSimilarGroupSuggestion(review?.suggestedValue)) {
         return review.suggestedValue;
       }
       if (isSimilarGroupSuggestion(defaultSuggestedValue)) {
         return defaultSuggestedValue;
       }
-      return { similarGroupId: currentGroupId } satisfies SimilarGroupSuggestion;
+      return {
+        similarGroupId: currentGroupId,
+      } satisfies SimilarGroupSuggestion;
     },
     render: ({ draft, setDraft }) => {
       const selected = isSimilarGroupSuggestion(draft)

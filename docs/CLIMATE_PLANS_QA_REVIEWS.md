@@ -6,13 +6,13 @@ Overlay-first human QA on climate-plans-pipeline step outputs. Reviews do **not*
 
 Stored in climate-plans-pipeline Postgres:
 
-| Field | Purpose |
-| --- | --- |
-| `step`, `entityType`, `entityId` | What was judged |
-| `reviewedSnapshot` | Pipeline output at review time (survives reruns) |
-| `status` | `OK` \| `ISSUE` \| `SUGGESTED_FIX` |
-| `comment` | Free-text note |
-| `suggestedValue` | Preferred output JSON when suggesting a fix |
+| Field                            | Purpose                                          |
+| -------------------------------- | ------------------------------------------------ |
+| `step`, `entityType`, `entityId` | What was judged                                  |
+| `reviewedSnapshot`               | Pipeline output at review time (survives reruns) |
+| `status`                         | `OK` \| `ISSUE` \| `SUGGESTED_FIX`               |
+| `comment`                        | Free-text note                                   |
+| `suggestedValue`                 | Preferred output JSON when suggesting a fix      |
 
 ## API
 
