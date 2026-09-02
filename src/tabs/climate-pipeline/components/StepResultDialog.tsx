@@ -618,16 +618,29 @@ function PreviousStepRuns({ runs }: { runs: PipelineStepRun[] }) {
   );
 }
 
-function PromptSection({ step }: { step: string }) {
+function PromptSection({
+  step,
+  promptSnapshot,
+}: {
+  step: string;
+  promptSnapshot: string | null;
+}) {
   const [expanded, setExpanded] = useState(false);
-  const [prompt, setPrompt] = useState<string | null>(null);
+  const [fetchedPrompt, setFetchedPrompt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Prefer the snapshot taken when this run actually started — the prompt
+  // may have been edited since, so the current source (fetched below as a
+  // fallback for older runs predating the snapshot) isn't necessarily what
+  // produced this run's output.
+  const isSnapshot = promptSnapshot !== null;
+  const prompt = isSnapshot ? promptSnapshot : fetchedPrompt;
 
   const handleToggle = async () => {
     const next = !expanded;
     setExpanded(next);
-    if (next && prompt === null && !isLoading) {
+    if (next && !isSnapshot && fetchedPrompt === null && !isLoading) {
       setIsLoading(true);
       setError(null);
       try {
@@ -636,7 +649,7 @@ function PromptSection({ step }: { step: string }) {
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        setPrompt(data.prompt ?? "");
+        setFetchedPrompt(data.prompt ?? "");
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load prompt");
       } finally {
@@ -675,9 +688,17 @@ function PromptSection({ step }: { step: string }) {
                 No static prompt for this step.
               </p>
             ) : (
-              <pre className="text-xs whitespace-pre-wrap break-words max-h-96 overflow-y-auto bg-gray-04 rounded p-3 border border-gray-03">
-                {prompt}
-              </pre>
+              <>
+                {!isSnapshot && (
+                  <p className="text-xs text-gray-02 mb-1">
+                    This run predates prompt history — showing the current
+                    prompt, which may differ from what actually ran.
+                  </p>
+                )}
+                <pre className="text-xs whitespace-pre-wrap break-words max-h-96 overflow-y-auto bg-gray-04 rounded p-3 border border-gray-03">
+                  {prompt}
+                </pre>
+              </>
             ))}
         </div>
       )}
@@ -1434,7 +1455,10 @@ export function StepResultDialog({
               outputs. Use the review board to export feedback for improving the
               pipeline.
             </span>
-            <PromptSection step={step} />
+            <PromptSection
+              step={step}
+              promptSnapshot={run?.promptSnapshot ?? null}
+            />
             <PreviousStepRuns runs={previousRuns} />
           </div>
         ) : (

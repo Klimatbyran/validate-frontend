@@ -28,6 +28,9 @@ export interface PipelineStepRun {
   completedAt: string | null;
   error: string | null;
   runId: string | null;
+  // The step's system prompt exactly as it was when this run started. Null
+  // on runs from before this existed, and on steps with no static prompt.
+  promptSnapshot: string | null;
 }
 
 export interface ClimatePipelinePlan {
