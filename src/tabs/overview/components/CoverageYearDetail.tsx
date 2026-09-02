@@ -562,9 +562,7 @@ export function CoverageYearDetailView({
       </div>
 
       <ClientTablePagination
-        from={
-          filteredCount === 0 ? 0 : (page - 1) * pageSize + 1
-        }
+        from={filteredCount === 0 ? 0 : (page - 1) * pageSize + 1}
         to={Math.min(page * pageSize, filteredCount)}
         filteredTotal={filteredCount}
         unfilteredTotal={detail.totalNames}
@@ -574,9 +572,6 @@ export function CoverageYearDetailView({
         canPaginate={totalPages > 1}
         allowShowAll={false}
         onPageChange={onPageChange}
-        onShowAllChange={() => {
-          /* Coverage lists can be thousands of rows — never load all at once. */
-        }}
       />
 
       <CoverageRematchModeDialog

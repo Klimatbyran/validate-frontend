@@ -84,6 +84,7 @@ function entryMatchChanged(
 function mergeCoverageMatchUpdate(
   previous: CoverageYearDetail | null,
   updated: CoverageYearDetail,
+  activeFilter: CoverageEntryFilter = "all",
 ): CoverageYearDetail {
   if (!previous) return updated;
 
@@ -106,20 +107,38 @@ function mergeCoverageMatchUpdate(
     const patchById = new Map(
       updated.entries.map((entry) => [entry.id, entry] as const),
     );
+    let removedForFilter = 0;
+    const entries = previous.entries.flatMap((entry) => {
+      const patch = patchById.get(entry.id);
+      if (!patch) return [entry];
+      const next = {
+        ...patch,
+        registryReports:
+          patch.registryReports.length > 0
+            ? patch.registryReports
+            : entry.registryReports,
+      };
+      if (
+        activeFilter === "matched" ||
+        activeFilter === "missing" ||
+        activeFilter === "ambiguous"
+      ) {
+        if (next.status !== activeFilter) {
+          removedForFilter += 1;
+          return [];
+        }
+      }
+      return [next];
+    });
+
+    const previousFilteredCount =
+      previous.filteredCount ?? previous.entries.length;
+
     return {
       ...previous,
       ...yearFields,
-      entries: previous.entries.map((entry) => {
-        const patch = patchById.get(entry.id);
-        if (!patch) return entry;
-        return {
-          ...patch,
-          registryReports:
-            patch.registryReports.length > 0
-              ? patch.registryReports
-              : entry.registryReports,
-        };
-      }),
+      entries,
+      filteredCount: Math.max(0, previousFilteredCount - removedForFilter),
     };
   }
 
@@ -368,39 +387,9 @@ export function useCoverageLists() {
         | "noReportCount"
       >,
     ) => {
-      setLists((previous) => patchListYearSummary(previous, listId, year, stats));
-    },
-    patchYearStats: (
-      listId: string,
-      year: number,
-      stats: Pick<
-        CoverageYearSummary,
-        | "totalNames"
-        | "matchedCount"
-        | "ambiguousCount"
-        | "coveragePercent"
-        | "hasAnyReportCount"
-        | "prodReadyCount"
-        | "noReportCount"
-      >,
-    ) => {
-      setLists((previous) => patchListYearSummary(previous, listId, year, stats));
-    },
-    patchYearStats: (
-      listId: string,
-      year: number,
-      stats: Pick<
-        CoverageYearSummary,
-        | "totalNames"
-        | "matchedCount"
-        | "ambiguousCount"
-        | "coveragePercent"
-        | "hasAnyReportCount"
-        | "prodReadyCount"
-        | "noReportCount"
-      >,
-    ) => {
-      setLists((previous) => patchListYearSummary(previous, listId, year, stats));
+      setLists((previous) =>
+        patchListYearSummary(previous, listId, year, stats),
+      );
     },
     createList: async (input: {
       name: string;
@@ -732,7 +721,9 @@ export function useCoverageYearDetail(
         entryId,
         payload,
       );
-      setDetail((previous) => mergeCoverageMatchUpdate(previous, updated));
+      setDetail((previous) =>
+        mergeCoverageMatchUpdate(previous, updated, filter),
+      );
       onYearStatsUpdated?.({
         totalNames: updated.totalNames,
         matchedCount: updated.matchedCount,
@@ -742,6 +733,8 @@ export function useCoverageYearDetail(
         prodReadyCount: updated.prodReadyCount,
         noReportCount: updated.noReportCount,
       });
+      // Soft refresh so page totals / registry filters stay accurate after membership changes.
+      void loadPage(page);
       return updated;
     },
   };

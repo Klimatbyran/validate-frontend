@@ -12,7 +12,7 @@ type Props = {
   canPaginate: boolean;
   allowShowAll?: boolean;
   onPageChange: (page: number) => void;
-  onShowAllChange: (showAll: boolean) => void;
+  onShowAllChange?: (showAll: boolean) => void;
 };
 
 export function ClientTablePagination({
@@ -62,7 +62,7 @@ export function ClientTablePagination({
               variant="ghost"
               size="sm"
               className="h-7 text-xs"
-              onClick={() => onShowAllChange(false)}
+              onClick={() => onShowAllChange?.(false)}
             >
               {t("common.pagination.showPages")}
             </Button>
@@ -87,7 +87,7 @@ export function ClientTablePagination({
                   variant="ghost"
                   size="sm"
                   className="h-7 text-xs px-2"
-                  onClick={() => onShowAllChange(true)}
+                  onClick={() => onShowAllChange?.(true)}
                 >
                   {t("common.pagination.showAll")}
                 </Button>
