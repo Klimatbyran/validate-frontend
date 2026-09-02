@@ -15,7 +15,6 @@ import {
 } from "@/ui/dialog";
 import SearchResultItem from "@/tabs/crawler/components/SearchResultItem";
 import ManuallyAddReportItem from "@/tabs/crawler/components/ManuallyAddReportItem";
-import RegistryList from "@/tabs/crawler/components/RegistryList";
 import { addRegistryEntry } from "@/tabs/registry/lib/registry-api";
 import {
   searchCompanyReports,
@@ -27,6 +26,7 @@ import type {
   SaveReportsListResponse,
   SelectedReport,
 } from "@/tabs/crawler/lib/crawler-types";
+import { CoverageRegistrySaveResult } from "@/tabs/overview/components/CoverageRegistrySaveResult";
 import type { CoverageEntry } from "@/tabs/overview/lib/coverage-types";
 import { CRAWLER_FEATURES } from "@/config/crawler-features";
 
@@ -302,23 +302,6 @@ export function CoverageFindReportDialog({
     });
   };
 
-  const responseType = !registryResponse
-    ? null
-    : registryResponse.failed.length === 0
-      ? "success"
-      : registryResponse.successes.length > 0
-        ? "partial"
-        : "failed";
-
-  const responseStatusClassName =
-    responseType === "success"
-      ? "text-green-03"
-      : responseType === "partial"
-        ? "text-yellow-400"
-        : responseType === "failed"
-          ? "text-pink-03"
-          : "text-gray-01";
-
   const crawlHasResults = (reportWithWikidata?.results.length ?? 0) > 0;
 
   return (
@@ -336,40 +319,7 @@ export function CoverageFindReportDialog({
 
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
             {registryResponse ? (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-02">
-                  {t("crawler.registryStatus")}:{" "}
-                  <span className={responseStatusClassName}>
-                    {responseType === "success"
-                      ? t("crawler.successful")
-                      : responseType === "partial"
-                        ? t("crawler.partiallySuccessful")
-                        : t("crawler.failed")}
-                  </span>
-                </p>
-                {registryResponse.successes.length > 0 ? (
-                  <div>
-                    <p className="mb-2 text-sm font-medium text-gray-01">
-                      {t("crawler.successful")}:
-                    </p>
-                    <RegistryList
-                      variant="success"
-                      items={registryResponse.successes}
-                    />
-                  </div>
-                ) : null}
-                {registryResponse.failed.length > 0 ? (
-                  <div>
-                    <p className="mb-2 text-sm font-medium text-gray-01">
-                      {t("crawler.failed")}:
-                    </p>
-                    <RegistryList
-                      variant="failed"
-                      items={registryResponse.failed}
-                    />
-                  </div>
-                ) : null}
-              </div>
+              <CoverageRegistrySaveResult response={registryResponse} />
             ) : (
               <div className="space-y-6">
                 <div className="space-y-3">

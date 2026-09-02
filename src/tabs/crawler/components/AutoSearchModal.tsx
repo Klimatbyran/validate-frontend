@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
+import { useElapsedMs } from "@/hooks/useElapsedMs";
+import { formatElapsedMs } from "@/lib/format-elapsed-ms";
 import {
   Dialog,
   DialogContent,
@@ -30,29 +31,6 @@ interface AutoSearchModalProps {
   runFinishedAt: number | null;
   /** Close after a finished run, or cancel + discard when still running. */
   onClose: () => void;
-}
-
-function formatElapsedMs(ms: number): string {
-  const totalSec = Math.max(0, Math.floor(ms / 1000));
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  return `${min}:${sec.toString().padStart(2, "0")}`;
-}
-
-function useElapsedMs(
-  startedAt: number | null,
-  finishedAt: number | null,
-): number | null {
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (!startedAt || finishedAt) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, [startedAt, finishedAt]);
-
-  if (!startedAt) return null;
-  return (finishedAt ?? now) - startedAt;
 }
 
 function ElapsedClock({

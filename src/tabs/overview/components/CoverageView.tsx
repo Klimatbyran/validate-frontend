@@ -7,10 +7,8 @@ import { Button } from "@/ui/button";
 import { Callout } from "@/ui/callout";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { LoadingSpinner } from "@/ui/loading-spinner";
-import {
-  useCoverageLists,
-  useCoverageYearDetail,
-} from "@/tabs/overview/hooks/useCoverageLists";
+import { useCoverageLists } from "@/tabs/overview/hooks/useCoverageLists";
+import { useCoverageYearDetail } from "@/tabs/overview/hooks/useCoverageYearDetail";
 import { fetchCoverageYearNames } from "@/tabs/overview/lib/coverage-api";
 import { coveragePercentTextClass } from "@/tabs/overview/lib/coverage-overview-styles";
 import { CoverageListTable } from "./CoverageListTable";
