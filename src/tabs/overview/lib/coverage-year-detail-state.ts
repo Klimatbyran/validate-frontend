@@ -95,15 +95,10 @@ export function mergeCoverageMatchUpdate(
     const entries = previous.entries.flatMap((entry) => {
       const patch = patchById.get(entry.id);
       if (!patch) return [entry];
-      const matchChanged = entryMatchChanged(entry, patch);
       const next = {
         ...patch,
-        // When the company match changes, trust the server pills (often cleared
-        // until staff refreshes reports). Otherwise keep prior pills if the
-        // match response omits them.
-        registryReports: matchChanged
-          ? (patch.registryReports ?? [])
-          : patch.registryReports.length > 0
+        registryReports:
+          patch.registryReports.length > 0
             ? patch.registryReports
             : entry.registryReports,
       };
