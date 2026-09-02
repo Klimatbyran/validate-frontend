@@ -53,7 +53,14 @@ export function CoverageView() {
     [coverage.lists, selectedListId],
   );
 
-  const yearDetail = useCoverageYearDetail(selectedListId, selectedYear);
+  const yearDetail = useCoverageYearDetail(
+    selectedListId,
+    selectedYear,
+    (stats) => {
+      if (selectedListId === null || selectedYear === null) return;
+      coverage.patchYearStats(selectedListId, selectedYear, stats);
+    },
+  );
 
   const openList = (listId: string) => {
     setSelectedListId(listId);
@@ -334,9 +341,10 @@ export function CoverageView() {
                   onFilterChange={yearDetail.setFilter}
                   search={yearDetail.search}
                   onSearchChange={yearDetail.setSearch}
-                  hasMore={yearDetail.detail.hasMore ?? false}
-                  isLoadingMore={yearDetail.isLoadingMore}
-                  onLoadMore={() => void yearDetail.loadMore()}
+                  page={yearDetail.page}
+                  totalPages={yearDetail.totalPages}
+                  pageSize={yearDetail.pageSize}
+                  onPageChange={yearDetail.setPage}
                   isRefreshingRegistry={yearDetail.isRefreshingRegistry}
                   onRefreshRegistry={() => void yearDetail.refreshRegistry()}
                   isRematching={yearDetail.isRematching}
@@ -474,7 +482,6 @@ export function CoverageView() {
           setIsMatchSubmitting(true);
           try {
             await yearDetail.setEntryMatch(matchEntry.id, action);
-            await coverage.refresh();
             setMatchEntry(null);
             if (action.type === "clear") {
               toast.success(

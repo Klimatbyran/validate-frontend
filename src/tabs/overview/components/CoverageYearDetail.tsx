@@ -8,6 +8,7 @@ import { RunReportsModal } from "@/components/RunReportsModal";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { editorCompanyPath } from "@/tabs/editor/lib/editor-routes";
 import { Button } from "@/ui/button";
+import { ClientTablePagination } from "@/ui/client-table-pagination";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { ReportYearTypeDropdown } from "./ReportYearTypeDropdown";
 import { CoverageCrawlReportsDialog } from "./CoverageCrawlReportsDialog";
@@ -47,9 +48,10 @@ type CoverageYearDetailProps = {
   onFilterChange: (filter: CoverageEntryFilter) => void;
   search: string;
   onSearchChange: (search: string) => void;
-  hasMore: boolean;
-  isLoadingMore: boolean;
-  onLoadMore: () => void;
+  page: number;
+  totalPages: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
   isRefreshingRegistry: boolean;
   onRefreshRegistry: () => void;
   isRematching: boolean;
@@ -87,9 +89,10 @@ export function CoverageYearDetailView({
   onFilterChange,
   search,
   onSearchChange,
-  hasMore,
-  isLoadingMore,
-  onLoadMore,
+  page,
+  totalPages,
+  pageSize,
+  onPageChange,
   isRefreshingRegistry,
   onRefreshRegistry,
   isRematching,
@@ -555,27 +558,23 @@ export function CoverageYearDetailView({
         </table>
       </div>
 
-      {hasMore ? (
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void onLoadMore()}
-            disabled={isLoadingMore}
-          >
-            {isLoadingMore ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="ml-2">
-                  {t("overview.coverage.loadingMore")}
-                </span>
-              </>
-            ) : (
-              t("overview.coverage.loadMore")
-            )}
-          </Button>
-        </div>
-      ) : null}
+      <ClientTablePagination
+        from={
+          filteredCount === 0 ? 0 : (page - 1) * pageSize + 1
+        }
+        to={Math.min(page * pageSize, filteredCount)}
+        filteredTotal={filteredCount}
+        unfilteredTotal={detail.totalNames}
+        page={page}
+        totalPages={totalPages}
+        showAll={false}
+        canPaginate={totalPages > 1}
+        allowShowAll={false}
+        onPageChange={onPageChange}
+        onShowAllChange={() => {
+          /* Coverage lists can be thousands of rows — never load all at once. */
+        }}
+      />
 
       {crawlEntries ? (
         <CoverageCrawlReportsDialog

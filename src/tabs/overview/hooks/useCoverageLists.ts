@@ -19,6 +19,7 @@ import type {
   CoverageEntryFilter,
   CoverageListSummary,
   CoverageYearDetail,
+  CoverageYearSummary,
   CoverageMatchSaveAction,
   CoverageYearRematch,
   RegistryReportPill,
@@ -294,6 +295,32 @@ function addRegistryReportToEntry(
   };
 }
 
+function patchListYearSummary(
+  lists: CoverageListSummary[],
+  listId: string,
+  year: number,
+  stats: Pick<
+    CoverageYearSummary,
+    | "totalNames"
+    | "matchedCount"
+    | "ambiguousCount"
+    | "coveragePercent"
+    | "hasAnyReportCount"
+    | "prodReadyCount"
+    | "noReportCount"
+  >,
+): CoverageListSummary[] {
+  return lists.map((list) => {
+    if (list.id !== listId) return list;
+    return {
+      ...list,
+      years: list.years.map((yearRow) =>
+        yearRow.year === year ? { ...yearRow, ...stats } : yearRow,
+      ),
+    };
+  });
+}
+
 export function useCoverageLists() {
   const [lists, setLists] = useState<CoverageListSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -326,6 +353,54 @@ export function useCoverageLists() {
     isRefreshing,
     error,
     refresh: () => loadLists(true),
+    patchYearStats: (
+      listId: string,
+      year: number,
+      stats: Pick<
+        CoverageYearSummary,
+        | "totalNames"
+        | "matchedCount"
+        | "ambiguousCount"
+        | "coveragePercent"
+        | "hasAnyReportCount"
+        | "prodReadyCount"
+        | "noReportCount"
+      >,
+    ) => {
+      setLists((previous) => patchListYearSummary(previous, listId, year, stats));
+    },
+    patchYearStats: (
+      listId: string,
+      year: number,
+      stats: Pick<
+        CoverageYearSummary,
+        | "totalNames"
+        | "matchedCount"
+        | "ambiguousCount"
+        | "coveragePercent"
+        | "hasAnyReportCount"
+        | "prodReadyCount"
+        | "noReportCount"
+      >,
+    ) => {
+      setLists((previous) => patchListYearSummary(previous, listId, year, stats));
+    },
+    patchYearStats: (
+      listId: string,
+      year: number,
+      stats: Pick<
+        CoverageYearSummary,
+        | "totalNames"
+        | "matchedCount"
+        | "ambiguousCount"
+        | "coveragePercent"
+        | "hasAnyReportCount"
+        | "prodReadyCount"
+        | "noReportCount"
+      >,
+    ) => {
+      setLists((previous) => patchListYearSummary(previous, listId, year, stats));
+    },
     createList: async (input: {
       name: string;
       year?: number;
@@ -376,13 +451,25 @@ export function useCoverageLists() {
 export function useCoverageYearDetail(
   listId: string | null,
   year: number | null,
+  onYearStatsUpdated?: (
+    stats: Pick<
+      CoverageYearDetail,
+      | "totalNames"
+      | "matchedCount"
+      | "ambiguousCount"
+      | "coveragePercent"
+      | "hasAnyReportCount"
+      | "prodReadyCount"
+      | "noReportCount"
+    >,
+  ) => void,
 ) {
   const [detail, setDetail] = useState<CoverageYearDetail | null>(null);
-  const [filter, setFilter] = useState<CoverageEntryFilter>("all");
+  const [filter, setFilter] = useState<CoverageEntryFilter>("missing");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isRefreshingRegistry, setIsRefreshingRegistry] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef(0);
@@ -396,8 +483,7 @@ export function useCoverageYearDetail(
 
   const loadPage = useCallback(
     async (
-      offset: number,
-      append: boolean,
+      pageNumber: number,
       queryOverride?: { filter?: CoverageEntryFilter; q?: string },
     ) => {
       if (!listId || year === null) {
@@ -407,9 +493,10 @@ export function useCoverageYearDetail(
 
       const requestId = ++requestRef.current;
       setError(null);
+      const offset = (pageNumber - 1) * COVERAGE_PAGE_SIZE;
 
       try {
-        const page = await fetchCoverageYearDetail(listId, year, {
+        const pageResult = await fetchCoverageYearDetail(listId, year, {
           offset,
           limit: COVERAGE_PAGE_SIZE,
           filter: queryOverride?.filter ?? filter,
@@ -420,19 +507,13 @@ export function useCoverageYearDetail(
         if (requestId !== requestRef.current) return;
 
         setDetail((previous) => {
-          if (append && previous) {
-            return {
-              ...page,
-              entries: [...previous.entries, ...page.entries],
-            };
-          }
-          if (!previous) return page;
+          if (!previous) return pageResult;
           const priorById = new Map(
             previous.entries.map((entry) => [entry.id, entry] as const),
           );
           return {
-            ...page,
-            entries: page.entries.map((entry) => {
+            ...pageResult,
+            entries: pageResult.entries.map((entry) => {
               const prior = priorById.get(entry.id);
               return {
                 ...entry,
@@ -460,41 +541,39 @@ export function useCoverageYearDetail(
     }
 
     const selectionKey = `${listId}:${year}`;
-    const selectionChanged = selectionRef.current !== selectionKey;
+    if (selectionRef.current === selectionKey) return;
     selectionRef.current = selectionKey;
 
-    if (selectionChanged) {
-      registryRefreshRef.current += 1;
-      setIsRefreshingRegistry(false);
-      setFilter("all");
-      setSearch("");
-      setDebouncedSearch("");
-    }
+    registryRefreshRef.current += 1;
+    setIsRefreshingRegistry(false);
+    setFilter("missing");
+    setSearch("");
+    setDebouncedSearch("");
+    setPage(1);
+  }, [listId, year]);
+
+  useEffect(() => {
+    if (!listId || year === null) return;
 
     setIsLoading(true);
-    void loadPage(
-      0,
-      false,
-      selectionChanged ? { filter: "all", q: "" } : undefined,
-    ).finally(() => setIsLoading(false));
-  }, [listId, year, filter, debouncedSearch, loadPage]);
+    void loadPage(page).finally(() => setIsLoading(false));
+  }, [listId, year, filter, debouncedSearch, page, loadPage]);
 
-  const loadMore = useCallback(async () => {
-    if (
-      !detail?.hasMore ||
-      isLoadingMore ||
-      isLoading ||
-      isRefreshingRegistry
-    ) {
-      return;
-    }
-    setIsLoadingMore(true);
-    try {
-      await loadPage(detail.entries.length, true);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [detail, isLoading, isLoadingMore, isRefreshingRegistry, loadPage]);
+  const setFilterAndResetPage = useCallback(
+    (nextFilter: CoverageEntryFilter) => {
+      setPage(1);
+      setFilter(nextFilter);
+    },
+    [],
+  );
+
+  const setSearchAndResetPage = useCallback((nextSearch: string) => {
+    setPage(1);
+    setSearch(nextSearch);
+  }, []);
+
+  const filteredCount = detail?.filteredCount ?? detail?.entries.length ?? 0;
+  const totalPages = Math.max(1, Math.ceil(filteredCount / COVERAGE_PAGE_SIZE));
 
   const refreshRegistry = useCallback(async () => {
     if (!listId || year === null) return;
@@ -537,7 +616,7 @@ export function useCoverageYearDetail(
       }
 
       if (isStale()) return;
-      await loadPage(0, false);
+      await loadPage(page);
     } catch (err) {
       if (isStale()) return;
 
@@ -545,13 +624,13 @@ export function useCoverageYearDetail(
         applyYearStats(previous, { registryRefreshInProgress: false }),
       );
       setError(err instanceof Error ? err.message : "Unknown error");
-      await loadPage(0, false);
+      await loadPage(page);
     } finally {
       if (!isStale()) {
         setIsRefreshingRegistry(false);
       }
     }
-  }, [listId, year, loadPage]);
+  }, [listId, year, loadPage, page]);
 
   const [isRematching, setIsRematching] = useState(false);
 
@@ -563,7 +642,17 @@ export function useCoverageYearDetail(
       setError(null);
       try {
         const result = await rematchCoverageYear(listId, year);
-        await loadPage(0, false);
+        onYearStatsUpdated?.({
+          totalNames: result.totalNames,
+          matchedCount: result.matchedCount,
+          ambiguousCount: result.ambiguousCount,
+          coveragePercent: result.coveragePercent,
+          hasAnyReportCount: detail?.hasAnyReportCount ?? 0,
+          prodReadyCount: detail?.prodReadyCount ?? 0,
+          noReportCount: detail?.noReportCount ?? 0,
+        });
+        setPage(1);
+        await loadPage(1);
         return result;
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
@@ -571,23 +660,25 @@ export function useCoverageYearDetail(
       } finally {
         setIsRematching(false);
       }
-    }, [listId, year, loadPage]);
+    }, [listId, year, loadPage, onYearStatsUpdated, detail]);
 
   return {
     detail,
     filter,
-    setFilter,
+    setFilter: setFilterAndResetPage,
     search,
-    setSearch,
+    setSearch: setSearchAndResetPage,
+    page,
+    totalPages,
+    pageSize: COVERAGE_PAGE_SIZE,
+    setPage,
     isLoading,
-    isLoadingMore,
     isRefreshingRegistry,
     isRematching,
     error,
-    loadMore,
     refreshRegistry,
     rematchCompanies,
-    refresh: () => loadPage(0, false),
+    refresh: () => loadPage(page),
     addEntryRegistryReport: (entryId: string, saved: SaveReportSuccess) => {
       setDetail((previous) =>
         previous
@@ -637,7 +728,15 @@ export function useCoverageYearDetail(
         payload,
       );
       setDetail((previous) => mergeCoverageMatchUpdate(previous, updated));
-      void loadPage(0, false);
+      onYearStatsUpdated?.({
+        totalNames: updated.totalNames,
+        matchedCount: updated.matchedCount,
+        ambiguousCount: updated.ambiguousCount,
+        coveragePercent: updated.coveragePercent,
+        hasAnyReportCount: updated.hasAnyReportCount,
+        prodReadyCount: updated.prodReadyCount,
+        noReportCount: updated.noReportCount,
+      });
       return updated;
     },
   };
