@@ -268,6 +268,20 @@ export async function setCoverageEntryMatch(
   );
 }
 
+export async function refreshCoverageEntryRegistry(
+  listId: string,
+  year: number,
+  entryId: string,
+): Promise<CoverageYearDetail> {
+  const url = coverageUrl(
+    `${listId}/years/${year}/entries/${entryId}/refresh-registry`,
+  );
+  const response = await garboAuthFetch(url, { method: "POST" });
+  return parseJson(response, url, (data) =>
+    coverageYearDetailSchema.parse(data),
+  );
+}
+
 export function namesFromTextarea(text: string): string[] {
   return text
     .split(/\r?\n/)

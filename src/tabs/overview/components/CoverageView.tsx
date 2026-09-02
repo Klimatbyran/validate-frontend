@@ -7,10 +7,8 @@ import { Button } from "@/ui/button";
 import { Callout } from "@/ui/callout";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { LoadingSpinner } from "@/ui/loading-spinner";
-import {
-  useCoverageLists,
-  useCoverageYearDetail,
-} from "@/tabs/overview/hooks/useCoverageLists";
+import { useCoverageLists } from "@/tabs/overview/hooks/useCoverageLists";
+import { useCoverageYearDetail } from "@/tabs/overview/hooks/useCoverageYearDetail";
 import { fetchCoverageYearNames } from "@/tabs/overview/lib/coverage-api";
 import { coveragePercentTextClass } from "@/tabs/overview/lib/coverage-overview-styles";
 import { CoverageListTable } from "./CoverageListTable";
@@ -348,6 +346,23 @@ export function CoverageView() {
                   isRefreshingRegistry={yearDetail.isRefreshingRegistry}
                   onRefreshRegistry={() => void yearDetail.refreshRegistry()}
                   isRematching={yearDetail.isRematching}
+                  refreshingEntryId={yearDetail.refreshingEntryId}
+                  onRefreshEntryReports={async (entry) => {
+                    try {
+                      await yearDetail.refreshEntryRegistry(entry.id);
+                      toast.success(
+                        t("overview.coverage.refreshEntryReportsSuccess", {
+                          name: entry.name,
+                        }),
+                      );
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : t("overview.coverage.refreshEntryReportsError"),
+                      );
+                    }
+                  }}
                   onRematchCompanies={async (mode) => {
                     try {
                       const result = await yearDetail.rematchCompanies(mode);

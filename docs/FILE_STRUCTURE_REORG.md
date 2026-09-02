@@ -1,6 +1,8 @@
 # File Structure (Current)
 
-This document describes the **current** file structure after the reorg. Shared code (used by 2+ features) lives in **components**, **hooks**, **lib**, and **ui**. Tab-only code lives under **tabs/<name>/**.
+This document describes the **current** file structure after the reorg, plus **guidelines for writing and reviewing code** (for people and AI). Shared code (used by 2+ features) lives in **components**, **hooks**, **lib**, and **ui**. Tab-only code lives under **tabs/<name>/**.
+
+When building or reviewing UI/features in this repo, follow **§1–§2** (placement + file size / splitting). Folder inventories below are reference; the guidelines are the living contract.
 
 ---
 
@@ -28,7 +30,60 @@ src/
 
 ---
 
-## 2. Current folder structure (detailed)
+## 2. File size, splitting, and readability
+
+These guidelines apply when **adding**, **changing**, or **reviewing** code. Prefer judgment over rigid rules—the goal is readable, navigable modules, not a folder full of tiny wrappers.
+
+### Soft size target
+
+- Aim for roughly **~300 lines per file** when a clean split exists.
+- Going somewhat over is fine if the file is still one clear responsibility (e.g. a focused dialog or hook).
+- **Treat ~500+ lines as a smell:** pause and check whether the file mixes concerns that should be separate components, hooks, or `lib/` helpers.
+- Line count alone is not a reason to split. Split when it improves how someone finds and changes behavior.
+
+### When to split
+
+Split when it makes the next change easier:
+
+| Pull out into…                          | When…                                                                                  |
+| --------------------------------------- | -------------------------------------------------------------------------------------- | --- | ------- | ------------------------------------------------------------------------------- |
+| **`components/`** (tab-local or shared) | Distinct UI with its own props/state (rows, dialogs, toolbars, nested views)           |
+| **`hooks/`**                            | Stateful orchestration, loading/mutation flows, or logic reused by multiple components |
+| **`lib/`**                              | Pure helpers, parsers, merge/normalize functions, API clients, types/schemas           |
+| \*\*Shared `src/components              | hooks                                                                                  | lib | ui`\*\* | Only when used by **2+ tabs** (or app shell)—do not “promote” speculative reuse |
+
+Examples of good splits: entry row out of a year-detail table; pure merge/poll helpers out of a large hook into `lib/`; a dialog that already has its own open/submit lifecycle.
+
+### Over-engineering vs readability
+
+**Do split** when:
+
+- One file owns unrelated flows (e.g. list CRUD + registry run-report + crawl + rematch in a single component).
+- Helpers are pure and testable on their own.
+- A child UI is readable with a small, explicit props surface.
+
+**Do not split** when:
+
+- You would create one-line or pass-through wrappers just to hit a line count.
+- The pieces are tightly coupled and must be read together to understand the flow.
+- The “component” has no meaningful boundary (no clear name, props, or reuse).
+- You invent shared abstractions for a single call site.
+
+Prefer **three clear ~200–300 line files** over **one 800-line file** _or_ **ten 40-line files** that force constant jumping. Optimize for the reader of the next PR.
+
+### For AI agents (and human reviewers)
+
+When implementing or reviewing:
+
+1. Place new code in the correct **tab vs shared** folder (§1).
+2. Check file length and responsibilities against this section; if a change pushes a file well past ~300–500 lines with mixed concerns, split as part of the same work when a clean boundary exists.
+3. Prefer extending an existing focused module over growing a mega-file.
+4. Do not refactor unrelated areas “for structure”; only split what the current change touches, unless the user asks for a broader cleanup.
+5. Keep names story-telling and functions focused; avoid leaking implementation details into names.
+
+---
+
+## 3. Current folder structure (detailed)
 
 ```
 src/
@@ -206,7 +261,7 @@ src/
 
 ---
 
-## 3. Current file locations (reference)
+## 4. Current file locations (reference)
 
 | Location             | Contents                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -227,7 +282,7 @@ src/
 
 ---
 
-## 4. Import conventions
+## 5. Import conventions
 
 The alias `@/*` → `src/*` is unchanged. Imports in the codebase use:
 
@@ -255,7 +310,7 @@ The alias `@/*` → `src/*` is unchanged. Imports in the codebase use:
 
 ---
 
-## 5. Migration steps (completed)
+## 6. Migration steps (completed)
 
 The following steps were followed to perform the reorg. Kept for reference.
 
@@ -328,7 +383,7 @@ The following steps were followed to perform the reorg. Kept for reference.
 
 ---
 
-## 6. Nothing-lost checklist (completed)
+## 7. Nothing-lost checklist (completed)
 
 Used to verify the reorg; all items were confirmed:
 
@@ -342,15 +397,16 @@ Used to verify the reorg; all items were confirmed:
 
 ---
 
-## 7. Summary
+## 8. Summary
 
 - **Shared:** `components/`, `hooks/`, `lib/`, `ui/` at `src/` for anything used in 2+ places.
 - **Tab-specific:** `tabs/<tab-name>/` with optional `components/`, `hooks/`, `lib/` (and `overview/`, `config/` where needed).
+- **Size / splitting:** aim ~300 lines when a clean split exists; split for readability, not for line-count theater; avoid over-engineering (§2).
 - **Job-details and scope** live under `tabs/jobbstatus` (used only by CompanyCard). **Crawler** has its own components, lib, and hooks under `tabs/crawler`.
 
 ---
 
-## 8. Historical: post-reorg cleanup (done)
+## 9. Historical: post-reorg cleanup (done)
 
 Obsolete paths were removed:
 

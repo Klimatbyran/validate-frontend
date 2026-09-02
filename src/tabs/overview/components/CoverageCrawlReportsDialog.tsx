@@ -3,7 +3,9 @@ import { Loader2, WandIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { RunReportsModal } from "@/components/RunReportsModal";
+import { useElapsedMs } from "@/hooks/useElapsedMs";
 import type { RunReportsPipelineHandle } from "@/hooks/useRunReportsPipeline";
+import { formatElapsedMs } from "@/lib/format-elapsed-ms";
 import type { RunReportListItem } from "@/lib/run-reports-types";
 import { Button } from "@/ui/button";
 import {
@@ -14,7 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui/dialog";
-import RegistryList from "@/tabs/crawler/components/RegistryList";
 import SearchResultItem from "@/tabs/crawler/components/SearchResultItem";
 import { saveToRegistry } from "@/tabs/crawler/lib/crawler-api";
 import type {
@@ -30,34 +31,12 @@ import {
   selectedReportFromHit,
   type CrawlProgress,
 } from "@/tabs/crawler/lib/crawler-utils";
+import { CoverageRegistrySaveResult } from "@/tabs/overview/components/CoverageRegistrySaveResult";
 import {
   coverageEntryCrawlCompany,
   coverageEntryForSavedReport,
 } from "@/tabs/overview/lib/coverage-registry-report-run";
 import type { CoverageEntry } from "@/tabs/overview/lib/coverage-types";
-
-function formatElapsedMs(ms: number): string {
-  const totalSec = Math.max(0, Math.floor(ms / 1000));
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  return `${min}:${sec.toString().padStart(2, "0")}`;
-}
-
-function useElapsedMs(
-  startedAt: number | null,
-  finishedAt: number | null,
-): number | null {
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (!startedAt || finishedAt) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, [finishedAt, startedAt]);
-
-  if (!startedAt) return null;
-  return (finishedAt ?? now) - startedAt;
-}
 
 type CoverageCrawlReportsDialogProps = {
   open: boolean;
@@ -322,26 +301,6 @@ export function CoverageCrawlReportsDialog({
     });
   };
 
-  const responseType = !registryResponse
-    ? null
-    : registryResponse.successes.length === 0 &&
-        registryResponse.failed.length === 0
-      ? "empty"
-      : registryResponse.failed.length === 0
-        ? "success"
-        : registryResponse.successes.length > 0
-          ? "partial"
-          : "failed";
-
-  const responseStatusClassName =
-    responseType === "success"
-      ? "text-green-03"
-      : responseType === "partial"
-        ? "text-yellow-400"
-        : responseType === "failed"
-          ? "text-pink-03"
-          : "text-gray-01";
-
   const busy = isCrawling || isSaving || isRunningReports;
   const awaitingCountry = phase === "country";
   const elapsedMs = useElapsedMs(runStartedAt, runFinishedAt);
@@ -523,46 +482,10 @@ export function CoverageCrawlReportsDialog({
                   </dd>
                 </dl>
                 {registryResponse ? (
-                  <>
-                    <p className="text-sm text-gray-02">
-                      {t("crawler.registryStatus")}:{" "}
-                      <span className={responseStatusClassName}>
-                        {responseType === "success"
-                          ? t("crawler.successful")
-                          : responseType === "partial"
-                            ? t("crawler.partiallySuccessful")
-                            : responseType === "failed"
-                              ? t("crawler.failed")
-                              : t("overview.coverage.crawlReportsNoneSaved")}
-                      </span>
-                    </p>
-                    {registryResponse.successes.length > 0 ? (
-                      <div>
-                        <p className="mb-2 text-sm font-medium text-gray-01">
-                          {t("crawler.successful")}:
-                        </p>
-                        <RegistryList
-                          variant="success"
-                          items={registryResponse.successes}
-                        />
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-02">
-                        {t("overview.coverage.crawlReportsNoneSaved")}
-                      </p>
-                    )}
-                    {registryResponse.failed.length > 0 ? (
-                      <div>
-                        <p className="mb-2 text-sm font-medium text-gray-01">
-                          {t("crawler.failed")}:
-                        </p>
-                        <RegistryList
-                          variant="failed"
-                          items={registryResponse.failed}
-                        />
-                      </div>
-                    ) : null}
-                  </>
+                  <CoverageRegistrySaveResult
+                    response={registryResponse}
+                    showEmptySuccessMessage
+                  />
                 ) : null}
               </div>
             ) : null}
