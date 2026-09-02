@@ -10,8 +10,9 @@ type Props = {
   totalPages: number;
   showAll: boolean;
   canPaginate: boolean;
+  allowShowAll?: boolean;
   onPageChange: (page: number) => void;
-  onShowAllChange: (showAll: boolean) => void;
+  onShowAllChange?: (showAll: boolean) => void;
 };
 
 export function ClientTablePagination({
@@ -23,6 +24,7 @@ export function ClientTablePagination({
   totalPages,
   showAll,
   canPaginate,
+  allowShowAll = true,
   onPageChange,
   onShowAllChange,
 }: Props) {
@@ -60,7 +62,7 @@ export function ClientTablePagination({
               variant="ghost"
               size="sm"
               className="h-7 text-xs"
-              onClick={() => onShowAllChange(false)}
+              onClick={() => onShowAllChange?.(false)}
             >
               {t("common.pagination.showPages")}
             </Button>
@@ -79,15 +81,17 @@ export function ClientTablePagination({
               <span className="text-gray-02 tabular-nums">
                 {t("common.pagination.page", { page, totalPages })}
               </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs px-2"
-                onClick={() => onShowAllChange(true)}
-              >
-                {t("common.pagination.showAll")}
-              </Button>
+              {allowShowAll ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs px-2"
+                  onClick={() => onShowAllChange?.(true)}
+                >
+                  {t("common.pagination.showAll")}
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="secondary"

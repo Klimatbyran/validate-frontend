@@ -53,7 +53,14 @@ export function CoverageView() {
     [coverage.lists, selectedListId],
   );
 
-  const yearDetail = useCoverageYearDetail(selectedListId, selectedYear);
+  const yearDetail = useCoverageYearDetail(
+    selectedListId,
+    selectedYear,
+    (stats) => {
+      if (selectedListId === null || selectedYear === null) return;
+      coverage.patchYearStats(selectedListId, selectedYear, stats);
+    },
+  );
 
   const openList = (listId: string) => {
     setSelectedListId(listId);
@@ -334,32 +341,33 @@ export function CoverageView() {
                   onFilterChange={yearDetail.setFilter}
                   search={yearDetail.search}
                   onSearchChange={yearDetail.setSearch}
-                  hasMore={yearDetail.detail.hasMore ?? false}
-                  isLoadingMore={yearDetail.isLoadingMore}
-                  onLoadMore={() => void yearDetail.loadMore()}
+                  page={yearDetail.page}
+                  totalPages={yearDetail.totalPages}
+                  pageSize={yearDetail.pageSize}
+                  onPageChange={yearDetail.setPage}
                   isRefreshingRegistry={yearDetail.isRefreshingRegistry}
                   onRefreshRegistry={() => void yearDetail.refreshRegistry()}
                   isRematching={yearDetail.isRematching}
-                  onRematchCompanies={() => {
-                    void (async () => {
-                      try {
-                        const result = await yearDetail.rematchCompanies();
-                        if (!result) return;
-                        toast.success(
-                          t("overview.coverage.rematchCompaniesSuccess", {
-                            rematched: result.rematchedCount,
-                            skipped: result.skippedManualCount,
-                            reports: result.reportLinkCount,
-                          }),
-                        );
-                      } catch (error) {
-                        toast.error(
-                          error instanceof Error
-                            ? error.message
-                            : t("overview.coverage.rematchCompaniesError"),
-                        );
-                      }
-                    })();
+                  onRematchCompanies={async (mode) => {
+                    try {
+                      const result = await yearDetail.rematchCompanies(mode);
+                      if (!result) return;
+                      toast.success(
+                        t("overview.coverage.rematchCompaniesSuccess", {
+                          rematched: result.rematchedCount,
+                          skipped: result.skippedManualCount,
+                          preserved: result.skippedByModeCount,
+                          reports: result.reportLinkCount,
+                        }),
+                      );
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : t("overview.coverage.rematchCompaniesError"),
+                      );
+                      throw error;
+                    }
                   }}
                   onRegistryReportSaved={(entryId, saved) => {
                     yearDetail.addEntryRegistryReport(entryId, saved);
@@ -474,7 +482,6 @@ export function CoverageView() {
           setIsMatchSubmitting(true);
           try {
             await yearDetail.setEntryMatch(matchEntry.id, action);
-            await coverage.refresh();
             setMatchEntry(null);
             if (action.type === "clear") {
               toast.success(

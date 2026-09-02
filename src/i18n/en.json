@@ -1491,8 +1491,25 @@
       "loadingMore": "Loading…",
       "refreshRegistry": "Refresh reports",
       "rematchCompanies": "Match companies",
-      "rematchCompaniesSuccess": "Matched {{rematched}} names ({{skipped}} manual kept). Linked {{reports}} reports.",
+      "rematchCompaniesRunning": "Matching…",
+      "rematchCompaniesSuccess": "Matched {{rematched}} names ({{skipped}} manual kept, {{preserved}} left unchanged). Linked {{reports}} reports.",
       "rematchCompaniesError": "Could not rematch companies",
+      "rematchDialogTitle": "Match companies",
+      "rematchDialogDescription": "Choose which list names to auto-match. Manual matches are never overwritten.",
+      "rematchModes": {
+        "missing": {
+          "label": "Missing only",
+          "description": "Fastest. Only rematch names that are still missing."
+        },
+        "missingAndAmbiguous": {
+          "label": "Missing + ambiguous",
+          "description": "Rematch missing and ambiguous names. Keep auto-matched rows."
+        },
+        "full": {
+          "label": "Full rematch",
+          "description": "Rematch every auto row, including previously auto-matched names."
+        }
+      },
       "crawlReports": "Crawl reports ({{count}})",
       "crawlReportsTitle": "Crawl reports",
       "crawlReportsDescription": "Crawling sustainability reports for {{count}} companies. Fetched PDFs are saved to the registry automatically.",

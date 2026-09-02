@@ -8,6 +8,7 @@ import { RunReportsModal } from "@/components/RunReportsModal";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { editorCompanyPath } from "@/tabs/editor/lib/editor-routes";
 import { Button } from "@/ui/button";
+import { ClientTablePagination } from "@/ui/client-table-pagination";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import { ReportYearTypeDropdown } from "./ReportYearTypeDropdown";
 import { CoverageCrawlReportsDialog } from "./CoverageCrawlReportsDialog";
@@ -31,9 +32,11 @@ import type { SaveReportSuccess } from "@/tabs/crawler/lib/crawler-types";
 import type {
   CoverageEntry,
   CoverageEntryFilter,
+  CoverageRematchMode,
   CoverageYearDetail,
   RegistryReportPill,
 } from "@/tabs/overview/lib/coverage-types";
+import { CoverageRematchModeDialog } from "./CoverageRematchModeDialog";
 
 const COVERAGE_ROW_HEIGHT_PX = 56;
 const COVERAGE_TABLE_MAX_HEIGHT_PX = 560;
@@ -47,13 +50,14 @@ type CoverageYearDetailProps = {
   onFilterChange: (filter: CoverageEntryFilter) => void;
   search: string;
   onSearchChange: (search: string) => void;
-  hasMore: boolean;
-  isLoadingMore: boolean;
-  onLoadMore: () => void;
+  page: number;
+  totalPages: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
   isRefreshingRegistry: boolean;
   onRefreshRegistry: () => void;
   isRematching: boolean;
-  onRematchCompanies: () => void;
+  onRematchCompanies: (mode: CoverageRematchMode) => void | Promise<void>;
   onEdit: () => void;
   onEditEntry: (entry: CoverageEntry) => void;
   onRegistryReportSaved?: (entryId: string, saved: SaveReportSuccess) => void;
@@ -87,9 +91,10 @@ export function CoverageYearDetailView({
   onFilterChange,
   search,
   onSearchChange,
-  hasMore,
-  isLoadingMore,
-  onLoadMore,
+  page,
+  totalPages,
+  pageSize,
+  onPageChange,
   isRefreshingRegistry,
   onRefreshRegistry,
   isRematching,
@@ -119,6 +124,7 @@ export function CoverageYearDetailView({
   const [crawlEntries, setCrawlEntries] = useState<CoverageEntry[] | null>(
     null,
   );
+  const [rematchDialogOpen, setRematchDialogOpen] = useState(false);
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const entryByIdRef = useRef<Map<string, CoverageEntry>>(new Map());
   const runPipeline = useRunReportsPipeline(
@@ -341,7 +347,7 @@ export function CoverageYearDetailView({
               variant="outline"
               size="sm"
               className="text-xs"
-              onClick={() => void onRematchCompanies()}
+              onClick={() => setRematchDialogOpen(true)}
               disabled={isRematching || isRefreshingRegistry}
             >
               {isRematching ? (
@@ -555,27 +561,28 @@ export function CoverageYearDetailView({
         </table>
       </div>
 
-      {hasMore ? (
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void onLoadMore()}
-            disabled={isLoadingMore}
-          >
-            {isLoadingMore ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="ml-2">
-                  {t("overview.coverage.loadingMore")}
-                </span>
-              </>
-            ) : (
-              t("overview.coverage.loadMore")
-            )}
-          </Button>
-        </div>
-      ) : null}
+      <ClientTablePagination
+        from={filteredCount === 0 ? 0 : (page - 1) * pageSize + 1}
+        to={Math.min(page * pageSize, filteredCount)}
+        filteredTotal={filteredCount}
+        unfilteredTotal={detail.totalNames}
+        page={page}
+        totalPages={totalPages}
+        showAll={false}
+        canPaginate={totalPages > 1}
+        allowShowAll={false}
+        onPageChange={onPageChange}
+      />
+
+      <CoverageRematchModeDialog
+        open={rematchDialogOpen}
+        onOpenChange={setRematchDialogOpen}
+        isSubmitting={isRematching}
+        onConfirm={async (mode) => {
+          await onRematchCompanies(mode);
+          setRematchDialogOpen(false);
+        }}
+      />
 
       {crawlEntries ? (
         <CoverageCrawlReportsDialog
