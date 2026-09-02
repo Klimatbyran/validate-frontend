@@ -45,12 +45,12 @@ These guidelines apply when **adding**, **changing**, or **reviewing** code. Pre
 
 Split when it makes the next change easier:
 
-| Pull out into… | When… |
-| -------------- | ----- |
-| **`components/`** (tab-local or shared) | Distinct UI with its own props/state (rows, dialogs, toolbars, nested views) |
-| **`hooks/`** | Stateful orchestration, loading/mutation flows, or logic reused by multiple components |
-| **`lib/`** | Pure helpers, parsers, merge/normalize functions, API clients, types/schemas |
-| **Shared `src/components|hooks|lib|ui`** | Only when used by **2+ tabs** (or app shell)—do not “promote” speculative reuse |
+| Pull out into…                          | When…                                                                                  |
+| --------------------------------------- | -------------------------------------------------------------------------------------- | --- | ------- | ------------------------------------------------------------------------------- |
+| **`components/`** (tab-local or shared) | Distinct UI with its own props/state (rows, dialogs, toolbars, nested views)           |
+| **`hooks/`**                            | Stateful orchestration, loading/mutation flows, or logic reused by multiple components |
+| **`lib/`**                              | Pure helpers, parsers, merge/normalize functions, API clients, types/schemas           |
+| \*\*Shared `src/components              | hooks                                                                                  | lib | ui`\*\* | Only when used by **2+ tabs** (or app shell)—do not “promote” speculative reuse |
 
 Examples of good splits: entry row out of a year-detail table; pure merge/poll helpers out of a large hook into `lib/`; a dialog that already has its own open/submit lifecycle.
 
@@ -69,7 +69,7 @@ Examples of good splits: entry row out of a year-detail table; pure merge/poll h
 - The “component” has no meaningful boundary (no clear name, props, or reuse).
 - You invent shared abstractions for a single call site.
 
-Prefer **three clear ~200–300 line files** over **one 800-line file** *or* **ten 40-line files** that force constant jumping. Optimize for the reader of the next PR.
+Prefer **three clear ~200–300 line files** over **one 800-line file** _or_ **ten 40-line files** that force constant jumping. Optimize for the reader of the next PR.
 
 ### For AI agents (and human reviewers)
 

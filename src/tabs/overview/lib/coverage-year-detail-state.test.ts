@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { formatElapsedMs } from "@/lib/format-elapsed-ms";
 import { mergeCoverageMatchUpdate } from "@/tabs/overview/lib/coverage-year-detail-state";
-import type { CoverageEntry, CoverageYearDetail } from "@/tabs/overview/lib/coverage-types";
+import type {
+  CoverageEntry,
+  CoverageYearDetail,
+} from "@/tabs/overview/lib/coverage-types";
 import {
   registrySaveResponseStatusClassName,
   registrySaveResponseType,

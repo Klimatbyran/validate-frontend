@@ -5,10 +5,7 @@ import type {
   CoverageEntry,
   RegistryReportPill,
 } from "@/tabs/overview/lib/coverage-types";
-import {
-  CoverageEntryRow,
-  CoverageSelectCheckbox,
-} from "./CoverageEntryRow";
+import { CoverageEntryRow, CoverageSelectCheckbox } from "./CoverageEntryRow";
 
 const COVERAGE_ROW_HEIGHT_PX = 56;
 const COVERAGE_TABLE_MAX_HEIGHT_PX = 560;

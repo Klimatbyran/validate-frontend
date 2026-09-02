@@ -1,7 +1,4 @@
-import {
-  COVERAGE_PAGE_SIZE,
-  fetchCoverageYearDetail,
-} from "./coverage-api";
+import { COVERAGE_PAGE_SIZE, fetchCoverageYearDetail } from "./coverage-api";
 import type {
   CoverageEntry,
   CoverageEntryFilter,
@@ -168,7 +165,9 @@ export function mergeCoverageMatchUpdate(
   };
 }
 
-export function savedReportToPill(saved: SaveReportSuccess): RegistryReportPill {
+export function savedReportToPill(
+  saved: SaveReportSuccess,
+): RegistryReportPill {
   return {
     reportId: saved.id,
     reportYear: saved.reportYear,
