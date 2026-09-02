@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
 import type { PipelineReview } from "./usePipelineReviews";
 
+export interface CommitmentExtractionPart {
+  text: string;
+  reasoning: string;
+  continuesPrevious: boolean;
+}
+
 export interface Commitment {
   id: string;
   stableId: string;
@@ -12,6 +18,7 @@ export interface Commitment {
   tableHeader: string | null;
   rowRaw: string | null;
   unverified: boolean;
+  extractionParts: CommitmentExtractionPart[] | null;
   climateRelevant: boolean | null;
   adaptation: boolean | null;
   climateFilterReason: string | null;
