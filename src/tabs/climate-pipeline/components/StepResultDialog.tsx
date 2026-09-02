@@ -22,6 +22,7 @@ import {
   useClimatePlanDetail,
   type ActivityShift,
   type Commitment,
+  type CommitmentExtractionPart,
   type ExtractedMeasure,
   type ClimatePlanDetail,
 } from "../hooks/useClimatePlanDetail";
@@ -618,6 +619,141 @@ function PreviousStepRuns({ runs }: { runs: PipelineStepRun[] }) {
   );
 }
 
+function PromptSection({
+  step,
+  promptSnapshot,
+}: {
+  step: string;
+  promptSnapshot: string | null;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [fetchedPrompt, setFetchedPrompt] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Prefer the snapshot taken when this run actually started — the prompt
+  // may have been edited since, so the current source (fetched below as a
+  // fallback for older runs predating the snapshot) isn't necessarily what
+  // produced this run's output.
+  const isSnapshot = promptSnapshot !== null;
+  const prompt = isSnapshot ? promptSnapshot : fetchedPrompt;
+
+  const handleToggle = async () => {
+    const next = !expanded;
+    setExpanded(next);
+    if (next && !isSnapshot && fetchedPrompt === null && !isLoading) {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(
+          `${getClimatePlansPipelineApiUrl()}/prompts/${step}`,
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        setFetchedPrompt(data.prompt ?? "");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to load prompt");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  return (
+    <div className="mt-1">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleToggle}
+        className="h-6 px-2 text-xs text-blue-03 hover:text-blue-04 hover:bg-blue-03/10"
+      >
+        {expanded ? (
+          <>
+            <ChevronsUp className="w-3 h-3 mr-1" /> Hide prompt
+          </>
+        ) : (
+          <>
+            <ChevronsDown className="w-3 h-3 mr-1" /> Show prompt
+          </>
+        )}
+      </Button>
+      {expanded && (
+        <div className="mt-2 border-l-2 border-gray-03 pl-3">
+          {isLoading && <p className="text-xs text-gray-02">Loading…</p>}
+          {error && <p className="text-xs text-pink-03">{error}</p>}
+          {!isLoading &&
+            !error &&
+            prompt !== null &&
+            (prompt === "" ? (
+              <p className="text-xs text-gray-02">
+                No static prompt for this step.
+              </p>
+            ) : (
+              <>
+                {!isSnapshot && (
+                  <p className="text-xs text-gray-02 mb-1">
+                    This run predates prompt history — showing the current
+                    prompt, which may differ from what actually ran.
+                  </p>
+                )}
+                <pre className="text-xs whitespace-pre-wrap break-words max-h-96 overflow-y-auto bg-gray-04 rounded p-3 border border-gray-03">
+                  {prompt}
+                </pre>
+              </>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// The raw sentence-level parts the model produced for this commitment,
+// before the deterministic merge step joined them into `text` — lets you
+// see why a bundling/splitting call was made, not just the end result.
+function ExtractionReasoning({ parts }: { parts: CommitmentExtractionPart[] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setExpanded((v) => !v)}
+        className="h-6 px-2 text-xs text-blue-03 hover:text-blue-04 hover:bg-blue-03/10"
+      >
+        {expanded ? (
+          <>
+            <ChevronsUp className="w-3 h-3 mr-1" /> Hide reasoning
+          </>
+        ) : (
+          <>
+            <ChevronsDown className="w-3 h-3 mr-1" /> Show reasoning
+            {parts.length > 1 ? ` (${parts.length} parts)` : ""}
+          </>
+        )}
+      </Button>
+      {expanded && (
+        <div className="mt-2 space-y-2 border-l-2 border-gray-03 pl-3">
+          <ol className="space-y-2">
+            {parts.map((part, i) => (
+              <li key={i} className="text-xs space-y-0.5">
+                <p className="text-gray-01 break-words">"{part.text}"</p>
+                <p className="text-gray-02 break-words">{part.reasoning}</p>
+                <p className="text-gray-02">
+                  continuesPrevious: {String(part.continuesPrevious)}
+                </p>
+              </li>
+            ))}
+          </ol>
+          <pre className="text-xs whitespace-pre-wrap break-words max-h-64 overflow-y-auto bg-gray-04 rounded p-3 border border-gray-03">
+            {JSON.stringify(parts, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RerunButton({
   planId,
   step,
@@ -1036,6 +1172,9 @@ function CommitmentsList({
               Section: {c.section}
             </p>
           )}
+          {columns === "extract" && c.extractionParts && (
+            <ExtractionReasoning parts={c.extractionParts} />
+          )}
           {columns === "climate" && c.climateFilterReason && (
             <p className="text-xs text-gray-02 break-words">
               {c.climateFilterReason}
@@ -1367,6 +1506,10 @@ export function StepResultDialog({
               outputs. Use the review board to export feedback for improving the
               pipeline.
             </span>
+            <PromptSection
+              step={step}
+              promptSnapshot={run?.promptSnapshot ?? null}
+            />
             <PreviousStepRuns runs={previousRuns} />
           </div>
         ) : (
