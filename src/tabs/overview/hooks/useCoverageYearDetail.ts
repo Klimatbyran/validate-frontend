@@ -66,7 +66,11 @@ export function useCoverageYearDetail(
   const loadPage = useCallback(
     async (
       pageNumber: number,
-      queryOverride?: { filter?: CoverageEntryFilter; q?: string },
+      queryOverride?: {
+        filter?: CoverageEntryFilter;
+        q?: string;
+        includeRegistry?: boolean;
+      },
     ) => {
       if (!listId || year === null) {
         setDetail(null);
@@ -83,7 +87,7 @@ export function useCoverageYearDetail(
           limit: COVERAGE_PAGE_SIZE,
           filter: queryOverride?.filter ?? filter,
           q: queryOverride?.q ?? debouncedSearch,
-          includeRegistry: true,
+          includeRegistry: queryOverride?.includeRegistry ?? true,
         });
 
         if (requestId !== requestRef.current) return;
@@ -365,8 +369,10 @@ export function useCoverageYearDetail(
         prodReadyCount: updated.prodReadyCount,
         noReportCount: updated.noReportCount,
       });
-      // Soft refresh so page totals / registry filters stay accurate after membership changes.
-      void loadPage(page);
+      // Soft refresh for page totals / filter membership. Skip registry
+      // enrichment so this does not re-load full prod company metadata after
+      // every match; existing pills are preserved via merge/union.
+      void loadPage(page, { includeRegistry: false });
       return updated;
     },
   };
