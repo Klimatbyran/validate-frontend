@@ -32,9 +32,11 @@ import type { SaveReportSuccess } from "@/tabs/crawler/lib/crawler-types";
 import type {
   CoverageEntry,
   CoverageEntryFilter,
+  CoverageRematchMode,
   CoverageYearDetail,
   RegistryReportPill,
 } from "@/tabs/overview/lib/coverage-types";
+import { CoverageRematchModeDialog } from "./CoverageRematchModeDialog";
 
 const COVERAGE_ROW_HEIGHT_PX = 56;
 const COVERAGE_TABLE_MAX_HEIGHT_PX = 560;
@@ -55,7 +57,7 @@ type CoverageYearDetailProps = {
   isRefreshingRegistry: boolean;
   onRefreshRegistry: () => void;
   isRematching: boolean;
-  onRematchCompanies: () => void;
+  onRematchCompanies: (mode: CoverageRematchMode) => void | Promise<void>;
   onEdit: () => void;
   onEditEntry: (entry: CoverageEntry) => void;
   onRegistryReportSaved?: (entryId: string, saved: SaveReportSuccess) => void;
@@ -122,6 +124,7 @@ export function CoverageYearDetailView({
   const [crawlEntries, setCrawlEntries] = useState<CoverageEntry[] | null>(
     null,
   );
+  const [rematchDialogOpen, setRematchDialogOpen] = useState(false);
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const entryByIdRef = useRef<Map<string, CoverageEntry>>(new Map());
   const runPipeline = useRunReportsPipeline(
@@ -344,7 +347,7 @@ export function CoverageYearDetailView({
               variant="outline"
               size="sm"
               className="text-xs"
-              onClick={() => void onRematchCompanies()}
+              onClick={() => setRematchDialogOpen(true)}
               disabled={isRematching || isRefreshingRegistry}
             >
               {isRematching ? (
@@ -573,6 +576,16 @@ export function CoverageYearDetailView({
         onPageChange={onPageChange}
         onShowAllChange={() => {
           /* Coverage lists can be thousands of rows — never load all at once. */
+        }}
+      />
+
+      <CoverageRematchModeDialog
+        open={rematchDialogOpen}
+        onOpenChange={setRematchDialogOpen}
+        isSubmitting={isRematching}
+        onConfirm={async (mode) => {
+          await onRematchCompanies(mode);
+          setRematchDialogOpen(false);
         }}
       />
 

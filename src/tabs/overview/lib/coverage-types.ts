@@ -90,15 +90,23 @@ export const coverageYearRegistryRefreshSchema = z.object({
   inProgress: z.boolean(),
 });
 
+export const coverageRematchModeSchema = z.enum([
+  "missing",
+  "missingAndAmbiguous",
+  "full",
+]);
+
 export const coverageYearRematchSchema = z.object({
   listId: z.string(),
   year: z.number(),
+  mode: coverageRematchModeSchema,
   totalNames: z.number(),
   matchedCount: z.number(),
   ambiguousCount: z.number(),
   coveragePercent: z.number(),
   rematchedCount: z.number(),
   skippedManualCount: z.number(),
+  skippedByModeCount: z.number(),
   reportLinkCount: z.number(),
 });
 
@@ -125,6 +133,7 @@ export type CoverageYearRegistryRefresh = z.infer<
   typeof coverageYearRegistryRefreshSchema
 >;
 export type CoverageYearRematch = z.infer<typeof coverageYearRematchSchema>;
+export type CoverageRematchMode = z.infer<typeof coverageRematchModeSchema>;
 export type CoverageCompanySearchHit = z.infer<
   typeof coverageCompanySearchHitSchema
 >;

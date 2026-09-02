@@ -22,6 +22,7 @@ import type {
   CoverageYearSummary,
   CoverageMatchSaveAction,
   CoverageYearRematch,
+  CoverageRematchMode,
   RegistryReportPill,
 } from "../lib/coverage-types";
 import type { SaveReportSuccess } from "@/tabs/crawler/lib/crawler-types";
@@ -634,14 +635,16 @@ export function useCoverageYearDetail(
 
   const [isRematching, setIsRematching] = useState(false);
 
-  const rematchCompanies =
-    useCallback(async (): Promise<CoverageYearRematch | null> => {
+  const rematchCompanies = useCallback(
+    async (
+      mode: CoverageRematchMode = "missing",
+    ): Promise<CoverageYearRematch | null> => {
       if (!listId || year === null) return null;
 
       setIsRematching(true);
       setError(null);
       try {
-        const result = await rematchCoverageYear(listId, year);
+        const result = await rematchCoverageYear(listId, year, mode);
         onYearStatsUpdated?.({
           totalNames: result.totalNames,
           matchedCount: result.matchedCount,
@@ -660,7 +663,9 @@ export function useCoverageYearDetail(
       } finally {
         setIsRematching(false);
       }
-    }, [listId, year, loadPage, onYearStatsUpdated, detail]);
+    },
+    [listId, year, loadPage, onYearStatsUpdated, detail],
+  );
 
   return {
     detail,

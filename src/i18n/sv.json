@@ -1491,8 +1491,25 @@
       "loadingMore": "Laddar…",
       "refreshRegistry": "Uppdatera rapporter",
       "rematchCompanies": "Matcha företag",
-      "rematchCompaniesSuccess": "Matchade {{rematched}} namn ({{skipped}} manuella behölls). Länkade {{reports}} rapporter.",
+      "rematchCompaniesRunning": "Matchar…",
+      "rematchCompaniesSuccess": "Matchade {{rematched}} namn ({{skipped}} manuella behölls, {{preserved}} oförändrade). Länkade {{reports}} rapporter.",
       "rematchCompaniesError": "Kunde inte matcha företag",
+      "rematchDialogTitle": "Matcha företag",
+      "rematchDialogDescription": "Välj vilka namn som ska matchas automatiskt. Manuella matchningar skrivs aldrig över.",
+      "rematchModes": {
+        "missing": {
+          "label": "Endast saknade",
+          "description": "Snabbast. Matcha bara namn som fortfarande saknas."
+        },
+        "missingAndAmbiguous": {
+          "label": "Saknade + tvetydiga",
+          "description": "Matcha saknade och tvetydiga namn. Behåll auto-matchade rader."
+        },
+        "full": {
+          "label": "Full omatchning",
+          "description": "Matcha om alla auto-rader, inklusive tidigare auto-matchade namn."
+        }
+      },
       "crawlReports": "Crawla rapporter ({{count}})",
       "crawlReportsTitle": "Crawla rapporter",
       "crawlReportsDescription": "Crawlar hållbarhetsrapporter för {{count}} företag. Hämtade PDF:er sparas automatiskt i registret.",

@@ -348,26 +348,26 @@ export function CoverageView() {
                   isRefreshingRegistry={yearDetail.isRefreshingRegistry}
                   onRefreshRegistry={() => void yearDetail.refreshRegistry()}
                   isRematching={yearDetail.isRematching}
-                  onRematchCompanies={() => {
-                    void (async () => {
-                      try {
-                        const result = await yearDetail.rematchCompanies();
-                        if (!result) return;
-                        toast.success(
-                          t("overview.coverage.rematchCompaniesSuccess", {
-                            rematched: result.rematchedCount,
-                            skipped: result.skippedManualCount,
-                            reports: result.reportLinkCount,
-                          }),
-                        );
-                      } catch (error) {
-                        toast.error(
-                          error instanceof Error
-                            ? error.message
-                            : t("overview.coverage.rematchCompaniesError"),
-                        );
-                      }
-                    })();
+                  onRematchCompanies={async (mode) => {
+                    try {
+                      const result = await yearDetail.rematchCompanies(mode);
+                      if (!result) return;
+                      toast.success(
+                        t("overview.coverage.rematchCompaniesSuccess", {
+                          rematched: result.rematchedCount,
+                          skipped: result.skippedManualCount,
+                          preserved: result.skippedByModeCount,
+                          reports: result.reportLinkCount,
+                        }),
+                      );
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : t("overview.coverage.rematchCompaniesError"),
+                      );
+                      throw error;
+                    }
                   }}
                   onRegistryReportSaved={(entryId, saved) => {
                     yearDetail.addEntryRegistryReport(entryId, saved);

@@ -13,6 +13,7 @@ import {
   type CoverageYearNames,
   type CoverageYearRegistryRefresh,
   type CoverageYearRematch,
+  type CoverageRematchMode,
   type CoverageCompanySearchHit,
   type CoverageEntryFilter,
 } from "./coverage-types";
@@ -127,9 +128,14 @@ export async function refreshCoverageYearRegistry(
 export async function rematchCoverageYear(
   listId: string,
   year: number,
+  mode: CoverageRematchMode = "full",
 ): Promise<CoverageYearRematch> {
   const url = coverageUrl(`${listId}/years/${year}/rematch`);
-  const response = await garboAuthFetch(url, { method: "POST" });
+  const response = await garboAuthFetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode }),
+  });
   return parseJson(response, url, (data) =>
     coverageYearRematchSchema.parse(data),
   );
