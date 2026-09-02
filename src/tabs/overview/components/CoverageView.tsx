@@ -346,6 +346,23 @@ export function CoverageView() {
                   isRefreshingRegistry={yearDetail.isRefreshingRegistry}
                   onRefreshRegistry={() => void yearDetail.refreshRegistry()}
                   isRematching={yearDetail.isRematching}
+                  refreshingEntryId={yearDetail.refreshingEntryId}
+                  onRefreshEntryReports={async (entry) => {
+                    try {
+                      await yearDetail.refreshEntryRegistry(entry.id);
+                      toast.success(
+                        t("overview.coverage.refreshEntryReportsSuccess", {
+                          name: entry.name,
+                        }),
+                      );
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : t("overview.coverage.refreshEntryReportsError"),
+                      );
+                    }
+                  }}
                   onRematchCompanies={async (mode) => {
                     try {
                       const result = await yearDetail.rematchCompanies(mode);

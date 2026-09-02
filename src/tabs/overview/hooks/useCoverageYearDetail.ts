@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   COVERAGE_PAGE_SIZE,
   fetchCoverageYearDetail,
+  refreshCoverageEntryRegistry,
   refreshCoverageYearRegistry,
   rematchCoverageYear,
   setCoverageEntryMatch,
@@ -18,6 +19,7 @@ import type { SaveReportSuccess } from "@/tabs/crawler/lib/crawler-types";
 import { unionRegistryReportPills } from "../lib/coverage-registry-report-run";
 import {
   addRegistryReportToEntry,
+  applyEntryRegistryRefresh,
   applyYearStats,
   mergeCoverageMatchUpdate,
   removeRegistryReportFromEntry,
@@ -48,6 +50,9 @@ export function useCoverageYearDetail(
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshingRegistry, setIsRefreshingRegistry] = useState(false);
+  const [refreshingEntryId, setRefreshingEntryId] = useState<string | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef(0);
   const registryRefreshRef = useRef(0);
@@ -255,9 +260,49 @@ export function useCoverageYearDetail(
     setPage,
     isLoading,
     isRefreshingRegistry,
+    refreshingEntryId,
     isRematching,
     error,
     refreshRegistry,
+    refreshEntryRegistry: async (entryId: string) => {
+      if (!listId || year === null) return null;
+      setRefreshingEntryId(entryId);
+      setError(null);
+      try {
+        const updated = await refreshCoverageEntryRegistry(
+          listId,
+          year,
+          entryId,
+        );
+        setDetail((previous) =>
+          previous
+            ? applyEntryRegistryRefresh(previous, updated, entryId, filter)
+            : updated,
+        );
+        onYearStatsUpdated?.({
+          totalNames: updated.totalNames,
+          matchedCount: updated.matchedCount,
+          ambiguousCount: updated.ambiguousCount,
+          coveragePercent: updated.coveragePercent,
+          hasAnyReportCount: updated.hasAnyReportCount,
+          prodReadyCount: updated.prodReadyCount,
+          noReportCount: updated.noReportCount,
+        });
+        if (
+          filter === "registryInProd" ||
+          filter === "registryOnly" ||
+          filter === "registryMissing"
+        ) {
+          void loadPage(page);
+        }
+        return updated;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unknown error");
+        throw err;
+      } finally {
+        setRefreshingEntryId(null);
+      }
+    },
     rematchCompanies,
     refresh: () => loadPage(page),
     addEntryRegistryReport: (entryId: string, saved: SaveReportSuccess) => {

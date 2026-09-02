@@ -22,6 +22,8 @@ type CoverageYearEntriesTableProps = {
   onToggleSelectAllLoaded: () => void;
   onToggleEntrySelected: (entry: CoverageEntry) => void;
   onEditEntry: (entry: CoverageEntry) => void;
+  onRefreshEntryReports: (entry: CoverageEntry) => void;
+  refreshingEntryId: string | null;
   onFindReportClick: (entry: CoverageEntry) => void;
   onRunReportClick: (entry: CoverageEntry) => void;
   onRunReport: (entry: CoverageEntry, report: RegistryReportPill) => void;
@@ -37,6 +39,8 @@ export function CoverageYearEntriesTable({
   onToggleSelectAllLoaded,
   onToggleEntrySelected,
   onEditEntry,
+  onRefreshEntryReports,
+  refreshingEntryId,
   onFindReportClick,
   onRunReportClick,
   onRunReport,
@@ -126,6 +130,12 @@ export function CoverageYearEntriesTable({
                     rowRef={rowVirtualizer.measureElement}
                     dataIndex={virtualRow.index}
                     onEditEntry={onEditEntry}
+                    onRefreshReports={onRefreshEntryReports}
+                    isRefreshingReports={refreshingEntryId === entry.id}
+                    refreshReportsDisabled={
+                      refreshingEntryId != null &&
+                      refreshingEntryId !== entry.id
+                    }
                     onFindReportClick={() => onFindReportClick(entry)}
                     onRunReportClick={() => onRunReportClick(entry)}
                     onRunReport={(report) => onRunReport(entry, report)}

@@ -64,6 +64,9 @@ type CoverageEntryRowProps = {
   rowRef: (element: HTMLTableRowElement | null) => void;
   dataIndex: number;
   onEditEntry: (entry: CoverageEntry) => void;
+  onRefreshReports: (entry: CoverageEntry) => void;
+  isRefreshingReports: boolean;
+  refreshReportsDisabled: boolean;
   onFindReportClick: () => void;
   onRunReportClick: () => void;
   onRunReport: (report: RegistryReportPill) => void;
@@ -78,6 +81,9 @@ export function CoverageEntryRow({
   rowRef,
   dataIndex,
   onEditEntry,
+  onRefreshReports,
+  isRefreshingReports,
+  refreshReportsDisabled,
   onFindReportClick,
   onRunReportClick,
   onRunReport,
@@ -174,6 +180,16 @@ export function CoverageEntryRow({
             onClick={() => onEditEntry(entry)}
           >
             {t("overview.coverage.editMatch")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onRefreshReports(entry)}
+            disabled={refreshReportsDisabled || isRefreshingReports}
+          >
+            {isRefreshingReports
+              ? t("overview.coverage.refreshEntryReportsRunning")
+              : t("overview.coverage.refreshEntryReports")}
           </Button>
           <Button variant="outline" size="sm" onClick={onFindReportClick}>
             {t("overview.coverage.findReport")}

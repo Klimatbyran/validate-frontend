@@ -95,10 +95,15 @@ export function mergeCoverageMatchUpdate(
     const entries = previous.entries.flatMap((entry) => {
       const patch = patchById.get(entry.id);
       if (!patch) return [entry];
+      const matchChanged = entryMatchChanged(entry, patch);
       const next = {
         ...patch,
-        registryReports:
-          patch.registryReports.length > 0
+        // When the company match changes, trust the server pills (often cleared
+        // until staff refreshes reports). Otherwise keep prior pills if the
+        // match response omits them.
+        registryReports: matchChanged
+          ? (patch.registryReports ?? [])
+          : patch.registryReports.length > 0
             ? patch.registryReports
             : entry.registryReports,
       };
@@ -296,6 +301,68 @@ export function addRegistryReportToEntry(
     noReportCount: hadReports
       ? detail.noReportCount
       : Math.max(0, detail.noReportCount - 1),
+  };
+}
+
+export function applyEntryRegistryRefresh(
+  previous: CoverageYearDetail,
+  updated: CoverageYearDetail,
+  entryId: string,
+  activeFilter: CoverageEntryFilter = "all",
+): CoverageYearDetail {
+  const refreshed = updated.entries.find((entry) => entry.id === entryId);
+  if (!refreshed) {
+    return {
+      ...previous,
+      hasAnyReportCount: updated.hasAnyReportCount,
+      prodReadyCount: updated.prodReadyCount,
+      noReportCount: updated.noReportCount,
+      registryRefreshedAt: updated.registryRefreshedAt,
+    };
+  }
+
+  let removedForFilter = 0;
+  const entries = previous.entries.flatMap((entry) => {
+    if (entry.id !== entryId) return [entry];
+    const next = {
+      ...entry,
+      ...refreshed,
+      registryReports: refreshed.registryReports ?? [],
+    };
+    if (
+      activeFilter === "registryInProd" ||
+      activeFilter === "registryOnly" ||
+      activeFilter === "registryMissing"
+    ) {
+      const hasReports = (next.registryReports?.length ?? 0) > 0;
+      const hasProdReady = (next.registryReports ?? []).some(
+        (report) => report.prodReady,
+      );
+      const stays =
+        activeFilter === "registryInProd"
+          ? hasProdReady
+          : activeFilter === "registryOnly"
+            ? hasReports && !hasProdReady
+            : !hasReports;
+      if (!stays) {
+        removedForFilter += 1;
+        return [];
+      }
+    }
+    return [next];
+  });
+
+  const previousFilteredCount =
+    previous.filteredCount ?? previous.entries.length;
+
+  return {
+    ...previous,
+    hasAnyReportCount: updated.hasAnyReportCount,
+    prodReadyCount: updated.prodReadyCount,
+    noReportCount: updated.noReportCount,
+    registryRefreshedAt: updated.registryRefreshedAt,
+    entries,
+    filteredCount: Math.max(0, previousFilteredCount - removedForFilter),
   };
 }
 

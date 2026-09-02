@@ -40,6 +40,8 @@ type CoverageYearDetailProps = {
   onRefreshRegistry: () => void;
   isRematching: boolean;
   onRematchCompanies: (mode: CoverageRematchMode) => void | Promise<void>;
+  refreshingEntryId: string | null;
+  onRefreshEntryReports: (entry: CoverageEntry) => void | Promise<void>;
   onEdit: () => void;
   onEditEntry: (entry: CoverageEntry) => void;
   onRegistryReportSaved?: (entryId: string, saved: SaveReportSuccess) => void;
@@ -67,6 +69,8 @@ export function CoverageYearDetailView({
   onRefreshRegistry,
   isRematching,
   onRematchCompanies,
+  refreshingEntryId,
+  onRefreshEntryReports,
   onEdit,
   onEditEntry,
   onRegistryReportSaved,
@@ -207,6 +211,8 @@ export function CoverageYearDetailView({
         onToggleSelectAllLoaded={toggleSelectAllLoaded}
         onToggleEntrySelected={toggleEntrySelected}
         onEditEntry={onEditEntry}
+        onRefreshEntryReports={(entry) => void onRefreshEntryReports(entry)}
+        refreshingEntryId={refreshingEntryId}
         onFindReportClick={(entry) =>
           reportActions.setFindReportSession({ entry })
         }
