@@ -15,6 +15,7 @@ import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
 import { JobbstatusTab } from "@/tabs/jobbstatus/JobbstatusTab";
 import { OverviewTab } from "@/tabs/overview/OverviewTab";
 import { RegistryTab } from "@/tabs/registry/RegistryTab";
+import { SuspiciousDataTab } from "@/tabs/suspicious/SuspiciousDataTab";
 import { UploadTab } from "@/tabs/upload/UploadTab";
 import { WorkflowTab } from "@/tabs/workflow/WorkflowTab";
 import { DEFAULT_TOP_LEVEL_PATH } from "@/lib/top-level-routes";
@@ -41,6 +42,7 @@ function App() {
           <Route path="/workflow" element={<WorkflowTab />} />
           <Route path="/debug" element={<DebugTab />} />
           <Route path="/errors" element={<ErrorBrowserTab />} />
+          <Route path="/suspicious" element={<SuspiciousDataTab />} />
           <Route path="/editor/company/:companyId" element={<EditorTab />} />
           <Route
             path="/editor/company"

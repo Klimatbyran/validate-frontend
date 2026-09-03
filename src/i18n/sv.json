@@ -53,7 +53,8 @@
     "editor": "Redigerare",
     "pipelineChoice": "Pipeline",
     "pipelineEmissions": "Företagsutsläpp",
-    "pipelineClimatePlans": "Klimatplaner"
+    "pipelineClimatePlans": "Klimatplaner",
+    "suspiciousData": "Misstänkt data"
   },
   "climatePipeline": {
     "title": "Klimatplanspipeline",
@@ -1181,6 +1182,157 @@
     "browser": "Utforskare",
     "overviewTab": "Översikt",
     "hardestReports": "Mest komplexa rapporter"
+  },
+  "suspicious": {
+    "title": "Misstänkt data",
+    "subtitle": "Datapunkter i produktion som inte stämmer med övrig produktionsdata — andra bolag, bolagets egen historik eller resten av samma rapport. Omfattar både AI-genererade och manuellt validerade värden.",
+    "prodBadge": "Produktion",
+    "loading": "Söker igenom produktionsdata…",
+    "loadFailed": "Kunde inte hämta produktionsdata",
+    "exportCsv": "Exportera CSV",
+    "view": {
+      "label": "Vy",
+      "findings": "Träffar",
+      "companies": "Per bolag",
+      "rules": "Regler"
+    },
+    "filters": {
+      "origin": "Datakälla",
+      "allYears": "Alla dataår",
+      "severity": "Allvarlighetsgrad",
+      "allSeverities": "Alla grader",
+      "rule": "Regel",
+      "allRules": "Alla regler",
+      "searchPlaceholder": "Bolag, datapunkt eller Wikidata-ID"
+    },
+    "origin": {
+      "all": "Alla",
+      "ai": "AI-genererad",
+      "verified": "Manuellt validerad"
+    },
+    "severity": {
+      "high": "Hög",
+      "medium": "Medel",
+      "low": "Låg"
+    },
+    "basis": {
+      "peers": "Andra bolag",
+      "history": "Bolagets egen historik",
+      "report": "Samma rapport"
+    },
+    "summary": {
+      "findings": "Träffar",
+      "companiesAffected": "Berörda bolag",
+      "valuesScanned": "Genomsökta värden"
+    },
+    "table": {
+      "company": "Bolag",
+      "dataPoint": "Datapunkt",
+      "value": "Värde",
+      "why": "Varför det ser fel ut",
+      "rule": "Regel",
+      "severity": "Allvarlighetsgrad",
+      "origin": "Ursprung",
+      "findings": "Träffar",
+      "dataYears": "Dataår",
+      "verifiedBy": "Verifierad av",
+      "comparedWith": "Jämförs med",
+      "description": "Vad regeln letar efter"
+    },
+    "detail": {
+      "subtitle": "{{dataPoint}} · dataår {{year}}",
+      "comparison": "Jämfört med",
+      "flaggedValue": "Flaggat värde",
+      "openInEditor": "Öppna i editorn",
+      "openReport": "Öppna rapport",
+      "openPublicPage": "Publik sida"
+    },
+    "comparison": {
+      "peerMedian": "Median för andra bolag",
+      "peerCount": "Andra bolag",
+      "zScore": "Robust z-värde",
+      "shareOfTotal": "Andel av totalen (%)",
+      "peerShare": "Medianandel andra bolag (%)",
+      "ownYearsMedian": "Median för övriga år",
+      "otherYears": "Jämförda övriga år",
+      "factor": "Faktor",
+      "statedScope3Total": "Angiven scope 3-total",
+      "categorySum": "Summa av kategorier",
+      "difference": "Skillnad",
+      "categoryValue": "Kategorins värde",
+      "statedTotal": "Angivna totala utsläpp",
+      "scopeSum": "Scope 1 + 2 + 3",
+      "scope1": "Scope 1",
+      "scope2": "Scope 2",
+      "scope3": "Scope 3",
+      "scope2Mb": "Scope 2 marknadsbaserad",
+      "scope2Lb": "Scope 2 platsbaserad",
+      "sharedValue": "Delat värde",
+      "dataPointCount": "Datapunkter med samma värde",
+      "dataYear": "Dataår",
+      "reportYear": "Rapportår"
+    },
+    "rules": {
+      "peerOutlier": {
+        "label": "Avvikare mot andra bolag",
+        "description": "Jämför varje värde med alla andra bolag som rapporterar samma datapunkt för samma år, på logaritmisk skala med median och MAD.",
+        "messageAbove": "{{factor}}× högre än medianen för {{peerCount}} andra bolag som rapporterar denna datapunkt.",
+        "messageBelow": "{{factor}}× lägre än medianen för {{peerCount}} andra bolag som rapporterar denna datapunkt."
+      },
+      "peerShareOutlier": {
+        "label": "Avvikande andel mot andra bolag",
+        "description": "Jämför värdets andel av bolagets egna totala utsläpp med samma andel hos andra bolag, så att bolagets storlek inte spelar roll.",
+        "messageAbove": "Utgör {{share}}% av bolagets totala utsläpp, mot {{peerShare}}% för {{peerCount}} andra bolag.",
+        "messageBelow": "Endast {{share}}% av bolagets totala utsläpp, mot {{peerShare}}% för {{peerCount}} andra bolag."
+      },
+      "unitScaleError": {
+        "label": "Enhetsförväxling",
+        "description": "Ett hopp nära en tiopotens (1 000× eller mer) mot bolagets övriga år, vilket oftast betyder att kg och ton blandats ihop.",
+        "messageAbove": "Ungefär {{factor}}× större än bolagets egen median för övriga år — typiskt för en enhetsförväxling.",
+        "messageBelow": "Ungefär {{factor}}× mindre än bolagets egen median för övriga år — typiskt för en enhetsförväxling."
+      },
+      "yearOverYearJump": {
+        "label": "Hopp mellan år",
+        "description": "Ett värde minst 10× från medianen för samma bolags övriga dataår.",
+        "messageAbove": "{{factor}}× högre än bolagets median över {{otherYears}} andra år.",
+        "messageBelow": "{{factor}}× lägre än bolagets median över {{otherYears}} andra år."
+      },
+      "scope3SumMismatch": {
+        "label": "Scope 3-summan stämmer inte",
+        "description": "De rapporterade scope 3-kategorierna summerar inte till den scope 3-total som anges i samma rapport.",
+        "message": "De {{categoryCount}} rapporterade scope 3-kategorierna skiljer sig {{percent}}% från den angivna scope 3-totalen."
+      },
+      "categoryExceedsTotal": {
+        "label": "Kategori större än totalen",
+        "description": "En enskild scope 3-kategori är större än den scope 3-total den ingår i.",
+        "message": "Denna enskilda kategori är {{percent}}% av den angivna scope 3-totalen den tillhör."
+      },
+      "totalSumMismatch": {
+        "label": "Totalsumman stämmer inte",
+        "description": "Scope 1 + scope 2 + scope 3 summerar inte till de totala utsläpp som anges i samma rapport.",
+        "message": "Scope 1 + 2 + 3 skiljer sig {{percent}}% från de angivna totala utsläppen."
+      },
+      "scope2Divergence": {
+        "label": "Scope 2-metoderna går isär",
+        "description": "Marknadsbaserad och platsbaserad scope 2 skiljer sig med flera storleksordningar, trots att de värderar samma el.",
+        "message": "Marknadsbaserad och platsbaserad scope 2 skiljer sig med {{factor}}×."
+      },
+      "duplicateValue": {
+        "label": "Dubblerat värde",
+        "description": "Samma tal förekommer under flera datapunkter i en rapport, vilket oftast betyder att ett värde kopierats ned i en tabell.",
+        "message": "Samma värde förekommer i {{count}} datapunkter i denna rapport: {{others}}."
+      },
+      "valueLooksLikeYear": {
+        "label": "Värdet ser ut som ett årtal",
+        "description": "Värdet är samma som rapportens dataår eller dokumentår, så ett årtal har troligen lästs som en utsläppssiffra.",
+        "message": "Värdet är {{year}}, rapportens eget årtal — troligen ett årtal som lästs som en siffra."
+      },
+      "negativeValue": {
+        "label": "Negativt värde",
+        "description": "Utsläpp under noll, vilket datamodellen inte har något sätt att uttrycka.",
+        "message": "Utsläppen anges som ett negativt tal."
+      }
+    }
   },
   "crawler": {
     "title": "Crawler",

@@ -9,6 +9,7 @@ export const TOP_LEVEL_TAB_SEGMENTS = [
   "workflow",
   "debug",
   "errors",
+  "suspicious",
   "editor",
   "climate-plans",
   "climate-pipeline",

@@ -26,6 +26,7 @@ export const PIPELINE_TAB_SEGMENTS = {
     "workflow",
     "debug",
     "errors",
+    "suspicious",
     "editor",
   ],
   "climate-plans": ["climate-plans", "climate-pipeline", "climate-qa-reviews"],

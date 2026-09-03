@@ -56,6 +56,8 @@ function tabLabelKey(tab: TopLevelTabSegment): string {
       return "nav.debug";
     case "errors":
       return "nav.errorBrowser";
+    case "suspicious":
+      return "nav.suspiciousData";
     case "editor":
       return "nav.editor";
     case "climate-plans":
