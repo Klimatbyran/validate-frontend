@@ -92,31 +92,31 @@ export function SuspiciousFindingDialog({
           </dl>
         </div>
 
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-          <div className="flex justify-between gap-4">
-            <dt className="text-gray-02">{t("yearLabels.dataYear")}</dt>
-            <dd className="text-gray-01">{finding.dataYear}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-gray-02">
-              {t("yearLabels.companyReportYearShort")}
-            </dt>
-            <dd className="text-gray-01">
-              {finding.reportYear ?? t("common.placeholderDash")}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-gray-02">{t("suspicious.table.verifiedBy")}</dt>
-            <dd className="text-gray-01">
-              {finding.verifiedByName ?? t("common.placeholderDash")}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-gray-02">{t("companyLink.wikidata")}</dt>
-            <dd className="text-gray-01">
-              {finding.wikidataId ?? t("common.placeholderDash")}
-            </dd>
-          </div>
+        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {[
+            {
+              labelKey: "yearLabels.dataYear",
+              value: String(finding.dataYear),
+            },
+            {
+              labelKey: "yearLabels.companyReportYearShort",
+              value: finding.reportYear ? String(finding.reportYear) : null,
+            },
+            {
+              labelKey: "suspicious.table.verifiedBy",
+              value: finding.verifiedByName,
+            },
+            { labelKey: "companyLink.wikidata", value: finding.wikidataId },
+          ].map((field) => (
+            <div key={field.labelKey}>
+              <dt className="text-[11px] uppercase tracking-wide text-gray-02">
+                {t(field.labelKey)}
+              </dt>
+              <dd className="text-sm text-gray-01 mt-0.5">
+                {field.value ?? t("common.placeholderDash")}
+              </dd>
+            </div>
+          ))}
         </dl>
 
         <div className="flex flex-wrap items-center gap-4 border-t border-gray-03/50 pt-4">

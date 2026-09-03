@@ -41,6 +41,96 @@ describe("peer comparison", () => {
 
     expect(rulesFor([...thin, odd], "Lonely")).not.toContain("peer-outlier");
   });
+
+  it("does not let a tightly clustered peer group flag a small deviation", () => {
+    // Every peer reports the identical value, so the measured spread is ~0.
+    // Without a floor on the spread, a 2x gap would score as wildly extreme.
+    const identicalPeers = Array.from({ length: 20 }, (_, index) =>
+      makeCompany(`Clone ${index}`, [
+        { dataYear: 2024, categories: { 9: 1_000 } },
+      ]),
+    );
+    const slightlyOff = makeCompany("Slightly Off", [
+      { dataYear: 2024, categories: { 9: 2_000 } },
+    ]);
+
+    expect(rulesFor([...identicalPeers, slightlyOff], "Slightly Off")).toEqual(
+      [],
+    );
+  });
+
+  it("still flags a large deviation from a tightly clustered peer group", () => {
+    const identicalPeers = Array.from({ length: 20 }, (_, index) =>
+      makeCompany(`Clone ${index}`, [
+        { dataYear: 2024, categories: { 9: 1_000 } },
+      ]),
+    );
+    const wayOff = makeCompany("Way Off", [
+      { dataYear: 2024, categories: { 9: 900_000 } },
+    ]);
+
+    expect(rulesFor([...identicalPeers, wayOff], "Way Off")).toContain(
+      "peer-outlier",
+    );
+  });
+});
+
+describe("share comparison guards", () => {
+  /** Peers whose totals add up, so their shares are a usable baseline. */
+  function consistentPeers(count: number) {
+    return Array.from({ length: count }, (_, index) =>
+      makeCompany(`Share Peer ${index}`, [
+        {
+          dataYear: 2024,
+          scope1: 100,
+          scope2mb: 100,
+          scope3StatedTotal: 800,
+          statedTotal: 1_000,
+          categories: { 1: 600, 2: 200 },
+        },
+      ]),
+    );
+  }
+
+  it("skips a report whose own scopes do not add up to its stated total", () => {
+    // Scope 1 is inflated, so every share computed against the total would be
+    // distorted by that one value rather than by anything of its own.
+    const inconsistent = makeCompany("Inconsistent AB", [
+      {
+        dataYear: 2024,
+        scope1: 100_000,
+        scope2mb: 100,
+        scope3StatedTotal: 800,
+        statedTotal: 1_000,
+        categories: { 1: 600, 2: 200 },
+      },
+    ]);
+
+    const rules = rulesFor(
+      [...consistentPeers(20), inconsistent],
+      "Inconsistent AB",
+    );
+
+    expect(rules).toContain("total-sum-mismatch");
+    expect(rules).not.toContain("peer-share-outlier");
+  });
+
+  it("compares shares when the report's own numbers agree", () => {
+    const lopsided = makeCompany("Lopsided AB", [
+      {
+        dataYear: 2024,
+        scope1: 100,
+        scope2mb: 100,
+        scope3StatedTotal: 800,
+        statedTotal: 1_000,
+        categories: { 1: 5, 2: 795 },
+      },
+    ]);
+
+    expect(
+      rulesFor([...consistentPeers(20), lopsided], "Lopsided AB"),
+    ).toContain("peer-share-outlier");
+  });
 });
 
 describe("company history comparison", () => {

@@ -11,7 +11,10 @@ import {
   safeLog10,
 } from "./stats";
 import { SUSPICION_CONFIG } from "./suspicion-config";
-import { periodTotalEmissions } from "./report-totals";
+import {
+  isPeriodTotalTrustworthy,
+  periodTotalEmissions,
+} from "./report-totals";
 
 interface PeerEntry {
   observation: DataPointObservation;
@@ -26,6 +29,8 @@ interface PeerThresholds {
   flagZ: number;
   mediumZ: number;
   highZ: number;
+  minLogMad: number;
+  minFactor: number;
 }
 
 interface PeerOutlier {
@@ -54,6 +59,12 @@ function severityForZ(
  * Flag entries whose modified z-score against their peer group exceeds the
  * threshold. Comparison happens in log space because emissions are
  * log-distributed: a 10× gap means the same thing at 100 t and at 100 000 t.
+ *
+ * Two guards keep tight peer groups honest. The MAD is floored, because a
+ * cluster with almost no measured spread would otherwise score every ordinary
+ * deviation as wildly suspicious; and a flagged value has to be a minimum
+ * factor off the median, so a statistically unusual but practically tiny gap
+ * doesn't reach a reviewer.
  */
 function findPeerOutliers(
   entries: PeerEntry[],
@@ -65,13 +76,19 @@ function findPeerOutliers(
   const center = median(logValues);
   if (center === null) return [];
 
-  const mad = medianAbsoluteDeviation(logValues, center);
+  const mad = Math.max(
+    medianAbsoluteDeviation(logValues, center),
+    thresholds.minLogMad,
+  );
   const peerMedian = 10 ** center;
   const outliers: PeerOutlier[] = [];
 
   for (const entry of entries) {
     const z = robustZScore(entry.logValue, center, mad);
     if (z === null || Math.abs(z) < thresholds.flagZ) continue;
+
+    const factor = 10 ** Math.abs(entry.logValue - center);
+    if (factor < thresholds.minFactor) continue;
 
     const above = entry.logValue > center;
     outliers.push({
@@ -81,7 +98,7 @@ function findPeerOutliers(
       severity: severityForZ(Math.abs(z), thresholds),
       peerMedian,
       peerCount: entries.length,
-      factor: 10 ** Math.abs(entry.logValue - center),
+      factor,
       above,
     });
   }
@@ -181,6 +198,8 @@ export function detectPeerShareOutliers(
   const entries: PeerEntry[] = [];
 
   for (const record of records) {
+    if (!isPeriodTotalTrustworthy(record.emissions)) continue;
+
     const total = periodTotalEmissions(record.emissions);
     if (total === null || total < SUSPICION_CONFIG.peerShare.minDenominator) {
       continue;

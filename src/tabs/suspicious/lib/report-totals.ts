@@ -1,5 +1,7 @@
 import { extractTotal } from "@/tabs/errors/lib";
 import type { ReportingPeriod } from "@/tabs/errors/types";
+import { relativeDifference } from "./stats";
+import { SUSPICION_CONFIG } from "./suspicion-config";
 
 type Emissions = ReportingPeriod["emissions"];
 
@@ -77,15 +79,19 @@ export function statedTotalEmissions(
 }
 
 /**
- * Best available whole-footprint figure for a reporting period: the company's
- * own stated total, else scope 1 + 2 + 3 from whatever parts are present.
- * Used as the denominator when normalising values by company size.
+ * Best available whole-footprint figure for a reporting period, used as the
+ * denominator when normalising values by company size.
+ *
+ * Takes the larger of the company's stated total and the sum of its scopes.
+ * A stated total that is smaller than the parts it should contain is itself
+ * one of the things this tab flags, and using it as a denominator would turn
+ * that single bad total into a suspicious share for every other value in the
+ * report.
  */
 export function periodTotalEmissions(
   emissions: Emissions | null | undefined,
 ): number | null {
   const stated = statedTotalEmissions(emissions);
-  if (stated !== null && stated > 0) return stated;
 
   const parts = [
     scope1Value(emissions),
@@ -93,7 +99,54 @@ export function periodTotalEmissions(
     scope3Total(emissions),
   ].filter((part): part is number => part !== null);
 
-  if (parts.length === 0) return null;
+  const sum = parts.length
+    ? parts.reduce((total, part) => total + part, 0)
+    : null;
+
+  const candidates = [stated, sum].filter(
+    (candidate): candidate is number => candidate !== null && candidate > 0,
+  );
+
+  return candidates.length ? Math.max(...candidates) : null;
+}
+
+/**
+ * Whether a period's own numbers agree well enough for its total to be used as
+ * a denominator.
+ *
+ * A single wrong value distorts every share computed against the total it
+ * feeds, which would smear one bad figure across all its siblings. When the
+ * parts and the totals disagree, the inconsistency rules report that directly
+ * and the share comparison sits the period out.
+ */
+export function isPeriodTotalTrustworthy(
+  emissions: Emissions | null | undefined,
+): boolean {
+  const scope3Stated = scope3StatedTotal(emissions);
+  const categorySum = scope3CategorySum(emissions);
+
+  if (scope3Stated !== null && categorySum !== null) {
+    const scope3Gap = relativeDifference(scope3Stated, categorySum);
+    if (
+      scope3Gap === null ||
+      scope3Gap >= SUSPICION_CONFIG.scope3Sum.flagRelative
+    ) {
+      return false;
+    }
+  }
+
+  const stated = statedTotalEmissions(emissions);
+  if (stated === null) return true;
+
+  const parts = [
+    scope1Value(emissions),
+    scope2Value(emissions),
+    scope3Total(emissions),
+  ].filter((part): part is number => part !== null);
+
+  if (parts.length < 3) return true;
+
   const sum = parts.reduce((total, part) => total + part, 0);
-  return sum > 0 ? sum : null;
+  const gap = relativeDifference(stated, sum);
+  return gap !== null && gap < SUSPICION_CONFIG.totalSum.flagRelative;
 }
