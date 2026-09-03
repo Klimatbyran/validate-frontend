@@ -1541,8 +1541,11 @@
       },
       "reports": {
         "missing": "Missing",
-        "pillInProd": "In prod — report has been run",
-        "pillInRegistry": "In registry — not run yet",
+        "pillInProd": "Year processed — CompanyReport for this year has reporting period data",
+        "pillInRegistry": "Year not processed yet — no CompanyReport with period data for this year",
+        "pillRunCompleted": "This report has a successful archive run",
+        "pillRunNotRun": "This report has not been run yet",
+        "pillRunFailed": "This report's latest archive run failed",
         "unknownType": "Unknown type"
       },
       "columns": {

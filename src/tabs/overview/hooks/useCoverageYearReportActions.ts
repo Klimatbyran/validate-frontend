@@ -135,6 +135,7 @@ export function useCoverageYearReportActions({
           url: updated.url,
           sourceUrl: updated.sourceUrl ?? updated.url,
           prodReady: false,
+          runStatus: "not_run",
         },
       );
       toast.success(

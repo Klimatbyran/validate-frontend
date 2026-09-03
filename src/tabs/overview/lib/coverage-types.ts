@@ -40,7 +40,13 @@ export const registryReportPillSchema = z.object({
   url: z.string(),
   sourceUrl: z.string().nullable(),
   matchMethod: z.enum(["wikidata", "name"]),
+  /** Year readiness: CompanyReport for this year with period data. */
   prodReady: z.boolean(),
+  /** Per-PDF archive run outcome. */
+  runStatus: z
+    .enum(["completed", "not_run", "failed"])
+    .optional()
+    .default("not_run"),
   reportTypeId: z.string().nullable().optional(),
   reportTypeSlug: z.string().nullable().optional(),
   reportTypeLabel: z.string().nullable().optional(),
@@ -144,6 +150,9 @@ export type CoverageMatchSaveAction =
   | { type: "markMissing" };
 
 export type RegistryReportPill = z.infer<typeof registryReportPillSchema>;
+export type CoverageReportRunStatus = NonNullable<
+  RegistryReportPill["runStatus"]
+>;
 
 export type CoverageEntryFilter =
   | "all"

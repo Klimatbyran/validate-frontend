@@ -2,7 +2,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ExternalLink, Pencil, Play, Trash2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
-import type { RegistryReportPill } from "@/tabs/overview/lib/coverage-types";
+import type {
+  CoverageReportRunStatus,
+  RegistryReportPill,
+} from "@/tabs/overview/lib/coverage-types";
 import {
   registryReportPipelineUrl,
   registryReportMenuLabel,
@@ -15,6 +18,27 @@ type ReportYearTypeDropdownProps = {
   onReplace: (report: RegistryReportPill) => void;
   onRemove: (report: RegistryReportPill) => void;
 };
+
+function runStatusDotClass(runStatus: CoverageReportRunStatus): string {
+  if (runStatus === "completed") return "bg-green-03";
+  if (runStatus === "failed") return "bg-pink-03";
+  return "bg-yellow-500";
+}
+
+function runStatusTitleKey(
+  runStatus: CoverageReportRunStatus,
+):
+  | "overview.coverage.reports.pillRunCompleted"
+  | "overview.coverage.reports.pillRunFailed"
+  | "overview.coverage.reports.pillRunNotRun" {
+  if (runStatus === "completed") {
+    return "overview.coverage.reports.pillRunCompleted";
+  }
+  if (runStatus === "failed") {
+    return "overview.coverage.reports.pillRunFailed";
+  }
+  return "overview.coverage.reports.pillRunNotRun";
+}
 
 export function ReportYearTypeDropdown({
   group,
@@ -113,16 +137,15 @@ export function ReportYearTypeDropdown({
                   group.reports,
                   t("overview.coverage.reports.unknownType"),
                 );
-                const typeClass = report.prodReady
-                  ? "bg-green-03"
-                  : "bg-yellow-500";
+                const runStatus = report.runStatus ?? "not_run";
                 return (
                   <div
                     key={report.reportId}
                     className="flex items-center gap-1 rounded px-1 py-1 hover:bg-gray-03/40"
                   >
                     <span
-                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${typeClass}`}
+                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${runStatusDotClass(runStatus)}`}
+                      title={t(runStatusTitleKey(runStatus))}
                       aria-hidden
                     />
                     <span className="min-w-0 flex-1 truncate text-xs text-gray-01">
