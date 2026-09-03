@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ExternalLink, Pencil, Play, Trash2 } from "lucide-react";
+import { ChevronDown, Check, ExternalLink, Pencil, Play, Trash2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import type {
   CoverageReportRunStatus,
@@ -17,6 +17,7 @@ type ReportYearTypeDropdownProps = {
   onRun: (report: RegistryReportPill) => void;
   onReplace: (report: RegistryReportPill) => void;
   onRemove: (report: RegistryReportPill) => void;
+  onConfirm?: (report: RegistryReportPill) => void;
 };
 
 function runStatusDotClass(runStatus: CoverageReportRunStatus): string {
@@ -45,6 +46,7 @@ export function ReportYearTypeDropdown({
   onRun,
   onReplace,
   onRemove,
+  onConfirm,
 }: ReportYearTypeDropdownProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -57,9 +59,11 @@ export function ReportYearTypeDropdown({
   } | null>(null);
 
   const yearLabel = group.year != null ? String(group.year) : "?";
-  const className = group.prodReady
-    ? "border-green-03/40 bg-green-03/20 text-green-03 hover:bg-green-03/30"
-    : "border-yellow-500/40 bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30";
+  const className = group.hasAmbiguous
+    ? "border-dashed border-blue-03/50 bg-blue-03/10 text-blue-03 hover:bg-blue-03/20"
+    : group.prodReady
+      ? "border-green-03/40 bg-green-03/20 text-green-03 hover:bg-green-03/30"
+      : "border-yellow-500/40 bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30";
 
   useEffect(() => {
     if (!open) return;
@@ -112,9 +116,11 @@ export function ReportYearTypeDropdown({
         aria-expanded={open}
         aria-haspopup="menu"
         title={
-          group.prodReady
-            ? t("overview.coverage.reports.pillInProd")
-            : t("overview.coverage.reports.pillInRegistry")
+          group.hasAmbiguous
+            ? t("overview.coverage.reports.pillAmbiguous")
+            : group.prodReady
+              ? t("overview.coverage.reports.pillInProd")
+              : t("overview.coverage.reports.pillInRegistry")
         }
         onClick={() => setOpen((current) => !current)}
         className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors ${className}`}
@@ -160,6 +166,19 @@ export function ReportYearTypeDropdown({
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
+                    {report.linkStatus === "ambiguous" && onConfirm ? (
+                      <button
+                        type="button"
+                        className="rounded-full p-1 text-gray-02 hover:bg-blue-03/20 hover:text-blue-03"
+                        title={t("overview.coverage.confirmReportLink")}
+                        onClick={() => {
+                          setOpen(false);
+                          onConfirm(report);
+                        }}
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className="rounded-full p-1 text-gray-02 hover:bg-gray-03/60 hover:text-gray-01"

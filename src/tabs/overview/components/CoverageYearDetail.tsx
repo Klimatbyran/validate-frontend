@@ -229,6 +229,9 @@ export function CoverageYearDetailView({
         onRemoveReport={(entry, report) =>
           reportActions.setRemoveReportTarget({ entryId: entry.id, report })
         }
+        onConfirmReport={(entry, report) => {
+          void reportActions.handleConfirmReport(entry.id, report);
+        }}
       />
 
       <ClientTablePagination

@@ -8,7 +8,7 @@ import {
   getRegistryRunReportsPipelineConfig,
   replaceRegistryReportSourceUrl,
 } from "@/tabs/registry/lib/registry-api";
-import { unlinkCoverageEntryReport } from "@/tabs/overview/lib/coverage-api";
+import { unlinkCoverageEntryReport, linkCoverageEntryReport } from "@/tabs/overview/lib/coverage-api";
 import type {
   CoverageEntry,
   CoverageYearDetail,
@@ -162,6 +162,28 @@ export function useCoverageYearReportActions({
     }
   };
 
+  const handleConfirmReport = async (
+    entryId: string,
+    report: RegistryReportPill,
+  ) => {
+    try {
+      const detail = await linkCoverageEntryReport(
+        listId,
+        year,
+        entryId,
+        report.reportId,
+      );
+      onEntryReportsLinked?.(detail);
+      toast.success(t("overview.coverage.confirmReportLinkSuccess"));
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("overview.coverage.confirmReportLinkError"),
+      );
+    }
+  };
+
   const handleRemoveReport = async () => {
     if (!removeReportTarget) return;
     setIsRemovingReport(true);
@@ -216,6 +238,7 @@ export function useCoverageYearReportActions({
     handleRunReportModalRun,
     handleReplaceReportUrl,
     handleRemoveReport,
+    handleConfirmReport,
     onEntryReportsLinked,
   };
 }

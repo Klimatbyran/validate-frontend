@@ -40,6 +40,7 @@ export const registryReportPillSchema = z.object({
   url: z.string(),
   sourceUrl: z.string().nullable(),
   matchMethod: z.enum(["wikidata", "name", "manual"]),
+  linkStatus: z.enum(["matched", "ambiguous"]).optional().default("matched"),
   /** Year readiness: CompanyReport for this year with period data. */
   prodReady: z.boolean(),
   /** Per-PDF archive run outcome. */

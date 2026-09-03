@@ -34,9 +34,12 @@ export function ReportYearPill({ report }: ReportYearPillProps) {
   const href = report.sourceUrl?.trim() || report.url;
   const label = report.reportYear ?? "?";
   const runStatus = report.runStatus ?? "not_run";
-  const className = report.prodReady
-    ? "border-green-03/40 bg-green-03/20 text-green-03 hover:bg-green-03/30"
-    : "border-yellow-500/40 bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30";
+  const isAmbiguous = report.linkStatus === "ambiguous";
+  const className = isAmbiguous
+    ? "border-dashed border-blue-03/50 bg-blue-03/10 text-blue-03 hover:bg-blue-03/20"
+    : report.prodReady
+      ? "border-green-03/40 bg-green-03/20 text-green-03 hover:bg-green-03/30"
+      : "border-yellow-500/40 bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30";
 
   return (
     <a
@@ -44,9 +47,11 @@ export function ReportYearPill({ report }: ReportYearPillProps) {
       target="_blank"
       rel="noopener noreferrer"
       title={`${
-        report.prodReady
-          ? t("overview.coverage.reports.pillInProd")
-          : t("overview.coverage.reports.pillInRegistry")
+        isAmbiguous
+          ? t("overview.coverage.reports.pillAmbiguous")
+          : report.prodReady
+            ? t("overview.coverage.reports.pillInProd")
+            : t("overview.coverage.reports.pillInRegistry")
       } · ${t(runStatusTitleKey(runStatus))}`}
       className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors ${className}`}
     >

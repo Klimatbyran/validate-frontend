@@ -72,6 +72,7 @@ type CoverageEntryRowProps = {
   onRunReport: (report: RegistryReportPill) => void;
   onReplaceReport: (report: RegistryReportPill) => void;
   onRemoveReport: (report: RegistryReportPill) => void;
+  onConfirmReport: (report: RegistryReportPill) => void;
 };
 
 export function CoverageEntryRow({
@@ -89,6 +90,7 @@ export function CoverageEntryRow({
   onRunReport,
   onReplaceReport,
   onRemoveReport,
+  onConfirmReport,
 }: CoverageEntryRowProps) {
   const { t } = useI18n();
 
@@ -163,6 +165,7 @@ export function CoverageEntryRow({
                 onRun={onRunReport}
                 onReplace={onReplaceReport}
                 onRemove={onRemoveReport}
+                onConfirm={onConfirmReport}
               />
             ))}
           </div>
