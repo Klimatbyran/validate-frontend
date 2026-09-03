@@ -27,15 +27,25 @@ import type {
   SelectedReport,
 } from "@/tabs/crawler/lib/crawler-types";
 import { CoverageRegistrySaveResult } from "@/tabs/overview/components/CoverageRegistrySaveResult";
-import type { CoverageEntry } from "@/tabs/overview/lib/coverage-types";
+import {
+  linkCoverageEntryReport,
+  searchCoverageRegistryReports,
+} from "@/tabs/overview/lib/coverage-api";
+import type {
+  CoverageEntry,
+  CoverageRegistryReportSearchHit,
+  CoverageYearDetail,
+} from "@/tabs/overview/lib/coverage-types";
 import { CRAWLER_FEATURES } from "@/config/crawler-features";
 
 type CoverageFindReportDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  listId: string;
   entry: CoverageEntry;
   defaultYear: number;
   onSaved?: (saved: SaveReportSuccess) => void;
+  onLinked?: (detail: CoverageYearDetail) => void;
   runPipeline: RunReportsPipelineHandle;
 };
 
@@ -51,9 +61,11 @@ function recentYearOptions(anchorYear: number): number[] {
 export function CoverageFindReportDialog({
   open,
   onOpenChange,
+  listId,
   entry,
   defaultYear,
   onSaved,
+  onLinked,
   runPipeline,
 }: CoverageFindReportDialogProps) {
   const { t } = useI18n();
@@ -71,6 +83,15 @@ export function CoverageFindReportDialog({
   const [registryResponse, setRegistryResponse] =
     useState<SaveReportsListResponse | null>(null);
   const [isRunModalOpen, setIsRunModalOpen] = useState(false);
+  const [registryQuery, setRegistryQuery] = useState("");
+  const [registryHits, setRegistryHits] = useState<
+    CoverageRegistryReportSearchHit[]
+  >([]);
+  const [isSearchingRegistry, setIsSearchingRegistry] = useState(false);
+  const [registrySearchError, setRegistrySearchError] = useState<string | null>(
+    null,
+  );
+  const [linkingReportId, setLinkingReportId] = useState<string | null>(null);
 
   const {
     runForUrls,
@@ -98,7 +119,43 @@ export function CoverageFindReportDialog({
     setIsSaving(false);
     setRegistryResponse(null);
     setIsRunModalOpen(false);
-  }, [open, defaultYear, entry.id]);
+    setRegistryQuery(companyName);
+    setRegistryHits([]);
+    setRegistrySearchError(null);
+    setLinkingReportId(null);
+  }, [open, defaultYear, entry.id, companyName]);
+
+  useEffect(() => {
+    if (!open) return;
+    const trimmed = registryQuery.trim();
+    if (trimmed.length < 2) {
+      setRegistryHits([]);
+      setRegistrySearchError(null);
+      return;
+    }
+
+    const handle = window.setTimeout(() => {
+      setIsSearchingRegistry(true);
+      setRegistrySearchError(null);
+      const yearNumber = Number.parseInt(reportYear, 10);
+      void searchCoverageRegistryReports(
+        trimmed,
+        Number.isFinite(yearNumber) ? yearNumber : undefined,
+      )
+        .then((hits) => setRegistryHits(hits))
+        .catch((error) => {
+          setRegistryHits([]);
+          setRegistrySearchError(
+            error instanceof Error
+              ? error.message
+              : t("overview.coverage.findReportRegistrySearchError"),
+          );
+        })
+        .finally(() => setIsSearchingRegistry(false));
+    }, 300);
+
+    return () => window.clearTimeout(handle);
+  }, [open, registryQuery, reportYear, t]);
 
   useEffect(() => {
     if (!selectedReport) return;
@@ -150,6 +207,31 @@ export function CoverageFindReportDialog({
       return;
     }
     setSelectedReport(selected);
+  };
+
+  const handleLinkRegistryReport = async (
+    hit: CoverageRegistryReportSearchHit,
+  ) => {
+    setLinkingReportId(hit.id);
+    setRegistrySearchError(null);
+    try {
+      const detail = await linkCoverageEntryReport(
+        listId,
+        defaultYear,
+        entry.id,
+        hit.id,
+      );
+      onLinked?.(detail);
+      handleOpenChange(false);
+    } catch (error) {
+      setRegistrySearchError(
+        error instanceof Error
+          ? error.message
+          : t("overview.coverage.findReportLinkError"),
+      );
+    } finally {
+      setLinkingReportId(null);
+    }
   };
 
   const handleSearchOnline = async () => {
@@ -355,6 +437,85 @@ export function CoverageFindReportDialog({
                     onChange={(event) => setReportYear(event.target.value)}
                     className="w-full rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm text-gray-01 focus:outline-none focus:ring-2 focus:ring-orange-03"
                   />
+                </div>
+
+                <div className="space-y-3 border-t border-gray-03/60 pt-4">
+                  <p className="text-sm font-medium text-gray-01">
+                    {t("overview.coverage.findReportRegistrySection")}
+                  </p>
+                  <input
+                    type="search"
+                    value={registryQuery}
+                    disabled={isSaving || linkingReportId != null}
+                    onChange={(event) => setRegistryQuery(event.target.value)}
+                    placeholder={t(
+                      "overview.coverage.findReportRegistrySearchPlaceholder",
+                    )}
+                    className="w-full rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm text-gray-01 focus:outline-none focus:ring-2 focus:ring-orange-03"
+                  />
+                  {isSearchingRegistry ? (
+                    <p className="flex items-center gap-2 text-sm text-gray-02">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {t("overview.coverage.findReportRegistrySearching")}
+                    </p>
+                  ) : null}
+                  {registrySearchError ? (
+                    <p className="text-sm text-pink-03">{registrySearchError}</p>
+                  ) : null}
+                  {registryHits.length > 0 ? (
+                    <ul className="space-y-2">
+                      {registryHits.map((hit) => {
+                        const alreadyLinked = (entry.registryReports ?? []).some(
+                          (report) => report.reportId === hit.id,
+                        );
+                        return (
+                          <li
+                            key={hit.id}
+                            className="flex flex-col gap-2 rounded-md border border-gray-03/60 p-3 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="min-w-0 space-y-1">
+                              <p className="truncate text-sm font-medium text-gray-01">
+                                {hit.companyName ?? hit.url}
+                              </p>
+                              <p className="truncate text-xs text-gray-02">
+                                {[hit.reportYear, hit.reportTypeLabel, hit.url]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="shrink-0"
+                              disabled={
+                                alreadyLinked ||
+                                linkingReportId != null ||
+                                isSaving
+                              }
+                              onClick={() => void handleLinkRegistryReport(hit)}
+                            >
+                              {linkingReportId === hit.id ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  {t("overview.coverage.findReportLinking")}
+                                </>
+                              ) : alreadyLinked ? (
+                                t("overview.coverage.findReportAlreadyLinked")
+                              ) : (
+                                t("overview.coverage.findReportLinkExisting")
+                              )}
+                            </Button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : registryQuery.trim().length >= 2 &&
+                    !isSearchingRegistry ? (
+                    <p className="text-sm text-gray-02">
+                      {t("overview.coverage.findReportRegistryNoResults")}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="space-y-2">

@@ -5,12 +5,13 @@ import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
 import type { RunReportListItem } from "@/lib/run-reports-types";
 import { toRunReportListItem } from "@/tabs/overview/lib/coverage-registry-report-run";
 import {
-  deleteReportFromRegistry,
   getRegistryRunReportsPipelineConfig,
   replaceRegistryReportSourceUrl,
 } from "@/tabs/registry/lib/registry-api";
+import { unlinkCoverageEntryReport } from "@/tabs/overview/lib/coverage-api";
 import type {
   CoverageEntry,
+  CoverageYearDetail,
   RegistryReportPill,
 } from "@/tabs/overview/lib/coverage-types";
 
@@ -29,6 +30,8 @@ type RunReportSession = {
 };
 
 type UseCoverageYearReportActionsArgs = {
+  listId: string;
+  year: number;
   entries: CoverageEntry[];
   onRegistryReportRemoved?: (entryId: string, reportId: string) => void;
   onRegistryReportUpdated?: (
@@ -36,12 +39,16 @@ type UseCoverageYearReportActionsArgs = {
     reportId: string,
     updated: RegistryReportPill,
   ) => void;
+  onEntryReportsLinked?: (detail: CoverageYearDetail) => void;
 };
 
 export function useCoverageYearReportActions({
+  listId,
+  year,
   entries,
   onRegistryReportRemoved,
   onRegistryReportUpdated,
+  onEntryReportsLinked,
 }: UseCoverageYearReportActionsArgs) {
   const { t } = useI18n();
   const [findReportSession, setFindReportSession] =
@@ -159,7 +166,13 @@ export function useCoverageYearReportActions({
     if (!removeReportTarget) return;
     setIsRemovingReport(true);
     try {
-      await deleteReportFromRegistry([removeReportTarget.report.reportId]);
+      await unlinkCoverageEntryReport(
+        listId,
+        year,
+        removeReportTarget.entryId,
+        removeReportTarget.report.reportId,
+        { reject: true },
+      );
       onRegistryReportRemoved?.(
         removeReportTarget.entryId,
         removeReportTarget.report.reportId,
@@ -203,5 +216,6 @@ export function useCoverageYearReportActions({
     handleRunReportModalRun,
     handleReplaceReportUrl,
     handleRemoveReport,
+    onEntryReportsLinked,
   };
 }

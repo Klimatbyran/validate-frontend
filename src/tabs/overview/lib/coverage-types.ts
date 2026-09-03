@@ -39,7 +39,7 @@ export const registryReportPillSchema = z.object({
   wikidataId: z.string().nullable(),
   url: z.string(),
   sourceUrl: z.string().nullable(),
-  matchMethod: z.enum(["wikidata", "name"]),
+  matchMethod: z.enum(["wikidata", "name", "manual"]),
   /** Year readiness: CompanyReport for this year with period data. */
   prodReady: z.boolean(),
   /** Per-PDF archive run outcome. */
@@ -70,6 +70,26 @@ export const coverageCompanySearchHitSchema = z.object({
 export const coverageCompanySearchResponseSchema = z.array(
   coverageCompanySearchHitSchema,
 );
+
+export const coverageRegistryReportSearchHitSchema = z.object({
+  id: z.string(),
+  companyName: z.string().nullable(),
+  wikidataId: z.string().nullable(),
+  url: z.string(),
+  sourceUrl: z.string().nullable(),
+  reportYear: z.string().nullable(),
+  reportTypeId: z.string().nullable(),
+  reportTypeSlug: z.string().nullable(),
+  reportTypeLabel: z.string().nullable(),
+});
+
+export const coverageRegistryReportSearchResponseSchema = z.array(
+  coverageRegistryReportSearchHitSchema,
+);
+
+export type CoverageRegistryReportSearchHit = z.infer<
+  typeof coverageRegistryReportSearchHitSchema
+>;
 
 export const coverageYearDetailSchema = coverageYearSummarySchema.extend({
   listId: z.string(),

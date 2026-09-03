@@ -397,6 +397,12 @@ export function CoverageView() {
                       updated,
                     );
                   }}
+                  onEntryReportsLinked={(linkedDetail) => {
+                    const entryId = linkedDetail.entries[0]?.id;
+                    if (entryId) {
+                      yearDetail.applyLinkedEntryReports(linkedDetail, entryId);
+                    }
+                  }}
                   onEdit={() =>
                     openEditYearDialog(selectedList.id, selectedYear)
                   }

@@ -323,6 +323,22 @@ export function useCoverageYearDetail(
           : previous,
       );
     },
+    applyLinkedEntryReports: (updated: CoverageYearDetail, entryId: string) => {
+      setDetail((previous) =>
+        previous
+          ? applyEntryRegistryRefresh(previous, updated, entryId, filter)
+          : updated,
+      );
+      onYearStatsUpdated?.({
+        totalNames: updated.totalNames,
+        matchedCount: updated.matchedCount,
+        ambiguousCount: updated.ambiguousCount,
+        coveragePercent: updated.coveragePercent,
+        hasAnyReportCount: updated.hasAnyReportCount,
+        prodReadyCount: updated.prodReadyCount,
+        noReportCount: updated.noReportCount,
+      });
+    },
     replaceEntryRegistryReport: (
       entryId: string,
       reportId: string,
