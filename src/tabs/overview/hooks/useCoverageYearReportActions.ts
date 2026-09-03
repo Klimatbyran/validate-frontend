@@ -33,7 +33,6 @@ type UseCoverageYearReportActionsArgs = {
   listId: string;
   year: number;
   entries: CoverageEntry[];
-  onRegistryReportRemoved?: (entryId: string, reportId: string) => void;
   onRegistryReportUpdated?: (
     entryId: string,
     reportId: string,
@@ -46,7 +45,6 @@ export function useCoverageYearReportActions({
   listId,
   year,
   entries,
-  onRegistryReportRemoved,
   onRegistryReportUpdated,
   onEntryReportsLinked,
 }: UseCoverageYearReportActionsArgs) {
@@ -188,17 +186,14 @@ export function useCoverageYearReportActions({
     if (!removeReportTarget) return;
     setIsRemovingReport(true);
     try {
-      await unlinkCoverageEntryReport(
+      const detail = await unlinkCoverageEntryReport(
         listId,
         year,
         removeReportTarget.entryId,
         removeReportTarget.report.reportId,
         { reject: true },
       );
-      onRegistryReportRemoved?.(
-        removeReportTarget.entryId,
-        removeReportTarget.report.reportId,
-      );
+      onEntryReportsLinked?.(detail);
       toast.success(t("overview.coverage.removeReportSuccess"));
       setRemoveReportTarget(null);
     } catch (error) {

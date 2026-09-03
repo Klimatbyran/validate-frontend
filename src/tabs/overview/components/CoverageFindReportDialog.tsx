@@ -134,6 +134,7 @@ export function CoverageFindReportDialog({
       return;
     }
 
+    let cancelled = false;
     const handle = window.setTimeout(() => {
       setIsSearchingRegistry(true);
       setRegistrySearchError(null);
@@ -142,8 +143,12 @@ export function CoverageFindReportDialog({
         trimmed,
         Number.isFinite(yearNumber) ? yearNumber : undefined,
       )
-        .then((hits) => setRegistryHits(hits))
+        .then((hits) => {
+          if (cancelled) return;
+          setRegistryHits(hits);
+        })
         .catch((error) => {
+          if (cancelled) return;
           setRegistryHits([]);
           setRegistrySearchError(
             error instanceof Error
@@ -151,10 +156,15 @@ export function CoverageFindReportDialog({
               : t("overview.coverage.findReportRegistrySearchError"),
           );
         })
-        .finally(() => setIsSearchingRegistry(false));
+        .finally(() => {
+          if (!cancelled) setIsSearchingRegistry(false);
+        });
     }, 300);
 
-    return () => window.clearTimeout(handle);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
   }, [open, registryQuery, reportYear, t]);
 
   useEffect(() => {

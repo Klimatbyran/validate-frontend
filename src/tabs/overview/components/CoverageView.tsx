@@ -387,9 +387,6 @@ export function CoverageView() {
                   onRegistryReportSaved={(entryId, saved) => {
                     yearDetail.addEntryRegistryReport(entryId, saved);
                   }}
-                  onRegistryReportRemoved={(entryId, reportId) => {
-                    yearDetail.removeEntryRegistryReport(entryId, reportId);
-                  }}
                   onRegistryReportUpdated={(entryId, reportId, updated) => {
                     yearDetail.replaceEntryRegistryReport(
                       entryId,

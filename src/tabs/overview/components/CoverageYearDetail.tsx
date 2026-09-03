@@ -45,7 +45,6 @@ type CoverageYearDetailProps = {
   onEdit: () => void;
   onEditEntry: (entry: CoverageEntry) => void;
   onRegistryReportSaved?: (entryId: string, saved: SaveReportSuccess) => void;
-  onRegistryReportRemoved?: (entryId: string, reportId: string) => void;
   onRegistryReportUpdated?: (
     entryId: string,
     reportId: string,
@@ -75,7 +74,6 @@ export function CoverageYearDetailView({
   onEdit,
   onEditEntry,
   onRegistryReportSaved,
-  onRegistryReportRemoved,
   onRegistryReportUpdated,
   onEntryReportsLinked,
 }: CoverageYearDetailProps) {
@@ -94,7 +92,6 @@ export function CoverageYearDetailView({
     listId,
     year,
     entries,
-    onRegistryReportRemoved,
     onRegistryReportUpdated,
     onEntryReportsLinked,
   });
