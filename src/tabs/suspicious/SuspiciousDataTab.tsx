@@ -1,5 +1,6 @@
 import React from "react";
 import { Download, RefreshCw } from "lucide-react";
+import type { ApiTarget } from "@/config/api-env";
 import { useI18n } from "@/contexts/I18nContext";
 import { downloadCsv } from "@/lib/utils";
 import { Callout } from "@/ui/callout";
@@ -16,7 +17,11 @@ import {
   summarizeByCompany,
   type SuspicionFilters,
 } from "./lib/filters";
-import { findingsToCsvRows, ruleLabelKey } from "./lib/finding-display";
+import {
+  findingsToCsvRows,
+  ruleLabelKey,
+  sourceLabelKey,
+} from "./lib/finding-display";
 import { SuspiciousCompaniesTable } from "./components/SuspiciousCompaniesTable";
 import { SuspiciousFiltersBar } from "./components/SuspiciousFilters";
 import { SuspiciousFindingDialog } from "./components/SuspiciousFindingDialog";
@@ -36,7 +41,10 @@ const VIEW_MODE_LABEL_KEYS: Record<SuspiciousViewMode, string> = {
 
 export function SuspiciousDataTab() {
   const { t } = useI18n();
-  const { isLoading, error, fetchData, scan } = useSuspiciousData();
+
+  // Defaults to production: the tab exists to review what is publicly live.
+  const [source, setSource] = React.useState<ApiTarget>("prod");
+  const { isLoading, error, fetchData, scan } = useSuspiciousData(source);
 
   const [viewMode, setViewMode] =
     React.useState<SuspiciousViewMode>("findings");
@@ -88,7 +96,7 @@ export function SuspiciousDataTab() {
               <h2 className="text-xl text-gray-01 font-semibold">
                 {t("suspicious.title")}
               </h2>
-              <EnvBadge env="prod">{t("suspicious.prodBadge")}</EnvBadge>
+              <EnvBadge env={source}>{t(sourceLabelKey(source))}</EnvBadge>
             </div>
             <p className="text-sm text-gray-02 mt-1 max-w-3xl">
               {t("suspicious.subtitle")}
@@ -127,6 +135,8 @@ export function SuspiciousDataTab() {
         <SuspiciousFiltersBar
           filters={filters}
           onChange={setFilters}
+          source={source}
+          onSourceChange={setSource}
           availableDataYears={options.dataYears}
           availableRules={options.rules}
           availableTags={options.tags}

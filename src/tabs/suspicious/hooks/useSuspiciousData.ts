@@ -1,5 +1,6 @@
 import React from "react";
-import { fetchProdPipelineCompanies } from "@/lib/pipeline-companies-cross-env";
+import type { ApiTarget } from "@/config/api-env";
+import { fetchPipelineCompaniesForTarget } from "@/lib/pipeline-companies-cross-env";
 import type { Company } from "@/tabs/errors/types";
 import { scanForSuspiciousData, type SuspicionScanResult } from "../lib/detect";
 
@@ -11,12 +12,13 @@ const EMPTY_SCAN: SuspicionScanResult = {
 };
 
 /**
- * Loads the production company list and runs every suspicion rule over it.
+ * Loads the company list from the chosen environment and runs every suspicion
+ * rule over it.
  *
- * Production is the only source here: this tab reviews what is live on
- * klimatkollen.se, not what a pipeline run produced on stage.
+ * Switching source refetches: the rules compare each value against its peers,
+ * so a scan is only meaningful within a single environment's data.
  */
-export function useSuspiciousData() {
+export function useSuspiciousData(source: ApiTarget) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [companies, setCompanies] = React.useState<Company[]>([]);
@@ -28,11 +30,14 @@ export function useSuspiciousData() {
     setError(null);
 
     try {
-      const prodCompanies = await fetchProdPipelineCompanies();
+      const sourceCompanies = await fetchPipelineCompaniesForTarget(source);
       if (requestId !== latestRequestId.current) return;
-      setCompanies(prodCompanies);
+      setCompanies(sourceCompanies);
     } catch (err) {
       if (requestId !== latestRequestId.current) return;
+      // Stale rows from the previous source would otherwise be scanned as if
+      // they came from the one that just failed.
+      setCompanies([]);
       setError(err instanceof Error ? err.message : "Unknown error");
       if (import.meta.env.DEV) {
         console.error("useSuspiciousData fetch error:", err);
@@ -40,7 +45,7 @@ export function useSuspiciousData() {
     } finally {
       if (requestId === latestRequestId.current) setIsLoading(false);
     }
-  }, []);
+  }, [source]);
 
   React.useEffect(() => {
     fetchData();

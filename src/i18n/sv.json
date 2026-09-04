@@ -1185,11 +1185,16 @@
   },
   "suspicious": {
     "title": "Misstänkt data",
-    "subtitle": "Datapunkter i produktion som inte stämmer med övrig produktionsdata — andra bolag, bolagets egen historik eller resten av samma rapport. Omfattar både AI-genererade och manuellt validerade värden.",
-    "prodBadge": "Produktion",
-    "loading": "Söker igenom produktionsdata…",
-    "loadFailed": "Kunde inte hämta produktionsdata",
+    "subtitle": "Datapunkter som inte stämmer med datan omkring dem — andra bolag, bolagets egen historik eller resten av samma rapport. Läser från lokal miljö, stage eller produktion och omfattar både AI-genererade och manuellt validerade värden.",
+    "loading": "Söker igenom datan…",
+    "loadFailed": "Kunde inte hämta datan",
     "exportCsv": "Exportera CSV",
+    "source": {
+      "label": "Datakälla",
+      "local": "Lokal",
+      "stage": "Stage",
+      "prod": "Produktion"
+    },
     "view": {
       "label": "Vy",
       "findings": "Träffar",

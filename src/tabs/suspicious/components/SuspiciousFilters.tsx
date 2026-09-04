@@ -1,4 +1,8 @@
 import { Search } from "lucide-react";
+import {
+  availablePipelineCompaniesSources,
+  type ApiTarget,
+} from "@/config/api-env";
 import { useI18n } from "@/contexts/I18nContext";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
@@ -9,7 +13,11 @@ import {
   type SuspicionRuleId,
   type SuspicionSeverity,
 } from "../types";
-import { ruleLabelKey, severityLabelKey } from "../lib/finding-display";
+import {
+  ruleLabelKey,
+  severityLabelKey,
+  sourceLabelKey,
+} from "../lib/finding-display";
 import type { SuspicionFilters } from "../lib/filters";
 
 const fieldLabelClass = "text-xs text-gray-02 uppercase tracking-wide";
@@ -19,17 +27,22 @@ type OriginFilter = SuspicionOrigin | "all";
 export function SuspiciousFiltersBar({
   filters,
   onChange,
+  source,
+  onSourceChange,
   availableDataYears,
   availableRules,
   availableTags,
 }: {
   filters: SuspicionFilters;
   onChange: (filters: SuspicionFilters) => void;
+  source: ApiTarget;
+  onSourceChange: (source: ApiTarget) => void;
   availableDataYears: number[];
   availableRules: SuspicionRuleId[];
   availableTags: string[];
 }) {
   const { t } = useI18n();
+  const sourceOptions = availablePipelineCompaniesSources();
 
   const originOptions: Array<{ value: OriginFilter; label: string }> = [
     { value: "all", label: t("suspicious.origin.all") },
@@ -39,6 +52,20 @@ export function SuspiciousFiltersBar({
 
   return (
     <div className="flex flex-wrap gap-4 items-end">
+      <div className="flex flex-col gap-1">
+        <label className={fieldLabelClass}>
+          {t("suspicious.source.label")}
+        </label>
+        <SingleSelectDropdown
+          options={sourceOptions}
+          value={source}
+          onChange={(value) => onSourceChange(value as ApiTarget)}
+          getOptionLabel={(value) => t(sourceLabelKey(value as ApiTarget))}
+          ariaLabel={t("suspicious.source.label")}
+          panelMinWidth={160}
+        />
+      </div>
+
       <div className="flex flex-col gap-1">
         <label className={fieldLabelClass}>
           {t("suspicious.filters.origin")}

@@ -1185,11 +1185,16 @@
   },
   "suspicious": {
     "title": "Suspicious data",
-    "subtitle": "Production data points that disagree with other production data — peer companies, the company's own history, or the rest of the same report. Covers both AI-generated and manually validated values.",
-    "prodBadge": "Production",
-    "loading": "Scanning production data…",
-    "loadFailed": "Could not load production data",
+    "subtitle": "Data points that disagree with the data around them — peer companies, the company's own history, or the rest of the same report. Reads from local, stage or production, and covers both AI-generated and manually validated values.",
+    "loading": "Scanning data…",
+    "loadFailed": "Could not load data",
     "exportCsv": "Export CSV",
+    "source": {
+      "label": "Data source",
+      "local": "Local",
+      "stage": "Stage",
+      "prod": "Production"
+    },
     "view": {
       "label": "View",
       "findings": "Findings",

@@ -210,6 +210,30 @@ export function getProdPipelineCompaniesListUrl(): string {
 }
 
 /**
+ * Suspicious data tab: staff pipeline list from an explicitly chosen
+ * environment, rather than whichever one VITE_UNEARTH_TARGET points at.
+ *
+ * `local` goes through the Vite dev proxy to a locally running Unearth API
+ * (localhost:3000). Deployments have no local upstream to proxy to, so a local
+ * pick outside dev reads stage - the same fallback the Errors tab's stage
+ * source toggle uses.
+ */
+export function getPipelineCompaniesListUrlForTarget(
+  target: ApiTarget,
+): string {
+  if (target === "prod") return getProdPipelineCompaniesListUrl();
+  if (target === "local" && import.meta.env.DEV) {
+    return joinApiPath("/unearth-local/api", PIPELINE_COMPANIES_LIST_PATH);
+  }
+  return getStagePipelineCompaniesListUrl();
+}
+
+/** Sources a user may pick from; local needs the dev server's proxy. */
+export function availablePipelineCompaniesSources(): ApiTarget[] {
+  return import.meta.env.DEV ? ["local", "stage", "prod"] : ["stage", "prod"];
+}
+
+/**
  * climate-plans-pipeline's own API — read directly by the browser (unlike
  * the callbackUrl garbo posts to server-side), so this one genuinely needs
  * to be reachable from wherever validate is running. Same jointMode()

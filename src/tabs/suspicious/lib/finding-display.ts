@@ -1,3 +1,4 @@
+import type { ApiTarget } from "@/config/api-env";
 import type {
   SuspicionBasis,
   SuspicionFinding,
@@ -44,6 +45,10 @@ export function severityLabelKey(severity: SuspicionSeverity): string {
 
 export function originLabelKey(origin: SuspicionOrigin): string {
   return `suspicious.origin.${origin}`;
+}
+
+export function sourceLabelKey(source: ApiTarget): string {
+  return `suspicious.source.${source}`;
 }
 
 /**
