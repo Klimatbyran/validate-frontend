@@ -8,6 +8,7 @@ import {
   coverageYearRegistryRefreshSchema,
   coverageYearRematchSchema,
   coverageCompanySearchResponseSchema,
+  coverageRegistryReportSearchResponseSchema,
   type CoverageListSummary,
   type CoverageYearDetail,
   type CoverageYearNames,
@@ -15,6 +16,7 @@ import {
   type CoverageYearRematch,
   type CoverageRematchMode,
   type CoverageCompanySearchHit,
+  type CoverageRegistryReportSearchHit,
   type CoverageEntryFilter,
 } from "./coverage-types";
 
@@ -245,6 +247,57 @@ export async function searchCoverageCompanies(
   const response = await garboAuthFetch(url, { cache: "no-store" });
   return parseJson(response, url, (data) =>
     coverageCompanySearchResponseSchema.parse(data),
+  );
+}
+
+export async function searchCoverageRegistryReports(
+  query: string,
+  year?: number,
+): Promise<CoverageRegistryReportSearchHit[]> {
+  const params = new URLSearchParams({ q: query });
+  if (year != null) params.set("year", String(year));
+  const url = `${coverageUrl("reports/search")}?${params.toString()}`;
+  const response = await garboAuthFetch(url, { cache: "no-store" });
+  return parseJson(response, url, (data) =>
+    coverageRegistryReportSearchResponseSchema.parse(data),
+  );
+}
+
+export async function linkCoverageEntryReport(
+  listId: string,
+  year: number,
+  entryId: string,
+  reportId: string,
+): Promise<CoverageYearDetail> {
+  const url = coverageUrl(`${listId}/years/${year}/entries/${entryId}/reports`);
+  const response = await garboAuthFetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reportId }),
+  });
+  return parseJson(response, url, (data) =>
+    coverageYearDetailSchema.parse(data),
+  );
+}
+
+export async function unlinkCoverageEntryReport(
+  listId: string,
+  year: number,
+  entryId: string,
+  reportId: string,
+  options?: { reject?: boolean },
+): Promise<CoverageYearDetail> {
+  const params = new URLSearchParams();
+  if (options?.reject) params.set("reject", "true");
+  const queryString = params.toString();
+  const url = coverageUrl(
+    `${listId}/years/${year}/entries/${entryId}/reports/${reportId}${
+      queryString ? `?${queryString}` : ""
+    }`,
+  );
+  const response = await garboAuthFetch(url, { method: "DELETE" });
+  return parseJson(response, url, (data) =>
+    coverageYearDetailSchema.parse(data),
   );
 }
 

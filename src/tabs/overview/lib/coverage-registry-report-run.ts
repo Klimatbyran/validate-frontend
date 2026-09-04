@@ -94,6 +94,7 @@ export type RegistryReportYearGroup = {
   year: number | null;
   reports: RegistryReportPill[];
   prodReady: boolean;
+  hasAmbiguous: boolean;
 };
 
 export function groupRegistryReportsByYear(
@@ -119,6 +120,9 @@ export function groupRegistryReportsByYear(
       year,
       reports: sortRegistryReportsByType(yearReports),
       prodReady: yearReports.some((report) => report.prodReady),
+      hasAmbiguous: yearReports.some(
+        (report) => report.linkStatus === "ambiguous",
+      ),
     }));
 
   if (unknown.length > 0) {
@@ -126,6 +130,7 @@ export function groupRegistryReportsByYear(
       year: null,
       reports: sortRegistryReportsByType(unknown),
       prodReady: unknown.some((report) => report.prodReady),
+      hasAmbiguous: unknown.some((report) => report.linkStatus === "ambiguous"),
     });
   }
 

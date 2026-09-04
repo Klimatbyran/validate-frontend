@@ -45,12 +45,12 @@ type CoverageYearDetailProps = {
   onEdit: () => void;
   onEditEntry: (entry: CoverageEntry) => void;
   onRegistryReportSaved?: (entryId: string, saved: SaveReportSuccess) => void;
-  onRegistryReportRemoved?: (entryId: string, reportId: string) => void;
   onRegistryReportUpdated?: (
     entryId: string,
     reportId: string,
     updated: RegistryReportPill,
   ) => void;
+  onEntryReportsLinked?: (detail: CoverageYearDetail) => void;
 };
 
 export function CoverageYearDetailView({
@@ -74,8 +74,8 @@ export function CoverageYearDetailView({
   onEdit,
   onEditEntry,
   onRegistryReportSaved,
-  onRegistryReportRemoved,
   onRegistryReportUpdated,
+  onEntryReportsLinked,
 }: CoverageYearDetailProps) {
   const { t } = useI18n();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -89,9 +89,11 @@ export function CoverageYearDetailView({
   const entries = detail.entries;
 
   const reportActions = useCoverageYearReportActions({
+    listId,
+    year,
     entries,
-    onRegistryReportRemoved,
     onRegistryReportUpdated,
+    onEntryReportsLinked,
   });
 
   useEffect(() => {
@@ -224,6 +226,9 @@ export function CoverageYearDetailView({
         onRemoveReport={(entry, report) =>
           reportActions.setRemoveReportTarget({ entryId: entry.id, report })
         }
+        onConfirmReport={(entry, report) => {
+          void reportActions.handleConfirmReport(entry.id, report);
+        }}
       />
 
       <ClientTablePagination
@@ -273,9 +278,14 @@ export function CoverageYearDetailView({
           onOpenChange={(open) => {
             if (!open) reportActions.setFindReportSession(null);
           }}
+          listId={listId}
           entry={reportActions.findReportSession.entry}
           defaultYear={year}
           runPipeline={reportActions.runPipeline}
+          onLinked={(linkedDetail) => {
+            onEntryReportsLinked?.(linkedDetail);
+            reportActions.setFindReportSession(null);
+          }}
           onSaved={(saved) =>
             onRegistryReportSaved?.(
               reportActions.findReportSession!.entry.id,

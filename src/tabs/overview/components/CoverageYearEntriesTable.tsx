@@ -26,6 +26,7 @@ type CoverageYearEntriesTableProps = {
   onRunReport: (entry: CoverageEntry, report: RegistryReportPill) => void;
   onReplaceReport: (entry: CoverageEntry, report: RegistryReportPill) => void;
   onRemoveReport: (entry: CoverageEntry, report: RegistryReportPill) => void;
+  onConfirmReport: (entry: CoverageEntry, report: RegistryReportPill) => void;
 };
 
 export function CoverageYearEntriesTable({
@@ -43,6 +44,7 @@ export function CoverageYearEntriesTable({
   onRunReport,
   onReplaceReport,
   onRemoveReport,
+  onConfirmReport,
 }: CoverageYearEntriesTableProps) {
   const { t } = useI18n();
   const tableScrollRef = useRef<HTMLDivElement>(null);
@@ -138,6 +140,7 @@ export function CoverageYearEntriesTable({
                     onRunReport={(report) => onRunReport(entry, report)}
                     onReplaceReport={(report) => onReplaceReport(entry, report)}
                     onRemoveReport={(report) => onRemoveReport(entry, report)}
+                    onConfirmReport={(report) => onConfirmReport(entry, report)}
                   />
                 );
               })}

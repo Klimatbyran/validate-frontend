@@ -5,12 +5,16 @@ import { useRunReportsPipeline } from "@/hooks/useRunReportsPipeline";
 import type { RunReportListItem } from "@/lib/run-reports-types";
 import { toRunReportListItem } from "@/tabs/overview/lib/coverage-registry-report-run";
 import {
-  deleteReportFromRegistry,
   getRegistryRunReportsPipelineConfig,
   replaceRegistryReportSourceUrl,
 } from "@/tabs/registry/lib/registry-api";
+import {
+  unlinkCoverageEntryReport,
+  linkCoverageEntryReport,
+} from "@/tabs/overview/lib/coverage-api";
 import type {
   CoverageEntry,
+  CoverageYearDetail,
   RegistryReportPill,
 } from "@/tabs/overview/lib/coverage-types";
 
@@ -29,19 +33,23 @@ type RunReportSession = {
 };
 
 type UseCoverageYearReportActionsArgs = {
+  listId: string;
+  year: number;
   entries: CoverageEntry[];
-  onRegistryReportRemoved?: (entryId: string, reportId: string) => void;
   onRegistryReportUpdated?: (
     entryId: string,
     reportId: string,
     updated: RegistryReportPill,
   ) => void;
+  onEntryReportsLinked?: (detail: CoverageYearDetail) => void;
 };
 
 export function useCoverageYearReportActions({
+  listId,
+  year,
   entries,
-  onRegistryReportRemoved,
   onRegistryReportUpdated,
+  onEntryReportsLinked,
 }: UseCoverageYearReportActionsArgs) {
   const { t } = useI18n();
   const [findReportSession, setFindReportSession] =
@@ -155,15 +163,40 @@ export function useCoverageYearReportActions({
     }
   };
 
+  const handleConfirmReport = async (
+    entryId: string,
+    report: RegistryReportPill,
+  ) => {
+    try {
+      const detail = await linkCoverageEntryReport(
+        listId,
+        year,
+        entryId,
+        report.reportId,
+      );
+      onEntryReportsLinked?.(detail);
+      toast.success(t("overview.coverage.confirmReportLinkSuccess"));
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("overview.coverage.confirmReportLinkError"),
+      );
+    }
+  };
+
   const handleRemoveReport = async () => {
     if (!removeReportTarget) return;
     setIsRemovingReport(true);
     try {
-      await deleteReportFromRegistry([removeReportTarget.report.reportId]);
-      onRegistryReportRemoved?.(
+      const detail = await unlinkCoverageEntryReport(
+        listId,
+        year,
         removeReportTarget.entryId,
         removeReportTarget.report.reportId,
+        { reject: true },
       );
+      onEntryReportsLinked?.(detail);
       toast.success(t("overview.coverage.removeReportSuccess"));
       setRemoveReportTarget(null);
     } catch (error) {
@@ -203,5 +236,7 @@ export function useCoverageYearReportActions({
     handleRunReportModalRun,
     handleReplaceReportUrl,
     handleRemoveReport,
+    handleConfirmReport,
+    onEntryReportsLinked,
   };
 }

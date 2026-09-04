@@ -176,6 +176,7 @@ export function savedReportToPill(
     url: saved.url,
     sourceUrl: saved.url,
     matchMethod: saved.wikidataId ? "wikidata" : "name",
+    linkStatus: "matched",
     prodReady: false,
     runStatus: "not_run",
     reportTypeId: saved.reportTypeId ?? null,
