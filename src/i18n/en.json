@@ -53,7 +53,8 @@
     "editor": "Editor",
     "pipelineChoice": "Pipeline",
     "pipelineEmissions": "Corporate emissions",
-    "pipelineClimatePlans": "Climate plans"
+    "pipelineClimatePlans": "Climate plans",
+    "suspiciousData": "Suspicious data"
   },
   "climatePipeline": {
     "title": "Climate Plans Pipeline",
@@ -1181,6 +1182,162 @@
     "browser": "Browser",
     "overviewTab": "Overview",
     "hardestReports": "Hardest Reports"
+  },
+  "suspicious": {
+    "title": "Suspicious data",
+    "subtitle": "Data points that disagree with the data around them — peer companies, the company's own history, or the rest of the same report. Reads from local, stage or production, and covers both AI-generated and manually validated values.",
+    "loading": "Scanning data…",
+    "loadFailed": "Could not load data",
+    "exportCsv": "Export CSV",
+    "source": {
+      "label": "Data source",
+      "local": "Local",
+      "stage": "Stage",
+      "prod": "Production"
+    },
+    "view": {
+      "label": "View",
+      "findings": "Findings",
+      "companies": "By company",
+      "rules": "Rules"
+    },
+    "filters": {
+      "origin": "Data origin",
+      "allYears": "All data years",
+      "severity": "Severity",
+      "allSeverities": "All severities",
+      "rule": "Rule",
+      "allRules": "All rules",
+      "searchPlaceholder": "Company, data point or Wikidata ID"
+    },
+    "origin": {
+      "all": "All",
+      "ai": "AI-generated",
+      "verified": "Manually validated"
+    },
+    "severity": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "basis": {
+      "peers": "Other companies",
+      "history": "Company's own history",
+      "report": "Same report"
+    },
+    "summary": {
+      "findings": "Findings",
+      "companiesAffected": "Companies affected",
+      "valuesScanned": "Values scanned"
+    },
+    "table": {
+      "company": "Company",
+      "dataPoint": "Data point",
+      "value": "Value",
+      "why": "Why it looks wrong",
+      "rule": "Rule",
+      "severity": "Severity",
+      "origin": "Origin",
+      "findings": "Findings",
+      "dataYears": "Data years",
+      "verifiedBy": "Verified by",
+      "comparedWith": "Compared with",
+      "description": "What it looks for"
+    },
+    "detail": {
+      "subtitle": "{{dataPoint}} · data year {{year}}",
+      "comparison": "Compared against",
+      "flaggedValue": "Flagged value",
+      "openInEditor": "Open in editor",
+      "openReport": "Open report",
+      "openPublicPage": "Public page"
+    },
+    "comparison": {
+      "peerMedian": "Peer median",
+      "peerCount": "Peer companies",
+      "zScore": "Robust z-score",
+      "shareOfTotal": "Share of total (%)",
+      "peerShare": "Peer median share (%)",
+      "ownYearsMedian": "Median of other years",
+      "otherYears": "Other years compared",
+      "factor": "Factor",
+      "statedScope3Total": "Stated scope 3 total",
+      "categorySum": "Sum of categories",
+      "difference": "Difference",
+      "categoryValue": "Category value",
+      "statedTotal": "Stated total emissions",
+      "scopeSum": "Scope 1 + 2 + 3",
+      "scope1": "Scope 1",
+      "scope2": "Scope 2",
+      "scope3": "Scope 3",
+      "scope2Mb": "Scope 2 market-based",
+      "scope2Lb": "Scope 2 location-based",
+      "sharedValue": "Shared value",
+      "dataPointCount": "Data points sharing it",
+      "dataYear": "Data year",
+      "reportYear": "Report year"
+    },
+    "rules": {
+      "peerOutlier": {
+        "label": "Peer outlier",
+        "description": "Compares each value against every other company reporting the same data point for the same year, on a log scale using median and MAD.",
+        "messageAbove": "{{factor}}× higher than the median of {{peerCount}} other companies reporting this data point.",
+        "messageBelow": "{{factor}}× lower than the median of {{peerCount}} other companies reporting this data point."
+      },
+      "peerShareOutlier": {
+        "label": "Peer share outlier",
+        "description": "Compares each value's share of its own company's total emissions against the same share for peer companies, so company size does not matter.",
+        "messageAbove": "Makes up {{share}}% of this company's total emissions, against {{peerShare}}% for {{peerCount}} peers.",
+        "messageBelow": "Only {{share}}% of this company's total emissions, against {{peerShare}}% for {{peerCount}} peers."
+      },
+      "unitScaleError": {
+        "label": "Unit mix-up",
+        "description": "A jump close to a power of ten (1 000× or more) against the company's own other years, which usually means kg and tonnes were mixed up.",
+        "messageAbove": "About {{factor}}× larger than this company's own median for its other years — the signature of a unit mix-up.",
+        "messageBelow": "About {{factor}}× smaller than this company's own median for its other years — the signature of a unit mix-up."
+      },
+      "yearOverYearJump": {
+        "label": "Year-on-year jump",
+        "description": "A value at least 10× away from the median of the same company's other data years.",
+        "messageAbove": "{{factor}}× higher than this company's median across {{otherYears}} other years.",
+        "messageBelow": "{{factor}}× lower than this company's median across {{otherYears}} other years."
+      },
+      "scope3SumMismatch": {
+        "label": "Scope 3 sum mismatch",
+        "description": "The reported scope 3 categories do not add up to the scope 3 total stated in the same report.",
+        "message": "The {{categoryCount}} reported scope 3 categories differ from the stated scope 3 total by {{percent}}%."
+      },
+      "categoryExceedsTotal": {
+        "label": "Category exceeds total",
+        "description": "A single scope 3 category is larger than the scope 3 total it is part of.",
+        "message": "This single category is {{percent}}% of the stated scope 3 total it belongs to."
+      },
+      "totalSumMismatch": {
+        "label": "Total sum mismatch",
+        "description": "Scope 1 + scope 2 + scope 3 does not add up to the total emissions stated in the same report.",
+        "message": "Scope 1 + 2 + 3 differs from the stated total emissions by {{percent}}%."
+      },
+      "scope2Divergence": {
+        "label": "Scope 2 method divergence",
+        "description": "Market-based and location-based scope 2 are orders of magnitude apart, though they price the same electricity.",
+        "message": "Market-based and location-based scope 2 are {{factor}}× apart."
+      },
+      "duplicateValue": {
+        "label": "Duplicated value",
+        "description": "The same number appears under several data points in one report, which usually means a value was copied down a table.",
+        "message": "The same value appears in {{count}} data points in this report: {{others}}."
+      },
+      "valueLooksLikeYear": {
+        "label": "Value looks like a year",
+        "description": "The value equals the report's data year or document year, so a year was probably read as an emissions figure.",
+        "message": "The value is {{year}}, the report's own year — likely a year picked up as a number."
+      },
+      "negativeValue": {
+        "label": "Negative value",
+        "description": "Emissions below zero, which the data model has no way to express.",
+        "message": "Emissions are reported as a negative number."
+      }
+    }
   },
   "crawler": {
     "title": "Crawler",

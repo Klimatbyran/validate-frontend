@@ -1,14 +1,15 @@
 import {
+  getPipelineCompaniesListUrlForTarget,
   getProdPipelineCompaniesListUrl,
   getStagePipelineCompaniesListUrl,
   PIPELINE_COMPANIES_LIST_PATH,
 } from "@/config/api-env";
-import type { ErrorBrowserStageSource } from "@/config/api-env";
+import type { ApiTarget, ErrorBrowserStageSource } from "@/config/api-env";
 import type { Company } from "@/tabs/errors/types";
 
-/** Error Browser: internal pipeline lists from fixed stage/prod Unearth hosts (X-API-Key via proxy). */
+/** Internal pipeline lists from fixed Unearth hosts (X-API-Key via proxy). */
 async function fetchPipelineCompanies(
-  label: "Stage" | "Prod",
+  label: string,
   url: string,
 ): Promise<Company[]> {
   const response = await fetch(url, {
@@ -51,6 +52,22 @@ export async function fetchStagePipelineCompanies(
 
 export async function fetchProdPipelineCompanies(): Promise<Company[]> {
   return fetchPipelineCompanies("Prod", getProdPipelineCompaniesListUrl());
+}
+
+const TARGET_LABELS: Record<ApiTarget, string> = {
+  local: "Local",
+  stage: "Stage",
+  prod: "Prod",
+};
+
+/** Suspicious data tab: the company list from an explicitly chosen environment. */
+export async function fetchPipelineCompaniesForTarget(
+  target: ApiTarget,
+): Promise<Company[]> {
+  return fetchPipelineCompanies(
+    TARGET_LABELS[target],
+    getPipelineCompaniesListUrlForTarget(target),
+  );
 }
 
 export async function fetchStageAndProdPipelineCompanies(
