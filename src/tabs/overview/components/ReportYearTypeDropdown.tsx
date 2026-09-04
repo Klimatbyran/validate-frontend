@@ -1,6 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Check, ExternalLink, Pencil, Play, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  Check,
+  ExternalLink,
+  Pencil,
+  Play,
+  Trash2,
+} from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import type {
   CoverageReportRunStatus,

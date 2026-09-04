@@ -470,14 +470,16 @@ export function CoverageFindReportDialog({
                     </p>
                   ) : null}
                   {registrySearchError ? (
-                    <p className="text-sm text-pink-03">{registrySearchError}</p>
+                    <p className="text-sm text-pink-03">
+                      {registrySearchError}
+                    </p>
                   ) : null}
                   {registryHits.length > 0 ? (
                     <ul className="space-y-2">
                       {registryHits.map((hit) => {
-                        const alreadyLinked = (entry.registryReports ?? []).some(
-                          (report) => report.reportId === hit.id,
-                        );
+                        const alreadyLinked = (
+                          entry.registryReports ?? []
+                        ).some((report) => report.reportId === hit.id);
                         return (
                           <li
                             key={hit.id}

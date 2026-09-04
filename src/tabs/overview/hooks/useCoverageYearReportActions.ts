@@ -8,7 +8,10 @@ import {
   getRegistryRunReportsPipelineConfig,
   replaceRegistryReportSourceUrl,
 } from "@/tabs/registry/lib/registry-api";
-import { unlinkCoverageEntryReport, linkCoverageEntryReport } from "@/tabs/overview/lib/coverage-api";
+import {
+  unlinkCoverageEntryReport,
+  linkCoverageEntryReport,
+} from "@/tabs/overview/lib/coverage-api";
 import type {
   CoverageEntry,
   CoverageYearDetail,

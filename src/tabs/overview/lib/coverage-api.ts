@@ -269,9 +269,7 @@ export async function linkCoverageEntryReport(
   entryId: string,
   reportId: string,
 ): Promise<CoverageYearDetail> {
-  const url = coverageUrl(
-    `${listId}/years/${year}/entries/${entryId}/reports`,
-  );
+  const url = coverageUrl(`${listId}/years/${year}/entries/${entryId}/reports`);
   const response = await garboAuthFetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
