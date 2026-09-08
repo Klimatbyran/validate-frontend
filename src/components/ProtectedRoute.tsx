@@ -38,7 +38,7 @@ export function ProtectedRoute({
   if (!isAuthenticated) {
     return (
       <Dialog open={true} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>{t("auth.loginRequired")}</DialogTitle>
             <DialogDescription>{t(descriptionKey)}</DialogDescription>
