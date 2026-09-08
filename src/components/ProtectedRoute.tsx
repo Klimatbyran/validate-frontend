@@ -16,9 +16,14 @@ import {
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  /** Override the prompt when guarding a single tab rather than the whole app. */
+  descriptionKey?: "auth.loginRequiredApp" | "auth.loginRequiredTab";
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({
+  children,
+  descriptionKey = "auth.loginRequiredApp",
+}: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, login } = useAuth();
   const { t } = useI18n();
 
@@ -36,7 +41,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t("auth.loginRequired")}</DialogTitle>
-            <DialogDescription>{t("auth.loginRequiredApp")}</DialogDescription>
+            <DialogDescription>{t(descriptionKey)}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 pt-4">
             <Button onClick={login} className="w-full">

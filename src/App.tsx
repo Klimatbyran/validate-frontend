@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthCallback } from "@/pages/AuthCallback";
 import { GlobalLoginModal } from "@/components/GlobalLoginModal";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import SlideshowPage from "@/pages/SlideshowPage";
 import { MainLayout } from "@/layouts/MainLayout";
 import { ApiAccessTab } from "@/tabs/api-access/ApiAccessTab";
@@ -42,7 +43,14 @@ function App() {
           <Route path="/workflow" element={<WorkflowTab />} />
           <Route path="/debug" element={<DebugTab />} />
           <Route path="/errors" element={<ErrorBrowserTab />} />
-          <Route path="/suspicious" element={<SuspiciousDataTab />} />
+          <Route
+            path="/suspicious"
+            element={
+              <ProtectedRoute descriptionKey="auth.loginRequiredTab">
+                <SuspiciousDataTab />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/editor/company/:companyId" element={<EditorTab />} />
           <Route
             path="/editor/company"
