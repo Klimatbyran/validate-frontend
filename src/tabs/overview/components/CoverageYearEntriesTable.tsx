@@ -19,6 +19,8 @@ type CoverageYearEntriesTableProps = {
   onToggleSelectAllLoaded: () => void;
   onToggleEntrySelected: (entry: CoverageEntry) => void;
   onEditEntry: (entry: CoverageEntry) => void;
+  onRenameEntry: (entry: CoverageEntry, name: string) => Promise<void>;
+  renamingEntryId: string | null;
   onRefreshEntryReports: (entry: CoverageEntry) => void;
   refreshingEntryId: string | null;
   onFindReportClick: (entry: CoverageEntry) => void;
@@ -37,6 +39,8 @@ export function CoverageYearEntriesTable({
   onToggleSelectAllLoaded,
   onToggleEntrySelected,
   onEditEntry,
+  onRenameEntry,
+  renamingEntryId,
   onRefreshEntryReports,
   refreshingEntryId,
   onFindReportClick,
@@ -129,6 +133,8 @@ export function CoverageYearEntriesTable({
                     rowRef={rowVirtualizer.measureElement}
                     dataIndex={virtualRow.index}
                     onEditEntry={onEditEntry}
+                    onRenameEntry={onRenameEntry}
+                    renamingEntryId={renamingEntryId}
                     onRefreshReports={onRefreshEntryReports}
                     isRefreshingReports={refreshingEntryId === entry.id}
                     refreshReportsDisabled={

@@ -45,6 +45,7 @@ export function CoverageView() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [matchEntry, setMatchEntry] = useState<CoverageEntry | null>(null);
   const [isMatchSubmitting, setIsMatchSubmitting] = useState(false);
+  const [renamingEntryId, setRenamingEntryId] = useState<string | null>(null);
 
   const selectedList = useMemo(
     () => coverage.lists.find((list) => list.id === selectedListId) ?? null,
@@ -404,6 +405,20 @@ export function CoverageView() {
                     openEditYearDialog(selectedList.id, selectedYear)
                   }
                   onEditEntry={setMatchEntry}
+                  renamingEntryId={renamingEntryId}
+                  onRenameEntry={async (entry, name) => {
+                    setRenamingEntryId(entry.id);
+                    try {
+                      await yearDetail.renameEntry(entry.id, name);
+                      toast.success(t("overview.coverage.renameEntrySuccess"));
+                    } catch (error) {
+                      throw error instanceof Error
+                        ? error
+                        : new Error(t("overview.coverage.renameEntryError"));
+                    } finally {
+                      setRenamingEntryId(null);
+                    }
+                  }}
                 />
               ) : null}
             </div>

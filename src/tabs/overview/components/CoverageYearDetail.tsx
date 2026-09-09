@@ -44,6 +44,8 @@ type CoverageYearDetailProps = {
   onRefreshEntryReports: (entry: CoverageEntry) => void | Promise<void>;
   onEdit: () => void;
   onEditEntry: (entry: CoverageEntry) => void;
+  onRenameEntry: (entry: CoverageEntry, name: string) => Promise<void>;
+  renamingEntryId: string | null;
   onRegistryReportSaved?: (entryId: string, saved: SaveReportSuccess) => void;
   onRegistryReportUpdated?: (
     entryId: string,
@@ -73,6 +75,8 @@ export function CoverageYearDetailView({
   onRefreshEntryReports,
   onEdit,
   onEditEntry,
+  onRenameEntry,
+  renamingEntryId,
   onRegistryReportSaved,
   onRegistryReportUpdated,
   onEntryReportsLinked,
@@ -213,6 +217,8 @@ export function CoverageYearDetailView({
         onToggleSelectAllLoaded={toggleSelectAllLoaded}
         onToggleEntrySelected={toggleEntrySelected}
         onEditEntry={onEditEntry}
+        onRenameEntry={onRenameEntry}
+        renamingEntryId={renamingEntryId}
         onRefreshEntryReports={(entry) => void onRefreshEntryReports(entry)}
         refreshingEntryId={refreshingEntryId}
         onFindReportClick={(entry) =>
