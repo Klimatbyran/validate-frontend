@@ -95,6 +95,10 @@ export function UploadTab() {
   const reportTypeSlug = isClimatePlansPipeline
     ? CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG
     : undefined;
+  // Climate plans are exactly the case this was built for — recover text
+  // and describe diagrams Docling would otherwise leave as bare image
+  // placeholders. No manual toggle; automatic whenever this pipeline is used.
+  const readImages = isClimatePlansPipeline ? true : undefined;
   const effectiveForceReindex = isClimatePlansPipeline ? false : forceReindex;
 
   const handleFileSubmit = useCallback(async () => {
@@ -145,6 +149,7 @@ export function UploadTab() {
         tags,
         callbackUrl,
         reportTypeSlug,
+        readImages,
       });
 
       const reusedCount = isUploadPdfsEnvelope(result)
@@ -192,6 +197,7 @@ export function UploadTab() {
     tags,
     callbackUrl,
     reportTypeSlug,
+    readImages,
     t,
     refetchBatches,
   ]);
@@ -319,6 +325,7 @@ export function UploadTab() {
         tags,
         callbackUrl,
         reportTypeSlug,
+        readImages,
       });
       console.log("Jobs created successfully:", result);
 
@@ -400,6 +407,7 @@ export function UploadTab() {
     tags,
     callbackUrl,
     reportTypeSlug,
+    readImages,
     t,
     refetchBatches,
   ]);
