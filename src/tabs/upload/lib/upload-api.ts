@@ -55,6 +55,9 @@ export interface UploadPdfsOptions {
   callbackUrl?: string;
   /** Explicit ReportType.slug for garbo to tag persisted markdown with. */
   reportTypeSlug?: string;
+  /** OCR pictures and describe genuine diagrams instead of leaving bare
+   * placeholders — voluntary, costs extra time/money per picture. */
+  readImages?: boolean;
 }
 
 export type UploadPdfUploadMeta = {
@@ -111,6 +114,9 @@ export interface CreateJobsFromUrlsOptions {
   callbackUrl?: string;
   /** Explicit ReportType.slug for garbo to tag persisted markdown with. */
   reportTypeSlug?: string;
+  /** OCR pictures and describe genuine diagrams instead of leaving bare
+   * placeholders — voluntary, costs extra time/money per picture. */
+  readImages?: boolean;
 }
 
 export async function uploadPdfsToParsePdf({
@@ -122,6 +128,7 @@ export async function uploadPdfsToParsePdf({
   tags,
   callbackUrl,
   reportTypeSlug,
+  readImages,
 }: UploadPdfsOptions): Promise<UploadPdfsResponse> {
   const formData = new FormData();
   for (const file of files) formData.append("files", file);
@@ -134,6 +141,7 @@ export async function uploadPdfsToParsePdf({
   if (tags && tags.length > 0) formData.append("tags", JSON.stringify(tags));
   if (callbackUrl) formData.append("callbackUrl", callbackUrl);
   if (reportTypeSlug) formData.append("reportTypeSlug", reportTypeSlug);
+  if (readImages) formData.append("readImages", "true");
 
   const response = await authenticatedFetch(PARSE_PDF_UPLOAD_ENDPOINT, {
     method: "POST",
@@ -164,6 +172,7 @@ export async function createJobsFromUrls({
   urlContexts,
   callbackUrl,
   reportTypeSlug,
+  readImages,
 }: CreateJobsFromUrlsOptions): Promise<CreateJobsFromUrlsResult> {
   const body = {
     autoApprove: Boolean(autoApprove),
@@ -177,6 +186,7 @@ export async function createJobsFromUrls({
     ...(urlContexts && urlContexts.length > 0 ? { urlContexts } : {}),
     ...(callbackUrl ? { callbackUrl } : {}),
     ...(reportTypeSlug ? { reportTypeSlug } : {}),
+    ...(readImages ? { readImages } : {}),
     urls,
   };
 
