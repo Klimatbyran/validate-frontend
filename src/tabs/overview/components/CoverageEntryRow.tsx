@@ -1,4 +1,5 @@
-import { Check, Minus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, Minus, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
@@ -64,6 +65,8 @@ type CoverageEntryRowProps = {
   rowRef: (element: HTMLTableRowElement | null) => void;
   dataIndex: number;
   onEditEntry: (entry: CoverageEntry) => void;
+  onRenameEntry: (entry: CoverageEntry, name: string) => Promise<void>;
+  renamingEntryId: string | null;
   onRefreshReports: (entry: CoverageEntry) => void;
   isRefreshingReports: boolean;
   refreshReportsDisabled: boolean;
@@ -82,6 +85,8 @@ export function CoverageEntryRow({
   rowRef,
   dataIndex,
   onEditEntry,
+  onRenameEntry,
+  renamingEntryId,
   onRefreshReports,
   isRefreshingReports,
   refreshReportsDisabled,
@@ -93,6 +98,18 @@ export function CoverageEntryRow({
   onConfirmReport,
 }: CoverageEntryRowProps) {
   const { t } = useI18n();
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [draftName, setDraftName] = useState(entry.name);
+  const [renameError, setRenameError] = useState<string | null>(null);
+
+  const isRenaming = renamingEntryId === entry.id;
+
+  useEffect(() => {
+    if (!isEditingName) {
+      setDraftName(entry.name);
+      setRenameError(null);
+    }
+  }, [entry.name, isEditingName]);
 
   const statusLabel =
     entry.status === "matched"
@@ -112,6 +129,35 @@ export function CoverageEntryRow({
   const yearGroups = groupRegistryReportsByYear(reports);
   const canRunReport = reports.length > 0;
 
+  const cancelNameEdit = () => {
+    setIsEditingName(false);
+    setDraftName(entry.name);
+    setRenameError(null);
+  };
+
+  const saveNameEdit = async () => {
+    const nextName = draftName.trim();
+    if (!nextName) {
+      setRenameError(t("overview.coverage.renameEntryEmpty"));
+      return;
+    }
+    if (nextName === entry.name) {
+      cancelNameEdit();
+      return;
+    }
+    setRenameError(null);
+    try {
+      await onRenameEntry(entry, nextName);
+      setIsEditingName(false);
+    } catch (error) {
+      setRenameError(
+        error instanceof Error
+          ? error.message
+          : t("overview.coverage.renameEntryError"),
+      );
+    }
+  };
+
   return (
     <tr
       ref={rowRef}
@@ -127,11 +173,73 @@ export function CoverageEntryRow({
           })}
         />
       </td>
-      <td
-        className="px-4 py-2 text-gray-01 align-top truncate"
-        title={entry.name}
-      >
-        {entry.name}
+      <td className="px-4 py-2 text-gray-01 align-top">
+        {isEditingName ? (
+          <div className="flex min-w-[12rem] flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={draftName}
+                onChange={(event) => setDraftName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void saveNameEdit();
+                  }
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    cancelNameEdit();
+                  }
+                }}
+                disabled={isRenaming}
+                autoFocus
+                aria-label={t("overview.coverage.renameEntryLabel")}
+                className="w-full rounded border border-gray-03 bg-gray-05 px-2 py-1 text-sm text-gray-01"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void saveNameEdit()}
+                disabled={isRenaming}
+              >
+                {isRenaming
+                  ? t("overview.coverage.renameEntrySaving")
+                  : t("overview.coverage.renameEntrySave")}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={cancelNameEdit}
+                disabled={isRenaming}
+              >
+                {t("overview.coverage.renameEntryCancel")}
+              </Button>
+            </div>
+            {renameError ? (
+              <p className="text-xs text-orange-03">{renameError}</p>
+            ) : null}
+          </div>
+        ) : (
+          <div className="flex items-start gap-2">
+            <span className="truncate" title={entry.name}>
+              {entry.name}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 shrink-0 p-0"
+              aria-label={t("overview.coverage.renameEntry")}
+              title={t("overview.coverage.renameEntry")}
+              onClick={() => {
+                setDraftName(entry.name);
+                setRenameError(null);
+                setIsEditingName(true);
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
       </td>
       <td className={`px-4 py-2 font-medium align-top ${statusClass}`}>
         <span>{statusLabel}</span>

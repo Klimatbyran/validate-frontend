@@ -321,6 +321,39 @@ export async function setCoverageEntryMatch(
   );
 }
 
+export async function renameCoverageEntry(
+  listId: string,
+  year: number,
+  entryId: string,
+  name: string,
+): Promise<CoverageYearDetail> {
+  const url = coverageUrl(`${listId}/years/${year}/entries/${entryId}/name`);
+  const response = await garboAuthFetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  if (response.ok) {
+    return coverageYearDetailSchema.parse(await response.json());
+  }
+  throwIfAuthError(response.status);
+  let message = `Rename coverage entry failed (${response.status})`;
+  try {
+    const data: unknown = await response.json();
+    if (data && typeof data === "object") {
+      const record = data as { message?: unknown; error?: unknown };
+      if (typeof record.message === "string" && record.message.trim()) {
+        message = record.message;
+      } else if (typeof record.error === "string" && record.error.trim()) {
+        message = record.error;
+      }
+    }
+  } catch {
+    // keep fallback message
+  }
+  throw new Error(message);
+}
+
 export async function refreshCoverageEntryRegistry(
   listId: string,
   year: number,
