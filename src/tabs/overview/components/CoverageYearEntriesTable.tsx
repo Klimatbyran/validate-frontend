@@ -79,7 +79,7 @@ export function CoverageYearEntriesTable({
                 ariaLabel={t("overview.coverage.selectAllLoaded")}
               />
             </th>
-            <th className="w-[22%] px-4 py-2 font-medium">
+            <th className="w-[26%] min-w-[14rem] px-4 py-2 font-medium">
               {t("overview.coverage.columns.listName")}
             </th>
             <th className="w-[13%] px-4 py-2 font-medium">
