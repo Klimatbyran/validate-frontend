@@ -306,6 +306,8 @@
       "loading": "Laddar företag...",
       "loadError": "Kunde inte ladda företag",
       "empty": "Inga företag matchar filtren",
+      "searchFirstHint": "Skriv minst {{min}} tecken för att söka, eller bläddra bland alla företag.",
+      "browseAll": "Visa alla",
       "company": "Företag",
       "tags": "Taggar",
       "reportUrl": "Rapport-URL",

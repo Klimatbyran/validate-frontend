@@ -1,7 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { listCompanies } from "../lib/companies-api";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  EDITOR_COMPANY_INDEX_PAGE_SIZE,
+  EDITOR_COMPANY_SEARCH_MIN_LENGTH,
+  listCompaniesIndex,
+} from "../lib/companies-api";
 import { fetchTagOptions } from "../lib/tag-options-api";
 import type { GarboCompanyListItem, TagOption } from "../lib/types";
+import { NO_TAGS_FILTER_OPTION } from "../lib/types";
 import { buildTagLabelBySlug } from "../lib/editor-tag-and-payload-utils";
 import {
   type CompanySortId,
@@ -17,13 +22,20 @@ import {
   expandCompaniesToReportRows,
 } from "../lib/company-report-rows";
 
+export type EditorListMode = "idle" | "search" | "browse";
+
 export function useSingleCompanyOverviewList() {
   const [companyList, setCompanyList] = useState<GarboCompanyListItem[]>([]);
   const [tagOptions, setTagOptions] = useState<TagOption[]>([]);
-  const [loadingList, setLoadingList] = useState(true);
+  const [loadingList, setLoadingList] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
+  const [listMode, setListMode] = useState<EditorListMode>("idle");
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(EDITOR_COMPANY_INDEX_PAGE_SIZE);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [excludeFilterTags, setExcludeFilterTags] = useState<string[]>([]);
   const [filterDataYears, setFilterDataYearsRaw] = useState<string[]>([]);
@@ -48,34 +60,135 @@ export function useSingleCompanyOverviewList() {
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [companySort, setCompanySort] = useState<CompanySortId>("name-asc");
 
+  const requestRef = useRef(0);
+
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setDebouncedSearchQuery(searchQuery.trim()),
+      300,
+    );
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
   useEffect(() => {
     let cancelled = false;
-    setLoadingList(true);
-    setListError(null);
-    Promise.all([listCompanies(), fetchTagOptions()])
-      .then(([list, tags]) => {
-        if (!cancelled) {
-          setCompanyList(list);
-          setTagOptions(tags);
-        }
+    fetchTagOptions()
+      .then((tags) => {
+        if (!cancelled) setTagOptions(tags);
       })
-      .catch((e) => {
-        if (!cancelled) {
-          setListError(e instanceof Error ? e.message : String(e));
-          setCompanyList([]);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingList(false);
+      .catch(() => {
+        if (!cancelled) setTagOptions([]);
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
+  const serverTags = useMemo(
+    () => filterTags.filter((tag) => tag !== NO_TAGS_FILTER_OPTION),
+    [filterTags],
+  );
+
+  const fetchIndex = useCallback(
+    async (input: {
+      mode: Exclude<EditorListMode, "idle">;
+      q?: string;
+      pageNumber: number;
+    }) => {
+      const requestId = ++requestRef.current;
+      setLoadingList(true);
+      setListError(null);
+      setListMode(input.mode);
+      try {
+        const offset = (input.pageNumber - 1) * pageSize;
+        const result = await listCompaniesIndex({
+          q: input.mode === "search" ? input.q : undefined,
+          offset,
+          limit: pageSize,
+          tags: serverTags.length ? serverTags : undefined,
+        });
+        if (requestId !== requestRef.current) return;
+        setCompanyList(result.companies);
+        setTotalCount(result.total);
+        setPage(input.pageNumber);
+      } catch (e) {
+        if (requestId !== requestRef.current) return;
+        setListError(e instanceof Error ? e.message : String(e));
+        setCompanyList([]);
+        setTotalCount(0);
+      } finally {
+        if (requestId === requestRef.current) setLoadingList(false);
+      }
+    },
+    [pageSize, serverTags],
+  );
+
+  useEffect(() => {
+    if (debouncedSearchQuery.length >= EDITOR_COMPANY_SEARCH_MIN_LENGTH) {
+      void fetchIndex({
+        mode: "search",
+        q: debouncedSearchQuery,
+        pageNumber: 1,
+      });
+      return;
+    }
+
+    setListMode((mode) => {
+      if (mode !== "search") return mode;
+      setCompanyList([]);
+      setTotalCount(0);
+      setPage(1);
+      setListError(null);
+      return "idle";
+    });
+  }, [debouncedSearchQuery, fetchIndex]);
+
+  useEffect(() => {
+    if (listMode === "browse") {
+      void fetchIndex({ mode: "browse", pageNumber: 1 });
+      return;
+    }
+    if (
+      listMode === "search" &&
+      debouncedSearchQuery.length >= EDITOR_COMPANY_SEARCH_MIN_LENGTH
+    ) {
+      void fetchIndex({
+        mode: "search",
+        q: debouncedSearchQuery,
+        pageNumber: 1,
+      });
+    }
+    // Tag include-filter is server-side; refetch the active mode.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverTags]);
+
+  const browseAll = useCallback(() => {
+    setSearchQuery("");
+    setDebouncedSearchQuery("");
+    void fetchIndex({ mode: "browse", pageNumber: 1 });
+  }, [fetchIndex]);
+
+  const setBrowsePage = useCallback(
+    (pageNumber: number) => {
+      if (listMode !== "browse") return;
+      void fetchIndex({ mode: "browse", pageNumber });
+    },
+    [fetchIndex, listMode],
+  );
+
   const refreshCompanyList = useCallback(() => {
-    return listCompanies().then(setCompanyList);
-  }, []);
+    if (listMode === "search") {
+      return fetchIndex({
+        mode: "search",
+        q: debouncedSearchQuery,
+        pageNumber: page,
+      });
+    }
+    if (listMode === "browse") {
+      return fetchIndex({ mode: "browse", pageNumber: page });
+    }
+    return Promise.resolve();
+  }, [debouncedSearchQuery, fetchIndex, listMode, page]);
 
   const dataYears = useMemo(
     () => collectDataYearsFromCompanies(companyList),
@@ -103,7 +216,9 @@ export function useSingleCompanyOverviewList() {
 
   const filterInput = useMemo(
     () => ({
-      searchQuery,
+      // Server already applied name search; keep client search empty so we
+      // don't double-filter the current page.
+      searchQuery: "",
       filterTags,
       excludeFilterTags,
       filterDataYears,
@@ -114,7 +229,6 @@ export function useSingleCompanyOverviewList() {
       filterMissingData,
     }),
     [
-      searchQuery,
       filterTags,
       excludeFilterTags,
       filterDataYears,
@@ -149,12 +263,21 @@ export function useSingleCompanyOverviewList() {
     [tagOptions],
   );
 
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
   return {
     companyList,
     setCompanyList,
     tagOptions,
     loadingList,
     listError,
+    listMode,
+    totalCount,
+    page,
+    pageSize,
+    totalPages,
+    browseAll,
+    setBrowsePage,
     refreshCompanyList,
     searchQuery,
     setSearchQuery,

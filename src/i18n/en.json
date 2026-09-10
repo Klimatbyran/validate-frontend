@@ -281,6 +281,8 @@
       "loading": "Loading companies...",
       "loadError": "Failed to load companies",
       "empty": "No companies match the filters",
+      "searchFirstHint": "Type at least {{min}} characters to search, or browse all companies.",
+      "browseAll": "Browse all",
       "company": "Company",
       "tags": "Tags",
       "reportUrl": "Report URL",

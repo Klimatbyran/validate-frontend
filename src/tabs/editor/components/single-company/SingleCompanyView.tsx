@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { LoadingSpinner } from "@/ui/loading-spinner";
+import { ClientTablePagination } from "@/ui/client-table-pagination";
 import { getCompany } from "../../lib/companies-api";
 import type { GarboCompanyDetail } from "../../lib/types";
 import { CompanyEditDetail } from "./CompanyEditDetail";
@@ -166,6 +167,29 @@ export function SingleCompanyView() {
         quickEdit={quickEdit}
         onQuickEditChange={setQuickEdit}
       />
+
+      {!overviewList.loadingList &&
+      overviewList.listMode === "browse" &&
+      overviewList.filteredReportRows.length > 0 ? (
+        <ClientTablePagination
+          from={
+            overviewList.totalCount === 0
+              ? 0
+              : (overviewList.page - 1) * overviewList.pageSize + 1
+          }
+          to={Math.min(
+            overviewList.page * overviewList.pageSize,
+            overviewList.totalCount,
+          )}
+          filteredTotal={overviewList.totalCount}
+          page={overviewList.page}
+          totalPages={overviewList.totalPages}
+          showAll={false}
+          canPaginate={overviewList.totalPages > 1}
+          allowShowAll={false}
+          onPageChange={overviewList.setBrowsePage}
+        />
+      ) : null}
     </div>
   );
 }
