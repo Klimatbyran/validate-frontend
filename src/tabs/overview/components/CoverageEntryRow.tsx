@@ -175,30 +175,32 @@ export function CoverageEntryRow({
       </td>
       <td className="px-4 py-2 text-gray-01 align-top">
         {isEditingName ? (
-          <div className="flex min-w-[12rem] flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={draftName}
-                onChange={(event) => setDraftName(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    void saveNameEdit();
-                  }
-                  if (event.key === "Escape") {
-                    event.preventDefault();
-                    cancelNameEdit();
-                  }
-                }}
-                disabled={isRenaming}
-                autoFocus
-                aria-label={t("overview.coverage.renameEntryLabel")}
-                className="w-full rounded border border-gray-03 bg-gray-05 px-2 py-1 text-sm text-gray-01"
-              />
+          <div className="flex w-full min-w-0 flex-col gap-1.5">
+            <input
+              type="text"
+              value={draftName}
+              onChange={(event) => setDraftName(event.target.value)}
+              onFocus={(event) => event.currentTarget.select()}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void saveNameEdit();
+                }
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  cancelNameEdit();
+                }
+              }}
+              disabled={isRenaming}
+              autoFocus
+              aria-label={t("overview.coverage.renameEntryLabel")}
+              className="box-border w-full min-w-0 rounded border border-gray-03 bg-gray-04 px-2.5 py-1.5 text-sm text-gray-01 outline-none focus:border-blue-03 focus:ring-2 focus:ring-blue-03/40"
+            />
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
+                className="shrink-0"
                 onClick={() => void saveNameEdit()}
                 disabled={isRenaming}
               >
@@ -209,6 +211,7 @@ export function CoverageEntryRow({
               <Button
                 variant="ghost"
                 size="sm"
+                className="shrink-0"
                 onClick={cancelNameEdit}
                 disabled={isRenaming}
               >
