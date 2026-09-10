@@ -7,6 +7,7 @@ import { inputClassName } from "../../lib/company-edit-utils";
 import { buildTagLabelBySlug } from "../../lib/editor-tag-and-payload-utils";
 import { NO_TAGS_FILTER_OPTION, type TagOption } from "../../lib/types";
 import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
+import type { EditorListMode } from "../../hooks/useSingleCompanyOverviewList";
 
 export function MultiCompanyFilters({
   searchQuery,
@@ -19,6 +20,8 @@ export function MultiCompanyFilters({
   onTagsChange,
   onRefresh,
   refreshDisabled,
+  onBrowseAll,
+  listMode,
 }: {
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
@@ -30,6 +33,8 @@ export function MultiCompanyFilters({
   onTagsChange: (tags: string[]) => void;
   onRefresh: () => void;
   refreshDisabled?: boolean;
+  onBrowseAll: () => void;
+  listMode: EditorListMode;
 }) {
   const { t } = useI18n();
   const tagLabelBySlug = useMemo(
@@ -44,17 +49,28 @@ export function MultiCompanyFilters({
       open={filtersOpen}
       onOpenChange={setFiltersOpen}
     >
-      <div>
-        <label className="block text-xs font-medium text-gray-02 mb-1">
-          {t("editor.singleCompanyView.searchByNameOrId")}
-        </label>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => onSearchQueryChange(e.target.value)}
-          placeholder={t("editor.singleCompanyView.searchPlaceholder")}
-          className={inputClassName}
-        />
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-[16rem] flex-1">
+          <label className="block text-xs font-medium text-gray-02 mb-1">
+            {t("editor.singleCompanyView.searchByNameOrId")}
+          </label>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchQueryChange(e.target.value)}
+            placeholder={t("editor.singleCompanyView.searchPlaceholder")}
+            className={inputClassName}
+          />
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={onBrowseAll}
+          disabled={listMode === "browse"}
+        >
+          {t("editor.companies.browseAll")}
+        </Button>
       </div>
 
       <div className="flex flex-wrap gap-4 items-end">
