@@ -416,7 +416,9 @@ export function CoverageView() {
                         ? error
                         : new Error(t("overview.coverage.renameEntryError"));
                     } finally {
-                      setRenamingEntryId(null);
+                      setRenamingEntryId((current) =>
+                        current === entry.id ? null : current,
+                      );
                     }
                   }}
                 />

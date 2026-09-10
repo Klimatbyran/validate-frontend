@@ -398,6 +398,9 @@ export function useCoverageYearDetail(
       setDetail((previous) =>
         mergeCoverageMatchUpdate(previous, updated, filter),
       );
+      // Soft refresh so search/pagination stay correct after a name change;
+      // skip registry enrichment to keep existing pills.
+      void loadPage(page, { includeRegistry: false });
       return updated;
     },
   };
