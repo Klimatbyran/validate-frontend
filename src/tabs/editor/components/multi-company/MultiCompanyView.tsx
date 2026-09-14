@@ -11,7 +11,6 @@ import type {
   GarboCompanyListItem,
   GarboMetadata,
 } from "../../lib/types";
-import { NO_TAGS_FILTER_OPTION } from "../../lib/types";
 import { FieldEditModal } from "./FieldEditModal";
 import { BulkTagUpdateModal } from "./BulkTagUpdateModal";
 import { MultiCompanyFilters } from "./MultiCompanyFilters";
@@ -22,7 +21,6 @@ import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { useMultiCompanyData } from "../../hooks/useMultiCompanyData";
 import {
   buildReportingPeriodUpdatePayload,
-  companyMatchesTagFilter,
   parseTagSlugs,
 } from "../../lib/editor-tag-and-payload-utils";
 
@@ -48,8 +46,9 @@ export function MultiCompanyView() {
     setSearchQuery,
     selectedTags,
     setSelectedTags,
+    selectedYear,
+    setSelectedYear,
   } = useMultiCompanyData();
-  const [selectedYear, setSelectedYear] = useState<string>("");
   const [actionLoading, setActionLoading] = useState(false);
   const [editState, setEditState] = useState<EditState | null>(null);
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<Set<string>>(
@@ -57,21 +56,8 @@ export function MultiCompanyView() {
   );
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
 
-  const filteredCompanies = useMemo(() => {
-    let filteredList = companies;
-    if (selectedTags.includes(NO_TAGS_FILTER_OPTION)) {
-      filteredList = filteredList.filter((company) =>
-        companyMatchesTagFilter(company.tags, selectedTags),
-      );
-    }
-    if (selectedYear) {
-      const selectedYearNumber = Number(selectedYear);
-      filteredList = filteredList.filter((company) =>
-        getPeriodForYear(company.reportingPeriods, selectedYearNumber),
-      );
-    }
-    return filteredList;
-  }, [companies, selectedYear, selectedTags]);
+  // Server index already applied tags / year / search.
+  const filteredCompanies = companies;
 
   const toggleCompanySelection = useCallback((companyId: string) => {
     setSelectedCompanyIds((prev) => {

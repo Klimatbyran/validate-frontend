@@ -22,7 +22,10 @@ export function useMultiCompanyData() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedYear, setSelectedYear] = useState("");
+  const [facetYears, setFacetYears] = useState<string[]>([]);
   const requestRef = useRef(0);
+  const facetsLoadedRef = useRef(false);
 
   useEffect(() => {
     const timer = window.setTimeout(
@@ -50,29 +53,49 @@ export function useMultiCompanyData() {
     () => selectedTags.filter((tag) => tag !== NO_TAGS_FILTER_OPTION),
     [selectedTags],
   );
+  const includeNoTags = selectedTags.includes(NO_TAGS_FILTER_OPTION);
+  const hasActiveServerFilters =
+    serverTags.length > 0 || includeNoTags || Boolean(selectedYear);
+
+  const buildIndexQuery = useCallback(
+    (input: {
+      mode: Exclude<EditorListMode, "idle">;
+      q?: string;
+      pageNumber: number;
+      includeFacets?: boolean;
+    }) => ({
+      q: input.mode === "search" ? input.q : undefined,
+      offset: (input.pageNumber - 1) * pageSize,
+      limit: pageSize,
+      includeFacets: input.includeFacets,
+      tags: serverTags.length ? serverTags : undefined,
+      includeNoTags: includeNoTags || undefined,
+      dataYears: selectedYear ? [selectedYear] : undefined,
+    }),
+    [includeNoTags, pageSize, selectedYear, serverTags],
+  );
 
   const fetchIndex = useCallback(
     async (input: {
       mode: Exclude<EditorListMode, "idle">;
       q?: string;
       pageNumber: number;
+      includeFacets?: boolean;
     }) => {
       const requestId = ++requestRef.current;
       setLoading(true);
       setError(null);
       setListMode(input.mode);
       try {
-        const offset = (input.pageNumber - 1) * pageSize;
-        const result = await listCompaniesIndex({
-          q: input.mode === "search" ? input.q : undefined,
-          offset,
-          limit: pageSize,
-          tags: serverTags.length ? serverTags : undefined,
-        });
+        const result = await listCompaniesIndex(buildIndexQuery(input));
         if (requestId !== requestRef.current) return;
         setCompanies(result.companies);
         setTotalCount(result.total);
         setPage(input.pageNumber);
+        if (result.facets) {
+          setFacetYears(result.facets.dataYears);
+          facetsLoadedRef.current = true;
+        }
       } catch (e) {
         if (requestId !== requestRef.current) return;
         setError(e instanceof Error ? e.message : String(e));
@@ -82,8 +105,25 @@ export function useMultiCompanyData() {
         if (requestId === requestRef.current) setLoading(false);
       }
     },
-    [pageSize, serverTags],
+    [buildIndexQuery],
   );
+
+  useEffect(() => {
+    if (facetsLoadedRef.current) return;
+    let cancelled = false;
+    listCompaniesIndex({ offset: 0, limit: 1, includeFacets: true })
+      .then((result) => {
+        if (cancelled || !result.facets) return;
+        setFacetYears(result.facets.dataYears);
+        facetsLoadedRef.current = true;
+      })
+      .catch(() => {
+        /* optional */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (debouncedSearchQuery.length >= EDITOR_COMPANY_SEARCH_MIN_LENGTH) {
@@ -96,15 +136,25 @@ export function useMultiCompanyData() {
     }
     setListMode((mode) => {
       if (mode !== "search") return mode;
+      if (hasActiveServerFilters) {
+        void fetchIndex({ mode: "browse", pageNumber: 1 });
+        return "browse";
+      }
       setCompanies([]);
       setTotalCount(0);
       setPage(1);
       setError(null);
       return "idle";
     });
-  }, [debouncedSearchQuery, fetchIndex]);
+  }, [debouncedSearchQuery, fetchIndex, hasActiveServerFilters]);
 
   useEffect(() => {
+    if (listMode === "idle") {
+      if (hasActiveServerFilters) {
+        void fetchIndex({ mode: "browse", pageNumber: 1 });
+      }
+      return;
+    }
     if (listMode === "browse") {
       void fetchIndex({ mode: "browse", pageNumber: 1 });
       return;
@@ -120,7 +170,7 @@ export function useMultiCompanyData() {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serverTags]);
+  }, [serverTags, includeNoTags, selectedYear]);
 
   const browseAll = useCallback(() => {
     setSearchQuery("");
@@ -150,21 +200,6 @@ export function useMultiCompanyData() {
     }
   }, [debouncedSearchQuery, fetchIndex, listMode, page]);
 
-  const years = useMemo(() => {
-    const uniqueYears = new Set<string>();
-    companies.forEach((company) => {
-      company.reportingPeriods?.forEach((reportingPeriod) => {
-        const year =
-          reportingPeriod.startDate?.slice(0, 4) ??
-          reportingPeriod.endDate?.slice(0, 4);
-        if (year) uniqueYears.add(year);
-      });
-    });
-    return Array.from(uniqueYears).sort((yearA, yearB) =>
-      yearB.localeCompare(yearA),
-    );
-  }, [companies]);
-
   const tagLabelBySlug = useMemo(
     () => buildTagLabelBySlug(tagOptions),
     [tagOptions],
@@ -176,7 +211,7 @@ export function useMultiCompanyData() {
     companies,
     setCompanies,
     tagOptions,
-    years,
+    years: facetYears,
     tagLabelBySlug,
     loading,
     error,
@@ -192,5 +227,7 @@ export function useMultiCompanyData() {
     setSearchQuery,
     selectedTags,
     setSelectedTags,
+    selectedYear,
+    setSelectedYear,
   };
 }

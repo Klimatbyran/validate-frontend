@@ -16,11 +16,7 @@ import {
   computeOverviewFilterPeriodStats,
   sortCompanyReportRows,
 } from "../lib/single-company-overview-list";
-import {
-  collectDataYearsFromCompanies,
-  collectReportYearsFromCompanies,
-  expandCompaniesToReportRows,
-} from "../lib/company-report-rows";
+import { expandCompaniesToReportRows } from "../lib/company-report-rows";
 
 export type EditorListMode = "idle" | "search" | "browse";
 
@@ -33,6 +29,9 @@ export function useSingleCompanyOverviewList() {
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(EDITOR_COMPANY_INDEX_PAGE_SIZE);
+  const [facetDataYears, setFacetDataYears] = useState<string[]>([]);
+  const [facetReportYears, setFacetReportYears] = useState<string[]>([]);
+  const [facetSectors, setFacetSectors] = useState<string[]>([]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -61,6 +60,7 @@ export function useSingleCompanyOverviewList() {
   const [companySort, setCompanySort] = useState<CompanySortId>("name-asc");
 
   const requestRef = useRef(0);
+  const facetsLoadedRef = useRef(false);
 
   useEffect(() => {
     const timer = window.setTimeout(
@@ -88,29 +88,77 @@ export function useSingleCompanyOverviewList() {
     () => filterTags.filter((tag) => tag !== NO_TAGS_FILTER_OPTION),
     [filterTags],
   );
+  const includeNoTags = filterTags.includes(NO_TAGS_FILTER_OPTION);
+
+  const hasActiveServerFilters =
+    serverTags.length > 0 ||
+    includeNoTags ||
+    excludeFilterTags.length > 0 ||
+    filterDataYears.length > 0 ||
+    filterReportYears.length > 0 ||
+    Boolean(filterSector) ||
+    Boolean(filterUnverified) ||
+    Boolean(filterMissingData);
+
+  const buildIndexQuery = useCallback(
+    (input: {
+      mode: Exclude<EditorListMode, "idle">;
+      q?: string;
+      pageNumber: number;
+      includeFacets?: boolean;
+    }) => ({
+      q: input.mode === "search" ? input.q : undefined,
+      offset: (input.pageNumber - 1) * pageSize,
+      limit: pageSize,
+      includeFacets: input.includeFacets,
+      tags: serverTags.length ? serverTags : undefined,
+      excludeTags: excludeFilterTags.length ? excludeFilterTags : undefined,
+      includeNoTags: includeNoTags || undefined,
+      dataYears: filterDataYears.length ? filterDataYears : undefined,
+      reportYears: filterReportYears.length ? filterReportYears : undefined,
+      sector: filterSector || undefined,
+      unverified: filterUnverified || undefined,
+      unverifiedScopedToDataYears:
+        filterApplyUnverifiedToSelectedYears || undefined,
+      missingData: filterMissingData || undefined,
+    }),
+    [
+      excludeFilterTags,
+      filterApplyUnverifiedToSelectedYears,
+      filterDataYears,
+      filterMissingData,
+      filterReportYears,
+      filterSector,
+      filterUnverified,
+      includeNoTags,
+      pageSize,
+      serverTags,
+    ],
+  );
 
   const fetchIndex = useCallback(
     async (input: {
       mode: Exclude<EditorListMode, "idle">;
       q?: string;
       pageNumber: number;
+      includeFacets?: boolean;
     }) => {
       const requestId = ++requestRef.current;
       setLoadingList(true);
       setListError(null);
       setListMode(input.mode);
       try {
-        const offset = (input.pageNumber - 1) * pageSize;
-        const result = await listCompaniesIndex({
-          q: input.mode === "search" ? input.q : undefined,
-          offset,
-          limit: pageSize,
-          tags: serverTags.length ? serverTags : undefined,
-        });
+        const result = await listCompaniesIndex(buildIndexQuery(input));
         if (requestId !== requestRef.current) return;
         setCompanyList(result.companies);
         setTotalCount(result.total);
         setPage(input.pageNumber);
+        if (result.facets) {
+          setFacetDataYears(result.facets.dataYears);
+          setFacetReportYears(result.facets.reportYears);
+          setFacetSectors(result.facets.sectors);
+          facetsLoadedRef.current = true;
+        }
       } catch (e) {
         if (requestId !== requestRef.current) return;
         setListError(e instanceof Error ? e.message : String(e));
@@ -120,8 +168,31 @@ export function useSingleCompanyOverviewList() {
         if (requestId === requestRef.current) setLoadingList(false);
       }
     },
-    [pageSize, serverTags],
+    [buildIndexQuery],
   );
+
+  useEffect(() => {
+    if (facetsLoadedRef.current) return;
+    let cancelled = false;
+    listCompaniesIndex({
+      offset: 0,
+      limit: 1,
+      includeFacets: true,
+    })
+      .then((result) => {
+        if (cancelled || !result.facets) return;
+        setFacetDataYears(result.facets.dataYears);
+        setFacetReportYears(result.facets.reportYears);
+        setFacetSectors(result.facets.sectors);
+        facetsLoadedRef.current = true;
+      })
+      .catch(() => {
+        /* facets are optional for first paint */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (debouncedSearchQuery.length >= EDITOR_COMPANY_SEARCH_MIN_LENGTH) {
@@ -135,15 +206,25 @@ export function useSingleCompanyOverviewList() {
 
     setListMode((mode) => {
       if (mode !== "search") return mode;
+      if (hasActiveServerFilters) {
+        void fetchIndex({ mode: "browse", pageNumber: 1 });
+        return "browse";
+      }
       setCompanyList([]);
       setTotalCount(0);
       setPage(1);
       setListError(null);
       return "idle";
     });
-  }, [debouncedSearchQuery, fetchIndex]);
+  }, [debouncedSearchQuery, fetchIndex, hasActiveServerFilters]);
 
   useEffect(() => {
+    if (listMode === "idle") {
+      if (hasActiveServerFilters) {
+        void fetchIndex({ mode: "browse", pageNumber: 1 });
+      }
+      return;
+    }
     if (listMode === "browse") {
       void fetchIndex({ mode: "browse", pageNumber: 1 });
       return;
@@ -158,9 +239,19 @@ export function useSingleCompanyOverviewList() {
         pageNumber: 1,
       });
     }
-    // Tag include-filter is server-side; refetch the active mode.
+    // Refetch when server-side filters change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serverTags]);
+  }, [
+    serverTags,
+    includeNoTags,
+    excludeFilterTags,
+    filterDataYears,
+    filterReportYears,
+    filterSector,
+    filterUnverified,
+    filterApplyUnverifiedToSelectedYears,
+    filterMissingData,
+  ]);
 
   const browseAll = useCallback(() => {
     setSearchQuery("");
@@ -190,34 +281,15 @@ export function useSingleCompanyOverviewList() {
     return Promise.resolve();
   }, [debouncedSearchQuery, fetchIndex, listMode, page]);
 
-  const dataYears = useMemo(
-    () => collectDataYearsFromCompanies(companyList),
-    [companyList],
-  );
-
-  const reportYears = useMemo(
-    () => collectReportYearsFromCompanies(companyList),
-    [companyList],
-  );
-
-  const sectors = useMemo(() => {
-    const set = new Set<string>();
-    companyList.forEach((c) => {
-      const code = c.industry?.subIndustryCode;
-      if (code) set.add(code);
-    });
-    return Array.from(set).sort();
-  }, [companyList]);
-
   const allReportRows = useMemo(
     () => expandCompaniesToReportRows(companyList),
     [companyList],
   );
 
+  // Server already filtered companies; keep row-level filters so multi-report
+  // companies only show matching report shells in the overview table.
   const filterInput = useMemo(
     () => ({
-      // Server already applied name search; keep client search empty so we
-      // don't double-filter the current page.
       searchQuery: "",
       filterTags,
       excludeFilterTags,
@@ -301,9 +373,9 @@ export function useSingleCompanyOverviewList() {
     setFiltersOpen,
     companySort,
     setCompanySort,
-    dataYears,
-    reportYears,
-    sectors,
+    dataYears: facetDataYears,
+    reportYears: facetReportYears,
+    sectors: facetSectors,
     allReportRows,
     filteredReportRows,
     sortedReportRows,
