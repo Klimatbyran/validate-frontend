@@ -24,6 +24,7 @@ import { buildTagLabelBySlug } from "../../lib/editor-tag-and-payload-utils";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
 import { wikidataFromIdentifiers } from "../../lib/company-identifiers";
 import { CompanyIdentifiersEditor } from "./CompanyIdentifiersEditor";
+import { CompanyMergeWizard } from "./CompanyMergeWizard";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
 
 export function CompanyDetailTab({
@@ -80,6 +81,7 @@ export function CompanyDetailTab({
   );
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingCompany, setDeletingCompany] = useState(false);
+  const [mergeModalOpen, setMergeModalOpen] = useState(false);
 
   useEffect(() => {
     setName(company.name ?? "");
@@ -461,6 +463,23 @@ export function CompanyDetailTab({
         </div>
       </section>
 
+      <section className="rounded-lg border border-gray-03 bg-gray-04/80 p-4">
+        <h3 className="text-sm font-semibold text-gray-01 mb-2">
+          {t("editor.singleCompanyView.mergeCompany.sectionTitle")}
+        </h3>
+        <p className="text-sm text-gray-02 mb-4">
+          {t("editor.singleCompanyView.mergeCompany.sectionHint")}
+        </p>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => setMergeModalOpen(true)}
+        >
+          {t("editor.singleCompanyView.mergeCompany.button")}
+        </Button>
+      </section>
+
       <section className="rounded-lg border border-red-500/30 bg-gray-04/80 p-4">
         <h3 className="text-sm font-semibold text-red-500 mb-2">
           {t("editor.singleCompanyView.deleteCompany.sectionTitle")}
@@ -480,6 +499,16 @@ export function CompanyDetailTab({
           {t("editor.singleCompanyView.deleteCompany.button")}
         </Button>
       </section>
+
+      <CompanyMergeWizard
+        open={mergeModalOpen}
+        onOpenChange={setMergeModalOpen}
+        survivorCompanyId={company.id}
+        survivorCompanyName={company.name ?? company.id}
+        onMerged={() => {
+          onSaved?.();
+        }}
+      />
 
       <Modal
         open={deleteModalOpen}
