@@ -107,6 +107,8 @@ export interface GarboReportingPeriodSummary {
 export type ReportingPeriodWritePayload = {
   startDate: string;
   endDate: string;
+  /** DB data year — keep stable so fiscal periods upsert the same row. */
+  year?: string;
   companyReportId?: string;
   reportURL?: string | null;
   reportS3Url?: string | null;

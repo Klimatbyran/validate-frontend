@@ -17,9 +17,14 @@ export function resolveCompanyReportId(
 export function attachCompanyReportIdToPeriodPatch<T extends object>(
   period: GarboReportingPeriodSummary,
   patch: T,
-): T & { companyReportId?: string } {
+): T & { companyReportId?: string; year?: string } {
   const companyReportId = resolveCompanyReportId(period);
-  return companyReportId ? { ...patch, companyReportId } : patch;
+  const year = period.year?.trim() || undefined;
+  return {
+    ...patch,
+    ...(companyReportId ? { companyReportId } : {}),
+    ...(year ? { year } : {}),
+  };
 }
 
 export type CompanyReportShellGroup = {

@@ -289,8 +289,24 @@ export async function updateReportingPeriods(
     reportingPeriods: ReportingPeriodWritePayload[];
     metadata?: GarboMetadata;
     replaceAllEmissions?: boolean;
+    companyReportId?: string;
   },
 ): Promise<void> {
+  const sharedCompanyReportIds = Array.from(
+    new Set(
+      body.reportingPeriods
+        .map((period) => period.companyReportId?.trim())
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+  const payload = {
+    ...body,
+    companyReportId:
+      body.companyReportId?.trim() ||
+      (sharedCompanyReportIds.length === 1
+        ? sharedCompanyReportIds[0]
+        : undefined),
+  };
   const res = await garboAuthFetch(
     apiUrl(companiesPath(`${encodeURIComponent(companyId)}/reporting-periods`)),
     {
@@ -299,7 +315,7 @@ export async function updateReportingPeriods(
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     },
   );
   if (res.status === 401) {
