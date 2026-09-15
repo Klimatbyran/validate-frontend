@@ -16,7 +16,6 @@ import { BulkTagUpdateModal } from "./BulkTagUpdateModal";
 import { MultiCompanyFilters } from "./MultiCompanyFilters";
 import { MultiCompanySelectionBar } from "./MultiCompanySelectionBar";
 import { MultiCompanyTable } from "./MultiCompanyTable";
-import { getPeriodForYear } from "../../lib/multi-company-utils";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { useMultiCompanyData } from "../../hooks/useMultiCompanyData";
 import {
