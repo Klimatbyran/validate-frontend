@@ -17,10 +17,23 @@ export const coverageYearSummarySchema = z.object({
   noReportCount: z.number().optional(),
 });
 
+export const coverageListGroupRefSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  label: z.string(),
+});
+
+export const coverageListGroupSchema = coverageListGroupRefSchema.extend({
+  listCount: z.number().int().nonnegative(),
+});
+
+export const coverageListGroupListSchema = z.array(coverageListGroupSchema);
+
 export const coverageListSummarySchema = z.object({
   id: z.string(),
   name: z.string(),
   updatedAt: z.string(),
+  group: coverageListGroupRefSchema.nullable(),
   years: z.array(coverageYearSummarySchema),
 });
 
@@ -163,6 +176,8 @@ export type CoverageMatchedCompany = z.infer<
   typeof coverageMatchedCompanySchema
 >;
 export type CoverageYearSummary = z.infer<typeof coverageYearSummarySchema>;
+export type CoverageListGroupRef = z.infer<typeof coverageListGroupRefSchema>;
+export type CoverageListGroup = z.infer<typeof coverageListGroupSchema>;
 export type CoverageListSummary = z.infer<typeof coverageListSummarySchema>;
 export type CoverageEntryStatus = z.infer<typeof coverageEntryStatusSchema>;
 export type CoverageEntry = z.infer<typeof coverageEntrySchema>;

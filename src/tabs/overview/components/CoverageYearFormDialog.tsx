@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { namesFromTextarea } from "@/tabs/overview/lib/coverage-api";
+import type { CoverageListGroup } from "@/tabs/overview/lib/coverage-types";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 
@@ -8,17 +9,20 @@ export type CoverageYearFormMode =
   | "createList"
   | "addYear"
   | "editYear"
-  | "editListName";
+  | "editList";
 
 type CoverageYearFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: CoverageYearFormMode;
+  groups?: CoverageListGroup[];
   initialListName?: string;
+  initialGroupId?: string | null;
   initialYear?: number;
   initialNamesText?: string;
   onSubmit: (input: {
     listName?: string;
+    groupId?: string | null;
     year: number;
     names: string[];
   }) => Promise<void>;
@@ -29,7 +33,9 @@ export function CoverageYearFormDialog({
   open,
   onOpenChange,
   mode,
+  groups = [],
   initialListName = "",
+  initialGroupId = null,
   initialYear = new Date().getFullYear(),
   initialNamesText = "",
   onSubmit,
@@ -37,30 +43,32 @@ export function CoverageYearFormDialog({
 }: CoverageYearFormDialogProps) {
   const { t } = useI18n();
   const [listName, setListName] = useState(initialListName);
+  const [groupId, setGroupId] = useState<string>(initialGroupId ?? "");
   const [year, setYear] = useState(String(initialYear));
   const [namesText, setNamesText] = useState(initialNamesText);
 
   useEffect(() => {
     if (!open) return;
     setListName(initialListName);
+    setGroupId(initialGroupId ?? "");
     setYear(String(initialYear));
     setNamesText(initialNamesText);
-  }, [open, initialListName, initialYear, initialNamesText]);
+  }, [open, initialListName, initialGroupId, initialYear, initialNamesText]);
 
   const title =
     mode === "createList"
       ? t("overview.coverage.createListTitle")
       : mode === "addYear"
         ? t("overview.coverage.addYearTitle")
-        : mode === "editListName"
-          ? t("overview.coverage.editListNameTitle")
+        : mode === "editList"
+          ? t("overview.coverage.editListTitle")
           : t("overview.coverage.editYearTitle");
 
   const trimmedListName = listName.trim();
   const parsedYear = Number.parseInt(year, 10);
   const isValidYear = Number.isFinite(parsedYear);
   const canSubmit =
-    mode === "editListName"
+    mode === "editList"
       ? trimmedListName.length > 0
       : mode === "createList"
         ? trimmedListName.length > 0 && isValidYear
@@ -70,8 +78,12 @@ export function CoverageYearFormDialog({
     if (!canSubmit) return;
     await onSubmit({
       listName:
-        mode === "createList" || mode === "editListName"
+        mode === "createList" || mode === "editList"
           ? trimmedListName
+          : undefined,
+      groupId:
+        mode === "createList" || mode === "editList"
+          ? groupId || null
           : undefined,
       year: parsedYear,
       names: namesFromTextarea(namesText),
@@ -83,12 +95,12 @@ export function CoverageYearFormDialog({
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      size={mode === "editListName" ? "lg" : "3xl"}
-      scrollable={mode !== "editListName"}
+      size={mode === "editList" ? "lg" : "3xl"}
+      scrollable={mode !== "editList"}
       title={title}
       description={
-        mode === "editListName"
-          ? t("overview.coverage.editListNameHint")
+        mode === "editList"
+          ? t("overview.coverage.editListHint")
           : t("overview.coverage.formHint")
       }
       footer={
@@ -106,21 +118,40 @@ export function CoverageYearFormDialog({
       }
     >
       <div className="space-y-4">
-        {mode === "createList" || mode === "editListName" ? (
-          <label className="block space-y-1">
-            <span className="text-sm text-gray-02">
-              {t("overview.coverage.listNameLabel")}
-            </span>
-            <input
-              className="w-full rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm"
-              value={listName}
-              onChange={(e) => setListName(e.target.value)}
-              placeholder={t("overview.coverage.listNamePlaceholder")}
-            />
-          </label>
+        {mode === "createList" || mode === "editList" ? (
+          <>
+            <label className="block space-y-1">
+              <span className="text-sm text-gray-02">
+                {t("overview.coverage.listNameLabel")}
+              </span>
+              <input
+                className="w-full rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm"
+                value={listName}
+                onChange={(e) => setListName(e.target.value)}
+                placeholder={t("overview.coverage.listNamePlaceholder")}
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-sm text-gray-02">
+                {t("overview.coverage.groupLabel")}
+              </span>
+              <select
+                className="w-full rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm"
+                value={groupId}
+                onChange={(e) => setGroupId(e.target.value)}
+              >
+                <option value="">{t("overview.coverage.groupNone")}</option>
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
         ) : null}
 
-        {mode !== "editListName" ? (
+        {mode !== "editList" ? (
           <label className="block space-y-1">
             <span className="text-sm text-gray-02">
               {t("overview.coverage.yearLabel")}
@@ -136,7 +167,7 @@ export function CoverageYearFormDialog({
           </label>
         ) : null}
 
-        {mode !== "editListName" ? (
+        {mode !== "editList" ? (
           <label className="block space-y-1">
             <span className="text-sm text-gray-02">
               {t("overview.coverage.namesLabel")}

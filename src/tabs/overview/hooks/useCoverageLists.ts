@@ -2,14 +2,19 @@ import { useCallback, useEffect, useState } from "react";
 import {
   addCoverageListYear,
   createCoverageList,
+  createCoverageListGroup,
   deleteCoverageList,
+  deleteCoverageListGroup,
   deleteCoverageListYear,
+  fetchCoverageListGroups,
   fetchCoverageLists,
-  renameCoverageList,
+  updateCoverageList,
   replaceCoverageYearNames,
+  updateCoverageListGroup,
   updateCoverageYearEdition,
 } from "../lib/coverage-api";
 import type {
+  CoverageListGroup,
   CoverageListSummary,
   CoverageYearSummary,
 } from "../lib/coverage-types";
@@ -17,6 +22,7 @@ import { patchListYearSummary } from "../lib/coverage-year-detail-state";
 
 export function useCoverageLists() {
   const [lists, setLists] = useState<CoverageListSummary[]>([]);
+  const [groups, setGroups] = useState<CoverageListGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,11 +32,16 @@ export function useCoverageLists() {
     else setIsLoading(true);
     setError(null);
     try {
-      const response = await fetchCoverageLists();
-      setLists(response.lists);
+      const [listsResponse, groupsResponse] = await Promise.all([
+        fetchCoverageLists(),
+        fetchCoverageListGroups(),
+      ]);
+      setLists(listsResponse.lists);
+      setGroups(groupsResponse);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
       setLists([]);
+      setGroups([]);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -43,6 +54,7 @@ export function useCoverageLists() {
 
   return {
     lists,
+    groups,
     isLoading,
     isRefreshing,
     error,
@@ -69,6 +81,7 @@ export function useCoverageLists() {
       name: string;
       year?: number;
       names?: string[];
+      groupId?: string | null;
     }) => {
       const created = await createCoverageList(input);
       await loadLists(true);
@@ -82,8 +95,16 @@ export function useCoverageLists() {
       await loadLists(true);
       return updated;
     },
+    updateList: async (
+      listId: string,
+      input: { name?: string; groupId?: string | null },
+    ) => {
+      const updated = await updateCoverageList(listId, input);
+      await loadLists(true);
+      return updated;
+    },
     renameList: async (listId: string, name: string) => {
-      const updated = await renameCoverageList(listId, name);
+      const updated = await updateCoverageList(listId, { name });
       await loadLists(true);
       return updated;
     },
@@ -107,6 +128,23 @@ export function useCoverageLists() {
     },
     deleteYear: async (listId: string, year: number) => {
       await deleteCoverageListYear(listId, year);
+      await loadLists(true);
+    },
+    createGroup: async (input: { slug: string; label: string }) => {
+      const created = await createCoverageListGroup(input);
+      await loadLists(true);
+      return created;
+    },
+    updateGroup: async (
+      groupId: string,
+      input: { slug?: string; label?: string },
+    ) => {
+      const updated = await updateCoverageListGroup(groupId, input);
+      await loadLists(true);
+      return updated;
+    },
+    deleteGroup: async (groupId: string) => {
+      await deleteCoverageListGroup(groupId);
       await loadLists(true);
     },
   };

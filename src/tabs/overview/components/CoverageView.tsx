@@ -14,6 +14,7 @@ import { coveragePercentTextClass } from "@/tabs/overview/lib/coverage-overview-
 import { CoverageListTable } from "./CoverageListTable";
 import { CoverageYearDetailView } from "./CoverageYearDetail";
 import { CoverageYearFormDialog } from "./CoverageYearFormDialog";
+import { CoverageManageGroupsDialog } from "./CoverageManageGroupsDialog";
 import { CoverageEntryMatchDialog } from "./CoverageEntryMatchDialog";
 import type {
   CoverageEntry,
@@ -22,10 +23,16 @@ import type {
 
 type DialogState =
   | { kind: "closed" }
-  | { kind: "createList" }
+  | { kind: "createList"; groupId?: string | null }
   | { kind: "addYear"; listId: string }
-  | { kind: "editListName"; listId: string; listName: string }
-  | { kind: "editYear"; listId: string; year: number; namesText: string };
+  | {
+      kind: "editList";
+      listId: string;
+      listName: string;
+      groupId: string | null;
+    }
+  | { kind: "editYear"; listId: string; year: number; namesText: string }
+  | { kind: "manageGroups" };
 
 type DeleteConfirmState =
   | { kind: "closed" }
@@ -69,6 +76,7 @@ export function CoverageView() {
 
   const handleCreateList = async (input: {
     listName?: string;
+    groupId?: string | null;
     year: number;
     names: string[];
   }) => {
@@ -79,6 +87,7 @@ export function CoverageView() {
         name: input.listName,
         year: input.year,
         names: input.names,
+        groupId: input.groupId ?? null,
       });
       setSelectedListId(created.id);
       setSelectedYear(input.year);
@@ -110,14 +119,18 @@ export function CoverageView() {
 
   const handleAddOrEditYear = async (input: {
     listName?: string;
+    groupId?: string | null;
     year: number;
     names: string[];
   }) => {
-    if (dialog.kind === "editListName") {
+    if (dialog.kind === "editList") {
       if (!input.listName) return;
       setIsSubmitting(true);
       try {
-        await coverage.renameList(dialog.listId, input.listName);
+        await coverage.updateList(dialog.listId, {
+          name: input.listName,
+          groupId: input.groupId ?? null,
+        });
       } finally {
         setIsSubmitting(false);
       }
@@ -213,9 +226,40 @@ export function CoverageView() {
       ) : selectedList ? (
         <div className="space-y-4">
           <div className="rounded-lg border border-gray-03 bg-gray-05/40 p-4 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-01">
-              {selectedList.name}
-            </h3>
+            <div className="flex flex-wrap items-center gap-3">
+              <h3 className="text-lg font-semibold text-gray-01">
+                {selectedList.name}
+              </h3>
+              <span className="rounded-full border border-gray-03 px-2.5 py-0.5 text-xs text-gray-02">
+                {selectedList.group?.label ?? t("overview.coverage.ungrouped")}
+              </span>
+              <label className="flex items-center gap-2 text-sm text-gray-02">
+                <span>{t("overview.coverage.groupLabel")}</span>
+                <select
+                  className="rounded-md border border-gray-03 bg-white px-2 py-1 text-sm text-gray-01"
+                  value={selectedList.group?.id ?? ""}
+                  onChange={(event) => {
+                    const nextGroupId = event.target.value || null;
+                    void coverage
+                      .updateList(selectedList.id, { groupId: nextGroupId })
+                      .catch((error) => {
+                        toast.error(
+                          error instanceof Error
+                            ? error.message
+                            : t("overview.coverage.errorTitle"),
+                        );
+                      });
+                  }}
+                >
+                  <option value="">{t("overview.coverage.groupNone")}</option>
+                  {coverage.groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -230,13 +274,14 @@ export function CoverageView() {
                 size="sm"
                 onClick={() =>
                   setDialog({
-                    kind: "editListName",
+                    kind: "editList",
                     listId: selectedList.id,
                     listName: selectedList.name,
+                    groupId: selectedList.group?.id ?? null,
                   })
                 }
               >
-                {t("overview.coverage.editListName")}
+                {t("overview.coverage.editList")}
               </Button>
               <Button
                 variant="secondary"
@@ -429,20 +474,25 @@ export function CoverageView() {
       ) : (
         <CoverageListTable
           lists={coverage.lists}
+          groups={coverage.groups}
           onSelectList={openList}
-          onCreateList={() => setDialog({ kind: "createList" })}
+          onCreateList={(groupId) =>
+            setDialog({ kind: "createList", groupId: groupId ?? null })
+          }
           onEditList={(list) =>
             setDialog({
-              kind: "editListName",
+              kind: "editList",
               listId: list.id,
               listName: list.name,
+              groupId: list.group?.id ?? null,
             })
           }
+          onManageGroups={() => setDialog({ kind: "manageGroups" })}
         />
       )}
 
       <CoverageYearFormDialog
-        open={dialog.kind !== "closed"}
+        open={dialog.kind !== "closed" && dialog.kind !== "manageGroups"}
         onOpenChange={(open) => {
           if (!open) setDialog({ kind: "closed" });
         }}
@@ -451,12 +501,20 @@ export function CoverageView() {
             ? "createList"
             : dialog.kind === "addYear"
               ? "addYear"
-              : dialog.kind === "editListName"
-                ? "editListName"
+              : dialog.kind === "editList"
+                ? "editList"
                 : "editYear"
         }
+        groups={coverage.groups}
         initialListName={
-          dialog.kind === "editListName" ? dialog.listName : undefined
+          dialog.kind === "editList" ? dialog.listName : undefined
+        }
+        initialGroupId={
+          dialog.kind === "createList"
+            ? (dialog.groupId ?? null)
+            : dialog.kind === "editList"
+              ? dialog.groupId
+              : null
         }
         initialYear={
           dialog.kind === "editYear" ? dialog.year : new Date().getFullYear()
@@ -469,6 +527,23 @@ export function CoverageView() {
             return;
           }
           await handleAddOrEditYear(input);
+        }}
+      />
+
+      <CoverageManageGroupsDialog
+        open={dialog.kind === "manageGroups"}
+        onOpenChange={(open) => {
+          if (!open) setDialog({ kind: "closed" });
+        }}
+        groups={coverage.groups}
+        onCreate={async (input) => {
+          await coverage.createGroup(input);
+        }}
+        onUpdate={async (groupId, input) => {
+          await coverage.updateGroup(groupId, input);
+        }}
+        onDelete={async (groupId) => {
+          await coverage.deleteGroup(groupId);
         }}
       />
 
