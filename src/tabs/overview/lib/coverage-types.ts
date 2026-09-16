@@ -72,6 +72,18 @@ export const coverageCompanySearchResponseSchema = z.array(
   coverageCompanySearchHitSchema,
 );
 
+export const coverageCompanyMatchSchema = z.object({
+  entryId: z.string(),
+  entryName: z.string(),
+  listId: z.string(),
+  listName: z.string(),
+  year: z.number().int(),
+});
+
+export const coverageCompanyMatchesResponseSchema = z.object({
+  matches: z.array(coverageCompanyMatchSchema),
+});
+
 export const coverageRegistryReportSearchHitSchema = z.object({
   id: z.string(),
   companyName: z.string().nullable(),
@@ -164,6 +176,7 @@ export type CoverageRematchMode = z.infer<typeof coverageRematchModeSchema>;
 export type CoverageCompanySearchHit = z.infer<
   typeof coverageCompanySearchHitSchema
 >;
+export type CoverageCompanyMatch = z.infer<typeof coverageCompanyMatchSchema>;
 
 export type CoverageMatchSaveAction =
   | { type: "match"; companyId: string; companyName: string }

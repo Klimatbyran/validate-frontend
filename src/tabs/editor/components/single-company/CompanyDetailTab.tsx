@@ -26,6 +26,8 @@ import { wikidataFromIdentifiers } from "../../lib/company-identifiers";
 import { CompanyIdentifiersEditor } from "./CompanyIdentifiersEditor";
 import { CompanyMergeWizard } from "./CompanyMergeWizard";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
+import { fetchCoverageCompanyMatches } from "@/tabs/overview/lib/coverage-api";
+import type { CoverageCompanyMatch } from "@/tabs/overview/lib/coverage-types";
 
 export function CompanyDetailTab({
   company,
@@ -82,6 +84,10 @@ export function CompanyDetailTab({
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingCompany, setDeletingCompany] = useState(false);
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
+  const [coverageMatches, setCoverageMatches] = useState<
+    CoverageCompanyMatch[]
+  >([]);
+  const [coverageMatchesLoading, setCoverageMatchesLoading] = useState(false);
 
   useEffect(() => {
     setName(company.name ?? "");
@@ -119,7 +125,33 @@ export function CompanyDetailTab({
         );
       })
       .finally(() => setIndustryOptionsLoading(false));
-  }, []);
+  }, [t]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCoverageMatchesLoading(true);
+    setCoverageMatches([]);
+    fetchCoverageCompanyMatches(company.id)
+      .then((matches) => {
+        if (!cancelled) setCoverageMatches(matches);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setCoverageMatches([]);
+          toast.error(
+            e instanceof Error
+              ? e.message
+              : t("editor.companyDetail.coverageListsLoadError"),
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setCoverageMatchesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [company.id, t]);
 
   const handleSaveCore = async (meta?: {
     comment?: string;
@@ -362,6 +394,34 @@ export function CompanyDetailTab({
                       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-03/80 text-gray-01"
                     >
                       {tagLabelBySlug[slug] ?? slug}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-lg bg-gray-05/60 p-4">
+              <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide mb-3">
+                {t("editor.companyDetail.coverageLists")}
+              </div>
+              {coverageMatchesLoading ? (
+                <div className="flex items-center gap-2 text-xs text-gray-02">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  {t("common.loading")}
+                </div>
+              ) : coverageMatches.length === 0 ? (
+                <p className="text-xs text-gray-02">
+                  {t("editor.companyDetail.coverageListsEmpty")}
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {coverageMatches.map((match) => (
+                    <span
+                      key={match.entryId}
+                      title={match.entryName}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-blue-03/30 bg-blue-03/15 text-blue-02"
+                    >
+                      {match.listName} {match.year}
                     </span>
                   ))}
                 </div>
