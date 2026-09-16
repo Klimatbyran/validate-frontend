@@ -464,6 +464,7 @@
         "source": "Source (will be deleted)",
         "keepBothReportsHint": "Same year on different registry reports (e.g. annual vs ESG) is kept as both — no conflict.",
         "fieldPicks": "Field choices",
+        "identifierPicks": "Identifier choices",
         "noFieldDiffs": "No differing core fields.",
         "keepSurvivor": "Keep survivor",
         "keepSource": "Use source",
@@ -486,6 +487,12 @@
           "internalComment": "Internal comment",
           "industry": "Industry",
           "baseYear": "Base year"
+        },
+        "identifierTypes": {
+          "ORG_NUMBER": "Org number",
+          "ISIN": "ISIN",
+          "WIKIDATA": "Wikidata",
+          "LEI": "LEI"
         }
       },
       "noIndustry": "No Industry",

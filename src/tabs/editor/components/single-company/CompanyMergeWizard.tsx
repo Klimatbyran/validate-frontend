@@ -28,6 +28,15 @@ function formatValue(value: string | number | null): string {
   return String(value);
 }
 
+function identifierTypeLabel(
+  type: string,
+  t: (key: string, params?: Record<string, string | number>) => string,
+): string {
+  const key = `editor.singleCompanyView.mergeCompany.identifierTypes.${type}`;
+  const label = t(key);
+  return label === key ? type : label;
+}
+
 export function CompanyMergeWizard({
   open,
   onOpenChange,
@@ -47,6 +56,9 @@ export function CompanyMergeWizard({
   const [fieldChoices, setFieldChoices] = useState<
     Partial<Record<CompanyMergeFieldKey, "survivor" | "source">>
   >({});
+  const [identifierChoices, setIdentifierChoices] = useState<
+    Partial<Record<string, "survivor" | "source">>
+  >({});
   const [periodResolutions, setPeriodResolutions] = useState<
     Record<string, "keep-survivor" | "keep-source">
   >({});
@@ -60,6 +72,7 @@ export function CompanyMergeWizard({
       setSelectedSource(null);
       setPreview(null);
       setFieldChoices({});
+      setIdentifierChoices({});
       setPeriodResolutions({});
       setMerging(false);
     }
@@ -100,6 +113,11 @@ export function CompanyMergeWizard({
     [preview],
   );
 
+  const differingIdentifiers = useMemo(
+    () => (preview?.identifierDiffs ?? []).filter((diff) => diff.differs),
+    [preview],
+  );
+
   const unresolvedConflicts = useMemo(() => {
     if (!preview) return [];
     return preview.periodYearConflicts.filter(
@@ -127,6 +145,12 @@ export function CompanyMergeWizard({
         defaults[diff.field] = diff.defaultChoice;
       }
       setFieldChoices(defaults);
+      const identifierDefaults: Partial<Record<string, "survivor" | "source">> =
+        {};
+      for (const diff of next.identifierDiffs ?? []) {
+        identifierDefaults[diff.type] = diff.defaultChoice;
+      }
+      setIdentifierChoices(identifierDefaults);
       setPeriodResolutions({});
       setStep("review");
     } catch (error) {
@@ -148,6 +172,7 @@ export function CompanyMergeWizard({
         survivorCompanyId,
         sourceCompanyIds: [selectedSource.id],
         fieldChoices,
+        identifierChoices,
         periodYearResolutions: periodResolutions,
       });
       toast.success(t("editor.singleCompanyView.mergeCompany.success"));
@@ -365,6 +390,72 @@ export function CompanyMergeWizard({
                 {t("editor.singleCompanyView.mergeCompany.noFieldDiffs")}
               </p>
             )}
+
+            {differingIdentifiers.length > 0 ? (
+              <div className="space-y-2">
+                <h4 className="font-medium">
+                  {t("editor.singleCompanyView.mergeCompany.identifierPicks")}
+                </h4>
+                {differingIdentifiers.map((diff) => (
+                  <div
+                    key={diff.type}
+                    className="grid gap-2 rounded-md border border-gray-03/60 p-3 md:grid-cols-[8rem_1fr_1fr]"
+                  >
+                    <div className="text-xs font-medium uppercase tracking-wide text-gray-02">
+                      {identifierTypeLabel(diff.type, t)}
+                    </div>
+                    <label className="flex cursor-pointer items-start gap-2">
+                      <input
+                        type="radio"
+                        name={`identifier-${diff.type}`}
+                        checked={
+                          (identifierChoices[diff.type] ??
+                            diff.defaultChoice) === "survivor"
+                        }
+                        onChange={() =>
+                          setIdentifierChoices((prev) => ({
+                            ...prev,
+                            [diff.type]: "survivor",
+                          }))
+                        }
+                      />
+                      <span>
+                        <span className="block text-xs text-gray-02">
+                          {t(
+                            "editor.singleCompanyView.mergeCompany.keepSurvivor",
+                          )}
+                        </span>
+                        {formatValue(diff.survivorValue)}
+                      </span>
+                    </label>
+                    <label className="flex cursor-pointer items-start gap-2">
+                      <input
+                        type="radio"
+                        name={`identifier-${diff.type}`}
+                        checked={
+                          (identifierChoices[diff.type] ??
+                            diff.defaultChoice) === "source"
+                        }
+                        onChange={() =>
+                          setIdentifierChoices((prev) => ({
+                            ...prev,
+                            [diff.type]: "source",
+                          }))
+                        }
+                      />
+                      <span>
+                        <span className="block text-xs text-gray-02">
+                          {t(
+                            "editor.singleCompanyView.mergeCompany.keepSource",
+                          )}
+                        </span>
+                        {formatValue(diff.sourceValue)}
+                      </span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            ) : null}
 
             {preview.periodYearConflicts.length > 0 ? (
               <div className="space-y-2">

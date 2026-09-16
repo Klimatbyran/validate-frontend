@@ -464,6 +464,7 @@
         "source": "Källa (tas bort)",
         "keepBothReportsHint": "Samma år på olika registry-rapporter (t.ex. årsredovisning vs ESG) behålls båda — ingen konflikt.",
         "fieldPicks": "Fältval",
+        "identifierPicks": "Identifierarval",
         "noFieldDiffs": "Inga skiljande kärnfält.",
         "keepSurvivor": "Behåll survivor",
         "keepSource": "Använd källa",
@@ -486,6 +487,12 @@
           "internalComment": "Intern kommentar",
           "industry": "Bransch",
           "baseYear": "Basår"
+        },
+        "identifierTypes": {
+          "ORG_NUMBER": "Org.nr",
+          "ISIN": "ISIN",
+          "WIKIDATA": "Wikidata",
+          "LEI": "LEI"
         }
       },
       "noIndustry": "Ingen bransch",

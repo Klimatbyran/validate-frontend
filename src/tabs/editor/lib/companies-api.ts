@@ -397,6 +397,13 @@ export type CompanyMergePreview = {
     differs: boolean;
     defaultChoice: "survivor" | "source";
   }>;
+  identifierDiffs: Array<{
+    type: string;
+    survivorValue: string | null;
+    sourceValue: string | null;
+    differs: boolean;
+    defaultChoice: "survivor" | "source";
+  }>;
   periodYearConflicts: Array<{
     conflictId: string;
     registryReportId: string;
@@ -454,6 +461,7 @@ export async function applyCompanyMerge(input: {
   survivorCompanyId: string;
   sourceCompanyIds: string[];
   fieldChoices?: Partial<Record<CompanyMergeFieldKey, "survivor" | "source">>;
+  identifierChoices?: Partial<Record<string, "survivor" | "source">>;
   periodYearResolutions?: Record<string, "keep-survivor" | "keep-source">;
 }): Promise<CompanyMergeApplyResult> {
   const res = await garboAuthFetch(apiUrl(companiesPath("merge")), {

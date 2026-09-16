@@ -88,6 +88,7 @@ export function CompanyDetailTab({
     CoverageCompanyMatch[]
   >([]);
   const [coverageMatchesLoading, setCoverageMatchesLoading] = useState(false);
+  const [coverageMatchesRefreshKey, setCoverageMatchesRefreshKey] = useState(0);
 
   useEffect(() => {
     setName(company.name ?? "");
@@ -151,7 +152,7 @@ export function CompanyDetailTab({
     return () => {
       cancelled = true;
     };
-  }, [company.id, t]);
+  }, [company.id, t, coverageMatchesRefreshKey]);
 
   const handleSaveCore = async (meta?: {
     comment?: string;
@@ -566,6 +567,7 @@ export function CompanyDetailTab({
         survivorCompanyId={company.id}
         survivorCompanyName={company.name ?? company.id}
         onMerged={() => {
+          setCoverageMatchesRefreshKey((key) => key + 1);
           onSaved?.();
         }}
       />
