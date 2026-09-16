@@ -133,6 +133,128 @@ export async function listCompanies(
     : [];
 }
 
+export const EDITOR_COMPANY_INDEX_PAGE_SIZE = 50;
+export const EDITOR_COMPANY_SEARCH_MIN_LENGTH = 2;
+
+export type EditorCompanyIndexQuery = {
+  q?: string;
+  offset?: number;
+  limit?: number;
+  includeFacets?: boolean;
+  tags?: string[];
+  excludeTags?: string[];
+  includeNoTags?: boolean;
+  dataYears?: string[];
+  reportYears?: string[];
+  sector?: string;
+  unverified?: "" | "emissions" | "all";
+  unverifiedScopedToDataYears?: boolean;
+  missingData?: "" | "no-emissions" | "no-reporting-period-data";
+  signal?: AbortSignal;
+};
+
+export type EditorCompanyIndexFacets = {
+  dataYears: string[];
+  reportYears: string[];
+  sectors: string[];
+};
+
+export type EditorCompanyIndexResult = {
+  companies: GarboCompanyListItem[];
+  total: number;
+  offset: number;
+  limit: number;
+  hasMore: boolean;
+  facets?: EditorCompanyIndexFacets;
+};
+
+export async function listCompaniesIndex(
+  query: EditorCompanyIndexQuery = {},
+): Promise<EditorCompanyIndexResult> {
+  const params = new URLSearchParams();
+  const q = query.q?.trim() ?? "";
+  if (q) params.set("q", q);
+  params.set("offset", String(query.offset ?? 0));
+  params.set("limit", String(query.limit ?? EDITOR_COMPANY_INDEX_PAGE_SIZE));
+  if (query.includeFacets) params.set("includeFacets", "true");
+  if (query.tags?.length) params.set("tags", query.tags.join(","));
+  if (query.excludeTags?.length)
+    params.set("excludeTags", query.excludeTags.join(","));
+  if (query.includeNoTags) params.set("includeNoTags", "true");
+  if (query.dataYears?.length)
+    params.set("dataYears", query.dataYears.join(","));
+  if (query.reportYears?.length)
+    params.set("reportYears", query.reportYears.join(","));
+  if (query.sector?.trim()) params.set("sector", query.sector.trim());
+  if (query.unverified) params.set("unverified", query.unverified);
+  if (query.unverifiedScopedToDataYears)
+    params.set("unverifiedScopedToDataYears", "true");
+  if (query.missingData) params.set("missingData", query.missingData);
+
+  const url = apiUrl(`${pipelineCompaniesPath("index")}?${params.toString()}`);
+  const res = await garboAuthFetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    signal: query.signal,
+  });
+  if (res.status === 401) {
+    throw new Error("Please log in to list companies.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to list companies: ${res.status} ${text}`);
+  }
+  const data = (await res.json()) as {
+    companies?: unknown[];
+    total?: number;
+    offset?: number;
+    limit?: number;
+    hasMore?: boolean;
+    facets?: {
+      dataYears?: unknown;
+      reportYears?: unknown;
+      sectors?: unknown;
+    };
+  };
+  const list = Array.isArray(data.companies) ? data.companies : [];
+  const offset = typeof data.offset === "number" ? data.offset : 0;
+  const limit =
+    typeof data.limit === "number"
+      ? data.limit
+      : EDITOR_COMPANY_INDEX_PAGE_SIZE;
+  const total = typeof data.total === "number" ? data.total : list.length;
+  const facets =
+    data.facets &&
+    Array.isArray(data.facets.dataYears) &&
+    Array.isArray(data.facets.reportYears) &&
+    Array.isArray(data.facets.sectors)
+      ? {
+          dataYears: data.facets.dataYears.filter(
+            (year): year is string => typeof year === "string",
+          ),
+          reportYears: data.facets.reportYears.filter(
+            (year): year is string => typeof year === "string",
+          ),
+          sectors: data.facets.sectors.filter(
+            (sector): sector is string => typeof sector === "string",
+          ),
+        }
+      : undefined;
+  return {
+    companies: list.map((raw) =>
+      normalizeCompany(parseGarboCompanyDetail(raw) as GarboCompanyDetail),
+    ),
+    total,
+    offset,
+    limit,
+    hasMore:
+      typeof data.hasMore === "boolean"
+        ? data.hasMore
+        : offset + list.length < total,
+    facets,
+  };
+}
+
 function companyMatchesEditorRef(
   company: GarboCompanyListItem,
   ref: string,

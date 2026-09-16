@@ -2,8 +2,10 @@ import { useCallback, useMemo, useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { LoadingSpinner } from "@/ui/loading-spinner";
+import { ClientTablePagination } from "@/ui/client-table-pagination";
 import { toast } from "sonner";
 import { updateCompany, updateReportingPeriods } from "../../lib/companies-api";
+import { EDITOR_COMPANY_SEARCH_MIN_LENGTH } from "../../lib/companies-api";
 import type {
   EditState,
   GarboCompanyListItem,
@@ -14,32 +16,12 @@ import { BulkTagUpdateModal } from "./BulkTagUpdateModal";
 import { MultiCompanyFilters } from "./MultiCompanyFilters";
 import { MultiCompanySelectionBar } from "./MultiCompanySelectionBar";
 import { MultiCompanyTable } from "./MultiCompanyTable";
-import { getPeriodForYear } from "../../lib/multi-company-utils";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { useMultiCompanyData } from "../../hooks/useMultiCompanyData";
 import {
   buildReportingPeriodUpdatePayload,
-  companyMatchesTagFilter,
   parseTagSlugs,
 } from "../../lib/editor-tag-and-payload-utils";
-
-function companyMatchesSearch(
-  company: GarboCompanyListItem,
-  query: string,
-): boolean {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  const name = (company.name ?? "").toLowerCase();
-  const wikidataId = (company.wikidataId ?? "").toLowerCase();
-  const internalId = (company.id ?? "").toLowerCase();
-  const idPrefix = internalId.split("-")[0];
-  return (
-    name.includes(q) ||
-    wikidataId.includes(q) ||
-    internalId.includes(q) ||
-    idPrefix.includes(q)
-  );
-}
 
 export function MultiCompanyView() {
   const { t } = useI18n();
@@ -52,10 +34,20 @@ export function MultiCompanyView() {
     loading,
     error,
     reload: loadCompanies,
+    listMode,
+    totalCount,
+    page,
+    pageSize,
+    totalPages,
+    browseAll,
+    setBrowsePage,
+    searchQuery,
+    setSearchQuery,
+    selectedTags,
+    setSelectedTags,
+    selectedYear,
+    setSelectedYear,
   } = useMultiCompanyData();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedYear, setSelectedYear] = useState<string>("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [editState, setEditState] = useState<EditState | null>(null);
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<Set<string>>(
@@ -63,27 +55,8 @@ export function MultiCompanyView() {
   );
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
 
-  const filteredCompanies = useMemo(() => {
-    let filteredList = companies;
-    if (searchQuery.trim()) {
-      filteredList = filteredList.filter((company) =>
-        companyMatchesSearch(company, searchQuery),
-      );
-    }
-    if (selectedTags.length) {
-      // API returns company.tags as string[] of slugs; filter shows companies that have any selected tag
-      filteredList = filteredList.filter((company) =>
-        companyMatchesTagFilter(company.tags, selectedTags),
-      );
-    }
-    if (selectedYear) {
-      const selectedYearNumber = Number(selectedYear);
-      filteredList = filteredList.filter((company) =>
-        getPeriodForYear(company.reportingPeriods, selectedYearNumber),
-      );
-    }
-    return filteredList;
-  }, [companies, searchQuery, selectedYear, selectedTags]);
+  // Server index already applied tags / year / search.
+  const filteredCompanies = companies;
 
   const toggleCompanySelection = useCallback((companyId: string) => {
     setSelectedCompanyIds((prev) => {
@@ -282,7 +255,9 @@ export function MultiCompanyView() {
         selectedTags={selectedTags}
         onTagsChange={setSelectedTags}
         onRefresh={loadCompanies}
-        refreshDisabled={loading}
+        refreshDisabled={loading || listMode === "idle"}
+        onBrowseAll={browseAll}
+        listMode={listMode}
       />
 
       {loading ? (
@@ -302,6 +277,22 @@ export function MultiCompanyView() {
             onClick={loadCompanies}
           >
             {t("common.refresh")}
+          </Button>
+        </div>
+      ) : listMode === "idle" ? (
+        <div className="rounded-lg border border-gray-03 bg-gray-04/80 p-8 text-center text-gray-02 space-y-3">
+          <p>
+            {t("editor.companies.searchFirstHint", {
+              min: EDITOR_COMPANY_SEARCH_MIN_LENGTH,
+            })}
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={browseAll}
+          >
+            {t("editor.companies.browseAll")}
           </Button>
         </div>
       ) : filteredCompanies.length === 0 ? (
@@ -329,6 +320,19 @@ export function MultiCompanyView() {
             actionLoading={actionLoading}
             onEdit={setEditState}
           />
+          {listMode === "browse" ? (
+            <ClientTablePagination
+              from={totalCount === 0 ? 0 : (page - 1) * pageSize + 1}
+              to={Math.min(page * pageSize, totalCount)}
+              filteredTotal={totalCount}
+              page={page}
+              totalPages={totalPages}
+              showAll={false}
+              canPaginate={totalPages > 1}
+              allowShowAll={false}
+              onPageChange={setBrowsePage}
+            />
+          ) : null}
         </>
       )}
 
