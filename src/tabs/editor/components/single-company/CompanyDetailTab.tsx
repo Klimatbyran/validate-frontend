@@ -24,7 +24,10 @@ import { buildTagLabelBySlug } from "../../lib/editor-tag-and-payload-utils";
 import { editorPrimaryActionButtonClass } from "../../lib/editor-button-classes";
 import { wikidataFromIdentifiers } from "../../lib/company-identifiers";
 import { CompanyIdentifiersEditor } from "./CompanyIdentifiersEditor";
+import { CompanyMergeWizard } from "./CompanyMergeWizard";
 import { ReviewerMetadataDialog } from "../ReviewerMetadataDialog";
+import { fetchCoverageCompanyMatches } from "@/tabs/overview/lib/coverage-api";
+import type { CoverageCompanyMatch } from "@/tabs/overview/lib/coverage-types";
 
 export function CompanyDetailTab({
   company,
@@ -80,6 +83,12 @@ export function CompanyDetailTab({
   );
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingCompany, setDeletingCompany] = useState(false);
+  const [mergeModalOpen, setMergeModalOpen] = useState(false);
+  const [coverageMatches, setCoverageMatches] = useState<
+    CoverageCompanyMatch[]
+  >([]);
+  const [coverageMatchesLoading, setCoverageMatchesLoading] = useState(false);
+  const [coverageMatchesRefreshKey, setCoverageMatchesRefreshKey] = useState(0);
 
   useEffect(() => {
     setName(company.name ?? "");
@@ -117,7 +126,33 @@ export function CompanyDetailTab({
         );
       })
       .finally(() => setIndustryOptionsLoading(false));
-  }, []);
+  }, [t]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCoverageMatchesLoading(true);
+    setCoverageMatches([]);
+    fetchCoverageCompanyMatches(company.id)
+      .then((matches) => {
+        if (!cancelled) setCoverageMatches(matches);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setCoverageMatches([]);
+          toast.error(
+            e instanceof Error
+              ? e.message
+              : t("editor.companyDetail.coverageListsLoadError"),
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setCoverageMatchesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [company.id, t, coverageMatchesRefreshKey]);
 
   const handleSaveCore = async (meta?: {
     comment?: string;
@@ -365,6 +400,34 @@ export function CompanyDetailTab({
                 </div>
               )}
             </section>
+
+            <section className="rounded-lg bg-gray-05/60 p-4">
+              <div className="text-xs font-semibold text-gray-02 uppercase tracking-wide mb-3">
+                {t("editor.companyDetail.coverageLists")}
+              </div>
+              {coverageMatchesLoading ? (
+                <div className="flex items-center gap-2 text-xs text-gray-02">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  {t("common.loading")}
+                </div>
+              ) : coverageMatches.length === 0 ? (
+                <p className="text-xs text-gray-02">
+                  {t("editor.companyDetail.coverageListsEmpty")}
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {coverageMatches.map((match) => (
+                    <span
+                      key={match.entryId}
+                      title={match.entryName}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-blue-03/30 bg-blue-03/15 text-blue-02"
+                    >
+                      {match.listName} {match.year}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
         </div>
         <Button
@@ -461,6 +524,23 @@ export function CompanyDetailTab({
         </div>
       </section>
 
+      <section className="rounded-lg border border-gray-03 bg-gray-04/80 p-4">
+        <h3 className="text-sm font-semibold text-gray-01 mb-2">
+          {t("editor.singleCompanyView.mergeCompany.sectionTitle")}
+        </h3>
+        <p className="text-sm text-gray-02 mb-4">
+          {t("editor.singleCompanyView.mergeCompany.sectionHint")}
+        </p>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => setMergeModalOpen(true)}
+        >
+          {t("editor.singleCompanyView.mergeCompany.button")}
+        </Button>
+      </section>
+
       <section className="rounded-lg border border-red-500/30 bg-gray-04/80 p-4">
         <h3 className="text-sm font-semibold text-red-500 mb-2">
           {t("editor.singleCompanyView.deleteCompany.sectionTitle")}
@@ -480,6 +560,17 @@ export function CompanyDetailTab({
           {t("editor.singleCompanyView.deleteCompany.button")}
         </Button>
       </section>
+
+      <CompanyMergeWizard
+        open={mergeModalOpen}
+        onOpenChange={setMergeModalOpen}
+        survivorCompanyId={company.id}
+        survivorCompanyName={company.name ?? company.id}
+        onMerged={() => {
+          setCoverageMatchesRefreshKey((key) => key + 1);
+          onSaved?.();
+        }}
+      />
 
       <Modal
         open={deleteModalOpen}

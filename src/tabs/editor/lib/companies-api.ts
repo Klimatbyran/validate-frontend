@@ -340,6 +340,148 @@ export async function deleteCompany(companyId: string): Promise<void> {
   }
 }
 
+export type CompanyMergeFieldKey =
+  | "name"
+  | "wikidataId"
+  | "lei"
+  | "url"
+  | "description"
+  | "internalComment"
+  | "industry"
+  | "baseYear";
+
+export type CompanyMergePeriodSummary = {
+  periodId: string;
+  year: string;
+  companyReportId: string;
+  registryReportId: string | null;
+  reportYear: string | null;
+  hasEmissions: boolean;
+  hasEconomy: boolean;
+};
+
+export type CompanyMergeSideSummary = {
+  id: string;
+  name: string;
+  wikidataId: string | null;
+  lei: string | null;
+  url: string | null;
+  description: string | null;
+  internalComment: string | null;
+  tags: string[];
+  alternativeNames: string[];
+  industrySubIndustryCode: string | null;
+  baseYear: number | null;
+  identifiers: Array<{ type: string; value: string }>;
+  reports: Array<{
+    companyReportId: string;
+    registryReportId: string | null;
+    reportYear: string | null;
+    periodYears: string[];
+  }>;
+  periods: CompanyMergePeriodSummary[];
+  goalsCount: number;
+  initiativesCount: number;
+  coverageMatchCount: number;
+  coverageSuggestionCount: number;
+  reportRunCount: number;
+};
+
+export type CompanyMergePreview = {
+  survivor: CompanyMergeSideSummary;
+  sources: CompanyMergeSideSummary[];
+  fieldDiffs: Array<{
+    field: CompanyMergeFieldKey;
+    survivorValue: string | number | null;
+    sourceValue: string | number | null;
+    differs: boolean;
+    defaultChoice: "survivor" | "source";
+  }>;
+  identifierDiffs: Array<{
+    type: string;
+    survivorValue: string | null;
+    sourceValue: string | null;
+    differs: boolean;
+    defaultChoice: "survivor" | "source";
+  }>;
+  periodYearConflicts: Array<{
+    conflictId: string;
+    registryReportId: string;
+    year: string;
+    survivorPeriod: CompanyMergePeriodSummary;
+    sourcePeriod: CompanyMergePeriodSummary;
+    sourceCompanyId: string;
+  }>;
+  movableReports: Array<{
+    sourceCompanyId: string;
+    companyReportId: string;
+    registryReportId: string | null;
+    reportYear: string | null;
+    periodYears: string[];
+    action: "move-report" | "merge-into-survivor-report";
+    survivorCompanyReportId: string | null;
+  }>;
+  resultingAlternativeNames: string[];
+  resultingTags: string[];
+  blockers: string[];
+};
+
+export type CompanyMergeApplyResult = {
+  survivorCompanyId: string;
+  deletedSourceCompanyIds: string[];
+  name: string;
+  wikidataId: string | null;
+  tags: string[];
+  alternativeNames: string[];
+};
+
+export async function previewCompanyMerge(input: {
+  survivorCompanyId: string;
+  sourceCompanyIds: string[];
+}): Promise<CompanyMergePreview> {
+  const res = await garboAuthFetch(apiUrl(companiesPath("merge/preview")), {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+  if (res.status === 401) {
+    throw new Error("Please log in to preview company merge.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Merge preview failed: ${res.status} ${text}`);
+  }
+  return (await res.json()) as CompanyMergePreview;
+}
+
+export async function applyCompanyMerge(input: {
+  survivorCompanyId: string;
+  sourceCompanyIds: string[];
+  fieldChoices?: Partial<Record<CompanyMergeFieldKey, "survivor" | "source">>;
+  identifierChoices?: Partial<Record<string, "survivor" | "source">>;
+  periodYearResolutions?: Record<string, "keep-survivor" | "keep-source">;
+}): Promise<CompanyMergeApplyResult> {
+  const res = await garboAuthFetch(apiUrl(companiesPath("merge")), {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+  if (res.status === 401) {
+    throw new Error("Please log in to merge companies.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Company merge failed: ${res.status} ${text}`);
+  }
+  return (await res.json()) as CompanyMergeApplyResult;
+}
+
 // Shell cleanup after last period delete: garbo k8s/jobs/README.md
 export async function deleteReportingPeriod(id: string): Promise<void> {
   const encodedId = encodeURIComponent(id);
