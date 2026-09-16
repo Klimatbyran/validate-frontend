@@ -446,7 +446,7 @@
       "mergeCompany": {
         "sectionTitle": "Slå ihop dubblettföretag",
         "sectionHint": "Absorbera en annan företagsrad i den här. Rapporteringsperioder på olika rapporter för samma år behålls båda.",
-        "button": "Slå ihop in i detta företag…",
+        "button": "Slå ihop…",
         "title": "Slå ihop företag",
         "description": "Slå ihop ett annat företag in i {{name}}. Det här företaget förblir kvar (survivor).",
         "cancel": "Avbryt",

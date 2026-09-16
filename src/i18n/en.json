@@ -446,7 +446,7 @@
       "mergeCompany": {
         "sectionTitle": "Merge duplicate company",
         "sectionHint": "Absorb another company record into this one. Reporting periods on different reports for the same year are kept together.",
-        "button": "Merge into this company…",
+        "button": "Merge…",
         "title": "Merge companies",
         "description": "Merge another company into {{name}}. This company stays as the survivor.",
         "cancel": "Cancel",
