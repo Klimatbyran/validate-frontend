@@ -492,9 +492,7 @@ export function CoverageView() {
       )}
 
       <CoverageYearFormDialog
-        open={
-          dialog.kind !== "closed" && dialog.kind !== "manageGroups"
-        }
+        open={dialog.kind !== "closed" && dialog.kind !== "manageGroups"}
         onOpenChange={(open) => {
           if (!open) setDialog({ kind: "closed" });
         }}

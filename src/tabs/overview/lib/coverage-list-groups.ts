@@ -1,7 +1,4 @@
-import type {
-  CoverageListGroup,
-  CoverageListSummary,
-} from "./coverage-types";
+import type { CoverageListGroup, CoverageListSummary } from "./coverage-types";
 
 export type CoverageListFocus =
   | { kind: "all" }
@@ -83,11 +80,12 @@ export function groupCoverageLists(
   }));
 
   const includeUngrouped =
-    focus.kind === "ungrouped" ||
-    focus.kind === "all" ||
-    ungrouped.length > 0;
+    focus.kind === "ungrouped" || focus.kind === "all" || ungrouped.length > 0;
 
-  if (includeUngrouped && (ungrouped.length > 0 || focus.kind === "ungrouped")) {
+  if (
+    includeUngrouped &&
+    (ungrouped.length > 0 || focus.kind === "ungrouped")
+  ) {
     sections.push({
       key: "ungrouped",
       group: null,

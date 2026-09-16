@@ -229,7 +229,9 @@ export async function createCoverageListGroup(input: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  return parseJson(response, url, (data) => coverageListGroupSchema.parse(data));
+  return parseJson(response, url, (data) =>
+    coverageListGroupSchema.parse(data),
+  );
 }
 
 export async function updateCoverageListGroup(
@@ -242,7 +244,9 @@ export async function updateCoverageListGroup(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  return parseJson(response, url, (data) => coverageListGroupSchema.parse(data));
+  return parseJson(response, url, (data) =>
+    coverageListGroupSchema.parse(data),
+  );
 }
 
 export async function deleteCoverageListGroup(groupId: string): Promise<void> {

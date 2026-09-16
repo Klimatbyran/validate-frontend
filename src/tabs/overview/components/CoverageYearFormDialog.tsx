@@ -140,9 +140,7 @@ export function CoverageYearFormDialog({
                 value={groupId}
                 onChange={(e) => setGroupId(e.target.value)}
               >
-                <option value="">
-                  {t("overview.coverage.groupNone")}
-                </option>
+                <option value="">{t("overview.coverage.groupNone")}</option>
                 {groups.map((group) => (
                   <option key={group.id} value={group.id}>
                     {group.label}

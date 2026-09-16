@@ -4,10 +4,7 @@ import {
   slugFromLabel,
   type CoverageListFocus,
 } from "./coverage-list-groups";
-import type {
-  CoverageListGroup,
-  CoverageListSummary,
-} from "./coverage-types";
+import type { CoverageListGroup, CoverageListSummary } from "./coverage-types";
 
 function list(
   id: string,
@@ -30,7 +27,11 @@ const groups: CoverageListGroup[] = [
 
 describe("groupCoverageLists", () => {
   const lists = [
-    list("l1", "ACWI Core", { id: "g1", slug: "msci_acwi", label: "MSCI ACWI" }),
+    list("l1", "ACWI Core", {
+      id: "g1",
+      slug: "msci_acwi",
+      label: "MSCI ACWI",
+    }),
     list("l2", "Nordic clients", null),
     list("l3", "ACWI Small", {
       id: "g1",
