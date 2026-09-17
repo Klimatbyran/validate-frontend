@@ -2,7 +2,7 @@ const GOVERNANCE_URL =
   /board[\s-]*of[\s-]*directors|board[\s-]*report|styrelse|auditor.?s[\s-]*report|corporate[\s-]*governance|governance[\s-]*report|remuneration|ersättningsrapport|ersattningsrapport|compensation[\s-]*report|proxy[\s-]*statement/i;
 
 const PRIMARY_REPORT =
-  /integrated[\s-]*(annual|report)|annual[\s-]*and[\s-]*sustainability|annual[\s-]*report|annualreport|årsredovisning|arsredovisning|sustainability[\s-]*report|hållbarhetsrapport|hallbarhetsrapport|bærekraftsrapport|baerekraftsrapport|årsrapport|arsrapport/i;
+  /integrated[\s-]*(annual|report)|annual[\s-]*and[\s-]*sustainability|annual[\s-]*report|annualreport|årsredovisning|arsredovisning|sustainability[\s-]*report|hållbarhetsrapport|hallbarhetsrapport|bærekraftsrapport|baerekraftsrapport|årsrapport|arsrapport|green[\s-]*bonds?|sustainability[\s-]*bonds?|sustainable[\s-]*finance|green[\s-]*financ|grön[\s-]*obligation|grønn[\s-]*obligasjon|use[\s-]*of[\s-]*proceeds/i;
 
 const TRUSTED_FILING_HOST =
   /(?:^|\.)((?:storage\.)?mfn\.se|newsweb\.oslobors\.no|mb\.cision\.com|news\.cision\.com|notified\.com|globenewswire\.com|investegate\.co\.uk|sec\.gov|live\.euronext\.com|nasdaqomxnordic\.com|finanssivalvonta\.fi)$/i;
