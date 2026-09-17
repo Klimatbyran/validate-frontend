@@ -28,6 +28,7 @@ export function useRegistryDisplayedView(
     const tableFiltered = applyRegistryTableFilters(textFiltered, {
       reportYear: filters.year,
       batch: filters.batch,
+      reportType: filters.reportType,
       wikidata: filters.wikidata,
       tagMode: filters.tagMode,
       tagSlugs: filters.tagSlugs,
@@ -37,6 +38,7 @@ export function useRegistryDisplayedView(
     const hasStructuredFilters =
       filters.year !== "all" ||
       filters.batch !== "all" ||
+      filters.reportType !== "all" ||
       filters.wikidata !== "all" ||
       filters.tagMode !== "ignore";
     const stats = buildRegistryStats(displayedRegistry);

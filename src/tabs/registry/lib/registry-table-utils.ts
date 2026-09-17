@@ -1,4 +1,5 @@
 import type { RegistryEntry } from "./registry-types";
+import { resolveRegistryEntryReportTypeId } from "./registry-utils";
 
 /** Report rows have no `createdAt` in Garbo yet; `id` order is a rough proxy for insertion order. */
 export type RegistrySortKey =
@@ -13,6 +14,8 @@ export type ReportYearFilterValue = "all" | "missing" | string;
 
 export type RegistryBatchFilterValue = "all" | "missing" | string;
 
+export type RegistryReportTypeFilterValue = "all" | "missing" | string;
+
 export type WikidataPresenceFilter = "all" | "present" | "missing";
 
 /** Tag filters use Garbo company list (`wikidataId` → `tags`). */
@@ -25,6 +28,7 @@ export type RegistryTagFilterMode =
 export interface RegistryViewFilters {
   year: ReportYearFilterValue;
   batch: RegistryBatchFilterValue;
+  reportType: RegistryReportTypeFilterValue;
   wikidata: WikidataPresenceFilter;
   tagMode: RegistryTagFilterMode;
   tagSlugs: string[];
@@ -35,6 +39,7 @@ export function defaultRegistryViewFilters(): RegistryViewFilters {
   return {
     year: "all",
     batch: "all",
+    reportType: "all",
     wikidata: "all",
     tagMode: "ignore",
     tagSlugs: [],
@@ -142,6 +147,7 @@ export function applyRegistryTableFilters(
   opts: {
     reportYear: ReportYearFilterValue;
     batch: RegistryBatchFilterValue;
+    reportType: RegistryReportTypeFilterValue;
     wikidata: WikidataPresenceFilter;
     tagMode: RegistryTagFilterMode;
     tagSlugs: string[];
@@ -159,6 +165,12 @@ export function applyRegistryTableFilters(
       if ((e.batchId ?? "").trim()) return false;
     } else if (opts.batch !== "all") {
       if ((e.batchId ?? "").trim() !== opts.batch) return false;
+    }
+
+    if (opts.reportType === "missing") {
+      if (resolveRegistryEntryReportTypeId(e)) return false;
+    } else if (opts.reportType !== "all") {
+      if (resolveRegistryEntryReportTypeId(e) !== opts.reportType) return false;
     }
 
     if (opts.wikidata === "present" && !isWikidataIdPresent(e.wikidataId)) {
