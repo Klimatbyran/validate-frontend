@@ -15,6 +15,7 @@ const REPORT_TYPE_ORDER = [
   "corporate-governance-report",
   "tcfd",
   "modern-slavery-statement",
+  "green-bond-report",
   "other",
 ];
 
