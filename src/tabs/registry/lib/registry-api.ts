@@ -21,6 +21,7 @@ export const REGISTRY_PAGE_SIZE = 75;
 export type RegistryBrowseParams = {
   reportYear?: string;
   batchId?: string;
+  reportTypeId?: string;
   wikidata?: "all" | "present" | "missing";
   wikidataIds?: string[];
   sort?: RegistrySortKey;
@@ -65,6 +66,9 @@ function appendBrowseParams(
   }
   if (browse.batchId && browse.batchId !== "all") {
     params.set("batchId", browse.batchId);
+  }
+  if (browse.reportTypeId && browse.reportTypeId !== "all") {
+    params.set("reportTypeId", browse.reportTypeId);
   }
   if (browse.wikidata && browse.wikidata !== "all") {
     params.set("wikidata", browse.wikidata);
