@@ -43,6 +43,15 @@ export interface ClimatePipelinePlan {
    * this plan's document — lets the tab look up and show PDF-parsing
    * status alongside this plan's own pipeline steps. */
   garboThreadId: string | null;
+  /** Deduplicated by groupId (groupDocumentReferences) — cheap count so the
+   * swimlane row can show a "N referenced documents" badge without
+   * fetching each plan's full detail. */
+  documentReferenceCount: number;
+  /** Companion references only, deduplicated — non-zero means this plan
+   * says its own measures live in a document we haven't parsed, so this
+   * parse may be incomplete. Used for the warning under the municipality
+   * name, separate from the total reference count above. */
+  companionReferenceCount: number;
 }
 
 const POLL_MS = 5000;

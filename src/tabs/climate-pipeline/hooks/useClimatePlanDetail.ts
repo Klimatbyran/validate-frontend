@@ -12,6 +12,10 @@ export interface Commitment {
   tableHeader: string | null;
   rowRaw: string | null;
   unverified: boolean;
+  // True when the commitment came from a recovered-image block (OCR/AI
+  // description of a picture, not verbatim document text) — not findable
+  // via the PDF's text layer, so "Find in PDF" won't locate it.
+  fromRecoveredImage: boolean;
   climateRelevant: boolean | null;
   adaptation: boolean | null;
   climateFilterReason: string | null;
@@ -35,6 +39,22 @@ export interface TransitionElementCandidate {
   shortLabel: string;
   sectorPath?: string;
   score: number;
+}
+
+export type DocumentReferenceRelationship = "companion" | "related";
+
+export interface DocumentReference {
+  id: string;
+  section: string;
+  name: string;
+  quote: string;
+  url: string | null;
+  relationship: DocumentReferenceRelationship;
+  reasoning: string;
+  /** Set by groupDocumentReferences — rows sharing a value name the same
+   * underlying document, mentioned in different sections. Null if this
+   * reference had no duplicate. */
+  groupId: string | null;
 }
 
 export interface ActivityShift {
@@ -83,6 +103,7 @@ export interface ClimatePlanDetail {
   municipality: { id: string; name: string } | null;
   status: string;
   commitments: Commitment[];
+  documentReferences: DocumentReference[];
   extractedMeasures: ExtractedMeasure[];
   reviews?: PipelineReview[];
 }
