@@ -5,12 +5,17 @@ import {
   ChevronsUp,
   FileCheck,
   FileWarning,
+  Image,
   Plus,
   RotateCw,
+  SearchCheck,
 } from "lucide-react";
 import { Modal } from "@/ui/modal";
+import { PdfHighlightViewer, PdfHighlightPanel } from "./PdfHighlightViewer";
+import { ResizableSplitView } from "./ResizableSplitView";
 import { Button } from "@/ui/button";
 import { cn } from "@/lib/utils";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
 import { StatusPill } from "@/components/StatusPill";
 import {
@@ -22,6 +27,7 @@ import {
   useClimatePlanDetail,
   type ActivityShift,
   type Commitment,
+  type DocumentReference,
   type ExtractedMeasure,
   type ClimatePlanDetail,
 } from "../hooks/useClimatePlanDetail";
@@ -50,6 +56,8 @@ function getStepItemCount(
   detail: ClimatePlanDetail,
 ): number | null {
   switch (step) {
+    case "documentReferences":
+      return detail.documentReferences.length;
     case "extractCommitments":
       return detail.commitments.length;
     case "filterCommitmentsClimate":
@@ -715,6 +723,34 @@ function FoundInDocumentFlag({ unverified }: { unverified: boolean }) {
   );
 }
 
+/** Flags commitments sourced from a recovered image (OCR/AI description) —
+ * these won't be findable via the PDF text layer's "Find in PDF" search. */
+function ImageSourceFlag() {
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-blue-03/40 bg-blue-03/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-03"
+      title="Extracted from a recovered image (OCR/AI description), not the document's text layer — not searchable in the PDF"
+    >
+      <Image className="h-3 w-3" aria-hidden />
+      <span>From image</span>
+    </span>
+  );
+}
+
+/** Shown after a PDF search couldn't re-locate a markdown-verified quote
+ * in the pdf.js text layer — worth a manual look in the source PDF. */
+function NotFoundInPdfFlag() {
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-pink-03/40 bg-pink-03/10 px-1.5 py-0.5 text-[10px] font-medium text-pink-03"
+      title="Verified in plan markdown, but not found again in the PDF text layer — check manually if needed"
+    >
+      <FileWarning className="h-3 w-3" aria-hidden />
+      <span>Not in PDF text</span>
+    </span>
+  );
+}
+
 function CommitmentReviewControls({
   commitment,
   columns,
@@ -782,18 +818,156 @@ function CommitmentReviewControls({
   );
 }
 
+function DocumentReferencesList({
+  documentReferences,
+}: {
+  documentReferences: DocumentReference[];
+}) {
+  if (documentReferences.length === 0) {
+    return (
+      <p className="text-sm text-gray-02">
+        No referenced documents found in this plan.
+      </p>
+    );
+  }
+
+  // groupDocumentReferences assigns groupId to rows naming the same
+  // document from different sections — collapse those into one card so
+  // the list doesn't repeat "avfallsplan" and "Avfallsplan" separately.
+  // Ungrouped rows (groupId null) fall back to a group of one, keyed by
+  // their own id.
+  const groups = new Map<string, DocumentReference[]>();
+  for (const ref of documentReferences) {
+    const key = ref.groupId ?? ref.id;
+    const list = groups.get(key) ?? [];
+    list.push(ref);
+    groups.set(key, list);
+  }
+  // A group's relationship is whichever member is "companion" — one
+  // mention explicitly tying it to this plan's own measures outweighs
+  // other mentions that were merely topically relevant.
+  const groupedRefs = [...groups.values()].map((members) => ({
+    name: members[0].name,
+    relationship: members.some((m) => m.relationship === "companion")
+      ? ("companion" as const)
+      : ("related" as const),
+    members,
+  }));
+
+  const companions = groupedRefs.filter((g) => g.relationship === "companion");
+  const related = groupedRefs.filter((g) => g.relationship === "related");
+
+  const renderGroup = (group: (typeof groupedRefs)[number]) => (
+    <article
+      key={group.members[0].id}
+      className="rounded-lg border border-gray-03/50 bg-gray-03/20 p-3 min-w-0 space-y-2"
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <MetaChip
+          label="Relationship"
+          tone={group.relationship === "companion" ? "type" : "score"}
+        >
+          {group.relationship}
+        </MetaChip>
+        <span className="text-sm font-medium text-gray-01">{group.name}</span>
+        {group.members.length > 1 && (
+          <span className="text-xs text-gray-02">
+            mentioned {group.members.length}×
+          </span>
+        )}
+      </div>
+      <div className="space-y-2 border-l-2 border-gray-03/50 pl-3">
+        {group.members.map((ref) => (
+          <div key={ref.id} className="space-y-0.5">
+            <p className="text-xs text-gray-02 break-words">
+              Section: {ref.section}
+            </p>
+            <p className="text-sm text-gray-01 break-words">
+              &ldquo;{ref.quote}&rdquo;
+            </p>
+            <p className="text-xs italic text-gray-02 break-words">
+              {ref.reasoning}
+            </p>
+            {ref.url && (
+              <a
+                href={ref.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block break-all text-xs text-blue-500 underline"
+              >
+                {ref.url}
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+
+  return (
+    <div className="space-y-4">
+      {companions.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-02">
+            Companion — likely holds this plan&apos;s own measures (
+            {companions.length})
+          </p>
+          <div className="space-y-2">{companions.map(renderGroup)}</div>
+        </div>
+      )}
+      {related.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-02">
+            Related documents ({related.length})
+          </p>
+          <div className="space-y-2">{related.map(renderGroup)}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// "focused" only searches for the one clicked commitment — much cheaper
+// than "all", which searches every verified phrase against every page.
+// Keeping them separate means a single "Find in PDF" click stays fast
+// regardless of how many commitments the plan has. Lifted to
+// StepResultDialog (rather than living inside CommitmentsList) so it can
+// decide whether the PDF opens as a modal or a side-by-side panel.
+type PdfViewerState =
+  | { mode: "focused"; commitment: Commitment }
+  | { mode: "all" };
+
 function CommitmentsList({
   commitments,
+  documentReferences,
   columns,
   reviewCtx,
+  allVerifiedPhrases,
+  pdfMissingPhrases,
+  setPdfViewer,
 }: {
   commitments: Commitment[];
+  documentReferences?: DocumentReference[];
   columns: "extract" | "climate" | "actionable" | "similar" | "themes";
   reviewCtx: ReviewContext;
+  allVerifiedPhrases: string[];
+  pdfMissingPhrases: Set<string>;
+  setPdfViewer: (v: PdfViewerState | null) => void;
 }) {
   if (commitments.length === 0) {
     return <p className="text-sm text-gray-02">No commitments yet.</p>;
   }
+
+  const referencesBySection = new Map<string, DocumentReference[]>();
+  for (const ref of documentReferences ?? []) {
+    const list = referencesBySection.get(ref.section) ?? [];
+    list.push(ref);
+    referencesBySection.set(ref.section, list);
+  }
+
+  const missingInView = commitments.filter((c) =>
+    pdfMissingPhrases.has(c.text),
+  ).length;
 
   if (columns === "similar") {
     const groups = new Map<string, Commitment[]>();
@@ -822,6 +996,8 @@ function CommitmentsList({
               {c.stableId}
             </span>
             <FoundInDocumentFlag unverified={c.unverified} />
+            {c.fromRecoveredImage && <ImageSourceFlag />}
+            {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
           </div>
           <p className="text-sm text-gray-01 break-words">{c.text}</p>
           <QaFooter>
@@ -951,6 +1127,8 @@ function CommitmentsList({
                           {c.stableId}
                         </span>
                         <FoundInDocumentFlag unverified={c.unverified} />
+                        {c.fromRecoveredImage && <ImageSourceFlag />}
+                        {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
                       </div>
                       <p className="text-sm text-gray-01 break-words">
                         {c.text}
@@ -994,66 +1172,134 @@ function CommitmentsList({
 
   return (
     <div className="space-y-3">
+      {allVerifiedPhrases.length > 0 && (
+        <button
+          onClick={() => setPdfViewer({ mode: "all" })}
+          className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 bg-gray-03/40 px-2.5 py-1.5 text-xs text-gray-01 hover:bg-gray-03/60"
+          title="Open the source PDF with every verified commitment highlighted"
+        >
+          <SearchCheck className="w-3.5 h-3.5" />
+          View all {allVerifiedPhrases.length} verified passages in PDF
+        </button>
+      )}
+      {pdfMissingPhrases.size > 0 && (
+        <p className="rounded-md border border-pink-03/30 bg-pink-03/10 px-2.5 py-1.5 text-xs text-pink-03">
+          {missingInView > 0
+            ? `${missingInView} commitment(s) in this list weren't found in the PDF text layer after search — marked “Not in PDF text” for manual check.`
+            : `${pdfMissingPhrases.size} verified commitment(s) weren't found in the PDF text layer (may be on another step's filtered list).`}
+        </p>
+      )}
       {columns === "extract" && (
         <p className="text-xs text-gray-02">
           <span className="text-gray-01">In doc / Not in doc</span> shows
-          whether the quote was found in the plan markdown. That flag stays on
-          the commitment through later steps.
+          whether the quote was found in the plan markdown.{" "}
+          <span className="text-gray-01">Not in PDF text</span> appears after
+          you open the PDF, for verified quotes the text-layer search still
+          couldn't locate.
         </p>
       )}
-      {commitments.map((c) => (
-        <article
-          key={c.id}
-          className="rounded-lg border border-gray-03/50 bg-gray-03/20 p-3 min-w-0 space-y-2"
-        >
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="font-mono text-xs text-gray-02">{c.stableId}</span>
-            <FoundInDocumentFlag unverified={c.unverified} />
-            {columns === "extract" && (
-              <MetaChip label="Type">{c.type}</MetaChip>
-            )}
-            {columns === "climate" && (
-              <>
-                <MetaChip label="Climate">
-                  <YesNo value={c.climateRelevant} />
+      {commitments.map((c, idx) => (
+        <div key={c.id} className="space-y-3">
+          {columns === "extract" &&
+            c.section !== commitments[idx - 1]?.section &&
+            referencesBySection.get(c.section)?.map((ref) => (
+              <div
+                key={ref.id}
+                className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-gray-01"
+              >
+                <p className="flex flex-wrap items-center gap-2 font-medium">
+                  <MetaChip
+                    label="Relationship"
+                    tone={ref.relationship === "companion" ? "type" : "score"}
+                  >
+                    {ref.relationship}
+                  </MetaChip>
+                  This section references: {ref.name}
+                </p>
+                <p className="mt-1 text-xs text-gray-02 break-words">
+                  &ldquo;{ref.quote}&rdquo;
+                </p>
+                <p className="mt-1 text-xs italic text-gray-02 break-words">
+                  {ref.reasoning}
+                </p>
+                {ref.url && (
+                  <a
+                    href={ref.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-block break-all text-xs text-blue-500 underline"
+                  >
+                    {ref.url}
+                  </a>
+                )}
+              </div>
+            ))}
+          <article className="rounded-lg border border-gray-03/50 bg-gray-03/20 p-3 min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="font-mono text-xs text-gray-02">
+                {c.stableId}
+              </span>
+              <FoundInDocumentFlag unverified={c.unverified} />
+              {c.fromRecoveredImage && <ImageSourceFlag />}
+              {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
+              {!c.unverified && !c.fromRecoveredImage && (
+                <button
+                  onClick={() =>
+                    setPdfViewer({ mode: "focused", commitment: c })
+                  }
+                  className="inline-flex items-center gap-1 rounded-md border border-gray-03 bg-gray-03/40 px-2 py-1 text-xs text-gray-01 hover:bg-gray-03/60"
+                  title="Find and highlight this passage in the source PDF"
+                >
+                  <SearchCheck className="w-3 h-3" />
+                  Find in PDF
+                </button>
+              )}
+              {columns === "extract" && (
+                <MetaChip label="Type">{c.type}</MetaChip>
+              )}
+              {columns === "climate" && (
+                <>
+                  <MetaChip label="Climate">
+                    <YesNo value={c.climateRelevant} />
+                  </MetaChip>
+                  <MetaChip label="Adaptation">
+                    <YesNo value={c.adaptation} />
+                  </MetaChip>
+                </>
+              )}
+              {columns === "actionable" && (
+                <MetaChip label="Actionable">
+                  <YesNo value={c.actionable} />
                 </MetaChip>
-                <MetaChip label="Adaptation">
-                  <YesNo value={c.adaptation} />
-                </MetaChip>
-              </>
+              )}
+            </div>
+            <p className="text-sm text-gray-01 break-words whitespace-pre-wrap">
+              {c.text}
+            </p>
+            {columns === "extract" && c.section && (
+              <p className="text-xs text-gray-02 break-words">
+                Section: {c.section}
+              </p>
             )}
-            {columns === "actionable" && (
-              <MetaChip label="Actionable">
-                <YesNo value={c.actionable} />
-              </MetaChip>
+            {columns === "climate" && c.climateFilterReason && (
+              <p className="text-xs text-gray-02 break-words">
+                {c.climateFilterReason}
+              </p>
             )}
-          </div>
-          <p className="text-sm text-gray-01 break-words whitespace-pre-wrap">
-            {c.text}
-          </p>
-          {columns === "extract" && c.section && (
-            <p className="text-xs text-gray-02 break-words">
-              Section: {c.section}
-            </p>
-          )}
-          {columns === "climate" && c.climateFilterReason && (
-            <p className="text-xs text-gray-02 break-words">
-              {c.climateFilterReason}
-            </p>
-          )}
-          {columns === "actionable" && c.actionableReason && (
-            <p className="text-xs text-gray-02 break-words">
-              {c.actionableReason}
-            </p>
-          )}
-          <QaFooter>
-            <CommitmentReviewControls
-              commitment={c}
-              columns={columns}
-              reviewCtx={reviewCtx}
-            />
-          </QaFooter>
-        </article>
+            {columns === "actionable" && c.actionableReason && (
+              <p className="text-xs text-gray-02 break-words">
+                {c.actionableReason}
+              </p>
+            )}
+            <QaFooter>
+              <CommitmentReviewControls
+                commitment={c}
+                columns={columns}
+                reviewCtx={reviewCtx}
+              />
+            </QaFooter>
+          </article>
+        </div>
       ))}
     </div>
   );
@@ -1155,6 +1401,17 @@ export function StepResultDialog({
     string,
     PipelineReview
   > | null>(null);
+  const [pdfViewer, setPdfViewer] = useState<PdfViewerState | null>(null);
+  // Verified commitment texts the PDF text-layer search couldn't re-find
+  // after opening the viewer — filled in by onVerifiedSearchComplete, kept
+  // so the list can flag them for manual checking even after the PDF closes.
+  const [pdfMissingPhrases, setPdfMissingPhrases] = useState<Set<string>>(
+    () => new Set(),
+  );
+  // Wide enough to fit a commitments list and a PDF page side by side —
+  // below this, the PDF instead opens as its own full-screen modal (see
+  // the return statement below).
+  const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
   const reviewsByEntity = useMemo(() => {
     if (localReviews) return localReviews;
@@ -1165,6 +1422,13 @@ export function StepResultDialog({
   useEffect(() => {
     setLocalReviews(null);
   }, [detail?.id, detailReviewsKey]);
+
+  // A PDF panel/modal left open from a previous step or plan would
+  // otherwise linger, showing the wrong document's highlights.
+  useEffect(() => {
+    setPdfViewer(null);
+    setPdfMissingPhrases(new Set());
+  }, [plan?.id, step, open]);
 
   if (!plan || !step) return null;
 
@@ -1190,6 +1454,47 @@ export function StepResultDialog({
     },
   };
 
+  // Whole-plan list, independent of which step's filtered view is open —
+  // "Find in PDF" always highlights every verified commitment, not just
+  // the ones visible in the current step. Hoisted above the content IIFE
+  // (rather than computed inside it) so the split-view PDF panel in the
+  // return statement below can use the same values.
+  const allVerifiedPhrases = detail
+    ? detail.commitments
+        .filter((c) => !c.unverified && !c.fromRecoveredImage)
+        .map((c) => c.text)
+    : [];
+  const pdfUrl = detail
+    ? `${getClimatePlansPipelineApiUrl()}/plans/${detail.id}/pdf`
+    : "";
+
+  function handleVerifiedSearchComplete(result: {
+    searchedPhrases: string[];
+    missingPhrases: string[];
+  }) {
+    const missingFromThisSearch = new Set(result.missingPhrases);
+    const searchedFullVerifiedSet =
+      result.searchedPhrases.length === allVerifiedPhrases.length &&
+      allVerifiedPhrases.every((phrase) =>
+        result.searchedPhrases.includes(phrase),
+      );
+
+    if (searchedFullVerifiedSet) {
+      setPdfMissingPhrases(missingFromThisSearch);
+      return;
+    }
+
+    // Single-commitment find: merge into any prior "view all" result.
+    setPdfMissingPhrases((previous) => {
+      const next = new Set(previous);
+      for (const phrase of result.searchedPhrases) {
+        if (missingFromThisSearch.has(phrase)) next.add(phrase);
+        else next.delete(phrase);
+      }
+      return next;
+    });
+  }
+
   const content = (() => {
     if (isLoading || !detail) {
       return (
@@ -1203,6 +1508,19 @@ export function StepResultDialog({
     }
 
     switch (step) {
+      // "documentReferences" is a synthetic pseudo-step opened from the
+      // plan row's reference-count badge (see PlanRow's
+      // DOCUMENT_REFERENCES_STEP); "groupDocumentReferences" is the real
+      // pipeline step's own swimlane pill. Both show the same list — the
+      // pill needs its own case too, or clicking it falls through to "No
+      // details for this step" below.
+      case "documentReferences":
+      case "groupDocumentReferences":
+        return (
+          <DocumentReferencesList
+            documentReferences={detail.documentReferences}
+          />
+        );
       case "extractMunicipality": {
         const entityKey = reviewKey(step, "municipality", plan.id);
         const snapshot = {
@@ -1246,8 +1564,12 @@ export function StepResultDialog({
         return (
           <CommitmentsList
             commitments={detail.commitments}
+            documentReferences={detail.documentReferences}
             columns="extract"
             reviewCtx={reviewCtx}
+            allVerifiedPhrases={allVerifiedPhrases}
+            pdfMissingPhrases={pdfMissingPhrases}
+            setPdfViewer={setPdfViewer}
           />
         );
       case "filterCommitmentsClimate":
@@ -1256,6 +1578,9 @@ export function StepResultDialog({
             commitments={detail.commitments}
             columns="climate"
             reviewCtx={reviewCtx}
+            allVerifiedPhrases={allVerifiedPhrases}
+            pdfMissingPhrases={pdfMissingPhrases}
+            setPdfViewer={setPdfViewer}
           />
         );
       case "filterCommitmentsActionable":
@@ -1264,6 +1589,9 @@ export function StepResultDialog({
             commitments={detail.commitments.filter((c) => c.climateRelevant)}
             columns="actionable"
             reviewCtx={reviewCtx}
+            allVerifiedPhrases={allVerifiedPhrases}
+            pdfMissingPhrases={pdfMissingPhrases}
+            setPdfViewer={setPdfViewer}
           />
         );
       case "groupCommitmentsSimilar":
@@ -1274,6 +1602,9 @@ export function StepResultDialog({
             )}
             columns="similar"
             reviewCtx={reviewCtx}
+            allVerifiedPhrases={allVerifiedPhrases}
+            pdfMissingPhrases={pdfMissingPhrases}
+            setPdfViewer={setPdfViewer}
           />
         );
       case "groupCommitmentsThemes":
@@ -1284,6 +1615,9 @@ export function StepResultDialog({
             )}
             columns="themes"
             reviewCtx={reviewCtx}
+            allVerifiedPhrases={allVerifiedPhrases}
+            pdfMissingPhrases={pdfMissingPhrases}
+            setPdfViewer={setPdfViewer}
           />
         );
       case "extractMeasures":
@@ -1316,12 +1650,19 @@ export function StepResultDialog({
     }
   })();
 
+  // On large screens, the PDF opens as a panel to the right of the
+  // content instead of stacking a second modal on top — both stay
+  // visible and independently scrollable at once. Smaller screens don't
+  // have room for that, so the PDF still opens as its own full-screen
+  // modal there (see the non-split branch below).
+  const showSplitPanel = isLargeScreen && pdfViewer !== null;
+
   return (
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      size="6xl"
-      scrollable
+      size={showSplitPanel ? "full" : "6xl"}
+      scrollable={!showSplitPanel}
       title={
         <div className="flex flex-wrap items-center gap-3">
           <span>{step}</span>
@@ -1330,23 +1671,29 @@ export function StepResultDialog({
               {itemCount} {itemCount === 1 ? "item" : "items"}
             </span>
           )}
-          <StatusPill
-            label={run?.status ?? "pending"}
-            status={toSwimlaneStatus(run?.status)}
-            isActive={run?.status === "running"}
-          />
-          <RerunButton
-            planId={plan.id}
-            step={step}
-            onRerun={() => {
-              refresh();
-              onRerun?.();
-            }}
-          />
+          {step !== "documentReferences" && (
+            <>
+              <StatusPill
+                label={run?.status ?? "pending"}
+                status={toSwimlaneStatus(run?.status)}
+                isActive={run?.status === "running"}
+              />
+              <RerunButton
+                planId={plan.id}
+                step={step}
+                onRerun={() => {
+                  refresh();
+                  onRerun?.();
+                }}
+              />
+            </>
+          )}
         </div>
       }
       description={
-        run ? (
+        step === "documentReferences" ? (
+          "Collected by extractCommitments across all sections, then deduplicated by groupDocumentReferences — this view itself isn't a separate pipeline step."
+        ) : run ? (
           <div>
             <span className="text-xs">
               Started {new Date(run.startedAt).toLocaleString()}
@@ -1374,7 +1721,54 @@ export function StepResultDialog({
         )
       }
     >
-      <div className="mt-4 min-w-0 overflow-x-hidden">{content}</div>
+      {showSplitPanel ? (
+        <ResizableSplitView
+          className="mt-4 lg:h-[75vh]"
+          left={content}
+          right={
+            <PdfHighlightPanel
+              url={pdfUrl}
+              // Always the full set (never just the one clicked
+              // commitment) so the panel renders the same document with
+              // the same yellow highlights every time it's opened for
+              // this plan — clicking a different commitment's "Find in
+              // PDF" while the panel stays open then only has to move
+              // the red highlight (see PdfHighlightBody's refocus
+              // effect), not reload anything.
+              verifiedPhrases={allVerifiedPhrases}
+              focusedPhrase={
+                pdfViewer?.mode === "focused"
+                  ? pdfViewer.commitment.text
+                  : undefined
+              }
+              onVerifiedSearchComplete={handleVerifiedSearchComplete}
+              onClose={() => setPdfViewer(null)}
+            />
+          }
+        />
+      ) : (
+        <>
+          <div className="mt-4 min-w-0 overflow-x-hidden">{content}</div>
+          {pdfViewer && (
+            <PdfHighlightViewer
+              open
+              onOpenChange={(nextOpen) => {
+                if (!nextOpen) setPdfViewer(null);
+              }}
+              url={pdfUrl}
+              verifiedPhrases={
+                pdfViewer.mode === "all" ? allVerifiedPhrases : []
+              }
+              focusedPhrase={
+                pdfViewer.mode === "focused"
+                  ? pdfViewer.commitment.text
+                  : undefined
+              }
+              onVerifiedSearchComplete={handleVerifiedSearchComplete}
+            />
+          )}
+        </>
+      )}
     </Modal>
   );
 }

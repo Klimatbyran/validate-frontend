@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ChevronsDown, ChevronsUp, Loader2, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronsDown,
+  ChevronsUp,
+  FileText,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { StatusPill } from "@/components/StatusPill";
 import { Button } from "@/ui/button";
@@ -25,6 +32,9 @@ import { ReviewingAsField } from "./components/ReviewingAsField";
 const COMMITMENT_STEPS = [
   "extractMunicipality",
   "extractCommitments",
+  // Parallel branch off extractCommitments, not part of the
+  // filterCommitmentsClimate -> ... chain — see startWorkers.ts.
+  "groupDocumentReferences",
   "filterCommitmentsClimate",
   "filterCommitmentsActionable",
   "groupCommitmentsSimilar",
@@ -36,6 +46,12 @@ const MEASURE_STEPS = [
   "scoreMeasures",
   "matchTransitionElements",
 ] as const;
+
+/** Not a real BullMQ step — a synthetic pseudo-step id StepResultDialog
+ * recognizes to show extractCommitments' collected document-reference
+ * side-output as its own flat list, opened from the badge below rather
+ * than a step pill. */
+const DOCUMENT_REFERENCES_STEP = "documentReferences";
 
 interface PlanRowProps {
   plan: ClimatePipelinePlan;
@@ -129,6 +145,18 @@ function PlanRow({ plan, onStepClick, onPdfJobClick }: PlanRowProps) {
           <div className="min-w-0">
             <h3 className="font-bold text-gray-01 truncate">{name}</h3>
             <p className="text-xs text-gray-02 truncate">{plan.url}</p>
+            {plan.companionReferenceCount > 0 && (
+              <button
+                onClick={() => onStepClick(plan, DOCUMENT_REFERENCES_STEP)}
+                className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 hover:underline"
+                title="This plan says its own measures live in a document we haven't parsed — the extraction may be incomplete."
+              >
+                <AlertTriangle className="w-3 h-3 shrink-0" />
+                Possibly incomplete — {plan.companionReferenceCount} companion
+                document
+                {plan.companionReferenceCount === 1 ? "" : "s"} not parsed
+              </button>
+            )}
           </div>
           {hasPreviousRuns && (
             <Button
@@ -172,7 +200,7 @@ function PlanRow({ plan, onStepClick, onPdfJobClick }: PlanRowProps) {
           })}
         </div>
       )}
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         {COMMITMENT_STEPS.map((step) => (
           <StepStatusPill
             key={step}
@@ -182,6 +210,18 @@ function PlanRow({ plan, onStepClick, onPdfJobClick }: PlanRowProps) {
             onClick={() => onStepClick(plan, step)}
           />
         ))}
+        {plan.documentReferenceCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onStepClick(plan, DOCUMENT_REFERENCES_STEP)}
+            className="h-6 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 shrink-0 w-auto min-w-0"
+          >
+            <FileText className="w-3 h-3 mr-1" />
+            {plan.documentReferenceCount} referenced document
+            {plan.documentReferenceCount === 1 ? "" : "s"}
+          </Button>
+        )}
       </div>
       <div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-03/50">
         {MEASURE_STEPS.map((step) => (
