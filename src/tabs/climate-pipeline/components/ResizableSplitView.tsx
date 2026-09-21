@@ -56,11 +56,8 @@ export function ResizableSplitView({
     if (width <= 0) return;
 
     // Handle moves right → right pane shrinks; left → right pane grows.
-    const deltaPercent =
-      ((event.clientX - dragStart.clientX) / width) * 100;
-    setRightPercent(
-      clampRightPercent(dragStart.rightPercent - deltaPercent),
-    );
+    const deltaPercent = ((event.clientX - dragStart.clientX) / width) * 100;
+    setRightPercent(clampRightPercent(dragStart.rightPercent - deltaPercent));
   }
 
   function endDrag(event: PointerEvent<HTMLDivElement>) {
@@ -84,11 +81,7 @@ export function ResizableSplitView({
   return (
     <div
       ref={splitRef}
-      className={cn(
-        "flex min-h-0",
-        isDragging && "select-none",
-        className,
-      )}
+      className={cn("flex min-h-0", isDragging && "select-none", className)}
     >
       <div
         className="min-w-0 overflow-x-hidden overflow-y-auto lg:pr-1"
