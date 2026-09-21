@@ -1508,10 +1508,14 @@ export function StepResultDialog({
     }
 
     switch (step) {
-      // Not a real pipeline step — a synthetic view over extractCommitments'
-      // side-output, opened from the plan row's reference-count badge
-      // rather than a step pill. See PlanRow's DOCUMENT_REFERENCES_STEP.
+      // "documentReferences" is a synthetic pseudo-step opened from the
+      // plan row's reference-count badge (see PlanRow's
+      // DOCUMENT_REFERENCES_STEP); "groupDocumentReferences" is the real
+      // pipeline step's own swimlane pill. Both show the same list — the
+      // pill needs its own case too, or clicking it falls through to "No
+      // details for this step" below.
       case "documentReferences":
+      case "groupDocumentReferences":
         return (
           <DocumentReferencesList
             documentReferences={detail.documentReferences}

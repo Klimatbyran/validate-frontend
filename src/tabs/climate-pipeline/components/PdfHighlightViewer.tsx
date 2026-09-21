@@ -585,11 +585,15 @@ async function extractPageTextData(page: PDFPageProxy): Promise<{
   const items: PageTextItem[] = [];
   const mcids: (string | null)[] = [];
   const geom: ItemGeometry[] = [];
-  let currentMcid: string | null = null;
+  // A stack, not a single scalar — nested BMC/EMC pairs are common in
+  // tagged PDFs (e.g. an inline tag inside a paragraph's own span), and
+  // popping back to the enclosing id on EMC (rather than resetting to
+  // null) keeps later items in the outer span correctly attributed to it.
+  const mcidStack: (string | null)[] = [];
   for (const item of textContent.items) {
     if ("str" in item) {
       items.push({ str: item.str, hasEOL: item.hasEOL });
-      mcids.push(currentMcid);
+      mcids.push(mcidStack.length > 0 ? mcidStack[mcidStack.length - 1] : null);
       geom.push({
         x: item.transform[4],
         y: item.transform[5],
@@ -599,9 +603,12 @@ async function extractPageTextData(page: PDFPageProxy): Promise<{
       item.type === "beginMarkedContentProps" ||
       item.type === "beginMarkedContent"
     ) {
-      currentMcid = "id" in item && item.id ? item.id : currentMcid;
+      const id = "id" in item && item.id ? item.id : null;
+      mcidStack.push(
+        id ?? (mcidStack.length > 0 ? mcidStack[mcidStack.length - 1] : null),
+      );
     } else if (item.type === "endMarkedContent") {
-      currentMcid = null;
+      mcidStack.pop();
     }
   }
   return { textContent, items, mcids, geom };
@@ -1397,6 +1404,7 @@ function PdfHighlightBody({
     if (!open || !container || isFocusedOnly) return;
 
     let cancelled = false;
+    let loadingTask: ReturnType<typeof pdfjsLib.getDocument> | null = null;
     setIsLoading(true);
     setError(null);
     setMatchCount(0);
@@ -1408,7 +1416,7 @@ function PdfHighlightBody({
 
     (async () => {
       try {
-        const loadingTask = pdfjsLib.getDocument({ url });
+        loadingTask = pdfjsLib.getDocument({ url });
         const doc = await Promise.race([
           loadingTask.promise,
           new Promise<never>((_, reject) =>
@@ -1461,6 +1469,10 @@ function PdfHighlightBody({
 
     return () => {
       cancelled = true;
+      // Aborts network requests and tears down the worker + any rendered
+      // page canvases — without this, every reload (new url, phrase set,
+      // or panel close) leaked the full previous document.
+      loadingTask?.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on verifiedPhrasesKey (a content signature), not verifiedPhrases by reference — see comment above its definition
   }, [open, url, verifiedPhrasesKey, container, isFocusedOnly]);
@@ -1475,6 +1487,7 @@ function PdfHighlightBody({
     if (!open || !container || !isFocusedOnly) return;
 
     let cancelled = false;
+    let loadingTask: ReturnType<typeof pdfjsLib.getDocument> | null = null;
     setIsLoading(true);
     setError(null);
     setFocusFound(false);
@@ -1484,7 +1497,7 @@ function PdfHighlightBody({
 
     (async () => {
       try {
-        const loadingTask = pdfjsLib.getDocument({ url });
+        loadingTask = pdfjsLib.getDocument({ url });
         const doc = await Promise.race([
           loadingTask.promise,
           new Promise<never>((_, reject) =>
@@ -1563,6 +1576,7 @@ function PdfHighlightBody({
 
     return () => {
       cancelled = true;
+      loadingTask?.destroy();
     };
   }, [open, url, focusedPhrase, container, isFocusedOnly]);
 
