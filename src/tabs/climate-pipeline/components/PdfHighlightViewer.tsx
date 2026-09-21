@@ -134,18 +134,39 @@ function buildFoldedSearchIndex(text: string): {
   // Iterate by code-unit index so indexMap entries are valid offsets into
   // `text` for the item-range overlap check in findMatchedItemIndices.
   for (let index = 0; index < text.length; ) {
+    const startIndex = index;
     // Skip the rest of a surrogate pair as one Unicode character when
     // present, so we don't fold half a code point.
     const code = text.charCodeAt(index);
-    const stride =
+    let stride =
       code >= 0xd800 && code <= 0xdbff && index + 1 < text.length ? 2 : 1;
-    const whole = text.slice(index, index + stride);
+    let whole = text.slice(index, index + stride);
+    // Greedily pull in any immediately-following combining marks (e.g. a
+    // decomposed "o" + U+0308 representing "ö", which some PDF text
+    // layers use instead of the precomposed character) so normalize()
+    // below actually has the full cluster to compose — normalizing a
+    // lone base character or a lone combining mark in isolation can't
+    // compose them, and a bare combining mark fails the \p{L} test and
+    // gets silently dropped, corrupting the fold (e.g. "Köping" ->
+    // "Koping", missing the whole diaeresis).
+    while (index + stride < text.length) {
+      const nextCode = text.charCodeAt(index + stride);
+      const nextChar = text[index + stride];
+      if (!/\p{M}/u.test(nextChar)) break;
+      whole += nextChar;
+      stride +=
+        nextCode >= 0xd800 &&
+        nextCode <= 0xdbff &&
+        index + stride + 1 < text.length
+          ? 2
+          : 1;
+    }
     const expanded = LIGATURES[whole] ?? whole.normalize("NFC");
     for (const piece of expanded) {
       const lower = piece.toLowerCase();
       if (/[\p{L}\p{N}]/u.test(lower)) {
         searchable += lower;
-        indexMap.push(index);
+        indexMap.push(startIndex);
       }
     }
     index += stride;
