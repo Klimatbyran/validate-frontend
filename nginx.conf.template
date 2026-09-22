@@ -4,17 +4,6 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # nginx's stock mime.types has no entry for .mjs (a newer extension),
-    # so it fell back to the default_type (application/octet-stream) —
-    # browsers reject a dynamically-imported ES module served with that
-    # content-type. Needed for pdf.js's worker (pdfjs-dist ships it as
-    # pdf.worker.min.mjs, loaded via `import()`), and for any future ESM
-    # asset. `types {}` extends nginx's built-in map rather than
-    # replacing it.
-    types {
-        application/javascript mjs;
-    }
-
     # Allow large file uploads (match ingress proxy-body-size)
     client_max_body_size 550m;
 
@@ -187,8 +176,29 @@ server {
     # Serve static files
     location / {
         try_files $uri $uri/ /index.html;
-        
-        location ~* \.(js|mjs|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+
+        # nginx's stock mime.types has no entry for .mjs (a newer
+        # extension), so it fell back to the server's default_type
+        # (application/octet-stream) — browsers refuse to execute a
+        # dynamically-imported ES module served with that content-type.
+        # Needed for pdf.js's worker (pdfjs-dist ships it as
+        # pdf.worker.min.mjs, loaded via a dynamic import()).
+        #
+        # default_type here, not a `types {}` block — types{} REPLACES
+        # nginx's whole built-in MIME map for the context it's declared
+        # in rather than extending it, which broke content-type
+        # resolution for every other file (including index.html itself,
+        # which then triggered a download prompt instead of rendering —
+        # confirmed directly against a real nginx container serving
+        # html/js/css/mjs test files side by side). default_type only
+        # applies within this location, to requests matching this regex.
+        location ~* \.mjs$ {
+            default_type application/javascript;
             expires 1y;
             add_header Cache-Control "public, immutable";
         }
