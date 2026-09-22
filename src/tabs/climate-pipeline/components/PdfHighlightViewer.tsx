@@ -998,7 +998,22 @@ function findScrollParent(
 /** Applies CSS zoom, then adjusts scroll so the point that was at the
  * viewport center before the change is still centered after — CSS zoom
  * alone leaves scrollTop/Left unchanged, which anchors to the top-left
- * and makes multi-page docs look like they jump to another page. */
+ * and makes multi-page docs look like they jump to another page.
+ *
+ * Works in scroll-fraction space (scrollLeft/scrollWidth), not pixel math
+ * off getBoundingClientRect() — the previous version derived a "local"
+ * content-space point via container.getBoundingClientRect() before the
+ * zoom and re-projected it after, which assumes the container's own left
+ * edge is a stable reference frame across the change. It isn't: container
+ * uses `w-max` + `min-w-full` so its own box grows/shrinks with zoom in a
+ * way that doesn't relate linearly to getBoundingClientRect().left,
+ * producing a small consistent error each call — invisible on one zoom
+ * click, but compounding into a steady left/up drift over repeated
+ * clicks (confirmed directly: -13px after 5 zoom-in steps in a real
+ * repro of this exact DOM shape). Fractions of scrollWidth/scrollHeight
+ * don't have this problem — a point at fraction F of the scrollable
+ * range before a uniform scale is still at fraction F after, regardless
+ * of how the zoomed box's own dimensions resolve internally. */
 function zoomContainerTowardViewportCenter(
   container: HTMLElement,
   previousZoom: number,
@@ -1011,21 +1026,26 @@ function zoomContainerTowardViewportCenter(
 
   const verticalScroller = findScrollParent(container, "y") ?? container;
   const horizontalScroller = findScrollParent(container, "x") ?? container;
-  const verticalRect = verticalScroller.getBoundingClientRect();
-  const horizontalRect = horizontalScroller.getBoundingClientRect();
-  const viewCenterX = horizontalRect.left + horizontalScroller.clientWidth / 2;
-  const viewCenterY = verticalRect.top + verticalScroller.clientHeight / 2;
 
-  const beforeRect = container.getBoundingClientRect();
-  const localX = (viewCenterX - beforeRect.left) / previousZoom;
-  const localY = (viewCenterY - beforeRect.top) / previousZoom;
+  const hFraction =
+    horizontalScroller.scrollWidth > 0
+      ? (horizontalScroller.scrollLeft + horizontalScroller.clientWidth / 2) /
+        horizontalScroller.scrollWidth
+      : 0.5;
+  const vFraction =
+    verticalScroller.scrollHeight > 0
+      ? (verticalScroller.scrollTop + verticalScroller.clientHeight / 2) /
+        verticalScroller.scrollHeight
+      : 0.5;
 
   container.style.zoom = String(nextZoom);
 
-  const afterRect = container.getBoundingClientRect();
-  horizontalScroller.scrollLeft +=
-    afterRect.left + localX * nextZoom - viewCenterX;
-  verticalScroller.scrollTop += afterRect.top + localY * nextZoom - viewCenterY;
+  horizontalScroller.scrollLeft =
+    hFraction * horizontalScroller.scrollWidth -
+    horizontalScroller.clientWidth / 2;
+  verticalScroller.scrollTop =
+    vFraction * verticalScroller.scrollHeight -
+    verticalScroller.clientHeight / 2;
 }
 
 /** Mean layout font-size of the matched text-layer spans (CSS px before
@@ -1149,10 +1169,16 @@ async function renderPageWithHighlights(
   // (like any retina-aware canvas) so CSS zoom — which stretches
   // whatever pixels are already there rather than re-rendering (see the
   // zoom effect in PdfHighlightBody) — has headroom to zoom in without
-  // visibly blurring, up to ZOOM_MAX. Capped in absolute terms too, so a
-  // page that's already rendering at a large displayScale (a wide modal)
+  // visibly blurring, up to ZOOM_MAX. This used to stop there and never
+  // actually accounted for the display's own pixel density, so it only
+  // looked sharp on a standard 1x screen — on a real retina laptop
+  // (devicePixelRatio 2), the browser was already upscaling the "native
+  // resolution" render just to show it at 100%, before any zoom was even
+  // applied. Capped (both the DPR factor and the final scale) so a page
+  // that's already rendering at a large displayScale (a wide modal)
   // doesn't multiply into an unreasonably large canvas.
-  const renderScale = Math.min(displayScale * ZOOM_MAX, 5);
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 3);
+  const renderScale = Math.min(displayScale * ZOOM_MAX * pixelRatio, 6);
   const renderViewport = page.getViewport({ scale: renderScale });
 
   const pageDiv = document.createElement("div");
@@ -1363,6 +1389,15 @@ function PdfHighlightBody({
   // per document, since a zoom level chosen for one PDF's layout isn't
   // necessarily right for the next one.
   const [zoom, setZoom] = useState(1);
+  // The zoom % field's own draft text — kept separate from `zoom` so a
+  // half-typed value (e.g. "2" on the way to "200") doesn't get clamped
+  // or reformatted mid-keystroke. Only parsed into a real zoom level on
+  // blur/Enter; the effect below keeps it in sync whenever zoom changes
+  // from elsewhere (the +/- buttons, or auto-zoom when revealing a
+  // focused match).
+  const [zoomInputValue, setZoomInputValue] = useState(() =>
+    String(Math.round(1 * 100)),
+  );
   const previousZoomRef = useRef(1);
   const pagesRef = useRef<RenderedPage[]>([]);
   const focusBarsRef = useRef<HTMLElement[]>([]);
@@ -1387,6 +1422,13 @@ function PdfHighlightBody({
     setZoom(1);
     previousZoomRef.current = 1;
   }, [url]);
+
+  // Keeps the zoom field's displayed text in sync whenever zoom changes
+  // from anywhere other than the field itself (+/- buttons, the reset
+  // above, or auto-zoom when revealing a focused match).
+  useEffect(() => {
+    setZoomInputValue(String(Math.round(zoom * 100)));
+  }, [zoom]);
 
   // Instant, non-reloading zoom: CSS zoom scales layout (unlike
   // transform: scale), then we re-anchor scroll so the viewport's center
@@ -1677,10 +1719,37 @@ function PdfHighlightBody({
   const zoomOutDisabled = isLoading || zoom <= ZOOM_MIN;
   const zoomInDisabled = isLoading || zoom >= ZOOM_MAX;
 
+  // Parses the field's draft text into a clamped zoom level. Invalid/empty
+  // input (cleared the field, typed letters) just reverts to the current
+  // zoom rather than applying anything — there's no sensible fallback
+  // number to guess at.
+  function commitZoomInput(rawValue: string) {
+    const parsed = Number.parseFloat(rawValue);
+    if (!Number.isFinite(parsed)) {
+      setZoomInputValue(String(Math.round(zoom * 100)));
+      return;
+    }
+    const clampedPercent = Math.min(
+      ZOOM_MAX * 100,
+      Math.max(ZOOM_MIN * 100, Math.round(parsed)),
+    );
+    setZoom(clampedPercent / 100);
+    setZoomInputValue(String(clampedPercent));
+  }
+
   return (
     <>
       <style>{TEXT_LAYER_CSS}</style>
-      <div className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-gray-04 py-1">
+      {/* left-0 right-0, not just top-0 — this toolbar is a sibling of the
+      zoomed pages container inside a scroller that scrolls both axes.
+      `sticky top-0` alone only pins vertically; once zoom makes a page
+      wider than the panel and the view scrolls horizontally to re-center
+      it, the toolbar (no horizontal pinning) scrolled out of view right
+      along with it — verified directly: without left-0, ~295px of a
+      594px-wide toolbar sat off-screen after a zoom-triggered horizontal
+      scroll, leaving the zoom controls stranded near the middle of the
+      visible area instead of pinned to the actual right edge. */}
+      <div className="sticky top-0 left-0 right-0 z-10 flex items-center justify-between gap-3 bg-gray-04 py-1">
         {description ? (
           <p className="text-sm text-gray-02">{description}</p>
         ) : (
@@ -1699,8 +1768,26 @@ function PdfHighlightBody({
               <Minus className="h-3.5 w-3.5" />
               <span className="sr-only">Zoom out</span>
             </button>
-            <span className="w-10 text-center text-xs tabular-nums text-gray-02">
-              {Math.round(zoom * 100)}%
+            <span className="flex items-center gap-0.5 text-xs tabular-nums text-gray-02">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={zoomInputValue}
+                disabled={isLoading}
+                onChange={(e) => setZoomInputValue(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                onBlur={(e) => commitZoomInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                  else if (e.key === "Escape") {
+                    setZoomInputValue(String(Math.round(zoom * 100)));
+                    e.currentTarget.blur();
+                  }
+                }}
+                title="Type a zoom percentage"
+                className="w-9 rounded-sm border border-transparent bg-transparent text-center hover:border-gray-03 focus:border-blue-03 focus:outline-none disabled:pointer-events-none disabled:opacity-30"
+              />
+              %
             </span>
             <button
               onClick={() =>
