@@ -1627,8 +1627,19 @@
         "ambiguous": "Ambiguous",
         "registryInProd": "In prod",
         "registryOnly": "In registry only",
-        "registryMissing": "Missing reports"
+        "registryMissing": "Missing reports",
+        "needsManualFind": "Needs manual find"
       },
+      "crawlNeedsManualFind": "Needs manual find",
+      "crawlOutcomeEmpty": "Crawl found nothing",
+      "crawlOutcomeSparse": "Crawl found ≤1 year",
+      "crawlOutcomeError": "Last crawl failed",
+      "crawlWebsiteUrl": "Company website",
+      "crawlWebsiteUrlPlaceholder": "https://…",
+      "crawlWebsiteUrlHint": "Used by nightly and coverage crawls. Saves to the company when matched.",
+      "crawlWebsiteUrlSave": "Save website",
+      "crawlWebsiteUrlSaved": "Website saved for crawls",
+      "crawlWebsiteUrlError": "Could not save website URL",
       "reports": {
         "missing": "Missing",
         "pillInProd": "Year processed — CompanyReport for this year has reporting period data",

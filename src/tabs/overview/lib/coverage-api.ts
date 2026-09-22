@@ -437,6 +437,25 @@ export async function renameCoverageEntry(
   throw new Error(message);
 }
 
+export async function updateCoverageEntryCrawlWebsite(
+  listId: string,
+  year: number,
+  entryId: string,
+  websiteUrl: string | null,
+): Promise<CoverageYearDetail> {
+  const url = coverageUrl(
+    `${listId}/years/${year}/entries/${entryId}/crawl-website`,
+  );
+  const response = await garboAuthFetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ websiteUrl }),
+  });
+  return parseJson(response, url, (data) =>
+    coverageYearDetailSchema.parse(data),
+  );
+}
+
 export async function refreshCoverageEntryRegistry(
   listId: string,
   year: number,
