@@ -1657,74 +1657,93 @@ export function StepResultDialog({
   // modal there (see the non-split branch below).
   const showSplitPanel = isLargeScreen && pdfViewer !== null;
 
+  const dialogTitle = (
+    <div className="flex flex-wrap items-center gap-3">
+      <span>{step}</span>
+      {itemCount !== null && (
+        <span className="text-xs font-normal text-gray-02">
+          {itemCount} {itemCount === 1 ? "item" : "items"}
+        </span>
+      )}
+      {step !== "documentReferences" && (
+        <>
+          <StatusPill
+            label={run?.status ?? "pending"}
+            status={toSwimlaneStatus(run?.status)}
+            isActive={run?.status === "running"}
+          />
+          <RerunButton
+            planId={plan.id}
+            step={step}
+            onRerun={() => {
+              refresh();
+              onRerun?.();
+            }}
+          />
+        </>
+      )}
+    </div>
+  );
+  const dialogDescription =
+    step === "documentReferences" ? (
+      "Collected by extractCommitments across all sections, then deduplicated by groupDocumentReferences — this view itself isn't a separate pipeline step."
+    ) : run ? (
+      <div>
+        <span className="text-xs">
+          Started {new Date(run.startedAt).toLocaleString()}
+          {run.completedAt &&
+            ` · finished ${new Date(run.completedAt).toLocaleString()}`}
+          {run.error && (
+            <span className="block text-pink-03 mt-1">{run.error}</span>
+          )}
+        </span>
+        {viewingPastRun && (
+          <span className="block text-xs text-blue-03 mt-1">
+            Viewing a past run — status/timing only; commitment and measure
+            content below always reflects the current data.
+          </span>
+        )}
+        <span className="block text-xs text-gray-02 mt-1">
+          QA marks are an overlay — they do not change live pipeline outputs.
+          Use the review board to export feedback for improving the pipeline.
+        </span>
+        <PreviousStepRuns runs={previousRuns} />
+      </div>
+    ) : (
+      "This step hasn't run yet."
+    );
+
   return (
     <Modal
       open={open}
       onOpenChange={onOpenChange}
       size={showSplitPanel ? "full" : "6xl"}
       scrollable={!showSplitPanel}
-      title={
-        <div className="flex flex-wrap items-center gap-3">
-          <span>{step}</span>
-          {itemCount !== null && (
-            <span className="text-xs font-normal text-gray-02">
-              {itemCount} {itemCount === 1 ? "item" : "items"}
-            </span>
-          )}
-          {step !== "documentReferences" && (
-            <>
-              <StatusPill
-                label={run?.status ?? "pending"}
-                status={toSwimlaneStatus(run?.status)}
-                isActive={run?.status === "running"}
-              />
-              <RerunButton
-                planId={plan.id}
-                step={step}
-                onRerun={() => {
-                  refresh();
-                  onRerun?.();
-                }}
-              />
-            </>
-          )}
-        </div>
-      }
-      description={
-        step === "documentReferences" ? (
-          "Collected by extractCommitments across all sections, then deduplicated by groupDocumentReferences — this view itself isn't a separate pipeline step."
-        ) : run ? (
-          <div>
-            <span className="text-xs">
-              Started {new Date(run.startedAt).toLocaleString()}
-              {run.completedAt &&
-                ` · finished ${new Date(run.completedAt).toLocaleString()}`}
-              {run.error && (
-                <span className="block text-pink-03 mt-1">{run.error}</span>
-              )}
-            </span>
-            {viewingPastRun && (
-              <span className="block text-xs text-blue-03 mt-1">
-                Viewing a past run — status/timing only; commitment and measure
-                content below always reflects the current data.
-              </span>
-            )}
-            <span className="block text-xs text-gray-02 mt-1">
-              QA marks are an overlay — they do not change live pipeline
-              outputs. Use the review board to export feedback for improving the
-              pipeline.
-            </span>
-            <PreviousStepRuns runs={previousRuns} />
-          </div>
-        ) : (
-          "This step hasn't run yet."
-        )
-      }
+      // The split-view case moves this into the left pane instead (see
+      // below) — the shared header would otherwise push the PDF pane down
+      // by however tall the run's timing/QA/previous-runs block happens
+      // to be, capping how much vertical room the PDF actually gets. The
+      // PDF pane doesn't need any of that context; the commitments list
+      // does.
+      title={showSplitPanel ? undefined : dialogTitle}
+      description={showSplitPanel ? undefined : dialogDescription}
     >
       {showSplitPanel ? (
         <ResizableSplitView
-          className="mt-4 lg:h-[75vh]"
-          left={content}
+          className="min-h-0 flex-1"
+          left={
+            <>
+              <div className="sticky top-0 z-10 mb-3 border-b border-gray-03 bg-gray-04 pb-3">
+                <h2 className="text-lg font-medium text-gray-01">
+                  {dialogTitle}
+                </h2>
+                <div className="mt-1 text-sm text-gray-02">
+                  {dialogDescription}
+                </div>
+              </div>
+              {content}
+            </>
+          }
           right={
             <PdfHighlightPanel
               url={pdfUrl}
