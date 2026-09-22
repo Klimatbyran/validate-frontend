@@ -177,7 +177,7 @@ export function useCompanies() {
       }
     };
 
-    const timer = window.setInterval(tick, 2000);
+    const timer = window.setInterval(tick, 5000);
     return () => window.clearInterval(timer);
   }, []);
 
