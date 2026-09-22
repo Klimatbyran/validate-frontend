@@ -3,7 +3,6 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
 import { Header } from "@/ui/header";
 import { Toaster } from "@/ui/sonner";
-import { CompaniesProvider } from "@/contexts/CompaniesContext";
 import {
   PipelineModeProvider,
   usePipelineMode,
@@ -161,11 +160,9 @@ export function MainLayout() {
       <Toaster />
       <div className="max-w-[1400px] mx-auto">
         <Header />
-        <CompaniesProvider>
-          <PipelineModeProvider>
-            <MainNav />
-          </PipelineModeProvider>
-        </CompaniesProvider>
+        <PipelineModeProvider>
+          <MainNav />
+        </PipelineModeProvider>
       </div>
     </div>
   );

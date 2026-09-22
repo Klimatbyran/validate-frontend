@@ -1,6 +1,6 @@
 /**
- * CompaniesContext - Shared companies data and refresh for Job status and Debug tabs.
- * Provider stays mounted so data is preloaded and persists when switching tabs.
+ * CompaniesContext — queue/company data for the Jobbstatus tab.
+ * Mount only under Jobbstatus so queue polling does not run on other tabs.
  */
 
 import { createContext, useContext, type ReactNode } from "react";
