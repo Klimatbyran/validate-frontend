@@ -8,6 +8,7 @@ import type {
 } from "./crawler-types";
 import { saveToRegistry, updateCompanyReports } from "./crawler-api";
 import { mapWithConcurrency } from "./map-with-concurrency";
+import { isEmissionsRelevantReportTypeSlug } from "./emissions-relevant-report-types";
 
 /** Parallel crawl cap — each company holds Firecrawl for minutes. */
 export const AUTO_SEARCH_CRAWL_CONCURRENCY = Math.max(
@@ -141,7 +142,7 @@ interface SearchCompanyReportsParams {
   onLabeledSaved?: (response: SaveReportsListResponse) => void;
 }
 
-const AUTO_SAVE_YEAR_LOOKBACK = 4;
+const AUTO_SAVE_YEAR_LOOKBACK = 5;
 
 function isRecentEnoughToAutoSave(
   year: string,
@@ -224,12 +225,16 @@ export function labeledHitsToSelectedReports(
       const reportYear = yearForSelectedReport(url, hit);
       if (!/^\d{4}$/.test(reportYear)) continue;
       if (!isRecentEnoughToAutoSave(reportYear, company.reportYear)) continue;
+      const reportTypeSlug = reportTypeSlugForAutoSave(hit);
+      // Keep climate/emissions-relevant types only — skip governance,
+      // modern slavery, unlabeled `other`, and similar low-yield annexes.
+      if (!isEmissionsRelevantReportTypeSlug(reportTypeSlug)) continue;
       hits.push({
         company,
         hit,
         url,
         reportYear,
-        reportTypeSlug: reportTypeSlugForAutoSave(hit),
+        reportTypeSlug,
       });
     }
   }
@@ -259,6 +264,72 @@ export function labeledHitsToSelectedReports(
   }
 
   return selected;
+}
+
+/**
+ * Extra climate/emissions-typed hits to save alongside an auto-search primary
+ * winner. Lets multiple relevant PDFs land for the same company/year without
+ * saving governance annexes or unlabeled junk.
+ */
+export function emissionsRelevantCompanionReports(input: {
+  companyReport: CompanyReport;
+  primary: SelectedReport;
+  wikidataId?: string;
+}): SelectedReport[] {
+  const primaryUrl = input.primary.url.trim().toLowerCase();
+  const requestedYear = input.primary.reportYear?.trim();
+  const companions: SelectedReport[] = [];
+  const seenUrl = new Set<string>([primaryUrl]);
+
+  for (const hit of input.companyReport.results) {
+    const url = hit.url?.trim();
+    if (hit.fetchFailed || !url) continue;
+    const urlKey = url.toLowerCase();
+    if (seenUrl.has(urlKey)) continue;
+    if (isSupportingAutoSaveDocument(url, hit.title)) continue;
+    if (
+      looksLikeOtherLegalEntity(
+        url,
+        input.companyReport.companyName,
+        hit.title,
+      )
+    ) {
+      continue;
+    }
+
+    const reportTypeSlug = hit.reportTypeSlug?.trim();
+    if (!isEmissionsRelevantReportTypeSlug(reportTypeSlug)) continue;
+
+    const reportYear = yearForSelectedReport(url, hit);
+    if (!/^\d{4}$/.test(reportYear)) continue;
+    if (
+      requestedYear &&
+      /^\d{4}$/.test(requestedYear) &&
+      reportYear !== requestedYear
+    ) {
+      continue;
+    }
+    if (
+      !isRecentEnoughToAutoSave(reportYear, input.companyReport.reportYear)
+    ) {
+      continue;
+    }
+
+    seenUrl.add(urlKey);
+    companions.push({
+      companyName: input.companyReport.companyName,
+      reportYear,
+      url,
+      wikidataId: input.wikidataId ?? input.companyReport.wikidataId,
+      reportTypeSlug,
+      s3Url: hit.s3Url ?? undefined,
+      s3Key: hit.s3Key ?? undefined,
+      s3Bucket: hit.s3Bucket ?? undefined,
+      sha256: hit.sha256 ?? undefined,
+    });
+  }
+
+  return companions;
 }
 
 export async function saveLabeledSearchResults(

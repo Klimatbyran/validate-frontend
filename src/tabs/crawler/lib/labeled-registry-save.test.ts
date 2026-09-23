@@ -55,7 +55,7 @@ describe("labeledHitsToSelectedReports", () => {
     ],
   };
 
-  it("saves fetched hits including unlabeled PDFs as other", () => {
+  it("saves climate-relevant typed hits and skips unlabeled PDFs", () => {
     expect(labeledHitsToSelectedReports([company])).toEqual([
       {
         companyName: "Walmart",
@@ -100,17 +100,6 @@ describe("labeledHitsToSelectedReports", () => {
         s3Key: undefined,
         s3Bucket: undefined,
         sha256: undefined,
-      },
-      {
-        companyName: "Walmart",
-        reportYear: lastYear,
-        url: "https://example.com/unlabeled.pdf",
-        wikidataId: "Q483551",
-        reportTypeSlug: "other",
-        s3Url: undefined,
-        s3Key: undefined,
-        sha256: undefined,
-        s3Bucket: undefined,
       },
     ]);
   });

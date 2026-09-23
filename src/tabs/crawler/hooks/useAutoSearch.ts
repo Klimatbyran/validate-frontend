@@ -1,5 +1,8 @@
 import { useCallback, useRef, useState } from "react";
-import { searchCompanyReports } from "../lib/crawler-utils";
+import {
+  emissionsRelevantCompanionReports,
+  searchCompanyReports,
+} from "../lib/crawler-utils";
 import { saveToRegistry } from "../lib/crawler-api";
 import { filterReportsNotAlreadyInRegistry } from "../lib/auto-search-registry-check";
 import { pickBestReportForCompany } from "../lib/auto-search-runner";
@@ -240,6 +243,13 @@ export function useAutoSearch() {
           });
         } else {
           winners.push(outcome.report);
+          winners.push(
+            ...emissionsRelevantCompanionReports({
+              companyReport,
+              primary: outcome.report,
+              wikidataId,
+            }),
+          );
         }
 
         resultStats.companyDetails.push(companyDetail);

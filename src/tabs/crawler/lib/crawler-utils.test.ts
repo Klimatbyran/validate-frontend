@@ -7,6 +7,7 @@ import {
   sanitizeCrawlErrorMessage,
 } from "./crawler-types";
 import {
+  emissionsRelevantCompanionReports,
   labeledHitsToSelectedReports,
   mergeSaveReportsResponses,
   selectedReportFromHit,
@@ -27,13 +28,18 @@ describe("labeledHitsToSelectedReports", () => {
   const recent = String(now);
   const lastYear = String(now - 1);
 
-  it("saves fetched PDFs with a year even when type or S3 is missing", () => {
+  it("saves climate-relevant typed PDFs and skips unlabeled or supporting hits", () => {
     const selected = labeledHitsToSelectedReports([
       company("Acme", [
         {
           url: `https://example.com/csr-${recent}.pdf`,
           reportYear: recent,
           reportTypeSlug: "csr-report",
+        },
+        {
+          url: `https://example.com/ghg-${recent}.pdf`,
+          reportYear: recent,
+          reportTypeSlug: "ghg-emissions-report",
         },
         {
           url: `https://example.com/cdp-${recent}.pdf`,
@@ -43,15 +49,18 @@ describe("labeledHitsToSelectedReports", () => {
           url: `https://example.com/report-${lastYear}.pdf`,
           title: `Something ${lastYear}`,
         },
+        {
+          url: `https://example.com/governance-${recent}.pdf`,
+          reportYear: recent,
+          reportTypeSlug: "corporate-governance-report",
+        },
       ]),
     ]);
 
     expect(selected.map((item) => item.url)).toEqual([
       `https://example.com/csr-${recent}.pdf`,
-      `https://example.com/report-${lastYear}.pdf`,
+      `https://example.com/ghg-${recent}.pdf`,
     ]);
-    expect(selected[1]?.reportYear).toBe(lastYear);
-    expect(selected[1]?.reportTypeSlug).toBe("other");
   });
 
   it("skips CDP, 10-K, old archive years, and subsidiary filings", () => {
@@ -156,6 +165,7 @@ describe("labeledHitsToSelectedReports", () => {
           url: `https://example.com/csr-${recent}.pdf`,
           reportYear: `${recent}-${Number(recent) + 1}`,
           title: `FY${recent} CSR`,
+          reportTypeSlug: "csr-report",
         },
       ]),
     ]);
@@ -164,6 +174,7 @@ describe("labeledHitsToSelectedReports", () => {
       expect.objectContaining({
         url: `https://example.com/csr-${recent}.pdf`,
         reportYear: recent,
+        reportTypeSlug: "csr-report",
       }),
     ]);
   });
@@ -191,6 +202,54 @@ describe("labeledHitsToSelectedReports", () => {
 
     expect(selected.map((item) => item.url)).toEqual([
       `https://example.com/csr-${recent}.pdf`,
+    ]);
+  });
+});
+
+describe("emissionsRelevantCompanionReports", () => {
+  const now = new Date().getFullYear();
+  const year = String(now);
+
+  it("adds other climate-typed hits for the same year as the primary winner", () => {
+    const companions = emissionsRelevantCompanionReports({
+      companyReport: company("Acme", [
+        {
+          url: `https://example.com/annual-${year}.pdf`,
+          reportYear: year,
+          reportTypeSlug: "annual-report",
+        },
+        {
+          url: `https://example.com/ghg-${year}.pdf`,
+          reportYear: year,
+          reportTypeSlug: "ghg-emissions-report",
+        },
+        {
+          url: `https://example.com/climate-plan-${year}.pdf`,
+          reportYear: year,
+          reportTypeSlug: "climate-plan",
+        },
+        {
+          url: `https://example.com/slavery-${year}.pdf`,
+          reportYear: year,
+          reportTypeSlug: "modern-slavery-statement",
+        },
+        {
+          url: `https://example.com/ghg-${Number(year) - 1}.pdf`,
+          reportYear: String(Number(year) - 1),
+          reportTypeSlug: "ghg-emissions-report",
+        },
+      ]),
+      primary: {
+        companyName: "Acme",
+        reportYear: year,
+        url: `https://example.com/annual-${year}.pdf`,
+        wikidataId: "Q1",
+      },
+    });
+
+    expect(companions.map((item) => item.url)).toEqual([
+      `https://example.com/ghg-${year}.pdf`,
+      `https://example.com/climate-plan-${year}.pdf`,
     ]);
   });
 });
