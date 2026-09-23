@@ -7,7 +7,6 @@ import {
   sanitizeCrawlErrorMessage,
 } from "./crawler-types";
 import {
-  emissionsRelevantCompanionReports,
   labeledHitsToSelectedReports,
   mergeSaveReportsResponses,
   selectedReportFromHit,
@@ -202,54 +201,6 @@ describe("labeledHitsToSelectedReports", () => {
 
     expect(selected.map((item) => item.url)).toEqual([
       `https://example.com/csr-${recent}.pdf`,
-    ]);
-  });
-});
-
-describe("emissionsRelevantCompanionReports", () => {
-  const now = new Date().getFullYear();
-  const year = String(now);
-
-  it("adds other climate-typed hits for the same year as the primary winner", () => {
-    const companions = emissionsRelevantCompanionReports({
-      companyReport: company("Acme", [
-        {
-          url: `https://example.com/annual-${year}.pdf`,
-          reportYear: year,
-          reportTypeSlug: "annual-report",
-        },
-        {
-          url: `https://example.com/ghg-${year}.pdf`,
-          reportYear: year,
-          reportTypeSlug: "ghg-emissions-report",
-        },
-        {
-          url: `https://example.com/climate-plan-${year}.pdf`,
-          reportYear: year,
-          reportTypeSlug: "climate-plan",
-        },
-        {
-          url: `https://example.com/slavery-${year}.pdf`,
-          reportYear: year,
-          reportTypeSlug: "modern-slavery-statement",
-        },
-        {
-          url: `https://example.com/ghg-${Number(year) - 1}.pdf`,
-          reportYear: String(Number(year) - 1),
-          reportTypeSlug: "ghg-emissions-report",
-        },
-      ]),
-      primary: {
-        companyName: "Acme",
-        reportYear: year,
-        url: `https://example.com/annual-${year}.pdf`,
-        wikidataId: "Q1",
-      },
-    });
-
-    expect(companions.map((item) => item.url)).toEqual([
-      `https://example.com/ghg-${year}.pdf`,
-      `https://example.com/climate-plan-${year}.pdf`,
     ]);
   });
 });
