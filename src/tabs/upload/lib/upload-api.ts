@@ -186,9 +186,7 @@ export async function createJobsFromUrls({
     autoApprove: Boolean(autoApprove),
     ...(batchId ? { batchId } : {}),
     forceReindex: Boolean(forceReindex),
-    ...(requireEmissionsPresence
-      ? { requireEmissionsPresence: true }
-      : {}),
+    ...(requireEmissionsPresence ? { requireEmissionsPresence: true } : {}),
     replaceAllEmissions: true,
     ...(runOnly && runOnly.length > 0 ? { runOnly } : {}),
     ...(tags && tags.length > 0 ? { tags } : {}),

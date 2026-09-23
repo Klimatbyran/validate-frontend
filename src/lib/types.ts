@@ -279,7 +279,12 @@ export interface CustomAPIProcess {
   year?: number;
   /** Batch ID when the process was started (e.g. from upload run options). */
   batchId?: string;
-  status: "active" | "completed" | "failed" | "waiting" | "skipped_no_emissions";
+  status:
+    | "active"
+    | "completed"
+    | "failed"
+    | "waiting"
+    | "skipped_no_emissions";
   jobs: CustomAPIJob[];
   startedAt?: number;
   finishedAt?: number;
