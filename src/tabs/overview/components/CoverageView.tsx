@@ -624,6 +624,17 @@ export function CoverageView() {
             setIsMatchSubmitting(false);
           }
         }}
+        onSaveWebsiteUrl={async (websiteUrl) => {
+          if (!matchEntry) return;
+          const updated = await yearDetail.setEntryCrawlWebsite(
+            matchEntry.id,
+            websiteUrl,
+          );
+          const nextEntry =
+            updated?.entries.find((entry) => entry.id === matchEntry.id) ??
+            null;
+          if (nextEntry) setMatchEntry(nextEntry);
+        }}
       />
     </div>
   );
