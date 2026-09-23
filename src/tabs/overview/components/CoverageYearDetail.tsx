@@ -163,6 +163,10 @@ export function CoverageYearDetailView({
       value: "registryMissing",
       label: t("overview.coverage.filters.registryMissing"),
     },
+    {
+      value: "needsManualFind",
+      label: t("overview.coverage.filters.needsManualFind"),
+    },
   ];
 
   return (

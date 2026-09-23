@@ -73,6 +73,19 @@ export const coverageEntrySchema = z.object({
   matchMethod: coverageMatchMethodSchema.optional(),
   matchedCompany: coverageMatchedCompanySchema.optional(),
   registryReports: z.array(registryReportPillSchema).default([]),
+  crawlState: z
+    .object({
+      websiteUrl: z.string().nullable(),
+      lastCrawledAt: z.string().nullable(),
+      lastCrawlOutcome: z
+        .enum(["found", "empty", "sparse", "error"])
+        .nullable(),
+      lastCrawlReportsSaved: z.number().int(),
+      crawlSkipUntil: z.string().nullable(),
+      needsManualFind: z.boolean(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export const coverageCompanySearchHitSchema = z.object({
@@ -210,4 +223,5 @@ export type CoverageEntryFilter =
   | "ambiguous"
   | "registryInProd"
   | "registryOnly"
-  | "registryMissing";
+  | "registryMissing"
+  | "needsManualFind";

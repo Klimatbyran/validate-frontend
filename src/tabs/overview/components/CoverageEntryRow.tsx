@@ -251,6 +251,22 @@ export function CoverageEntryRow({
             {t("overview.coverage.manualBadge")}
           </span>
         ) : null}
+        {entry.crawlState?.needsManualFind ? (
+          <span
+            className="ml-2 text-[10px] uppercase tracking-wide text-orange-03"
+            title={
+              entry.crawlState.lastCrawlOutcome === "empty"
+                ? t("overview.coverage.crawlOutcomeEmpty")
+                : entry.crawlState.lastCrawlOutcome === "sparse"
+                  ? t("overview.coverage.crawlOutcomeSparse")
+                  : entry.crawlState.lastCrawlOutcome === "error"
+                    ? t("overview.coverage.crawlOutcomeError")
+                    : t("overview.coverage.crawlNeedsManualFind")
+            }
+          >
+            {t("overview.coverage.crawlNeedsManualFind")}
+          </span>
+        ) : null}
       </td>
       <td className="px-4 py-2 text-gray-02 align-top truncate">
         {entry.matchedCompany ? (

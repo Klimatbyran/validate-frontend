@@ -1627,8 +1627,19 @@
         "ambiguous": "Tvetydiga",
         "registryInProd": "I prod",
         "registryOnly": "Endast i register",
-        "registryMissing": "Saknar rapporter"
+        "registryMissing": "Saknar rapporter",
+        "needsManualFind": "Behöver manuell sökning"
       },
+      "crawlNeedsManualFind": "Behöver manuell sökning",
+      "crawlOutcomeEmpty": "Crawl hittade inget",
+      "crawlOutcomeSparse": "Crawl hittade ≤1 år",
+      "crawlOutcomeError": "Senaste crawl misslyckades",
+      "crawlWebsiteUrl": "Företagswebbplats",
+      "crawlWebsiteUrlPlaceholder": "https://…",
+      "crawlWebsiteUrlHint": "Används av nattliga och coverage-crawls. Sparas på företaget när det är matchat.",
+      "crawlWebsiteUrlSave": "Spara webbplats",
+      "crawlWebsiteUrlSaved": "Webbplats sparad för crawls",
+      "crawlWebsiteUrlError": "Kunde inte spara webbadress",
       "reports": {
         "missing": "Saknas",
         "pillInProd": "År bearbetat — CompanyReport för året har perioddata",

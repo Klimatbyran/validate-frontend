@@ -14,6 +14,7 @@ type CoverageEntryMatchDialogProps = {
   onOpenChange: (open: boolean) => void;
   entry: CoverageEntry | null;
   onAction: (action: CoverageMatchSaveAction) => Promise<void>;
+  onSaveWebsiteUrl?: (websiteUrl: string | null) => Promise<void>;
   isSubmitting?: boolean;
 };
 
@@ -22,6 +23,7 @@ export function CoverageEntryMatchDialog({
   onOpenChange,
   entry,
   onAction,
+  onSaveWebsiteUrl,
   isSubmitting = false,
 }: CoverageEntryMatchDialogProps) {
   const { t } = useI18n();
@@ -30,12 +32,17 @@ export function CoverageEntryMatchDialog({
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [isSavingWebsite, setIsSavingWebsite] = useState(false);
+  const [websiteMessage, setWebsiteMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !entry) return;
     setQuery(entry.matchedCompany?.name ?? entry.name);
     setSelectedId(null);
     setSearchError(null);
+    setWebsiteUrl(entry.crawlState?.websiteUrl ?? "");
+    setWebsiteMessage(null);
   }, [open, entry]);
 
   useEffect(() => {
@@ -156,7 +163,68 @@ export function CoverageEntryMatchDialog({
             {t("overview.coverage.columns.listName")}
           </p>
           <p className="text-sm text-gray-01 font-medium">{entry.name}</p>
+          {entry.crawlState?.needsManualFind ? (
+            <p className="mt-1 text-xs text-orange-03">
+              {entry.crawlState.lastCrawlOutcome === "empty"
+                ? t("overview.coverage.crawlOutcomeEmpty")
+                : entry.crawlState.lastCrawlOutcome === "sparse"
+                  ? t("overview.coverage.crawlOutcomeSparse")
+                  : entry.crawlState.lastCrawlOutcome === "error"
+                    ? t("overview.coverage.crawlOutcomeError")
+                    : t("overview.coverage.crawlNeedsManualFind")}
+            </p>
+          ) : null}
         </div>
+
+        {onSaveWebsiteUrl ? (
+          <div className="space-y-1.5">
+            <label className="block space-y-1">
+              <span className="text-sm text-gray-02">
+                {t("overview.coverage.crawlWebsiteUrl")}
+              </span>
+              <input
+                className="w-full rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm"
+                value={websiteUrl}
+                onChange={(e) => setWebsiteUrl(e.target.value)}
+                placeholder={t("overview.coverage.crawlWebsiteUrlPlaceholder")}
+              />
+            </label>
+            <p className="text-xs text-gray-02">
+              {t("overview.coverage.crawlWebsiteUrlHint")}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={isSavingWebsite || isSubmitting}
+                onClick={() => {
+                  setIsSavingWebsite(true);
+                  setWebsiteMessage(null);
+                  const next = websiteUrl.trim() || null;
+                  void onSaveWebsiteUrl(next)
+                    .then(() => {
+                      setWebsiteMessage(
+                        t("overview.coverage.crawlWebsiteUrlSaved"),
+                      );
+                    })
+                    .catch((error) => {
+                      setWebsiteMessage(
+                        error instanceof Error
+                          ? error.message
+                          : t("overview.coverage.crawlWebsiteUrlError"),
+                      );
+                    })
+                    .finally(() => setIsSavingWebsite(false));
+                }}
+              >
+                {t("overview.coverage.crawlWebsiteUrlSave")}
+              </Button>
+              {websiteMessage ? (
+                <span className="text-xs text-gray-02">{websiteMessage}</span>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
 
         <label className="block space-y-1">
           <span className="text-sm text-gray-02">
