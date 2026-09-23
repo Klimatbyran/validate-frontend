@@ -87,6 +87,10 @@ export function ApiKeysListView({
           <ul className="mt-3 space-y-2">
             {keys.map((keyItem) => {
               const isRevoked = keyItem.revokedAt !== null;
+              const isExpired =
+                !isRevoked &&
+                keyItem.expiresAt != null &&
+                new Date(keyItem.expiresAt).getTime() <= Date.now();
               return (
                 <li
                   key={keyItem.id}
@@ -105,6 +109,10 @@ export function ApiKeysListView({
                       {isRevoked ? (
                         <span className="text-xs text-pink-03">
                           {t("apiAccess.keysStatusRevoked")}
+                        </span>
+                      ) : isExpired ? (
+                        <span className="text-xs text-pink-03">
+                          {t("apiAccess.keysStatusExpired")}
                         </span>
                       ) : (
                         <>
@@ -145,6 +153,17 @@ export function ApiKeysListView({
                           : null,
                       )}
                     </span>
+                    {keyItem.expiresAt ? (
+                      <span className={isExpired ? "text-pink-03/80" : undefined}>
+                        {t("apiAccess.keysExpires")}:{" "}
+                        {formatDate(new Date(keyItem.expiresAt))}
+                      </span>
+                    ) : null}
+                    {keyItem.companyScope ? (
+                      <span>
+                        {t("apiAccess.keysScope")}: {keyItem.companyScope}
+                      </span>
+                    ) : null}
                     {isRevoked ? (
                       <span className="text-pink-03/80">
                         {t("apiAccess.keysRevoked")}:{" "}
