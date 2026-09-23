@@ -154,7 +154,9 @@ export function ApiKeysListView({
                       )}
                     </span>
                     {keyItem.expiresAt ? (
-                      <span className={isExpired ? "text-pink-03/80" : undefined}>
+                      <span
+                        className={isExpired ? "text-pink-03/80" : undefined}
+                      >
                         {t("apiAccess.keysExpires")}:{" "}
                         {formatDate(new Date(keyItem.expiresAt))}
                       </span>

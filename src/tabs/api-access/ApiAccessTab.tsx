@@ -149,7 +149,9 @@ export function ApiAccessTab() {
                   <input
                     type="checkbox"
                     checked={isTrial}
-                    onChange={(event) => handleTrialChange(event.target.checked)}
+                    onChange={(event) =>
+                      handleTrialChange(event.target.checked)
+                    }
                     className="mt-1"
                   />
                   <span>
