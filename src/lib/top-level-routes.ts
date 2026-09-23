@@ -1,6 +1,5 @@
 /** First URL segment selects the main tab. See docs/ROUTING_URL_STATE.md. */
 export const TOP_LEVEL_TAB_SEGMENTS = [
-  "crawler",
   "registry",
   "overview",
   "upload",
@@ -17,7 +16,7 @@ export const TOP_LEVEL_TAB_SEGMENTS = [
 
 export type TopLevelTabSegment = (typeof TOP_LEVEL_TAB_SEGMENTS)[number];
 
-export const DEFAULT_TOP_LEVEL_PATH = "/crawler";
+export const DEFAULT_TOP_LEVEL_PATH = "/overview";
 
 export function firstPathSegment(pathname: string): string {
   return pathname.replace(/^\//, "").split("/")[0] ?? "";

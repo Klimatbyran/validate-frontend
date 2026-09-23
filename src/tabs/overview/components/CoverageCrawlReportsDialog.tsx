@@ -25,7 +25,7 @@ import type {
   SelectedReport,
 } from "@/tabs/crawler/lib/crawler-types";
 import {
-  AUTO_SEARCH_CRAWL_CONCURRENCY,
+  REPORT_CRAWL_CONCURRENCY,
   labeledHitsToSelectedReports,
   searchCompanyReports,
   selectedReportFromHit,
@@ -420,7 +420,7 @@ export function CoverageCrawlReportsDialog({
                               companyTotal: crawlProgress.companyTotal,
                               parallel:
                                 crawlProgress.parallel ??
-                                AUTO_SEARCH_CRAWL_CONCURRENCY,
+                                REPORT_CRAWL_CONCURRENCY,
                             })
                           : t("crawler.crawlProgress", {
                               company: crawlProgress.companyName,

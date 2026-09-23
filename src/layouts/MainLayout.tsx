@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 
 const TABS_WITH_SPACED_CONTENT = new Set<TopLevelTabSegment>([
   "jobbstatus",
-  "crawler",
   "registry",
   "overview",
   "editor",
@@ -37,8 +36,6 @@ function pipelineModeLabelKey(mode: PipelineMode): string {
 
 function tabLabelKey(tab: TopLevelTabSegment): string {
   switch (tab) {
-    case "crawler":
-      return "nav.crawler";
     case "registry":
       return "nav.registry";
     case "upload":

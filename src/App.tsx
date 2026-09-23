@@ -8,7 +8,6 @@ import { ApiAccessTab } from "@/tabs/api-access/ApiAccessTab";
 import { ClimatePlansExplorer } from "@/tabs/climate-plans/ClimatePlansExplorer";
 import { ClimatePipelineTab } from "@/tabs/climate-pipeline/ClimatePipelineTab";
 import { ClimateQaReviewsTab } from "@/tabs/climate-pipeline/ClimateQaReviewsTab";
-import { CrawlerTab } from "@/tabs/crawler/CrawlerTab";
 import { DebugTab } from "@/tabs/debug/DebugTab";
 import { EditorTab } from "@/tabs/editor/EditorTab";
 import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
@@ -32,7 +31,10 @@ function App() {
             path="/"
             element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />}
           />
-          <Route path="/crawler" element={<CrawlerTab />} />
+          <Route
+            path="/crawler"
+            element={<Navigate to="/overview" replace />}
+          />
           <Route path="/registry" element={<RegistryTab />} />
           <Route path="/overview" element={<OverviewTab />} />
           <Route path="/upload" element={<UploadTab />} />
