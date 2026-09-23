@@ -288,11 +288,7 @@ export function emissionsRelevantCompanionReports(input: {
     if (seenUrl.has(urlKey)) continue;
     if (isSupportingAutoSaveDocument(url, hit.title)) continue;
     if (
-      looksLikeOtherLegalEntity(
-        url,
-        input.companyReport.companyName,
-        hit.title,
-      )
+      looksLikeOtherLegalEntity(url, input.companyReport.companyName, hit.title)
     ) {
       continue;
     }
@@ -309,9 +305,7 @@ export function emissionsRelevantCompanionReports(input: {
     ) {
       continue;
     }
-    if (
-      !isRecentEnoughToAutoSave(reportYear, input.companyReport.reportYear)
-    ) {
+    if (!isRecentEnoughToAutoSave(reportYear, input.companyReport.reportYear)) {
       continue;
     }
 
