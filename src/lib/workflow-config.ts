@@ -35,6 +35,7 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   parsePdf: "PDF Parsning",
   doclingParsePDF: "PDF Parsning docling",
   indexMarkdown: "Markdown",
+  checkEmissionsPresence: "Utsläppsnärvaro",
   extractDescriptions: "Extrahera beskrivningar",
 
   // AI Data Extraction
@@ -91,6 +92,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
       "parsePdf",
       "doclingParsePDF",
       "indexMarkdown",
+      "checkEmissionsPresence",
       "extractDescriptions",
       "guessWikidata",
       "extractEmissions",

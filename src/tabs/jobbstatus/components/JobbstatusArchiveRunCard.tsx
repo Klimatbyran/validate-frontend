@@ -63,6 +63,8 @@ function runStatusChipClass(status: string): string {
       return "bg-green-03/20 text-green-02 border border-green-03/35";
     case "failed":
       return "bg-pink-03/20 text-pink-02 border border-pink-03/35";
+    case "skipped_no_emissions":
+      return "bg-gray-03/80 text-gray-02 border border-gray-02/40";
     default:
       return "bg-blue-03/15 text-blue-02 border border-blue-03/30";
   }

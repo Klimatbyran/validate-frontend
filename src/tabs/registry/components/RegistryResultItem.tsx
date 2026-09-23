@@ -79,6 +79,39 @@ const RegistryResultItem = ({
           entry.reportType?.slug?.trim() ||
           t("common.placeholderDash")}
       </td>
+      <td className="px-4 py-3 text-sm text-gray-02">
+        {entry.hasEmissionsMentions === true ? (
+          <span
+            className="inline-flex items-center rounded-md bg-green-03/15 text-green-02 border border-green-03/30 px-2 py-0.5 text-[11px] font-medium"
+            title={
+              entry.emissionsPresenceCheckedAt
+                ? t("registry.emissionsPresenceCheckedAt", {
+                    date: entry.emissionsPresenceCheckedAt,
+                  })
+                : undefined
+            }
+          >
+            {t("registry.emissionsPresenceYes")}
+          </span>
+        ) : entry.hasEmissionsMentions === false ? (
+          <span
+            className="inline-flex items-center rounded-md bg-gray-03/80 text-gray-02 border border-gray-02/35 px-2 py-0.5 text-[11px] font-medium"
+            title={
+              entry.emissionsPresenceCheckedAt
+                ? t("registry.emissionsPresenceCheckedAt", {
+                    date: entry.emissionsPresenceCheckedAt,
+                  })
+                : undefined
+            }
+          >
+            {t("registry.emissionsPresenceNo")}
+          </span>
+        ) : (
+          <span className="text-xs text-gray-02">
+            {t("registry.emissionsPresenceUnchecked")}
+          </span>
+        )}
+      </td>
       <td className="px-4 py-3 text-sm text-gray-02 max-w-[22rem]">
         <div className="flex flex-wrap gap-2">
           {linkItems.length ? (
