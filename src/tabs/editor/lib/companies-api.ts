@@ -13,6 +13,7 @@ import {
   garboCompanyIdSchema,
 } from "./companies-schemas";
 import { apiUrl } from "./api-utils";
+import { sharedCompanyReportIdForPeriods } from "./company-report-shells";
 
 function normalizeReportingPeriodUrls(
   company: GarboCompanyDetail,
@@ -411,8 +412,15 @@ export async function updateReportingPeriods(
     reportingPeriods: ReportingPeriodWritePayload[];
     metadata?: GarboMetadata;
     replaceAllEmissions?: boolean;
+    companyReportId?: string;
   },
 ): Promise<void> {
+  const payload = {
+    ...body,
+    companyReportId:
+      body.companyReportId?.trim() ||
+      sharedCompanyReportIdForPeriods(body.reportingPeriods),
+  };
   const res = await garboAuthFetch(
     apiUrl(companiesPath(`${encodeURIComponent(companyId)}/reporting-periods`)),
     {
@@ -421,7 +429,7 @@ export async function updateReportingPeriods(
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     },
   );
   if (res.status === 401) {
