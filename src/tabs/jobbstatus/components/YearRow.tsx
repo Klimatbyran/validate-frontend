@@ -38,7 +38,7 @@ export function YearRow({
   isExpanded,
   onToggleExpand,
 }: YearRowProps) {
-  const { formatDate } = useI18n();
+  const { formatDate, t } = useI18n();
   const yearStepStats = useMemo(() => {
     const pipelineSteps = getAllPipelineSteps();
     return pipelineSteps.map((step) => {
@@ -87,6 +87,11 @@ export function YearRow({
           {currentThreadId && (
             <span className="text-xs text-gray-02 font-mono bg-gray-04 px-1.5 py-0.5 rounded">
               {currentThreadId}
+            </span>
+          )}
+          {yearData.processStatus === "skipped_no_emissions" && (
+            <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md bg-gray-03/80 text-gray-02 border border-gray-02/40">
+              {t("jobstatus.archiveStatusSkippedNoEmissions")}
             </span>
           )}
           {hasPreviousRuns && (

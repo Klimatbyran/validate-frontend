@@ -25,6 +25,7 @@ function getStatusLabelKey(status: string, isActive?: boolean): string {
     needs_approval: "status.needs_approval",
     wikidata_unverified: "status.wikidata_unverified",
     waiting: "status.waiting",
+    skipped: "status.skippedNoEmissions",
   };
   return keyMap[status] ?? "status.waiting";
 }

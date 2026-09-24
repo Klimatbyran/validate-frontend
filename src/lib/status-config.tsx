@@ -82,7 +82,7 @@ export const STATUS_CONFIG = {
     },
   },
   skipped: {
-    label: "Skipped",
+    label: "No emissions",
     icon: Minus,
     colors: {
       text: "text-gray-02",
@@ -151,8 +151,9 @@ export function getCompactStyles(
 ): string {
   const config = STATUS_CONFIG[status];
 
-  // If job doesn't exist, use a more subtle gray style
-  if (jobExists === false) {
+  // Never-ran steps stay subdued — except emissions-gate skips, which are a
+  // real terminal outcome for queues that intentionally did not start.
+  if (jobExists === false && status !== "skipped") {
     return `text-gray-02 bg-gray-03/30 border-gray-03/50`;
   }
 
@@ -240,14 +241,17 @@ export function getStepIcon(
     | "failed"
     | "waiting"
     | "needs_approval"
-    | "wikidata_unverified",
+    | "wikidata_unverified"
+    | "skipped",
 ) {
   const config = getStatusConfig(status);
   const IconComponent = config.icon;
 
   // Use gray for waiting status in step icons (user requirement)
   const iconColor =
-    status === "waiting" ? config.colors.text : config.colors.icon;
+    status === "waiting" || status === "skipped"
+      ? config.colors.text
+      : config.colors.icon;
 
   return (
     <IconComponent

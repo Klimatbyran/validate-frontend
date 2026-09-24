@@ -101,6 +101,8 @@ export function YearStepGrid({
             icon: getStatusIcon(aggregate.status, "detailed", !!isActive),
             text: getStatusLabel(aggregate.status, !!isActive),
           };
+          const showAsExisting =
+            job !== undefined || aggregate.status === "skipped";
 
           if (variant === "compact") {
             return (
@@ -109,7 +111,7 @@ export function YearStepGrid({
                 label={fieldName}
                 status={aggregate.status}
                 isActive={!!isActive}
-                jobExists={job !== undefined}
+                jobExists={showAsExisting}
                 isRerun={isRerun}
                 onClick={() => onFieldClick(queueId, yearData, { isRerun })}
               />

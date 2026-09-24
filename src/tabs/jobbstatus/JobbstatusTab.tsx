@@ -24,6 +24,7 @@ import {
   isFullyCompleted,
   hasIssues,
   hasPipelineStepIssues,
+  hasSkippedNoEmissions,
 } from "./lib/swimlane-filters";
 import { useI18n } from "@/contexts/I18nContext";
 import { useRerunByWorker } from "./hooks/useRerunByWorker";
@@ -116,6 +117,9 @@ function JobbstatusTabContent() {
       fully_completed: swimlaneCompanies.filter((c) =>
         isFullyCompleted(c, runScope),
       ).length,
+      skipped_no_emissions: swimlaneCompanies.filter((c) =>
+        hasSkippedNoEmissions(c, runScope),
+      ).length,
       has_issues: swimlaneCompanies.filter((c) => hasIssues(c, runScope))
         .length,
       preprocessing_issues: swimlaneCompanies.filter((c) =>
@@ -146,6 +150,8 @@ function JobbstatusTabContent() {
                   return hasProcessingJobs(company, runScope);
                 case "fully_completed":
                   return isFullyCompleted(company, runScope);
+                case "skipped_no_emissions":
+                  return hasSkippedNoEmissions(company, runScope);
                 case "has_issues":
                   return hasIssues(company, runScope);
                 case "preprocessing_issues":

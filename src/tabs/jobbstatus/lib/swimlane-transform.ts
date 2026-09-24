@@ -96,6 +96,7 @@ export function convertCompaniesToSwimlaneFormat(
             year,
             attempts: yearProcesses.length,
             fields: {},
+            processStatus: process.status,
             jobs: (process.jobs || []).map((job) => {
               const rawJobCompany =
                 job.companyName ??
