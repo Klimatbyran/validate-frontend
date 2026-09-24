@@ -14,6 +14,7 @@ import {
   MoreVertical,
   Search,
   RefreshCw,
+  Minus,
 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
@@ -56,6 +57,7 @@ const PRIMARY_FILTER_ICONS: Record<FilterType, React.ReactNode> = {
   has_failed: <XCircle className="w-4 h-4" />,
   has_processing: <RotateCw className="w-4 h-4" />,
   has_issues: <AlertTriangle className="w-4 h-4" />,
+  skipped_no_emissions: <Minus className="w-4 h-4" />,
   fully_completed: <CheckCircle2 className="w-4 h-4" />,
   preprocessing_issues: <AlertTriangle className="w-4 h-4" />,
   data_extraction_issues: <AlertTriangle className="w-4 h-4" />,

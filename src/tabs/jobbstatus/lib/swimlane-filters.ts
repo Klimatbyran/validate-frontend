@@ -7,6 +7,7 @@ import type { SwimlaneCompany, SwimlaneYearData } from "@/lib/types";
 import {
   calculatePipelineStepStatus,
   getQueueAttemptSummary,
+  yearIsEmissionsPresenceSkipped,
 } from "@/lib/workflow-utils";
 import {
   getAllPipelineSteps,
@@ -18,6 +19,7 @@ export type FilterType =
   | "has_failed"
   | "has_processing"
   | "fully_completed"
+  | "skipped_no_emissions"
   | "has_issues"
   | "preprocessing_issues"
   | "data_extraction_issues"
@@ -131,7 +133,7 @@ export function isFullyCompleted(
       null;
     const attemptedQueueIds = allQueueIds.filter((queueId) => {
       const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
-      return agg.attempts.length > 0;
+      return agg.attempts.length > 0 || agg.status === "skipped";
     });
     if (attemptedQueueIds.length === 0) return false;
     return attemptedQueueIds.every((queueId) => {
@@ -139,6 +141,17 @@ export function isFullyCompleted(
       return agg.status === "completed" || agg.status === "skipped";
     });
   });
+}
+
+/**
+ * Check if company run(s) ended at the emissions presence gate.
+ */
+export function hasSkippedNoEmissions(
+  company: SwimlaneCompany,
+  runScope: RunScope = "latest",
+): boolean {
+  const yearsToCheck = getYearsToCheck(company, runScope);
+  return yearsToCheck.some((year) => yearIsEmissionsPresenceSkipped(year));
 }
 
 /**

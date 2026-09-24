@@ -211,6 +211,13 @@ export interface SwimlaneYearData {
   latestTimestamp?: number; // Timestamp of the latest attempt
   // Optional thread identifier for grouping runs; populated by the swimlane view conversion logic
   threadId?: string;
+  /** Process-level status from pipeline-api (e.g. skipped_no_emissions). */
+  processStatus?:
+    | "active"
+    | "completed"
+    | "failed"
+    | "waiting"
+    | "skipped_no_emissions";
 }
 
 export interface SwimlaneCompany {
