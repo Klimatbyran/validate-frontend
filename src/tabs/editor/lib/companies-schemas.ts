@@ -56,7 +56,6 @@ export const garboCompanyDetailSchema = garboCompanyListItemSchema
   })
   .passthrough();
 
-
 export function parseGarboCompanyDetail(raw: unknown) {
   return garboCompanyDetailSchema.parse(raw);
 }

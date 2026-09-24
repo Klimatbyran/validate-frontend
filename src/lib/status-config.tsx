@@ -163,7 +163,6 @@ export function getCompactStyles(
   return `text-white ${config.colors.background} ${config.colors.border}`;
 }
 
-
 /**
  * Get background color for status indicators (with /20 opacity for dialogs)
  */

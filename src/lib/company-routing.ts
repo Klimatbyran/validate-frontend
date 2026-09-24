@@ -5,4 +5,3 @@ export function getCompanyUrlSegment(company: {
 }): string {
   return company.wikidataId ?? company.id.split("-")[0];
 }
-

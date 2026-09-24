@@ -25,4 +25,3 @@ export function coveragePercentCardClass(percent: number): string {
   }
   return "border-orange-03/30 bg-orange-03/10 text-orange-03";
 }
-

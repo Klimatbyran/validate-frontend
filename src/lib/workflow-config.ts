@@ -163,7 +163,6 @@ export function getWorkflowStages(): WorkflowStage[] {
   }));
 }
 
-
 /**
  * Get all queue IDs for a pipeline step
  */
@@ -171,10 +170,6 @@ export function getQueuesForPipelineStep(stepId: string): string[] {
   const step = PIPELINE_STEPS.find((s) => s.id === stepId);
   return step?.stageIds || [];
 }
-
-
-
-
 
 /**
  * Get all pipeline steps sorted by order

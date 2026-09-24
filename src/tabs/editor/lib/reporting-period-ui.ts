@@ -119,7 +119,6 @@ export function getPeriodDataYear(period: {
   return getPeriodYear(period);
 }
 
-
 export const editorSecondaryIdTextClass = "text-xs text-gray-02 break-all";
 
 export function dataYearsWithMultiplePeriods(

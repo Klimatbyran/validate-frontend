@@ -31,7 +31,6 @@ export function wikidataFromIdentifiers(
   return row?.value?.trim() || company.wikidataId?.trim() || null;
 }
 
-
 export type EditableCompanyIdentifier = {
   key: string;
   type: GarboCompanyIdentifierType;

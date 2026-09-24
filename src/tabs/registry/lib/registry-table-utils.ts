@@ -60,4 +60,3 @@ export function isWikidataIdPresent(
 ): boolean {
   return typeof wikidataId === "string" && /^Q\d+$/i.test(wikidataId.trim());
 }
-

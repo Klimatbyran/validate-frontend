@@ -97,4 +97,3 @@ export function reportRowMatchesReportYearFilter(
   if (!row.reportYear) return false;
   return reportYears.includes(row.reportYear);
 }
-
