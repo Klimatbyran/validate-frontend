@@ -49,7 +49,10 @@ export type PipelineAutoRunPatch = {
   resetFailureCounters?: boolean;
 };
 
-async function parseStatus(response: Response, url: string): Promise<PipelineAutoRunStatus> {
+async function parseStatus(
+  response: Response,
+  url: string,
+): Promise<PipelineAutoRunStatus> {
   if (!response.ok) {
     throwIfAuthError(response.status);
     const body = await response.text().catch(() => "");

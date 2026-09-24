@@ -1,4 +1,4 @@
-From d18566e8d5a2ead0d27dbc9a161a8c81af5766a3 Mon Sep 17 00:00:00 2001
+From 5b029a74c39b6388f83160a8e5d2511d81232f7a Mon Sep 17 00:00:00 2001
 From: Cursor Agent <cursoragent@cursor.com>
 Date: Thu, 24 Sep 2026 08:57:21 +0000
 Subject: [PATCH] Add pipeline auto-run backlog drain with soft on/off controls
@@ -9,7 +9,7 @@ Docling preflight, concurrency limits, and consecutive-failure auto-disable.
 ---
  doc/pipeline.md                               |  14 +
  .../migration.sql                             |  29 +
- prisma/schema.prisma                          |  28 +-
+ prisma/schema.prisma                          |  26 +
  src/api/routes/internal/pipelineAutoRun.ts    |  55 ++
  src/api/services/pipelineAutoRunService.ts    | 667 ++++++++++++++++++
  src/api/services/pipelineAutoRunTypes.ts      | 101 +++
@@ -17,7 +17,7 @@ Docling preflight, concurrency limits, and consecutive-failure auto-disable.
  src/startWorkers.ts                           |  22 +-
  src/workers/pipelineAutoRun.ts                |  63 ++
  tests/pipelineAutoRun.test.ts                 |  73 ++
- 10 files changed, 1048 insertions(+), 8 deletions(-)
+ 10 files changed, 1047 insertions(+), 7 deletions(-)
  create mode 100644 prisma/migrations/20260924120000_pipeline_auto_run/migration.sql
  create mode 100644 src/api/routes/internal/pipelineAutoRun.ts
  create mode 100644 src/api/services/pipelineAutoRunService.ts
@@ -26,10 +26,10 @@ Docling preflight, concurrency limits, and consecutive-failure auto-disable.
  create mode 100644 tests/pipelineAutoRun.test.ts
 
 diff --git a/doc/pipeline.md b/doc/pipeline.md
-index 10062ee..cc401f7 100644
+index cda7471..e400a52 100644
 --- a/doc/pipeline.md
 +++ b/doc/pipeline.md
-@@ -1098,3 +1098,17 @@ scope3: [
+@@ -1151,3 +1151,17 @@ scope3: [
      }
  ]
  ```
@@ -83,15 +83,13 @@ index 0000000..cc4c513
 +
 +CREATE INDEX IF NOT EXISTS "ReportRun_auto_run_status_idx" ON "ReportRun"("auto_run", "status");
 diff --git a/prisma/schema.prisma b/prisma/schema.prisma
-index 9da93dd..d0ed04e 100644
+index 16d0fc3..ffeee63 100644
 --- a/prisma/schema.prisma
 +++ b/prisma/schema.prisma
-@@ -656,13 +656,16 @@ model ReportRun {
-   companyReportId String?         @map("company_report_id")
+@@ -661,12 +661,15 @@ model ReportRun {
    batchDbId       String?         @map("batch_db_id")
    batch           Batch?          @relation(fields: [batchDbId], references: [id], onDelete: SetNull, onUpdate: Cascade)
--  status          String          @default("running") // 'running' | 'completed' | 'failed'
-+  status          String          @default("running") // 'running' | 'completed' | 'failed' | 'skipped_no_emissions'
+   status          String          @default("running") // 'running' | 'completed' | 'failed' | 'skipped_no_emissions'
 +  /// True when this run was started by the pipeline auto-run ticker.
 +  autoRun         Boolean         @default(false) @map("auto_run")
    startedAt       DateTime        @default(now())
@@ -104,7 +102,7 @@ index 9da93dd..d0ed04e 100644
    @@index([companyId])
    @@index([wikidataId])
    @@index([companyReportId])
-@@ -914,3 +917,26 @@ model CoverageCrawlState {
+@@ -918,3 +921,26 @@ model CoverageCrawlState {
    @@index([crawlSkipUntil])
    @@map("coverage_crawl_states")
  }
@@ -995,48 +993,46 @@ index f85ec5b..9c0c985 100644
      prefix: 'api/internal/client-api-keys',
    })
 diff --git a/src/startWorkers.ts b/src/startWorkers.ts
-index 3ff4946..dd0c990 100644
+index 85ce501..03e13d9 100644
 --- a/src/startWorkers.ts
 +++ b/src/startWorkers.ts
-@@ -55,16 +55,23 @@ for (const queueName of Object.values(QUEUE_NAMES)) {
-         select: { id: true },
-       })
- 
+@@ -54,6 +54,10 @@ for (const queueName of Object.values(QUEUE_NAMES)) {
+       // checkEmissionsPresence finishing within ms on a gated cache hit) do not
+       // race on findUnique → create and drop the unique-constraint loser —
+       // which previously could leave archive status stuck at "running".
 +      const autoRun = Boolean(
 +        (job.data as { autoRun?: unknown } | undefined)?.autoRun
 +      )
 +
-       const reportRun = existingReportRun
-         ? await prisma.reportRun.update({
-             where: { threadId },
--            data: reportRunSyncFieldsFromJob({
--              companyName,
--              companyId,
--              wikidataId,
--              companyReportId,
--              batchDbId,
--            }),
-+            data: {
-+              ...reportRunSyncFieldsFromJob({
-+                companyName,
-+                companyId,
-+                wikidataId,
-+                companyReportId,
-+                batchDbId,
-+              }),
-+              ...(autoRun ? { autoRun: true } : {}),
-+            },
-           })
-         : await prisma.reportRun.create({
-             data: {
-@@ -75,6 +82,7 @@ for (const queueName of Object.values(QUEUE_NAMES)) {
-               wikidataId,
-               companyReportId,
-               batchDbId,
-+              autoRun,
-             },
-           })
+       const reportRun = await prisma.reportRun.upsert({
+         where: { threadId },
+         create: {
+@@ -64,14 +68,18 @@ for (const queueName of Object.values(QUEUE_NAMES)) {
+           wikidataId,
+           companyReportId,
+           batchDbId,
++          autoRun,
++        },
++        update: {
++          ...reportRunSyncFieldsFromJob({
++            companyName,
++            companyId,
++            wikidataId,
++            companyReportId,
++            batchDbId,
++          }),
++          ...(autoRun ? { autoRun: true } : {}),
+         },
+-        update: reportRunSyncFieldsFromJob({
+-          companyName,
+-          companyId,
+-          wikidataId,
+-          companyReportId,
+-          batchDbId,
+-        }),
+       })
  
+       let returnValue: Record<string, any> | null = null
 diff --git a/src/workers/pipelineAutoRun.ts b/src/workers/pipelineAutoRun.ts
 new file mode 100644
 index 0000000..9818290

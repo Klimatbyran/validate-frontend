@@ -553,9 +553,7 @@ export function UploadTab() {
         <TabsContent value="manual" className="space-y-6">
           <Tabs
             value={uploadMode}
-            onValueChange={(value) =>
-              setUploadMode(value as ManualUploadMode)
-            }
+            onValueChange={(value) => setUploadMode(value as ManualUploadMode)}
             className="w-full"
           >
             <TabsList className="inline-flex bg-gray-04/50 p-1 rounded-full">

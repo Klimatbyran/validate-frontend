@@ -107,9 +107,7 @@ export function AutoRunPanel() {
 
   const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
   const [reportTypesLoading, setReportTypesLoading] = useState(true);
-  const [coverageLists, setCoverageLists] = useState<CoverageListSummary[]>(
-    [],
-  );
+  const [coverageLists, setCoverageLists] = useState<CoverageListSummary[]>([]);
   const [coverageLoading, setCoverageLoading] = useState(true);
   const [registryBatches, setRegistryBatches] = useState<
     { id: string; batchName: string }[]
@@ -159,8 +157,7 @@ export function AutoRunPanel() {
       const next = await fetchPipelineAutoRunStatus();
       applyStatus(next);
     } catch (e) {
-      const message =
-        e instanceof Error ? e.message : t("upload.unknownError");
+      const message = e instanceof Error ? e.message : t("upload.unknownError");
       setError(message);
     } finally {
       setLoading(false);
@@ -376,9 +373,7 @@ export function AutoRunPanel() {
               <p>{t("upload.autoRun.disabledReports")}</p>
             )}
             {(status?.lastError || error) && (
-              <p className="text-xs opacity-90">
-                {status?.lastError || error}
-              </p>
+              <p className="text-xs opacity-90">{status?.lastError || error}</p>
             )}
           </div>
         )}
@@ -468,7 +463,9 @@ export function AutoRunPanel() {
             onChange={setCoverageListIds}
           />
         </div>
-        <p className="text-xs text-gray-02">{t("upload.autoRun.filtersHint")}</p>
+        <p className="text-xs text-gray-02">
+          {t("upload.autoRun.filtersHint")}
+        </p>
       </div>
 
       <UploadRunOptions
@@ -503,11 +500,7 @@ export function AutoRunPanel() {
       />
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          disabled={saving}
-          onClick={() => void saveConfig()}
-        >
+        <Button size="sm" disabled={saving} onClick={() => void saveConfig()}>
           {saving ? t("upload.autoRun.saving") : t("upload.autoRun.save")}
         </Button>
         <Button
