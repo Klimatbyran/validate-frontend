@@ -186,7 +186,9 @@ export async function createJobsFromUrls({
     autoApprove: Boolean(autoApprove),
     ...(batchId ? { batchId } : {}),
     forceReindex: Boolean(forceReindex),
-    ...(requireEmissionsPresence ? { requireEmissionsPresence: true } : {}),
+    // Always send (like forceReindex) so pipeline-api Zod default / job.data
+    // clearly carry the gate flag — omitting true-only made stage debugging harder.
+    requireEmissionsPresence: Boolean(requireEmissionsPresence),
     replaceAllEmissions: true,
     ...(runOnly && runOnly.length > 0 ? { runOnly } : {}),
     ...(tags && tags.length > 0 ? { tags } : {}),
