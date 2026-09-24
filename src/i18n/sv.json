@@ -755,6 +755,7 @@
       "lastTick": "Senaste tick",
       "filtersTitle": "Backloggfilter",
       "filtersHint": "Lämna ett filter tomt för att inkludera alla. Filter kombineras (AND). Filteralternativ hämtas från Unearth; själva körningengår till Garbo.",
+      "confirmEnableNoFilters": "Inga backlog-filter är valda. Auto-run kommer att köa varje registry-rapport som ännu inte är kopplad till ett företag. Fortsätta?",
       "reportTypes": "Rapporttyper",
       "registryBatches": "Registry-batchar",
       "coverageLists": "Täckningslistor",

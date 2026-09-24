@@ -755,6 +755,7 @@
       "lastTick": "Last tick",
       "filtersTitle": "Backlog filters",
       "filtersHint": "Leave a filter empty to include all. Filters are combined (AND). Filter options load from Unearth; the runner itself talks to Garbo.",
+      "confirmEnableNoFilters": "No backlog filters are selected. Auto-run will drain every registry report that is not yet linked to a company. Continue?",
       "reportTypes": "Report types",
       "registryBatches": "Registry batches",
       "coverageLists": "Coverage lists",

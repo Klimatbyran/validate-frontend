@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { LoadingSpinner } from "@/ui/loading-spinner";
@@ -90,6 +90,11 @@ export function AutoRunPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Skip rewriting form fields on status polls while the operator is editing. */
+  const formDirtyRef = useRef(false);
+  const markFormDirty = useCallback(() => {
+    formDirtyRef.current = true;
+  }, []);
 
   const [reportTypeIds, setReportTypeIds] = useState<string[]>([]);
   const [registryBatchIds, setRegistryBatchIds] = useState<string[]>([]);
@@ -125,8 +130,7 @@ export function AutoRunPanel() {
     error: tagsError,
   } = useTagOptions();
 
-  const applyStatus = useCallback((next: PipelineAutoRunStatus) => {
-    setStatus(next);
+  const applyFormFromStatus = useCallback((next: PipelineAutoRunStatus) => {
     setReportTypeIds(next.filters.reportTypeIds ?? []);
     setRegistryBatchIds(next.filters.registryBatchIds ?? []);
     setCoverageListIds(next.filters.coverageListIds ?? []);
@@ -149,23 +153,40 @@ export function AutoRunPanel() {
     } else {
       setBatchDropdownChoice("");
     }
+    formDirtyRef.current = false;
   }, []);
 
-  const refresh = useCallback(async () => {
-    setError(null);
-    try {
-      const next = await fetchPipelineAutoRunStatus();
-      applyStatus(next);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : t("upload.unknownError");
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [applyStatus, t]);
+  const applyStatus = useCallback(
+    (next: PipelineAutoRunStatus) => {
+      setStatus(next);
+      applyFormFromStatus(next);
+    },
+    [applyFormFromStatus],
+  );
+
+  const refresh = useCallback(
+    async (opts?: { syncForm?: boolean }) => {
+      setError(null);
+      try {
+        const next = await fetchPipelineAutoRunStatus();
+        setStatus(next);
+        // Polls must not wipe unsaved edits; initial load / post-save sync form.
+        if (opts?.syncForm || !formDirtyRef.current) {
+          applyFormFromStatus(next);
+        }
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : t("upload.unknownError");
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [applyFormFromStatus, t],
+  );
 
   useEffect(() => {
-    void refresh();
+    void refresh({ syncForm: true });
     const id = window.setInterval(() => {
       void refresh();
     }, 15_000);
@@ -194,11 +215,12 @@ export function AutoRunPanel() {
 
   const handleWorkerToggle = useCallback(
     (workerId: RunOnlyWorkerId, checked: boolean) => {
+      markFormDirty();
       setSelectedWorkers((prev) =>
         checked ? [...prev, workerId] : prev.filter((id) => id !== workerId),
       );
     },
-    [],
+    [markFormDirty],
   );
 
   const buildPatchOptions = useCallback(async () => {
@@ -291,8 +313,24 @@ export function AutoRunPanel() {
 
   const toggleEnabled = useCallback(async () => {
     const nextEnabled = !(status?.enabled ?? false);
+    if (
+      nextEnabled &&
+      reportTypeIds.length === 0 &&
+      registryBatchIds.length === 0 &&
+      coverageListIds.length === 0
+    ) {
+      const ok = window.confirm(t("upload.autoRun.confirmEnableNoFilters"));
+      if (!ok) return;
+    }
     await saveConfig({ enabled: nextEnabled });
-  }, [saveConfig, status?.enabled]);
+  }, [
+    saveConfig,
+    status?.enabled,
+    reportTypeIds.length,
+    registryBatchIds.length,
+    coverageListIds.length,
+    t,
+  ]);
 
   if (loading && !status) {
     return (
@@ -438,7 +476,10 @@ export function AutoRunPanel() {
               label: rt.label?.trim() || rt.slug,
             }))}
             selected={reportTypeIds}
-            onChange={setReportTypeIds}
+            onChange={(next) => {
+              markFormDirty();
+              setReportTypeIds(next);
+            }}
           />
           <MultiCheckList
             label={t("upload.autoRun.registryBatches")}
@@ -449,7 +490,10 @@ export function AutoRunPanel() {
               label: b.batchName,
             }))}
             selected={registryBatchIds}
-            onChange={setRegistryBatchIds}
+            onChange={(next) => {
+              markFormDirty();
+              setRegistryBatchIds(next);
+            }}
           />
           <MultiCheckList
             label={t("upload.autoRun.coverageLists")}
@@ -460,7 +504,10 @@ export function AutoRunPanel() {
               label: list.name,
             }))}
             selected={coverageListIds}
-            onChange={setCoverageListIds}
+            onChange={(next) => {
+              markFormDirty();
+              setCoverageListIds(next);
+            }}
           />
         </div>
         <p className="text-xs text-gray-02">
@@ -474,28 +521,49 @@ export function AutoRunPanel() {
           existingBatches,
           batchesLoading,
           batchDropdownChoice,
-          onBatchDropdownChoiceChange: setBatchDropdownChoice,
+          onBatchDropdownChoiceChange: (value) => {
+            markFormDirty();
+            setBatchDropdownChoice(value);
+          },
           customBatchName,
-          onCustomBatchNameChange: setCustomBatchName,
+          onCustomBatchNameChange: (value) => {
+            markFormDirty();
+            setCustomBatchName(value);
+          },
         }}
         tags={{
           tagOptions,
           tagsLoading,
           tagsError,
           selectedTags,
-          onSelectedTagsChange: setSelectedTags,
+          onSelectedTagsChange: (tags) => {
+            markFormDirty();
+            setSelectedTags(tags);
+          },
         }}
         workers={{
           runAllWorkers,
-          onRunAllWorkersChange: setRunAllWorkers,
+          onRunAllWorkersChange: (value) => {
+            markFormDirty();
+            setRunAllWorkers(value);
+          },
           selectedWorkers,
           onSelectedWorkersChange: handleWorkerToggle,
           forceReindex,
-          onForceReindexChange: setForceReindex,
+          onForceReindexChange: (value) => {
+            markFormDirty();
+            setForceReindex(value);
+          },
           autoApprove,
-          onAutoApproveChange: setAutoApprove,
+          onAutoApproveChange: (value) => {
+            markFormDirty();
+            setAutoApprove(value);
+          },
           requireEmissionsPresence,
-          onRequireEmissionsPresenceChange: setRequireEmissionsPresence,
+          onRequireEmissionsPresenceChange: (value) => {
+            markFormDirty();
+            setRequireEmissionsPresence(value);
+          },
         }}
       />
 
