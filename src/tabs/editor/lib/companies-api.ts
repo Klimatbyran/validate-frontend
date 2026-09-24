@@ -13,6 +13,7 @@ import {
   garboCompanyIdSchema,
 } from "./companies-schemas";
 import { apiUrl } from "./api-utils";
+import { sharedCompanyReportIdForPeriods } from "./company-report-shells";
 
 function normalizeReportingPeriodUrls(
   company: GarboCompanyDetail,
@@ -292,20 +293,11 @@ export async function updateReportingPeriods(
     companyReportId?: string;
   },
 ): Promise<void> {
-  const sharedCompanyReportIds = Array.from(
-    new Set(
-      body.reportingPeriods
-        .map((period) => period.companyReportId?.trim())
-        .filter((id): id is string => Boolean(id)),
-    ),
-  );
   const payload = {
     ...body,
     companyReportId:
       body.companyReportId?.trim() ||
-      (sharedCompanyReportIds.length === 1
-        ? sharedCompanyReportIds[0]
-        : undefined),
+      sharedCompanyReportIdForPeriods(body.reportingPeriods),
   };
   const res = await garboAuthFetch(
     apiUrl(companiesPath(`${encodeURIComponent(companyId)}/reporting-periods`)),

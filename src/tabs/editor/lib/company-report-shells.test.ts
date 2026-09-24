@@ -4,6 +4,7 @@ import {
   getPeriodShellKey,
   groupPeriodsByReportShell,
   resolveCompanyReportId,
+  sharedCompanyReportIdForPeriods,
   UNLINKED_REPORT_SHELL_KEY,
 } from "./company-report-shells";
 import type { GarboReportingPeriodSummary } from "./types";
@@ -48,6 +49,26 @@ describe("resolveCompanyReportId", () => {
     };
 
     expect(resolveCompanyReportId(period)).toBeUndefined();
+  });
+});
+
+describe("sharedCompanyReportIdForPeriods", () => {
+  it("returns the shell when every period is on it", () => {
+    expect(
+      sharedCompanyReportIdForPeriods([
+        { companyReportId: "shell-1" },
+        { companyReportId: "shell-1" },
+      ]),
+    ).toBe("shell-1");
+  });
+
+  it("returns undefined when a period has no shell", () => {
+    expect(
+      sharedCompanyReportIdForPeriods([
+        { companyReportId: "shell-1" },
+        { companyReportId: "" },
+      ]),
+    ).toBeUndefined();
   });
 });
 
