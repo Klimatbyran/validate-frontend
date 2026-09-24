@@ -1,0 +1,1190 @@
+From d18566e8d5a2ead0d27dbc9a161a8c81af5766a3 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Thu, 24 Sep 2026 08:57:21 +0000
+Subject: [PATCH] Add pipeline auto-run backlog drain with soft on/off controls
+
+Introduce PipelineAutoRunConfig, staff GET/PATCH /api/pipeline-auto-run,
+and a repeatable worker that enqueues registry reports into parsePdf with
+Docling preflight, concurrency limits, and consecutive-failure auto-disable.
+---
+ doc/pipeline.md                               |  14 +
+ .../migration.sql                             |  29 +
+ prisma/schema.prisma                          |  28 +-
+ src/api/routes/internal/pipelineAutoRun.ts    |  55 ++
+ src/api/services/pipelineAutoRunService.ts    | 667 ++++++++++++++++++
+ src/api/services/pipelineAutoRunTypes.ts      | 101 +++
+ src/app.ts                                    |   4 +
+ src/startWorkers.ts                           |  22 +-
+ src/workers/pipelineAutoRun.ts                |  63 ++
+ tests/pipelineAutoRun.test.ts                 |  73 ++
+ 10 files changed, 1048 insertions(+), 8 deletions(-)
+ create mode 100644 prisma/migrations/20260924120000_pipeline_auto_run/migration.sql
+ create mode 100644 src/api/routes/internal/pipelineAutoRun.ts
+ create mode 100644 src/api/services/pipelineAutoRunService.ts
+ create mode 100644 src/api/services/pipelineAutoRunTypes.ts
+ create mode 100644 src/workers/pipelineAutoRun.ts
+ create mode 100644 tests/pipelineAutoRun.test.ts
+
+diff --git a/doc/pipeline.md b/doc/pipeline.md
+index 10062ee..cc401f7 100644
+--- a/doc/pipeline.md
++++ b/doc/pipeline.md
+@@ -1098,3 +1098,17 @@ scope3: [
+     }
+ ]
+ ```
++
++## Pipeline auto-run (backlog drain)
++
++Validate can enable a soft-gated backlog runner that enqueues saved registry `Report` rows into `parsePdf` overnight / in the background.
++
++- **Config API (staff JWT):** `GET|PATCH /api/pipeline-auto-run`
++- **Worker:** `pipelineAutoRun` repeatable tick (~60s). When `enabled=false`, it never enqueues new jobs (soft disable — in-flight work finishes).
++- **Defaults:** off; `maxConcurrent=1`; `autoApprove=true`; `forceReindex=false`; `requireEmissionsPresence=true` (honoured once that gate is deployed).
++- **Filters:** `reportTypeIds`, registry `batchId`s, `coverageListIds` (Garbo coverage tables — no Unearth hop).
++- **Concurrency:** counts only auto-run jobs on early queues (`parsePdf`, `doclingParsePDF`, `indexMarkdown`, `checkEmissionsPresence`). Jobs delayed waiting for human approval **free** the slot so Docling can keep draining the backlog.
++- **Safety:** Docling unreachable → pause (`pausedReason=docling_unreachable`); 3 consecutive Docling failures or 5 consecutive report failures → soft disable.
++- **Attribution:** job data includes `autoRun: true`; `ReportRun.autoRun` is set for counter / status queries.
++
++Operators must ensure RunPod Docling is up before enabling.
+diff --git a/prisma/migrations/20260924120000_pipeline_auto_run/migration.sql b/prisma/migrations/20260924120000_pipeline_auto_run/migration.sql
+new file mode 100644
+index 0000000..cc4c513
+--- /dev/null
++++ b/prisma/migrations/20260924120000_pipeline_auto_run/migration.sql
+@@ -0,0 +1,29 @@
++-- Pipeline auto-run config + ReportRun.autoRun attribution
++
++CREATE TABLE "pipeline_auto_run_config" (
++    "id" TEXT NOT NULL DEFAULT 'default',
++    "enabled" BOOLEAN NOT NULL DEFAULT false,
++    "max_concurrent" INTEGER NOT NULL DEFAULT 1,
++    "filters" JSONB NOT NULL DEFAULT '{}',
++    "run_options" JSONB NOT NULL DEFAULT '{}',
++    "consecutive_docling_failures" INTEGER NOT NULL DEFAULT 0,
++    "consecutive_report_failures" INTEGER NOT NULL DEFAULT 0,
++    "paused_reason" TEXT,
++    "disabled_reason" TEXT,
++    "last_tick_at" TIMESTAMP(3),
++    "last_enqueued_at" TIMESTAMP(3),
++    "last_error" TEXT,
++    "updated_by" TEXT,
++    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++    "updated_at" TIMESTAMP(3) NOT NULL,
++
++    CONSTRAINT "pipeline_auto_run_config_pkey" PRIMARY KEY ("id")
++);
++
++INSERT INTO "pipeline_auto_run_config" ("id", "updated_at")
++VALUES ('default', CURRENT_TIMESTAMP)
++ON CONFLICT ("id") DO NOTHING;
++
++ALTER TABLE "ReportRun" ADD COLUMN IF NOT EXISTS "auto_run" BOOLEAN NOT NULL DEFAULT false;
++
++CREATE INDEX IF NOT EXISTS "ReportRun_auto_run_status_idx" ON "ReportRun"("auto_run", "status");
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index 9da93dd..d0ed04e 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -656,13 +656,16 @@ model ReportRun {
+   companyReportId String?         @map("company_report_id")
+   batchDbId       String?         @map("batch_db_id")
+   batch           Batch?          @relation(fields: [batchDbId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+-  status          String          @default("running") // 'running' | 'completed' | 'failed'
++  status          String          @default("running") // 'running' | 'completed' | 'failed' | 'skipped_no_emissions'
++  /// True when this run was started by the pipeline auto-run ticker.
++  autoRun         Boolean         @default(false) @map("auto_run")
+   startedAt       DateTime        @default(now())
+   updatedAt       DateTime        @updatedAt
+   jobs            ReportRunJob[]
+   datapointNotes  DatapointNote[]
+ 
+   @@index([pdfUrl])
++  @@index([autoRun, status])
+   @@index([companyId])
+   @@index([wikidataId])
+   @@index([companyReportId])
+@@ -914,3 +917,26 @@ model CoverageCrawlState {
+   @@index([crawlSkipUntil])
+   @@map("coverage_crawl_states")
+ }
++
++/// Durable on/off + filters for Validate pipeline auto-run (backlog drain).
++model PipelineAutoRunConfig {
++  id                           String    @id @default("default")
++  enabled                      Boolean   @default(false)
++  maxConcurrent                Int       @default(1) @map("max_concurrent")
++  /// { reportTypeIds?: string[], registryBatchIds?: string[], coverageListIds?: string[] }
++  filters                      Json      @default("{}")
++  /// { autoApprove, forceReindex, runOnly?, tags?, batchId?, requireEmissionsPresence? }
++  runOptions                   Json      @default("{}")
++  consecutiveDoclingFailures   Int       @default(0) @map("consecutive_docling_failures")
++  consecutiveReportFailures    Int       @default(0) @map("consecutive_report_failures")
++  pausedReason                 String?   @map("paused_reason")
++  disabledReason               String?   @map("disabled_reason")
++  lastTickAt                   DateTime? @map("last_tick_at")
++  lastEnqueuedAt               DateTime? @map("last_enqueued_at")
++  lastError                    String?   @map("last_error")
++  updatedBy                    String?   @map("updated_by")
++  createdAt                    DateTime  @default(now()) @map("created_at")
++  updatedAt                    DateTime  @updatedAt @map("updated_at")
++
++  @@map("pipeline_auto_run_config")
++}
+diff --git a/src/api/routes/internal/pipelineAutoRun.ts b/src/api/routes/internal/pipelineAutoRun.ts
+new file mode 100644
+index 0000000..8a2b02e
+--- /dev/null
++++ b/src/api/routes/internal/pipelineAutoRun.ts
+@@ -0,0 +1,55 @@
++import type { FastifyInstance } from 'fastify'
++import {
++  getPipelineAutoRunStatus,
++  patchPipelineAutoRunConfig,
++} from '../../services/pipelineAutoRunService'
++import { pipelineAutoRunPatchSchema } from '../../services/pipelineAutoRunTypes'
++
++/**
++ * Staff JWT control surface for Validate auto-run (backlog drain).
++ * Soft disable: PATCH enabled=false stops new enqueues only.
++ */
++export async function pipelineAutoRunRoutes(app: FastifyInstance) {
++  app.get(
++    '/',
++    {
++      schema: {
++        summary: 'Get pipeline auto-run config and live status',
++        tags: ['Internal'],
++        hide: true,
++      },
++    },
++    async (_request, reply) => {
++      const status = await getPipelineAutoRunStatus()
++      return reply.send(status)
++    }
++  )
++
++  app.patch(
++    '/',
++    {
++      schema: {
++        summary: 'Update pipeline auto-run config (on/off, filters, options)',
++        tags: ['Internal'],
++        body: pipelineAutoRunPatchSchema,
++        hide: true,
++      },
++    },
++    async (request, reply) => {
++      const body = pipelineAutoRunPatchSchema.parse(request.body)
++      const updatedBy =
++        request.user && typeof request.user === 'object'
++          ? ((request.user as { id?: string }).id ?? null)
++          : null
++      try {
++        const status = await patchPipelineAutoRunConfig(body, updatedBy)
++        return reply.send(status)
++      } catch (err) {
++        request.log.error({ err }, 'pipeline-auto-run PATCH failed')
++        return reply.status(400).send({
++          error: err instanceof Error ? err.message : 'Invalid auto-run config',
++        })
++      }
++    }
++  )
++}
+diff --git a/src/api/services/pipelineAutoRunService.ts b/src/api/services/pipelineAutoRunService.ts
+new file mode 100644
+index 0000000..a7bbb43
+--- /dev/null
++++ b/src/api/services/pipelineAutoRunService.ts
+@@ -0,0 +1,667 @@
++import { Prisma } from '@prisma/client'
++import { Job, Queue } from 'bullmq'
++import redis from '../../config/redis'
++import doclingConfig from '../../config/docling'
++import { prisma } from '../../lib/prisma'
++import { queues } from '../../queues'
++import { withPipelineJobOpts } from '../../lib/pipelineJobOptions'
++import { resolveReportBatchDbId } from '../../lib/reportRunPersistence'
++import {
++  AUTO_RUN_ACTIVE_QUEUES,
++  AUTO_RUN_APPROVAL_QUEUES,
++  DOCLING_FAILURE_AUTO_OFF,
++  REPORT_FAILURE_AUTO_OFF,
++  pipelineAutoRunFiltersSchema,
++  pipelineAutoRunOptionsSchema,
++  type PipelineAutoRunFilters,
++  type PipelineAutoRunOptions,
++  type PipelineAutoRunPatch,
++  type PipelineAutoRunStatus,
++  reportRunnableUrl,
++} from './pipelineAutoRunTypes'
++
++const CONFIG_ID = 'default'
++
++type ConfigRow = {
++  id: string
++  enabled: boolean
++  maxConcurrent: number
++  filters: unknown
++  runOptions: unknown
++  consecutiveDoclingFailures: number
++  consecutiveReportFailures: number
++  pausedReason: string | null
++  disabledReason: string | null
++  lastTickAt: Date | null
++  lastEnqueuedAt: Date | null
++  lastError: string | null
++  updatedBy: string | null
++  updatedAt: Date
++}
++
++function parseFilters(raw: unknown): PipelineAutoRunFilters {
++  return pipelineAutoRunFiltersSchema.parse(raw ?? {})
++}
++
++function parseOptions(raw: unknown): PipelineAutoRunOptions {
++  return pipelineAutoRunOptionsSchema.parse(raw ?? {})
++}
++
++export async function ensurePipelineAutoRunConfig(): Promise<ConfigRow> {
++  const existing = await prisma.pipelineAutoRunConfig.findUnique({
++    where: { id: CONFIG_ID },
++  })
++  if (existing) return existing as ConfigRow
++  return (await prisma.pipelineAutoRunConfig.create({
++    data: { id: CONFIG_ID },
++  })) as ConfigRow
++}
++
++export async function getPipelineAutoRunStatus(): Promise<PipelineAutoRunStatus> {
++  const row = await ensurePipelineAutoRunConfig()
++  const filters = parseFilters(row.filters)
++  const runOptions = parseOptions(row.runOptions)
++  const [activelyProcessing, parkedOnApproval, remainingEstimate, docling] =
++    await Promise.all([
++      countActivelyProcessingAutoRuns(),
++      countParkedOnApprovalAutoRuns(),
++      estimateRemainingCandidates(filters, runOptions),
++      checkDoclingReachable(),
++    ])
++
++  return {
++    enabled: row.enabled,
++    maxConcurrent: row.maxConcurrent,
++    filters,
++    runOptions,
++    consecutiveDoclingFailures: row.consecutiveDoclingFailures,
++    consecutiveReportFailures: row.consecutiveReportFailures,
++    pausedReason: row.pausedReason,
++    disabledReason: row.disabledReason,
++    lastTickAt: row.lastTickAt?.toISOString() ?? null,
++    lastEnqueuedAt: row.lastEnqueuedAt?.toISOString() ?? null,
++    lastError: row.lastError,
++    updatedBy: row.updatedBy,
++    updatedAt: row.updatedAt.toISOString(),
++    activelyProcessing,
++    parkedOnApproval,
++    remainingEstimate,
++    doclingReachable: docling,
++  }
++}
++
++export async function patchPipelineAutoRunConfig(
++  patch: PipelineAutoRunPatch,
++  updatedBy?: string | null
++): Promise<PipelineAutoRunStatus> {
++  const row = await ensurePipelineAutoRunConfig()
++  const currentFilters = parseFilters(row.filters)
++  const currentOptions = parseOptions(row.runOptions)
++
++  const nextEnabled = patch.enabled ?? row.enabled
++  const enabling = patch.enabled === true && !row.enabled
++  const resetCounters =
++    patch.resetFailureCounters ?? (enabling ? true : false)
++
++  const nextFilters = patch.filters
++    ? parseFilters({ ...currentFilters, ...patch.filters })
++    : currentFilters
++  const nextOptions = patch.runOptions
++    ? parseOptions({ ...currentOptions, ...patch.runOptions })
++    : currentOptions
++
++  await prisma.pipelineAutoRunConfig.update({
++    where: { id: CONFIG_ID },
++    data: {
++      enabled: nextEnabled,
++      ...(patch.maxConcurrent !== undefined
++        ? { maxConcurrent: patch.maxConcurrent }
++        : {}),
++      filters: nextFilters as Prisma.InputJsonValue,
++      runOptions: nextOptions as Prisma.InputJsonValue,
++      ...(resetCounters
++        ? {
++            consecutiveDoclingFailures: 0,
++            consecutiveReportFailures: 0,
++          }
++        : {}),
++      ...(enabling || patch.enabled === true
++        ? { disabledReason: null, pausedReason: null, lastError: null }
++        : {}),
++      ...(updatedBy ? { updatedBy } : {}),
++    },
++  })
++
++  return getPipelineAutoRunStatus()
++}
++
++function reportUrlVariants(report: {
++  url: string
++  sourceUrl: string | null
++  s3Url: string | null
++}): string[] {
++  return [report.url, report.sourceUrl, report.s3Url]
++    .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
++    .map((u) => u.trim())
++}
++
++function jobIsAutoRun(job: Job): boolean {
++  return Boolean((job.data as { autoRun?: unknown } | undefined)?.autoRun)
++}
++
++function jobIsWaitingForApproval(job: Job): boolean {
++  const data = job.data as {
++    waitingForCompanyName?: unknown
++    approval?: { approved?: unknown }
++  }
++  if (data?.waitingForCompanyName === true) return true
++  if (
++    data?.approval &&
++    typeof data.approval === 'object' &&
++    data.approval.approved !== true
++  ) {
++    return true
++  }
++  return false
++}
++
++async function getJobsFromQueues(
++  queueNames: readonly string[],
++  statuses: Array<'waiting' | 'active' | 'delayed' | 'paused'>
++): Promise<{ queueName: string; job: Job }[]> {
++  const out: { queueName: string; job: Job }[] = []
++  for (const queueName of queueNames) {
++    const q = new Queue(queueName, { connection: redis })
++    try {
++      const jobs = await q.getJobs([...statuses], 0, 499)
++      for (const job of jobs) {
++        if (job) out.push({ queueName, job })
++      }
++    } catch {
++      // Queue may not exist yet (e.g. checkEmissionsPresence before that PR).
++    } finally {
++      await q.close().catch(() => undefined)
++    }
++  }
++  return out
++}
++
++export async function countActivelyProcessingAutoRuns(): Promise<number> {
++  const jobs = await getJobsFromQueues(AUTO_RUN_ACTIVE_QUEUES, [
++    'waiting',
++    'active',
++    'delayed',
++    'paused',
++  ])
++  const threadIds = new Set<string>()
++  for (const { job } of jobs) {
++    if (!jobIsAutoRun(job)) continue
++    const threadId = (job.data as { threadId?: string })?.threadId
++    if (threadId) threadIds.add(threadId)
++    else threadIds.add(job.id ?? job.name)
++  }
++  return threadIds.size
++}
++
++export async function countParkedOnApprovalAutoRuns(): Promise<number> {
++  const jobs = await getJobsFromQueues(AUTO_RUN_APPROVAL_QUEUES, ['delayed'])
++  const threadIds = new Set<string>()
++  for (const { job } of jobs) {
++    if (!jobIsAutoRun(job)) continue
++    if (!jobIsWaitingForApproval(job)) continue
++    const threadId = (job.data as { threadId?: string })?.threadId
++    if (threadId) threadIds.add(threadId)
++  }
++  return threadIds.size
++}
++
++async function collectClaimedPdfUrls(): Promise<Set<string>> {
++  const claimed = new Set<string>()
++
++  const openRuns = await prisma.reportRun.findMany({
++    where: {
++      OR: [
++        { status: 'running' },
++        // Terminal gate from emissions-presence PR — still "claimed" for re-enqueue.
++        { status: 'skipped_no_emissions' },
++      ],
++    },
++    select: { pdfUrl: true },
++  })
++  for (const run of openRuns) {
++    if (run.pdfUrl) claimed.add(run.pdfUrl)
++  }
++
++  const live = await getJobsFromQueues(
++    [...AUTO_RUN_ACTIVE_QUEUES, ...AUTO_RUN_APPROVAL_QUEUES],
++    ['waiting', 'active', 'delayed', 'paused']
++  )
++  for (const { job } of live) {
++    const url = (job.data as { url?: string })?.url
++    if (typeof url === 'string' && url.trim()) claimed.add(url.trim())
++    const sourceUrl = (job.data as { sourceUrl?: string })?.sourceUrl
++    if (typeof sourceUrl === 'string' && sourceUrl.trim()) {
++      claimed.add(sourceUrl.trim())
++    }
++  }
++
++  return claimed
++}
++
++export async function selectAutoRunCandidates(
++  filters: PipelineAutoRunFilters,
++  runOptions: PipelineAutoRunOptions,
++  limit: number
++): Promise<
++  Array<{
++    id: string
++    url: string
++    sourceUrl: string | null
++    s3Url: string | null
++    companyName: string | null
++    wikidataId: string | null
++  }>
++> {
++  if (limit <= 0) return []
++
++  const claimed = await collectClaimedPdfUrls()
++
++  // Avoid referencing hasEmissionsMentions until the column exists in the client.
++  const baseWhere: Prisma.ReportWhereInput = {
++    AND: [
++      { companyReports: { none: {} } },
++      ...(filters.reportTypeIds.length
++        ? [{ reportTypeId: { in: filters.reportTypeIds } }]
++        : []),
++      ...(filters.registryBatchIds.length
++        ? [{ batchId: { in: filters.registryBatchIds } }]
++        : []),
++      ...(filters.coverageListIds.length
++        ? [
++            {
++              coverageEntryReports: {
++                some: {
++                  linkStatus: 'matched' as const,
++                  entry: {
++                    year: { listId: { in: filters.coverageListIds } },
++                  },
++                },
++              },
++            },
++          ]
++        : []),
++    ],
++  }
++
++  // Fetch a window larger than limit so we can filter claimed URLs in memory.
++  const rows = await prisma.report.findMany({
++    where: baseWhere,
++    orderBy: { id: 'asc' },
++    take: Math.max(limit * 20, 50),
++    select: {
++      id: true,
++      url: true,
++      sourceUrl: true,
++      s3Url: true,
++      companyName: true,
++      wikidataId: true,
++    },
++  })
++
++  // Exclude reports that already have a completed (or skipped) run for any URL variant.
++  const completedUrls = new Set(
++    (
++      await prisma.reportRun.findMany({
++        where: {
++          status: { in: ['completed', 'skipped_no_emissions'] },
++          pdfUrl: {
++            in: rows.flatMap((r) => reportUrlVariants(r)),
++          },
++        },
++        select: { pdfUrl: true },
++      })
++    ).map((r) => r.pdfUrl)
++  )
++
++  const selected: typeof rows = []
++  for (const row of rows) {
++    const variants = reportUrlVariants(row)
++    if (variants.some((u) => claimed.has(u) || completedUrls.has(u))) {
++      continue
++    }
++    // Prefer rows with a runnable URL
++    try {
++      reportRunnableUrl(row)
++    } catch {
++      continue
++    }
++    selected.push(row)
++    if (selected.length >= limit) break
++  }
++
++  return selected
++}
++
++export async function estimateRemainingCandidates(
++  filters: PipelineAutoRunFilters,
++  _runOptions: PipelineAutoRunOptions
++): Promise<number | null> {
++  try {
++    // Approximate: count reports with no CompanyReport matching filters.
++    // Claimed/completed fine-filter is expensive; UI shows estimate.
++    const simplified: Prisma.ReportWhereInput = {
++      AND: [
++        { companyReports: { none: {} } },
++        ...(filters.reportTypeIds.length
++          ? [{ reportTypeId: { in: filters.reportTypeIds } }]
++          : []),
++        ...(filters.registryBatchIds.length
++          ? [{ batchId: { in: filters.registryBatchIds } }]
++          : []),
++        ...(filters.coverageListIds.length
++          ? [
++              {
++                coverageEntryReports: {
++                  some: {
++                    linkStatus: 'matched' as const,
++                    entry: {
++                      year: { listId: { in: filters.coverageListIds } },
++                    },
++                  },
++                },
++              },
++            ]
++          : []),
++      ],
++    }
++    return await prisma.report.count({ where: simplified })
++  } catch {
++    return null
++  }
++}
++
++export async function checkDoclingReachable(): Promise<boolean> {
++  const base = doclingConfig.baseUrl.replace(/\/+$/, '')
++  const candidates = [`${base}/health`, `${base}/`, base]
++  for (const url of candidates) {
++    try {
++      const controller = new AbortController()
++      const timer = setTimeout(() => controller.abort(), 4_000)
++      const res = await fetch(url, {
++        method: 'GET',
++        signal: controller.signal,
++      })
++      clearTimeout(timer)
++      // Any HTTP response (including 404/401) means the host is reachable.
++      if (res.status > 0) return true
++    } catch {
++      // try next
++    }
++  }
++  return false
++}
++
++async function softDisable(
++  reason: string,
++  extra?: { lastError?: string }
++): Promise<void> {
++  await prisma.pipelineAutoRunConfig.update({
++    where: { id: CONFIG_ID },
++    data: {
++      enabled: false,
++      disabledReason: reason,
++      ...(extra?.lastError ? { lastError: extra.lastError } : {}),
++    },
++  })
++}
++
++/**
++ * Observe recent auto-run ReportRun outcomes and update failure counters /
++ * soft-disable thresholds. Approval waits are ignored.
++ */
++export async function observeAutoRunOutcomes(): Promise<void> {
++  const row = await ensurePipelineAutoRunConfig()
++  const since =
++    row.lastTickAt ?? new Date(Date.now() - 10 * 60 * 1000)
++
++  const recentJobs = await prisma.reportRunJob.findMany({
++    where: {
++      finishedAt: { gte: since },
++      reportRun: { autoRun: true },
++    },
++    select: {
++      status: true,
++      queueName: true,
++      failedReason: true,
++      reportRunId: true,
++      reportRun: { select: { status: true, threadId: true } },
++    },
++    orderBy: { finishedAt: 'asc' },
++    take: 200,
++  })
++
++  let doclingFails = row.consecutiveDoclingFailures
++  let reportFails = row.consecutiveReportFailures
++
++  for (const job of recentJobs) {
++    if (job.status === 'failed') {
++      if (job.queueName === 'doclingParsePDF') {
++        doclingFails += 1
++      }
++      reportFails += 1
++    } else if (job.status === 'completed') {
++      if (job.queueName === 'doclingParsePDF') {
++        doclingFails = 0
++      }
++      if (job.queueName === 'sendCompanyLink') {
++        doclingFails = 0
++        reportFails = 0
++      }
++    }
++  }
++
++  // Also reset on completed auto-run ReportRuns
++  const completedRuns = await prisma.reportRun.count({
++    where: {
++      autoRun: true,
++      status: { in: ['completed', 'skipped_no_emissions'] },
++      updatedAt: { gte: since },
++    },
++  })
++  if (completedRuns > 0) {
++    doclingFails = 0
++    reportFails = 0
++  }
++
++  const data: Prisma.PipelineAutoRunConfigUpdateInput = {
++    consecutiveDoclingFailures: doclingFails,
++    consecutiveReportFailures: reportFails,
++  }
++
++  if (doclingFails >= DOCLING_FAILURE_AUTO_OFF && row.enabled) {
++    data.enabled = false
++    data.disabledReason = 'docling_failures'
++    data.lastError = `Auto-disabled after ${doclingFails} consecutive Docling failures`
++  } else if (reportFails >= REPORT_FAILURE_AUTO_OFF && row.enabled) {
++    data.enabled = false
++    data.disabledReason = 'report_failures'
++    data.lastError = `Auto-disabled after ${reportFails} consecutive report failures`
++  }
++
++  await prisma.pipelineAutoRunConfig.update({
++    where: { id: CONFIG_ID },
++    data,
++  })
++}
++
++export async function enqueueAutoRunReport(
++  report: {
++    id: string
++    url: string
++    sourceUrl: string | null
++    s3Url: string | null
++    companyName: string | null
++    wikidataId: string | null
++  },
++  runOptions: PipelineAutoRunOptions
++): Promise<{ threadId: string; jobId: string | undefined }> {
++  const runnable = reportRunnableUrl(report)
++  const threadId = crypto.randomUUID()
++
++  let batchId = runOptions.batchId
++  if (batchId) {
++    // Normalize to stable Batch.id when possible; workers also accept batchName.
++    const resolved = await resolveReportBatchDbId(batchId)
++    if (resolved) {
++      const batch = await prisma.batch.findUnique({
++        where: { id: resolved },
++        select: { id: true, batchName: true },
++      })
++      // Prefer batchName string for job.data.batchId (matches pipeline-api / Validate).
++      batchId = batch?.batchName ?? batchId
++    }
++  }
++
++  const jobData: Record<string, unknown> = {
++    url: runnable.url,
++    ...(runnable.sourceUrl ? { sourceUrl: runnable.sourceUrl } : {}),
++    threadId,
++    autoApprove: Boolean(runOptions.autoApprove),
++    forceReindex: Boolean(runOptions.forceReindex),
++    replaceAllEmissions: true,
++    autoRun: true,
++    autoRunReportId: report.id,
++    ...(runOptions.requireEmissionsPresence
++      ? { requireEmissionsPresence: true }
++      : {}),
++    ...(runOptions.runOnly?.length ? { runOnly: runOptions.runOnly } : {}),
++    ...(runOptions.tags?.length ? { tags: runOptions.tags } : {}),
++    ...(batchId ? { batchId } : {}),
++    ...(report.companyName ? { companyName: report.companyName } : {}),
++    ...(report.wikidataId
++      ? { wikidata: { node: report.wikidataId } }
++      : {}),
++  }
++
++  // Create ReportRun early so candidate selection sees it as claimed.
++  const batchDbId = await resolveReportBatchDbId(
++    typeof batchId === 'string' ? batchId : null
++  )
++  await prisma.reportRun.create({
++    data: {
++      threadId,
++      pdfUrl: runnable.url,
++      companyName: report.companyName,
++      wikidataId: report.wikidataId,
++      batchDbId,
++      autoRun: true,
++      status: 'running',
++    },
++  })
++
++  try {
++    const job = await queues.parsePdf.add(
++      'download ' + runnable.url.slice(-20),
++      jobData as { url: string; threadId: string; autoApprove: boolean },
++      withPipelineJobOpts({ attempts: 1 })
++    )
++    return { threadId, jobId: job.id }
++  } catch (err) {
++    await prisma.reportRun
++      .update({
++        where: { threadId },
++        data: { status: 'failed' },
++      })
++      .catch(() => undefined)
++    throw err
++  }
++}
++
++/**
++ * One ticker iteration: observe outcomes, Docling preflight, maybe enqueue.
++ */
++export async function runPipelineAutoRunTick(): Promise<{
++  enqueued: number
++  skippedReason?: string
++}> {
++  await observeAutoRunOutcomes()
++  const afterObserve = await ensurePipelineAutoRunConfig()
++
++  const doclingOk = await checkDoclingReachable()
++  if (!doclingOk) {
++    await prisma.pipelineAutoRunConfig.update({
++      where: { id: CONFIG_ID },
++      data: {
++        pausedReason: 'docling_unreachable',
++        lastTickAt: new Date(),
++        lastError: 'Docling unreachable — paused enqueueing',
++      },
++    })
++  } else if (afterObserve.pausedReason === 'docling_unreachable') {
++    await prisma.pipelineAutoRunConfig.update({
++      where: { id: CONFIG_ID },
++      data: {
++        pausedReason: null,
++        lastError: null,
++        lastTickAt: new Date(),
++      },
++    })
++  } else {
++    await prisma.pipelineAutoRunConfig.update({
++      where: { id: CONFIG_ID },
++      data: { lastTickAt: new Date() },
++    })
++  }
++
++  const latest = await ensurePipelineAutoRunConfig()
++  if (!latest.enabled) {
++    return { enqueued: 0, skippedReason: 'disabled' }
++  }
++  if (latest.pausedReason) {
++    return { enqueued: 0, skippedReason: latest.pausedReason }
++  }
++
++  const filters = parseFilters(latest.filters)
++  const runOptions = parseOptions(latest.runOptions)
++  const active = await countActivelyProcessingAutoRuns()
++  const slots = Math.max(0, latest.maxConcurrent - active)
++  if (slots <= 0) {
++    return { enqueued: 0, skippedReason: 'at_capacity' }
++  }
++
++  const candidates = await selectAutoRunCandidates(filters, runOptions, slots)
++  let enqueued = 0
++  for (const report of candidates) {
++    try {
++      await enqueueAutoRunReport(report, runOptions)
++      enqueued += 1
++    } catch (err) {
++      const message = err instanceof Error ? err.message : String(err)
++      await prisma.pipelineAutoRunConfig.update({
++        where: { id: CONFIG_ID },
++        data: { lastError: message },
++      })
++      // Count enqueue failures toward report failures
++      const refreshed = await ensurePipelineAutoRunConfig()
++      const nextFails = refreshed.consecutiveReportFailures + 1
++      if (nextFails >= REPORT_FAILURE_AUTO_OFF) {
++        await softDisable('report_failures', { lastError: message })
++      } else {
++        await prisma.pipelineAutoRunConfig.update({
++          where: { id: CONFIG_ID },
++          data: { consecutiveReportFailures: nextFails },
++        })
++      }
++      break
++    }
++  }
++
++  if (enqueued > 0) {
++    await prisma.pipelineAutoRunConfig.update({
++      where: { id: CONFIG_ID },
++      data: { lastEnqueuedAt: new Date(), lastError: null },
++    })
++  }
++
++  return { enqueued }
++}
+diff --git a/src/api/services/pipelineAutoRunTypes.ts b/src/api/services/pipelineAutoRunTypes.ts
+new file mode 100644
+index 0000000..780ee2f
+--- /dev/null
++++ b/src/api/services/pipelineAutoRunTypes.ts
+@@ -0,0 +1,101 @@
++import { z } from 'zod'
++
++export const DOCLING_FAILURE_AUTO_OFF = 3
++export const REPORT_FAILURE_AUTO_OFF = 5
++
++export const pipelineAutoRunFiltersSchema = z.object({
++  reportTypeIds: z.array(z.string().min(1)).optional().default([]),
++  registryBatchIds: z.array(z.string().min(1)).optional().default([]),
++  coverageListIds: z.array(z.string().min(1)).optional().default([]),
++})
++
++export const pipelineAutoRunOptionsSchema = z.object({
++  autoApprove: z.boolean().optional().default(true),
++  forceReindex: z.boolean().optional().default(false),
++  requireEmissionsPresence: z.boolean().optional().default(true),
++  runOnly: z.array(z.string().min(1)).optional(),
++  tags: z.array(z.string().min(1)).optional(),
++  /** Garbo Batch.id or batchName string for Jobbstatus filtering. */
++  batchId: z.string().min(1).optional(),
++})
++
++export const pipelineAutoRunPatchSchema = z.object({
++  enabled: z.boolean().optional(),
++  maxConcurrent: z.number().int().min(1).max(10).optional(),
++  filters: pipelineAutoRunFiltersSchema.partial().optional(),
++  runOptions: pipelineAutoRunOptionsSchema.partial().optional(),
++  /** When re-enabling, clear failure counters (default true if enabling). */
++  resetFailureCounters: z.boolean().optional(),
++})
++
++export type PipelineAutoRunFilters = z.infer<
++  typeof pipelineAutoRunFiltersSchema
++>
++export type PipelineAutoRunOptions = z.infer<
++  typeof pipelineAutoRunOptionsSchema
++>
++export type PipelineAutoRunPatch = z.infer<typeof pipelineAutoRunPatchSchema>
++
++export type PipelineAutoRunStatus = {
++  enabled: boolean
++  maxConcurrent: number
++  filters: PipelineAutoRunFilters
++  runOptions: PipelineAutoRunOptions
++  consecutiveDoclingFailures: number
++  consecutiveReportFailures: number
++  pausedReason: string | null
++  disabledReason: string | null
++  lastTickAt: string | null
++  lastEnqueuedAt: string | null
++  lastError: string | null
++  updatedBy: string | null
++  updatedAt: string
++  activelyProcessing: number
++  parkedOnApproval: number
++  remainingEstimate: number | null
++  doclingReachable: boolean | null
++}
++
++/** Prefer cached PDF URL for workers; keep web sourceUrl when available. */
++export function reportRunnableUrl(report: {
++  url: string
++  sourceUrl: string | null
++  s3Url: string | null
++}): { url: string; sourceUrl?: string } {
++  if (report.s3Url?.trim()) {
++    return {
++      url: report.s3Url.trim(),
++      sourceUrl:
++        report.sourceUrl?.trim() ||
++        (report.url.startsWith('http') ? report.url : undefined),
++    }
++  }
++  const source = report.sourceUrl?.trim()
++  if (source) return { url: source }
++  return { url: report.url }
++}
++
++/** Early queues that occupy an auto-run concurrency slot. */
++export const AUTO_RUN_ACTIVE_QUEUES = [
++  'parsePdf',
++  'doclingParsePDF',
++  'indexMarkdown',
++  'checkEmissionsPresence',
++] as const
++
++/** Queues where a delayed job may be waiting for staff approval. */
++export const AUTO_RUN_APPROVAL_QUEUES = [
++  'precheck',
++  'guessWikidata',
++  'saveToAPI',
++  'diffReportingPeriods',
++  'diffIndustry',
++  'diffGoals',
++  'diffInitiatives',
++  'diffBaseYear',
++  'diffTags',
++  'diffReportType',
++  'diffDescriptions',
++  'diffReportingQuality',
++  'diffLEI',
++] as const
+diff --git a/src/app.ts b/src/app.ts
+index f85ec5b..9c0c985 100644
+--- a/src/app.ts
++++ b/src/app.ts
+@@ -37,6 +37,7 @@ import { registryDeleteRoutes } from './api/routes/internal/registry.delete'
+ import { registryUpdateRoutes } from './api/routes/internal/registry.update'
+ import { registryMarkdownRoutes } from './api/routes/internal/registry.markdown'
+ import { queueArchiveReadRoutes } from './api/routes/internal/queue.archive.read'
++import { pipelineAutoRunRoutes } from './api/routes/internal/pipelineAutoRun'
+ import clientApiKeyGatePlugin from './api/plugins/clientApiKeyGate'
+ import { registerClientApiRoutes } from './registerClientApiRoutes'
+ 
+@@ -158,6 +159,9 @@ async function authenticatedContext(app: FastifyInstance) {
+   app.register(queueArchiveReadRoutes, {
+     prefix: 'api/queue-archive',
+   })
++  app.register(pipelineAutoRunRoutes, {
++    prefix: 'api/pipeline-auto-run',
++  })
+   app.register(clientApiKeysAdminRoutes, {
+     prefix: 'api/internal/client-api-keys',
+   })
+diff --git a/src/startWorkers.ts b/src/startWorkers.ts
+index 3ff4946..dd0c990 100644
+--- a/src/startWorkers.ts
++++ b/src/startWorkers.ts
+@@ -55,16 +55,23 @@ for (const queueName of Object.values(QUEUE_NAMES)) {
+         select: { id: true },
+       })
+ 
++      const autoRun = Boolean(
++        (job.data as { autoRun?: unknown } | undefined)?.autoRun
++      )
++
+       const reportRun = existingReportRun
+         ? await prisma.reportRun.update({
+             where: { threadId },
+-            data: reportRunSyncFieldsFromJob({
+-              companyName,
+-              companyId,
+-              wikidataId,
+-              companyReportId,
+-              batchDbId,
+-            }),
++            data: {
++              ...reportRunSyncFieldsFromJob({
++                companyName,
++                companyId,
++                wikidataId,
++                companyReportId,
++                batchDbId,
++              }),
++              ...(autoRun ? { autoRun: true } : {}),
++            },
+           })
+         : await prisma.reportRun.create({
+             data: {
+@@ -75,6 +82,7 @@ for (const queueName of Object.values(QUEUE_NAMES)) {
+               wikidataId,
+               companyReportId,
+               batchDbId,
++              autoRun,
+             },
+           })
+ 
+diff --git a/src/workers/pipelineAutoRun.ts b/src/workers/pipelineAutoRun.ts
+new file mode 100644
+index 0000000..9818290
+--- /dev/null
++++ b/src/workers/pipelineAutoRun.ts
+@@ -0,0 +1,63 @@
++import { Worker, Queue } from 'bullmq'
++import redis from '../config/redis'
++import { runPipelineAutoRunTick } from '../api/services/pipelineAutoRunService'
++import { withPipelineJobOpts } from '../lib/pipelineJobOptions'
++
++export const PIPELINE_AUTO_RUN_QUEUE = 'pipelineAutoRun'
++const REPEAT_EVERY_MS = 60_000
++
++const queue = new Queue(PIPELINE_AUTO_RUN_QUEUE, {
++  connection: redis,
++  defaultJobOptions: withPipelineJobOpts({
++    removeOnComplete: { count: 20 },
++    removeOnFail: { count: 50 },
++  }),
++})
++
++const worker = new Worker(
++  PIPELINE_AUTO_RUN_QUEUE,
++  async (job) => {
++    job.log('pipelineAutoRun tick starting')
++    const result = await runPipelineAutoRunTick()
++    job.log(
++      `pipelineAutoRun tick done enqueued=${result.enqueued}` +
++        (result.skippedReason ? ` skipped=${result.skippedReason}` : '')
++    )
++    return result
++  },
++  {
++    connection: redis,
++    concurrency: 1,
++    lockDuration: 2 * 60 * 1000,
++  }
++)
++
++worker.on('failed', (job, err) => {
++  console.error(
++    `[pipelineAutoRun] tick failed job=${job?.id}:`,
++    err?.message ?? err
++  )
++})
++
++async function ensureRepeatableTick() {
++  try {
++    await queue.add(
++      'tick',
++      {},
++      {
++        repeat: { every: REPEAT_EVERY_MS },
++        jobId: 'pipeline-auto-run-tick',
++        ...withPipelineJobOpts(),
++      }
++    )
++    console.log(
++      `[pipelineAutoRun] repeatable tick every ${REPEAT_EVERY_MS}ms registered`
++    )
++  } catch (err) {
++    console.error('[pipelineAutoRun] failed to register repeatable tick:', err)
++  }
++}
++
++void ensureRepeatableTick()
++
++export default worker
+diff --git a/tests/pipelineAutoRun.test.ts b/tests/pipelineAutoRun.test.ts
+new file mode 100644
+index 0000000..4e64c28
+--- /dev/null
++++ b/tests/pipelineAutoRun.test.ts
+@@ -0,0 +1,73 @@
++import {
++  pipelineAutoRunFiltersSchema,
++  pipelineAutoRunOptionsSchema,
++  pipelineAutoRunPatchSchema,
++  DOCLING_FAILURE_AUTO_OFF,
++  REPORT_FAILURE_AUTO_OFF,
++  reportRunnableUrl,
++} from '../src/api/services/pipelineAutoRunTypes'
++
++describe('pipelineAutoRunTypes', () => {
++  it('applies safer defaults for run options', () => {
++    const opts = pipelineAutoRunOptionsSchema.parse({})
++    expect(opts.autoApprove).toBe(true)
++    expect(opts.forceReindex).toBe(false)
++    expect(opts.requireEmissionsPresence).toBe(true)
++  })
++
++  it('parses filters and patch', () => {
++    const filters = pipelineAutoRunFiltersSchema.parse({
++      reportTypeIds: ['t1'],
++      coverageListIds: ['c1'],
++    })
++    expect(filters.reportTypeIds).toEqual(['t1'])
++    expect(filters.registryBatchIds).toEqual([])
++    expect(filters.coverageListIds).toEqual(['c1'])
++
++    const patch = pipelineAutoRunPatchSchema.parse({
++      enabled: true,
++      maxConcurrent: 1,
++      filters: { reportTypeIds: ['a'] },
++    })
++    expect(patch.enabled).toBe(true)
++    expect(patch.maxConcurrent).toBe(1)
++  })
++
++  it('exposes auto-off thresholds', () => {
++    expect(DOCLING_FAILURE_AUTO_OFF).toBe(3)
++    expect(REPORT_FAILURE_AUTO_OFF).toBe(5)
++  })
++})
++
++describe('reportRunnableUrl', () => {
++  it('prefers s3Url and keeps sourceUrl', () => {
++    expect(
++      reportRunnableUrl({
++        url: 'https://example.com/r.pdf',
++        sourceUrl: 'https://example.com/r.pdf',
++        s3Url: 'https://storage.example/r.pdf',
++      })
++    ).toEqual({
++      url: 'https://storage.example/r.pdf',
++      sourceUrl: 'https://example.com/r.pdf',
++    })
++  })
++
++  it('falls back to sourceUrl then url', () => {
++    expect(
++      reportRunnableUrl({
++        url: 'https://example.com/r.pdf',
++        sourceUrl: 'https://example.com/canonical.pdf',
++        s3Url: null,
++      })
++    ).toEqual({ url: 'https://example.com/canonical.pdf' })
++
++    expect(
++      reportRunnableUrl({
++        url: 'https://example.com/r.pdf',
++        sourceUrl: null,
++        s3Url: null,
++      })
++    ).toEqual({ url: 'https://example.com/r.pdf' })
++  })
++})
+-- 
+2.43.0
+
