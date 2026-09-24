@@ -1,21 +1,8 @@
 # Pipeline auto-run
 
 Validate UI lives in this repo (`/upload?tab=autorun`). The orchestrator is in
-**Klimatbyran/garbo** — see [PR #1425](https://github.com/Klimatbyran/garbo/pull/1425).
-
-This agent cannot push to `Klimatbyran/garbo` (403). After rebasing onto
-`main`, conflicts in `prisma/schema.prisma` and `src/startWorkers.ts` were
-resolved locally. Apply and force-push from a machine with write access:
-
-```bash
-cd garbo
-git fetch origin main
-git checkout cursor/pipeline-auto-run-e5c5
-git reset --hard origin/main
-git am path/to/validate-frontend/docs/pipeline-auto-run/garbo-rebase.patch
-# or: git apply --index … && git commit
-git push --force-with-lease origin cursor/pipeline-auto-run-e5c5
-```
+**Klimatbyran/garbo** — see [PR #1425](https://github.com/Klimatbyran/garbo/pull/1425)
+(rebased onto `main`, mergeable).
 
 Deploy order: apply Garbo migration `20260924120000_pipeline_auto_run`, then
 restart Garbo workers, then ship Validate.
