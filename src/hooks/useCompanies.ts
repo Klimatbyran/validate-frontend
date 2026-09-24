@@ -104,7 +104,11 @@ export function useCompanies() {
             }));
             return newCompanies;
           });
-          if (updated.status === "completed" || updated.status === "failed") {
+          if (
+            updated.status === "completed" ||
+            updated.status === "failed" ||
+            updated.status === "skipped_no_emissions"
+          ) {
             state.stopped = true;
             return;
           }

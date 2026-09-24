@@ -190,7 +190,9 @@ export function JobbstatusArchiveRunCard({
               <span
                 className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md shrink-0 ${runStatusChipClass(run.status)}`}
               >
-                {run.status}
+                {run.status === "skipped_no_emissions"
+                  ? t("jobstatus.archiveStatusSkippedNoEmissions")
+                  : run.status}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-02 mt-1">

@@ -195,7 +195,8 @@ export type SwimlaneStatusType =
   | "wikidata_unverified"
   | "processing"
   | "waiting"
-  | "failed";
+  | "failed"
+  | "skipped";
 
 export interface SwimlaneFieldData {
   status: SwimlaneStatusType;

@@ -136,7 +136,7 @@ export function isFullyCompleted(
     if (attemptedQueueIds.length === 0) return false;
     return attemptedQueueIds.every((queueId) => {
       const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
-      return agg.status === "completed";
+      return agg.status === "completed" || agg.status === "skipped";
     });
   });
 }
