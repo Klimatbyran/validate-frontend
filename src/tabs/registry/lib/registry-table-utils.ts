@@ -15,6 +15,9 @@ export type RegistryReportTypeFilterValue = "all" | "missing" | string;
 
 export type WikidataPresenceFilter = "all" | "present" | "missing";
 
+/** Cheap Scope 1/2/3 mention gate on the registry report. */
+export type EmissionsPresenceFilter = "all" | "yes" | "no" | "unchecked";
+
 /** Tag filters use Garbo company list (`wikidataId` → `tags`). */
 export type RegistryTagFilterMode =
   | "ignore"
@@ -27,6 +30,7 @@ export interface RegistryViewFilters {
   batch: RegistryBatchFilterValue;
   reportType: RegistryReportTypeFilterValue;
   wikidata: WikidataPresenceFilter;
+  emissionsPresence: EmissionsPresenceFilter;
   tagMode: RegistryTagFilterMode;
   tagSlugs: string[];
   sort: RegistrySortKey;
@@ -38,6 +42,7 @@ export function defaultRegistryViewFilters(): RegistryViewFilters {
     batch: "all",
     reportType: "all",
     wikidata: "all",
+    emissionsPresence: "all",
     tagMode: "ignore",
     tagSlugs: [],
     sort: "companyNameAsc",

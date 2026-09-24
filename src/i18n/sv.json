@@ -1013,6 +1013,7 @@
       "has_failed": "Har misslyckade",
       "has_processing": "Bearbetar",
       "fully_completed": "Fullständigt klart",
+      "skipped_no_emissions": "Inga utsläpp (hoppades över)",
       "has_issues": "Har problem",
       "preprocessing_issues": "Preprocessing-problem",
       "data_extraction_issues": "Dataextraktion-problem",
@@ -1852,6 +1853,11 @@
     "filterWikidataAll": "Alla",
     "filterWikidataPresent": "Har Wikidata-ID",
     "filterWikidataMissing": "Saknar Wikidata-ID",
+    "filterEmissionsPresence": "Utsläpp",
+    "filterEmissionsPresenceAll": "Alla",
+    "filterEmissionsPresenceYes": "Scope nämns",
+    "filterEmissionsPresenceNo": "Inga scope",
+    "filterEmissionsPresenceUnchecked": "Ej kontrollerad",
     "filterCompanyTags": "Företagstaggar (Garbo)",
     "filterTagsIgnore": "Ignorera taggar",
     "filterTagsNoTagsInGarbo": "Företaget saknar taggar",
@@ -2153,6 +2159,7 @@
     "wikidata_unverified": "Wikidata overifierad",
     "processing": "Bearbetar",
     "waiting": "Väntar",
+    "skippedNoEmissions": "Inga Scope 1/2/3 — hoppades över",
     "processingNow": "Bearbetar nu"
   }
 }

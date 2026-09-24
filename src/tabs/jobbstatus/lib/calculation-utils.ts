@@ -45,7 +45,7 @@ export function calculateSwimlaneOverallStats(
         latestYear,
         canonicalThreadId,
       );
-      if (agg.attempts.length === 0) return;
+      if (agg.attempts.length === 0 && agg.status !== "skipped") return;
       switch (agg.status) {
         case "completed":
         case "wikidata_unverified":

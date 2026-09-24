@@ -94,6 +94,15 @@ export function isEmissionsPresenceGated(job: any): boolean {
   return Boolean(rv && typeof rv === "object" && rv.gated === true);
 }
 
+/** True when this run ended at the emissions presence gate (no LLM extraction). */
+export function yearIsEmissionsPresenceSkipped(
+  yearData: SwimlaneYearData,
+): boolean {
+  if (yearData.processStatus === "skipped_no_emissions") return true;
+  const jobs = yearData.jobs || [];
+  return jobs.some((job) => isEmissionsPresenceGated(job));
+}
+
 /**
  * Single source of truth for job status determination
  * Used by all views to ensure consistency
@@ -124,6 +133,12 @@ export function getJobStatus(job: any): SwimlaneStatusType {
     return "processing";
   }
 
+  // Flow parents (e.g. checkEmissionsPresence waiting on Docling/index) are
+  // not idle — show processing so the gate does not look stuck on Waiting.
+  if (rawStatus === "waiting-children") {
+    return "processing";
+  }
+
   // For completed jobs, distinguish auto-approved unverified Wikidata from fully done
   if (rawStatus === "completed" || job.finishedOn) {
     if (isEmissionsPresenceGated(job)) {
@@ -142,11 +157,7 @@ export function getJobStatus(job: any): SwimlaneStatusType {
     return needsApproval ? "needs_approval" : "completed";
   }
 
-  if (
-    rawStatus === "waiting" ||
-    rawStatus === "waiting-children" ||
-    rawStatus === "delayed"
-  ) {
+  if (rawStatus === "waiting" || rawStatus === "delayed") {
     return "waiting";
   }
 
@@ -285,6 +296,24 @@ export function getQueueAttemptSummary(
   anySucceeded: boolean;
 } {
   const attempts = getQueueAttempts(queueId, yearData, threadId);
+  if (attempts.length === 0) {
+    // Downstream queues never enqueued after the emissions gate — show skipped
+    // instead of perpetual Waiting so the run reads as finished.
+    if (yearIsEmissionsPresenceSkipped(yearData)) {
+      return {
+        status: "skipped",
+        attempts: [],
+        hasMixedOutcomes: false,
+        anySucceeded: false,
+      };
+    }
+    return {
+      status: "waiting",
+      attempts: [],
+      hasMixedOutcomes: false,
+      anySucceeded: false,
+    };
+  }
   const statuses = attempts.map((j) => getJobStatus(j));
   const unique = new Set(statuses);
   const hasMixedOutcomes = unique.size > 1;
@@ -350,12 +379,13 @@ export function calculateStepJobStats(
       null;
     for (const queueId of queueIds) {
       const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
-      // Only count queues that have actually been attempted in this run
-      if (agg.attempts.length === 0) continue;
+      // Count attempted queues, and synthetic skips after the emissions gate
+      if (agg.attempts.length === 0 && agg.status !== "skipped") continue;
       init.total++;
       switch (agg.status) {
         case "completed":
         case "wikidata_unverified":
+        case "skipped":
           init.completed++;
           break;
         case "processing":
@@ -547,11 +577,13 @@ export function calculatePipelineStepStatus(
       return "waiting";
     }
 
-    // Filter to only jobs that have been started (ignore waiting jobs that haven't been run)
+    // Filter to only jobs that have been started (ignore waiting jobs that haven't been run).
+    // Include synthetic "skipped" after emissions gate (never enqueued, but terminal).
     const startedJobs = jobsWithStatuses.filter(
       (entry) =>
-        Array.isArray(entry.attempts) &&
-        entry.attempts.some((j: any) => hasJobBeenStarted(j)),
+        entry.status === "skipped" ||
+        (Array.isArray(entry.attempts) &&
+          entry.attempts.some((j: any) => hasJobBeenStarted(j))),
     );
 
     if (startedJobs.length === 0) {

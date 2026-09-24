@@ -1013,6 +1013,7 @@
       "has_failed": "Has failed",
       "has_processing": "Processing",
       "fully_completed": "Fully completed",
+      "skipped_no_emissions": "No emissions (skipped)",
       "has_issues": "Has issues",
       "preprocessing_issues": "Preprocessing issues",
       "data_extraction_issues": "Data extraction issues",
@@ -1852,6 +1853,11 @@
     "filterWikidataAll": "Any",
     "filterWikidataPresent": "Has Wikidata ID",
     "filterWikidataMissing": "Missing Wikidata ID",
+    "filterEmissionsPresence": "Emissions",
+    "filterEmissionsPresenceAll": "Any",
+    "filterEmissionsPresenceYes": "Scopes mentioned",
+    "filterEmissionsPresenceNo": "No scopes",
+    "filterEmissionsPresenceUnchecked": "Not checked",
     "filterCompanyTags": "Company tags (Garbo)",
     "filterTagsIgnore": "Ignore tags",
     "filterTagsNoTagsInGarbo": "Company has no tags",
@@ -2153,6 +2159,7 @@
     "wikidata_unverified": "Wikidata unverified",
     "processing": "Processing",
     "waiting": "Waiting",
+    "skippedNoEmissions": "No Scope 1/2/3 — skipped",
     "processingNow": "Processing now"
   }
 }
