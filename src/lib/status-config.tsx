@@ -5,6 +5,7 @@ import {
   XCircle,
   RotateCw,
   ShieldAlert,
+  Minus,
 } from "lucide-react";
 import type { SwimlaneStatusType } from "./types";
 
@@ -78,6 +79,17 @@ export const STATUS_CONFIG = {
       border: "border-blue-02/60",
       icon: "text-blue-03",
       iconCompact: "text-white",
+    },
+  },
+  skipped: {
+    label: "Skipped",
+    icon: Minus,
+    colors: {
+      text: "text-gray-02",
+      background: "bg-gray-03/80",
+      border: "border-gray-02/50",
+      icon: "text-gray-02",
+      iconCompact: "text-gray-02",
     },
   },
 } as const;
@@ -169,6 +181,7 @@ export function getStatusBackgroundColor(status: SwimlaneStatusType): string {
     needs_approval: "bg-orange-03/20",
     wikidata_unverified: "bg-green-02/20",
     waiting: "bg-blue-01/20",
+    skipped: "bg-gray-03/50",
   };
   return backgroundMap[status];
 }

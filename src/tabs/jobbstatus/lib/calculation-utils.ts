@@ -92,6 +92,7 @@ export function calculateOverallStatistics(
         switch (status) {
           case "completed":
           case "wikidata_unverified":
+          case "skipped":
             completedFields++;
             break;
           case "processing":
@@ -175,6 +176,7 @@ export function calculateSwimlaneOverallStats(
       switch (agg.status) {
         case "completed":
         case "wikidata_unverified":
+        case "skipped":
           completedFields++;
           break;
         case "processing":

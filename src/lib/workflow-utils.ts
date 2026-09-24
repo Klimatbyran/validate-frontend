@@ -76,6 +76,27 @@ export function jobNeedsUserInteraction(job: any): boolean {
 }
 
 /**
+ * True when checkEmissionsPresence completed and stopped the pipeline
+ * (no Scope 1/2/3 mentions).
+ */
+export function isEmissionsPresenceGated(job: any): boolean {
+  const queueId = job?.queueId ?? job?.queue;
+  if (queueId !== "checkEmissionsPresence") return false;
+  if (job?.status && job.status !== "completed" && !job?.finishedOn) {
+    return false;
+  }
+  let rv = job?.returnvalue;
+  if (typeof rv === "string") {
+    try {
+      rv = JSON.parse(rv);
+    } catch {
+      return false;
+    }
+  }
+  return Boolean(rv && typeof rv === "object" && rv.gated === true);
+}
+
+/**
  * Single source of truth for job status determination
  * Used by all views to ensure consistency
  */
@@ -107,6 +128,10 @@ export function getJobStatus(job: any): SwimlaneStatusType {
 
   // For completed jobs, distinguish auto-approved unverified Wikidata from fully done
   if (rawStatus === "completed" || job.finishedOn) {
+    if (isEmissionsPresenceGated(job)) {
+      return "skipped";
+    }
+
     if (isWikidataAutoApprovedUnverified(job)) {
       return "wikidata_unverified";
     }
@@ -420,7 +445,11 @@ function hasJobBeenStarted(job: any): boolean {
 }
 
 function isPipelineProgressStatus(status: SwimlaneStatusType): boolean {
-  return status === "completed" || status === "wikidata_unverified";
+  return (
+    status === "completed" ||
+    status === "wikidata_unverified" ||
+    status === "skipped"
+  );
 }
 
 /**
@@ -458,7 +487,13 @@ function isAcceptableStepOutcome(entry: {
 export function calculatePipelineStepStatus(
   yearData: SwimlaneYearData,
   stepId: string,
-): "completed" | "processing" | "failed" | "waiting" | "needs_approval" {
+):
+  | "completed"
+  | "processing"
+  | "failed"
+  | "waiting"
+  | "needs_approval"
+  | "skipped" {
   // Get English queue IDs instead of Swedish display names
   const queueIds = getQueuesForPipelineStep(stepId);
 
@@ -577,9 +612,16 @@ export function calculatePipelineStepStatus(
       return "failed";
     }
 
+    const hasSkipped = startedJobs.some((entry) => entry.status === "skipped");
+
     // If all started jobs are completed (green), show green
     // This means: no failed, no stuck, no delayed - everything that was run is green
     if (allCompleted && hasCompleted) {
+      // Emissions gate stopped the run — show skipped instead of a green preprocess
+      // that looks like a full success while later steps never started.
+      if (hasSkipped) {
+        return "skipped";
+      }
       return "completed";
     }
 

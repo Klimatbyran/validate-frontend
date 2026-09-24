@@ -63,6 +63,8 @@ function runStatusChipClass(status: string): string {
       return "bg-green-03/20 text-green-02 border border-green-03/35";
     case "failed":
       return "bg-pink-03/20 text-pink-02 border border-pink-03/35";
+    case "skipped_no_emissions":
+      return "bg-gray-03/80 text-gray-02 border border-gray-02/40";
     default:
       return "bg-blue-03/15 text-blue-02 border border-blue-03/30";
   }
@@ -188,7 +190,9 @@ export function JobbstatusArchiveRunCard({
               <span
                 className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md shrink-0 ${runStatusChipClass(run.status)}`}
               >
-                {run.status}
+                {run.status === "skipped_no_emissions"
+                  ? t("jobstatus.archiveStatusSkippedNoEmissions")
+                  : run.status}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-02 mt-1">

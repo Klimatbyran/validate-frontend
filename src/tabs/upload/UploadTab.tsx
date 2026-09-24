@@ -56,6 +56,8 @@ export function UploadTab() {
   const [selectedWorkers, setSelectedWorkers] =
     useState<RunOnlyWorkerId[]>(DEFAULT_RUN_ONLY);
   const [forceReindex, setForceReindex] = useState(false);
+  const [requireEmissionsPresence, setRequireEmissionsPresence] =
+    useState(false);
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
   const [customBatchName, setCustomBatchName] = useState("");
   const {
@@ -100,6 +102,9 @@ export function UploadTab() {
   // placeholders. No manual toggle; automatic whenever this pipeline is used.
   const readImages = isClimatePlansPipeline ? true : undefined;
   const effectiveForceReindex = isClimatePlansPipeline ? false : forceReindex;
+  const effectiveRequireEmissionsPresence = isClimatePlansPipeline
+    ? false
+    : requireEmissionsPresence;
 
   const handleFileSubmit = useCallback(async () => {
     if (uploadedFiles.length === 0) {
@@ -144,6 +149,7 @@ export function UploadTab() {
         files: uploadedFiles.map(({ file }) => file),
         autoApprove,
         forceReindex: effectiveForceReindex,
+        requireEmissionsPresence: effectiveRequireEmissionsPresence,
         batchId: pipelineBatchId,
         runOnly,
         tags,
@@ -191,6 +197,7 @@ export function UploadTab() {
     runAllWorkers,
     selectedWorkers,
     effectiveForceReindex,
+    effectiveRequireEmissionsPresence,
     batchDropdownChoice,
     customBatchName,
     runOnly,
@@ -320,6 +327,7 @@ export function UploadTab() {
         urls,
         autoApprove,
         forceReindex: effectiveForceReindex,
+        requireEmissionsPresence: effectiveRequireEmissionsPresence,
         batchId: pipelineBatchId,
         runOnly,
         tags,
@@ -401,6 +409,7 @@ export function UploadTab() {
     runAllWorkers,
     selectedWorkers,
     effectiveForceReindex,
+    effectiveRequireEmissionsPresence,
     batchDropdownChoice,
     customBatchName,
     runOnly,
@@ -530,6 +539,9 @@ export function UploadTab() {
               onSelectedWorkersChange: handleWorkerToggle,
               forceReindex,
               onForceReindexChange: setForceReindex,
+              requireEmissionsPresence,
+              onRequireEmissionsPresenceChange: setRequireEmissionsPresence,
+              hideEmissionsPresenceToggle: isClimatePlansPipeline,
             }}
           />
           <UrlUploadForm
@@ -567,6 +579,9 @@ export function UploadTab() {
               onSelectedWorkersChange: handleWorkerToggle,
               forceReindex,
               onForceReindexChange: setForceReindex,
+              requireEmissionsPresence,
+              onRequireEmissionsPresenceChange: setRequireEmissionsPresence,
+              hideEmissionsPresenceToggle: isClimatePlansPipeline,
             }}
           />
           <FileUploadZone
