@@ -21,6 +21,8 @@ export const clientApiKeyListItemSchema = z.object({
   apiKey: z.string().optional(),
   revokedAt: z.string().nullable(),
   lastUsedAt: z.string().nullable(),
+  expiresAt: z.string().nullable().optional(),
+  companyScope: z.string().nullable().optional(),
   createdAt: z.string(),
   role: z.object({
     id: z.string(),
@@ -41,6 +43,7 @@ export const createClientApiKeyBodySchema = z.object({
     .max(64)
     .regex(/^[a-zA-Z0-9_-]+$/)
     .optional(),
+  trial: z.boolean().optional(),
 });
 
 export const createClientApiKeyResponseSchema = z.object({
@@ -48,6 +51,8 @@ export const createClientApiKeyResponseSchema = z.object({
   name: z.string(),
   keyLookup: z.string(),
   roleId: z.string(),
+  expiresAt: z.string().nullable().optional(),
+  companyScope: z.string().nullable().optional(),
   apiKey: z.string(),
 });
 
