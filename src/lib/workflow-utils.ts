@@ -7,13 +7,11 @@
 
 import type {
   SwimlaneStatusType,
-  SwimlaneFieldData,
   SwimlaneYearData,
   SwimlaneCompany,
 } from "./types";
 import {
   getQueuesForPipelineStep,
-  getAllPipelineSteps,
   NON_BLOCKING_FAILURE_QUEUES,
 } from "./workflow-config";
 
@@ -165,46 +163,6 @@ export function getJobStatus(job: any): SwimlaneStatusType {
   // Default to waiting for all other cases
   // This includes jobs that are not processed, not finished, and not explicitly failed
   return "waiting";
-}
-
-/**
- * Get the status from a field data object
- */
-export function getFieldStatus(
-  fieldData: SwimlaneStatusType | SwimlaneFieldData | undefined,
-): SwimlaneStatusType {
-  if (!fieldData) {
-    return "waiting";
-  }
-
-  if (typeof fieldData === "string") {
-    return fieldData;
-  }
-
-  return fieldData.status;
-}
-
-/**
- * Extract jobs for a specific pipeline step from data
- */
-export function getJobsForStep(
-  data: SwimlaneYearData | SwimlaneCompany[],
-  stepId: string,
-): any[] {
-  const queueIds = getQueuesForPipelineStep(stepId);
-
-  if (Array.isArray(data)) {
-    // All companies data - only get jobs from latest year per company (effective = latest per queue+thread)
-    return data.flatMap((company) => {
-      const latestYear = company.years[0];
-      const effective = latestYear ? getEffectiveJobs(latestYear) : [];
-      return effective.filter((job) => queueIds.includes(job.queueId));
-    });
-  } else {
-    // Single year data
-    const effective = getEffectiveJobs(data);
-    return effective.filter((job) => queueIds.includes(job.queueId));
-  }
 }
 
 /**
@@ -682,58 +640,3 @@ export function calculatePipelineStepStatus(
   }
 }
 
-/**
- * Convert grouped companies data to swimlane format
- */
-export function convertGroupedCompaniesToSwimlaneFormat(
-  groupedCompanies: any[],
-): SwimlaneCompany[] {
-  return groupedCompanies.map((company) => {
-    const years: SwimlaneYearData[] = (company.attempts || []).map(
-      (attempt: any) => {
-        const yearData: SwimlaneYearData = {
-          year: attempt.year,
-          attempts: attempt.attemptCount || 1, // Use actual attempt count
-          fields: {},
-          jobs: attempt.jobs || [], // Preserve the actual job data
-          latestTimestamp: attempt.latestTimestamp, // Include latest timestamp
-        };
-
-        // Populate fields from jobs instead of stages to get complete data
-        (attempt.jobs || []).forEach((job: any) => {
-          const status = getJobStatus(job);
-
-          yearData.fields[job.queueId] = {
-            status,
-            isActivelyProcessing: status === "processing",
-          } as SwimlaneFieldData;
-        });
-
-        // Ensure all expected queue IDs for each step have field data
-        // This prevents undefined field data from causing incorrect step statuses
-        const allPipelineSteps = getAllPipelineSteps();
-        allPipelineSteps.forEach((step) => {
-          const queueIds = getQueuesForPipelineStep(step.id);
-          queueIds.forEach((queueId) => {
-            if (!yearData.fields[queueId]) {
-              // If no job exists for this queue ID, default to waiting
-              yearData.fields[queueId] = {
-                status: "waiting" as SwimlaneStatusType,
-                isActivelyProcessing: false,
-              } as SwimlaneFieldData;
-            }
-          });
-        });
-
-        return yearData;
-      },
-    );
-
-    const result = {
-      id: company.company,
-      name: company.companyName || company.company,
-      years,
-    };
-    return result;
-  });
-}

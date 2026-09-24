@@ -98,28 +98,3 @@ export function reportRowMatchesReportYearFilter(
   return reportYears.includes(row.reportYear);
 }
 
-export function collectDataYearsFromCompanies(
-  companies: GarboCompanyListItem[],
-): string[] {
-  const years = new Set<string>();
-  for (const company of companies) {
-    for (const period of company.reportingPeriods ?? []) {
-      const y = getPeriodDataYear(period);
-      if (y) years.add(y);
-    }
-  }
-  return Array.from(years).sort((a, b) => b.localeCompare(a));
-}
-
-export function collectReportYearsFromCompanies(
-  companies: GarboCompanyListItem[],
-): string[] {
-  const years = new Set<string>();
-  for (const company of companies) {
-    for (const period of company.reportingPeriods ?? []) {
-      const y = getPersistedCompanyReportYearFromPeriod(period);
-      if (y) years.add(y);
-    }
-  }
-  return Array.from(years).sort((a, b) => b.localeCompare(a));
-}

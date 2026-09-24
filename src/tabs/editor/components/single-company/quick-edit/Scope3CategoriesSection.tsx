@@ -28,10 +28,10 @@ export function Scope3CategoriesSection({
 }) {
   const { t } = useI18n();
 
-  const scope3Categories = period.emissions?.scope3?.categories ?? [];
+  const scope3Categories = period.emissions?.scope3?.categories;
   const categoryIds = useMemo(
     () =>
-      Array.from(new Set(scope3Categories.map((c) => c.category))).sort(
+      Array.from(new Set((scope3Categories ?? []).map((c) => c.category))).sort(
         (a, b) => a - b,
       ),
     [scope3Categories],
@@ -106,14 +106,14 @@ export function Scope3CategoriesSection({
       }
       categoryNameFor={(cat) => quickEditScope3CategoryName(cat, t)}
       getOriginalForCategory={(cat) => {
-        const original = scope3Categories.find((c) => c.category === cat);
+        const original = (scope3Categories ?? []).find((c) => c.category === cat);
         return {
           value: original?.total ?? null,
           metadata: (original?.metadata as GarboFieldMetadata | null) ?? null,
         };
       }}
       getEditedValueForCategory={(cat) => {
-        const original = scope3Categories.find((c) => c.category === cat);
+        const original = (scope3Categories ?? []).find((c) => c.category === cat);
         const originalVal = original?.total ?? null;
         const editedVal = edited.scope3Categories?.[String(cat)];
         return editedVal ?? (originalVal != null ? String(originalVal) : "");
@@ -122,7 +122,7 @@ export function Scope3CategoriesSection({
         edited.scope3Categories?.[String(cat)] != null
       }
       getVerifiedForCategory={(cat) => {
-        const original = scope3Categories.find((c) => c.category === cat);
+        const original = (scope3Categories ?? []).find((c) => c.category === cat);
         const originalVerified = !!original?.metadata?.verifiedBy;
         const hasEditedVerified =
           edited.scope3CategoriesVerified != null &&
@@ -135,7 +135,7 @@ export function Scope3CategoriesSection({
           : originalVerified;
       }}
       onChangeValue={(cat, next) => {
-        const original = scope3Categories.find((c) => c.category === cat);
+        const original = (scope3Categories ?? []).find((c) => c.category === cat);
         const originalVal = original?.total ?? null;
         setScope3CatVal(cat, next, originalVal != null);
       }}

@@ -100,6 +100,8 @@ export function CompanyDetailTab({
     setAlternativeNamesText((company.alternativeNames ?? []).join("\n"));
     setSubIndustryCode(company.industry?.subIndustryCode ?? "");
     setBaseYear(displayBaseYear(company.baseYear, dash));
+    // Sync form from company field values — avoid depending on `company` identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- field-level sync
   }, [
     company.id,
     company.name,

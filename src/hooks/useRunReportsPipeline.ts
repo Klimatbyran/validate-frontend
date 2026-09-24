@@ -75,7 +75,10 @@ const DEFAULT_TOAST_KEYS: RunReportsPipelineToastKeys = {
 /** Shared run-reports flow for Registry, Crawler, and Overview. Optional config for fixed stage endpoints. */
 export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
   const { t } = useI18n();
-  const toastKeys = { ...DEFAULT_TOAST_KEYS, ...config?.toastKeys };
+  const toastKeys = useMemo(
+    () => ({ ...DEFAULT_TOAST_KEYS, ...config?.toastKeys }),
+    [config?.toastKeys],
+  );
   const [isRunningReports, setIsRunningReports] = useState(false);
   const [autoApprove, setAutoApprove] = useState(true);
   const [runAllWorkers, setRunAllWorkers] = useState(false);
