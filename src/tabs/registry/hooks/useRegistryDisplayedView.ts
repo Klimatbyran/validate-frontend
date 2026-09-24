@@ -30,6 +30,7 @@ export function useRegistryDisplayedView(
       batch: filters.batch,
       reportType: filters.reportType,
       wikidata: filters.wikidata,
+      emissionsPresence: filters.emissionsPresence,
       tagMode: filters.tagMode,
       tagSlugs: filters.tagSlugs,
       wikidataToTags,
@@ -40,6 +41,7 @@ export function useRegistryDisplayedView(
       filters.batch !== "all" ||
       filters.reportType !== "all" ||
       filters.wikidata !== "all" ||
+      filters.emissionsPresence !== "all" ||
       filters.tagMode !== "ignore";
     const stats = buildRegistryStats(displayedRegistry);
     return {

@@ -9,6 +9,7 @@ import { buildTagLabelBySlug } from "@/tabs/editor/lib/editor-tag-and-payload-ut
 import { fetchReportTypes } from "@/tabs/editor/lib/report-types-api";
 import type { ReportType, TagOption } from "@/tabs/editor/lib/types";
 import type {
+  EmissionsPresenceFilter,
   RegistryBatchFilterValue,
   RegistryReportTypeFilterValue,
   RegistrySortKey,
@@ -23,6 +24,13 @@ const WIKIDATA_OPTIONS: WikidataPresenceFilter[] = [
   "all",
   "present",
   "missing",
+];
+
+const EMISSIONS_PRESENCE_OPTIONS: EmissionsPresenceFilter[] = [
+  "all",
+  "yes",
+  "no",
+  "unchecked",
 ];
 
 const TAG_MODE_OPTIONS: RegistryTagFilterMode[] = [
@@ -168,6 +176,13 @@ const RegistryFiltersAndSort = ({
     return t("registry.filterWikidataMissing");
   };
 
+  const labelEmissionsPresence = (v: string) => {
+    if (v === "all") return t("registry.filterEmissionsPresenceAll");
+    if (v === "yes") return t("registry.filterEmissionsPresenceYes");
+    if (v === "no") return t("registry.filterEmissionsPresenceNo");
+    return t("registry.filterEmissionsPresenceUnchecked");
+  };
+
   const labelTagMode = (v: string) => {
     if (v === "ignore") return t("registry.filterTagsIgnore");
     if (v === "no_tags_in_garbo") return t("registry.filterTagsNoTagsInGarbo");
@@ -279,6 +294,27 @@ const RegistryFiltersAndSort = ({
                 placeholder={t("registry.filterWikidataAll")}
                 getOptionLabel={labelWikidata}
                 ariaLabel={t("registry.filterWikidata")}
+                triggerClassName="min-w-[160px]"
+              />
+            </DisableWrap>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-02 mb-1">
+              {t("registry.filterEmissionsPresence")}
+            </label>
+            <DisableWrap disabled={disabled}>
+              <SingleSelectDropdown
+                options={[...EMISSIONS_PRESENCE_OPTIONS]}
+                value={filters.emissionsPresence}
+                onChange={(v) =>
+                  onFiltersChange({
+                    emissionsPresence: v as EmissionsPresenceFilter,
+                  })
+                }
+                placeholder={t("registry.filterEmissionsPresenceAll")}
+                getOptionLabel={labelEmissionsPresence}
+                ariaLabel={t("registry.filterEmissionsPresence")}
                 triggerClassName="min-w-[160px]"
               />
             </DisableWrap>

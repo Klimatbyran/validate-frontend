@@ -23,6 +23,7 @@ export type RegistryBrowseParams = {
   batchId?: string;
   reportTypeId?: string;
   wikidata?: "all" | "present" | "missing";
+  emissionsPresence?: "all" | "yes" | "no" | "unchecked";
   wikidataIds?: string[];
   sort?: RegistrySortKey;
 };
@@ -72,6 +73,9 @@ function appendBrowseParams(
   }
   if (browse.wikidata && browse.wikidata !== "all") {
     params.set("wikidata", browse.wikidata);
+  }
+  if (browse.emissionsPresence && browse.emissionsPresence !== "all") {
+    params.set("emissionsPresence", browse.emissionsPresence);
   }
   if (browse.sort) {
     params.set("sort", browse.sort);
