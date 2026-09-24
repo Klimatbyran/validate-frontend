@@ -27,10 +27,6 @@ const CRAWL_CONCURRENCY = REPORT_CRAWL_CONCURRENCY;
 export const FALLBACK_REPORT_TYPE_SLUG = "other";
 export const FALLBACK_REPORT_TYPE_LABEL = "Other";
 
-export function fallbackReportTypeSlug(slug?: string | null): string {
-  return slug?.trim() || FALLBACK_REPORT_TYPE_SLUG;
-}
-
 /** Auto-save: keep a known slug; unlabeled hits become `other`; label-only hits omit slug. */
 export function reportTypeSlugForAutoSave(
   hit?: Pick<Report, "reportTypeSlug" | "reportType"> | null,

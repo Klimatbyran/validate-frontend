@@ -332,36 +332,6 @@ export async function getCompany(
   return byMatchId ?? (match as GarboCompanyDetail);
 }
 
-export async function createCompany(body: {
-  wikidataId?: string;
-  name: string;
-  descriptions?: Array<{ language: string; text: string; id?: string }>;
-  internalComment?: string;
-  tags?: string[];
-  url?: string;
-  logoUrl?: string | null;
-  lei?: string;
-  metadata?: GarboMetadata;
-  verified?: boolean;
-}): Promise<{ ok: boolean; id: string }> {
-  const res = await garboAuthFetch(apiUrl(companiesPath()), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-  if (res.status === 401) {
-    throw new Error("Please log in to create company.");
-  }
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to create company: ${res.status} ${text}`);
-  }
-  return res.json();
-}
-
 export async function updateCompany(
   companyId: string,
   body: {

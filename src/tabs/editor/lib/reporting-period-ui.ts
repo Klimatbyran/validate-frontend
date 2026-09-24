@@ -119,12 +119,6 @@ export function getPeriodDataYear(period: {
   return getPeriodYear(period);
 }
 
-export function shortenCompanyReportId(id: string, visibleChars = 8): string {
-  const trimmed = id.trim();
-  if (trimmed.length <= visibleChars) return trimmed;
-  return `${trimmed.slice(0, visibleChars)}…`;
-}
-
 export const editorSecondaryIdTextClass = "text-xs text-gray-02 break-all";
 
 export function dataYearsWithMultiplePeriods(

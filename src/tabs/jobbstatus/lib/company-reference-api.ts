@@ -61,6 +61,8 @@ export function useCompanyReferenceByYears<T>(
   buildRef.current = buildSnapshotFromPeriod;
 
   React.useEffect(() => {
+    const years =
+      yearsKey === "" ? [] : yearsKey.split(",").map((part) => Number(part));
     if (!wikidataId || years.length === 0) return;
     const abortController = new AbortController();
     let isMounted = true;

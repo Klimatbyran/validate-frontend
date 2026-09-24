@@ -171,6 +171,8 @@ export function CoverageFindReportDialog({
     setSelectedReport((previous) =>
       previous ? { ...previous, reportYear: reportYearLabel } : previous,
     );
+    // Only re-stamp year when the label changes; selectedReport is updated in place.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reportYearLabel only
   }, [reportYearLabel]);
 
   const reportWithWikidata = useMemo((): CompanyReport | null => {

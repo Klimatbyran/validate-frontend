@@ -70,16 +70,6 @@ export async function fetchCoverageLists(): Promise<{
   );
 }
 
-export async function fetchCoverageList(
-  listId: string,
-): Promise<CoverageListSummary> {
-  const url = coverageUrl(listId);
-  const response = await garboAuthFetch(url, { cache: "no-store" });
-  return parseJson(response, url, (data) =>
-    coverageListSummarySchema.parse(data),
-  );
-}
-
 export type CoverageYearDetailQuery = {
   offset?: number;
   limit?: number;
@@ -187,13 +177,6 @@ export async function addCoverageListYear(
   return parseJson(response, url, (data) =>
     coverageListSummarySchema.parse(data),
   );
-}
-
-export async function renameCoverageList(
-  listId: string,
-  name: string,
-): Promise<CoverageListSummary> {
-  return updateCoverageList(listId, { name });
 }
 
 export async function updateCoverageList(

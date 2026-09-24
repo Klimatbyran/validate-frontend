@@ -145,11 +145,12 @@ export function useCompanies() {
     };
     document.addEventListener("visibilitychange", onVisibility);
 
+    const processPollers = processPollersRef.current;
     return () => {
       if (intervalId) window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("companies:refresh", onKick);
-      processPollersRef.current.forEach((state) => {
+      processPollers.forEach((state) => {
         state.stopped = true;
       });
     };

@@ -31,11 +31,6 @@ export function wikidataFromIdentifiers(
   return row?.value?.trim() || company.wikidataId?.trim() || null;
 }
 
-export function leiFromIdentifiers(company: GarboCompanyDetail): string | null {
-  const row = identifierByType(company, "LEI");
-  return row?.value?.trim() || company.lei?.trim() || null;
-}
-
 export type EditableCompanyIdentifier = {
   key: string;
   type: GarboCompanyIdentifierType;

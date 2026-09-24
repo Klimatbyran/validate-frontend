@@ -155,12 +155,6 @@ export async function searchRegistryPage(
   }
 }
 
-/** @deprecated Use fetchRegistryPage — kept for callers not yet migrated. */
-export const fetchRegistryList = async () => {
-  const page = await fetchRegistryPage(1, REGISTRY_PAGE_SIZE);
-  return page.rows;
-};
-
 export async function fetchRegistryBatches() {
   const url = registryUrl(
     `reports/registry/batches?limit=${REGISTRY_BATCHES_LIMIT}`,

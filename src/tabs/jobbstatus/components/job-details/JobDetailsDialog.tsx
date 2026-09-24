@@ -82,6 +82,8 @@ export function JobDetailsDialog({
     return () => {
       aborted = true;
     };
+    // Re-fetch when the job identity changes, not on every job field update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- job.id/queueId
   }, [job?.id, job?.queueId, isOpen]);
 
   // Create effectiveJob that merges detailed data (similar to job-specific-data-view)

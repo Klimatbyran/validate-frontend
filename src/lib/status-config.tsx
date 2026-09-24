@@ -165,13 +165,6 @@ export function getCompactStyles(
 }
 
 /**
- * Get detailed view text color for a status
- */
-export function getDetailedTextColor(status: SwimlaneStatusType): string {
-  return STATUS_CONFIG[status].colors.text;
-}
-
-/**
  * Get background color for status indicators (with /20 opacity for dialogs)
  */
 export function getStatusBackgroundColor(status: SwimlaneStatusType): string {
