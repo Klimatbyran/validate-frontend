@@ -222,7 +222,7 @@ export function FilterBar({
                   variant={isActive ? "primary" : "ghost"}
                   size="sm"
                   onClick={() => onToggleFilter(filter.id)}
-                  className={`!w-auto !min-w-0 h-9 px-4 text-sm ${
+                  className={`!w-auto !min-w-0 !max-w-none h-9 px-4 text-sm gap-0 ${
                     isActive
                       ? filter.activeColor
                       : "border border-gray-03 text-gray-01 hover:bg-gray-03/40"
