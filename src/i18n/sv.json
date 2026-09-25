@@ -732,8 +732,6 @@
     "pdfCachedSummary": "{{total}} PDF:er cachades till lagring ({{reused}} fanns redan i objektlagring).",
     "pdfCachePartialFailure": "{{failed}} av {{total}} länk(ar) kunde inte cachas. {{succeeded}} länk(ar) lades ändå till.",
     "manualTab": "Manuell uppladdning",
-    "requireEmissionsPresence": "Fortsätt bara om utsläpp nämns",
-    "requireEmissionsPresenceHint": "Om på: efter Docling hoppas LLM-extraktion över om rapporten saknar Scope 1/2/3-språk (sparar kostnad för PDF:er utan utsläpp).",
     "autoRun": {
       "tab": "Auto-körning",
       "title": "Pipeline auto-körning",
@@ -754,7 +752,7 @@
       "lastEnqueue": "Senaste enqueue",
       "lastTick": "Senaste tick",
       "filtersTitle": "Backloggfilter",
-      "filtersHint": "Lämna ett filter tomt för att inkludera alla. Filter kombineras (AND). Filteralternativ hämtas från Unearth; själva körningengår till Garbo.",
+      "filtersHint": "Lämna ett filter tomt för att inkludera alla. Filter kombineras (AND). Filteralternativ hämtas från Unearth; själva körningen går till Garbo.",
       "confirmEnableNoFilters": "Inga backlog-filter är valda. Auto-run kommer att köa varje registry-rapport som ännu inte är kopplad till ett företag. Fortsätta?",
       "reportTypes": "Rapporttyper",
       "registryBatches": "Registry-batchar",
@@ -765,7 +763,8 @@
       "save": "Spara inställningar",
       "saving": "Sparar…",
       "saved": "Auto-körningsinställningar sparade",
-      "saveError": "Kunde inte spara auto-körning: {{message}}"
+      "saveError": "Kunde inte spara auto-körning: {{message}}",
+      "discardUnsavedConfirm": "Du har osparade auto-körningsändringar. Kasta dem och ladda om från servern?"
     }
   },
   "jobstatus": {

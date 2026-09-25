@@ -14,7 +14,8 @@ export type PipelineAutoRunOptions = {
   requireEmissionsPresence: boolean;
   runOnly?: string[];
   tags?: string[];
-  batchId?: string;
+  /** Null clears a previously saved Jobbstatus batch. */
+  batchId?: string | null;
 };
 
 export type PipelineAutoRunStatus = {

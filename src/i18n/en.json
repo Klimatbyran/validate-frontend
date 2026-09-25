@@ -732,8 +732,6 @@
     "pdfCachedSummary": "Cached {{total}} PDF(s) to storage ({{reused}} already in object storage).",
     "pdfCachePartialFailure": "{{failed}} of {{total}} link(s) could not be cached. {{succeeded}} link(s) were still added.",
     "manualTab": "Manual upload",
-    "requireEmissionsPresence": "Only continue if emissions mentioned",
-    "requireEmissionsPresenceHint": "When on: after Docling, skip LLM extraction if the report has no Scope 1/2/3 language (saves cost on non-emissions PDFs).",
     "autoRun": {
       "tab": "Auto-run",
       "title": "Pipeline auto-run",
@@ -765,7 +763,8 @@
       "save": "Save settings",
       "saving": "Saving…",
       "saved": "Auto-run settings saved",
-      "saveError": "Could not save auto-run settings: {{message}}"
+      "saveError": "Could not save auto-run settings: {{message}}",
+      "discardUnsavedConfirm": "You have unsaved auto-run edits. Discard them and reload from the server?"
     }
   },
   "jobstatus": {

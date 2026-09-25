@@ -4,6 +4,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { Button } from "@/ui/button";
 import { cn } from "@/lib/utils";
+import { ApiAuthError } from "@/lib/garbo-auth-fetch";
 import { DEFAULT_RUN_ONLY, type RunOnlyWorkerId } from "@/lib/run-only-workers";
 import { fetchReportTypes } from "@/tabs/editor/lib/report-types-api";
 import type { ReportType } from "@/tabs/editor/lib/types";
@@ -92,6 +93,8 @@ export function AutoRunPanel() {
   const [error, setError] = useState<string | null>(null);
   /** Skip rewriting form fields on status polls while the operator is editing. */
   const formDirtyRef = useRef(false);
+  /** Bumped on save/refresh so in-flight polls cannot clobber fresher state. */
+  const statusFetchGenRef = useRef(0);
   const markFormDirty = useCallback(() => {
     formDirtyRef.current = true;
   }, []);
@@ -130,6 +133,18 @@ export function AutoRunPanel() {
     error: tagsError,
   } = useTagOptions();
 
+  const handleAuthError = useCallback(
+    (err: unknown): boolean => {
+      if (!(err instanceof ApiAuthError)) return false;
+      toast.error(t("auth.loginRequired"));
+      window.dispatchEvent(
+        new CustomEvent("show-login-modal", { detail: { action: () => {} } }),
+      );
+      return true;
+    },
+    [t],
+  );
+
   const applyFormFromStatus = useCallback((next: PipelineAutoRunStatus) => {
     setReportTypeIds(next.filters.reportTypeIds ?? []);
     setRegistryBatchIds(next.filters.registryBatchIds ?? []);
@@ -167,22 +182,31 @@ export function AutoRunPanel() {
   const refresh = useCallback(
     async (opts?: { syncForm?: boolean }) => {
       setError(null);
+      const gen = ++statusFetchGenRef.current;
       try {
         const next = await fetchPipelineAutoRunStatus();
+        if (gen !== statusFetchGenRef.current) return;
         setStatus(next);
         // Polls must not wipe unsaved edits; initial load / post-save sync form.
         if (opts?.syncForm || !formDirtyRef.current) {
           applyFormFromStatus(next);
         }
       } catch (e) {
+        if (gen !== statusFetchGenRef.current) return;
+        if (handleAuthError(e)) {
+          setError(t("auth.loginRequired"));
+          return;
+        }
         const message =
           e instanceof Error ? e.message : t("upload.unknownError");
         setError(message);
       } finally {
-        setLoading(false);
+        if (gen === statusFetchGenRef.current) {
+          setLoading(false);
+        }
       }
     },
-    [applyFormFromStatus, t],
+    [applyFormFromStatus, handleAuthError, t],
   );
 
   useEffect(() => {
@@ -229,7 +253,7 @@ export function AutoRunPanel() {
         ? selectedWorkers
         : undefined;
 
-    let batchId: string | undefined;
+    let batchId: string | null;
     if (batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE) {
       if (!customBatchName.trim()) {
         throw new Error(t("upload.batchNameRequired"));
@@ -240,6 +264,9 @@ export function AutoRunPanel() {
       });
     } else if (batchDropdownChoice) {
       batchId = batchDropdownChoice;
+    } else {
+      // Explicit null clears a previously saved batch (undefined is dropped from JSON).
+      batchId = null;
     }
 
     return {
@@ -270,6 +297,8 @@ export function AutoRunPanel() {
       }
       setSaving(true);
       setError(null);
+      // Invalidate in-flight polls so they cannot overwrite this save response.
+      const gen = ++statusFetchGenRef.current;
       try {
         const runOptions = await buildPatchOptions();
         const next = await patchPipelineAutoRun({
@@ -283,18 +312,26 @@ export function AutoRunPanel() {
           runOptions,
           ...(extra?.enabled === true ? { resetFailureCounters: true } : {}),
         });
+        if (gen !== statusFetchGenRef.current) return;
         applyStatus(next);
         if (batchDropdownChoice === NEW_BATCH_DROPDOWN_VALUE) {
           refetchBatches();
         }
         toast.success(t("upload.autoRun.saved"));
       } catch (e) {
+        if (gen !== statusFetchGenRef.current) return;
+        if (handleAuthError(e)) {
+          setError(t("auth.loginRequired"));
+          return;
+        }
         const message =
           e instanceof Error ? e.message : t("upload.unknownError");
         setError(message);
         toast.error(t("upload.autoRun.saveError", { message }));
       } finally {
-        setSaving(false);
+        if (gen === statusFetchGenRef.current) {
+          setSaving(false);
+        }
       }
     },
     [
@@ -307,6 +344,7 @@ export function AutoRunPanel() {
       applyStatus,
       batchDropdownChoice,
       refetchBatches,
+      handleAuthError,
       t,
     ],
   );
@@ -331,6 +369,17 @@ export function AutoRunPanel() {
     coverageListIds.length,
     t,
   ]);
+
+  const handleRefreshClick = useCallback(() => {
+    if (formDirtyRef.current) {
+      const ok = window.confirm(t("upload.autoRun.discardUnsavedConfirm"));
+      if (!ok) {
+        void refresh();
+        return;
+      }
+    }
+    void refresh({ syncForm: true });
+  }, [refresh, t]);
 
   if (loading && !status) {
     return (
@@ -575,7 +624,7 @@ export function AutoRunPanel() {
           size="sm"
           variant="secondary"
           disabled={saving}
-          onClick={() => void refresh()}
+          onClick={handleRefreshClick}
         >
           {t("common.refresh")}
         </Button>

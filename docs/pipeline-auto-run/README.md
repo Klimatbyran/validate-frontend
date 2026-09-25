@@ -1,27 +1,16 @@
 # Pipeline auto-run
 
-Validate UI lives in this repo (`/upload?tab=autorun`). The orchestrator is in
-**Klimatbyran/garbo** — see [PR #1425](https://github.com/Klimatbyran/garbo/pull/1425).
+Validate UI: `/upload?tab=autorun` (`AutoRunPanel`).
 
-## Garbo follow-up (candidate selection)
+Orchestrator: [Klimatbyran/garbo#1425](https://github.com/Klimatbyran/garbo/pull/1425)
+(`GET|PATCH /api/pipeline-auto-run` + `pipelineAutoRun` worker).
 
-This agent cannot push to `Klimatbyran/garbo` (403). Before enabling auto-run
-on stage, apply the candidate-starvation fix on the PR branch:
+## Deploy order
 
-```bash
-cd garbo
-git checkout cursor/pipeline-auto-run-e5c5
-git am path/to/validate-frontend/docs/pipeline-auto-run/garbo-candidate-fix.patch
-git push origin cursor/pipeline-auto-run-e5c5
-```
-
-That patch pages past skipped/failed claims, excludes `hasEmissionsMentions=false`
-when the emissions gate is on, ages out stale `running` claims, and fails closed
-on Redis queue-read errors.
-
-Deploy order: apply Garbo migration `20260924120000_pipeline_auto_run`, then
-restart Garbo workers, then ship Validate. Leave auto-run **Off** until the
-candidate-fix commit is on the deployed Garbo image.
+1. Apply Garbo migration `20260924120000_pipeline_auto_run` and deploy Garbo API + workers
+   (include the candidate-selection fix on that PR).
+2. Deploy Validate.
+3. Leave auto-run **Off** until smoke-ready; set backlog filters before any On test.
 
 ## Stage verification checklist
 
@@ -35,3 +24,4 @@ candidate-fix commit is on the deployed Garbo image.
 - [ ] Report parks on company-name / company-link approval → concurrency slot frees; next report can Docling
 - [ ] Approve in Jobbstatus → same thread continues without re-Docling
 - [ ] `requireEmissionsPresence` on → non-emissions PDF becomes `skipped_no_emissions`
+- [ ] Clear Jobbstatus batch on Auto-run and Save → `runOptions.batchId` is gone on next GET
