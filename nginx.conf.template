@@ -34,9 +34,26 @@ server {
         return 308 /garbo-api/;
     }
 
-    # Garbo API: queue-archive only
+    # Garbo API: queue-archive + pipeline-auto-run (staff JWT)
     location /garbo-api/queue-archive/ {
         proxy_pass ${GARBO_API_URL}/queue-archive/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host ${GARBO_HOST};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-API-Key ${GARBO_ALL_ACCESS_API_KEY};
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+    }
+
+    location /garbo-api/pipeline-auto-run {
+        proxy_pass ${GARBO_API_URL}/pipeline-auto-run;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -100,6 +117,23 @@ server {
     }
     location /garbo-stage-api/queue-archive/ {
         proxy_pass https://stage-api.klimatkollen.se/api/queue-archive/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host stage-api.klimatkollen.se;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-API-Key ${GARBO_STAGE_ALL_ACCESS_API_KEY};
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+    }
+
+    location /garbo-stage-api/pipeline-auto-run {
+        proxy_pass https://stage-api.klimatkollen.se/api/pipeline-auto-run;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
