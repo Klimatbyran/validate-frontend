@@ -18,6 +18,24 @@ function hasAnyMetadata(metadata: GarboFieldMetadata | null | undefined) {
   );
 }
 
+/** Only linkify internal storage PDF deep links — never arbitrary hrefs. */
+function trustedSourcePageUrl(
+  value: string | null | undefined,
+): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "https:") return null;
+    if (!url.hostname.toLowerCase().endsWith("storage.googleapis.com")) {
+      return null;
+    }
+    return trimmed;
+  } catch {
+    return null;
+  }
+}
+
 export function MetadataDetailsDialog({
   metadata,
   fieldLabel,
@@ -47,7 +65,7 @@ export function MetadataDetailsDialog({
     | undefined;
   const source = metadata?.source?.trim() || null;
   const sourceReference = metadata?.sourceReference?.trim() || null;
-  const sourcePageUrl = metadata?.sourcePageUrl?.trim() || null;
+  const sourcePageUrl = trustedSourcePageUrl(metadata?.sourcePageUrl);
   const comment = metadata?.comment?.trim() || null;
   const verifiedBy =
     metadata?.verifiedBy?.name?.trim() ||
@@ -179,27 +197,14 @@ export function MetadataDetailsDialog({
               <div className="text-xs font-medium text-gray-02 mb-1">
                 {t("editor.metadataDetails.source")}
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <a
-                  href={source}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-02 underline break-all"
-                >
-                  {source}
-                </a>
-                <Button
-                  asChild
-                  size="sm"
-                  variant="secondary"
-                  className="min-w-0"
-                >
-                  <a href={source} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    {t("editor.metadataDetails.openSource")}
-                  </a>
-                </Button>
-              </div>
+              <a
+                href={source}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-02 underline break-all"
+              >
+                {source}
+              </a>
             </section>
           )}
 
@@ -208,9 +213,9 @@ export function MetadataDetailsDialog({
               <div className="text-xs font-medium text-gray-02 mb-1">
                 {t("editor.metadataDetails.comment")}
               </div>
-              <div className="text-sm text-gray-01 whitespace-pre-wrap break-words">
+              <p className="text-sm text-gray-01 whitespace-pre-wrap break-words">
                 {comment}
-              </div>
+              </p>
             </section>
           )}
         </div>
