@@ -7,10 +7,14 @@ Orchestrator: [Klimatbyran/garbo#1425](https://github.com/Klimatbyran/garbo/pull
 
 ## Deploy order
 
-1. Apply Garbo migration `20260924120000_pipeline_auto_run` and deploy Garbo API + workers
-   (include the candidate-selection fix on that PR).
+1. Apply Garbo migration `20260924120000_pipeline_auto_run` and deploy Garbo API + workers.
 2. Deploy Validate.
 3. Leave auto-run **Off** until smoke-ready; set backlog filters before any On test.
+
+## Operator notes
+
+- Validate saves `maxConcurrent: 1` on every PATCH (stage-safe; not exposed in the UI).
+- Clearing the Jobbstatus batch dropdown and saving sends `batchId: null` (required to clear; omitting the key leaves the prior value).
 
 ## Stage verification checklist
 
