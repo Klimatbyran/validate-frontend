@@ -1619,7 +1619,7 @@
       "localeSaveError": "Kunde inte spara locale",
       "localeDeleteError": "Kunde inte ta bort locale",
       "noGroupsYet": "Inga grupper ännu. Skapa en för att organisera täckningslistor.",
-      "noLocalesYet": "Inga locales ännu. Försådda länder syns efter migrering; du kan också skapa fler.",
+      "noLocalesYet": "Inga locales ännu. Efter databasmigreringen syns försådda länder här; du kan också skapa fler.",
       "confirmDeleteGroupTitle": "Ta bort täckningsgrupp?",
       "confirmDeleteGroup": "Ta bort \"{{name}}\"? {{count}} lista/listor blir ogrupperade.",
       "confirmDeleteLocaleTitle": "Ta bort crawl-locale?",

@@ -1619,7 +1619,7 @@
       "localeSaveError": "Could not save locale",
       "localeDeleteError": "Could not delete locale",
       "noGroupsYet": "No groups yet. Create one to organize coverage lists.",
-      "noLocalesYet": "No locales yet. Seeded countries appear after migration; you can also create more.",
+      "noLocalesYet": "No locales yet. After the database migration, seeded countries appear here; you can also create more.",
       "confirmDeleteGroupTitle": "Delete coverage group?",
       "confirmDeleteGroup": "Delete \"{{name}}\"? {{count}} list(s) will become ungrouped.",
       "confirmDeleteLocaleTitle": "Delete crawl locale?",

@@ -42,7 +42,8 @@ export function useCoverageLists() {
         await Promise.all([
           fetchCoverageLists(),
           fetchCoverageListGroups(),
-          fetchCoverageListLocales(),
+          // Older API builds may lack locales — do not blank the Coverage tab.
+          fetchCoverageListLocales().catch(() => [] as CoverageListLocale[]),
         ]);
       setLists(listsResponse.lists);
       setGroups(groupsResponse);
