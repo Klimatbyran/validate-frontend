@@ -3,18 +3,23 @@ import {
   addCoverageListYear,
   createCoverageList,
   createCoverageListGroup,
+  createCoverageListLocale,
   deleteCoverageList,
   deleteCoverageListGroup,
+  deleteCoverageListLocale,
   deleteCoverageListYear,
   fetchCoverageListGroups,
+  fetchCoverageListLocales,
   fetchCoverageLists,
   updateCoverageList,
   replaceCoverageYearNames,
   updateCoverageListGroup,
+  updateCoverageListLocale,
   updateCoverageYearEdition,
 } from "../lib/coverage-api";
 import type {
   CoverageListGroup,
+  CoverageListLocale,
   CoverageListSummary,
   CoverageYearSummary,
 } from "../lib/coverage-types";
@@ -23,6 +28,7 @@ import { patchListYearSummary } from "../lib/coverage-year-detail-state";
 export function useCoverageLists() {
   const [lists, setLists] = useState<CoverageListSummary[]>([]);
   const [groups, setGroups] = useState<CoverageListGroup[]>([]);
+  const [locales, setLocales] = useState<CoverageListLocale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,16 +38,20 @@ export function useCoverageLists() {
     else setIsLoading(true);
     setError(null);
     try {
-      const [listsResponse, groupsResponse] = await Promise.all([
-        fetchCoverageLists(),
-        fetchCoverageListGroups(),
-      ]);
+      const [listsResponse, groupsResponse, localesResponse] =
+        await Promise.all([
+          fetchCoverageLists(),
+          fetchCoverageListGroups(),
+          fetchCoverageListLocales(),
+        ]);
       setLists(listsResponse.lists);
       setGroups(groupsResponse);
+      setLocales(localesResponse);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
       setLists([]);
       setGroups([]);
+      setLocales([]);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -55,6 +65,7 @@ export function useCoverageLists() {
   return {
     lists,
     groups,
+    locales,
     isLoading,
     isRefreshing,
     error,
@@ -82,6 +93,7 @@ export function useCoverageLists() {
       year?: number;
       names?: string[];
       groupId?: string | null;
+      localeId?: string | null;
     }) => {
       const created = await createCoverageList(input);
       await loadLists(true);
@@ -97,7 +109,11 @@ export function useCoverageLists() {
     },
     updateList: async (
       listId: string,
-      input: { name?: string; groupId?: string | null },
+      input: {
+        name?: string;
+        groupId?: string | null;
+        localeId?: string | null;
+      },
     ) => {
       const updated = await updateCoverageList(listId, input);
       await loadLists(true);
@@ -145,6 +161,23 @@ export function useCoverageLists() {
     },
     deleteGroup: async (groupId: string) => {
       await deleteCoverageListGroup(groupId);
+      await loadLists(true);
+    },
+    createLocale: async (input: { slug: string; label: string }) => {
+      const created = await createCoverageListLocale(input);
+      await loadLists(true);
+      return created;
+    },
+    updateLocale: async (
+      localeId: string,
+      input: { slug?: string; label?: string },
+    ) => {
+      const updated = await updateCoverageListLocale(localeId, input);
+      await loadLists(true);
+      return updated;
+    },
+    deleteLocale: async (localeId: string) => {
+      await deleteCoverageListLocale(localeId);
       await loadLists(true);
     },
   };

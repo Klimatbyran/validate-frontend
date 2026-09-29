@@ -22,6 +22,7 @@ type CoverageListTableProps = {
   onCreateList: (groupId?: string | null) => void;
   onEditList: (list: CoverageListSummary) => void;
   onManageGroups: () => void;
+  onManageLocales: () => void;
 };
 
 type FocusPillValue = "all" | "ungrouped" | `group:${string}`;
@@ -58,6 +59,9 @@ function CoverageListsTableBody({
               {t("overview.coverage.columns.list")}
             </th>
             <th className="px-4 py-2 font-medium">
+              {t("overview.coverage.columns.locale")}
+            </th>
+            <th className="px-4 py-2 font-medium">
               {t("overview.coverage.columns.years")}
             </th>
             <th className="px-4 py-2 font-medium">
@@ -82,6 +86,9 @@ function CoverageListsTableBody({
               >
                 <td className="px-4 py-2 font-medium text-gray-01">
                   {list.name}
+                </td>
+                <td className="px-4 py-2 text-gray-02">
+                  {list.locale?.label ?? "—"}
                 </td>
                 <td className="px-4 py-2 text-gray-02">{list.years.length}</td>
                 <td className="px-4 py-2">
@@ -126,7 +133,7 @@ function CoverageListsTableBody({
           })}
           {lists.length === 0 ? (
             <tr>
-              <td colSpan={5} className="px-4 py-8 text-center text-gray-02">
+              <td colSpan={6} className="px-4 py-8 text-center text-gray-02">
                 {emptyLabel}
               </td>
             </tr>
@@ -144,6 +151,7 @@ export function CoverageListTable({
   onCreateList,
   onEditList,
   onManageGroups,
+  onManageLocales,
 }: CoverageListTableProps) {
   const { t } = useI18n();
   const [focus, setFocus] = useState<CoverageListFocus>(() =>
@@ -187,6 +195,9 @@ export function CoverageListTable({
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={onManageGroups}>
             {t("overview.coverage.manageGroups")}
+          </Button>
+          <Button variant="secondary" onClick={onManageLocales}>
+            {t("overview.coverage.manageLocales")}
           </Button>
           <Button onClick={() => onCreateList(null)}>
             {t("overview.coverage.addList")}

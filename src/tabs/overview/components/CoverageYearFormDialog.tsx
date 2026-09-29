@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { namesFromTextarea } from "@/tabs/overview/lib/coverage-api";
-import type { CoverageListGroup } from "@/tabs/overview/lib/coverage-types";
+import type {
+  CoverageListGroup,
+  CoverageListLocale,
+} from "@/tabs/overview/lib/coverage-types";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 
@@ -16,13 +19,16 @@ type CoverageYearFormDialogProps = {
   onOpenChange: (open: boolean) => void;
   mode: CoverageYearFormMode;
   groups?: CoverageListGroup[];
+  locales?: CoverageListLocale[];
   initialListName?: string;
   initialGroupId?: string | null;
+  initialLocaleId?: string | null;
   initialYear?: number;
   initialNamesText?: string;
   onSubmit: (input: {
     listName?: string;
     groupId?: string | null;
+    localeId?: string | null;
     year: number;
     names: string[];
   }) => Promise<void>;
@@ -34,8 +40,10 @@ export function CoverageYearFormDialog({
   onOpenChange,
   mode,
   groups = [],
+  locales = [],
   initialListName = "",
   initialGroupId = null,
+  initialLocaleId = null,
   initialYear = new Date().getFullYear(),
   initialNamesText = "",
   onSubmit,
@@ -44,6 +52,7 @@ export function CoverageYearFormDialog({
   const { t } = useI18n();
   const [listName, setListName] = useState(initialListName);
   const [groupId, setGroupId] = useState<string>(initialGroupId ?? "");
+  const [localeId, setLocaleId] = useState<string>(initialLocaleId ?? "");
   const [year, setYear] = useState(String(initialYear));
   const [namesText, setNamesText] = useState(initialNamesText);
 
@@ -51,9 +60,17 @@ export function CoverageYearFormDialog({
     if (!open) return;
     setListName(initialListName);
     setGroupId(initialGroupId ?? "");
+    setLocaleId(initialLocaleId ?? "");
     setYear(String(initialYear));
     setNamesText(initialNamesText);
-  }, [open, initialListName, initialGroupId, initialYear, initialNamesText]);
+  }, [
+    open,
+    initialListName,
+    initialGroupId,
+    initialLocaleId,
+    initialYear,
+    initialNamesText,
+  ]);
 
   const title =
     mode === "createList"
@@ -84,6 +101,10 @@ export function CoverageYearFormDialog({
       groupId:
         mode === "createList" || mode === "editList"
           ? groupId || null
+          : undefined,
+      localeId:
+        mode === "createList" || mode === "editList"
+          ? localeId || null
           : undefined,
       year: parsedYear,
       names: namesFromTextarea(namesText),
@@ -147,6 +168,26 @@ export function CoverageYearFormDialog({
                   </option>
                 ))}
               </select>
+            </label>
+            <label className="block space-y-1">
+              <span className="text-sm text-gray-02">
+                {t("overview.coverage.localeLabel")}
+              </span>
+              <select
+                className="w-full rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm"
+                value={localeId}
+                onChange={(e) => setLocaleId(e.target.value)}
+              >
+                <option value="">{t("overview.coverage.localeNone")}</option>
+                {locales.map((locale) => (
+                  <option key={locale.id} value={locale.id}>
+                    {locale.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-02">
+                {t("overview.coverage.localeHint")}
+              </p>
             </label>
           </>
         ) : null}
