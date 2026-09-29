@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pencil } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
+import { HelpTip } from "@/ui/help-tip";
 import { ViewModePills } from "@/ui/view-mode-pills";
 import type {
   CoverageListGroup,
@@ -9,6 +10,7 @@ import type {
 } from "@/tabs/overview/lib/coverage-types";
 import { coveragePercentTextClass } from "@/tabs/overview/lib/coverage-overview-styles";
 import {
+  aggregateLatestYearCoverage,
   coverageListFocusFromStorage,
   groupCoverageLists,
   persistCoverageListFocus,
@@ -226,39 +228,61 @@ export function CoverageListTable({
             : t("overview.coverage.noLists")}
         </p>
       ) : (
-        sections.map((section) => (
-          <section key={section.key} className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-gray-01">
-                {section.key === "ungrouped"
-                  ? t("overview.coverage.ungrouped")
-                  : section.label}{" "}
-                <span className="font-normal text-gray-02 tabular-nums">
-                  ({section.lists.length})
-                </span>
-              </h3>
-              {section.group ? (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => onCreateList(section.group?.id)}
-                >
-                  {t("overview.coverage.addListInGroup")}
-                </Button>
-              ) : null}
-            </div>
-            <CoverageListsTableBody
-              lists={section.lists}
-              onSelectList={onSelectList}
-              onEditList={onEditList}
-              emptyLabel={
-                section.group
-                  ? t("overview.coverage.emptyGroup")
-                  : t("overview.coverage.noUngroupedLists")
-              }
-            />
-          </section>
-        ))
+        sections.map((section) => {
+          const latestAggregate = aggregateLatestYearCoverage(section.lists);
+          return (
+            <section key={section.key} className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-gray-01 inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span>
+                    {section.key === "ungrouped"
+                      ? t("overview.coverage.ungrouped")
+                      : section.label}{" "}
+                    <span className="font-normal text-gray-02 tabular-nums">
+                      ({section.lists.length})
+                    </span>
+                  </span>
+                  {latestAggregate ? (
+                    <span className="inline-flex items-center gap-1 font-normal text-gray-02 tabular-nums">
+                      <span
+                        className={`font-semibold ${coveragePercentTextClass(latestAggregate.coveragePercent)}`}
+                      >
+                        {latestAggregate.coveragePercent}%
+                      </span>
+                      <span>
+                        ({latestAggregate.matchedCount}/
+                        {latestAggregate.totalNames})
+                      </span>
+                      <HelpTip
+                        text={t("overview.coverage.groupLatestCoverageHelp")}
+                        widthClassName="w-72"
+                      />
+                    </span>
+                  ) : null}
+                </h3>
+                {section.group ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onCreateList(section.group?.id)}
+                  >
+                    {t("overview.coverage.addListInGroup")}
+                  </Button>
+                ) : null}
+              </div>
+              <CoverageListsTableBody
+                lists={section.lists}
+                onSelectList={onSelectList}
+                onEditList={onEditList}
+                emptyLabel={
+                  section.group
+                    ? t("overview.coverage.emptyGroup")
+                    : t("overview.coverage.noUngroupedLists")
+                }
+              />
+            </section>
+          );
+        })
       )}
     </div>
   );

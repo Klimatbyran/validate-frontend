@@ -1627,6 +1627,7 @@
       "ungrouped": "Ogrupperade",
       "emptyGroup": "Inga listor i den här gruppen ännu.",
       "noUngroupedLists": "Inga ogrupperade listor.",
+      "groupLatestCoverageHelp": "Viktad täckning för listorna i gruppen, baserat på varje listas senaste år (matchade ÷ totalt antal namn). Listor kan ha olika senaste år; bolag som finns på flera listor räknas en gång per lista.",
       "groupFocusLabel": "Fokusera täckningsgrupp",
       "groupFocus": {
         "all": "Alla",

@@ -1,15 +1,33 @@
 import { describe, expect, it } from "vitest";
 import {
+  aggregateLatestYearCoverage,
   groupCoverageLists,
   slugFromLabel,
   type CoverageListFocus,
 } from "./coverage-list-groups";
-import type { CoverageListGroup, CoverageListSummary } from "./coverage-types";
+import type {
+  CoverageListGroup,
+  CoverageListSummary,
+  CoverageYearSummary,
+} from "./coverage-types";
+
+function year(
+  partial: Partial<CoverageYearSummary> & Pick<CoverageYearSummary, "year">,
+): CoverageYearSummary {
+  return {
+    totalNames: 0,
+    matchedCount: 0,
+    ambiguousCount: 0,
+    coveragePercent: 0,
+    ...partial,
+  };
+}
 
 function list(
   id: string,
   name: string,
   group: CoverageListSummary["group"],
+  years: CoverageYearSummary[] = [],
 ): CoverageListSummary {
   return {
     id,
@@ -17,7 +35,7 @@ function list(
     updatedAt: "2026-01-01T00:00:00.000Z",
     group,
     locale: null,
-    years: [],
+    years,
   };
 }
 
@@ -70,5 +88,49 @@ describe("groupCoverageLists", () => {
 describe("slugFromLabel", () => {
   it("slugifies labels", () => {
     expect(slugFromLabel("Country Indexes")).toBe("country-indexes");
+  });
+});
+
+describe("aggregateLatestYearCoverage", () => {
+  it("returns null when no lists have years", () => {
+    expect(
+      aggregateLatestYearCoverage([
+        list("l1", "Empty", null),
+        list("l2", "Also empty", null),
+      ]),
+    ).toBeNull();
+  });
+
+  it("sums matched and total from each list's latest year", () => {
+    const result = aggregateLatestYearCoverage([
+      list("l1", "Sweden", null, [
+        year({ year: 2024, matchedCount: 8, totalNames: 10, coveragePercent: 80 }),
+        year({ year: 2023, matchedCount: 1, totalNames: 10, coveragePercent: 10 }),
+      ]),
+      list("l2", "Norway", null, [
+        year({ year: 2024, matchedCount: 2, totalNames: 5, coveragePercent: 40 }),
+      ]),
+      list("l3", "No year yet", null),
+    ]);
+
+    expect(result).toEqual({
+      matchedCount: 10,
+      totalNames: 15,
+      coveragePercent: 67,
+    });
+  });
+
+  it("returns 0% when total names is zero", () => {
+    expect(
+      aggregateLatestYearCoverage([
+        list("l1", "Empty year", null, [
+          year({ year: 2024, matchedCount: 0, totalNames: 0, coveragePercent: 0 }),
+        ]),
+      ]),
+    ).toEqual({
+      matchedCount: 0,
+      totalNames: 0,
+      coveragePercent: 0,
+    });
   });
 });

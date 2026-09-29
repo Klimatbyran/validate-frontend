@@ -12,6 +12,38 @@ export type CoverageListSection = {
   lists: CoverageListSummary[];
 };
 
+/** Sum of each list's latest-year matched/total (years are ordered desc). */
+export type CoverageLatestYearAggregate = {
+  matchedCount: number;
+  totalNames: number;
+  coveragePercent: number;
+};
+
+export function aggregateLatestYearCoverage(
+  lists: CoverageListSummary[],
+): CoverageLatestYearAggregate | null {
+  let matchedCount = 0;
+  let totalNames = 0;
+  let listsWithYears = 0;
+
+  for (const list of lists) {
+    const latestYear = list.years[0];
+    if (!latestYear) continue;
+    listsWithYears += 1;
+    matchedCount += latestYear.matchedCount;
+    totalNames += latestYear.totalNames;
+  }
+
+  if (listsWithYears === 0) return null;
+
+  return {
+    matchedCount,
+    totalNames,
+    coveragePercent:
+      totalNames === 0 ? 0 : Math.round((matchedCount / totalNames) * 100),
+  };
+}
+
 const FOCUS_STORAGE_KEY = "validate.coverage.listFocus";
 
 export function coverageListFocusFromStorage(): CoverageListFocus {
