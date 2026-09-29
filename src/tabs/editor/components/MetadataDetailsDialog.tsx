@@ -19,9 +19,7 @@ function hasAnyMetadata(metadata: GarboFieldMetadata | null | undefined) {
 }
 
 /** Only linkify internal storage PDF deep links — never arbitrary hrefs. */
-function trustedSourcePageUrl(
-  value: string | null | undefined,
-): string | null {
+function trustedSourcePageUrl(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   if (!trimmed) return null;
   try {
