@@ -13,6 +13,8 @@ const garboMinimalMetadataSchema = z
     verifiedBy: z.object({ name: z.string() }).nullable().optional(),
     source: z.string().nullable().optional(),
     comment: z.string().nullable().optional(),
+    sourceReference: z.string().nullable().optional(),
+    sourcePageUrl: z.string().nullable().optional(),
   })
   .passthrough();
 
