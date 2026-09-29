@@ -15,6 +15,7 @@ import { CoverageListTable } from "./CoverageListTable";
 import { CoverageYearDetailView } from "./CoverageYearDetail";
 import { CoverageYearFormDialog } from "./CoverageYearFormDialog";
 import { CoverageManageGroupsDialog } from "./CoverageManageGroupsDialog";
+import { CoverageManageLocalesDialog } from "./CoverageManageLocalesDialog";
 import { CoverageEntryMatchDialog } from "./CoverageEntryMatchDialog";
 import type {
   CoverageEntry,
@@ -30,9 +31,11 @@ type DialogState =
       listId: string;
       listName: string;
       groupId: string | null;
+      localeId: string | null;
     }
   | { kind: "editYear"; listId: string; year: number; namesText: string }
-  | { kind: "manageGroups" };
+  | { kind: "manageGroups" }
+  | { kind: "manageLocales" };
 
 type DeleteConfirmState =
   | { kind: "closed" }
@@ -77,6 +80,7 @@ export function CoverageView() {
   const handleCreateList = async (input: {
     listName?: string;
     groupId?: string | null;
+    localeId?: string | null;
     year: number;
     names: string[];
   }) => {
@@ -88,6 +92,7 @@ export function CoverageView() {
         year: input.year,
         names: input.names,
         groupId: input.groupId ?? null,
+        localeId: input.localeId ?? null,
       });
       setSelectedListId(created.id);
       setSelectedYear(input.year);
@@ -120,6 +125,7 @@ export function CoverageView() {
   const handleAddOrEditYear = async (input: {
     listName?: string;
     groupId?: string | null;
+    localeId?: string | null;
     year: number;
     names: string[];
   }) => {
@@ -130,6 +136,7 @@ export function CoverageView() {
         await coverage.updateList(dialog.listId, {
           name: input.listName,
           groupId: input.groupId ?? null,
+          localeId: input.localeId ?? null,
         });
       } finally {
         setIsSubmitting(false);
@@ -233,6 +240,10 @@ export function CoverageView() {
               <span className="rounded-full border border-gray-03 px-2.5 py-0.5 text-xs text-gray-02">
                 {selectedList.group?.label ?? t("overview.coverage.ungrouped")}
               </span>
+              <span className="rounded-full border border-gray-03 px-2.5 py-0.5 text-xs text-gray-02">
+                {selectedList.locale?.label ??
+                  t("overview.coverage.localeNone")}
+              </span>
               <label className="flex items-center gap-2 text-sm text-gray-02">
                 <span>{t("overview.coverage.groupLabel")}</span>
                 <select
@@ -259,6 +270,32 @@ export function CoverageView() {
                   ))}
                 </select>
               </label>
+              <label className="flex items-center gap-2 text-sm text-gray-02">
+                <span>{t("overview.coverage.localeLabel")}</span>
+                <select
+                  className="rounded-md border border-gray-03 bg-white px-2 py-1 text-sm text-gray-01"
+                  value={selectedList.locale?.id ?? ""}
+                  onChange={(event) => {
+                    const nextLocaleId = event.target.value || null;
+                    void coverage
+                      .updateList(selectedList.id, { localeId: nextLocaleId })
+                      .catch((error) => {
+                        toast.error(
+                          error instanceof Error
+                            ? error.message
+                            : t("overview.coverage.errorTitle"),
+                        );
+                      });
+                  }}
+                >
+                  <option value="">{t("overview.coverage.localeNone")}</option>
+                  {coverage.locales.map((locale) => (
+                    <option key={locale.id} value={locale.id}>
+                      {locale.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -278,6 +315,7 @@ export function CoverageView() {
                     listId: selectedList.id,
                     listName: selectedList.name,
                     groupId: selectedList.group?.id ?? null,
+                    localeId: selectedList.locale?.id ?? null,
                   })
                 }
               >
@@ -485,14 +523,20 @@ export function CoverageView() {
               listId: list.id,
               listName: list.name,
               groupId: list.group?.id ?? null,
+              localeId: list.locale?.id ?? null,
             })
           }
           onManageGroups={() => setDialog({ kind: "manageGroups" })}
+          onManageLocales={() => setDialog({ kind: "manageLocales" })}
         />
       )}
 
       <CoverageYearFormDialog
-        open={dialog.kind !== "closed" && dialog.kind !== "manageGroups"}
+        open={
+          dialog.kind !== "closed" &&
+          dialog.kind !== "manageGroups" &&
+          dialog.kind !== "manageLocales"
+        }
         onOpenChange={(open) => {
           if (!open) setDialog({ kind: "closed" });
         }}
@@ -506,6 +550,7 @@ export function CoverageView() {
                 : "editYear"
         }
         groups={coverage.groups}
+        locales={coverage.locales}
         initialListName={
           dialog.kind === "editList" ? dialog.listName : undefined
         }
@@ -516,6 +561,7 @@ export function CoverageView() {
               ? dialog.groupId
               : null
         }
+        initialLocaleId={dialog.kind === "editList" ? dialog.localeId : null}
         initialYear={
           dialog.kind === "editYear" ? dialog.year : new Date().getFullYear()
         }
@@ -544,6 +590,23 @@ export function CoverageView() {
         }}
         onDelete={async (groupId) => {
           await coverage.deleteGroup(groupId);
+        }}
+      />
+
+      <CoverageManageLocalesDialog
+        open={dialog.kind === "manageLocales"}
+        onOpenChange={(open) => {
+          if (!open) setDialog({ kind: "closed" });
+        }}
+        locales={coverage.locales}
+        onCreate={async (input) => {
+          await coverage.createLocale(input);
+        }}
+        onUpdate={async (localeId, input) => {
+          await coverage.updateLocale(localeId, input);
+        }}
+        onDelete={async (localeId) => {
+          await coverage.deleteLocale(localeId);
         }}
       />
 

@@ -5,6 +5,8 @@ import {
   coverageListSummarySchema,
   coverageListGroupSchema,
   coverageListGroupListSchema,
+  coverageListLocaleSchema,
+  coverageListLocaleListSchema,
   coverageYearDetailSchema,
   coverageYearNamesSchema,
   coverageYearRegistryRefreshSchema,
@@ -14,6 +16,7 @@ import {
   coverageCompanyMatchesResponseSchema,
   type CoverageListSummary,
   type CoverageListGroup,
+  type CoverageListLocale,
   type CoverageYearDetail,
   type CoverageYearNames,
   type CoverageYearRegistryRefresh,
@@ -40,6 +43,15 @@ function coverageGroupsUrl(path = ""): string {
   const base = getUnearthApiBaseUrl();
   const segment = path.replace(/^\//, "").replace(/\/+$/, "");
   return `${base}/coverage-list-groups${segment ? `/${segment}` : ""}`.replace(
+    /\/+$/,
+    "",
+  );
+}
+
+function coverageLocalesUrl(path = ""): string {
+  const base = getUnearthApiBaseUrl();
+  const segment = path.replace(/^\//, "").replace(/\/+$/, "");
+  return `${base}/coverage-list-locales${segment ? `/${segment}` : ""}`.replace(
     /\/+$/,
     "",
   );
@@ -152,6 +164,7 @@ export async function createCoverageList(input: {
   year?: number;
   names?: string[];
   groupId?: string | null;
+  localeId?: string | null;
 }): Promise<CoverageListSummary> {
   const url = coverageUrl("");
   const response = await garboAuthFetch(url, {
@@ -181,7 +194,11 @@ export async function addCoverageListYear(
 
 export async function updateCoverageList(
   listId: string,
-  input: { name?: string; groupId?: string | null },
+  input: {
+    name?: string;
+    groupId?: string | null;
+    localeId?: string | null;
+  },
 ): Promise<CoverageListSummary> {
   const url = coverageUrl(listId);
   const response = await garboAuthFetch(url, {
@@ -240,6 +257,60 @@ export async function deleteCoverageListGroup(groupId: string): Promise<void> {
     const body = await response.text().catch(() => "");
     throw new Error(
       `Delete coverage list group failed (${response.status})${body ? `: ${body.slice(0, 200)}` : ""}`,
+    );
+  }
+}
+
+export async function fetchCoverageListLocales(): Promise<
+  CoverageListLocale[]
+> {
+  const url = coverageLocalesUrl();
+  const response = await garboAuthFetch(url, { cache: "no-store" });
+  return parseJson(response, url, (data) =>
+    coverageListLocaleListSchema.parse(data),
+  );
+}
+
+export async function createCoverageListLocale(input: {
+  slug: string;
+  label: string;
+}): Promise<CoverageListLocale> {
+  const url = coverageLocalesUrl();
+  const response = await garboAuthFetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return parseJson(response, url, (data) =>
+    coverageListLocaleSchema.parse(data),
+  );
+}
+
+export async function updateCoverageListLocale(
+  localeId: string,
+  input: { slug?: string; label?: string },
+): Promise<CoverageListLocale> {
+  const url = coverageLocalesUrl(localeId);
+  const response = await garboAuthFetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return parseJson(response, url, (data) =>
+    coverageListLocaleSchema.parse(data),
+  );
+}
+
+export async function deleteCoverageListLocale(
+  localeId: string,
+): Promise<void> {
+  const url = coverageLocalesUrl(localeId);
+  const response = await garboAuthFetch(url, { method: "DELETE" });
+  if (!response.ok) {
+    throwIfAuthError(response.status);
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `Delete coverage list locale failed (${response.status})${body ? `: ${body.slice(0, 200)}` : ""}`,
     );
   }
 }
