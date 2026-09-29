@@ -1428,7 +1428,7 @@
       "showingOf": "Visar {{shown}} av {{total}}",
       "sections": {
         "dailyActivity": "Aktivitet per dag",
-        "dailyActivityHint": "Pipeline-körningar och jobb från kö-arkivet för valt kalenderdatum, plus skapade CompanyReports/batchar och ungefärliga verifieringsuppdateringar.",
+        "dailyActivityHint": "Nattliga coverage crawl/rematch-resultat, pipeline-körningar och jobb från kö-arkivet för valt kalenderdatum, plus skapade CompanyReports/batchar och ungefärliga verifieringsuppdateringar.",
         "totals": "Databasöversikt",
         "totalsHint": "Siffror från denna Unearth-instans (stage eller prod beroende på vilken API Validate pekar mot).",
         "emissionsByYear": "Företag med utsläppsdata per år",
@@ -1468,6 +1468,25 @@
           "finished": "Avslutade",
           "completed": "Klara",
           "failed": "Misslyckade"
+        },
+        "coverage": {
+          "sectionTitle": "Nattliga coverage-jobb",
+          "crawlTitle": "Coverage-crawl",
+          "rematchTitle": "Coverage-rematch",
+          "crawlNone": "Ingen coverage-crawl startade den här dagen.",
+          "rematchNone": "Ingen coverage-rematch startade den här dagen.",
+          "outcome": "Utfall",
+          "statusRunning": "Pågår",
+          "statusCompleted": "Klar",
+          "statusCompletedWithFailures": "Klar med fel",
+          "statusFailed": "Misslyckad",
+          "companiesCrawled": "Företag crawlade",
+          "reportsSaved": "Rapporter sparade",
+          "failures": "Fel",
+          "candidates": "Kandidater",
+          "rematchedEntries": "Poster rematchade",
+          "reportLinks": "Rapportlänkar",
+          "yearEditions": "Årsutgåvor"
         }
       },
       "metrics": {
