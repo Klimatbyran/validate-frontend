@@ -1,6 +1,6 @@
 import { BadgeCheck, Undo2 } from "lucide-react";
 import { IconActionButton } from "@/ui/icon-action-button";
-import type { GarboFieldMetadata } from "../../../lib/types";
+import type { GarboFieldMetadata, GarboMetadataHistory } from "../../../lib/types";
 import { MetadataDetailsDialog } from "../../MetadataDetailsDialog";
 
 export function Scope3CategoriesCard({
@@ -34,6 +34,7 @@ export function Scope3CategoriesCard({
   getOriginalForCategory: (cat: number) => {
     value: number | null;
     metadata: GarboFieldMetadata | null;
+    metadataHistory?: GarboMetadataHistory | null;
   };
   getEditedValueForCategory: (cat: number) => string;
   isEditedValueDirty: (cat: number) => boolean;
@@ -84,6 +85,7 @@ export function Scope3CategoriesCard({
                 <MetadataDetailsDialog
                   fieldLabel={fieldLabelForCategory(cat)}
                   metadata={original.metadata}
+                  metadataHistory={original.metadataHistory}
                 />
                 <IconActionButton
                   variant="md"

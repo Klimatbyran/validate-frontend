@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
-import type { GarboFieldMetadata } from "../../../lib/types";
+import type {
+  GarboFieldMetadata,
+  GarboMetadataHistory,
+} from "../../../lib/types";
 import { MetadataVerifyUndoActions } from "../../MetadataVerifyUndoActions";
 
 export function QuickEditNumberRow({
@@ -9,6 +12,7 @@ export function QuickEditNumberRow({
   dirty,
   inputClassName,
   metadata,
+  metadataHistory,
   fieldLabel,
   onReset,
   resetTitle,
@@ -23,6 +27,7 @@ export function QuickEditNumberRow({
   dirty: boolean;
   inputClassName: string;
   metadata: GarboFieldMetadata | null;
+  metadataHistory?: GarboMetadataHistory | null;
   fieldLabel: string;
   onReset: () => void;
   resetTitle: string;
@@ -50,6 +55,7 @@ export function QuickEditNumberRow({
         <MetadataVerifyUndoActions
           fieldLabel={fieldLabel}
           metadata={metadata}
+          metadataHistory={metadataHistory}
           verified={verified}
           onToggleVerified={onToggleVerified}
           verifyTitle={toggleVerifiedTitle}

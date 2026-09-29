@@ -78,6 +78,7 @@ export function Scope2Section({
               <MetadataVerifyUndoActions
                 fieldLabel={scope2FieldLabel(year)}
                 metadata={originalMeta}
+                metadataHistory={rp.emissions?.scope2?.metadataHistory}
                 verified={verified}
                 onToggleVerified={() =>
                   setEditedField(rp.id, { scope2Verified: !verified })

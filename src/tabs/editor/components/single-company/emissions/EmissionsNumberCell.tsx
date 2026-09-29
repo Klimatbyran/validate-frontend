@@ -1,4 +1,7 @@
-import type { GarboFieldMetadata } from "../../../lib/types";
+import type {
+  GarboFieldMetadata,
+  GarboMetadataHistory,
+} from "../../../lib/types";
 import { MetadataVerifyUndoActions } from "../../MetadataVerifyUndoActions";
 
 export function EmissionsNumberCell({
@@ -6,6 +9,7 @@ export function EmissionsNumberCell({
   onChange,
   dirty,
   metadata,
+  metadataHistory,
   fieldLabel,
   verified,
   onToggleVerified,
@@ -21,6 +25,7 @@ export function EmissionsNumberCell({
   onChange: (next: string) => void;
   dirty: boolean;
   metadata: GarboFieldMetadata | null;
+  metadataHistory?: GarboMetadataHistory | null;
   fieldLabel: string;
   verified: boolean;
   onToggleVerified: () => void;
@@ -48,6 +53,7 @@ export function EmissionsNumberCell({
       <MetadataVerifyUndoActions
         fieldLabel={fieldLabel}
         metadata={metadata}
+        metadataHistory={metadataHistory}
         verified={verified}
         onToggleVerified={onToggleVerified}
         verifyTitle={verifyTitle}

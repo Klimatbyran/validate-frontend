@@ -1,17 +1,22 @@
 import type { ReactNode } from "react";
-import type { GarboFieldMetadata } from "../lib/types";
+import type {
+  GarboFieldMetadata,
+  GarboMetadataHistory,
+} from "../lib/types";
 import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
 
 export function FieldWithMetadata({
   label,
   fieldLabel,
   metadata,
+  metadataHistory,
   children,
 }: {
   label: ReactNode;
   /** Label used inside the metadata dialog title/trigger. */
   fieldLabel: string;
   metadata: GarboFieldMetadata | null;
+  metadataHistory?: GarboMetadataHistory | null;
   children: ReactNode;
 }) {
   return (
@@ -20,7 +25,11 @@ export function FieldWithMetadata({
         <label className="block text-xs font-medium text-gray-01">
           {label}
         </label>
-        <MetadataDetailsDialog fieldLabel={fieldLabel} metadata={metadata} />
+        <MetadataDetailsDialog
+          fieldLabel={fieldLabel}
+          metadata={metadata}
+          metadataHistory={metadataHistory}
+        />
       </div>
       {children}
     </div>
