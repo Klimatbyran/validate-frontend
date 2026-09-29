@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { ChevronDown, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,39 @@ import type {
   CoverageMatchSaveAction,
 } from "@/tabs/overview/lib/coverage-types";
 
+const coverageMetaSelectClassName =
+  "appearance-none rounded-md border border-gray-03 bg-gray-05 pl-2.5 pr-8 py-1.5 text-sm text-gray-01 focus:outline-none focus:ring-2 focus:ring-blue-03/50 focus:border-blue-03";
+
+function CoverageMetaSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: ReactNode;
+}) {
+  return (
+    <label className="flex items-center gap-2 text-sm text-gray-02">
+      <span>{label}</span>
+      <span className="relative inline-flex items-center">
+        <select
+          className={coverageMetaSelectClassName}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        >
+          {children}
+        </select>
+        <ChevronDown
+          aria-hidden
+          className="pointer-events-none absolute right-2 h-3.5 w-3.5 text-gray-02"
+        />
+      </span>
+    </label>
+  );
+}
 type DialogState =
   | { kind: "closed" }
   | { kind: "createList"; groupId?: string | null }
@@ -244,58 +277,54 @@ export function CoverageView() {
                 {selectedList.locale?.label ??
                   t("overview.coverage.localeNone")}
               </span>
-              <label className="flex items-center gap-2 text-sm text-gray-02">
-                <span>{t("overview.coverage.groupLabel")}</span>
-                <select
-                  className="rounded-md border border-gray-03 bg-white px-2 py-1 text-sm text-gray-01"
-                  value={selectedList.group?.id ?? ""}
-                  onChange={(event) => {
-                    const nextGroupId = event.target.value || null;
-                    void coverage
-                      .updateList(selectedList.id, { groupId: nextGroupId })
-                      .catch((error) => {
-                        toast.error(
-                          error instanceof Error
-                            ? error.message
-                            : t("overview.coverage.errorTitle"),
-                        );
-                      });
-                  }}
-                >
-                  <option value="">{t("overview.coverage.groupNone")}</option>
-                  {coverage.groups.map((group) => (
-                    <option key={group.id} value={group.id}>
-                      {group.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex items-center gap-2 text-sm text-gray-02">
-                <span>{t("overview.coverage.localeLabel")}</span>
-                <select
-                  className="rounded-md border border-gray-03 bg-white px-2 py-1 text-sm text-gray-01"
-                  value={selectedList.locale?.id ?? ""}
-                  onChange={(event) => {
-                    const nextLocaleId = event.target.value || null;
-                    void coverage
-                      .updateList(selectedList.id, { localeId: nextLocaleId })
-                      .catch((error) => {
-                        toast.error(
-                          error instanceof Error
-                            ? error.message
-                            : t("overview.coverage.errorTitle"),
-                        );
-                      });
-                  }}
-                >
-                  <option value="">{t("overview.coverage.localeNone")}</option>
-                  {coverage.locales.map((locale) => (
-                    <option key={locale.id} value={locale.id}>
-                      {locale.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <CoverageMetaSelect
+                label={t("overview.coverage.groupLabel")}
+                value={selectedList.group?.id ?? ""}
+                onChange={(nextGroupId) => {
+                  void coverage
+                    .updateList(selectedList.id, {
+                      groupId: nextGroupId || null,
+                    })
+                    .catch((error) => {
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : t("overview.coverage.errorTitle"),
+                      );
+                    });
+                }}
+              >
+                <option value="">{t("overview.coverage.groupNone")}</option>
+                {coverage.groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.label}
+                  </option>
+                ))}
+              </CoverageMetaSelect>
+              <CoverageMetaSelect
+                label={t("overview.coverage.localeLabel")}
+                value={selectedList.locale?.id ?? ""}
+                onChange={(nextLocaleId) => {
+                  void coverage
+                    .updateList(selectedList.id, {
+                      localeId: nextLocaleId || null,
+                    })
+                    .catch((error) => {
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : t("overview.coverage.errorTitle"),
+                      );
+                    });
+                }}
+              >
+                <option value="">{t("overview.coverage.localeNone")}</option>
+                {coverage.locales.map((locale) => (
+                  <option key={locale.id} value={locale.id}>
+                    {locale.label}
+                  </option>
+                ))}
+              </CoverageMetaSelect>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
