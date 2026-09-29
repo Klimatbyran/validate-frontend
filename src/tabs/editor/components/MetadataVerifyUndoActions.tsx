@@ -1,11 +1,15 @@
 import { BadgeCheck, Undo2 } from "lucide-react";
 import { IconActionButton } from "@/ui/icon-action-button";
-import type { GarboFieldMetadata } from "../lib/types";
+import type {
+  GarboFieldMetadata,
+  GarboMetadataHistory,
+} from "../lib/types";
 import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
 
 export function MetadataVerifyUndoActions({
   fieldLabel,
   metadata,
+  metadataHistory,
   verified,
   onToggleVerified,
   verifyTitle,
@@ -18,6 +22,7 @@ export function MetadataVerifyUndoActions({
 }: {
   fieldLabel: string;
   metadata: GarboFieldMetadata | null;
+  metadataHistory?: GarboMetadataHistory | null;
   verified: boolean;
   onToggleVerified: () => void;
   verifyTitle: string;
@@ -30,7 +35,11 @@ export function MetadataVerifyUndoActions({
 }) {
   return (
     <>
-      <MetadataDetailsDialog fieldLabel={fieldLabel} metadata={metadata} />
+      <MetadataDetailsDialog
+        fieldLabel={fieldLabel}
+        metadata={metadata}
+        metadataHistory={metadataHistory}
+      />
       <IconActionButton
         variant={variant}
         onClick={onToggleVerified}

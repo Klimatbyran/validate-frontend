@@ -221,7 +221,7 @@
       "viewDetails": "View details",
       "openFieldMetadata": "Open {{field}} metadata",
       "titleWithField": "{{field}} details",
-      "description": "Source and validation metadata for this field.",
+      "description": "Source, validation, and change history for this field.",
       "sectionDetails": "Details",
       "updated": "Updated",
       "verifiedBy": "Verified by",
@@ -231,7 +231,11 @@
       "sourcePage": "Report page",
       "openSourcePage": "Open report page",
       "comment": "Comment",
-      "verifiedYes": "Yes"
+      "verifiedYes": "Yes",
+      "history": "Change history",
+      "previousValue": "Previous value",
+      "unknownUser": "Unknown user",
+      "bot": "bot"
     },
     "reviewerDialog": {
       "title": "Reviewer details",

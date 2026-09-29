@@ -5,6 +5,7 @@ import { IconActionButton } from "@/ui/icon-action-button";
 import { inputClassName } from "../../../lib/company-edit-utils";
 import type {
   GarboFieldMetadata,
+  GarboMetadataHistory,
   GarboReportingPeriodSummary,
 } from "../../../lib/types";
 import type { ReportingPeriodQuickEditEdited } from "../../../lib/reporting-period-quick-edit";
@@ -27,6 +28,7 @@ type NumberRowSpec = {
   dirty: boolean;
   fieldLabel: string;
   metadata: GarboFieldMetadata | null;
+  metadataHistory?: GarboMetadataHistory | null;
   onChange: (next: string) => void;
   onReset: () => void;
   resetTitle: string;
@@ -118,6 +120,7 @@ export function EmissionsSection({
       dirty: edited.scope1Total != null,
       fieldLabel: t("editor.companies.scope1"),
       metadata: period.emissions?.scope1?.metadata as GarboFieldMetadata | null,
+      metadataHistory: period.emissions?.scope1?.metadataHistory,
       onChange: (next) =>
         setNullableEdit("scope1Total", next, originalScope1 != null),
       onReset: () =>
@@ -141,6 +144,7 @@ export function EmissionsSection({
       fieldLabel: scope12Label,
       metadata: period.emissions?.scope1And2
         ?.metadata as GarboFieldMetadata | null,
+      metadataHistory: period.emissions?.scope1And2?.metadataHistory,
       onChange: (next) =>
         setNullableEdit("scope1And2Total", next, originalScope1And2 != null),
       onReset: () =>
@@ -164,6 +168,8 @@ export function EmissionsSection({
       fieldLabel: t("editor.reportingPeriodQuickEdit.scope3StatedTotal"),
       metadata: period.emissions?.scope3?.statedTotalEmissions
         ?.metadata as GarboFieldMetadata | null,
+      metadataHistory:
+        period.emissions?.scope3?.statedTotalEmissions?.metadataHistory,
       onChange: (next) =>
         setNullableEdit(
           "scope3StatedTotal",
@@ -194,6 +200,7 @@ export function EmissionsSection({
       fieldLabel: t("editor.reportingPeriodQuickEdit.overallStatedTotal"),
       metadata: period.emissions?.statedTotalEmissions
         ?.metadata as GarboFieldMetadata | null,
+      metadataHistory: period.emissions?.statedTotalEmissions?.metadataHistory,
       onChange: (next) =>
         setNullableEdit(
           "statedTotalEmissions",
@@ -234,6 +241,7 @@ export function EmissionsSection({
             inputClassName={inputClassName}
             fieldLabel={row.fieldLabel}
             metadata={row.metadata}
+            metadataHistory={row.metadataHistory}
             onReset={row.onReset}
             resetTitle={row.resetTitle}
             verified={row.verified}
@@ -255,6 +263,7 @@ export function EmissionsSection({
                   period.emissions?.scope2
                     ?.metadata as GarboFieldMetadata | null
                 }
+                metadataHistory={period.emissions?.scope2?.metadataHistory}
               />
               <IconActionButton
                 variant="md"
@@ -364,6 +373,7 @@ export function EmissionsSection({
           inputClassName={inputClassName}
           fieldLabel={numberRows[2]!.fieldLabel}
           metadata={numberRows[2]!.metadata}
+          metadataHistory={numberRows[2]!.metadataHistory}
           onReset={numberRows[2]!.onReset}
           resetTitle={numberRows[2]!.resetTitle}
           verified={numberRows[2]!.verified}
@@ -387,6 +397,7 @@ export function EmissionsSection({
           inputClassName={inputClassName}
           fieldLabel={numberRows[3]!.fieldLabel}
           metadata={numberRows[3]!.metadata}
+          metadataHistory={numberRows[3]!.metadataHistory}
           onReset={numberRows[3]!.onReset}
           resetTitle={numberRows[3]!.resetTitle}
           verified={numberRows[3]!.verified}

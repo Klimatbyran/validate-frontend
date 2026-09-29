@@ -76,6 +76,7 @@ export function EconomySection({
           metadata={
             period.economy?.turnover?.metadata as GarboFieldMetadata | null
           }
+          metadataHistory={period.economy?.turnover?.metadataHistory}
           onReset={() =>
             setEdited((p) => {
               const n = { ...p };
@@ -161,6 +162,7 @@ export function EconomySection({
               metadata={
                 period.economy?.employees?.metadata as GarboFieldMetadata | null
               }
+              metadataHistory={period.economy?.employees?.metadataHistory}
               verified={employeesVerified}
               onToggleVerified={() =>
                 setEdited((p) => ({
