@@ -56,6 +56,28 @@ export type OverviewSummaryCompanyRef = {
   companyReportCount: number;
 };
 
+export type OverviewCoverageJobRunBase = {
+  id: string;
+  status: "running" | "completed" | "failed";
+  startedAt: string;
+  finishedAt: string | null;
+  failures: number;
+  errorMessage: string | null;
+};
+
+export type OverviewCoverageCrawlJobRun = OverviewCoverageJobRunBase & {
+  candidates: number;
+  crawled: number;
+  savedReports: number;
+  skippedByCooldown: number;
+};
+
+export type OverviewCoverageRematchJobRun = OverviewCoverageJobRunBase & {
+  yearEditions: number;
+  rematchedEntries: number;
+  reportLinks: number;
+};
+
 export type OverviewDailyActivityResponse = {
   localEnv: "stage" | "prod";
   day: string;
@@ -82,6 +104,11 @@ export type OverviewDailyActivityResponse = {
     companiesFirstReportCreated: number;
     batchesCreated: number;
     verifiedMetadataUpdates: number;
+  };
+  /** Latest overnight coverage CronJob run of each kind that started on this day. */
+  coverageJobs?: {
+    crawl: OverviewCoverageCrawlJobRun | null;
+    rematch: OverviewCoverageRematchJobRun | null;
   };
 };
 

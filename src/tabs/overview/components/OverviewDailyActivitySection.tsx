@@ -3,8 +3,105 @@ import { Callout } from "@/ui/callout";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { MetricCard, MetricCardGrid } from "@/ui/metric-card";
 import { useOverviewDailyActivity } from "../hooks/useOverviewDailyActivity";
-import type { OverviewDailyActivityResponse } from "../lib/overview-types";
+import type {
+  OverviewCoverageCrawlJobRun,
+  OverviewCoverageJobRunBase,
+  OverviewCoverageRematchJobRun,
+  OverviewDailyActivityResponse,
+} from "../lib/overview-types";
 import { CountTable, SummarySection } from "./OverviewSummaryShared";
+
+function jobOutcomeLabel(
+  run: OverviewCoverageJobRunBase,
+  t: (key: string) => string,
+): string {
+  if (run.status === "running") {
+    return t("overview.summary.activity.coverage.statusRunning");
+  }
+  if (run.status === "failed") {
+    return t("overview.summary.activity.coverage.statusFailed");
+  }
+  if (run.failures > 0) {
+    return t("overview.summary.activity.coverage.statusCompletedWithFailures");
+  }
+  return t("overview.summary.activity.coverage.statusCompleted");
+}
+
+function CoverageCrawlMetrics({ run }: { run: OverviewCoverageCrawlJobRun }) {
+  const { t } = useI18n();
+  return (
+    <div className="space-y-2">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-02">
+        {t("overview.summary.activity.coverage.crawlTitle")}
+      </h4>
+      <MetricCardGrid className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+        <MetricCard
+          label={t("overview.summary.activity.coverage.outcome")}
+          value={jobOutcomeLabel(run, t)}
+        />
+        <MetricCard
+          label={t("overview.summary.activity.coverage.companiesCrawled")}
+          value={run.crawled}
+        />
+        <MetricCard
+          label={t("overview.summary.activity.coverage.reportsSaved")}
+          value={run.savedReports}
+        />
+        <MetricCard
+          label={t("overview.summary.activity.coverage.failures")}
+          value={run.failures}
+        />
+        <MetricCard
+          label={t("overview.summary.activity.coverage.candidates")}
+          value={run.candidates}
+        />
+      </MetricCardGrid>
+      {run.errorMessage ? (
+        <p className="text-xs text-red-03">{run.errorMessage}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function CoverageRematchMetrics({
+  run,
+}: {
+  run: OverviewCoverageRematchJobRun;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="space-y-2">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-02">
+        {t("overview.summary.activity.coverage.rematchTitle")}
+      </h4>
+      <MetricCardGrid className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+        <MetricCard
+          label={t("overview.summary.activity.coverage.outcome")}
+          value={jobOutcomeLabel(run, t)}
+        />
+        <MetricCard
+          label={t("overview.summary.activity.coverage.rematchedEntries")}
+          value={run.rematchedEntries}
+        />
+        <MetricCard
+          label={t("overview.summary.activity.coverage.reportLinks")}
+          value={run.reportLinks}
+        />
+        <MetricCard
+          label={t("overview.summary.activity.coverage.failures")}
+          value={run.failures}
+        />
+        <MetricCard
+          label={t("overview.summary.activity.coverage.yearEditions")}
+          value={run.yearEditions}
+        />
+      </MetricCardGrid>
+      {run.errorMessage ? (
+        <p className="text-xs text-red-03">{run.errorMessage}</p>
+      ) : null}
+    </div>
+  );
+}
 
 function DailyActivityMetrics({
   activity,
@@ -14,10 +111,33 @@ function DailyActivityMetrics({
   isRefreshing: boolean;
 }) {
   const { t } = useI18n();
-  const { pipeline, data } = activity;
+  const { pipeline, data, coverageJobs } = activity;
+  const hasCoverageJobs = coverageJobs != null;
 
   return (
     <div className={`space-y-4 ${isRefreshing ? "opacity-70" : ""}`}>
+      {hasCoverageJobs ? (
+        <div className="space-y-4">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-02">
+            {t("overview.summary.activity.coverage.sectionTitle")}
+          </h4>
+          {coverageJobs.crawl ? (
+            <CoverageCrawlMetrics run={coverageJobs.crawl} />
+          ) : (
+            <p className="text-sm text-gray-02">
+              {t("overview.summary.activity.coverage.crawlNone")}
+            </p>
+          )}
+          {coverageJobs.rematch ? (
+            <CoverageRematchMetrics run={coverageJobs.rematch} />
+          ) : (
+            <p className="text-sm text-gray-02">
+              {t("overview.summary.activity.coverage.rematchNone")}
+            </p>
+          )}
+        </div>
+      ) : null}
+
       <MetricCardGrid className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         <MetricCard
           label={t("overview.summary.activity.runsStarted")}

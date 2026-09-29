@@ -1428,7 +1428,7 @@
       "showingOf": "Showing {{shown}} of {{total}}",
       "sections": {
         "dailyActivity": "Activity by day",
-        "dailyActivityHint": "Pipeline runs and jobs from the queue archive for the selected calendar day, plus CompanyReports/batches created and approximate verification updates.",
+        "dailyActivityHint": "Overnight coverage crawl/rematch results, pipeline runs and jobs from the queue archive for the selected calendar day, plus CompanyReports/batches created and approximate verification updates.",
         "totals": "Database totals",
         "totalsHint": "Counts from this Unearth instance (stage or prod depending on which API Validate is pointed at).",
         "emissionsByYear": "Companies with emissions data by year",
@@ -1468,6 +1468,25 @@
           "finished": "Finished",
           "completed": "Completed",
           "failed": "Failed"
+        },
+        "coverage": {
+          "sectionTitle": "Overnight coverage jobs",
+          "crawlTitle": "Coverage crawl",
+          "rematchTitle": "Coverage rematch",
+          "crawlNone": "No coverage crawl run started this day.",
+          "rematchNone": "No coverage rematch run started this day.",
+          "outcome": "Outcome",
+          "statusRunning": "Running",
+          "statusCompleted": "Completed",
+          "statusCompletedWithFailures": "Completed with failures",
+          "statusFailed": "Failed",
+          "companiesCrawled": "Companies crawled",
+          "reportsSaved": "Reports saved",
+          "failures": "Failures",
+          "candidates": "Candidates",
+          "rematchedEntries": "Entries rematched",
+          "reportLinks": "Report links",
+          "yearEditions": "Year editions"
         }
       },
       "metrics": {
