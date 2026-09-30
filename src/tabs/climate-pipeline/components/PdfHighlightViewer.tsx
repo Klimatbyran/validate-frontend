@@ -1583,7 +1583,14 @@ function PdfHighlightBody({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- focusedPhrasesKey is a content signature for focusedPhrases (a fresh array each render), same pattern as verifiedPhrasesKey above
-  }, [container, zoom, focusedPhrase, focusedPhrasesKey, isLoading, isFocusedOnly]);
+  }, [
+    container,
+    zoom,
+    focusedPhrase,
+    focusedPhrasesKey,
+    isLoading,
+    isFocusedOnly,
+  ]);
 
   // Full multi-page load — renders every page with verifiedPhrases
   // highlighted yellow. Skipped for the fast single-page path (isFocusedOnly),
