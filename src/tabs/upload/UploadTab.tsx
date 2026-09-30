@@ -67,6 +67,8 @@ export function UploadTab() {
   const [selectedWorkers, setSelectedWorkers] =
     useState<RunOnlyWorkerId[]>(DEFAULT_RUN_ONLY);
   const [forceReindex, setForceReindex] = useState(false);
+  const [forceRedescribeImagesToggle, setForceRedescribeImagesToggle] =
+    useState(false);
   const [requireEmissionsPresence, setRequireEmissionsPresence] =
     useState(false);
   const [batchDropdownChoice, setBatchDropdownChoice] = useState<string>("");
@@ -134,6 +136,12 @@ export function UploadTab() {
   // and describe diagrams Docling would otherwise leave as bare image
   // placeholders. No manual toggle; automatic whenever this pipeline is used.
   const readImages = isClimatePlansPipeline ? true : undefined;
+  // Only meaningful alongside readImages — the toggle itself is only shown
+  // for this pipeline (see UploadRunOptions), but guard here too so a
+  // stale true value can never leak into the emissions pipeline's request.
+  const forceRedescribeImages = isClimatePlansPipeline
+    ? forceRedescribeImagesToggle
+    : undefined;
   const effectiveForceReindex = isClimatePlansPipeline ? false : forceReindex;
   const effectiveRequireEmissionsPresence = isClimatePlansPipeline
     ? false
@@ -189,6 +197,7 @@ export function UploadTab() {
         callbackUrl,
         reportTypeSlug,
         readImages,
+        forceRedescribeImages,
       });
 
       const reusedCount = isUploadPdfsEnvelope(result)
@@ -238,6 +247,7 @@ export function UploadTab() {
     callbackUrl,
     reportTypeSlug,
     readImages,
+    forceRedescribeImages,
     t,
     refetchBatches,
   ]);
@@ -367,6 +377,7 @@ export function UploadTab() {
         callbackUrl,
         reportTypeSlug,
         readImages,
+        forceRedescribeImages,
       });
       console.log("Jobs created successfully:", result);
 
@@ -450,6 +461,7 @@ export function UploadTab() {
     callbackUrl,
     reportTypeSlug,
     readImages,
+    forceRedescribeImages,
     t,
     refetchBatches,
   ]);
@@ -570,6 +582,8 @@ export function UploadTab() {
             <TabsContent value="url">
               <UploadRunOptions
                 pipelineMode={pipelineMode}
+                forceRedescribeImages={forceRedescribeImagesToggle}
+                onForceRedescribeImagesChange={setForceRedescribeImagesToggle}
                 batch={{
                   existingBatches,
                   batchesLoading,
@@ -610,6 +624,8 @@ export function UploadTab() {
             <TabsContent value="file">
               <UploadRunOptions
                 pipelineMode={pipelineMode}
+                forceRedescribeImages={forceRedescribeImagesToggle}
+                onForceRedescribeImagesChange={setForceRedescribeImagesToggle}
                 batch={{
                   existingBatches,
                   batchesLoading,

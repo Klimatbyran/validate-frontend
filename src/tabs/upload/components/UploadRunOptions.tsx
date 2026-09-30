@@ -22,6 +22,10 @@ interface UploadRunOptionsProps {
   dropdownUsePortal?: boolean;
   /** When climate-plans, hide emissions worker options and show a pipeline note. */
   pipelineMode?: PipelineMode;
+  /** Climate-plans only — re-run the vision model on every picture instead
+   * of reusing docling_test's cached description for that exact image. */
+  forceRedescribeImages?: boolean;
+  onForceRedescribeImagesChange?: (value: boolean) => void;
 }
 
 export function UploadRunOptions({
@@ -30,6 +34,8 @@ export function UploadRunOptions({
   workers,
   dropdownUsePortal = true,
   pipelineMode = "emissions",
+  forceRedescribeImages = false,
+  onForceRedescribeImagesChange,
 }: UploadRunOptionsProps) {
   const { t } = useI18n();
   const isClimatePlansPipeline = pipelineMode === "climate-plans";
@@ -94,6 +100,43 @@ export function UploadRunOptions({
       </div>
 
       {!isClimatePlansPipeline && <UploadWorkerRunOptions {...workers} />}
+
+      {isClimatePlansPipeline && onForceRedescribeImagesChange && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <label
+              htmlFor="force-redescribe-images"
+              className="text-sm text-gray-01 cursor-pointer"
+            >
+              {t("upload.forceRedescribeImages")}
+            </label>
+            <button
+              id="force-redescribe-images"
+              type="button"
+              role="switch"
+              aria-checked={forceRedescribeImages}
+              onClick={() =>
+                onForceRedescribeImagesChange(!forceRedescribeImages)
+              }
+              className={cn(
+                "relative inline-flex h-6 w-11 items-center rounded-full",
+                "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                forceRedescribeImages ? "bg-orange-03" : "bg-gray-03",
+              )}
+            >
+              <span
+                className={cn(
+                  "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                  forceRedescribeImages ? "translate-x-6" : "translate-x-1",
+                )}
+              />
+            </button>
+          </div>
+          <p className="text-xs text-gray-02">
+            {t("upload.forceRedescribeImagesDescription")}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

@@ -719,6 +719,8 @@
     "runOnly": "Kör endast:",
     "forceReindex": "Tvinga omindexering",
     "forceReindexDescription": "Om på: kör docling även om rapporten redan finns i vektordatabasen (använd efter uppgradering av docling/OCR).",
+    "forceRedescribeImages": "Beskriv om alla bilder",
+    "forceRedescribeImagesDescription": "Om på: kör synmodellen igen på varje bild istället för att återanvända en cachad beskrivning från en tidigare körning (använd efter att bildbeskrivningsprompten förbättrats).",
     "requireEmissionsPresence": "Fortsätt bara om utsläpp nämns",
     "requireEmissionsPresenceDescription": "Om på: efter markdown, sök snabbt efter Scope 1/2/3. Om inget hittas hoppas precheck och all LLM-extraktion över (körningen blir skipped_no_emissions).",
     "climatePlansPipelineActive": "Klimatplanspipeline",

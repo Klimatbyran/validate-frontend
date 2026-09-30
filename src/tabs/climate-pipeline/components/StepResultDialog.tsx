@@ -3,14 +3,22 @@ import {
   Loader2,
   ChevronsDown,
   ChevronsUp,
+  Code,
+  Copy,
   FileCheck,
+  FileText,
   FileWarning,
   Image,
   Plus,
   RotateCw,
   SearchCheck,
+  Tags,
+  Target,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Modal } from "@/ui/modal";
+import { CollapsibleSection } from "@/ui/collapsible-section";
+import { MarkdownVectorPagesDisplay } from "@/ui/markdown-display";
 import { PdfHighlightViewer, PdfHighlightPanel } from "./PdfHighlightViewer";
 import { ResizableSplitView } from "./ResizableSplitView";
 import { Button } from "@/ui/button";
@@ -28,6 +36,7 @@ import {
   type ActivityShift,
   type Commitment,
   type DocumentReference,
+  type DocumentReferenceRelationship,
   type ExtractedMeasure,
   type ClimatePlanDetail,
 } from "../hooks/useClimatePlanDetail";
@@ -115,6 +124,19 @@ function activityShiftEntityKey(shift: ActivityShift): string {
   ]
     .join("|")
     .slice(0, 200);
+}
+
+function documentReferenceTone(
+  relationship: DocumentReferenceRelationship,
+): MetaChipTone {
+  switch (relationship) {
+    case "companion":
+      return "type";
+    case "initiative":
+      return "relevance";
+    default:
+      return "score";
+  }
 }
 
 function QaFooter({ children }: { children: React.ReactNode }) {
@@ -635,23 +657,25 @@ function RerunButton({
   step: string;
   onRerun: () => void;
 }) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingMode, setLoadingMode] = useState<"cascade" | "single" | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
-  const handleClick = async () => {
-    setIsLoading(true);
+  const handleClick = async (noCascade: boolean) => {
+    setLoadingMode(noCascade ? "single" : "cascade");
     setError(null);
     try {
-      const res = await fetch(
-        `${getClimatePlansPipelineApiUrl()}/plans/${planId}/rerun/${step}`,
-        { method: "POST" },
-      );
+      const url = `${getClimatePlansPipelineApiUrl()}/plans/${planId}/rerun/${step}${
+        noCascade ? "?noCascade=true" : ""
+      }`;
+      const res = await fetch(url, { method: "POST" });
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       onRerun();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to rerun");
     } finally {
-      setIsLoading(false);
+      setLoadingMode(null);
     }
   };
 
@@ -660,16 +684,32 @@ function RerunButton({
       <Button
         variant="outline"
         size="sm"
-        onClick={handleClick}
-        disabled={isLoading}
+        onClick={() => handleClick(false)}
+        disabled={loadingMode !== null}
         className="h-7 px-3 text-xs"
+        title="Rerun this step and cascade through every step after it"
       >
-        {isLoading ? (
+        {loadingMode === "cascade" ? (
           <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
         ) : (
           <RotateCw className="w-3 h-3 mr-1.5" />
         )}
         Rerun from here
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => handleClick(true)}
+        disabled={loadingMode !== null}
+        className="h-7 px-3 text-xs"
+        title="Rerun only this step, without re-running anything downstream"
+      >
+        {loadingMode === "single" ? (
+          <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+        ) : (
+          <RotateCw className="w-3 h-3 mr-1.5" />
+        )}
+        Rerun only this step
       </Button>
       {error && <span className="text-xs text-pink-03">{error}</span>}
     </div>
@@ -747,6 +787,32 @@ function NotFoundInPdfFlag() {
     >
       <FileWarning className="h-3 w-3" aria-hidden />
       <span>Not in PDF text</span>
+    </span>
+  );
+}
+
+const ORIGIN_LABELS: Record<string, string> = {
+  region: "region",
+  national: "national",
+  eu: "EU",
+  other: "other",
+};
+
+/** Flags a commitment whose target/measure is explicitly attributed to
+ * another body rather than being the municipality's own — not always a
+ * numeric "goal", can equally be a measure someone else suggested.
+ * Independent of actor: the municipality is usually still the one doing
+ * the committing. Can name more than one body at once. */
+function OriginFlag({ originatesFrom }: { originatesFrom: Commitment["originatesFrom"] }) {
+  if (!originatesFrom || originatesFrom.length === 0) return null;
+  const label = originatesFrom.map((o) => ORIGIN_LABELS[o] ?? o).join(", ");
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-blue-03/40 bg-blue-03/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-03"
+      title={`Originates from ${label} — not a target/measure the municipality set itself`}
+    >
+      <Target className="h-3 w-3" aria-hidden />
+      <span>Originates from: {label}</span>
     </span>
   );
 }
@@ -845,16 +911,20 @@ function DocumentReferencesList({
   }
   // A group's relationship is whichever member is "companion" — one
   // mention explicitly tying it to this plan's own measures outweighs
-  // other mentions that were merely topically relevant.
+  // other mentions that were merely topically relevant. "initiative" is
+  // the next strongest signal (an explicit adoption act), then "related".
   const groupedRefs = [...groups.values()].map((members) => ({
     name: members[0].name,
     relationship: members.some((m) => m.relationship === "companion")
       ? ("companion" as const)
-      : ("related" as const),
+      : members.some((m) => m.relationship === "initiative")
+        ? ("initiative" as const)
+        : ("related" as const),
     members,
   }));
 
   const companions = groupedRefs.filter((g) => g.relationship === "companion");
+  const initiatives = groupedRefs.filter((g) => g.relationship === "initiative");
   const related = groupedRefs.filter((g) => g.relationship === "related");
 
   const renderGroup = (group: (typeof groupedRefs)[number]) => (
@@ -865,7 +935,7 @@ function DocumentReferencesList({
       <div className="flex flex-wrap items-center gap-2">
         <MetaChip
           label="Relationship"
-          tone={group.relationship === "companion" ? "type" : "score"}
+          tone={documentReferenceTone(group.relationship)}
         >
           {group.relationship}
         </MetaChip>
@@ -913,6 +983,15 @@ function DocumentReferencesList({
             {companions.length})
           </p>
           <div className="space-y-2">{companions.map(renderGroup)}</div>
+        </div>
+      )}
+      {initiatives.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-02">
+            Initiative — a regional/national program the municipality has
+            explicitly joined ({initiatives.length})
+          </p>
+          <div className="space-y-2">{initiatives.map(renderGroup)}</div>
         </div>
       )}
       {related.length > 0 && (
@@ -998,6 +1077,7 @@ function CommitmentsList({
             <FoundInDocumentFlag unverified={c.unverified} />
             {c.fromRecoveredImage && <ImageSourceFlag />}
             {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
+            <OriginFlag originatesFrom={c.originatesFrom} />
           </div>
           <p className="text-sm text-gray-01 break-words">{c.text}</p>
           <QaFooter>
@@ -1129,6 +1209,7 @@ function CommitmentsList({
                         <FoundInDocumentFlag unverified={c.unverified} />
                         {c.fromRecoveredImage && <ImageSourceFlag />}
                         {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
+                                    <OriginFlag originatesFrom={c.originatesFrom} />
                       </div>
                       <p className="text-sm text-gray-01 break-words">
                         {c.text}
@@ -1199,7 +1280,7 @@ function CommitmentsList({
         </p>
       )}
       {commitments.map((c, idx) => (
-        <div key={c.id} className="space-y-3">
+        <div key={c.id} id={`commitment-${c.id}`} className="space-y-3">
           {columns === "extract" &&
             c.section !== commitments[idx - 1]?.section &&
             referencesBySection.get(c.section)?.map((ref) => (
@@ -1210,7 +1291,7 @@ function CommitmentsList({
                 <p className="flex flex-wrap items-center gap-2 font-medium">
                   <MetaChip
                     label="Relationship"
-                    tone={ref.relationship === "companion" ? "type" : "score"}
+                    tone={documentReferenceTone(ref.relationship)}
                   >
                     {ref.relationship}
                   </MetaChip>
@@ -1242,13 +1323,18 @@ function CommitmentsList({
               <FoundInDocumentFlag unverified={c.unverified} />
               {c.fromRecoveredImage && <ImageSourceFlag />}
               {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
-              {!c.unverified && !c.fromRecoveredImage && (
+                <OriginFlag originatesFrom={c.originatesFrom} />
+              {!c.unverified && (
                 <button
                   onClick={() =>
                     setPdfViewer({ mode: "focused", commitment: c })
                   }
                   className="inline-flex items-center gap-1 rounded-md border border-gray-03 bg-gray-03/40 px-2 py-1 text-xs text-gray-01 hover:bg-gray-03/60"
-                  title="Find and highlight this passage in the source PDF"
+                  title={
+                    c.fromRecoveredImage
+                      ? "Search for this passage in the source PDF — docling routed it through image recovery, but the PDF sometimes has real selectable text there anyway"
+                      : "Find and highlight this passage in the source PDF"
+                  }
                 >
                   <SearchCheck className="w-3 h-3" />
                   Find in PDF
@@ -1276,6 +1362,15 @@ function CommitmentsList({
             <p className="text-sm text-gray-01 break-words whitespace-pre-wrap">
               {c.text}
             </p>
+            {c.type === "TABLE" && c.tableMetadata && c.tableMetadata.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {c.tableMetadata.map((field, i) => (
+                  <MetaChip key={i} label={field.label}>
+                    {field.value}
+                  </MetaChip>
+                ))}
+              </div>
+            )}
             {columns === "extract" && c.section && (
               <p className="text-xs text-gray-02 break-words">
                 Section: {c.section}
@@ -1430,6 +1525,17 @@ export function StepResultDialog({
     setPdfMissingPhrases(new Set());
   }, [plan?.id, step, open]);
 
+  // Opening the split panel swaps the commitments list into a whole new
+  // parent (plain scroll div -> ResizableSplitView's left pane), so React
+  // remounts it at scroll position 0 — losing the spot the user was just
+  // looking at. Re-find the clicked commitment in the fresh DOM and scroll
+  // it back into view instead of leaving the list jumped to the top.
+  useEffect(() => {
+    if (pdfViewer?.mode !== "focused") return;
+    const el = document.getElementById(`commitment-${pdfViewer.commitment.id}`);
+    el?.scrollIntoView({ block: "center" });
+  }, [pdfViewer]);
+
   if (!plan || !step) return null;
 
   const stepRuns = plan.pipelineSteps.filter((s) => s.step === step);
@@ -1459,11 +1565,42 @@ export function StepResultDialog({
   // the ones visible in the current step. Hoisted above the content IIFE
   // (rather than computed inside it) so the split-view PDF panel in the
   // return statement below can use the same values.
-  const allVerifiedPhrases = detail
-    ? detail.commitments
-        .filter((c) => !c.unverified && !c.fromRecoveredImage)
-        .map((c) => c.text)
+  // Flat per-part phrases, not one string per commitment — a merged
+  // commitment's parts don't always sit next to each other in the source
+  // (see commitmentExtraction.ts's merge loop), so searching for the whole
+  // merged text as one string would miss every part after the first. Each
+  // part is searched/highlighted independently (same pattern as the
+  // focused-commitment path — see PdfHighlightViewer's verifiedPhrases
+  // loop, which already unions per-phrase matches into one highlight set).
+  // Includes fromRecoveredImage commitments too — docling routes a region
+  // through image recovery when its OWN layout model misclassifies it as a
+  // picture, which doesn't always mean the underlying PDF actually lacks
+  // real selectable text there (confirmed on a real plan: pdftotext found
+  // clean text at a spot docling had classified as an image). Searching
+  // anyway and falling back to NotFoundInPdfFlag when it's a genuine image
+  // costs nothing — the search already handles "not found" gracefully for
+  // ordinary misses.
+  const verifiedCommitments = detail
+    ? detail.commitments.filter((c) => !c.unverified)
     : [];
+  const allVerifiedPhrases = verifiedCommitments.flatMap((c) =>
+    c.extractionParts && c.extractionParts.length > 0
+      ? c.extractionParts.map((p) => p.text)
+      : [c.text],
+  );
+  // Maps each searched part phrase back to the commitment it belongs to,
+  // so "this part wasn't found" can be reported as "this commitment wasn't
+  // fully found" via pdfMissingPhrases (keyed by commitment text, per the
+  // NotFoundInPdfFlag checks below) without changing what those checks key
+  // on.
+  const partToCommitmentText = new Map<string, string>();
+  for (const c of verifiedCommitments) {
+    const parts =
+      c.extractionParts && c.extractionParts.length > 0
+        ? c.extractionParts.map((p) => p.text)
+        : [c.text];
+    for (const part of parts) partToCommitmentText.set(part, c.text);
+  }
   const pdfUrl = detail
     ? `${getClimatePlansPipelineApiUrl()}/plans/${detail.id}/pdf`
     : "";
@@ -1480,11 +1617,25 @@ export function StepResultDialog({
       );
 
     if (searchedFullVerifiedSet) {
-      setPdfMissingPhrases(missingFromThisSearch);
+      // result.* here are per-part phrases (see allVerifiedPhrases above)
+      // — a commitment counts as missing if ANY of its own parts wasn't
+      // found, same "every part must hold" bar the worker's own
+      // unverified check uses. pdfMissingPhrases stays keyed by
+      // commitment text either way, so NotFoundInPdfFlag's checks don't
+      // need to change.
+      const missingCommitments = new Set<string>();
+      for (const phrase of missingFromThisSearch) {
+        const commitmentText = partToCommitmentText.get(phrase);
+        if (commitmentText) missingCommitments.add(commitmentText);
+      }
+      setPdfMissingPhrases(missingCommitments);
       return;
     }
 
     // Single-commitment find: merge into any prior "view all" result.
+    // This path's phrases are already commitment-level (the focused path
+    // reports missing/searched using the commitment's flat text as its
+    // identifier — see PdfHighlightBody), unlike the view-all path above.
     setPdfMissingPhrases((previous) => {
       const next = new Set(previous);
       for (const phrase of result.searchedPhrases) {
@@ -1684,6 +1835,69 @@ export function StepResultDialog({
       )}
     </div>
   );
+  // Lets a reviewer check how docling's parsed markdown actually renders
+  // (tables in particular — table-structure bugs like the banner-row one
+  // fixed in commitmentText.ts are much easier to spot rendered than in
+  // raw pipe-syntax) without leaving the dialog. Same rendering component
+  // used for company markdown (see markdown-display.tsx).
+  const sourceMarkdownSection = detail?.markdown ? (
+    <div className="mt-3">
+      <CollapsibleSection
+        title="Source markdown — pretty"
+        icon={<FileText />}
+        accentIconBg="bg-blue-03/20"
+        accentTextColor="text-blue-03"
+      >
+        <div className="prose prose-sm prose-invert max-w-none">
+          <MarkdownVectorPagesDisplay value={detail.markdown} />
+        </div>
+      </CollapsibleSection>
+      <CollapsibleSection
+        title="Source markdown — raw"
+        icon={<Code />}
+        accentIconBg="bg-pink-03/20"
+        accentTextColor="text-pink-03"
+      >
+        <div className="flex justify-end mb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard.writeText(detail.markdown!);
+              toast.success("Raw markdown copied");
+            }}
+            className="text-gray-02 hover:bg-gray-03/40"
+          >
+            <Copy className="w-4 h-4 mr-1" />
+            Copy
+          </Button>
+        </div>
+        <pre className="text-xs text-gray-02 overflow-x-auto whitespace-pre-wrap">
+          {detail.markdown}
+        </pre>
+      </CollapsibleSection>
+      {detail.annotatedMarkdown && (
+        <CollapsibleSection
+          title="Source markdown — annotated"
+          icon={<Tags />}
+          accentIconBg="bg-orange-03/20"
+          accentTextColor="text-orange-03"
+        >
+          <p className="text-xs text-gray-02 mb-2">
+            The source markdown with "[SYSTEM NOTE: ...]" markers inserted
+            wherever a heading is immediately preceded by a bare-number
+            decorative image — exactly what chunking/extraction actually
+            sees for those headings (see rule 8). Computed fresh on every
+            fetch, never stored, never used for verification.
+          </p>
+          <pre className="text-xs text-gray-02 overflow-x-auto whitespace-pre-wrap">
+            {detail.annotatedMarkdown}
+          </pre>
+        </CollapsibleSection>
+      )}
+    </div>
+  ) : null;
+
   const dialogDescription =
     step === "documentReferences" ? (
       "Collected by extractCommitments across all sections, then deduplicated by groupDocumentReferences — this view itself isn't a separate pipeline step."
@@ -1742,6 +1956,7 @@ export function StepResultDialog({
                 </div>
               </div>
               {content}
+              {sourceMarkdownSection}
             </>
           }
           right={
@@ -1760,6 +1975,11 @@ export function StepResultDialog({
                   ? pdfViewer.commitment.text
                   : undefined
               }
+              focusedPhraseParts={
+                pdfViewer?.mode === "focused"
+                  ? pdfViewer.commitment.extractionParts?.map((p) => p.text)
+                  : undefined
+              }
               onVerifiedSearchComplete={handleVerifiedSearchComplete}
               onClose={() => setPdfViewer(null)}
             />
@@ -1767,7 +1987,10 @@ export function StepResultDialog({
         />
       ) : (
         <>
-          <div className="mt-4 min-w-0 overflow-x-hidden">{content}</div>
+          <div className="mt-4 min-w-0 overflow-x-hidden">
+            {content}
+            {sourceMarkdownSection}
+          </div>
           {pdfViewer && (
             <PdfHighlightViewer
               open
@@ -1781,6 +2004,11 @@ export function StepResultDialog({
               focusedPhrase={
                 pdfViewer.mode === "focused"
                   ? pdfViewer.commitment.text
+                  : undefined
+              }
+              focusedPhraseParts={
+                pdfViewer.mode === "focused"
+                  ? pdfViewer.commitment.extractionParts?.map((p) => p.text)
                   : undefined
               }
               onVerifiedSearchComplete={handleVerifiedSearchComplete}

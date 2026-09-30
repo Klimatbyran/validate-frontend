@@ -206,6 +206,34 @@ function foldedNeedleCandidates(phrase: string): string[] {
   return candidates;
 }
 
+/** Splits a phrase on its first colon into [before, after] — a colon often
+ * joins two halves that read fine as one commitment ("Kommunen ska också
+ * där det är möjligt: ställa sysselsättningskrav...") but weren't
+ * necessarily printed as one continuous run in the PDF (a colon-introduced
+ * clause, list intro, etc.). Returns null when there's no colon, or either
+ * side is too short to search for safely. Deliberately NOT one more
+ * candidate in foldedNeedleCandidates's ladder — that ladder picks the
+ * FIRST candidate that matches and stops, so if "before" happened to match
+ * it would win and "after" would never even be attempted. The two halves
+ * aren't alternatives to each other (unlike the word-count prefixes, which
+ * are increasingly-short versions of the SAME text) — they're disjoint, so
+ * both need to be searched and highlighted independently. See
+ * findMatchedItemIndicesWithFallback, which tries this only once the whole
+ * phrase has already failed to match on its own. */
+function colonSplitParts(phrase: string): [string, string] | null {
+  const colonIndex = phrase.indexOf(":");
+  if (colonIndex === -1) return null;
+  const before = phrase.slice(0, colonIndex).trim();
+  const after = phrase.slice(colonIndex + 1).trim();
+  if (
+    foldForSearch(before).length < MIN_FOLDED_NEEDLE_LENGTH ||
+    foldForSearch(after).length < MIN_FOLDED_NEEDLE_LENGTH
+  ) {
+    return null;
+  }
+  return [before, after];
+}
+
 interface PageTextItem {
   str: string;
   hasEOL: boolean;
@@ -763,6 +791,54 @@ function findMatchedItemIndices(
   return { count, itemIndices };
 }
 
+/** Same as findMatchedItemIndices, but with one more fallback tier: if the
+ * whole phrase (and its word-count prefixes) genuinely isn't found at all,
+ * and the phrase has a colon, search for the text before and after it
+ * INDEPENDENTLY and union whatever either one finds — rather than picking
+ * whichever one happens to match first and ignoring the other (that's what
+ * folding them into foldedNeedleCandidates's single-winner ladder used to
+ * do, and it meant only one half of a two-part statement ever got
+ * highlighted even when both halves were genuinely present on the page).
+ * Only kicks in once the full phrase has already failed — see
+ * colonSplitParts. */
+function findMatchedItemIndicesWithFallback(
+  items: PageTextItem[],
+  phrase: string,
+): { count: number; itemIndices: Set<number> } {
+  const wholePhraseResult = findMatchedItemIndices(items, phrase);
+
+  const parts = colonSplitParts(phrase);
+  if (!parts) return wholePhraseResult;
+
+  // foldedNeedleCandidates's prefix ladder (8/12/20 words) means
+  // wholePhraseResult can already be non-empty from a PREFIX match alone —
+  // if the text before the colon is that long on its own, the prefix
+  // candidate matches just the "before" half and "after" is never even
+  // searched. A non-empty result therefore doesn't prove both halves were
+  // found, so check for "after" specifically rather than trusting
+  // wholePhraseResult's mere presence.
+  const [before, after] = parts;
+  const afterResult = findMatchedItemIndices(items, after);
+  const afterAlreadyCovered = [...afterResult.itemIndices].some((i) =>
+    wholePhraseResult.itemIndices.has(i),
+  );
+  if (wholePhraseResult.itemIndices.size > 0 && afterAlreadyCovered) {
+    return wholePhraseResult;
+  }
+
+  const beforeResult = findMatchedItemIndices(items, before);
+  const itemIndices = new Set([
+    ...wholePhraseResult.itemIndices,
+    ...beforeResult.itemIndices,
+    ...afterResult.itemIndices,
+  ]);
+  const count =
+    wholePhraseResult.itemIndices.size > 0
+      ? wholePhraseResult.count
+      : beforeResult.count + afterResult.count;
+  return { count, itemIndices };
+}
+
 /** Product of CSS `zoom` on `element` and its ancestors — getClientRects /
  * getBoundingClientRect return visual pixels that already include this, but
  * absolutely-positioned children inside a zoomed overlay still use the
@@ -1256,7 +1332,10 @@ async function renderPageWithHighlights(
   let verifiedMatches = 0;
   const touchedItemIndices = new Set<number>();
   for (const phrase of verifiedPhrases) {
-    const { count, itemIndices } = findMatchedItemIndices(items, phrase);
+    const { count, itemIndices } = findMatchedItemIndicesWithFallback(
+      items,
+      phrase,
+    );
     verifiedMatches += count;
     for (const i of itemIndices) touchedItemIndices.add(i);
   }
@@ -1279,19 +1358,46 @@ async function renderPageWithHighlights(
   };
 }
 
-/** Searches one already-rendered page's cached data for `phrase` and, if
- * found, draws a red highlight for it — the cheap path a focusedPhrase
- * change takes once the page is already on screen, versus the expensive
- * renderPageWithHighlights above. Hides any yellow bars under the red
- * ones so colours don't stack. Returns the bar elements drawn (for later
- * removal) and whether anything matched. */
+/** Searches one already-rendered page's cached data for each of `phrases`
+ * and, if anything matched, draws a red highlight for it — the cheap path
+ * a focusedPhrase change takes once the page is already on screen, versus
+ * the expensive renderPageWithHighlights above. Hides any yellow bars
+ * under the red ones so colours don't stack. Returns the bar elements
+ * drawn (for later removal), whether anything matched at all (`found` —
+ * for the highlight/zoom/scroll decision, where a partial match is still
+ * worth showing), and which of `phrases` individually matched on this page
+ * (`foundPhrases` — for callers that need to know whether EVERY part was
+ * found, not just whether the union was non-empty; see the two call sites'
+ * missingPhrases reporting, which must not clear a commitment's "not fully
+ * in PDF" flag just because one of several parts turned up). */
 function highlightFocusedPhraseOnPage(
   rendered: RenderedPage,
-  phrase: string,
-): { found: boolean; bars: HTMLElement[]; suggestedZoom: number } {
-  const { itemIndices } = findMatchedItemIndices(rendered.items, phrase);
+  phrases: string[],
+): {
+  found: boolean;
+  foundPhrases: Set<string>;
+  bars: HTMLElement[];
+  suggestedZoom: number;
+} {
+  // A merged commitment's parts don't always sit next to each other in the
+  // source (see commitmentExtraction.ts's merge loop) — search each part
+  // independently and union whichever ones this page actually contains,
+  // same pattern as the verifiedPhrases loop in renderPageWithHighlights.
+  // groupIntoConsecutiveRuns (inside drawMatchHighlights) already draws a
+  // separate box per disconnected run, so a partial match still highlights
+  // exactly the parts that were found instead of requiring all of them.
+  const itemIndices = new Set<number>();
+  const foundPhrases = new Set<string>();
+  for (const phrase of phrases) {
+    const { itemIndices: found } = findMatchedItemIndicesWithFallback(
+      rendered.items,
+      phrase,
+    );
+    if (found.size > 0) foundPhrases.add(phrase);
+    for (const i of found) itemIndices.add(i);
+  }
   if (itemIndices.size === 0) {
-    return { found: false, bars: [], suggestedZoom: 1 };
+    return { found: false, foundPhrases, bars: [], suggestedZoom: 1 };
   }
   const bars = drawMatchHighlights(
     rendered.overlay,
@@ -1303,7 +1409,7 @@ function highlightFocusedPhraseOnPage(
   const suggestedZoom = focusZoomForFontSize(
     averageMatchedFontSizePx(rendered.divs, itemIndices),
   );
-  return { found: true, bars, suggestedZoom };
+  return { found: true, foundPhrases, bars, suggestedZoom };
 }
 
 /** Which verified phrases have no match on any already-rendered page —
@@ -1315,7 +1421,8 @@ function findMissingPhrases(
   return phrases.filter(
     (phrase) =>
       !pages.some(
-        (page) => findMatchedItemIndices(page.items, phrase).count > 0,
+        (page) =>
+          findMatchedItemIndicesWithFallback(page.items, phrase).count > 0,
       ),
   );
 }
@@ -1336,6 +1443,14 @@ export interface PdfHighlightTarget {
    * verifiedPhrases unchanged) does not reload or re-render the document —
    * see the refocus effect below. */
   focusedPhrase?: string;
+  /** The individual sentence-level parts focusedPhrase was merged from
+   * (see Commitment.extractionParts) — when given, searched and
+   * highlighted independently instead of requiring focusedPhrase's full
+   * merged text to match as one contiguous run, since a merge can span a
+   * real gap in the source (excluded background, a bullet marker) that
+   * pdf.js's text layer won't bridge either. Falls back to [focusedPhrase]
+   * when omitted or empty. */
+  focusedPhraseParts?: string[];
   /** Fires after the PDF has been opened and searched — never before open.
    * `missingPhrases` are verified texts we still couldn't locate in the
    * pdf.js text layer (so the commitments list can flag them for manual
@@ -1357,6 +1472,7 @@ function PdfHighlightBody({
   url,
   verifiedPhrases,
   focusedPhrase,
+  focusedPhraseParts,
   onVerifiedSearchComplete,
 }: PdfHighlightTarget & { open: boolean }) {
   // A callback ref backed by state, not a plain useRef — when this runs
@@ -1408,6 +1524,15 @@ function PdfHighlightBody({
   onVerifiedSearchCompleteRef.current = onVerifiedSearchComplete;
 
   const isFocusedOnly = verifiedPhrases.length === 0 && !!focusedPhrase;
+  const focusedPhrases =
+    focusedPhraseParts && focusedPhraseParts.length > 0
+      ? focusedPhraseParts
+      : focusedPhrase
+        ? [focusedPhrase]
+        : [];
+  // Keyed the same way as verifiedPhrasesKey below, for the same reason —
+  // a fresh array/prop identity every render shouldn't retrigger effects.
+  const focusedPhrasesKey = focusedPhrases.join("|");
 
   // The caller's plan-detail data gets refetched on a poll elsewhere in
   // the tree, which hands us a brand-new (but content-identical) array
@@ -1451,13 +1576,21 @@ function PdfHighlightBody({
     focusBarsRef.current = [];
     restoreAllVerifiedBars(pagesRef.current);
     for (const rendered of pagesRef.current) {
-      const result = highlightFocusedPhraseOnPage(rendered, focusedPhrase);
+      const result = highlightFocusedPhraseOnPage(rendered, focusedPhrases);
       if (result.found) {
         focusBarsRef.current.push(...result.bars);
         break;
       }
     }
-  }, [container, zoom, focusedPhrase, isLoading, isFocusedOnly]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- focusedPhrasesKey is a content signature for focusedPhrases (a fresh array each render), same pattern as verifiedPhrasesKey above
+  }, [
+    container,
+    zoom,
+    focusedPhrase,
+    focusedPhrasesKey,
+    isLoading,
+    isFocusedOnly,
+  ]);
 
   // Full multi-page load — renders every page with verifiedPhrases
   // highlighted yellow. Skipped for the fast single-page path (isFocusedOnly),
@@ -1576,7 +1709,18 @@ function PdfHighlightBody({
           ),
         ]);
 
-        const needleCandidates = foldedNeedleCandidates(focusedPhrase!);
+        // Union candidates across every part — a merged commitment only
+        // needs ONE of its parts to be on a page for that to be the right
+        // page to render (see highlightFocusedPhraseOnPage for the actual
+        // per-part highlighting once rendered). Each part's own colon
+        // halves are included too, same fallback as
+        // findMatchedItemIndicesWithFallback uses for the actual
+        // highlighting — a page containing only the text after a part's
+        // colon still needs to be found as the right page.
+        const needleCandidatesByPart = focusedPhrases.map((p) => [
+          ...foldedNeedleCandidates(p),
+          ...(colonSplitParts(p)?.map((half) => foldForSearch(half)) ?? []),
+        ]);
         let targetPageNum: number | null = null;
         for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
           if (cancelled) return;
@@ -1584,14 +1728,23 @@ function PdfHighlightBody({
           const items = await getPageItems(page);
           const { text } = joinPageItems(items);
           const searchable = foldForSearch(text);
-          if (needleCandidates.some((needle) => searchable.includes(needle))) {
+          if (
+            needleCandidatesByPart.some((candidates) =>
+              candidates.some((needle) => searchable.includes(needle)),
+            )
+          ) {
             targetPageNum = pageNum;
             break;
           }
         }
         if (cancelled) return;
 
-        let foundFocused = false;
+        // Which of focusedPhrases actually matched — may be a strict
+        // subset of the whole set even when something matched (a partial
+        // match still highlights and counts as "found" for display), so
+        // this is tracked separately from the highlight/zoom decision for
+        // the missingPhrases report below.
+        let foundPhrases = new Set<string>();
         if (targetPageNum !== null) {
           const page = await doc.getPage(targetPageNum);
           const { rendered } = await renderPageWithHighlights(
@@ -1600,11 +1753,13 @@ function PdfHighlightBody({
             [],
           );
           if (cancelled) return;
-          const { found, bars, suggestedZoom } = highlightFocusedPhraseOnPage(
-            rendered,
-            focusedPhrase!,
-          );
-          foundFocused = found;
+          const {
+            found,
+            foundPhrases: foundOnPage,
+            bars,
+            suggestedZoom,
+          } = highlightFocusedPhraseOnPage(rendered, focusedPhrases);
+          foundPhrases = foundOnPage;
           if (found) {
             setFocusFound(true);
             focusBarsRef.current = bars;
@@ -1623,11 +1778,15 @@ function PdfHighlightBody({
         } else {
           setSearchedWholeDoc(true);
         }
-        setMissingPhraseCount(foundFocused ? 0 : 1);
+        // A commitment only counts as fully verified — clearing its "not
+        // found in PDF" flag — when EVERY part was found, not just the
+        // union that decides whether to highlight/zoom at all.
+        const allPartsFound = focusedPhrases.every((p) => foundPhrases.has(p));
+        setMissingPhraseCount(allPartsFound ? 0 : 1);
         setIsLoading(false);
         onVerifiedSearchCompleteRef.current?.({
           searchedPhrases: [focusedPhrase!],
-          missingPhrases: foundFocused ? [] : [focusedPhrase!],
+          missingPhrases: allPartsFound ? [] : [focusedPhrase!],
         });
       } catch (e) {
         if (!cancelled) {
@@ -1641,7 +1800,8 @@ function PdfHighlightBody({
       cancelled = true;
       loadingTask?.destroy();
     };
-  }, [open, url, focusedPhrase, container, isFocusedOnly]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- focusedPhrasesKey is a content signature for focusedPhrases (a fresh array each render), same pattern as verifiedPhrasesKey above
+  }, [open, url, focusedPhrase, focusedPhrasesKey, container, isFocusedOnly]);
 
   // Refocus — runs whenever focusedPhrase changes while the full
   // multi-page render above is already in place (the panel's normal
@@ -1661,11 +1821,13 @@ function PdfHighlightBody({
     }
 
     let found = false;
+    let foundPhrases = new Set<string>();
     for (const rendered of pagesRef.current) {
-      const result = highlightFocusedPhraseOnPage(rendered, focusedPhrase);
+      const result = highlightFocusedPhraseOnPage(rendered, focusedPhrases);
       if (result.found) {
         focusBarsRef.current.push(...result.bars);
         found = true;
+        foundPhrases = result.foundPhrases;
         requestAnimationFrame(() => {
           if (!container) return;
           const nextZoom = revealFocusHighlight(
@@ -1681,10 +1843,14 @@ function PdfHighlightBody({
       }
     }
     setFocusFound(found);
+    // Same distinction as the fast single-page path above: a partial match
+    // (found is true, but not every part) still highlights, but must not
+    // clear the commitment's "not found in PDF" flag.
+    const allPartsFound = focusedPhrases.every((p) => foundPhrases.has(p));
     if (focusedPhrase) {
       onVerifiedSearchCompleteRef.current?.({
         searchedPhrases: [focusedPhrase],
-        missingPhrases: found ? [] : [focusedPhrase],
+        missingPhrases: allPartsFound ? [] : [focusedPhrase],
       });
     }
     // isLoading flipping false->true->false around a reload (a new
@@ -1692,7 +1858,8 @@ function PdfHighlightBody({
     // no-op (guarded above), and the second searches the freshly
     // rendered pagesRef, so no separate "did it just finish" signal is
     // needed beyond isLoading itself.
-  }, [focusedPhrase, isLoading, isFocusedOnly, container]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- focusedPhrasesKey is a content signature for focusedPhrases (a fresh array each render), same pattern as verifiedPhrasesKey above
+  }, [focusedPhrase, focusedPhrasesKey, isLoading, isFocusedOnly, container]);
 
   const description = isLoading
     ? isFocusedOnly
@@ -1840,6 +2007,7 @@ export function PdfHighlightViewer({
   url,
   verifiedPhrases,
   focusedPhrase,
+  focusedPhraseParts,
   onVerifiedSearchComplete,
 }: PdfHighlightViewerProps) {
   return (
@@ -1855,6 +2023,7 @@ export function PdfHighlightViewer({
         url={url}
         verifiedPhrases={verifiedPhrases}
         focusedPhrase={focusedPhrase}
+        focusedPhraseParts={focusedPhraseParts}
         onVerifiedSearchComplete={onVerifiedSearchComplete}
       />
     </Modal>
@@ -1872,6 +2041,7 @@ export function PdfHighlightPanel({
   url,
   verifiedPhrases,
   focusedPhrase,
+  focusedPhraseParts,
   onVerifiedSearchComplete,
   onClose,
 }: PdfHighlightPanelProps) {
@@ -1894,6 +2064,7 @@ export function PdfHighlightPanel({
           url={url}
           verifiedPhrases={verifiedPhrases}
           focusedPhrase={focusedPhrase}
+          focusedPhraseParts={focusedPhraseParts}
           onVerifiedSearchComplete={onVerifiedSearchComplete}
         />
       </div>

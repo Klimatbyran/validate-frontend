@@ -719,6 +719,8 @@
     "runOnly": "Run only:",
     "forceReindex": "Force reindex",
     "forceReindexDescription": "When on: run docling even if the report already exists in the vector DB (use after docling/OCR upgrade).",
+    "forceRedescribeImages": "Redescribe all images",
+    "forceRedescribeImagesDescription": "When on: re-run the vision model on every picture instead of reusing a cached description from an earlier run (use after improving the image-description prompt).",
     "requireEmissionsPresence": "Only continue if emissions mentioned",
     "requireEmissionsPresenceDescription": "When on: after markdown is ready, cheaply scan for Scope 1/2/3 mentions. If none are found, skip precheck and all LLM extraction (run ends as skipped_no_emissions).",
     "climatePlansPipelineActive": "Climate plans pipeline",
