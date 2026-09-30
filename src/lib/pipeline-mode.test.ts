@@ -9,6 +9,7 @@ describe("pipelineModeForTab", () => {
   it("maps emissions tabs", () => {
     expect(pipelineModeForTab("overview")).toBe("emissions");
     expect(pipelineModeForTab("editor")).toBe("emissions");
+    expect(pipelineModeForTab("review")).toBe("emissions");
   });
 
   it("maps climate-plans tabs", () => {

@@ -53,7 +53,8 @@
     "editor": "Redigerare",
     "pipelineChoice": "Pipeline",
     "pipelineEmissions": "Företagsutsläpp",
-    "pipelineClimatePlans": "Klimatplaner"
+    "pipelineClimatePlans": "Klimatplaner",
+    "review": "Granskning"
   },
   "climatePipeline": {
     "title": "Klimatplanspipeline",
@@ -2242,5 +2243,36 @@
     "waiting": "Väntar",
     "skippedNoEmissions": "Inga Scope 1/2/3 — hoppades över",
     "processingNow": "Bearbetar nu"
+  },
+  "review": {
+    "title": "Manuell granskning",
+    "subtitle": "Datakvalitetsköer för bolag som ser ofullständiga, avvikande eller övergivna ut. Öppna bolaget för att åtgärda, eller avfärda falska positiva tills evidensen ändras.",
+    "refresh": "Uppdatera",
+    "envLine": "{{env}} · uppdaterad {{at}}",
+    "viewsAria": "Granskningsvyer",
+    "views": {
+      "summary": "Översikt",
+      "issue": "Issue"
+    },
+    "groups": {
+      "completeness": "Fullständighet",
+      "temporal": "Tidsluckor",
+      "anomalies": "Värdeanomalier",
+      "identity": "Identitet / skal",
+      "extraction": "Extraktionskvalitet"
+    },
+    "dismissedCount": "{{count}} avfärdade",
+    "authRequired": "Logga in för att ladda manuell granskning.",
+    "backToSummary": "Tillbaka till översikt",
+    "issueFallbackTitle": "Issue",
+    "issueCounts": "{{active}} aktiva · {{dismissed}} avfärdade · visar {{shown}}",
+    "searchPlaceholder": "Sök bolag, Wikidata, LEI…",
+    "showDismissed": "Visa avfärdade",
+    "emptyIssue": "Inga bolag matchar den här issuen just nu.",
+    "openEditor": "Öppna i editor",
+    "dismiss": "Avfärda",
+    "undoDismiss": "Ångra avfärdning",
+    "dismissedBadge": "Avfärdad för den här evidensen",
+    "noIdentifiers": "Ingen Wikidata / LEI"
   }
 }
