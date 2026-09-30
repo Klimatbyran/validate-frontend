@@ -806,19 +806,37 @@ function findMatchedItemIndicesWithFallback(
   phrase: string,
 ): { count: number; itemIndices: Set<number> } {
   const wholePhraseResult = findMatchedItemIndices(items, phrase);
-  if (wholePhraseResult.itemIndices.size > 0) return wholePhraseResult;
 
   const parts = colonSplitParts(phrase);
   if (!parts) return wholePhraseResult;
 
+  // foldedNeedleCandidates's prefix ladder (8/12/20 words) means
+  // wholePhraseResult can already be non-empty from a PREFIX match alone —
+  // if the text before the colon is that long on its own, the prefix
+  // candidate matches just the "before" half and "after" is never even
+  // searched. A non-empty result therefore doesn't prove both halves were
+  // found, so check for "after" specifically rather than trusting
+  // wholePhraseResult's mere presence.
   const [before, after] = parts;
-  const beforeResult = findMatchedItemIndices(items, before);
   const afterResult = findMatchedItemIndices(items, after);
+  const afterAlreadyCovered = [...afterResult.itemIndices].some((i) =>
+    wholePhraseResult.itemIndices.has(i),
+  );
+  if (wholePhraseResult.itemIndices.size > 0 && afterAlreadyCovered) {
+    return wholePhraseResult;
+  }
+
+  const beforeResult = findMatchedItemIndices(items, before);
   const itemIndices = new Set([
+    ...wholePhraseResult.itemIndices,
     ...beforeResult.itemIndices,
     ...afterResult.itemIndices,
   ]);
-  return { count: beforeResult.count + afterResult.count, itemIndices };
+  const count =
+    wholePhraseResult.itemIndices.size > 0
+      ? wholePhraseResult.count
+      : beforeResult.count + afterResult.count;
+  return { count, itemIndices };
 }
 
 /** Product of CSS `zoom` on `element` and its ancestors — getClientRects /
