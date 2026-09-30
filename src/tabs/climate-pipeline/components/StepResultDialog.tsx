@@ -758,7 +758,7 @@ function FoundInDocumentFlag({ unverified }: { unverified: boolean }) {
       ) : (
         <FileWarning className="h-3 w-3" aria-hidden />
       )}
-      <span>{found ? "In doc" : "Not in doc"}</span>
+      <span>{found ? "In markdown" : "Not in markdown"}</span>
     </span>
   );
 }
@@ -1266,17 +1266,17 @@ function CommitmentsList({
       {pdfMissingPhrases.size > 0 && (
         <p className="rounded-md border border-pink-03/30 bg-pink-03/10 px-2.5 py-1.5 text-xs text-pink-03">
           {missingInView > 0
-            ? `${missingInView} commitment(s) in this list weren't found in the PDF text layer after search — marked “Not in PDF text” for manual check.`
-            : `${pdfMissingPhrases.size} verified commitment(s) weren't found in the PDF text layer (may be on another step's filtered list).`}
+            ? `${missingInView} markdown-verified commitment(s) in this list weren't found in the PDF text layer after search — marked “Not in PDF text” for manual check.`
+            : `${pdfMissingPhrases.size} markdown-verified commitment(s) weren't found in the PDF text layer (may be on another step's filtered list).`}
         </p>
       )}
       {columns === "extract" && (
         <p className="text-xs text-gray-02">
-          <span className="text-gray-01">In doc / Not in doc</span> shows
-          whether the quote was found in the plan markdown.{" "}
-          <span className="text-gray-01">Not in PDF text</span> appears after
-          you open the PDF, for verified quotes the text-layer search still
-          couldn't locate.
+          <span className="text-gray-01">In markdown / Not in markdown</span>{" "}
+          shows whether the quote was found in the plan markdown.{" "}
+          <span className="text-gray-01">Not in PDF text</span> is a second,
+          separate check — it only ever appears on markdown-verified quotes
+          where the PDF's own text layer search still couldn't locate them.
         </p>
       )}
       {commitments.map((c, idx) => (
