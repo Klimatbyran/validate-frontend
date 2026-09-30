@@ -1340,16 +1340,27 @@ async function renderPageWithHighlights(
   };
 }
 
-/** Searches one already-rendered page's cached data for `phrase` and, if
- * found, draws a red highlight for it — the cheap path a focusedPhrase
- * change takes once the page is already on screen, versus the expensive
- * renderPageWithHighlights above. Hides any yellow bars under the red
- * ones so colours don't stack. Returns the bar elements drawn (for later
- * removal) and whether anything matched. */
+/** Searches one already-rendered page's cached data for each of `phrases`
+ * and, if anything matched, draws a red highlight for it — the cheap path
+ * a focusedPhrase change takes once the page is already on screen, versus
+ * the expensive renderPageWithHighlights above. Hides any yellow bars
+ * under the red ones so colours don't stack. Returns the bar elements
+ * drawn (for later removal), whether anything matched at all (`found` —
+ * for the highlight/zoom/scroll decision, where a partial match is still
+ * worth showing), and which of `phrases` individually matched on this page
+ * (`foundPhrases` — for callers that need to know whether EVERY part was
+ * found, not just whether the union was non-empty; see the two call sites'
+ * missingPhrases reporting, which must not clear a commitment's "not fully
+ * in PDF" flag just because one of several parts turned up). */
 function highlightFocusedPhraseOnPage(
   rendered: RenderedPage,
   phrases: string[],
-): { found: boolean; bars: HTMLElement[]; suggestedZoom: number } {
+): {
+  found: boolean;
+  foundPhrases: Set<string>;
+  bars: HTMLElement[];
+  suggestedZoom: number;
+} {
   // A merged commitment's parts don't always sit next to each other in the
   // source (see commitmentExtraction.ts's merge loop) — search each part
   // independently and union whichever ones this page actually contains,
@@ -1358,15 +1369,17 @@ function highlightFocusedPhraseOnPage(
   // separate box per disconnected run, so a partial match still highlights
   // exactly the parts that were found instead of requiring all of them.
   const itemIndices = new Set<number>();
+  const foundPhrases = new Set<string>();
   for (const phrase of phrases) {
     const { itemIndices: found } = findMatchedItemIndicesWithFallback(
       rendered.items,
       phrase,
     );
+    if (found.size > 0) foundPhrases.add(phrase);
     for (const i of found) itemIndices.add(i);
   }
   if (itemIndices.size === 0) {
-    return { found: false, bars: [], suggestedZoom: 1 };
+    return { found: false, foundPhrases, bars: [], suggestedZoom: 1 };
   }
   const bars = drawMatchHighlights(
     rendered.overlay,
@@ -1378,7 +1391,7 @@ function highlightFocusedPhraseOnPage(
   const suggestedZoom = focusZoomForFontSize(
     averageMatchedFontSizePx(rendered.divs, itemIndices),
   );
-  return { found: true, bars, suggestedZoom };
+  return { found: true, foundPhrases, bars, suggestedZoom };
 }
 
 /** Which verified phrases have no match on any already-rendered page —
@@ -1701,7 +1714,12 @@ function PdfHighlightBody({
         }
         if (cancelled) return;
 
-        let foundFocused = false;
+        // Which of focusedPhrases actually matched — may be a strict
+        // subset of the whole set even when something matched (a partial
+        // match still highlights and counts as "found" for display), so
+        // this is tracked separately from the highlight/zoom decision for
+        // the missingPhrases report below.
+        let foundPhrases = new Set<string>();
         if (targetPageNum !== null) {
           const page = await doc.getPage(targetPageNum);
           const { rendered } = await renderPageWithHighlights(
@@ -1710,11 +1728,13 @@ function PdfHighlightBody({
             [],
           );
           if (cancelled) return;
-          const { found, bars, suggestedZoom } = highlightFocusedPhraseOnPage(
-            rendered,
-            focusedPhrases,
-          );
-          foundFocused = found;
+          const {
+            found,
+            foundPhrases: foundOnPage,
+            bars,
+            suggestedZoom,
+          } = highlightFocusedPhraseOnPage(rendered, focusedPhrases);
+          foundPhrases = foundOnPage;
           if (found) {
             setFocusFound(true);
             focusBarsRef.current = bars;
@@ -1733,11 +1753,15 @@ function PdfHighlightBody({
         } else {
           setSearchedWholeDoc(true);
         }
-        setMissingPhraseCount(foundFocused ? 0 : 1);
+        // A commitment only counts as fully verified — clearing its "not
+        // found in PDF" flag — when EVERY part was found, not just the
+        // union that decides whether to highlight/zoom at all.
+        const allPartsFound = focusedPhrases.every((p) => foundPhrases.has(p));
+        setMissingPhraseCount(allPartsFound ? 0 : 1);
         setIsLoading(false);
         onVerifiedSearchCompleteRef.current?.({
           searchedPhrases: [focusedPhrase!],
-          missingPhrases: foundFocused ? [] : [focusedPhrase!],
+          missingPhrases: allPartsFound ? [] : [focusedPhrase!],
         });
       } catch (e) {
         if (!cancelled) {
@@ -1772,11 +1796,13 @@ function PdfHighlightBody({
     }
 
     let found = false;
+    let foundPhrases = new Set<string>();
     for (const rendered of pagesRef.current) {
       const result = highlightFocusedPhraseOnPage(rendered, focusedPhrases);
       if (result.found) {
         focusBarsRef.current.push(...result.bars);
         found = true;
+        foundPhrases = result.foundPhrases;
         requestAnimationFrame(() => {
           if (!container) return;
           const nextZoom = revealFocusHighlight(
@@ -1792,10 +1818,14 @@ function PdfHighlightBody({
       }
     }
     setFocusFound(found);
+    // Same distinction as the fast single-page path above: a partial match
+    // (found is true, but not every part) still highlights, but must not
+    // clear the commitment's "not found in PDF" flag.
+    const allPartsFound = focusedPhrases.every((p) => foundPhrases.has(p));
     if (focusedPhrase) {
       onVerifiedSearchCompleteRef.current?.({
         searchedPhrases: [focusedPhrase],
-        missingPhrases: found ? [] : [focusedPhrase],
+        missingPhrases: allPartsFound ? [] : [focusedPhrase],
       });
     }
     // isLoading flipping false->true->false around a reload (a new
