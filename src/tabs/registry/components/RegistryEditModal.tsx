@@ -97,6 +97,8 @@ const RegistryEditModal = ({
     setBatchDropdownChoice(entry.batchId?.trim() ?? "");
     setCustomBatchName("");
     setReportTypeId(resolveRegistryEntryReportTypeId(entry));
+    // Sync form fields from entry primitives — avoid depending on `entry` identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- field-level sync
   }, [
     entry.companyName,
     entry.reportYear,
@@ -126,7 +128,7 @@ const RegistryEditModal = ({
         );
       })
       .finally(() => setReportTypesLoading(false));
-  }, [open]);
+  }, [open, t]);
 
   const uploadPdfAndApplyFields = useCallback(
     async (file: File) => {

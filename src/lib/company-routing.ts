@@ -5,10 +5,3 @@ export function getCompanyUrlSegment(company: {
 }): string {
   return company.wikidataId ?? company.id.split("-")[0];
 }
-
-export function getKlimatkollenCompanyPath(company: {
-  id: string;
-  wikidataId?: string | null;
-}): string {
-  return `https://klimatkollen.se/companies/${getCompanyUrlSegment(company)}`;
-}

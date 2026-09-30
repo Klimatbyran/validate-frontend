@@ -13,6 +13,7 @@ import {
   garboCompanyIdSchema,
 } from "./companies-schemas";
 import { apiUrl } from "./api-utils";
+import { sharedCompanyReportIdForPeriods } from "./company-report-shells";
 
 function normalizeReportingPeriodUrls(
   company: GarboCompanyDetail,
@@ -133,6 +134,128 @@ export async function listCompanies(
     : [];
 }
 
+export const EDITOR_COMPANY_INDEX_PAGE_SIZE = 50;
+export const EDITOR_COMPANY_SEARCH_MIN_LENGTH = 2;
+
+export type EditorCompanyIndexQuery = {
+  q?: string;
+  offset?: number;
+  limit?: number;
+  includeFacets?: boolean;
+  tags?: string[];
+  excludeTags?: string[];
+  includeNoTags?: boolean;
+  dataYears?: string[];
+  reportYears?: string[];
+  sector?: string;
+  unverified?: "" | "emissions" | "all";
+  unverifiedScopedToDataYears?: boolean;
+  missingData?: "" | "no-emissions" | "no-reporting-period-data";
+  signal?: AbortSignal;
+};
+
+export type EditorCompanyIndexFacets = {
+  dataYears: string[];
+  reportYears: string[];
+  sectors: string[];
+};
+
+export type EditorCompanyIndexResult = {
+  companies: GarboCompanyListItem[];
+  total: number;
+  offset: number;
+  limit: number;
+  hasMore: boolean;
+  facets?: EditorCompanyIndexFacets;
+};
+
+export async function listCompaniesIndex(
+  query: EditorCompanyIndexQuery = {},
+): Promise<EditorCompanyIndexResult> {
+  const params = new URLSearchParams();
+  const q = query.q?.trim() ?? "";
+  if (q) params.set("q", q);
+  params.set("offset", String(query.offset ?? 0));
+  params.set("limit", String(query.limit ?? EDITOR_COMPANY_INDEX_PAGE_SIZE));
+  if (query.includeFacets) params.set("includeFacets", "true");
+  if (query.tags?.length) params.set("tags", query.tags.join(","));
+  if (query.excludeTags?.length)
+    params.set("excludeTags", query.excludeTags.join(","));
+  if (query.includeNoTags) params.set("includeNoTags", "true");
+  if (query.dataYears?.length)
+    params.set("dataYears", query.dataYears.join(","));
+  if (query.reportYears?.length)
+    params.set("reportYears", query.reportYears.join(","));
+  if (query.sector?.trim()) params.set("sector", query.sector.trim());
+  if (query.unverified) params.set("unverified", query.unverified);
+  if (query.unverifiedScopedToDataYears)
+    params.set("unverifiedScopedToDataYears", "true");
+  if (query.missingData) params.set("missingData", query.missingData);
+
+  const url = apiUrl(`${pipelineCompaniesPath("index")}?${params.toString()}`);
+  const res = await garboAuthFetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    signal: query.signal,
+  });
+  if (res.status === 401) {
+    throw new Error("Please log in to list companies.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to list companies: ${res.status} ${text}`);
+  }
+  const data = (await res.json()) as {
+    companies?: unknown[];
+    total?: number;
+    offset?: number;
+    limit?: number;
+    hasMore?: boolean;
+    facets?: {
+      dataYears?: unknown;
+      reportYears?: unknown;
+      sectors?: unknown;
+    };
+  };
+  const list = Array.isArray(data.companies) ? data.companies : [];
+  const offset = typeof data.offset === "number" ? data.offset : 0;
+  const limit =
+    typeof data.limit === "number"
+      ? data.limit
+      : EDITOR_COMPANY_INDEX_PAGE_SIZE;
+  const total = typeof data.total === "number" ? data.total : list.length;
+  const facets =
+    data.facets &&
+    Array.isArray(data.facets.dataYears) &&
+    Array.isArray(data.facets.reportYears) &&
+    Array.isArray(data.facets.sectors)
+      ? {
+          dataYears: data.facets.dataYears.filter(
+            (year): year is string => typeof year === "string",
+          ),
+          reportYears: data.facets.reportYears.filter(
+            (year): year is string => typeof year === "string",
+          ),
+          sectors: data.facets.sectors.filter(
+            (sector): sector is string => typeof sector === "string",
+          ),
+        }
+      : undefined;
+  return {
+    companies: list.map((raw) =>
+      normalizeCompany(parseGarboCompanyDetail(raw) as GarboCompanyDetail),
+    ),
+    total,
+    offset,
+    limit,
+    hasMore:
+      typeof data.hasMore === "boolean"
+        ? data.hasMore
+        : offset + list.length < total,
+    facets,
+  };
+}
+
 function companyMatchesEditorRef(
   company: GarboCompanyListItem,
   ref: string,
@@ -209,36 +332,6 @@ export async function getCompany(
   return byMatchId ?? (match as GarboCompanyDetail);
 }
 
-export async function createCompany(body: {
-  wikidataId?: string;
-  name: string;
-  descriptions?: Array<{ language: string; text: string; id?: string }>;
-  internalComment?: string;
-  tags?: string[];
-  url?: string;
-  logoUrl?: string | null;
-  lei?: string;
-  metadata?: GarboMetadata;
-  verified?: boolean;
-}): Promise<{ ok: boolean; id: string }> {
-  const res = await garboAuthFetch(apiUrl(companiesPath()), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-  if (res.status === 401) {
-    throw new Error("Please log in to create company.");
-  }
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to create company: ${res.status} ${text}`);
-  }
-  return res.json();
-}
-
 export async function updateCompany(
   companyId: string,
   body: {
@@ -289,8 +382,15 @@ export async function updateReportingPeriods(
     reportingPeriods: ReportingPeriodWritePayload[];
     metadata?: GarboMetadata;
     replaceAllEmissions?: boolean;
+    companyReportId?: string;
   },
 ): Promise<void> {
+  const payload = {
+    ...body,
+    companyReportId:
+      body.companyReportId?.trim() ||
+      sharedCompanyReportIdForPeriods(body.reportingPeriods),
+  };
   const res = await garboAuthFetch(
     apiUrl(companiesPath(`${encodeURIComponent(companyId)}/reporting-periods`)),
     {
@@ -299,7 +399,7 @@ export async function updateReportingPeriods(
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     },
   );
   if (res.status === 401) {
@@ -338,6 +438,148 @@ export async function deleteCompany(companyId: string): Promise<void> {
     const text = await res.text();
     throw new Error(`Failed to delete company: ${res.status} ${text}`);
   }
+}
+
+export type CompanyMergeFieldKey =
+  | "name"
+  | "wikidataId"
+  | "lei"
+  | "url"
+  | "description"
+  | "internalComment"
+  | "industry"
+  | "baseYear";
+
+export type CompanyMergePeriodSummary = {
+  periodId: string;
+  year: string;
+  companyReportId: string;
+  registryReportId: string | null;
+  reportYear: string | null;
+  hasEmissions: boolean;
+  hasEconomy: boolean;
+};
+
+export type CompanyMergeSideSummary = {
+  id: string;
+  name: string;
+  wikidataId: string | null;
+  lei: string | null;
+  url: string | null;
+  description: string | null;
+  internalComment: string | null;
+  tags: string[];
+  alternativeNames: string[];
+  industrySubIndustryCode: string | null;
+  baseYear: number | null;
+  identifiers: Array<{ type: string; value: string }>;
+  reports: Array<{
+    companyReportId: string;
+    registryReportId: string | null;
+    reportYear: string | null;
+    periodYears: string[];
+  }>;
+  periods: CompanyMergePeriodSummary[];
+  goalsCount: number;
+  initiativesCount: number;
+  coverageMatchCount: number;
+  coverageSuggestionCount: number;
+  reportRunCount: number;
+};
+
+export type CompanyMergePreview = {
+  survivor: CompanyMergeSideSummary;
+  sources: CompanyMergeSideSummary[];
+  fieldDiffs: Array<{
+    field: CompanyMergeFieldKey;
+    survivorValue: string | number | null;
+    sourceValue: string | number | null;
+    differs: boolean;
+    defaultChoice: "survivor" | "source";
+  }>;
+  identifierDiffs: Array<{
+    type: string;
+    survivorValue: string | null;
+    sourceValue: string | null;
+    differs: boolean;
+    defaultChoice: "survivor" | "source";
+  }>;
+  periodYearConflicts: Array<{
+    conflictId: string;
+    registryReportId: string;
+    year: string;
+    survivorPeriod: CompanyMergePeriodSummary;
+    sourcePeriod: CompanyMergePeriodSummary;
+    sourceCompanyId: string;
+  }>;
+  movableReports: Array<{
+    sourceCompanyId: string;
+    companyReportId: string;
+    registryReportId: string | null;
+    reportYear: string | null;
+    periodYears: string[];
+    action: "move-report" | "merge-into-survivor-report";
+    survivorCompanyReportId: string | null;
+  }>;
+  resultingAlternativeNames: string[];
+  resultingTags: string[];
+  blockers: string[];
+};
+
+export type CompanyMergeApplyResult = {
+  survivorCompanyId: string;
+  deletedSourceCompanyIds: string[];
+  name: string;
+  wikidataId: string | null;
+  tags: string[];
+  alternativeNames: string[];
+};
+
+export async function previewCompanyMerge(input: {
+  survivorCompanyId: string;
+  sourceCompanyIds: string[];
+}): Promise<CompanyMergePreview> {
+  const res = await garboAuthFetch(apiUrl(companiesPath("merge/preview")), {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+  if (res.status === 401) {
+    throw new Error("Please log in to preview company merge.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Merge preview failed: ${res.status} ${text}`);
+  }
+  return (await res.json()) as CompanyMergePreview;
+}
+
+export async function applyCompanyMerge(input: {
+  survivorCompanyId: string;
+  sourceCompanyIds: string[];
+  fieldChoices?: Partial<Record<CompanyMergeFieldKey, "survivor" | "source">>;
+  identifierChoices?: Partial<Record<string, "survivor" | "source">>;
+  periodYearResolutions?: Record<string, "keep-survivor" | "keep-source">;
+}): Promise<CompanyMergeApplyResult> {
+  const res = await garboAuthFetch(apiUrl(companiesPath("merge")), {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+  if (res.status === 401) {
+    throw new Error("Please log in to merge companies.");
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Company merge failed: ${res.status} ${text}`);
+  }
+  return (await res.json()) as CompanyMergeApplyResult;
 }
 
 // Shell cleanup after last period delete: garbo k8s/jobs/README.md

@@ -48,7 +48,7 @@ export function AuthCallback() {
         console.error("Authentication error:", err);
         setError(err?.message || t("auth.authFailed"));
       });
-  }, [searchParams, authenticate, navigate]);
+  }, [searchParams, authenticate, navigate, t]);
 
   // Show loading state
   if (!error) {

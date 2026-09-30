@@ -25,11 +25,10 @@ export function Scope3Section({
   wikidataId,
 }: Scope3EmissionsDisplayProps) {
   const { t, formatNumber } = useI18n();
-  const scope3Entries = Array.isArray(data.scope3) ? data.scope3 : [];
-
   const sortedScope3ByYear = React.useMemo(() => {
+    const scope3Entries = Array.isArray(data.scope3) ? data.scope3 : [];
     return [...scope3Entries].sort((a, b) => b.year - a.year);
-  }, [scope3Entries]);
+  }, [data.scope3]);
   const years = React.useMemo(
     () => Array.from(new Set(sortedScope3ByYear.map((e) => e.year))),
     [sortedScope3ByYear],
@@ -264,7 +263,7 @@ export function Scope3Section({
     );
   }
 
-  if (scope3Entries.length === 0) {
+  if (sortedScope3ByYear.length === 0) {
     return null;
   }
 

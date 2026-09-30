@@ -1,6 +1,5 @@
 import type {
   CompanyReport,
-  LockedReport,
   Report,
   SaveReportsListResponse,
   SelectedReport,
@@ -8,21 +7,25 @@ import type {
 } from "./crawler-types";
 import { saveToRegistry, updateCompanyReports } from "./crawler-api";
 import { mapWithConcurrency } from "./map-with-concurrency";
+import { isEmissionsRelevantReportTypeSlug } from "./emissions-relevant-report-types";
 
 /** Parallel crawl cap — each company holds Firecrawl for minutes. */
-export const AUTO_SEARCH_CRAWL_CONCURRENCY = Math.max(
+export const REPORT_CRAWL_CONCURRENCY = Math.max(
   1,
-  Math.min(12, Number(import.meta.env.VITE_AUTO_SEARCH_CRAWL_CONCURRENCY ?? 4)),
+  Math.min(
+    12,
+    Number(
+      import.meta.env.VITE_REPORT_CRAWL_CONCURRENCY ??
+        import.meta.env.VITE_AUTO_SEARCH_CRAWL_CONCURRENCY ??
+        4,
+    ),
+  ),
 );
-const CRAWL_CONCURRENCY = AUTO_SEARCH_CRAWL_CONCURRENCY;
+const CRAWL_CONCURRENCY = REPORT_CRAWL_CONCURRENCY;
 
 /** Seeded report type used when the classifier does not match a known catalog type. */
 export const FALLBACK_REPORT_TYPE_SLUG = "other";
 export const FALLBACK_REPORT_TYPE_LABEL = "Other";
-
-export function fallbackReportTypeSlug(slug?: string | null): string {
-  return slug?.trim() || FALLBACK_REPORT_TYPE_SLUG;
-}
 
 /** Auto-save: keep a known slug; unlabeled hits become `other`; label-only hits omit slug. */
 export function reportTypeSlugForAutoSave(
@@ -141,7 +144,7 @@ interface SearchCompanyReportsParams {
   onLabeledSaved?: (response: SaveReportsListResponse) => void;
 }
 
-const AUTO_SAVE_YEAR_LOOKBACK = 4;
+const AUTO_SAVE_YEAR_LOOKBACK = 5;
 
 function isRecentEnoughToAutoSave(
   year: string,
@@ -224,12 +227,16 @@ export function labeledHitsToSelectedReports(
       const reportYear = yearForSelectedReport(url, hit);
       if (!/^\d{4}$/.test(reportYear)) continue;
       if (!isRecentEnoughToAutoSave(reportYear, company.reportYear)) continue;
+      const reportTypeSlug = reportTypeSlugForAutoSave(hit);
+      // Keep climate/emissions-relevant types only — skip governance,
+      // modern slavery, unlabeled `other`, and similar low-yield annexes.
+      if (!isEmissionsRelevantReportTypeSlug(reportTypeSlug)) continue;
       hits.push({
         company,
         hit,
         url,
         reportYear,
-        reportTypeSlug: reportTypeSlugForAutoSave(hit),
+        reportTypeSlug,
       });
     }
   }
@@ -421,59 +428,4 @@ export const searchCompanyReports = async ({
   );
 
   return reports;
-};
-
-/** @deprecated Prefer searchCompanyReports with full company objects. */
-export const searchCompanyReportsByNames = async ({
-  companyNames,
-  reportYear,
-  country,
-  onProgress,
-  onLabeledSaved,
-}: {
-  companyNames: string[];
-  reportYear?: string;
-  country?: string;
-  onProgress?: (progress: CrawlProgress) => void;
-  onLabeledSaved?: (response: SaveReportsListResponse) => void;
-}): Promise<CompanyReport[]> =>
-  searchCompanyReports({
-    companies: companyNames.map((name) => ({
-      name,
-      ...(reportYear?.trim() ? { reportYear: reportYear.trim() } : {}),
-      country,
-    })),
-    onProgress,
-    onLabeledSaved,
-  });
-
-/**
- * Writes crawled reports to CSV file and triggers download.
- */
-export const writeCrawledReportsToCsv = (
-  companyReports: LockedReport[],
-): void => {
-  const escapeCsvValue = (value: string) => {
-    const escaped = value.replace(/"/g, '""');
-    return `"${escaped}"`;
-  };
-  const header = ["companyName", "reportYear", "url"]
-    .map(escapeCsvValue)
-    .join(";");
-  const rows = companyReports.map((report) =>
-    [
-      escapeCsvValue(report.companyName),
-      escapeCsvValue(report.reportYear),
-      escapeCsvValue(report.url),
-    ].join(";"),
-  );
-  const csvContent = `\ufeff${[header, ...rows].join("\r\n")}`;
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", `company_reports_${Date.now()}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 };

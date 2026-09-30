@@ -17,10 +17,36 @@ export const coverageYearSummarySchema = z.object({
   noReportCount: z.number().optional(),
 });
 
+export const coverageListGroupRefSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  label: z.string(),
+});
+
+export const coverageListGroupSchema = coverageListGroupRefSchema.extend({
+  listCount: z.number().int().nonnegative(),
+});
+
+export const coverageListGroupListSchema = z.array(coverageListGroupSchema);
+
+export const coverageListLocaleRefSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  label: z.string(),
+});
+
+export const coverageListLocaleSchema = coverageListLocaleRefSchema.extend({
+  listCount: z.number().int().nonnegative(),
+});
+
+export const coverageListLocaleListSchema = z.array(coverageListLocaleSchema);
+
 export const coverageListSummarySchema = z.object({
   id: z.string(),
   name: z.string(),
   updatedAt: z.string(),
+  group: coverageListGroupRefSchema.nullable(),
+  locale: coverageListLocaleRefSchema.nullable().optional().default(null),
   years: z.array(coverageYearSummarySchema),
 });
 
@@ -60,6 +86,19 @@ export const coverageEntrySchema = z.object({
   matchMethod: coverageMatchMethodSchema.optional(),
   matchedCompany: coverageMatchedCompanySchema.optional(),
   registryReports: z.array(registryReportPillSchema).default([]),
+  crawlState: z
+    .object({
+      websiteUrl: z.string().nullable(),
+      lastCrawledAt: z.string().nullable(),
+      lastCrawlOutcome: z
+        .enum(["found", "empty", "sparse", "error"])
+        .nullable(),
+      lastCrawlReportsSaved: z.number().int(),
+      crawlSkipUntil: z.string().nullable(),
+      needsManualFind: z.boolean(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export const coverageCompanySearchHitSchema = z.object({
@@ -71,6 +110,18 @@ export const coverageCompanySearchHitSchema = z.object({
 export const coverageCompanySearchResponseSchema = z.array(
   coverageCompanySearchHitSchema,
 );
+
+export const coverageCompanyMatchSchema = z.object({
+  entryId: z.string(),
+  entryName: z.string(),
+  listId: z.string(),
+  listName: z.string(),
+  year: z.number().int(),
+});
+
+export const coverageCompanyMatchesResponseSchema = z.object({
+  matches: z.array(coverageCompanyMatchSchema),
+});
 
 export const coverageRegistryReportSearchHitSchema = z.object({
   id: z.string(),
@@ -151,6 +202,10 @@ export type CoverageMatchedCompany = z.infer<
   typeof coverageMatchedCompanySchema
 >;
 export type CoverageYearSummary = z.infer<typeof coverageYearSummarySchema>;
+export type CoverageListGroupRef = z.infer<typeof coverageListGroupRefSchema>;
+export type CoverageListGroup = z.infer<typeof coverageListGroupSchema>;
+export type CoverageListLocaleRef = z.infer<typeof coverageListLocaleRefSchema>;
+export type CoverageListLocale = z.infer<typeof coverageListLocaleSchema>;
 export type CoverageListSummary = z.infer<typeof coverageListSummarySchema>;
 export type CoverageEntryStatus = z.infer<typeof coverageEntryStatusSchema>;
 export type CoverageEntry = z.infer<typeof coverageEntrySchema>;
@@ -164,6 +219,7 @@ export type CoverageRematchMode = z.infer<typeof coverageRematchModeSchema>;
 export type CoverageCompanySearchHit = z.infer<
   typeof coverageCompanySearchHitSchema
 >;
+export type CoverageCompanyMatch = z.infer<typeof coverageCompanyMatchSchema>;
 
 export type CoverageMatchSaveAction =
   | { type: "match"; companyId: string; companyName: string }
@@ -182,4 +238,5 @@ export type CoverageEntryFilter =
   | "ambiguous"
   | "registryInProd"
   | "registryOnly"
-  | "registryMissing";
+  | "registryMissing"
+  | "needsManualFind";

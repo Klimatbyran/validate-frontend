@@ -14,6 +14,7 @@ import {
   MoreVertical,
   Search,
   RefreshCw,
+  Minus,
 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
@@ -56,6 +57,7 @@ const PRIMARY_FILTER_ICONS: Record<FilterType, React.ReactNode> = {
   has_failed: <XCircle className="w-4 h-4" />,
   has_processing: <RotateCw className="w-4 h-4" />,
   has_issues: <AlertTriangle className="w-4 h-4" />,
+  skipped_no_emissions: <Minus className="w-4 h-4" />,
   fully_completed: <CheckCircle2 className="w-4 h-4" />,
   preprocessing_issues: <AlertTriangle className="w-4 h-4" />,
   data_extraction_issues: <AlertTriangle className="w-4 h-4" />,
@@ -220,7 +222,7 @@ export function FilterBar({
                   variant={isActive ? "primary" : "ghost"}
                   size="sm"
                   onClick={() => onToggleFilter(filter.id)}
-                  className={`!w-auto !min-w-0 h-9 px-4 text-sm ${
+                  className={`!w-auto !min-w-0 !max-w-none h-9 px-4 text-sm gap-0 ${
                     isActive
                       ? filter.activeColor
                       : "border border-gray-03 text-gray-01 hover:bg-gray-03/40"

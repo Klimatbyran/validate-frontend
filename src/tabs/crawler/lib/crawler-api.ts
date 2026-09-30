@@ -3,10 +3,6 @@ import {
   CRAWL_UNREACHABLE_MESSAGE,
   SEARCH_REPORT_JOB_TIMEOUT_MESSAGE,
   type crawlerSearchQuery,
-  type LlmSelectionCandidate,
-  type LlmSelectionResult,
-  type PdfTextResponse,
-  type PrefilterReportResult,
   type SaveReportsListResponse,
   type SelectedReport,
 } from "./crawler-types";
@@ -42,34 +38,6 @@ function isAbortError(error: unknown): boolean {
 type TransientRetryOptions = {
   attempts?: number;
 };
-
-/** Retry when Vite proxy or API dev restart drops in-flight requests (ECONNREFUSED → 500). */
-async function fetchWithTransientRetry(
-  url: string,
-  init?: RequestInit,
-  options?: TransientRetryOptions,
-): Promise<Response | null> {
-  const attempts = options?.attempts ?? TRANSIENT_FETCH_ATTEMPTS;
-  let lastResponse: Response | null = null;
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    try {
-      const response = await fetch(url, init);
-      lastResponse = response;
-      if (
-        response.ok ||
-        !TRANSIENT_HTTP_STATUSES.has(response.status) ||
-        attempt === attempts
-      ) {
-        return response;
-      }
-    } catch (error) {
-      if (isAbortError(error)) throw error;
-      if (attempt === attempts) return lastResponse;
-    }
-    await sleep(transientRetryDelayMs(attempt));
-  }
-  return lastResponse;
-}
 
 async function authFetchWithTransientRetry(
   url: string,
@@ -194,100 +162,6 @@ export const updateCompanyReports = async (searchQuery: crawlerSearchQuery) => {
 
   throw new Error(SEARCH_REPORT_JOB_TIMEOUT_MESSAGE);
 };
-
-export const fetchCompanyNamesList = async () => {
-  const url = reportsUrl("internal-companies/reports/database-list");
-  try {
-    const response = await fetch(url);
-    if (response.ok) {
-      const data = await response.json();
-      return data;
-    } else {
-      const msg = `Failed to fetch company names: ${response.status} ${response.statusText} (${url})`;
-      console.error(msg);
-      throw new Error(msg);
-    }
-  } catch (error) {
-    const msg = `Failed to fetch company names (${url})`;
-    console.error(msg, error);
-    throw error instanceof Error ? error : new Error(msg);
-  }
-};
-
-export async function fetchPdfText(
-  pdfUrl: string,
-  maxPages = 1,
-): Promise<PdfTextResponse | null> {
-  const params = new URLSearchParams({
-    pdfUrl,
-    maxPages: String(maxPages),
-  });
-  const url = `${reportsUrl("internal-companies/reports/pdf-text")}?${params}`;
-  try {
-    const response = await fetchWithTransientRetry(url);
-    if (!response?.ok) return null;
-    return (await response.json()) as PdfTextResponse;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Fast LLM triage on crawl metadata — skip obvious non-matches before PDF download.
- */
-export async function prefilterReportCandidates(input: {
-  companyName: string;
-  reportYear: string;
-  candidates: Pick<LlmSelectionCandidate, "url" | "title" | "description">[];
-}): Promise<PrefilterReportResult | null> {
-  if (input.candidates.length === 0) return null;
-  try {
-    const response = await authFetchWithTransientRetry(
-      reportsUrl("internal-companies/reports/prefilter-reports"),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(input),
-      },
-    );
-    if (!response?.ok) return null;
-    return (await response.json()) as PrefilterReportResult;
-  } catch (error) {
-    console.error("LLM report prefilter failed:", error);
-    return null;
-  }
-}
-
-/**
- * Ask the API's LLM to pick the correct company/year report from candidates.
- * Best-effort: returns null on any failure so callers skip auto-save.
- */
-export async function selectReportWithLlm(input: {
-  companyName: string;
-  reportYear: string;
-  candidates: LlmSelectionCandidate[];
-}): Promise<LlmSelectionResult | null> {
-  if (input.candidates.length === 0) return null;
-  try {
-    const response = await authFetchWithTransientRetry(
-      reportsUrl("internal-companies/reports/select-report"),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(input),
-      },
-    );
-    if (!response?.ok) return null;
-    return (await response.json()) as LlmSelectionResult;
-  } catch (error) {
-    console.error("LLM report selection failed:", error);
-    return null;
-  }
-}
 
 export const saveToRegistry = async (
   reports: SelectedReport[],

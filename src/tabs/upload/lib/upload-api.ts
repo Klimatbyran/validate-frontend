@@ -47,6 +47,7 @@ export interface UploadPdfsOptions {
   files: File[];
   autoApprove: boolean;
   forceReindex: boolean;
+  requireEmissionsPresence?: boolean;
   batchId?: string;
   runOnly?: RunOnlyWorkerId[];
   tags?: string[];
@@ -106,6 +107,7 @@ export interface CreateJobsFromUrlsOptions {
   urls: string[];
   autoApprove: boolean;
   forceReindex: boolean;
+  requireEmissionsPresence?: boolean;
   batchId?: string;
   runOnly?: RunOnlyWorkerId[];
   tags?: string[];
@@ -131,6 +133,7 @@ export async function uploadPdfsToParsePdf({
   files,
   autoApprove,
   forceReindex,
+  requireEmissionsPresence,
   batchId,
   runOnly,
   tags,
@@ -143,6 +146,10 @@ export async function uploadPdfsToParsePdf({
   for (const file of files) formData.append("files", file);
   formData.append("autoApprove", String(Boolean(autoApprove)));
   formData.append("forceReindex", String(Boolean(forceReindex)));
+  formData.append(
+    "requireEmissionsPresence",
+    String(Boolean(requireEmissionsPresence)),
+  );
   formData.append("replaceAllEmissions", "true");
   if (batchId) formData.append("batchId", batchId);
   if (runOnly && runOnly.length > 0)
@@ -173,6 +180,7 @@ export async function createJobsFromUrls({
   urls,
   autoApprove,
   forceReindex,
+  requireEmissionsPresence,
   batchId,
   runOnly,
   tags,
@@ -190,6 +198,7 @@ export async function createJobsFromUrls({
     autoApprove: Boolean(autoApprove),
     ...(batchId ? { batchId } : {}),
     forceReindex: Boolean(forceReindex),
+    ...(requireEmissionsPresence ? { requireEmissionsPresence: true } : {}),
     replaceAllEmissions: true,
     ...(runOnly && runOnly.length > 0 ? { runOnly } : {}),
     ...(tags && tags.length > 0 ? { tags } : {}),

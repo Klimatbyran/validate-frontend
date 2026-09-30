@@ -42,6 +42,11 @@ export const PRIMARY_FILTER_CONFIG: PrimaryFilterConfig[] = [
     badgeColorClass: "bg-orange-03/20 text-orange-03",
     activeColor: "bg-orange-03 text-white hover:bg-orange-03/90",
   },
+  {
+    id: "skipped_no_emissions",
+    badgeColorClass: "bg-gray-03/80 text-gray-02",
+    activeColor: "bg-gray-02 text-white hover:bg-gray-02/90",
+  },
 ];
 
 export const SECONDARY_FILTER_CONFIG: Array<{ id: FilterType }> = [

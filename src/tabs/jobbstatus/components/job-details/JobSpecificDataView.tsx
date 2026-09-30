@@ -328,14 +328,17 @@ export function JobSpecificDataView({
     return { reportYearHint, documentReportYear };
   }, [effectiveJob, job, processedData]);
 
+  const hasJobReturnValue = Boolean(job?.returnvalue);
+  const hasScope3Data = Boolean(scope3Data);
+
   React.useEffect(() => {
     try {
       console.log("[JobSpecificDataView] scope3 panel context", {
         jobId: job?.id,
         queueId: job?.queueId,
-        hasReturnValue: !!job?.returnvalue,
+        hasReturnValue: hasJobReturnValue,
         derivedWikidataId: wikidataId,
-        hasScope3Data: !!scope3Data,
+        hasScope3Data,
       });
       console.log("[JobSpecificDataView] threadId sources", {
         dataThreadId: (job as any)?.data?.threadId,
@@ -349,11 +352,10 @@ export function JobSpecificDataView({
       // ignore debug logging errors
     }
   }, [
-    job?.id,
-    job?.queueId,
-    Boolean(job?.returnvalue),
+    job,
+    hasJobReturnValue,
     wikidataId,
-    Boolean(scope3Data),
+    hasScope3Data,
     effectiveJob,
     detailed,
   ]);

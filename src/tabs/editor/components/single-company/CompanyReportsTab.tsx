@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import {
@@ -44,32 +44,35 @@ export function CompanyReportsTab({
     null,
   );
 
-  const loadCompanyReports = (signal?: AbortSignal) => {
-    setLoadingShells(true);
-    setShellsError(null);
-    return fetchCompanyReports(company.id, signal)
-      .then((reports) => {
-        if (signal?.aborted) return;
-        setCompanyReports(reports);
-      })
-      .catch((error) => {
-        if (signal?.aborted) return;
-        const message =
-          error instanceof Error
-            ? error.message
-            : t("editor.singleCompanyView.companyReports.loadFailed");
-        setShellsError(message);
-      })
-      .finally(() => {
-        if (!signal?.aborted) setLoadingShells(false);
-      });
-  };
+  const loadCompanyReports = useCallback(
+    (signal?: AbortSignal) => {
+      setLoadingShells(true);
+      setShellsError(null);
+      return fetchCompanyReports(company.id, signal)
+        .then((reports) => {
+          if (signal?.aborted) return;
+          setCompanyReports(reports);
+        })
+        .catch((error) => {
+          if (signal?.aborted) return;
+          const message =
+            error instanceof Error
+              ? error.message
+              : t("editor.singleCompanyView.companyReports.loadFailed");
+          setShellsError(message);
+        })
+        .finally(() => {
+          if (!signal?.aborted) setLoadingShells(false);
+        });
+    },
+    [company.id, t],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
     void loadCompanyReports(controller.signal);
     return () => controller.abort();
-  }, [company.id]);
+  }, [loadCompanyReports]);
 
   useEffect(() => {
     setEditedYears({});

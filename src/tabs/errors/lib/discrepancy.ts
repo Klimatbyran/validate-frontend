@@ -30,11 +30,6 @@ export function companiesToMapById(companies: Company[]): Map<string, Company> {
   return map;
 }
 
-/** @deprecated Use companyCrossEnvKey — internal id does not match across environments. */
-export function companyUnionKey(company: Company): string {
-  return companyCrossEnvKey(company);
-}
-
 const UNIT_ERROR_POWERS = [10, 100, 1000, 10000, 100000, 1000000] as const;
 
 /** Return unit-error factor (stage/prod ratio) when values differ by a power of 10; otherwise undefined. */

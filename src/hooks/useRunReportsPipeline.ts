@@ -75,13 +75,18 @@ const DEFAULT_TOAST_KEYS: RunReportsPipelineToastKeys = {
 /** Shared run-reports flow for Registry, Crawler, and Overview. Optional config for fixed stage endpoints. */
 export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
   const { t } = useI18n();
-  const toastKeys = { ...DEFAULT_TOAST_KEYS, ...config?.toastKeys };
+  const toastKeys = useMemo(
+    () => ({ ...DEFAULT_TOAST_KEYS, ...config?.toastKeys }),
+    [config?.toastKeys],
+  );
   const [isRunningReports, setIsRunningReports] = useState(false);
   const [autoApprove, setAutoApprove] = useState(true);
   const [runAllWorkers, setRunAllWorkers] = useState(false);
   const [selectedWorkers, setSelectedWorkers] =
     useState<RunOnlyWorkerId[]>(DEFAULT_RUN_ONLY);
   const [forceReindex, setForceReindex] = useState(false);
+  const [requireEmissionsPresence, setRequireEmissionsPresence] =
+    useState(false);
   const [batchDropdownChoice, setBatchDropdownChoice] = useState("");
   const [customBatchName, setCustomBatchName] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -167,6 +172,7 @@ export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
           urls,
           autoApprove,
           forceReindex,
+          requireEmissionsPresence,
           batchId: pipelineBatchId,
           runOnly,
           tags,
@@ -217,6 +223,7 @@ export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
       customBatchName,
       autoApprove,
       forceReindex,
+      requireEmissionsPresence,
       runOnly,
       tags,
       config?.batchesApiUrl,
@@ -249,6 +256,8 @@ export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
         onSelectedWorkersChange: handleWorkerToggle,
         forceReindex,
         onForceReindexChange: setForceReindex,
+        requireEmissionsPresence,
+        onRequireEmissionsPresenceChange: setRequireEmissionsPresence,
       },
     }),
     [
@@ -264,6 +273,7 @@ export function useRunReportsPipeline(config?: RunReportsPipelineConfig) {
       selectedWorkers,
       handleWorkerToggle,
       forceReindex,
+      requireEmissionsPresence,
     ],
   );
 

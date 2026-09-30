@@ -254,7 +254,7 @@ export function GicsTreeSelect({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [open]);
+  }, [open, panelMaxHeight]);
 
   const selected = useMemo(
     () => options.find((o) => o.code === value) ?? null,

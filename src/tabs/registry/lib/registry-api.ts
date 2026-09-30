@@ -21,7 +21,9 @@ export const REGISTRY_PAGE_SIZE = 75;
 export type RegistryBrowseParams = {
   reportYear?: string;
   batchId?: string;
+  reportTypeId?: string;
   wikidata?: "all" | "present" | "missing";
+  emissionsPresence?: "all" | "yes" | "no" | "unchecked";
   wikidataIds?: string[];
   sort?: RegistrySortKey;
 };
@@ -66,8 +68,14 @@ function appendBrowseParams(
   if (browse.batchId && browse.batchId !== "all") {
     params.set("batchId", browse.batchId);
   }
+  if (browse.reportTypeId && browse.reportTypeId !== "all") {
+    params.set("reportTypeId", browse.reportTypeId);
+  }
   if (browse.wikidata && browse.wikidata !== "all") {
     params.set("wikidata", browse.wikidata);
+  }
+  if (browse.emissionsPresence && browse.emissionsPresence !== "all") {
+    params.set("emissionsPresence", browse.emissionsPresence);
   }
   if (browse.sort) {
     params.set("sort", browse.sort);
@@ -146,12 +154,6 @@ export async function searchRegistryPage(
     throw error instanceof Error ? error : new Error(msg);
   }
 }
-
-/** @deprecated Use fetchRegistryPage — kept for callers not yet migrated. */
-export const fetchRegistryList = async () => {
-  const page = await fetchRegistryPage(1, REGISTRY_PAGE_SIZE);
-  return page.rows;
-};
 
 export async function fetchRegistryBatches() {
   const url = registryUrl(

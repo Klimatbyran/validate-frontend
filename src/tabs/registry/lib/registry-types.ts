@@ -14,6 +14,9 @@ export interface RegistryEntry {
   reportTypeId?: string | null;
   reportTypeSlug?: string | null;
   reportTypeLabel?: string | null;
+  /** null = never checked; true/false = last Scope 1/2/3 presence scan. */
+  hasEmissionsMentions?: boolean | null;
+  emissionsPresenceCheckedAt?: string | null;
   reportType?: {
     id: string;
     slug: string;

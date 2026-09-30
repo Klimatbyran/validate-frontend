@@ -14,12 +14,30 @@ export function resolveCompanyReportId(
   return id || undefined;
 }
 
+/** Top-level shell id only when every period in the save is already on that shell. */
+export function sharedCompanyReportIdForPeriods(
+  periods: { companyReportId?: string | null }[],
+): string | undefined {
+  if (periods.length === 0) return undefined;
+  const first = periods[0]?.companyReportId?.trim();
+  if (!first) return undefined;
+  const allShareFirst = periods.every(
+    (period) => period.companyReportId?.trim() === first,
+  );
+  return allShareFirst ? first : undefined;
+}
+
 export function attachCompanyReportIdToPeriodPatch<T extends object>(
   period: GarboReportingPeriodSummary,
   patch: T,
-): T & { companyReportId?: string } {
+): T & { companyReportId?: string; year?: string } {
   const companyReportId = resolveCompanyReportId(period);
-  return companyReportId ? { ...patch, companyReportId } : patch;
+  const year = period.year?.trim() || undefined;
+  return {
+    ...patch,
+    ...(companyReportId ? { companyReportId } : {}),
+    ...(year ? { year } : {}),
+  };
 }
 
 export type CompanyReportShellGroup = {

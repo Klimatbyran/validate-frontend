@@ -18,7 +18,7 @@ describe("pipelineModeForTab", () => {
   });
 
   it("returns null for universal tabs", () => {
-    expect(pipelineModeForTab("crawler")).toBeNull();
+    expect(pipelineModeForTab("registry")).toBeNull();
     expect(pipelineModeForTab("upload")).toBeNull();
     expect(pipelineModeForTab("access")).toBeNull();
   });
@@ -40,6 +40,6 @@ describe("resolveInitialPipelineMode", () => {
   });
 
   it("falls back to emissions for universal tabs without storage", () => {
-    expect(resolveInitialPipelineMode("crawler")).toBe("emissions");
+    expect(resolveInitialPipelineMode("registry")).toBe("emissions");
   });
 });

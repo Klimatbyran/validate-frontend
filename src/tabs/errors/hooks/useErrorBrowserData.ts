@@ -518,7 +518,13 @@ export function useErrorBrowserData(
         },
       };
     });
-  }, [pairedCompanies, selectedDataYear, selectedReportYear, verifiedOnly]);
+  }, [
+    pairedCompanies,
+    tagFilteredCompanies,
+    selectedDataYear,
+    selectedReportYear,
+    verifiedOnly,
+  ]);
 
   const worstCompanies = React.useMemo((): WorstCompany[] => {
     if (
@@ -618,7 +624,13 @@ export function useErrorBrowserData(
     }
 
     return companyErrors.sort((a, b) => b.errorCount - a.errorCount);
-  }, [pairedCompanies, selectedDataYear, selectedReportYear, verifiedOnly]);
+  }, [
+    pairedCompanies,
+    tagFilteredCompanies,
+    selectedDataYear,
+    selectedReportYear,
+    verifiedOnly,
+  ]);
 
   const difficultCompanyIds = React.useMemo(() => {
     const ids = new Map<string, number>();

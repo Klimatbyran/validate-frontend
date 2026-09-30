@@ -1,4 +1,4 @@
-import type { RegistryEntry, RegistryStats } from "./registry-types";
+import type { RegistryEntry } from "./registry-types";
 
 export function isValidHttpUrl(raw: string): boolean {
   const trimmed = raw.trim();
@@ -92,18 +92,6 @@ export function filterRegistryEntries(
     }
   }
   return [...matched.values()];
-}
-
-export function buildRegistryStats(entries: RegistryEntry[]): RegistryStats {
-  const companyKeys = new Set(
-    entries
-      .map((e) => (e.wikidataId ?? e.companyName ?? "").trim())
-      .filter(Boolean),
-  );
-  return {
-    uniqueCompanies: companyKeys.size,
-    totalReports: entries.length,
-  };
 }
 
 export function writeRegistryEntriesToCsv(entries: RegistryEntry[]): void {

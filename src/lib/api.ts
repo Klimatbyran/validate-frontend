@@ -441,98 +441,6 @@ export function fetchQueueJobs(
 // VIKTIGT: Använd endast reaktiva RxJS-metoder. Statiska objekt, globala variabler
 // och blockerande metoder som toArray() är FÖRBJUDNA.
 
-// Load all historical jobs for a queue - simplified for custom API
-export function fetchAllHistoricalJobs(
-  queueName: string,
-  status?: string,
-): Observable<QueueJobsResponse> {
-  // The custom API returns all jobs at once, so we just need to fetch them
-  return from(fetchQueueJobs(queueName, status)).pipe(
-    catchError((error) => {
-      console.error(`Error fetching historical jobs for ${queueName}:`, error);
-      // Return empty response on error
-      return of({
-        queue: {
-          name: queueName,
-          type: "bullmq" as const,
-          isPaused: false,
-          statuses: [],
-          counts: {
-            active: 0,
-            waiting: 0,
-            completed: 0,
-            failed: 0,
-            delayed: 0,
-            paused: 0,
-            prioritized: 0,
-            "waiting-children": 0,
-          },
-          jobs: [],
-          pagination: {
-            pageCount: 0,
-            range: { start: 0, end: 0 },
-          },
-          readOnlyMode: false,
-          allowRetries: true,
-          allowCompletedRetries: true,
-          delimiter: ":",
-        },
-      });
-    }),
-    share(),
-  );
-}
-
-// New process management endpoints for the custom API
-export function fetchProcesses(): Promise<CustomAPIProcess[]> {
-  return new Promise((resolve, reject) => {
-    try {
-      const subscription = rateLimiter
-        .throttle(() => api.get("/processes/"))
-        .pipe(
-          map((response) => response.data || []),
-          catchError((error) => {
-            console.error("Error fetching processes:", error);
-            return of([]);
-          }),
-        )
-        .subscribe({
-          next: (processes) => resolve(processes),
-          error: (error) => reject(error),
-        });
-
-      return () => subscription.unsubscribe();
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
-
-export function fetchProcessesByCompany(): Promise<CustomAPICompany[]> {
-  return new Promise((resolve, reject) => {
-    try {
-      const subscription = rateLimiter
-        .throttle(() => api.get("/processes/companies"))
-        .pipe(
-          map((response) => response.data || []),
-          catchError((error) => {
-            console.error("Error fetching processes by company:", error);
-            // Propagate error so callers can decide how to handle state updates
-            return throwError(() => error);
-          }),
-        )
-        .subscribe({
-          next: (companies) => resolve(companies),
-          error: (error) => reject(error),
-        });
-
-      return () => subscription.unsubscribe();
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
-
 function parseCompaniesResponse(data: unknown): CustomAPICompany[] {
   const d = data as any;
   const directCompanies = Array.isArray(d?.companies) ? d.companies : null;
@@ -553,12 +461,6 @@ function parseCompaniesResponse(data: unknown): CustomAPICompany[] {
     );
   }
   return [];
-}
-
-/** Fetches all companies. API does not support pagination; no query params sent. */
-export async function fetchCompanies(): Promise<CustomAPICompany[]> {
-  const response = await api.get<unknown>("/processes/companies");
-  return parseCompaniesResponse(response.data);
 }
 
 export async function fetchCompaniesPage(

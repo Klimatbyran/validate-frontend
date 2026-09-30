@@ -3,19 +3,27 @@ import { garboAuthFetch, throwIfAuthError } from "@/lib/garbo-auth-fetch";
 import {
   coverageListCollectionSchema,
   coverageListSummarySchema,
+  coverageListGroupSchema,
+  coverageListGroupListSchema,
+  coverageListLocaleSchema,
+  coverageListLocaleListSchema,
   coverageYearDetailSchema,
   coverageYearNamesSchema,
   coverageYearRegistryRefreshSchema,
   coverageYearRematchSchema,
   coverageCompanySearchResponseSchema,
   coverageRegistryReportSearchResponseSchema,
+  coverageCompanyMatchesResponseSchema,
   type CoverageListSummary,
+  type CoverageListGroup,
+  type CoverageListLocale,
   type CoverageYearDetail,
   type CoverageYearNames,
   type CoverageYearRegistryRefresh,
   type CoverageYearRematch,
   type CoverageRematchMode,
   type CoverageCompanySearchHit,
+  type CoverageCompanyMatch,
   type CoverageRegistryReportSearchHit,
   type CoverageEntryFilter,
 } from "./coverage-types";
@@ -26,6 +34,24 @@ function coverageUrl(path: string): string {
   const base = getUnearthApiBaseUrl();
   const segment = path.replace(/^\//, "").replace(/\/+$/, "");
   return `${base}/coverage-lists${segment ? `/${segment}` : ""}`.replace(
+    /\/+$/,
+    "",
+  );
+}
+
+function coverageGroupsUrl(path = ""): string {
+  const base = getUnearthApiBaseUrl();
+  const segment = path.replace(/^\//, "").replace(/\/+$/, "");
+  return `${base}/coverage-list-groups${segment ? `/${segment}` : ""}`.replace(
+    /\/+$/,
+    "",
+  );
+}
+
+function coverageLocalesUrl(path = ""): string {
+  const base = getUnearthApiBaseUrl();
+  const segment = path.replace(/^\//, "").replace(/\/+$/, "");
+  return `${base}/coverage-list-locales${segment ? `/${segment}` : ""}`.replace(
     /\/+$/,
     "",
   );
@@ -53,16 +79,6 @@ export async function fetchCoverageLists(): Promise<{
   const response = await garboAuthFetch(url, { cache: "no-store" });
   return parseJson(response, url, (data) =>
     coverageListCollectionSchema.parse(data),
-  );
-}
-
-export async function fetchCoverageList(
-  listId: string,
-): Promise<CoverageListSummary> {
-  const url = coverageUrl(listId);
-  const response = await garboAuthFetch(url, { cache: "no-store" });
-  return parseJson(response, url, (data) =>
-    coverageListSummarySchema.parse(data),
   );
 }
 
@@ -147,6 +163,8 @@ export async function createCoverageList(input: {
   name: string;
   year?: number;
   names?: string[];
+  groupId?: string | null;
+  localeId?: string | null;
 }): Promise<CoverageListSummary> {
   const url = coverageUrl("");
   const response = await garboAuthFetch(url, {
@@ -174,19 +192,127 @@ export async function addCoverageListYear(
   );
 }
 
-export async function renameCoverageList(
+export async function updateCoverageList(
   listId: string,
-  name: string,
+  input: {
+    name?: string;
+    groupId?: string | null;
+    localeId?: string | null;
+  },
 ): Promise<CoverageListSummary> {
   const url = coverageUrl(listId);
   const response = await garboAuthFetch(url, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(input),
   });
   return parseJson(response, url, (data) =>
     coverageListSummarySchema.parse(data),
   );
+}
+
+export async function fetchCoverageListGroups(): Promise<CoverageListGroup[]> {
+  const url = coverageGroupsUrl();
+  const response = await garboAuthFetch(url, { cache: "no-store" });
+  return parseJson(response, url, (data) =>
+    coverageListGroupListSchema.parse(data),
+  );
+}
+
+export async function createCoverageListGroup(input: {
+  slug: string;
+  label: string;
+}): Promise<CoverageListGroup> {
+  const url = coverageGroupsUrl();
+  const response = await garboAuthFetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return parseJson(response, url, (data) =>
+    coverageListGroupSchema.parse(data),
+  );
+}
+
+export async function updateCoverageListGroup(
+  groupId: string,
+  input: { slug?: string; label?: string },
+): Promise<CoverageListGroup> {
+  const url = coverageGroupsUrl(groupId);
+  const response = await garboAuthFetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return parseJson(response, url, (data) =>
+    coverageListGroupSchema.parse(data),
+  );
+}
+
+export async function deleteCoverageListGroup(groupId: string): Promise<void> {
+  const url = coverageGroupsUrl(groupId);
+  const response = await garboAuthFetch(url, { method: "DELETE" });
+  if (!response.ok) {
+    throwIfAuthError(response.status);
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `Delete coverage list group failed (${response.status})${body ? `: ${body.slice(0, 200)}` : ""}`,
+    );
+  }
+}
+
+export async function fetchCoverageListLocales(): Promise<
+  CoverageListLocale[]
+> {
+  const url = coverageLocalesUrl();
+  const response = await garboAuthFetch(url, { cache: "no-store" });
+  return parseJson(response, url, (data) =>
+    coverageListLocaleListSchema.parse(data),
+  );
+}
+
+export async function createCoverageListLocale(input: {
+  slug: string;
+  label: string;
+}): Promise<CoverageListLocale> {
+  const url = coverageLocalesUrl();
+  const response = await garboAuthFetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return parseJson(response, url, (data) =>
+    coverageListLocaleSchema.parse(data),
+  );
+}
+
+export async function updateCoverageListLocale(
+  localeId: string,
+  input: { slug?: string; label?: string },
+): Promise<CoverageListLocale> {
+  const url = coverageLocalesUrl(localeId);
+  const response = await garboAuthFetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return parseJson(response, url, (data) =>
+    coverageListLocaleSchema.parse(data),
+  );
+}
+
+export async function deleteCoverageListLocale(
+  localeId: string,
+): Promise<void> {
+  const url = coverageLocalesUrl(localeId);
+  const response = await garboAuthFetch(url, { method: "DELETE" });
+  if (!response.ok) {
+    throwIfAuthError(response.status);
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `Delete coverage list locale failed (${response.status})${body ? `: ${body.slice(0, 200)}` : ""}`,
+    );
+  }
 }
 
 export async function replaceCoverageYearNames(
@@ -248,6 +374,17 @@ export async function searchCoverageCompanies(
   return parseJson(response, url, (data) =>
     coverageCompanySearchResponseSchema.parse(data),
   );
+}
+
+export async function fetchCoverageCompanyMatches(
+  companyId: string,
+): Promise<CoverageCompanyMatch[]> {
+  const url = coverageUrl(`companies/${companyId}/matches`);
+  const response = await garboAuthFetch(url, { cache: "no-store" });
+  const parsed = await parseJson(response, url, (data) =>
+    coverageCompanyMatchesResponseSchema.parse(data),
+  );
+  return parsed.matches;
 }
 
 export async function searchCoverageRegistryReports(
@@ -352,6 +489,25 @@ export async function renameCoverageEntry(
     // keep fallback message
   }
   throw new Error(message);
+}
+
+export async function updateCoverageEntryCrawlWebsite(
+  listId: string,
+  year: number,
+  entryId: string,
+  websiteUrl: string | null,
+): Promise<CoverageYearDetail> {
+  const url = coverageUrl(
+    `${listId}/years/${year}/entries/${entryId}/crawl-website`,
+  );
+  const response = await garboAuthFetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ websiteUrl }),
+  });
+  return parseJson(response, url, (data) =>
+    coverageYearDetailSchema.parse(data),
+  );
 }
 
 export async function refreshCoverageEntryRegistry(

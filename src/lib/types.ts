@@ -195,7 +195,8 @@ export type SwimlaneStatusType =
   | "wikidata_unverified"
   | "processing"
   | "waiting"
-  | "failed";
+  | "failed"
+  | "skipped";
 
 export interface SwimlaneFieldData {
   status: SwimlaneStatusType;
@@ -210,6 +211,13 @@ export interface SwimlaneYearData {
   latestTimestamp?: number; // Timestamp of the latest attempt
   // Optional thread identifier for grouping runs; populated by the swimlane view conversion logic
   threadId?: string;
+  /** Process-level status from pipeline-api (e.g. skipped_no_emissions). */
+  processStatus?:
+    | "active"
+    | "completed"
+    | "failed"
+    | "waiting"
+    | "skipped_no_emissions";
 }
 
 export interface SwimlaneCompany {
@@ -279,7 +287,12 @@ export interface CustomAPIProcess {
   year?: number;
   /** Batch ID when the process was started (e.g. from upload run options). */
   batchId?: string;
-  status: "active" | "completed" | "failed" | "waiting";
+  status:
+    | "active"
+    | "completed"
+    | "failed"
+    | "waiting"
+    | "skipped_no_emissions";
   jobs: CustomAPIJob[];
   startedAt?: number;
   finishedAt?: number;

@@ -63,7 +63,9 @@ function browseParamsFromFilters(
   return {
     reportYear: filters.year,
     batchId: filters.batch,
+    reportTypeId: filters.reportType,
     wikidata: filters.wikidata,
+    emissionsPresence: filters.emissionsPresence,
     sort: filters.sort,
     ...(tagWikidataIds ? { wikidataIds: tagWikidataIds } : {}),
   };
@@ -195,7 +197,9 @@ export function useRegistryData({
   const hasStructuredFilters =
     filters.year !== "all" ||
     filters.batch !== "all" ||
+    filters.reportType !== "all" ||
     filters.wikidata !== "all" ||
+    filters.emissionsPresence !== "all" ||
     filters.tagMode !== "ignore";
 
   return {

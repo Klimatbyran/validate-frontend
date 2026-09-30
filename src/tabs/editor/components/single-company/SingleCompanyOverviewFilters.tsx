@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useI18n } from "@/contexts/I18nContext";
+import { Button } from "@/ui/button";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
@@ -10,6 +11,7 @@ import type {
   FilterUnverifiedOption,
 } from "../../lib/single-company-overview-list";
 import type { SingleCompanyOverviewList } from "../../hooks/useSingleCompanyOverviewList";
+import { EDITOR_COMPANY_SEARCH_MIN_LENGTH } from "../../lib/companies-api";
 
 type Props = {
   list: SingleCompanyOverviewList;
@@ -30,13 +32,24 @@ export function SingleCompanyOverviewFilters({ list, afterSlot }: Props) {
         <label className="block text-xs font-medium text-gray-02 mb-1">
           {t("editor.singleCompanyView.searchByNameOrId")}
         </label>
-        <input
-          type="text"
-          value={list.searchQuery}
-          onChange={(e) => list.setSearchQuery(e.target.value)}
-          placeholder={t("editor.singleCompanyView.searchPlaceholder")}
-          className="w-full max-w-md px-3 py-2 rounded-lg border border-gray-03 bg-gray-05 text-gray-01 placeholder:text-gray-03 focus:outline-none focus:ring-2 focus:ring-blue-03"
-        />
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="text"
+            value={list.searchQuery}
+            onChange={(e) => list.setSearchQuery(e.target.value)}
+            placeholder={t("editor.singleCompanyView.searchPlaceholder")}
+            className="w-full max-w-md px-3 py-2 rounded-lg border border-gray-03 bg-gray-05 text-gray-01 placeholder:text-gray-03 focus:outline-none focus:ring-2 focus:ring-blue-03"
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={list.browseAll}
+            disabled={list.listMode === "browse" || list.loadingList}
+          >
+            {t("editor.companies.browseAll")}
+          </Button>
+        </div>
       </div>
       <div className="flex flex-wrap gap-4">
         <div>
@@ -237,11 +250,31 @@ export function SingleCompanyOverviewListAfterSlot({
         </div>
       )}
 
-      {!list.loadingList && list.filteredReportRows.length === 0 && (
-        <div className="py-8 text-center text-gray-02 text-sm">
-          {t("editor.singleCompanyView.noCompaniesMatch")}
+      {!list.loadingList && list.listMode === "idle" && (
+        <div className="py-8 text-center text-gray-02 text-sm space-y-3">
+          <p>
+            {t("editor.companies.searchFirstHint", {
+              min: EDITOR_COMPANY_SEARCH_MIN_LENGTH,
+            })}
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={list.browseAll}
+          >
+            {t("editor.companies.browseAll")}
+          </Button>
         </div>
       )}
+
+      {!list.loadingList &&
+        list.listMode !== "idle" &&
+        list.filteredReportRows.length === 0 && (
+          <div className="py-8 text-center text-gray-02 text-sm">
+            {t("editor.singleCompanyView.noCompaniesMatch")}
+          </div>
+        )}
     </>
   );
 }

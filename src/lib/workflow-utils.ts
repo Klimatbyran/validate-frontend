@@ -7,13 +7,11 @@
 
 import type {
   SwimlaneStatusType,
-  SwimlaneFieldData,
   SwimlaneYearData,
   SwimlaneCompany,
 } from "./types";
 import {
   getQueuesForPipelineStep,
-  getAllPipelineSteps,
   NON_BLOCKING_FAILURE_QUEUES,
 } from "./workflow-config";
 
@@ -76,6 +74,36 @@ export function jobNeedsUserInteraction(job: any): boolean {
 }
 
 /**
+ * True when checkEmissionsPresence completed and stopped the pipeline
+ * (no Scope 1/2/3 mentions).
+ */
+export function isEmissionsPresenceGated(job: any): boolean {
+  const queueId = job?.queueId ?? job?.queue;
+  if (queueId !== "checkEmissionsPresence") return false;
+  if (job?.status && job.status !== "completed" && !job?.finishedOn) {
+    return false;
+  }
+  let rv = job?.returnvalue;
+  if (typeof rv === "string") {
+    try {
+      rv = JSON.parse(rv);
+    } catch {
+      return false;
+    }
+  }
+  return Boolean(rv && typeof rv === "object" && rv.gated === true);
+}
+
+/** True when this run ended at the emissions presence gate (no LLM extraction). */
+export function yearIsEmissionsPresenceSkipped(
+  yearData: SwimlaneYearData,
+): boolean {
+  if (yearData.processStatus === "skipped_no_emissions") return true;
+  const jobs = yearData.jobs || [];
+  return jobs.some((job) => isEmissionsPresenceGated(job));
+}
+
+/**
  * Single source of truth for job status determination
  * Used by all views to ensure consistency
  */
@@ -105,8 +133,18 @@ export function getJobStatus(job: any): SwimlaneStatusType {
     return "processing";
   }
 
+  // Flow parents (e.g. checkEmissionsPresence waiting on Docling/index) are
+  // not idle — show processing so the gate does not look stuck on Waiting.
+  if (rawStatus === "waiting-children") {
+    return "processing";
+  }
+
   // For completed jobs, distinguish auto-approved unverified Wikidata from fully done
   if (rawStatus === "completed" || job.finishedOn) {
+    if (isEmissionsPresenceGated(job)) {
+      return "skipped";
+    }
+
     if (isWikidataAutoApprovedUnverified(job)) {
       return "wikidata_unverified";
     }
@@ -119,11 +157,7 @@ export function getJobStatus(job: any): SwimlaneStatusType {
     return needsApproval ? "needs_approval" : "completed";
   }
 
-  if (
-    rawStatus === "waiting" ||
-    rawStatus === "waiting-children" ||
-    rawStatus === "delayed"
-  ) {
+  if (rawStatus === "waiting" || rawStatus === "delayed") {
     return "waiting";
   }
 
@@ -140,46 +174,6 @@ export function getJobStatus(job: any): SwimlaneStatusType {
   // Default to waiting for all other cases
   // This includes jobs that are not processed, not finished, and not explicitly failed
   return "waiting";
-}
-
-/**
- * Get the status from a field data object
- */
-export function getFieldStatus(
-  fieldData: SwimlaneStatusType | SwimlaneFieldData | undefined,
-): SwimlaneStatusType {
-  if (!fieldData) {
-    return "waiting";
-  }
-
-  if (typeof fieldData === "string") {
-    return fieldData;
-  }
-
-  return fieldData.status;
-}
-
-/**
- * Extract jobs for a specific pipeline step from data
- */
-export function getJobsForStep(
-  data: SwimlaneYearData | SwimlaneCompany[],
-  stepId: string,
-): any[] {
-  const queueIds = getQueuesForPipelineStep(stepId);
-
-  if (Array.isArray(data)) {
-    // All companies data - only get jobs from latest year per company (effective = latest per queue+thread)
-    return data.flatMap((company) => {
-      const latestYear = company.years[0];
-      const effective = latestYear ? getEffectiveJobs(latestYear) : [];
-      return effective.filter((job) => queueIds.includes(job.queueId));
-    });
-  } else {
-    // Single year data
-    const effective = getEffectiveJobs(data);
-    return effective.filter((job) => queueIds.includes(job.queueId));
-  }
 }
 
 /**
@@ -302,6 +296,24 @@ export function getQueueAttemptSummary(
   anySucceeded: boolean;
 } {
   const attempts = getQueueAttempts(queueId, yearData, threadId);
+  if (attempts.length === 0) {
+    // Downstream queues never enqueued after the emissions gate — show skipped
+    // instead of perpetual Waiting so the run reads as finished.
+    if (yearIsEmissionsPresenceSkipped(yearData)) {
+      return {
+        status: "skipped",
+        attempts: [],
+        hasMixedOutcomes: false,
+        anySucceeded: false,
+      };
+    }
+    return {
+      status: "waiting",
+      attempts: [],
+      hasMixedOutcomes: false,
+      anySucceeded: false,
+    };
+  }
   const statuses = attempts.map((j) => getJobStatus(j));
   const unique = new Set(statuses);
   const hasMixedOutcomes = unique.size > 1;
@@ -367,12 +379,13 @@ export function calculateStepJobStats(
       null;
     for (const queueId of queueIds) {
       const agg = getQueueAttemptSummary(queueId, year, canonicalThreadId);
-      // Only count queues that have actually been attempted in this run
-      if (agg.attempts.length === 0) continue;
+      // Count attempted queues, and synthetic skips after the emissions gate
+      if (agg.attempts.length === 0 && agg.status !== "skipped") continue;
       init.total++;
       switch (agg.status) {
         case "completed":
         case "wikidata_unverified":
+        case "skipped":
           init.completed++;
           break;
         case "processing":
@@ -420,7 +433,11 @@ function hasJobBeenStarted(job: any): boolean {
 }
 
 function isPipelineProgressStatus(status: SwimlaneStatusType): boolean {
-  return status === "completed" || status === "wikidata_unverified";
+  return (
+    status === "completed" ||
+    status === "wikidata_unverified" ||
+    status === "skipped"
+  );
 }
 
 /**
@@ -458,7 +475,13 @@ function isAcceptableStepOutcome(entry: {
 export function calculatePipelineStepStatus(
   yearData: SwimlaneYearData,
   stepId: string,
-): "completed" | "processing" | "failed" | "waiting" | "needs_approval" {
+):
+  | "completed"
+  | "processing"
+  | "failed"
+  | "waiting"
+  | "needs_approval"
+  | "skipped" {
   // Get English queue IDs instead of Swedish display names
   const queueIds = getQueuesForPipelineStep(stepId);
 
@@ -554,11 +577,13 @@ export function calculatePipelineStepStatus(
       return "waiting";
     }
 
-    // Filter to only jobs that have been started (ignore waiting jobs that haven't been run)
+    // Filter to only jobs that have been started (ignore waiting jobs that haven't been run).
+    // Include synthetic "skipped" after emissions gate (never enqueued, but terminal).
     const startedJobs = jobsWithStatuses.filter(
       (entry) =>
-        Array.isArray(entry.attempts) &&
-        entry.attempts.some((j: any) => hasJobBeenStarted(j)),
+        entry.status === "skipped" ||
+        (Array.isArray(entry.attempts) &&
+          entry.attempts.some((j: any) => hasJobBeenStarted(j))),
     );
 
     if (startedJobs.length === 0) {
@@ -577,9 +602,16 @@ export function calculatePipelineStepStatus(
       return "failed";
     }
 
+    const hasSkipped = startedJobs.some((entry) => entry.status === "skipped");
+
     // If all started jobs are completed (green), show green
     // This means: no failed, no stuck, no delayed - everything that was run is green
     if (allCompleted && hasCompleted) {
+      // Emissions gate stopped the run — show skipped instead of a green preprocess
+      // that looks like a full success while later steps never started.
+      if (hasSkipped) {
+        return "skipped";
+      }
       return "completed";
     }
 
@@ -638,60 +670,4 @@ export function calculatePipelineStepStatus(
   } else {
     return "waiting";
   }
-}
-
-/**
- * Convert grouped companies data to swimlane format
- */
-export function convertGroupedCompaniesToSwimlaneFormat(
-  groupedCompanies: any[],
-): SwimlaneCompany[] {
-  return groupedCompanies.map((company) => {
-    const years: SwimlaneYearData[] = (company.attempts || []).map(
-      (attempt: any) => {
-        const yearData: SwimlaneYearData = {
-          year: attempt.year,
-          attempts: attempt.attemptCount || 1, // Use actual attempt count
-          fields: {},
-          jobs: attempt.jobs || [], // Preserve the actual job data
-          latestTimestamp: attempt.latestTimestamp, // Include latest timestamp
-        };
-
-        // Populate fields from jobs instead of stages to get complete data
-        (attempt.jobs || []).forEach((job: any) => {
-          const status = getJobStatus(job);
-
-          yearData.fields[job.queueId] = {
-            status,
-            isActivelyProcessing: status === "processing",
-          } as SwimlaneFieldData;
-        });
-
-        // Ensure all expected queue IDs for each step have field data
-        // This prevents undefined field data from causing incorrect step statuses
-        const allPipelineSteps = getAllPipelineSteps();
-        allPipelineSteps.forEach((step) => {
-          const queueIds = getQueuesForPipelineStep(step.id);
-          queueIds.forEach((queueId) => {
-            if (!yearData.fields[queueId]) {
-              // If no job exists for this queue ID, default to waiting
-              yearData.fields[queueId] = {
-                status: "waiting" as SwimlaneStatusType,
-                isActivelyProcessing: false,
-              } as SwimlaneFieldData;
-            }
-          });
-        });
-
-        return yearData;
-      },
-    );
-
-    const result = {
-      id: company.company,
-      name: company.companyName || company.company,
-      years,
-    };
-    return result;
-  });
 }

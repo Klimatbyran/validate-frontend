@@ -35,6 +35,7 @@ export const QUEUE_DISPLAY_NAMES: Record<string, string> = {
   parsePdf: "PDF Parsning",
   doclingParsePDF: "PDF Parsning docling",
   indexMarkdown: "Markdown",
+  checkEmissionsPresence: "Utsläppsnärvaro",
   extractDescriptions: "Extrahera beskrivningar",
 
   // AI Data Extraction
@@ -91,6 +92,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
       "parsePdf",
       "doclingParsePDF",
       "indexMarkdown",
+      "checkEmissionsPresence",
       "extractDescriptions",
       "guessWikidata",
       "extractEmissions",
@@ -162,49 +164,11 @@ export function getWorkflowStages(): WorkflowStage[] {
 }
 
 /**
- * Get pipeline step for a given queue ID
- */
-export function getPipelineStepForQueue(
-  queueId: string,
-): PipelineStep | undefined {
-  return PIPELINE_STEPS.find((step) => step.stageIds.includes(queueId));
-}
-
-/**
  * Get all queue IDs for a pipeline step
  */
 export function getQueuesForPipelineStep(stepId: string): string[] {
   const step = PIPELINE_STEPS.find((s) => s.id === stepId);
   return step?.stageIds || [];
-}
-
-/**
- * Get all field names (display names) for a pipeline step
- */
-export function getFieldNamesForPipelineStep(stepId: string): string[] {
-  const queueIds = getQueuesForPipelineStep(stepId);
-  return queueIds.map(getQueueDisplayName);
-}
-
-/**
- * Get all field names across all pipeline steps
- */
-export function getAllFieldNames(): string[] {
-  return Object.values(QUEUE_DISPLAY_NAMES);
-}
-
-/**
- * Check if a queue ID is valid
- */
-export function isValidQueueId(queueId: string): boolean {
-  return queueId in QUEUE_DISPLAY_NAMES;
-}
-
-/**
- * Get pipeline step by ID
- */
-export function getPipelineStep(stepId: string): PipelineStep | undefined {
-  return PIPELINE_STEPS.find((step) => step.id === stepId);
 }
 
 /**

@@ -73,6 +73,8 @@ export function CompanyIdentifiersEditor({
     setRows(buildEditableIdentifiers(company));
     setAddType("");
     setAddValue("");
+    // Sync rows from identifier fields — avoid depending on `company` identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- field-level sync
   }, [company.id, company.identifiers, company.wikidataId, company.lei]);
 
   const typesInUse = useMemo(() => rows.map((row) => row.type), [rows]);

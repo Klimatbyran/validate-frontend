@@ -58,7 +58,9 @@ One Unearth API backend from `VITE_UNEARTH_TARGET` (legacy: `VITE_GARBO_TARGET`)
 
 Jobbstatus Archive, batch pickers, `POST /queue-archive/batches`. Helper: `getGarboQueueArchiveUrl()` → `/garbo-api/queue-archive/…` (deployed) or `/garbo-stage/api/queue-archive/…` (dev).
 
-Requires JWT from Unearth login (`garboAuthFetch`). Garbo also exposes the **same handler** at `/api/internal-queue-archive` (X-API-Key) for server callers (e.g. Unearth overview backend) — keep both: staff browser vs integration, not interchangeable auth.
+Requires JWT from Unearth login (`garboAuthFetch`). Garbo also exposes the **same queue-archive handler** at `/api/internal-queue-archive` (X-API-Key) for server callers (e.g. Unearth overview backend) — keep both: staff browser vs integration, not interchangeable auth.
+
+**Pipeline auto-run** (staff JWT only — no X-API-Key twin): `GET|PATCH /pipeline-auto-run` via `getGarboPipelineAutoRunUrl()` → `/garbo-api/pipeline-auto-run` (deployed) or `/garbo-stage/api/pipeline-auto-run` (dev). Soft on/off for Garbo’s backlog drain worker; filter option lists for the UI still come from Unearth (report types, registry batches, coverage lists). Nginx still injects `X-API-Key` for consistency with other Garbo proxies; Garbo ignores it on this route and requires Bearer JWT.
 
 ### 4. Pipeline API – live job status
 

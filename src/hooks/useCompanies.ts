@@ -104,7 +104,11 @@ export function useCompanies() {
             }));
             return newCompanies;
           });
-          if (updated.status === "completed" || updated.status === "failed") {
+          if (
+            updated.status === "completed" ||
+            updated.status === "failed" ||
+            updated.status === "skipped_no_emissions"
+          ) {
             state.stopped = true;
             return;
           }
@@ -141,11 +145,12 @@ export function useCompanies() {
     };
     document.addEventListener("visibilitychange", onVisibility);
 
+    const processPollers = processPollersRef.current;
     return () => {
       if (intervalId) window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("companies:refresh", onKick);
-      processPollersRef.current.forEach((state) => {
+      processPollers.forEach((state) => {
         state.stopped = true;
       });
     };
@@ -177,7 +182,7 @@ export function useCompanies() {
       }
     };
 
-    const timer = window.setInterval(tick, 2000);
+    const timer = window.setInterval(tick, 5000);
     return () => window.clearInterval(timer);
   }, []);
 

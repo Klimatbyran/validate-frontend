@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Filter } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
@@ -6,9 +6,12 @@ import { SearchAndFiltersCard } from "@/ui/search-and-filters-card";
 import { SingleSelectDropdown } from "@/ui/single-select-dropdown";
 import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import { buildTagLabelBySlug } from "@/tabs/editor/lib/editor-tag-and-payload-utils";
-import type { TagOption } from "@/tabs/editor/lib/types";
+import { fetchReportTypes } from "@/tabs/editor/lib/report-types-api";
+import type { ReportType, TagOption } from "@/tabs/editor/lib/types";
 import type {
+  EmissionsPresenceFilter,
   RegistryBatchFilterValue,
+  RegistryReportTypeFilterValue,
   RegistrySortKey,
   RegistryTagFilterMode,
   RegistryViewFilters,
@@ -21,6 +24,13 @@ const WIKIDATA_OPTIONS: WikidataPresenceFilter[] = [
   "all",
   "present",
   "missing",
+];
+
+const EMISSIONS_PRESENCE_OPTIONS: EmissionsPresenceFilter[] = [
+  "all",
+  "yes",
+  "no",
+  "unchecked",
 ];
 
 const TAG_MODE_OPTIONS: RegistryTagFilterMode[] = [
@@ -79,8 +89,28 @@ const RegistryFiltersAndSort = ({
 }: RegistryFiltersAndSortProps) => {
   const { t } = useI18n();
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
+  const [reportTypesLoading, setReportTypesLoading] = useState(false);
   const tagControlsDisabled =
     disabled || Boolean(companyTagsError) || companyTagsLoading;
+
+  useEffect(() => {
+    let cancelled = false;
+    setReportTypesLoading(true);
+    void fetchReportTypes()
+      .then((types) => {
+        if (!cancelled) setReportTypes(types);
+      })
+      .catch(() => {
+        if (!cancelled) setReportTypes([]);
+      })
+      .finally(() => {
+        if (!cancelled) setReportTypesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const yearOptionList = useMemo(
     () => ["all", "missing", ...distinctYears],
@@ -95,6 +125,22 @@ const RegistryFiltersAndSort = ({
   const batchLabelById = useMemo(
     () => Object.fromEntries(batchOptions.map((b) => [b.id, b.batchName])),
     [batchOptions],
+  );
+
+  const reportTypeOptionList = useMemo(
+    () => ["all", "missing", ...reportTypes.map((type) => type.id)],
+    [reportTypes],
+  );
+
+  const reportTypeLabelById = useMemo(
+    () =>
+      Object.fromEntries(
+        reportTypes.map((type) => [
+          type.id,
+          type.label?.trim() || type.slug || type.id,
+        ]),
+      ),
+    [reportTypes],
   );
 
   const tagSlugOptions = useMemo(
@@ -118,10 +164,23 @@ const RegistryFiltersAndSort = ({
     return batchLabelById[v] ?? v;
   };
 
+  const labelReportType = (v: string) => {
+    if (v === "all") return t("registry.filterReportTypeAll");
+    if (v === "missing") return t("registry.filterReportTypeMissing");
+    return reportTypeLabelById[v] ?? v;
+  };
+
   const labelWikidata = (v: string) => {
     if (v === "all") return t("registry.filterWikidataAll");
     if (v === "present") return t("registry.filterWikidataPresent");
     return t("registry.filterWikidataMissing");
+  };
+
+  const labelEmissionsPresence = (v: string) => {
+    if (v === "all") return t("registry.filterEmissionsPresenceAll");
+    if (v === "yes") return t("registry.filterEmissionsPresenceYes");
+    if (v === "no") return t("registry.filterEmissionsPresenceNo");
+    return t("registry.filterEmissionsPresenceUnchecked");
   };
 
   const labelTagMode = (v: string) => {
@@ -200,6 +259,29 @@ const RegistryFiltersAndSort = ({
 
           <div>
             <label className="block text-xs font-medium text-gray-02 mb-1">
+              {t("registry.filterReportType")}
+            </label>
+            <DisableWrap disabled={disabled}>
+              <SingleSelectDropdown
+                options={reportTypeOptionList}
+                value={filters.reportType}
+                onChange={(v) =>
+                  onFiltersChange({
+                    reportType: v as RegistryReportTypeFilterValue,
+                  })
+                }
+                placeholder={t("registry.filterReportTypeAll")}
+                getOptionLabel={labelReportType}
+                ariaLabel={t("registry.filterReportType")}
+                loading={reportTypesLoading}
+                loadingLabel={t("registry.filterReportTypeLoading")}
+                triggerClassName="min-w-[160px]"
+              />
+            </DisableWrap>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-02 mb-1">
               {t("registry.filterWikidata")}
             </label>
             <DisableWrap disabled={disabled}>
@@ -212,6 +294,27 @@ const RegistryFiltersAndSort = ({
                 placeholder={t("registry.filterWikidataAll")}
                 getOptionLabel={labelWikidata}
                 ariaLabel={t("registry.filterWikidata")}
+                triggerClassName="min-w-[160px]"
+              />
+            </DisableWrap>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-02 mb-1">
+              {t("registry.filterEmissionsPresence")}
+            </label>
+            <DisableWrap disabled={disabled}>
+              <SingleSelectDropdown
+                options={[...EMISSIONS_PRESENCE_OPTIONS]}
+                value={filters.emissionsPresence}
+                onChange={(v) =>
+                  onFiltersChange({
+                    emissionsPresence: v as EmissionsPresenceFilter,
+                  })
+                }
+                placeholder={t("registry.filterEmissionsPresenceAll")}
+                getOptionLabel={labelEmissionsPresence}
+                ariaLabel={t("registry.filterEmissionsPresence")}
                 triggerClassName="min-w-[160px]"
               />
             </DisableWrap>

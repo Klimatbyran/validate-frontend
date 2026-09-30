@@ -9,7 +9,10 @@ import { Loader2, ArrowUp } from "lucide-react";
 import { Button } from "@/ui/button";
 import { motion } from "framer-motion";
 import { ViewModePills } from "@/ui/view-mode-pills";
-import { useCompaniesContext } from "@/contexts/CompaniesContext";
+import {
+  CompaniesProvider,
+  useCompaniesContext,
+} from "@/contexts/CompaniesContext";
 import { useBatches } from "@/hooks/useBatches";
 import { convertCompaniesToSwimlaneFormat } from "./lib/swimlane-transform";
 import {
@@ -21,6 +24,7 @@ import {
   isFullyCompleted,
   hasIssues,
   hasPipelineStepIssues,
+  hasSkippedNoEmissions,
 } from "./lib/swimlane-filters";
 import { useI18n } from "@/contexts/I18nContext";
 import { useRerunByWorker } from "./hooks/useRerunByWorker";
@@ -47,6 +51,14 @@ function jobbstatusSubtabFromSearchParams(
 }
 
 export function JobbstatusTab() {
+  return (
+    <CompaniesProvider>
+      <JobbstatusTabContent />
+    </CompaniesProvider>
+  );
+}
+
+function JobbstatusTabContent() {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const jobbstatusSubtab = jobbstatusSubtabFromSearchParams(searchParams);
@@ -105,6 +117,9 @@ export function JobbstatusTab() {
       fully_completed: swimlaneCompanies.filter((c) =>
         isFullyCompleted(c, runScope),
       ).length,
+      skipped_no_emissions: swimlaneCompanies.filter((c) =>
+        hasSkippedNoEmissions(c, runScope),
+      ).length,
       has_issues: swimlaneCompanies.filter((c) => hasIssues(c, runScope))
         .length,
       preprocessing_issues: swimlaneCompanies.filter((c) =>
@@ -135,6 +150,8 @@ export function JobbstatusTab() {
                   return hasProcessingJobs(company, runScope);
                 case "fully_completed":
                   return isFullyCompleted(company, runScope);
+                case "skipped_no_emissions":
+                  return hasSkippedNoEmissions(company, runScope);
                 case "has_issues":
                   return hasIssues(company, runScope);
                 case "preprocessing_issues":

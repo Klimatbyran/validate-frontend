@@ -4,6 +4,7 @@ import {
   getPeriodShellKey,
   groupPeriodsByReportShell,
   resolveCompanyReportId,
+  sharedCompanyReportIdForPeriods,
   UNLINKED_REPORT_SHELL_KEY,
 } from "./company-report-shells";
 import type { GarboReportingPeriodSummary } from "./types";
@@ -51,11 +52,32 @@ describe("resolveCompanyReportId", () => {
   });
 });
 
+describe("sharedCompanyReportIdForPeriods", () => {
+  it("returns the shell when every period is on it", () => {
+    expect(
+      sharedCompanyReportIdForPeriods([
+        { companyReportId: "shell-1" },
+        { companyReportId: "shell-1" },
+      ]),
+    ).toBe("shell-1");
+  });
+
+  it("returns undefined when a period has no shell", () => {
+    expect(
+      sharedCompanyReportIdForPeriods([
+        { companyReportId: "shell-1" },
+        { companyReportId: "" },
+      ]),
+    ).toBeUndefined();
+  });
+});
+
 describe("attachCompanyReportIdToPeriodPatch", () => {
-  it("adds companyReportId when the period is linked to a shell", () => {
+  it("adds companyReportId and year when the period is linked to a shell", () => {
     const period: GarboReportingPeriodSummary = {
       startDate: "2024-01-01",
       endDate: "2024-12-31",
+      year: "2024",
       companyReportId: "shell-1",
     };
 
@@ -68,6 +90,7 @@ describe("attachCompanyReportIdToPeriodPatch", () => {
       startDate: "2024-01-01",
       endDate: "2024-12-31",
       companyReportId: "shell-1",
+      year: "2024",
     });
   });
 });

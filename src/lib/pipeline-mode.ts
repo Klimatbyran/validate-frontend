@@ -10,7 +10,6 @@ export const PIPELINE_MODE_STORAGE_KEY = "validate.pipelineMode";
 
 /** Always available regardless of pipeline mode. */
 export const UNIVERSAL_TAB_SEGMENTS = [
-  "crawler",
   "registry",
   "upload",
   "access",

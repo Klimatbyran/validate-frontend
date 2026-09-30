@@ -27,13 +27,18 @@ describe("labeledHitsToSelectedReports", () => {
   const recent = String(now);
   const lastYear = String(now - 1);
 
-  it("saves fetched PDFs with a year even when type or S3 is missing", () => {
+  it("saves climate-relevant typed PDFs and skips unlabeled or supporting hits", () => {
     const selected = labeledHitsToSelectedReports([
       company("Acme", [
         {
           url: `https://example.com/csr-${recent}.pdf`,
           reportYear: recent,
           reportTypeSlug: "csr-report",
+        },
+        {
+          url: `https://example.com/ghg-${recent}.pdf`,
+          reportYear: recent,
+          reportTypeSlug: "ghg-emissions-report",
         },
         {
           url: `https://example.com/cdp-${recent}.pdf`,
@@ -43,15 +48,18 @@ describe("labeledHitsToSelectedReports", () => {
           url: `https://example.com/report-${lastYear}.pdf`,
           title: `Something ${lastYear}`,
         },
+        {
+          url: `https://example.com/governance-${recent}.pdf`,
+          reportYear: recent,
+          reportTypeSlug: "corporate-governance-report",
+        },
       ]),
     ]);
 
     expect(selected.map((item) => item.url)).toEqual([
       `https://example.com/csr-${recent}.pdf`,
-      `https://example.com/report-${lastYear}.pdf`,
+      `https://example.com/ghg-${recent}.pdf`,
     ]);
-    expect(selected[1]?.reportYear).toBe(lastYear);
-    expect(selected[1]?.reportTypeSlug).toBe("other");
   });
 
   it("skips CDP, 10-K, old archive years, and subsidiary filings", () => {
@@ -156,6 +164,7 @@ describe("labeledHitsToSelectedReports", () => {
           url: `https://example.com/csr-${recent}.pdf`,
           reportYear: `${recent}-${Number(recent) + 1}`,
           title: `FY${recent} CSR`,
+          reportTypeSlug: "csr-report",
         },
       ]),
     ]);
@@ -164,6 +173,7 @@ describe("labeledHitsToSelectedReports", () => {
       expect.objectContaining({
         url: `https://example.com/csr-${recent}.pdf`,
         reportYear: recent,
+        reportTypeSlug: "csr-report",
       }),
     ]);
   });

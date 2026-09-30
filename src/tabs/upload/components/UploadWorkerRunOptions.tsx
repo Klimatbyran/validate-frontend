@@ -12,6 +12,10 @@ export interface UploadWorkerRunOptionsProps {
   ) => void;
   forceReindex: boolean;
   onForceReindexChange: (value: boolean) => void;
+  requireEmissionsPresence?: boolean;
+  onRequireEmissionsPresenceChange?: (value: boolean) => void;
+  /** When true, hide emissions-gate toggle (e.g. climate-plans callback path). */
+  hideEmissionsPresenceToggle?: boolean;
   autoApprove?: boolean;
   onAutoApproveChange?: (value: boolean) => void;
 }
@@ -23,6 +27,9 @@ export function UploadWorkerRunOptions({
   onSelectedWorkersChange,
   forceReindex,
   onForceReindexChange,
+  requireEmissionsPresence = false,
+  onRequireEmissionsPresenceChange,
+  hideEmissionsPresenceToggle = false,
   autoApprove,
   onAutoApproveChange,
 }: UploadWorkerRunOptionsProps) {
@@ -160,10 +167,49 @@ export function UploadWorkerRunOptions({
             />
           </button>
         </div>
+        <p className="text-xs text-gray-02">
+          {t("upload.forceReindexDescription")}
+        </p>
+
+        {!hideEmissionsPresenceToggle && onRequireEmissionsPresenceChange && (
+          <>
+            <div className="flex items-center justify-between pt-1">
+              <label
+                htmlFor="require-emissions-presence"
+                className="text-sm text-gray-01 cursor-pointer"
+              >
+                {t("upload.requireEmissionsPresence")}
+              </label>
+              <button
+                id="require-emissions-presence"
+                type="button"
+                role="switch"
+                aria-checked={requireEmissionsPresence}
+                onClick={() =>
+                  onRequireEmissionsPresenceChange(!requireEmissionsPresence)
+                }
+                className={cn(
+                  "relative inline-flex h-6 w-11 items-center rounded-full",
+                  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  requireEmissionsPresence ? "bg-blue-03" : "bg-gray-03",
+                )}
+              >
+                <span
+                  className={cn(
+                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                    requireEmissionsPresence
+                      ? "translate-x-6"
+                      : "translate-x-1",
+                  )}
+                />
+              </button>
+            </div>
+            <p className="text-xs text-gray-02">
+              {t("upload.requireEmissionsPresenceDescription")}
+            </p>
+          </>
+        )}
       </div>
-      <p className="text-xs text-gray-02">
-        {t("upload.forceReindexDescription")}
-      </p>
     </div>
   );
 }

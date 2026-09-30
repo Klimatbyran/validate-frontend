@@ -337,7 +337,33 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
+        "/garbo-stage/api/pipeline-auto-run": {
+          target: urls.garboStage,
+          changeOrigin: true,
+          secure: true,
+          rewrite: (path) => path.replace(/^\/garbo-stage/, ""),
+          timeout: PROXY_TIMEOUT_MS,
+          proxyTimeout: PROXY_TIMEOUT_MS,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              setProxyApiKey(proxyReq, env.GARBO_STAGE_ALL_ACCESS_API_KEY);
+            });
+          },
+        },
         "/garbo-stage-api/queue-archive": {
+          target: urls.garboStage,
+          changeOrigin: true,
+          secure: true,
+          rewrite: (path) => path.replace(/^\/garbo-stage-api/, "/api"),
+          timeout: PROXY_TIMEOUT_MS,
+          proxyTimeout: PROXY_TIMEOUT_MS,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              setProxyApiKey(proxyReq, env.GARBO_STAGE_ALL_ACCESS_API_KEY);
+            });
+          },
+        },
+        "/garbo-stage-api/pipeline-auto-run": {
           target: urls.garboStage,
           changeOrigin: true,
           secure: true,
@@ -363,7 +389,28 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
+        "/garbo/api/pipeline-auto-run": {
+          target: urls.garboProd,
+          changeOrigin: true,
+          secure: true,
+          rewrite: (path) => path.replace(/^\/garbo/, ""),
+          timeout: PROXY_TIMEOUT_MS,
+          proxyTimeout: PROXY_TIMEOUT_MS,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              setProxyApiKey(proxyReq, env.GARBO_PROD_ALL_ACCESS_API_KEY);
+            });
+          },
+        },
         "/garbo-local/api/queue-archive": {
+          target: urls.garboLocal,
+          changeOrigin: true,
+          secure: !urls.garboLocal.startsWith("http://"),
+          rewrite: (path) => path.replace(/^\/garbo-local/, ""),
+          timeout: PROXY_TIMEOUT_MS,
+          proxyTimeout: PROXY_TIMEOUT_MS,
+        },
+        "/garbo-local/api/pipeline-auto-run": {
           target: urls.garboLocal,
           changeOrigin: true,
           secure: !urls.garboLocal.startsWith("http://"),

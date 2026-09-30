@@ -39,4 +39,18 @@ export default tseslint.config(
       ],
     },
   },
+  // Contexts and shared UI modules intentionally co-export hooks/helpers with
+  // components (standard React pattern). Splitting them just to silence this
+  // rule is not worth the churn.
+  {
+    files: [
+      "**/contexts/**/*.{ts,tsx}",
+      "**/ui/**/*.{ts,tsx}",
+      "src/lib/status-config.tsx",
+      "**/structuredSuggestEditors.tsx",
+    ],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
 );

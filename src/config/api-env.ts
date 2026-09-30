@@ -131,6 +131,13 @@ export function getGarboQueueArchiveUrl(path: string): string {
   return `${base}/queue-archive${p}`;
 }
 
+/** Staff JWT path for pipeline auto-run config / status (Garbo). */
+export function getGarboPipelineAutoRunUrl(path = ""): string {
+  const base = getGarboApiBaseUrl().replace(/\/+$/, "");
+  const p = (path.startsWith("/") ? path : `/${path}`).replace(/\/+$/, "");
+  return `${base}/pipeline-auto-run${p}`;
+}
+
 /** Ignores VITE_UNEARTH_TARGET. */
 export function getStageGarboQueueArchiveUrl(path: string): string {
   const base = import.meta.env.DEV ? "/garbo-stage/api" : "/garbo-stage-api";

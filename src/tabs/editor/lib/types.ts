@@ -107,6 +107,8 @@ export interface GarboReportingPeriodSummary {
 export type ReportingPeriodWritePayload = {
   startDate: string;
   endDate: string;
+  /** DB data year — keep stable so fiscal periods upsert the same row. */
+  year?: string;
   companyReportId?: string;
   reportURL?: string | null;
   reportS3Url?: string | null;
@@ -120,6 +122,10 @@ export interface GarboMinimalMetadata {
   verifiedBy?: { name: string } | null;
   source?: string | null;
   comment?: string | null;
+  /** Human page/section locator, e.g. "p. 42, GHG table". */
+  sourceReference?: string | null;
+  /** Internal stored PDF URL with #page=N deep link. */
+  sourcePageUrl?: string | null;
 }
 
 export type GarboCompanyIdentifierType =
@@ -138,6 +144,8 @@ export interface GarboCompanyIdentifier {
 export interface GarboFieldMetadata extends GarboMinimalMetadata {
   source?: string | null;
   comment?: string | null;
+  sourceReference?: string | null;
+  sourcePageUrl?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   verifiedAt?: string | null;

@@ -5,6 +5,7 @@ import {
   XCircle,
   RotateCw,
   ShieldAlert,
+  Minus,
 } from "lucide-react";
 import type { SwimlaneStatusType } from "./types";
 
@@ -80,6 +81,17 @@ export const STATUS_CONFIG = {
       iconCompact: "text-white",
     },
   },
+  skipped: {
+    label: "No emissions",
+    icon: Minus,
+    colors: {
+      text: "text-gray-02",
+      background: "bg-gray-03/80",
+      border: "border-gray-02/50",
+      icon: "text-gray-02",
+      iconCompact: "text-gray-02",
+    },
+  },
 } as const;
 
 /**
@@ -139,8 +151,9 @@ export function getCompactStyles(
 ): string {
   const config = STATUS_CONFIG[status];
 
-  // If job doesn't exist, use a more subtle gray style
-  if (jobExists === false) {
+  // Never-ran steps stay subdued — except emissions-gate skips, which are a
+  // real terminal outcome for queues that intentionally did not start.
+  if (jobExists === false && status !== "skipped") {
     return `text-gray-02 bg-gray-03/30 border-gray-03/50`;
   }
 
@@ -149,13 +162,6 @@ export function getCompactStyles(
   }
 
   return `text-white ${config.colors.background} ${config.colors.border}`;
-}
-
-/**
- * Get detailed view text color for a status
- */
-export function getDetailedTextColor(status: SwimlaneStatusType): string {
-  return STATUS_CONFIG[status].colors.text;
 }
 
 /**
@@ -169,6 +175,7 @@ export function getStatusBackgroundColor(status: SwimlaneStatusType): string {
     needs_approval: "bg-orange-03/20",
     wikidata_unverified: "bg-green-02/20",
     waiting: "bg-blue-01/20",
+    skipped: "bg-gray-03/50",
   };
   return backgroundMap[status];
 }
@@ -227,14 +234,17 @@ export function getStepIcon(
     | "failed"
     | "waiting"
     | "needs_approval"
-    | "wikidata_unverified",
+    | "wikidata_unverified"
+    | "skipped",
 ) {
   const config = getStatusConfig(status);
   const IconComponent = config.icon;
 
   // Use gray for waiting status in step icons (user requirement)
   const iconColor =
-    status === "waiting" ? config.colors.text : config.colors.icon;
+    status === "waiting" || status === "skipped"
+      ? config.colors.text
+      : config.colors.icon;
 
   return (
     <IconComponent

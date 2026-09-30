@@ -7,6 +7,7 @@ import {
   rematchCoverageYear,
   renameCoverageEntry,
   setCoverageEntryMatch,
+  updateCoverageEntryCrawlWebsite,
 } from "../lib/coverage-api";
 import type {
   CoverageEntryFilter,
@@ -390,6 +391,22 @@ export function useCoverageYearDetail(
       // enrichment so this does not re-load full prod company metadata after
       // every match; existing pills are preserved via merge/union.
       void loadPage(page, { includeRegistry: false });
+      return updated;
+    },
+    setEntryCrawlWebsite: async (
+      entryId: string,
+      websiteUrl: string | null,
+    ) => {
+      if (!listId || year === null) return null;
+      const updated = await updateCoverageEntryCrawlWebsite(
+        listId,
+        year,
+        entryId,
+        websiteUrl,
+      );
+      setDetail((previous) =>
+        mergeCoverageMatchUpdate(previous, updated, filter),
+      );
       return updated;
     },
     renameEntry: async (entryId: string, name: string) => {
