@@ -659,6 +659,8 @@
     "runOnly": "Kör endast:",
     "forceReindex": "Tvinga omindexering",
     "forceReindexDescription": "Om på: kör docling även om rapporten redan finns i vektordatabasen (använd efter uppgradering av docling/OCR).",
+    "forceRedescribeImages": "Beskriv om alla bilder",
+    "forceRedescribeImagesDescription": "Om på: kör synmodellen igen på varje bild istället för att återanvända en cachad beskrivning från en tidigare körning (använd efter att bildbeskrivningsprompten förbättrats).",
     "climatePlansPipelineActive": "Klimatplanspipeline",
     "climatePlansPipelineActiveDescription": "Uppladdningar stannar efter Docling + indexering och lämnar över url:en till klimatplanspipelinen (precheck och utsläppsextraktion hoppas över).",
     "uploadingToTitle": "Laddar upp till: {{pipeline}}",

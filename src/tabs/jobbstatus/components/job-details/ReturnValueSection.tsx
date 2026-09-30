@@ -32,6 +32,20 @@ interface PictureRecoveryInfo {
   description: string | null;
   ocr_text: string | null;
   thumbnail: string;
+  // Tokens this picture's description cost — its ORIGINAL cost when
+  // from_cache is true, not a cost incurred again this run. Null for an
+  // OCR-only fallback (no VLM call at all). Undefined on a result from
+  // before this existed.
+  tokens?: number | null;
+  from_cache?: boolean;
+}
+
+interface VlmUsage {
+  model: string;
+  calls: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
 }
 
 interface ImageRecoveryStats {
@@ -39,7 +53,26 @@ interface ImageRecoveryStats {
   pictures_dropped_small: number;
   pictures_dropped_duplicate: number;
   pictures_described: number;
+  pictures_from_cache?: number;
+  // Tokens actually SPENT this run — excludes cache hits. Undefined on a
+  // result from before this existed.
+  vlm_usage?: VlmUsage;
   pictures?: PictureRecoveryInfo[];
+}
+
+// gpt-4o's per-token price as of this writing — check
+// https://openai.com/api/pricing before trusting this for anything beyond
+// a rough order-of-magnitude estimate; OpenAI's rates change over time and
+// this constant won't track that automatically. The token counts above it
+// (from the API's own response) are exact; this dollar figure is not.
+const GPT_4O_USD_PER_PROMPT_TOKEN = 2.5 / 1_000_000;
+const GPT_4O_USD_PER_COMPLETION_TOKEN = 10.0 / 1_000_000;
+
+function estimateUsdCost(usage: VlmUsage): string {
+  const cost =
+    usage.prompt_tokens * GPT_4O_USD_PER_PROMPT_TOKEN +
+    usage.completion_tokens * GPT_4O_USD_PER_COMPLETION_TOKEN;
+  return cost < 0.01 ? "<$0.01" : `~$${cost.toFixed(2)}`;
 }
 
 /** doclingParsePDF's own per-picture OCR/VLM counts, only present when
@@ -84,6 +117,20 @@ function ImageRecoveryGallery({
             <div className="flex items-center gap-3 text-xs text-gray-02 mb-1">
               <span>Picture {pic.index}</span>
               {pic.page !== null && <span>Page {pic.page}</span>}
+              {typeof pic.tokens === "number" && (
+                <span
+                  className={
+                    pic.from_cache ? "text-blue-03" : undefined
+                  }
+                  title={
+                    pic.from_cache
+                      ? "Reused from an earlier description of this exact image — no tokens spent this run"
+                      : "Tokens spent describing this image this run"
+                  }
+                >
+                  {pic.tokens} tokens{pic.from_cache ? " (cached)" : ""}
+                </span>
+              )}
             </div>
             {(pic.description ?? pic.ocr_text) && (
               <p className="text-xs text-gray-01 whitespace-pre-wrap">
@@ -121,6 +168,21 @@ export function ReturnValueSection({ job }: ReturnValueSectionProps) {
           {imageRecovery.pictures_described} described,{" "}
           {imageRecovery.pictures_dropped_small} too small,{" "}
           {imageRecovery.pictures_dropped_duplicate} duplicate
+          {!!imageRecovery.pictures_from_cache && (
+            <>
+              , {imageRecovery.pictures_from_cache} from cache (no new cost)
+            </>
+          )}
+          {imageRecovery.vlm_usage && imageRecovery.vlm_usage.calls > 0 && (
+            <>
+              {" — "}
+              {imageRecovery.vlm_usage.total_tokens} tokens spent this run (
+              {imageRecovery.vlm_usage.calls} call
+              {imageRecovery.vlm_usage.calls === 1 ? "" : "s"} to{" "}
+              {imageRecovery.vlm_usage.model},{" "}
+              {estimateUsdCost(imageRecovery.vlm_usage)})
+            </>
+          )}
         </p>
       )}
       {imageRecovery?.pictures && imageRecovery.pictures.length > 0 && (

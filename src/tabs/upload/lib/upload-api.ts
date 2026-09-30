@@ -58,6 +58,10 @@ export interface UploadPdfsOptions {
   /** OCR pictures and describe genuine diagrams instead of leaving bare
    * placeholders — voluntary, costs extra time/money per picture. */
   readImages?: boolean;
+  /** Only meaningful alongside readImages. Skips the description cache
+   * (keyed by image hash) and re-runs the vision model on every picture,
+   * instead of reusing an existing description for that exact image. */
+  forceRedescribeImages?: boolean;
 }
 
 export type UploadPdfUploadMeta = {
@@ -117,6 +121,10 @@ export interface CreateJobsFromUrlsOptions {
   /** OCR pictures and describe genuine diagrams instead of leaving bare
    * placeholders — voluntary, costs extra time/money per picture. */
   readImages?: boolean;
+  /** Only meaningful alongside readImages. Skips the description cache
+   * (keyed by image hash) and re-runs the vision model on every picture,
+   * instead of reusing an existing description for that exact image. */
+  forceRedescribeImages?: boolean;
 }
 
 export async function uploadPdfsToParsePdf({
@@ -129,6 +137,7 @@ export async function uploadPdfsToParsePdf({
   callbackUrl,
   reportTypeSlug,
   readImages,
+  forceRedescribeImages,
 }: UploadPdfsOptions): Promise<UploadPdfsResponse> {
   const formData = new FormData();
   for (const file of files) formData.append("files", file);
@@ -142,6 +151,8 @@ export async function uploadPdfsToParsePdf({
   if (callbackUrl) formData.append("callbackUrl", callbackUrl);
   if (reportTypeSlug) formData.append("reportTypeSlug", reportTypeSlug);
   if (readImages) formData.append("readImages", "true");
+  if (forceRedescribeImages)
+    formData.append("forceRedescribeImages", "true");
 
   const response = await authenticatedFetch(PARSE_PDF_UPLOAD_ENDPOINT, {
     method: "POST",
@@ -173,6 +184,7 @@ export async function createJobsFromUrls({
   callbackUrl,
   reportTypeSlug,
   readImages,
+  forceRedescribeImages,
 }: CreateJobsFromUrlsOptions): Promise<CreateJobsFromUrlsResult> {
   const body = {
     autoApprove: Boolean(autoApprove),
@@ -187,6 +199,7 @@ export async function createJobsFromUrls({
     ...(callbackUrl ? { callbackUrl } : {}),
     ...(reportTypeSlug ? { reportTypeSlug } : {}),
     ...(readImages ? { readImages } : {}),
+    ...(forceRedescribeImages ? { forceRedescribeImages } : {}),
     urls,
   };
 

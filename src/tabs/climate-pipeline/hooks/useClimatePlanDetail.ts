@@ -2,6 +2,27 @@ import { useState, useEffect, useCallback } from "react";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
 import type { PipelineReview } from "./usePipelineReviews";
 
+/** One sentence-level piece the model produced before this commitment's
+ * `text` was merged from possibly-several such parts (see
+ * commitmentExtraction.ts's merge loop) — kept so a merged commitment can
+ * still be searched/verified/highlighted per-part in the PDF even when the
+ * merged whole isn't one contiguous excerpt of the document (a gap sits
+ * between two parts, e.g. excluded background or a bullet marker). Only
+ * `text` is used on this side; the rest of the JSON blob (reasoning
+ * fields, etc.) is ignored here. */
+export interface ExtractionPart {
+  text: string;
+}
+
+/** One other cell from this commitment's table row (a responsible party, a
+ * deadline, a status column, ...) — see commitmentText.ts's
+ * parseTableRowMetadata. `label` falls back to a positional "Column N" when
+ * the source table's header cell was blank/malformed. */
+export interface TableRowField {
+  label: string;
+  value: string;
+}
+
 export interface Commitment {
   id: string;
   stableId: string;
@@ -11,11 +32,23 @@ export interface Commitment {
   type: "TEXT" | "TABLE";
   tableHeader: string | null;
   rowRaw: string | null;
+  /** Only ever set when type is "TABLE". Null for a TEXT commitment, a
+   * TABLE one with no other non-empty cells, or a row from before this
+   * existed. */
+  tableMetadata: TableRowField[] | null;
   unverified: boolean;
+  /** Null on rows from before this existed. */
+  extractionParts: ExtractionPart[] | null;
   // True when the commitment came from a recovered-image block (OCR/AI
   // description of a picture, not verbatim document text) — not findable
   // via the PDF's text layer, so "Find in PDF" won't locate it.
   fromRecoveredImage: boolean;
+  // Which other body/bodies, if any, this commitment's target or measure
+  // is explicitly said to come from: a municipality can commit to a
+  // region's and/or the EU's target/measure rather than its own. Empty
+  // array (or null, on rows from before this existed) means nothing else
+  // was named.
+  originatesFrom: Array<"region" | "national" | "eu" | "other"> | null;
   climateRelevant: boolean | null;
   adaptation: boolean | null;
   climateFilterReason: string | null;
@@ -41,7 +74,7 @@ export interface TransitionElementCandidate {
   score: number;
 }
 
-export type DocumentReferenceRelationship = "companion" | "related";
+export type DocumentReferenceRelationship = "companion" | "related" | "initiative";
 
 export interface DocumentReference {
   id: string;
@@ -102,6 +135,17 @@ export interface ClimatePlanDetail {
   extractedMunicipalityName: string | null;
   municipality: { id: string; name: string } | null;
   status: string;
+  /** The full source document docling parsed — the same text every
+   * commitment is verified/highlighted against. Null on a plan from before
+   * this was persisted, or one whose markdown hasn't been fetched yet. */
+  markdown: string | null;
+  /** Debug view only — `markdown` with "[SYSTEM NOTE: ...]" markers
+   * inserted wherever a heading is immediately preceded by a bare-number
+   * decorative image (see annotateNumberedGoalHeadings in
+   * commitmentText.ts). Computed fresh on every fetch, never stored —
+   * shows exactly what chunking/extraction actually sees, but is never
+   * itself used for verification. */
+  annotatedMarkdown: string | null;
   commitments: Commitment[];
   documentReferences: DocumentReference[];
   extractedMeasures: ExtractedMeasure[];
