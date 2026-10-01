@@ -2289,6 +2289,8 @@
     "dismissedFeedEmpty": "No dismissals yet.",
     "dismissedFeedCounts": "Showing {{shown}} of {{total}}",
     "filterAllFlags": "All flags",
-    "openIssue": "Open issue"
+    "openIssue": "Open issue",
+    "loadMore": "Load more",
+    "loadingMore": "Loading…"
   }
 }

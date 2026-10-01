@@ -2289,6 +2289,8 @@
     "dismissedFeedEmpty": "Inga avfärdanden ännu.",
     "dismissedFeedCounts": "Visar {{shown}} av {{total}}",
     "filterAllFlags": "Alla flaggor",
-    "openIssue": "Öppna issue"
+    "openIssue": "Öppna issue",
+    "loadMore": "Ladda fler",
+    "loadingMore": "Laddar…"
   }
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiAuthError } from "@/lib/garbo-auth-fetch";
 import { fetchManualReviewSummary } from "../lib/manual-review-api";
+import type { ManualReviewFlagKey } from "../lib/flag-catalog";
 import type { ManualReviewSummaryResponse } from "../types";
 
 export function useManualReviewSummary() {
@@ -32,5 +33,31 @@ export function useManualReviewSummary() {
     void refresh();
   }, [refresh]);
 
-  return { data, loading, error, authRequired, refresh };
+  const adjustFlagCounts = useCallback(
+    (
+      flagKey: ManualReviewFlagKey,
+      delta: { active: number; dismissed: number },
+    ) => {
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          flags: prev.flags.map((flag) => {
+            if (flag.flagKey !== flagKey) return flag;
+            return {
+              ...flag,
+              activeCount: Math.max(0, flag.activeCount + delta.active),
+              dismissedCount: Math.max(
+                0,
+                flag.dismissedCount + delta.dismissed,
+              ),
+            };
+          }),
+        };
+      });
+    },
+    [],
+  );
+
+  return { data, loading, error, authRequired, refresh, adjustFlagCounts };
 }

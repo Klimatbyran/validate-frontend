@@ -65,6 +65,7 @@ export function useManualReviewDismissals(options: {
       } catch (err) {
         if (err instanceof ApiAuthError) setAuthRequired(true);
         else setError(err instanceof Error ? err.message : "Undo failed");
+        throw err;
       } finally {
         setActionBusyId(null);
       }

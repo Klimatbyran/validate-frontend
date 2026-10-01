@@ -8,6 +8,8 @@ import type { ManualReviewCompanyHit, ManualReviewIssuesResponse } from "../type
 type Props = {
   data: ManualReviewIssuesResponse | null;
   loading: boolean;
+  loadingMore: boolean;
+  hasMore: boolean;
   error: string | null;
   authRequired: boolean;
   q: string;
@@ -18,11 +20,14 @@ type Props = {
   onIncludeDismissedChange: (value: boolean) => void;
   onDismissRequest: (hit: ManualReviewCompanyHit) => void;
   onUndo: (hit: ManualReviewCompanyHit) => void;
+  onLoadMore: () => void;
 };
 
 export function ReviewIssueView({
   data,
   loading,
+  loadingMore,
+  hasMore,
   error,
   authRequired,
   q,
@@ -33,6 +38,7 @@ export function ReviewIssueView({
   onIncludeDismissedChange,
   onDismissRequest,
   onUndo,
+  onLoadMore,
 }: Props) {
   const { t } = useI18n();
 
@@ -98,11 +104,27 @@ export function ReviewIssueView({
             <ReviewCompanyHitCard
               key={`${hit.companyId}:${hit.evidenceFingerprint}`}
               hit={hit}
-              busy={actionBusyId === hit.companyId}
+              busy={
+                actionBusyId ===
+                `${hit.companyId}:${hit.evidenceFingerprint}`
+              }
               onDismissRequest={onDismissRequest}
               onUndo={onUndo}
             />
           ))}
+          {hasMore ? (
+            <div className="flex justify-center pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={loadingMore}
+                onClick={onLoadMore}
+              >
+                {loadingMore ? t("review.loadingMore") : t("review.loadMore")}
+              </Button>
+            </div>
+          ) : null}
         </div>
       )}
     </div>

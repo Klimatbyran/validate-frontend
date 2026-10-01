@@ -151,7 +151,15 @@ export function ManualReviewTab() {
           actionBusyId={dismissals.actionBusyId}
           onQChange={setQ}
           onFlagKeyChange={setDismissedFlagFilter}
-          onUndo={dismissals.undo}
+          onUndo={async (dismissal) => {
+            await dismissals.undo(dismissal);
+            if (isManualReviewFlagKey(dismissal.flagKey)) {
+              summary.adjustFlagCounts(dismissal.flagKey, {
+                active: 1,
+                dismissed: -1,
+              });
+            }
+          }}
           onOpenIssue={openIssue}
         />
       ) : view === "summary" || !flagKey ? (
@@ -166,6 +174,8 @@ export function ManualReviewTab() {
         <ReviewIssueView
           data={issue.data}
           loading={issue.loading}
+          loadingMore={issue.loadingMore}
+          hasMore={issue.hasMore}
           error={issue.error}
           authRequired={issue.authRequired}
           q={q}
@@ -175,7 +185,18 @@ export function ManualReviewTab() {
           onQChange={setQ}
           onIncludeDismissedChange={setIncludeDismissed}
           onDismissRequest={setDismissTarget}
-          onUndo={issue.undo}
+          onUndo={async (hit) => {
+            await issue.undo(hit);
+            if (flagKey) {
+              summary.adjustFlagCounts(flagKey, {
+                active: 1,
+                dismissed: -1,
+              });
+            }
+          }}
+          onLoadMore={() => {
+            void issue.loadMore();
+          }}
         />
       )}
 
@@ -184,17 +205,17 @@ export function ManualReviewTab() {
         open={Boolean(dismissTarget)}
         isLoading={
           dismissTarget != null &&
-          issue.actionBusyId === dismissTarget.companyId
+          issue.actionBusyId ===
+            `${dismissTarget.companyId}:${dismissTarget.evidenceFingerprint}`
         }
         onOpenChange={(open) => {
           if (!open) setDismissTarget(null);
         }}
         onConfirm={async (note) => {
-          if (!dismissTarget) return;
+          if (!dismissTarget || !flagKey) return;
           await issue.dismiss(dismissTarget, note);
           setDismissTarget(null);
-          void summary.refresh();
-          void dismissals.refresh();
+          summary.adjustFlagCounts(flagKey, { active: -1, dismissed: 1 });
         }}
       />
     </div>
