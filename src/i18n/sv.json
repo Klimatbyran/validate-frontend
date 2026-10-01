@@ -53,7 +53,8 @@
     "editor": "Redigerare",
     "pipelineChoice": "Pipeline",
     "pipelineEmissions": "Företagsutsläpp",
-    "pipelineClimatePlans": "Klimatplaner"
+    "pipelineClimatePlans": "Klimatplaner",
+    "review": "Granskning"
   },
   "climatePipeline": {
     "title": "Klimatplanspipeline",
@@ -2252,5 +2253,55 @@
     "waiting": "Väntar",
     "skippedNoEmissions": "Inga Scope 1/2/3 — hoppades över",
     "processingNow": "Bearbetar nu"
+  },
+  "review": {
+    "title": "Manuell granskning",
+    "subtitle": "Datakvalitetsköer för bolag som ser ofullständiga, avvikande eller övergivna ut. Öppna bolaget för att åtgärda, eller avfärda falska positiva tills evidensen ändras.",
+    "refresh": "Uppdatera",
+    "envLine": "{{env}} · uppdaterad {{at}}",
+    "viewsAria": "Granskningsvyer",
+    "views": {
+      "summary": "Översikt",
+      "issue": "Issue",
+      "dismissed": "Avfärdade"
+    },
+    "groups": {
+      "completeness": "Fullständighet",
+      "temporal": "Tidsluckor",
+      "anomalies": "Värdeanomalier",
+      "identity": "Identitet / skal",
+      "extraction": "Extraktionskvalitet"
+    },
+    "dismissedCount": "{{count}} avfärdade",
+    "experimentalBadge": "Experimentell",
+    "authRequired": "Logga in för att ladda manuell granskning.",
+    "backToSummary": "Tillbaka till översikt",
+    "issueFallbackTitle": "Issue",
+    "issueCounts": "{{active}} aktiva · {{dismissed}} avfärdade · visar {{shown}}",
+    "searchPlaceholder": "Sök bolag, Wikidata, LEI…",
+    "showDismissed": "Visa avfärdade",
+    "emptyIssue": "Inga bolag matchar den här issuen just nu.",
+    "openEditor": "Öppna i editor",
+    "dismiss": "Avfärda",
+    "undoDismiss": "Ångra avfärdning",
+    "dismissedBadge": "Avfärdad för den här evidensen",
+    "noIdentifiers": "Ingen Wikidata / LEI",
+    "dismissDialogTitle": "Avfärda den här flaggan?",
+    "dismissDialogDescription": "Lägg till en kort anledning så att teamet kan se mönster senare. Flaggan förblir dold tills evidensen ändras.",
+    "dismissNoteLabel": "Anledning / kommentar",
+    "dismissNotePlaceholder": "t.ex. Förväntad räkenskapsårslucka; moderbolaget rapporterar bara konsoliderat…",
+    "dismissNoteRequired": "En kommentar krävs för att avfärda.",
+    "dismissConfirm": "Avfärda",
+    "dismissCancel": "Avbryt",
+    "dismissedBy": "Avfärdad av {{name}} · {{at}}",
+    "dismissedNote": "Anteckning: {{note}}",
+    "dismissedFeedTitle": "Avfärdade fynd",
+    "dismissedFeedSubtitle": "Tvärgående feed av avfärdade Manual Review-fynd — bra för mönster och delad kontext.",
+    "dismissedFeedEmpty": "Inga avfärdanden ännu.",
+    "dismissedFeedCounts": "Visar {{shown}} av {{total}}",
+    "filterAllFlags": "Alla flaggor",
+    "openIssue": "Öppna issue",
+    "loadMore": "Ladda fler",
+    "loadingMore": "Laddar…"
   }
 }
