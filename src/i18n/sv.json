@@ -255,7 +255,7 @@
       "viewDetails": "Visa detaljer",
       "openFieldMetadata": "Öppna metadata för {{field}}",
       "titleWithField": "{{field}} – detaljer",
-      "description": "Källa och valideringsmetadata för detta fält.",
+      "description": "Källa, validering och ändringshistorik för detta fält.",
       "sectionDetails": "Detaljer",
       "updated": "Uppdaterad",
       "verifiedBy": "Verifierad av",
@@ -265,7 +265,11 @@
       "sourcePage": "Rapportsida",
       "openSourcePage": "Öppna rapportsida",
       "comment": "Kommentar",
-      "verifiedYes": "Ja"
+      "verifiedYes": "Ja",
+      "history": "Ändringshistorik",
+      "previousValue": "Föregående värde",
+      "unknownUser": "Okänd användare",
+      "bot": "bot"
     },
     "reviewerDialog": {
       "title": "Granskningsdetaljer",

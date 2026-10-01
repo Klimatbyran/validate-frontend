@@ -8,6 +8,7 @@ import { MultiSelectDropdown } from "@/ui/multi-select-dropdown";
 import type {
   GarboCompanyDetail,
   GarboFieldMetadata,
+  GarboMetadataHistory,
   GarboReportingPeriodSummary,
   ReportingPeriodWritePayload,
 } from "../../lib/types";
@@ -289,6 +290,9 @@ export function EmissionsDataTab({
     getOriginalMeta: (
       rp: GarboReportingPeriodSummary,
     ) => GarboFieldMetadata | null;
+    getOriginalHistory: (
+      rp: GarboReportingPeriodSummary,
+    ) => GarboMetadataHistory | null | undefined;
     fieldLabel: (year: string) => string;
     undoTitle: string;
   };
@@ -306,6 +310,8 @@ export function EmissionsDataTab({
         getOriginalMeta: (rp) =>
           (rp.emissions?.statedTotalEmissions
             ?.metadata as GarboFieldMetadata | null) ?? null,
+        getOriginalHistory: (rp) =>
+          rp.emissions?.statedTotalEmissions?.metadataHistory,
         fieldLabel: (year) => `${overall} (${year})`,
         undoTitle: t("editor.periodEditor.undoField", { field: overall }),
       },
@@ -316,6 +322,7 @@ export function EmissionsDataTab({
         getOriginalTotal: (rp) => rp.emissions?.scope1?.total ?? null,
         getOriginalMeta: (rp) =>
           (rp.emissions?.scope1?.metadata as GarboFieldMetadata | null) ?? null,
+        getOriginalHistory: (rp) => rp.emissions?.scope1?.metadataHistory,
         fieldLabel: (year) => `${scope1} (${year})`,
         undoTitle: t("editor.periodEditor.undoField", { field: scope1 }),
       },
@@ -327,6 +334,7 @@ export function EmissionsDataTab({
         getOriginalMeta: (rp) =>
           (rp.emissions?.scope1And2?.metadata as GarboFieldMetadata | null) ??
           null,
+        getOriginalHistory: (rp) => rp.emissions?.scope1And2?.metadataHistory,
         fieldLabel: (year) => `${scope1And2Display} (${year})`,
         undoTitle: t("editor.periodEditor.undoField", {
           field: scope1And2Display,
@@ -555,6 +563,7 @@ export function EmissionsDataTab({
                     const rpEdits = edited[rp.id] ?? {};
                     const original = spec.getOriginalTotal(rp);
                     const originalMeta = spec.getOriginalMeta(rp);
+                    const originalHistory = spec.getOriginalHistory(rp);
                     const originalVerified = !!originalMeta?.verifiedBy;
                     const value = (rpEdits[spec.valueKey] ??
                       (original != null ? String(original) : "")) as string;
@@ -578,6 +587,7 @@ export function EmissionsDataTab({
                             )
                           }
                           metadata={originalMeta}
+                          metadataHistory={originalHistory}
                           fieldLabel={spec.fieldLabel(yearLabel)}
                           verified={verified}
                           onToggleVerified={() =>

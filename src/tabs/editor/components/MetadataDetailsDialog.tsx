@@ -3,7 +3,10 @@ import { useMemo } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
-import type { GarboFieldMetadata } from "../lib/types";
+import type {
+  GarboFieldMetadata,
+  GarboMetadataHistory,
+} from "../lib/types";
 
 function hasAnyMetadata(metadata: GarboFieldMetadata | null | undefined) {
   if (!metadata) return false;
@@ -14,8 +17,14 @@ function hasAnyMetadata(metadata: GarboFieldMetadata | null | undefined) {
       metadata.comment?.trim() ||
       metadata.verifiedBy?.name?.trim() ||
       metadata.verifiedBy ||
-      metadata.updatedAt,
+      metadata.updatedAt ||
+      metadata.createdAt ||
+      metadata.user?.name,
   );
+}
+
+function hasHistory(history: GarboMetadataHistory | null | undefined) {
+  return Boolean(history && history.length > 0);
 }
 
 /** Only linkify internal storage PDF deep links — never arbitrary hrefs. */
@@ -34,12 +43,27 @@ function trustedSourcePageUrl(value: string | null | undefined): string | null {
   }
 }
 
+function formatPreviousValue(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
 export function MetadataDetailsDialog({
   metadata,
+  metadataHistory,
   fieldLabel,
   triggerAriaLabel,
 }: {
   metadata?: GarboFieldMetadata | null;
+  /** Full append-only history chain (newest first). Falls back to [metadata]. */
+  metadataHistory?: GarboMetadataHistory | null;
   fieldLabel: string;
   triggerAriaLabel?: string;
 }) {
@@ -53,24 +77,28 @@ export function MetadataDetailsDialog({
       year: "numeric",
       month: "short",
       day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(d);
   };
 
-  const openable = useMemo(() => hasAnyMetadata(metadata), [metadata]);
-  const metaAny = metadata as
-    | (GarboFieldMetadata & Record<string, unknown>)
-    | null
-    | undefined;
-  const source = metadata?.source?.trim() || null;
-  const sourceReference = metadata?.sourceReference?.trim() || null;
-  const sourcePageUrl = trustedSourcePageUrl(metadata?.sourcePageUrl);
-  const comment = metadata?.comment?.trim() || null;
-  const verifiedBy =
-    metadata?.verifiedBy?.name?.trim() ||
-    (metadata?.verifiedBy ? t("editor.metadataDetails.verifiedYes") : null);
+  const historyEntries = useMemo(() => {
+    if (hasHistory(metadataHistory)) return metadataHistory!;
+    if (hasAnyMetadata(metadata)) return [metadata!];
+    return [];
+  }, [metadata, metadataHistory]);
 
+  const openable = historyEntries.length > 0;
+  const latest = historyEntries[0] ?? metadata;
+  const source = latest?.source?.trim() || null;
+  const sourceReference = latest?.sourceReference?.trim() || null;
+  const sourcePageUrl = trustedSourcePageUrl(latest?.sourcePageUrl);
+  const comment = latest?.comment?.trim() || null;
+  const verifiedBy =
+    latest?.verifiedBy?.name?.trim() ||
+    (latest?.verifiedBy ? t("editor.metadataDetails.verifiedYes") : null);
   const updatedAt =
-    formatDate(metadata?.updatedAt) ?? formatDate(metaAny?.updatedAt) ?? null;
+    formatDate(latest?.updatedAt) ?? formatDate(latest?.createdAt) ?? null;
 
   if (!openable) return null;
 
@@ -214,6 +242,80 @@ export function MetadataDetailsDialog({
               <p className="text-sm text-gray-01 whitespace-pre-wrap break-words">
                 {comment}
               </p>
+            </section>
+          )}
+
+          {historyEntries.length > 0 && (
+            <section className="rounded-lg bg-gray-05 p-3">
+              <div className="text-xs font-medium text-gray-02 mb-3">
+                {t("editor.metadataDetails.history")}
+              </div>
+              <ol className="grid gap-3">
+                {historyEntries.map((entry, index) => {
+                  const when =
+                    formatDate(entry.createdAt) ??
+                    formatDate(entry.updatedAt) ??
+                    "—";
+                  const who =
+                    entry.user?.name?.trim() ||
+                    t("editor.metadataDetails.unknownUser");
+                  const botLabel = entry.user?.bot
+                    ? ` (${t("editor.metadataDetails.bot")})`
+                    : "";
+                  const prev = formatPreviousValue(entry.previousValue);
+                  const entryVerified =
+                    entry.verifiedBy?.name?.trim() || null;
+                  const entryComment = entry.comment?.trim() || null;
+                  const entrySource = entry.source?.trim() || null;
+
+                  return (
+                    <li
+                      key={entry.id ?? `${when}-${index}`}
+                      className="rounded-md border border-gray-04 bg-white/60 p-3"
+                    >
+                      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
+                        <span className="text-sm font-medium text-gray-01">
+                          {who}
+                          {botLabel}
+                        </span>
+                        <span className="text-xs text-gray-03">{when}</span>
+                      </div>
+                      <dl className="grid gap-1 text-sm">
+                        {prev !== null && (
+                          <div>
+                            <dt className="inline text-xs text-gray-03 mr-1">
+                              {t("editor.metadataDetails.previousValue")}:
+                            </dt>
+                            <dd className="inline text-gray-01 break-all font-mono text-xs">
+                              {prev}
+                            </dd>
+                          </div>
+                        )}
+                        {entryVerified && (
+                          <div>
+                            <dt className="inline text-xs text-gray-03 mr-1">
+                              {t("editor.metadataDetails.verifiedBy")}:
+                            </dt>
+                            <dd className="inline text-gray-01">
+                              {entryVerified}
+                            </dd>
+                          </div>
+                        )}
+                        {entrySource && (
+                          <div className="text-xs text-gray-02 break-all">
+                            {entrySource}
+                          </div>
+                        )}
+                        {entryComment && (
+                          <div className="text-xs text-gray-01 whitespace-pre-wrap">
+                            {entryComment}
+                          </div>
+                        )}
+                      </dl>
+                    </li>
+                  );
+                })}
+              </ol>
             </section>
           )}
         </div>
