@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
+import { authenticatedFetch } from "@/lib/api-helpers";
 
 export type ReviewStatus = "OK" | "ISSUE" | "SUGGESTED_FIX";
 
@@ -61,7 +62,7 @@ export async function upsertPipelineReview(
   planId: string,
   input: UpsertPipelineReviewInput,
 ): Promise<PipelineReview> {
-  const res = await fetch(
+  const res = await authenticatedFetch(
     `${getClimatePlansPipelineApiUrl()}/plans/${planId}/reviews`,
     {
       method: "POST",
@@ -77,7 +78,7 @@ export async function upsertPipelineReview(
 }
 
 export async function deletePipelineReview(reviewId: string): Promise<void> {
-  const res = await fetch(
+  const res = await authenticatedFetch(
     `${getClimatePlansPipelineApiUrl()}/reviews/${reviewId}`,
     { method: "DELETE" },
   );
