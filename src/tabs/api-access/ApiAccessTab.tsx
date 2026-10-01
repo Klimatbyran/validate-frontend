@@ -10,6 +10,8 @@ import { ApiUsageView } from "./components/ApiUsageView";
 import { createAPIkey } from "./lib/api-access-api";
 import { useApiAccessData } from "./hooks/useApiAccessData";
 
+const PARTNER_TRIAL_ROLE_SLUG = "partner-trial";
+
 export function ApiAccessTab() {
   const { t } = useI18n();
   const {
@@ -22,7 +24,6 @@ export function ApiAccessTab() {
     refreshKeys,
   } = useApiAccessData();
   const [role, setRole] = useState<string>("");
-  const [isTrial, setIsTrial] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [keyName, setKeyName] = useState("");
@@ -33,12 +34,14 @@ export function ApiAccessTab() {
   } | null>(null);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
 
-  const selectableRoles = isTrial
-    ? roles.filter((item) => item.slug === "partner-trial")
-    : roles.filter((item) => item.slug !== "partner-trial");
+  /** Legacy Garbo-era duplicates; prefer Unearth roles from seed. */
+  const selectableRoles = roles.filter(
+    (item) => item.slug !== "all_access" && item.slug !== "company_data",
+  );
 
   const selectedRole =
     selectableRoles.find((item) => item.slug === role) ?? null;
+  const isTrialRole = selectedRole?.slug === PARTNER_TRIAL_ROLE_SLUG;
 
   const parseRoleLabel = useCallback((label: string | null) => {
     if (!label) return { name: label, description: null };
@@ -61,14 +64,8 @@ export function ApiAccessTab() {
       setRole(selectableRoles[0].slug);
       setPermissionsOpen(false);
     }
-    // selectableRoles is derived from roles + isTrial; depend on those instead of the array.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role, roles, isTrial]);
-
-  const handleTrialChange = (checked: boolean) => {
-    setIsTrial(checked);
-    setPermissionsOpen(false);
-  };
+  }, [role, roles]);
 
   const handleCreateKey = async () => {
     if (isCreating) return;
@@ -92,12 +89,11 @@ export function ApiAccessTab() {
         name: trimmedName,
         roleId: selectedRole.id,
         keyLookup: keyLookup.trim() || undefined,
-        trial: isTrial || undefined,
+        trial: isTrialRole || undefined,
       });
       setCreatedKey({ name: trimmedName, apiKey: created.apiKey });
       setKeyName("");
       setKeyLookup("");
-      setIsTrial(false);
       await refreshKeys();
     } catch (error) {
       setCreateError(
@@ -145,25 +141,6 @@ export function ApiAccessTab() {
               </div>
 
               <div className="mt-6 space-y-4">
-                <label className="flex items-start gap-2 cursor-pointer max-w-xl">
-                  <input
-                    type="checkbox"
-                    checked={isTrial}
-                    onChange={(event) =>
-                      handleTrialChange(event.target.checked)
-                    }
-                    className="mt-1"
-                  />
-                  <span>
-                    <span className="text-sm text-gray-01">
-                      {t("apiAccess.trialLabel")}
-                    </span>
-                    <span className="block text-xs text-gray-02 mt-0.5">
-                      {t("apiAccess.trialHelp")}
-                    </span>
-                  </span>
-                </label>
-
                 <div className="flex flex-col gap-1">
                   <div className="text-xs text-gray-02 uppercase tracking-wide">
                     {t("apiAccess.roleLabel")}
@@ -188,9 +165,7 @@ export function ApiAccessTab() {
                       />
                     ) : (
                       <p className="text-xs text-gray-02">
-                        {isTrial
-                          ? t("apiAccess.trialRoleMissing")
-                          : t("common.loading")}
+                        {t("common.loading")}
                       </p>
                     )}
                     {selectedRole ? (
@@ -199,6 +174,11 @@ export function ApiAccessTab() {
                       </p>
                     ) : null}
                   </div>
+                  {isTrialRole ? (
+                    <p className="text-xs text-gray-02 mt-1 max-w-xl">
+                      {t("apiAccess.trialHelp")}
+                    </p>
+                  ) : null}
                   {selectedRole && selectedRole.permissions.length > 0 ? (
                     <div>
                       <button
