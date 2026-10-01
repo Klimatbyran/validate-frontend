@@ -32,7 +32,13 @@ export function ApiAccessTab() {
   } | null>(null);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
 
-  const selectedRole = roles.find((item) => item.slug === role) ?? null;
+  /** Legacy Garbo-era duplicates; prefer Unearth roles from seed. */
+  const selectableRoles = roles.filter(
+    (item) => item.slug !== "all_access" && item.slug !== "company_data",
+  );
+
+  const selectedRole =
+    selectableRoles.find((item) => item.slug === role) ?? null;
 
   const parseRoleLabel = useCallback((label: string | null) => {
     if (!label) return { name: label, description: null };
@@ -47,9 +53,15 @@ export function ApiAccessTab() {
   }, []);
 
   useEffect(() => {
-    if (!role && roles.length > 0) {
-      setRole(roles[0].slug);
+    if (selectableRoles.length === 0) {
+      if (role !== "") setRole("");
+      return;
     }
+    if (!selectableRoles.some((item) => item.slug === role)) {
+      setRole(selectableRoles[0].slug);
+      setPermissionsOpen(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, roles]);
 
   const handleCreateKey = async () => {
@@ -130,15 +142,15 @@ export function ApiAccessTab() {
                     {t("apiAccess.roleLabel")}
                   </div>
                   <div className="flex items-center gap-4 flex-wrap">
-                    {roles.length > 0 ? (
+                    {selectableRoles.length > 0 ? (
                       <SingleSelectDropdown
-                        options={roles.map((item) => item.slug)}
+                        options={selectableRoles.map((item) => item.slug)}
                         value={role}
                         onChange={handleRoleChange}
                         placeholder={t("apiAccess.roleLabel")}
                         ariaLabel={t("apiAccess.roleLabel")}
                         getOptionLabel={(value) => {
-                          const item = roles.find(
+                          const item = selectableRoles.find(
                             (candidate) => candidate.slug === value,
                           );
                           return (
