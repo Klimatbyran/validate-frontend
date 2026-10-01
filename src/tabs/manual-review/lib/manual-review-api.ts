@@ -3,6 +3,7 @@ import { getUnearthApiBaseUrl } from "@/config/api-env";
 import type { ManualReviewFlagKey } from "./flag-catalog";
 import type {
   ManualReviewDismissal,
+  ManualReviewDismissalsResponse,
   ManualReviewIssuesResponse,
   ManualReviewSummaryResponse,
 } from "../types";
@@ -69,6 +70,24 @@ export async function undoManualReviewDismissal(
   const res = await garboAuthFetch(
     reviewUrl(`/dismissals/${encodeURIComponent(id)}`),
     { method: "DELETE" },
+  );
+  return readJson(res);
+}
+
+export async function fetchManualReviewDismissals(options?: {
+  q?: string;
+  flagKey?: ManualReviewFlagKey;
+  offset?: number;
+  limit?: number;
+}): Promise<ManualReviewDismissalsResponse> {
+  const params = new URLSearchParams();
+  if (options?.q?.trim()) params.set("q", options.q.trim());
+  if (options?.flagKey) params.set("flagKey", options.flagKey);
+  if (options?.offset != null) params.set("offset", String(options.offset));
+  if (options?.limit != null) params.set("limit", String(options.limit));
+  const qs = params.toString();
+  const res = await garboAuthFetch(
+    reviewUrl(`/dismissals${qs ? `?${qs}` : ""}`),
   );
   return readJson(res);
 }

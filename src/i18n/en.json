@@ -2252,7 +2252,8 @@
     "viewsAria": "Review views",
     "views": {
       "summary": "Summary",
-      "issue": "Issue"
+      "issue": "Issue",
+      "dismissed": "Dismissed"
     },
     "groups": {
       "completeness": "Completeness",
@@ -2273,6 +2274,21 @@
     "dismiss": "Dismiss",
     "undoDismiss": "Undo dismiss",
     "dismissedBadge": "Dismissed for this evidence",
-    "noIdentifiers": "No Wikidata / LEI"
+    "noIdentifiers": "No Wikidata / LEI",
+    "dismissDialogTitle": "Dismiss this finding?",
+    "dismissDialogDescription": "Add a short reason so the team can spot patterns later. The finding stays hidden until the underlying evidence changes.",
+    "dismissNoteLabel": "Reason / comment",
+    "dismissNotePlaceholder": "e.g. Expected fiscal-year gap; parent company reports consolidated only…",
+    "dismissNoteRequired": "A comment is required to dismiss.",
+    "dismissConfirm": "Dismiss",
+    "dismissCancel": "Cancel",
+    "dismissedBy": "Dismissed by {{name}} · {{at}}",
+    "dismissedNote": "Note: {{note}}",
+    "dismissedFeedTitle": "Dismissed findings",
+    "dismissedFeedSubtitle": "Cross-flag feed of dismissed Manual Review findings — useful for patterns and shared context.",
+    "dismissedFeedEmpty": "No dismissals yet.",
+    "dismissedFeedCounts": "Showing {{shown}} of {{total}}",
+    "filterAllFlags": "All flags",
+    "openIssue": "Open issue"
   }
 }

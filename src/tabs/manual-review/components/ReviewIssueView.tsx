@@ -16,7 +16,7 @@ type Props = {
   onBack: () => void;
   onQChange: (value: string) => void;
   onIncludeDismissedChange: (value: boolean) => void;
-  onDismiss: (hit: ManualReviewCompanyHit) => void;
+  onDismissRequest: (hit: ManualReviewCompanyHit) => void;
   onUndo: (hit: ManualReviewCompanyHit) => void;
 };
 
@@ -31,7 +31,7 @@ export function ReviewIssueView({
   onBack,
   onQChange,
   onIncludeDismissedChange,
-  onDismiss,
+  onDismissRequest,
   onUndo,
 }: Props) {
   const { t } = useI18n();
@@ -99,7 +99,7 @@ export function ReviewIssueView({
               key={`${hit.companyId}:${hit.evidenceFingerprint}`}
               hit={hit}
               busy={actionBusyId === hit.companyId}
-              onDismiss={onDismiss}
+              onDismissRequest={onDismissRequest}
               onUndo={onUndo}
             />
           ))}

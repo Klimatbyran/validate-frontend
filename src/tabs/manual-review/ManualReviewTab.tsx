@@ -1,27 +1,37 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { ViewModePills } from "@/ui/view-mode-pills";
+import { ReviewDismissDialog } from "./components/ReviewDismissDialog";
+import { ReviewDismissedFeedView } from "./components/ReviewDismissedFeedView";
 import { ReviewIssueView } from "./components/ReviewIssueView";
 import { ReviewSummaryView } from "./components/ReviewSummaryView";
+import { useManualReviewDismissals } from "./hooks/useManualReviewDismissals";
 import { useManualReviewIssue } from "./hooks/useManualReviewIssue";
 import { useManualReviewSummary } from "./hooks/useManualReviewSummary";
 import {
   isManualReviewFlagKey,
   type ManualReviewFlagKey,
 } from "./lib/flag-catalog";
+import type { ManualReviewCompanyHit } from "./types";
 
-type ReviewView = "summary" | "issue";
+type ReviewView = "summary" | "issue" | "dismissed";
 
 export function ManualReviewTab() {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [dismissTarget, setDismissTarget] =
+    useState<ManualReviewCompanyHit | null>(null);
 
+  const rawView = searchParams.get("view");
   const view: ReviewView =
-    searchParams.get("view") === "issue" ? "issue" : "summary";
+    rawView === "issue" || rawView === "dismissed" ? rawView : "summary";
   const issueParam = searchParams.get("issue");
   const flagKey = isManualReviewFlagKey(issueParam) ? issueParam : null;
+  const dismissedFlagParam = searchParams.get("dismissedFlag");
+  const dismissedFlagFilter: ManualReviewFlagKey | "all" =
+    isManualReviewFlagKey(dismissedFlagParam) ? dismissedFlagParam : "all";
   const q = searchParams.get("q") ?? "";
   const includeDismissed = searchParams.get("includeDismissed") === "1";
 
@@ -31,11 +41,17 @@ export function ManualReviewTab() {
     q,
     includeDismissed,
   });
+  const dismissals = useManualReviewDismissals({
+    enabled: view === "dismissed",
+    q,
+    flagKey: dismissedFlagFilter,
+  });
 
   const viewOptions = useMemo(
     () => [
       { value: "summary" as const, label: t("review.views.summary") },
       { value: "issue" as const, label: t("review.views.issue") },
+      { value: "dismissed" as const, label: t("review.views.dismissed") },
     ],
     [t],
   );
@@ -67,6 +83,13 @@ export function ManualReviewTab() {
     const params = new URLSearchParams(searchParams);
     if (value) params.set("includeDismissed", "1");
     else params.delete("includeDismissed");
+    setSearchParams(params, { replace: true });
+  }
+
+  function setDismissedFlagFilter(value: ManualReviewFlagKey | "all") {
+    const params = new URLSearchParams(searchParams);
+    if (value === "all") params.delete("dismissedFlag");
+    else params.set("dismissedFlag", value);
     setSearchParams(params, { replace: true });
   }
 
@@ -107,6 +130,7 @@ export function ManualReviewTab() {
               onClick={() => {
                 void summary.refresh();
                 void issue.refresh();
+                void dismissals.refresh();
               }}
             >
               {t("review.refresh")}
@@ -115,7 +139,22 @@ export function ManualReviewTab() {
         </div>
       </div>
 
-      {view === "summary" || !flagKey ? (
+      {view === "dismissed" ? (
+        <ReviewDismissedFeedView
+          dismissals={dismissals.data?.dismissals ?? []}
+          total={dismissals.data?.total ?? 0}
+          loading={dismissals.loading}
+          error={dismissals.error}
+          authRequired={dismissals.authRequired}
+          q={q}
+          flagKey={dismissedFlagFilter}
+          actionBusyId={dismissals.actionBusyId}
+          onQChange={setQ}
+          onFlagKeyChange={setDismissedFlagFilter}
+          onUndo={dismissals.undo}
+          onOpenIssue={openIssue}
+        />
+      ) : view === "summary" || !flagKey ? (
         <ReviewSummaryView
           flags={summary.data?.flags ?? []}
           loading={summary.loading}
@@ -135,10 +174,29 @@ export function ManualReviewTab() {
           onBack={() => setView("summary")}
           onQChange={setQ}
           onIncludeDismissedChange={setIncludeDismissed}
-          onDismiss={issue.dismiss}
+          onDismissRequest={setDismissTarget}
           onUndo={issue.undo}
         />
       )}
+
+      <ReviewDismissDialog
+        hit={dismissTarget}
+        open={Boolean(dismissTarget)}
+        isLoading={
+          dismissTarget != null &&
+          issue.actionBusyId === dismissTarget.companyId
+        }
+        onOpenChange={(open) => {
+          if (!open) setDismissTarget(null);
+        }}
+        onConfirm={async (note) => {
+          if (!dismissTarget) return;
+          await issue.dismiss(dismissTarget, note);
+          setDismissTarget(null);
+          void summary.refresh();
+          void dismissals.refresh();
+        }}
+      />
     </div>
   );
 }

@@ -1,30 +1,29 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiAuthError } from "@/lib/garbo-auth-fetch";
 import {
-  dismissManualReviewFlag,
-  fetchManualReviewIssues,
+  fetchManualReviewDismissals,
   undoManualReviewDismissal,
 } from "../lib/manual-review-api";
 import type { ManualReviewFlagKey } from "../lib/flag-catalog";
 import type {
-  ManualReviewCompanyHit,
-  ManualReviewIssuesResponse,
+  ManualReviewDismissal,
+  ManualReviewDismissalsResponse,
 } from "../types";
 
-export function useManualReviewIssue(options: {
-  flagKey: ManualReviewFlagKey | null;
+export function useManualReviewDismissals(options: {
+  enabled: boolean;
   q: string;
-  includeDismissed: boolean;
+  flagKey: ManualReviewFlagKey | "all";
 }) {
-  const { flagKey, q, includeDismissed } = options;
-  const [data, setData] = useState<ManualReviewIssuesResponse | null>(null);
+  const { enabled, q, flagKey } = options;
+  const [data, setData] = useState<ManualReviewDismissalsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authRequired, setAuthRequired] = useState(false);
   const [actionBusyId, setActionBusyId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!flagKey) {
+    if (!enabled) {
       setData(null);
       return;
     }
@@ -32,10 +31,9 @@ export function useManualReviewIssue(options: {
     setError(null);
     setAuthRequired(false);
     try {
-      const next = await fetchManualReviewIssues({
-        flagKey,
+      const next = await fetchManualReviewDismissals({
         q,
-        includeDismissed,
+        flagKey: flagKey === "all" ? undefined : flagKey,
         offset: 0,
         limit: 100,
       });
@@ -45,46 +43,24 @@ export function useManualReviewIssue(options: {
         setAuthRequired(true);
         setData(null);
       } else {
-        setError(err instanceof Error ? err.message : "Failed to load issues");
+        setError(
+          err instanceof Error ? err.message : "Failed to load dismissals",
+        );
       }
     } finally {
       setLoading(false);
     }
-  }, [flagKey, q, includeDismissed]);
+  }, [enabled, q, flagKey]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  const dismiss = useCallback(
-    async (hit: ManualReviewCompanyHit, note: string) => {
-      if (!flagKey) return;
-      setActionBusyId(hit.companyId);
-      try {
-        await dismissManualReviewFlag({
-          companyId: hit.companyId,
-          flagKey,
-          evidenceFingerprint: hit.evidenceFingerprint,
-          note,
-        });
-        await refresh();
-      } catch (err) {
-        if (err instanceof ApiAuthError) setAuthRequired(true);
-        else setError(err instanceof Error ? err.message : "Dismiss failed");
-        throw err;
-      } finally {
-        setActionBusyId(null);
-      }
-    },
-    [flagKey, refresh],
-  );
-
   const undo = useCallback(
-    async (hit: ManualReviewCompanyHit) => {
-      if (!hit.dismissalId) return;
-      setActionBusyId(hit.companyId);
+    async (dismissal: ManualReviewDismissal) => {
+      setActionBusyId(dismissal.id);
       try {
-        await undoManualReviewDismissal(hit.dismissalId);
+        await undoManualReviewDismissal(dismissal.id);
         await refresh();
       } catch (err) {
         if (err instanceof ApiAuthError) setAuthRequired(true);
@@ -103,7 +79,6 @@ export function useManualReviewIssue(options: {
     authRequired,
     actionBusyId,
     refresh,
-    dismiss,
     undo,
   };
 }

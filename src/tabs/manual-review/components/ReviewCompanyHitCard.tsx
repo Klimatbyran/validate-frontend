@@ -7,14 +7,14 @@ import type { ManualReviewCompanyHit } from "../types";
 type Props = {
   hit: ManualReviewCompanyHit;
   busy: boolean;
-  onDismiss: (hit: ManualReviewCompanyHit) => void;
+  onDismissRequest: (hit: ManualReviewCompanyHit) => void;
   onUndo: (hit: ManualReviewCompanyHit) => void;
 };
 
 export function ReviewCompanyHitCard({
   hit,
   busy,
-  onDismiss,
+  onDismissRequest,
   onUndo,
 }: Props) {
   const { t } = useI18n();
@@ -68,7 +68,7 @@ export function ReviewCompanyHitCard({
               variant="outline"
               size="sm"
               disabled={busy}
-              onClick={() => onDismiss(hit)}
+              onClick={() => onDismissRequest(hit)}
             >
               {t("review.dismiss")}
             </Button>
@@ -77,7 +77,24 @@ export function ReviewCompanyHitCard({
       </div>
       <p className="text-sm text-gray-01">{hit.evidenceSummary}</p>
       {dismissed ? (
-        <p className="text-xs text-gray-02">{t("review.dismissedBadge")}</p>
+        <div className="space-y-1 rounded-md border border-gray-03/80 bg-gray-04/40 px-3 py-2">
+          <p className="text-xs text-gray-02">{t("review.dismissedBadge")}</p>
+          {hit.dismissedByName || hit.dismissedAt ? (
+            <p className="text-xs text-gray-02">
+              {t("review.dismissedBy", {
+                name: hit.dismissedByName ?? "—",
+                at: hit.dismissedAt
+                  ? new Date(hit.dismissedAt).toLocaleString()
+                  : "—",
+              })}
+            </p>
+          ) : null}
+          {hit.dismissalNote ? (
+            <p className="text-sm text-gray-01">
+              {t("review.dismissedNote", { note: hit.dismissalNote })}
+            </p>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

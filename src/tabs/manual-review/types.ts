@@ -25,6 +25,9 @@ export type ManualReviewCompanyHit = {
   evidenceSummary: string;
   dismissalId: string | null;
   dismissedAt: string | null;
+  dismissalNote: string | null;
+  dismissedByUserId: string | null;
+  dismissedByName: string | null;
 };
 
 export type ManualReviewIssuesResponse = {
@@ -42,9 +45,22 @@ export type ManualReviewIssuesResponse = {
 export type ManualReviewDismissal = {
   id: string;
   companyId: string;
+  companyName: string;
+  wikidataId: string | null;
+  lei: string | null;
   flagKey: string;
+  flagTitle: string;
   evidenceFingerprint: string;
+  evidenceSummary: string | null;
   note: string | null;
   userId: string;
+  userName: string;
   createdAt: string;
+};
+
+export type ManualReviewDismissalsResponse = {
+  total: number;
+  offset: number;
+  limit: number;
+  dismissals: ManualReviewDismissal[];
 };
