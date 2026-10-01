@@ -108,6 +108,8 @@
     "keysLoadError": "Kunde inte ladda API-nycklar.",
     "keysListTitle": "Befintliga API-nycklar",
     "keysEmpty": "Inga API-nycklar hittades.",
+    "keysEmptyHiddenRevoked": "Inga nycklar att visa. Avmarkera ”Dölj återkallade” för att se återkallade nycklar.",
+    "hideRevoked": "Dölj återkallade",
     "keysStatusActive": "Aktiv",
     "keysStatusRevoked": "Återkallad",
     "keysStatusExpired": "Utgången",
@@ -151,6 +153,8 @@
       "requests": "anrop",
       "lastRequest": "Senaste anrop",
       "endpoints": "Endpoints",
+      "endpointCount": "{{count}} endpoints",
+      "noEndpoints": "Ingen endpoint-översikt för den här nyckeln.",
       "serviceUnknown": "okänd"
     },
     "roles": {

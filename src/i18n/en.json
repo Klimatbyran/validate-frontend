@@ -107,6 +107,8 @@
     "keysLoadError": "Could not load API keys.",
     "keysListTitle": "Existing API keys",
     "keysEmpty": "No API keys found.",
+    "keysEmptyHiddenRevoked": "No keys to show. Uncheck “Hide revoked” to see revoked keys.",
+    "hideRevoked": "Hide revoked",
     "keysStatusActive": "Active",
     "keysStatusRevoked": "Revoked",
     "keysStatusExpired": "Expired",
@@ -150,6 +152,8 @@
       "requests": "requests",
       "lastRequest": "Last request",
       "endpoints": "Endpoints",
+      "endpointCount": "{{count}} endpoints",
+      "noEndpoints": "No endpoint breakdown for this key.",
       "serviceUnknown": "unknown"
     },
     "description": "Role description: ",
