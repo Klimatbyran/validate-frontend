@@ -2263,6 +2263,7 @@
       "extraction": "Extraction quality"
     },
     "dismissedCount": "{{count}} dismissed",
+    "experimentalBadge": "Experimental",
     "authRequired": "Sign in to load Manual Review.",
     "backToSummary": "Back to summary",
     "issueFallbackTitle": "Issue",

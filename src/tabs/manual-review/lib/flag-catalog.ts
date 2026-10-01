@@ -31,6 +31,36 @@ export const MANUAL_REVIEW_FLAG_GROUPS = [
 
 export type ManualReviewFlagGroup = (typeof MANUAL_REVIEW_FLAG_GROUPS)[number];
 
+export type ManualReviewFlagMaturity = "stable" | "experimental";
+
+/**
+ * Local mirror of API maturity for URL/typing fallbacks. Summary tiles prefer
+ * `maturity` from the API response when present.
+ */
+export const FLAG_MATURITY: Record<
+  ManualReviewFlagKey,
+  ManualReviewFlagMaturity
+> = {
+  "no-reporting-periods": "stable",
+  "no-emissions": "stable",
+  "missing-wikidata": "stable",
+  "missing-lei": "stable",
+  "missing-industry": "stable",
+  untagged: "stable",
+  "period-without-economy": "stable",
+  "year-gap": "stable",
+  "missing-latest-year": "stable",
+  "few-emissions-years": "stable",
+  "scope-spike-drop": "experimental",
+  "unit-scale-suspect": "experimental",
+  "stated-vs-calculated": "experimental",
+  "scope3-stated-vs-categories": "experimental",
+  "zero-or-negative-emissions": "experimental",
+  "shell-company": "stable",
+  "reporting-quality-warning": "stable",
+  "open-datapoint-notes": "stable",
+};
+
 export function isManualReviewFlagKey(
   value: string | null | undefined,
 ): value is ManualReviewFlagKey {

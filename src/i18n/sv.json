@@ -2263,6 +2263,7 @@
       "extraction": "Extraktionskvalitet"
     },
     "dismissedCount": "{{count}} avfärdade",
+    "experimentalBadge": "Experimentell",
     "authRequired": "Logga in för att ladda manuell granskning.",
     "backToSummary": "Tillbaka till översikt",
     "issueFallbackTitle": "Issue",

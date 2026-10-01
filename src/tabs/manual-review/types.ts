@@ -5,6 +5,8 @@ export type ManualReviewSummaryFlag = {
   group: string;
   title: string;
   description: string;
+  /** From API; falls back to local FLAG_MATURITY when absent. */
+  maturity?: "stable" | "experimental";
   activeCount: number;
   dismissedCount: number;
 };
