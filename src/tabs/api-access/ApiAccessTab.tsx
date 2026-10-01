@@ -10,6 +10,8 @@ import { ApiUsageView } from "./components/ApiUsageView";
 import { createAPIkey } from "./lib/api-access-api";
 import { useApiAccessData } from "./hooks/useApiAccessData";
 
+const PARTNER_TRIAL_ROLE_SLUG = "partner-trial";
+
 export function ApiAccessTab() {
   const { t } = useI18n();
   const {
@@ -39,6 +41,7 @@ export function ApiAccessTab() {
 
   const selectedRole =
     selectableRoles.find((item) => item.slug === role) ?? null;
+  const isTrialRole = selectedRole?.slug === PARTNER_TRIAL_ROLE_SLUG;
 
   const parseRoleLabel = useCallback((label: string | null) => {
     if (!label) return { name: label, description: null };
@@ -86,6 +89,7 @@ export function ApiAccessTab() {
         name: trimmedName,
         roleId: selectedRole.id,
         keyLookup: keyLookup.trim() || undefined,
+        trial: isTrialRole || undefined,
       });
       setCreatedKey({ name: trimmedName, apiKey: created.apiKey });
       setKeyName("");
@@ -170,6 +174,11 @@ export function ApiAccessTab() {
                       </p>
                     ) : null}
                   </div>
+                  {isTrialRole ? (
+                    <p className="text-xs text-gray-02 mt-1 max-w-xl">
+                      {t("apiAccess.trialHelp")}
+                    </p>
+                  ) : null}
                   {selectedRole && selectedRole.permissions.length > 0 ? (
                     <div>
                       <button
@@ -252,7 +261,7 @@ export function ApiAccessTab() {
 
                   <Button
                     onClick={handleCreateKey}
-                    disabled={isCreating}
+                    disabled={isCreating || !selectedRole}
                     className="max-w-[200px]"
                   >
                     {t("apiAccess.generateButton")}

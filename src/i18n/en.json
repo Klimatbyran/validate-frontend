@@ -109,6 +109,8 @@
     "keysEmpty": "No API keys found.",
     "keysStatusActive": "Active",
     "keysStatusRevoked": "Revoked",
+    "keysStatusExpired": "Expired",
+    "trialHelp": "Expires automatically after 7 days. Access is limited to companies tagged Sweden on list, search, and detail endpoints.",
     "revokeAria": "Revoke key {{name}}",
     "revokeError": "Could not revoke API key.",
     "revokeDialog": {
@@ -120,6 +122,8 @@
     "keysRole": "Role",
     "keysCreated": "Created",
     "keysLastUsed": "Last used",
+    "keysExpires": "Expires",
+    "keysScope": "Scope",
     "keysRevoked": "Revoked",
     "revealKeyAria": "Reveal API key for {{name}}",
     "revealKeyTitle": "API key for {{name}}",

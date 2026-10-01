@@ -25,6 +25,7 @@ import { Button } from "@/ui/button";
 import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
+import { authenticatedFetch } from "@/lib/api-helpers";
 import { StatusPill } from "@/components/StatusPill";
 import {
   toSwimlaneStatus,
@@ -669,7 +670,7 @@ function RerunButton({
       const url = `${getClimatePlansPipelineApiUrl()}/plans/${planId}/rerun/${step}${
         noCascade ? "?noCascade=true" : ""
       }`;
-      const res = await fetch(url, { method: "POST" });
+      const res = await authenticatedFetch(url, { method: "POST" });
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       onRerun();
     } catch (err) {
