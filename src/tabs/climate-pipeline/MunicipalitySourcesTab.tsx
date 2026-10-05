@@ -187,9 +187,10 @@ function MunicipalityRow({
   };
 
   const handleRun = async () => {
+    if (!source.url) return;
     setIsRunning(true);
     try {
-      await runMunicipalitySource(source.id);
+      await runMunicipalitySource(source.id, source.url);
       toast.success(`Started pipeline for ${source.municipality}`);
       onChanged({ ...source, lastRunAt: new Date().toISOString() });
     } catch (err) {
@@ -333,7 +334,8 @@ export function MunicipalitySourcesTab() {
 
     setIsRunningRegion(true);
     try {
-      const result = await runMunicipalityRegion(county);
+      const urls = rows.filter((r) => r.url).map((r) => r.url!);
+      const result = await runMunicipalityRegion(county, urls);
       toast.success(
         `Started ${result.started.length} run(s) in ${county}` +
           (result.skippedNoUrl.length > 0
