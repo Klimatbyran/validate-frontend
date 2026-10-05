@@ -50,6 +50,7 @@
     "climatePlans": "Explore climate plans",
     "climatePipeline": "Climate Pipeline",
     "climateQaReviews": "QA reviews",
+    "municipalitySources": "Municipalities",
     "editor": "Editor",
     "pipelineChoice": "Pipeline",
     "pipelineEmissions": "Corporate emissions",
@@ -87,6 +88,25 @@
     "colWhen": "Reviewed",
     "reviewingAs": "Reviewing as",
     "reviewingAsPlaceholder": "Your name"
+  },
+  "municipalitySources": {
+    "title": "Swedish municipalities — climate plan registry",
+    "subtitle": "All 290 municipalities, seeded from Klimatkollen's own tracking spreadsheet — edit any field, then run the pipeline for a row's url.",
+    "refresh": "Refresh",
+    "filterCounty": "County",
+    "countyAll": "All counties",
+    "count": "{{count}} municipalities",
+    "empty": "No municipalities match this filter.",
+    "error": "Could not load municipalities: {{error}}",
+    "colMunicipality": "Municipality",
+    "colCounty": "County",
+    "colPlanName": "Plan name",
+    "colUrl": "Url",
+    "colYear": "Year",
+    "colNotes": "Notes",
+    "colLastRun": "Last run",
+    "colRun": "Run",
+    "runRegion": "Run this region ({{count}})"
   },
   "apiAccess": {
     "title": "API Access",
