@@ -151,50 +151,45 @@ export function useManualReviewIssue(options: {
     [flagKey, includeDismissed],
   );
 
-  const undo = useCallback(
-    async (hit: ManualReviewCompanyHit) => {
-      if (!hit.dismissalId) return;
-      setActionBusyId(hitBusyKey(hit));
-      try {
-        await undoManualReviewDismissal(hit.dismissalId);
-        setData((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            companies: prev.companies.map((row) => {
-              if (
-                row.companyId !== hit.companyId ||
-                row.evidenceFingerprint !== hit.evidenceFingerprint
-              ) {
-                return row;
-              }
-              return {
-                ...row,
-                dismissalId: null,
-                dismissedAt: null,
-                dismissalNote: null,
-                dismissedByUserId: null,
-                dismissedByName: null,
-              };
-            }),
-            activeCount: prev.activeCount + 1,
-            dismissedCount: Math.max(0, prev.dismissedCount - 1),
-          };
-        });
-      } catch (err) {
-        if (err instanceof ApiAuthError) setAuthRequired(true);
-        else setError(err instanceof Error ? err.message : "Undo failed");
-        throw err;
-      } finally {
-        setActionBusyId(null);
-      }
-    },
-    [],
-  );
+  const undo = useCallback(async (hit: ManualReviewCompanyHit) => {
+    if (!hit.dismissalId) return;
+    setActionBusyId(hitBusyKey(hit));
+    try {
+      await undoManualReviewDismissal(hit.dismissalId);
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          companies: prev.companies.map((row) => {
+            if (
+              row.companyId !== hit.companyId ||
+              row.evidenceFingerprint !== hit.evidenceFingerprint
+            ) {
+              return row;
+            }
+            return {
+              ...row,
+              dismissalId: null,
+              dismissedAt: null,
+              dismissalNote: null,
+              dismissedByUserId: null,
+              dismissedByName: null,
+            };
+          }),
+          activeCount: prev.activeCount + 1,
+          dismissedCount: Math.max(0, prev.dismissedCount - 1),
+        };
+      });
+    } catch (err) {
+      if (err instanceof ApiAuthError) setAuthRequired(true);
+      else setError(err instanceof Error ? err.message : "Undo failed");
+      throw err;
+    } finally {
+      setActionBusyId(null);
+    }
+  }, []);
 
-  const hasMore = Boolean(
-    data && data.companies.length < data.totalMatching,
-  );
+  const hasMore = Boolean(data && data.companies.length < data.totalMatching);
 
   return {
     data,

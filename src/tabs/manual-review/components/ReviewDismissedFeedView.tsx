@@ -48,7 +48,9 @@ export function ReviewDismissedFeedView({
         <h2 className="text-xl font-semibold text-gray-01">
           {t("review.dismissedFeedTitle")}
         </h2>
-        <p className="text-sm text-gray-02">{t("review.dismissedFeedSubtitle")}</p>
+        <p className="text-sm text-gray-02">
+          {t("review.dismissedFeedSubtitle")}
+        </p>
         <p className="text-xs text-gray-02">
           {t("review.dismissedFeedCounts", {
             shown: dismissals.length,

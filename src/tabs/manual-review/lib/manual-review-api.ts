@@ -45,7 +45,9 @@ export async function fetchManualReviewIssues(options: {
   if (options.limit != null) params.set("limit", String(options.limit));
   const qs = params.toString();
   const res = await garboAuthFetch(
-    reviewUrl(`/issues/${encodeURIComponent(options.flagKey)}${qs ? `?${qs}` : ""}`),
+    reviewUrl(
+      `/issues/${encodeURIComponent(options.flagKey)}${qs ? `?${qs}` : ""}`,
+    ),
   );
   return readJson(res);
 }

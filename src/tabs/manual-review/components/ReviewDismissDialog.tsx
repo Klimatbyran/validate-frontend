@@ -80,7 +80,9 @@ export function ReviewDismissDialog({
             className="w-full rounded-md border border-gray-03 bg-gray-05 px-3 py-2 text-sm text-gray-01"
           />
           {showRequired ? (
-            <p className="text-xs text-pink-03">{t("review.dismissNoteRequired")}</p>
+            <p className="text-xs text-pink-03">
+              {t("review.dismissNoteRequired")}
+            </p>
           ) : null}
         </label>
         <DialogFooter>
@@ -99,7 +101,9 @@ export function ReviewDismissDialog({
             onClick={() => void handleConfirm()}
             disabled={isLoading}
           >
-            {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : null}
             {t("review.dismissConfirm")}
           </Button>
         </DialogFooter>

@@ -3,7 +3,10 @@ import { Button } from "@/ui/button";
 import { Callout } from "@/ui/callout";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { ReviewCompanyHitCard } from "./ReviewCompanyHitCard";
-import type { ManualReviewCompanyHit, ManualReviewIssuesResponse } from "../types";
+import type {
+  ManualReviewCompanyHit,
+  ManualReviewIssuesResponse,
+} from "../types";
 
 type Props = {
   data: ManualReviewIssuesResponse | null;
@@ -52,9 +55,7 @@ export function ReviewIssueView({
           <h2 className="text-xl font-semibold text-gray-01">
             {data?.title ?? t("review.issueFallbackTitle")}
           </h2>
-          <p className="text-sm text-gray-02">
-            {data?.description ?? ""}
-          </p>
+          <p className="text-sm text-gray-02">{data?.description ?? ""}</p>
           {data ? (
             <p className="text-xs text-gray-02">
               {t("review.issueCounts", {
@@ -105,8 +106,7 @@ export function ReviewIssueView({
               key={`${hit.companyId}:${hit.evidenceFingerprint}`}
               hit={hit}
               busy={
-                actionBusyId ===
-                `${hit.companyId}:${hit.evidenceFingerprint}`
+                actionBusyId === `${hit.companyId}:${hit.evidenceFingerprint}`
               }
               onDismissRequest={onDismissRequest}
               onUndo={onUndo}
