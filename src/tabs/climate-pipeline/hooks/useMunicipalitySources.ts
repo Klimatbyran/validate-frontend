@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
+import {
+  CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
+  getClimatePlansPipelineApiUrl,
+  getClimatePlansPipelineWebhookUrl,
+} from "@/config/api-env";
 import { authenticatedFetch } from "@/lib/api-helpers";
+import { createJobsFromUrls } from "@/tabs/upload/lib/upload-api";
 
 export interface MunicipalitySource {
   id: string;
@@ -74,9 +79,25 @@ export async function updateMunicipalitySource(
   return (await res.json()) as MunicipalitySource;
 }
 
+/** Triggers the real docling parse + Chroma indexing via the same
+ * createJobsFromUrls call the upload tab uses to add a climate plan —
+ * garbo posts the parsed markdown to our own /webhook once it's done,
+ * which is what actually enqueues extractMunicipality. Enqueuing that
+ * job directly (skipping this call) fails for any url not already
+ * indexed in Chroma from a prior upload. The backend /run call after it
+ * is bookkeeping only (records lastRunAt). */
 export async function runMunicipalitySource(
   id: string,
-): Promise<{ jobId: string; url: string }> {
+  url: string,
+): Promise<void> {
+  await createJobsFromUrls({
+    urls: [url],
+    autoApprove: false,
+    forceReindex: false,
+    callbackUrl: getClimatePlansPipelineWebhookUrl(),
+    reportTypeSlug: CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
+  });
+
   const res = await authenticatedFetch(
     `${getClimatePlansPipelineApiUrl()}/municipality-sources/${id}/run`,
     { method: "POST" },
@@ -85,23 +106,33 @@ export async function runMunicipalitySource(
     const text = await res.text();
     throw new Error(text || `${res.status} ${res.statusText}`);
   }
-  return (await res.json()) as { jobId: string; url: string };
 }
 
 export interface RunRegionResult {
   county: string;
-  started: { id: string; municipality: string; jobId: string }[];
+  started: { id: string; municipality: string }[];
   skippedNoUrl: string[];
 }
 
-/** Bulk-triggers every municipality in a county that has a url — same
- * extractMunicipality chain as a single run, so results land as real
- * ClimatePlan rows the normal way, just started all at once. Meaningful
- * real cost (one real fetch+extraction per municipality), so the UI
- * confirms before calling this. */
+/** Bulk version of runMunicipalitySource above — one createJobsFromUrls
+ * call with every url in the county, then one backend call to record
+ * lastRunAt for all of them. Meaningful real cost (one real
+ * fetch+extraction per municipality), so the UI confirms before calling
+ * this. */
 export async function runMunicipalityRegion(
   county: string,
+  urls: string[],
 ): Promise<RunRegionResult> {
+  if (urls.length > 0) {
+    await createJobsFromUrls({
+      urls,
+      autoApprove: false,
+      forceReindex: false,
+      callbackUrl: getClimatePlansPipelineWebhookUrl(),
+      reportTypeSlug: CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
+    });
+  }
+
   const res = await authenticatedFetch(
     `${getClimatePlansPipelineApiUrl()}/municipality-sources/run-region`,
     {
