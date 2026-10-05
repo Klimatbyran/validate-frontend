@@ -105,6 +105,17 @@ function commitmentEntityId(commitment: Commitment): string {
   return commitment.stableId;
 }
 
+/** A commitment's own text, split into independently-searchable parts when
+ * it was merged from several source sentences (see Commitment.extractionParts)
+ * — a merge doesn't always sit contiguously in the source, so searching for
+ * the whole merged text as one string would miss every part after the
+ * first. Falls back to [commitment.text] when there are no parts. */
+function commitmentParts(commitment: Commitment): string[] {
+  return commitment.extractionParts && commitment.extractionParts.length > 0
+    ? commitment.extractionParts.map((p) => p.text)
+    : [commitment.text];
+}
+
 /** Survive extractMeasures recreate when measure text is unchanged. */
 function measureEntityId(measure: ExtractedMeasure): string {
   let hash = 0;
@@ -1019,9 +1030,20 @@ function DocumentReferencesList({
 // regardless of how many commitments the plan has. Lifted to
 // StepResultDialog (rather than living inside CommitmentsList) so it can
 // decide whether the PDF opens as a modal or a side-by-side panel.
+// Green for "passed the climate filter" — gray for "filtered out" reuses
+// PdfHighlightViewer's own default secondary color, so only this one needs
+// defining here.
+const CLIMATE_PASSED_COLOR = "rgba(34, 197, 94, 0.45)";
+
 type PdfViewerState =
   | { mode: "focused"; commitment: Commitment }
-  | { mode: "all" };
+  | { mode: "all" }
+  // Only reachable from the climate-filter step's own "view all in PDF"
+  // button — colors verified commitments green/gray by whether they
+  // passed the climate filter instead of the usual flat yellow (see
+  // CLIMATE_PASSED_COLOR above; the gray side reuses PdfHighlightViewer's
+  // own default secondary color).
+  | { mode: "all-climate" };
 
 function CommitmentsList({
   commitments,
@@ -1029,6 +1051,8 @@ function CommitmentsList({
   columns,
   reviewCtx,
   allVerifiedPhrases,
+  climatePassedPhrases,
+  climateFilteredOutPhrases,
   pdfMissingPhrases,
   setPdfViewer,
 }: {
@@ -1037,6 +1061,10 @@ function CommitmentsList({
   columns: "extract" | "climate" | "actionable" | "similar" | "themes";
   reviewCtx: ReviewContext;
   allVerifiedPhrases: string[];
+  /** Only used when columns === "climate" — see the view-all-in-PDF button
+   * further down, which colors these green/gray instead of flat yellow. */
+  climatePassedPhrases: string[];
+  climateFilteredOutPhrases: string[];
   pdfMissingPhrases: Set<string>;
   setPdfViewer: (v: PdfViewerState | null) => void;
 }) {
@@ -1274,16 +1302,31 @@ function CommitmentsList({
 
   return (
     <div className="space-y-3">
-      {allVerifiedPhrases.length > 0 && (
-        <button
-          onClick={() => setPdfViewer({ mode: "all" })}
-          className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 bg-gray-03/40 px-2.5 py-1.5 text-xs text-gray-01 hover:bg-gray-03/60"
-          title="Open the source PDF with every verified commitment highlighted"
-        >
-          <SearchCheck className="w-3.5 h-3.5" />
-          View all {allVerifiedPhrases.length} verified passages in PDF
-        </button>
-      )}
+      {columns === "climate"
+        ? (climatePassedPhrases.length > 0 ||
+            climateFilteredOutPhrases.length > 0) && (
+            <button
+              onClick={() => setPdfViewer({ mode: "all-climate" })}
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 bg-gray-03/40 px-2.5 py-1.5 text-xs text-gray-01 hover:bg-gray-03/60"
+              title="Open the source PDF — climate-relevant commitments in green, filtered-out ones in gray"
+            >
+              <SearchCheck className="w-3.5 h-3.5" />
+              View all in PDF ({
+                climatePassedPhrases.length
+              } climate-relevant, {climateFilteredOutPhrases.length} filtered
+              out)
+            </button>
+          )
+        : allVerifiedPhrases.length > 0 && (
+            <button
+              onClick={() => setPdfViewer({ mode: "all" })}
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 bg-gray-03/40 px-2.5 py-1.5 text-xs text-gray-01 hover:bg-gray-03/60"
+              title="Open the source PDF with every verified commitment highlighted"
+            >
+              <SearchCheck className="w-3.5 h-3.5" />
+              View all {allVerifiedPhrases.length} verified passages in PDF
+            </button>
+          )}
       {pdfMissingPhrases.size > 0 && (
         <p className="rounded-md border border-pink-03/30 bg-pink-03/10 px-2.5 py-1.5 text-xs text-pink-03">
           {missingInView > 0
@@ -1656,11 +1699,7 @@ export function StepResultDialog({
   const verifiedCommitments = detail
     ? detail.commitments.filter((c) => !c.unverified)
     : [];
-  const allVerifiedPhrases = verifiedCommitments.flatMap((c) =>
-    c.extractionParts && c.extractionParts.length > 0
-      ? c.extractionParts.map((p) => p.text)
-      : [c.text],
-  );
+  const allVerifiedPhrases = verifiedCommitments.flatMap(commitmentParts);
   // Maps each searched part phrase back to the commitment it belongs to,
   // so "this part wasn't found" can be reported as "this commitment wasn't
   // fully found" via pdfMissingPhrases (keyed by commitment text, per the
@@ -1668,12 +1707,20 @@ export function StepResultDialog({
   // on.
   const partToCommitmentText = new Map<string, string>();
   for (const c of verifiedCommitments) {
-    const parts =
-      c.extractionParts && c.extractionParts.length > 0
-        ? c.extractionParts.map((p) => p.text)
-        : [c.text];
-    for (const part of parts) partToCommitmentText.set(part, c.text);
+    for (const part of commitmentParts(c))
+      partToCommitmentText.set(part, c.text);
   }
+  // Same split, but by whether each commitment passed the climate filter —
+  // feeds the "view all in PDF, climate-colored" button on that step (see
+  // CommitmentsList's columns === "climate" branch). Still only
+  // markdown-verified commitments — an unverified one can't be found in
+  // the PDF text layer either, there's nothing useful to highlight.
+  const climatePassedPhrases = verifiedCommitments
+    .filter((c) => c.climateRelevant)
+    .flatMap(commitmentParts);
+  const climateFilteredOutPhrases = verifiedCommitments
+    .filter((c) => !c.climateRelevant)
+    .flatMap(commitmentParts);
   const pdfUrl = detail
     ? `${getClimatePlansPipelineApiUrl()}/plans/${detail.id}/pdf`
     : "";
@@ -1792,6 +1839,8 @@ export function StepResultDialog({
             columns="extract"
             reviewCtx={reviewCtx}
             allVerifiedPhrases={allVerifiedPhrases}
+            climatePassedPhrases={climatePassedPhrases}
+            climateFilteredOutPhrases={climateFilteredOutPhrases}
             pdfMissingPhrases={pdfMissingPhrases}
             setPdfViewer={setPdfViewer}
           />
@@ -1803,6 +1852,8 @@ export function StepResultDialog({
             columns="climate"
             reviewCtx={reviewCtx}
             allVerifiedPhrases={allVerifiedPhrases}
+            climatePassedPhrases={climatePassedPhrases}
+            climateFilteredOutPhrases={climateFilteredOutPhrases}
             pdfMissingPhrases={pdfMissingPhrases}
             setPdfViewer={setPdfViewer}
           />
@@ -1814,6 +1865,8 @@ export function StepResultDialog({
             columns="actionable"
             reviewCtx={reviewCtx}
             allVerifiedPhrases={allVerifiedPhrases}
+            climatePassedPhrases={climatePassedPhrases}
+            climateFilteredOutPhrases={climateFilteredOutPhrases}
             pdfMissingPhrases={pdfMissingPhrases}
             setPdfViewer={setPdfViewer}
           />
@@ -1827,6 +1880,8 @@ export function StepResultDialog({
             columns="similar"
             reviewCtx={reviewCtx}
             allVerifiedPhrases={allVerifiedPhrases}
+            climatePassedPhrases={climatePassedPhrases}
+            climateFilteredOutPhrases={climateFilteredOutPhrases}
             pdfMissingPhrases={pdfMissingPhrases}
             setPdfViewer={setPdfViewer}
           />
@@ -1840,6 +1895,8 @@ export function StepResultDialog({
             columns="themes"
             reviewCtx={reviewCtx}
             allVerifiedPhrases={allVerifiedPhrases}
+            climatePassedPhrases={climatePassedPhrases}
+            climateFilteredOutPhrases={climateFilteredOutPhrases}
             pdfMissingPhrases={pdfMissingPhrases}
             setPdfViewer={setPdfViewer}
           />
@@ -1880,6 +1937,14 @@ export function StepResultDialog({
   // have room for that, so the PDF still opens as its own full-screen
   // modal there (see the non-split branch below).
   const showSplitPanel = isLargeScreen && pdfViewer !== null;
+
+  // Climate step's PDF view shows green/gray (passed/filtered-out) instead
+  // of the usual flat yellow — bound to which step is active rather than
+  // pdfViewer.mode, since the panel below always shows the full background
+  // set regardless of mode ("focused" only adds a red overlay on top of
+  // it), so its color choice needs the same binding the modal's
+  // "all-climate" mode uses.
+  const isClimateStep = step === "filterCommitmentsClimate";
 
   const dialogTitle = (
     <div className="flex flex-wrap items-center gap-3">
@@ -2037,12 +2102,20 @@ export function StepResultDialog({
               url={pdfUrl}
               // Always the full set (never just the one clicked
               // commitment) so the panel renders the same document with
-              // the same yellow highlights every time it's opened for
-              // this plan — clicking a different commitment's "Find in
-              // PDF" while the panel stays open then only has to move
-              // the red highlight (see PdfHighlightBody's refocus
-              // effect), not reload anything.
-              verifiedPhrases={allVerifiedPhrases}
+              // the same highlights every time it's opened for this plan
+              // — clicking a different commitment's "Find in PDF" while
+              // the panel stays open then only has to move the red
+              // highlight (see PdfHighlightBody's refocus effect), not
+              // reload anything. On the climate step this is the
+              // green/gray passed/filtered-out split instead of flat
+              // yellow (see isClimateStep above).
+              verifiedPhrases={
+                isClimateStep ? climatePassedPhrases : allVerifiedPhrases
+              }
+              verifiedColor={isClimateStep ? CLIMATE_PASSED_COLOR : undefined}
+              secondaryPhrases={
+                isClimateStep ? climateFilteredOutPhrases : undefined
+              }
               focusedPhrase={
                 pdfViewer?.mode === "focused"
                   ? pdfViewer.commitment.text
@@ -2072,7 +2145,21 @@ export function StepResultDialog({
               }}
               url={pdfUrl}
               verifiedPhrases={
-                pdfViewer.mode === "all" ? allVerifiedPhrases : []
+                pdfViewer.mode === "all-climate"
+                  ? climatePassedPhrases
+                  : pdfViewer.mode === "all"
+                    ? allVerifiedPhrases
+                    : []
+              }
+              verifiedColor={
+                pdfViewer.mode === "all-climate"
+                  ? CLIMATE_PASSED_COLOR
+                  : undefined
+              }
+              secondaryPhrases={
+                pdfViewer.mode === "all-climate"
+                  ? climateFilteredOutPhrases
+                  : undefined
               }
               focusedPhrase={
                 pdfViewer.mode === "focused"
