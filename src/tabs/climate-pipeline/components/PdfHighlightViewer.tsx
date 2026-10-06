@@ -1212,6 +1212,7 @@ function revealFocusHighlight(
 }
 
 const VERIFIED_COLOR = "rgba(250, 204, 21, 0.45)"; // yellow — readable alone
+const SECONDARY_COLOR = "rgba(156, 163, 175, 0.4)"; // gray — a de-emphasized second group (e.g. "filtered out at this step"), distinct from both yellow and red
 const FOCUS_COLOR = "rgba(239, 68, 68, 0.28)"; // red — kept light; never stacked on yellow
 
 /** Everything findMatchedItemIndices/drawMatchHighlights need to
@@ -1228,15 +1229,20 @@ interface RenderedPage {
 }
 
 /** Renders one page (canvas + positioned text layer) into `container` and
- * highlights every verifiedPhrase match on it in yellow — the expensive
- * step (rasterizing a full page), so callers should only invoke this for
- * pages that actually need it. Does not handle focusedPhrase — that's
- * layered on afterward via highlightFocusedPhraseOnPage, reusing the
- * RenderedPage this returns, so refocusing never re-renders anything. */
+ * highlights every verifiedPhrase match on it (yellow by default, or
+ * verifiedColor), plus an optional second, independently-colored
+ * secondaryPhrases group — the expensive step (rasterizing a full page),
+ * so callers should only invoke this for pages that actually need it.
+ * Does not handle focusedPhrase — that's layered on afterward via
+ * highlightFocusedPhraseOnPage, reusing the RenderedPage this returns, so
+ * refocusing never re-renders anything. */
 async function renderPageWithHighlights(
   page: PDFPageProxy,
   container: HTMLElement,
   verifiedPhrases: string[],
+  verifiedColor: string = VERIFIED_COLOR,
+  secondaryPhrases: string[] = [],
+  secondaryColor: string = SECONDARY_COLOR,
 ): Promise<{ verifiedMatches: number; rendered: RenderedPage }> {
   const displayScale = computeFitScale(page, container);
   const displayViewport = page.getViewport({ scale: displayScale });
@@ -1343,7 +1349,28 @@ async function renderPageWithHighlights(
     highlightOverlay,
     touchedItemIndices,
     divs,
-    VERIFIED_COLOR,
+    verifiedColor,
+  );
+
+  // Same unioning as above, independently — a second, differently-colored
+  // group (see secondaryPhrases on PdfHighlightTarget). Drawn after the
+  // primary group so the two never need to compete for z-order on an
+  // overlapping item (shouldn't normally happen, since a commitment only
+  // ever belongs to one group — this is just a deterministic fallback).
+  const secondaryTouchedItemIndices = new Set<number>();
+  for (const phrase of secondaryPhrases) {
+    const { count, itemIndices } = findMatchedItemIndicesWithFallback(
+      items,
+      phrase,
+    );
+    verifiedMatches += count;
+    for (const i of itemIndices) secondaryTouchedItemIndices.add(i);
+  }
+  const secondaryBars = drawMatchHighlights(
+    highlightOverlay,
+    secondaryTouchedItemIndices,
+    divs,
+    secondaryColor,
   );
 
   return {
@@ -1353,7 +1380,10 @@ async function renderPageWithHighlights(
       items,
       divs,
       overlay: highlightOverlay,
-      verifiedBars,
+      // Both groups hide the same way under a red focus bar (see
+      // syncVerifiedBarsUnderFocus) — concatenating is simplest and
+      // correct, since that function is color-agnostic.
+      verifiedBars: [...verifiedBars, ...secondaryBars],
     },
   };
 }
@@ -1438,6 +1468,20 @@ export interface PdfHighlightTarget {
    * the same fully-rendered document can be reused across clicks (see
    * the refocus effect below). */
   verifiedPhrases: string[];
+  /** Overrides the color verifiedPhrases are drawn in (default: yellow,
+   * VERIFIED_COLOR) — e.g. green, when this group means "passed this
+   * step's filter" rather than the usual "verified in markdown". */
+  verifiedColor?: string;
+  /** A second, independently-colored set of phrases — e.g. commitments
+   * that did NOT pass this step's filter, shown de-emphasized alongside
+   * the (usually green) primary set so both are visible on one PDF pass
+   * without implying either one is "verified" in the primary sense.
+   * Folded into the same searched/missing reporting as verifiedPhrases
+   * (see onVerifiedSearchComplete) — both groups are real content the
+   * commitments list needs "not found in PDF" flags for. */
+  secondaryPhrases?: string[];
+  /** Color for secondaryPhrases (default: gray, SECONDARY_COLOR). */
+  secondaryColor?: string;
   /** The one commitment the user clicked in on, if any — marked red and
    * scrolled into view once found. Changing this alone (with url/
    * verifiedPhrases unchanged) does not reload or re-render the document —
@@ -1471,6 +1515,9 @@ function PdfHighlightBody({
   open,
   url,
   verifiedPhrases,
+  verifiedColor = VERIFIED_COLOR,
+  secondaryPhrases = [],
+  secondaryColor = SECONDARY_COLOR,
   focusedPhrase,
   focusedPhraseParts,
   onVerifiedSearchComplete,
@@ -1541,7 +1588,8 @@ function PdfHighlightBody({
   // effect below (wiping and re-rendering every page) on every one of
   // those polls. Keying on the joined content instead means it only
   // reruns when the actual set of verified phrases changes.
-  const verifiedPhrasesKey = verifiedPhrases.join("|");
+  const verifiedPhrasesKey =
+    verifiedPhrases.join("|") + "::" + secondaryPhrases.join("|");
 
   useEffect(() => {
     setZoom(1);
@@ -1636,6 +1684,9 @@ function PdfHighlightBody({
             page,
             container,
             verifiedPhrases,
+            verifiedColor,
+            secondaryPhrases,
+            secondaryColor,
           );
           if (cancelled) return;
           totalMatches += verifiedMatches;
@@ -1643,15 +1694,18 @@ function PdfHighlightBody({
         }
 
         if (!cancelled) {
+          // Both groups are real content the commitments list needs "not
+          // found in PDF" flags for — see secondaryPhrases's doc comment.
+          const allSearchedPhrases = [...verifiedPhrases, ...secondaryPhrases];
           const missingPhrases = findMissingPhrases(
             pagesRef.current,
-            verifiedPhrases,
+            allSearchedPhrases,
           );
           setMatchCount(totalMatches);
           setMissingPhraseCount(missingPhrases.length);
           setIsLoading(false);
           onVerifiedSearchCompleteRef.current?.({
-            searchedPhrases: verifiedPhrases,
+            searchedPhrases: allSearchedPhrases,
             missingPhrases,
           });
         }
@@ -2006,6 +2060,9 @@ export function PdfHighlightViewer({
   onOpenChange,
   url,
   verifiedPhrases,
+  verifiedColor,
+  secondaryPhrases,
+  secondaryColor,
   focusedPhrase,
   focusedPhraseParts,
   onVerifiedSearchComplete,
@@ -2022,6 +2079,9 @@ export function PdfHighlightViewer({
         open={open}
         url={url}
         verifiedPhrases={verifiedPhrases}
+        verifiedColor={verifiedColor}
+        secondaryPhrases={secondaryPhrases}
+        secondaryColor={secondaryColor}
         focusedPhrase={focusedPhrase}
         focusedPhraseParts={focusedPhraseParts}
         onVerifiedSearchComplete={onVerifiedSearchComplete}
@@ -2040,6 +2100,9 @@ export interface PdfHighlightPanelProps extends PdfHighlightTarget {
 export function PdfHighlightPanel({
   url,
   verifiedPhrases,
+  verifiedColor,
+  secondaryPhrases,
+  secondaryColor,
   focusedPhrase,
   focusedPhraseParts,
   onVerifiedSearchComplete,
@@ -2063,6 +2126,9 @@ export function PdfHighlightPanel({
           open
           url={url}
           verifiedPhrases={verifiedPhrases}
+          verifiedColor={verifiedColor}
+          secondaryPhrases={secondaryPhrases}
+          secondaryColor={secondaryColor}
           focusedPhrase={focusedPhrase}
           focusedPhraseParts={focusedPhraseParts}
           onVerifiedSearchComplete={onVerifiedSearchComplete}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Ban } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
@@ -22,6 +22,18 @@ export function ApiKeysListView({
   const [revoking, setRevoking] = useState<string | null>(null);
   const [revokeError, setRevokeError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hideRevoked, setHideRevoked] = useState(true);
+
+  const visibleKeys = useMemo(
+    () =>
+      hideRevoked ? keys.filter((keyItem) => keyItem.revokedAt === null) : keys,
+    [hideRevoked, keys],
+  );
+
+  const revokedCount = useMemo(
+    () => keys.filter((keyItem) => keyItem.revokedAt !== null).length,
+    [keys],
+  );
 
   const handleRevoke = async () => {
     if (!revoking) return;
@@ -71,8 +83,23 @@ export function ApiKeysListView({
       />
 
       <div className="bg-gray-04/80 backdrop-blur-sm rounded-lg p-6">
-        <div className="text-sm font-semibold text-gray-01">
-          {t("apiAccess.keysListTitle")}
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="text-sm font-semibold text-gray-01">
+            {t("apiAccess.keysListTitle")}
+          </div>
+          {keys.length > 0 ? (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hideRevoked}
+                onChange={(event) => setHideRevoked(event.target.checked)}
+              />
+              <span className="text-xs text-gray-02">
+                {t("apiAccess.hideRevoked")}
+                {revokedCount > 0 ? ` (${revokedCount})` : ""}
+              </span>
+            </label>
+          ) : null}
         </div>
 
         {keysLoading ? (
@@ -83,10 +110,18 @@ export function ApiKeysListView({
           <p className="mt-3 text-xs text-gray-02">
             {t("apiAccess.keysEmpty")}
           </p>
+        ) : visibleKeys.length === 0 ? (
+          <p className="mt-3 text-xs text-gray-02">
+            {t("apiAccess.keysEmptyHiddenRevoked")}
+          </p>
         ) : (
           <ul className="mt-3 space-y-2">
-            {keys.map((keyItem) => {
+            {visibleKeys.map((keyItem) => {
               const isRevoked = keyItem.revokedAt !== null;
+              const isExpired =
+                !isRevoked &&
+                keyItem.expiresAt != null &&
+                new Date(keyItem.expiresAt).getTime() <= Date.now();
               return (
                 <li
                   key={keyItem.id}
@@ -105,6 +140,10 @@ export function ApiKeysListView({
                       {isRevoked ? (
                         <span className="text-xs text-pink-03">
                           {t("apiAccess.keysStatusRevoked")}
+                        </span>
+                      ) : isExpired ? (
+                        <span className="text-xs text-pink-03">
+                          {t("apiAccess.keysStatusExpired")}
                         </span>
                       ) : (
                         <>
@@ -145,6 +184,19 @@ export function ApiKeysListView({
                           : null,
                       )}
                     </span>
+                    {keyItem.expiresAt ? (
+                      <span
+                        className={isExpired ? "text-pink-03/80" : undefined}
+                      >
+                        {t("apiAccess.keysExpires")}:{" "}
+                        {formatDate(new Date(keyItem.expiresAt))}
+                      </span>
+                    ) : null}
+                    {keyItem.companyScope ? (
+                      <span>
+                        {t("apiAccess.keysScope")}: {keyItem.companyScope}
+                      </span>
+                    ) : null}
                     {isRevoked ? (
                       <span className="text-pink-03/80">
                         {t("apiAccess.keysRevoked")}:{" "}
