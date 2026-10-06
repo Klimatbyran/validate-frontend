@@ -26,6 +26,7 @@ const TABS_WITH_SPACED_CONTENT = new Set<TopLevelTabSegment>([
   "registry",
   "overview",
   "editor",
+  "review",
 ]);
 
 function pipelineModeLabelKey(mode: PipelineMode): string {
@@ -52,6 +53,8 @@ function tabLabelKey(tab: TopLevelTabSegment): string {
       return "nav.debug";
     case "errors":
       return "nav.errorBrowser";
+    case "review":
+      return "nav.review";
     case "editor":
       return "nav.editor";
     case "climate-plans":

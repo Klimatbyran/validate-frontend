@@ -13,6 +13,7 @@ import { DebugTab } from "@/tabs/debug/DebugTab";
 import { EditorTab } from "@/tabs/editor/EditorTab";
 import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
 import { JobbstatusTab } from "@/tabs/jobbstatus/JobbstatusTab";
+import { ManualReviewTab } from "@/tabs/manual-review/ManualReviewTab";
 import { OverviewTab } from "@/tabs/overview/OverviewTab";
 import { RegistryTab } from "@/tabs/registry/RegistryTab";
 import { UploadTab } from "@/tabs/upload/UploadTab";
@@ -44,6 +45,7 @@ function App() {
           <Route path="/workflow" element={<WorkflowTab />} />
           <Route path="/debug" element={<DebugTab />} />
           <Route path="/errors" element={<ErrorBrowserTab />} />
+          <Route path="/review" element={<ManualReviewTab />} />
           <Route path="/editor/company/:companyId" element={<EditorTab />} />
           <Route
             path="/editor/company"
