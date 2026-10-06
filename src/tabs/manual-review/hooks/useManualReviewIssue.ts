@@ -191,9 +191,7 @@ export function useManualReviewIssue(options: {
   }, []);
 
   const companies = data?.companies ?? [];
-  const hasMore = Boolean(
-    data && companies.length < (data.totalMatching ?? 0),
-  );
+  const hasMore = Boolean(data && companies.length < (data.totalMatching ?? 0));
 
   return {
     data,
