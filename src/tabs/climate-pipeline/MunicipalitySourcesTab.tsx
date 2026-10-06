@@ -260,9 +260,7 @@ function MunicipalityRow({
           placeholder="Year"
           type="number"
           className="max-w-[5rem]"
-          onSave={(next) =>
-            save({ adoptedYear: next ? Number(next) : null })
-          }
+          onSave={(next) => save({ adoptedYear: next ? Number(next) : null })}
         />
       </td>
       <td className="px-3 py-2 align-top">
@@ -274,9 +272,7 @@ function MunicipalityRow({
         />
       </td>
       <td className="px-3 py-2 text-xs text-gray-02 align-top whitespace-nowrap">
-        {source.lastRunAt
-          ? new Date(source.lastRunAt).toLocaleString()
-          : "—"}
+        {source.lastRunAt ? new Date(source.lastRunAt).toLocaleString() : "—"}
       </td>
       <td className="px-3 py-2 align-top">
         <div className="flex justify-center">
@@ -443,9 +439,7 @@ export function MunicipalitySourcesTab() {
         </p>
       )}
       {!isLoading && !error && rows.length === 0 && (
-        <p className="text-sm text-gray-02">
-          {t("municipalitySources.empty")}
-        </p>
+        <p className="text-sm text-gray-02">{t("municipalitySources.empty")}</p>
       )}
       {!isLoading && rows.length > 0 && (
         <DataTableShell>
