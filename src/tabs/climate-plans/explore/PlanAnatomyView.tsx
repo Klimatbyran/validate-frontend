@@ -13,7 +13,7 @@ export function PlanAnatomyView({
   return (
     <div className="space-y-4">
       <MethodologyPanel
-        data="plan_scope_*.json (document type, period, mitigation vs adaptation) plus municipality-sources (URL, adopted year) and pipeline markdown length."
+        data="plan_scope_*.json (document type, period, mitigation vs adaptation) plus municipality-sources (URL, adopted year) and pipeline markdown length. Extracted / climate / groups are pipeline commitment counts (all unique texts, climateRelevant === true, then similar-groups after climate+actionable)."
         calculation="No derived score — this is a reading table so we can see which extracts are strategies vs action plans, how long the source is, and whether Paris / quantified targets landed in emission_targets."
       />
       {records.length === 0 ? (
@@ -29,7 +29,9 @@ export function PlanAnatomyView({
                 <th className="px-3 py-2 font-medium">Focus</th>
                 <th className="px-3 py-2 font-medium">Paris</th>
                 <th className="px-3 py-2 font-medium">Quantified</th>
-                <th className="px-3 py-2 font-medium">Commitments</th>
+                <th className="px-3 py-2 font-medium">Extracted</th>
+                <th className="px-3 py-2 font-medium">Climate</th>
+                <th className="px-3 py-2 font-medium">Groups</th>
                 <th className="px-3 py-2 font-medium">Length</th>
                 <th className="px-3 py-2 font-medium">Sources</th>
               </tr>
@@ -60,6 +62,12 @@ export function PlanAnatomyView({
                   </td>
                   <td className="px-3 py-2 tabular-nums text-gray-01">
                     {row.commitmentCount}
+                  </td>
+                  <td className="px-3 py-2 tabular-nums text-gray-01">
+                    {row.climateRelevantCommitmentCount ?? "—"}
+                  </td>
+                  <td className="px-3 py-2 tabular-nums text-gray-01">
+                    {row.climateCommitmentGroupCount ?? "—"}
                   </td>
                   <td className="px-3 py-2 tabular-nums text-gray-02">
                     {row.markdownChars == null

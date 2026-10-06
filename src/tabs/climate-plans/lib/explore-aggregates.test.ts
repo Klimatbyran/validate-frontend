@@ -6,6 +6,7 @@ import {
 } from "./municipality-names";
 import {
   collectTefHits,
+  countClimateCommitmentGroups,
   mapKpiValue,
   tefGroupStrengths,
 } from "./explore-aggregates";
@@ -69,6 +70,7 @@ function record(
     commitmentCount: 4,
     commitmentSource: "pipeline-commitments",
     climateRelevantCommitmentCount: 3,
+    climateCommitmentGroupCount: 2,
     markdownChars: 12000,
     tefHits: [],
     goals: [],
@@ -118,10 +120,53 @@ describe("TEF grouping and strength", () => {
   });
 });
 
+describe("climate commitment groups", () => {
+  it("collapses similarGroupId after climate and actionable filters", () => {
+    expect(
+      countClimateCommitmentGroups([
+        {
+          text: "a",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: "g1",
+        },
+        {
+          text: "a-dup",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: "g1",
+        },
+        {
+          text: "b",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: null,
+        },
+        {
+          text: "not-climate",
+          climateRelevant: false,
+          actionable: true,
+          similarGroupId: null,
+        },
+        {
+          text: "not-actionable",
+          climateRelevant: true,
+          actionable: false,
+          similarGroupId: null,
+        },
+      ]),
+    ).toBe(2);
+  });
+});
+
 describe("map KPIs", () => {
   it("returns commitment count and boolean Paris flag", () => {
     const row = record({});
     expect(mapKpiValue(row, "uniqueCommitments", null).numeric).toBe(4);
+    expect(mapKpiValue(row, "climateRelevantCommitments", null).numeric).toBe(
+      3,
+    );
+    expect(mapKpiValue(row, "climateCommitmentGroups", null).numeric).toBe(2);
     expect(mapKpiValue(row, "parisMentioned", null).booleanValue).toBe(true);
     expect(mapKpiValue(row, "climateRelevantShare", null).numeric).toBeCloseTo(
       0.75,
