@@ -192,8 +192,24 @@ export function MapKpiView({
             </div>
             <dl className="grid grid-cols-2 gap-2 text-sm">
               <Stat
-                label="Commitments"
+                label="Extracted commitments"
                 value={String(selected.commitmentCount)}
+              />
+              <Stat
+                label="Climate-relevant"
+                value={
+                  selected.climateRelevantCommitmentCount == null
+                    ? "—"
+                    : String(selected.climateRelevantCommitmentCount)
+                }
+              />
+              <Stat
+                label="Climate groups"
+                value={
+                  selected.climateCommitmentGroupCount == null
+                    ? "—"
+                    : String(selected.climateCommitmentGroupCount)
+                }
               />
               <Stat label="Goals" value={String(selected.goals.length)} />
               <Stat

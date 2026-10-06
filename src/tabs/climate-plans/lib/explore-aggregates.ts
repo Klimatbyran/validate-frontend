@@ -2,6 +2,7 @@ import type { Measure } from "./measures-types";
 import type {
   ExploreMunicipalityRecord,
   MapKpiId,
+  PipelineCommitment,
   TefGroupStrength,
   TefHit,
 } from "./explore-types";
@@ -90,6 +91,32 @@ export function parsePercent(
   return Number.isFinite(n) ? n : null;
 }
 
+export function countClimateRelevantCommitments(
+  commitments: PipelineCommitment[],
+): number {
+  return commitments.filter((c) => c.climateRelevant === true).length;
+}
+
+/**
+ * Same population as pipeline `groupCommitmentsSimilar`: climate-relevant
+ * and actionable commitments, collapsed by `similarGroupId`. Ungrouped
+ * rows each count as their own group.
+ */
+export function countClimateCommitmentGroups(
+  commitments: PipelineCommitment[],
+): number {
+  const filtered = commitments.filter(
+    (c) => c.climateRelevant === true && c.actionable === true,
+  );
+  const groupIds = new Set<string>();
+  let singletons = 0;
+  for (const commitment of filtered) {
+    if (commitment.similarGroupId) groupIds.add(commitment.similarGroupId);
+    else singletons += 1;
+  }
+  return groupIds.size + singletons;
+}
+
 export interface MapKpiValue {
   numeric: number | null;
   booleanValue: boolean | null;
@@ -117,6 +144,20 @@ export function mapKpiValue(
         booleanValue: null,
         kind: "numeric",
         unit: "commitments",
+      };
+    case "climateRelevantCommitments":
+      return {
+        numeric: record.climateRelevantCommitmentCount,
+        booleanValue: null,
+        kind: "numeric",
+        unit: "commitments",
+      };
+    case "climateCommitmentGroups":
+      return {
+        numeric: record.climateCommitmentGroupCount,
+        booleanValue: null,
+        kind: "numeric",
+        unit: "groups",
       };
     case "goalCount":
       return {
@@ -243,6 +284,11 @@ export function mergeRegionRecords(
   )
     ? null
     : records.reduce((s, r) => s + (r.climateRelevantCommitmentCount ?? 0), 0);
+  const climateGroups = records.every(
+    (r) => r.climateCommitmentGroupCount == null,
+  )
+    ? null
+    : records.reduce((s, r) => s + (r.climateCommitmentGroupCount ?? 0), 0);
 
   const bools = (pick: (r: ExploreMunicipalityRecord) => boolean | null) => {
     const known = records.map(pick).filter((v): v is boolean => v != null);
@@ -262,6 +308,7 @@ export function mergeRegionRecords(
       ? "pipeline-commitments"
       : "measures-as-proxy",
     climateRelevantCommitmentCount: climateRelevant,
+    climateCommitmentGroupCount: climateGroups,
     markdownChars,
     tefHits,
     goals,
@@ -287,10 +334,22 @@ export const MAP_KPI_META: Record<
   { label: string; data: string; calculation: string }
 > = {
   uniqueCommitments: {
-    label: "Unique commitments",
-    data: "Pipeline Commitment rows when climateRelevant is not false; otherwise unique scored measures (static JSON or pipeline scoreMeasures).",
+    label: "Extracted commitments",
+    data: "Pipeline Commitment rows after extractCommitments (all unique texts). Static files have no Commitment table, so unique scored measures are used as a proxy.",
     calculation:
-      "Count of unique commitment texts / stable IDs. Static files have no Commitment table, so measures are used as a proxy.",
+      "Set size of commitment.text. This is before climate / actionable filters and before similar-grouping.",
+  },
+  climateRelevantCommitments: {
+    label: "Climate-relevant commitments",
+    data: "Pipeline filterCommitmentsClimate: Commitment.climateRelevant === true. Not available on static measures files.",
+    calculation:
+      "Row count where climateRelevant is true (null/false are excluded). Still one row per extracted commitment — duplicates have not been grouped yet.",
+  },
+  climateCommitmentGroups: {
+    label: "Climate commitment groups",
+    data: "Pipeline groupCommitmentsSimilar, after filterCommitmentsClimate and filterCommitmentsActionable. Uses similarGroupId on climate-relevant + actionable rows.",
+    calculation:
+      "Count distinct similarGroupId values, plus each climate+actionable commitment that has no group id (a singleton). That is the unique-commitment set the later measure steps see.",
   },
   goalCount: {
     label: "Goals in the plan",
@@ -347,7 +406,7 @@ export const MAP_KPI_META: Record<
   },
   climateRelevantShare: {
     label: "Climate-relevant share",
-    data: "Pipeline commitments.climateRelevant. Not available on static measures files.",
-    calculation: "climateRelevant count / commitment count.",
+    data: "Pipeline commitments.climateRelevant === true versus all extracted unique texts. Not available on static measures files.",
+    calculation: "climate-relevant row count / extracted unique-text count.",
   },
 };

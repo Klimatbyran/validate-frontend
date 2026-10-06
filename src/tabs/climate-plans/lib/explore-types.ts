@@ -44,6 +44,8 @@ export interface ExploreMunicipalityRecord {
   commitmentCount: number;
   commitmentSource: "pipeline-commitments" | "measures-as-proxy";
   climateRelevantCommitmentCount: number | null;
+  /** Unique similar-groups after climate + actionable filters. Null without pipeline commitments. */
+  climateCommitmentGroupCount: number | null;
   markdownChars: number | null;
   tefHits: TefHit[];
   goals: QuantifiedGoal[];
@@ -92,8 +94,17 @@ export interface AlignmentRow {
   gap: number;
 }
 
+export interface PipelineCommitment {
+  text: string;
+  climateRelevant: boolean | null;
+  actionable: boolean | null;
+  similarGroupId: string | null;
+}
+
 export type MapKpiId =
   | "uniqueCommitments"
+  | "climateRelevantCommitments"
+  | "climateCommitmentGroups"
   | "goalCount"
   | "quantifiedGoalCount"
   | "distinctTefs"

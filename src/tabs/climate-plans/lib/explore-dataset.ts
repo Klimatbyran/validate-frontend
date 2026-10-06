@@ -9,10 +9,17 @@ import type {
   ExploreDataSource,
   ExploreDataset,
   ExploreMunicipalityRecord,
+  PipelineCommitment,
   QuantifiedGoal,
   SectorYearEmissions,
 } from "./explore-types";
-import { collectTefHits, parsePercent, parseYear } from "./explore-aggregates";
+import {
+  collectTefHits,
+  countClimateCommitmentGroups,
+  countClimateRelevantCommitments,
+  parsePercent,
+  parseYear,
+} from "./explore-aggregates";
 import {
   foldPlaceName,
   lookupByFoldedName,
@@ -89,6 +96,7 @@ function emptyRecord(id: string, name: string): ExploreMunicipalityRecord {
     commitmentCount: 0,
     commitmentSource: "measures-as-proxy",
     climateRelevantCommitmentCount: null,
+    climateCommitmentGroupCount: null,
     markdownChars: null,
     tefHits: [],
     goals: [],
@@ -182,6 +190,8 @@ interface PipelinePlanListItem {
   commitments?: Array<{
     text: string;
     climateRelevant: boolean | null;
+    actionable?: boolean | null;
+    similarGroupId?: string | null;
   }>;
 }
 
@@ -340,11 +350,20 @@ export async function loadExploreDataset(): Promise<ExploreDataset> {
     }
     if (Array.isArray(extra.commitments) && extra.commitments.length > 0) {
       const unique = new Set(extra.commitments.map((c) => c.text));
+      const pipelineCommitments: PipelineCommitment[] = extra.commitments.map(
+        (c) => ({
+          text: c.text,
+          climateRelevant: c.climateRelevant,
+          actionable: c.actionable ?? null,
+          similarGroupId: c.similarGroupId ?? null,
+        }),
+      );
       record.commitmentCount = unique.size;
       record.commitmentSource = "pipeline-commitments";
-      record.climateRelevantCommitmentCount = extra.commitments.filter(
-        (c) => c.climateRelevant !== false,
-      ).length;
+      record.climateRelevantCommitmentCount =
+        countClimateRelevantCommitments(pipelineCommitments);
+      record.climateCommitmentGroupCount =
+        countClimateCommitmentGroups(pipelineCommitments);
       addSource(record, "pipeline-commitments");
     }
   }
