@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { ViewModePills } from "@/ui/view-mode-pills";
@@ -20,6 +20,7 @@ type ReviewView = "summary" | "issue" | "dismissed";
 
 export function ManualReviewTab() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [dismissTarget, setDismissTarget] =
     useState<ManualReviewCompanyHit | null>(null);
@@ -69,7 +70,7 @@ export function ManualReviewTab() {
     const params = new URLSearchParams(searchParams);
     params.set("view", "issue");
     params.set("issue", nextFlag);
-    setSearchParams(params, { replace: false });
+    navigate({ pathname: "/review", search: `?${params.toString()}` });
   }
 
   function setQ(value: string) {

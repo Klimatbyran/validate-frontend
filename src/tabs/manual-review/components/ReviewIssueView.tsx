@@ -61,7 +61,7 @@ export function ReviewIssueView({
               {t("review.issueCounts", {
                 active: data.activeCount,
                 dismissed: data.dismissedCount,
-                shown: data.companies.length,
+                shown: data.companies?.length ?? 0,
               })}
             </p>
           ) : null}
@@ -95,13 +95,13 @@ export function ReviewIssueView({
         <div className="flex justify-center py-12">
           <LoadingSpinner />
         </div>
-      ) : data && data.companies.length === 0 ? (
+      ) : data && (data.companies?.length ?? 0) === 0 ? (
         <p className="text-sm text-gray-02 py-8 text-center">
           {t("review.emptyIssue")}
         </p>
       ) : (
         <div className="space-y-3">
-          {data?.companies.map((hit) => (
+          {(data?.companies ?? []).map((hit) => (
             <ReviewCompanyHitCard
               key={`${hit.companyId}:${hit.evidenceFingerprint}`}
               hit={hit}
