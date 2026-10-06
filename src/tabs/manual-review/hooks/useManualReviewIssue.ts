@@ -66,7 +66,8 @@ export function useManualReviewIssue(options: {
 
   const loadMore = useCallback(async () => {
     if (!flagKey || !data) return;
-    if (data.companies.length >= data.totalMatching) return;
+    const loaded = data.companies?.length ?? 0;
+    if (loaded >= (data.totalMatching ?? 0)) return;
     setLoadingMore(true);
     setError(null);
     try {
@@ -74,7 +75,7 @@ export function useManualReviewIssue(options: {
         flagKey,
         q,
         includeDismissed,
-        offset: data.companies.length,
+        offset: data.companies?.length ?? 0,
         limit: PAGE_SIZE,
       });
       setData((prev) => {
@@ -189,7 +190,8 @@ export function useManualReviewIssue(options: {
     }
   }, []);
 
-  const hasMore = Boolean(data && data.companies.length < data.totalMatching);
+  const companies = data?.companies ?? [];
+  const hasMore = Boolean(data && companies.length < (data.totalMatching ?? 0));
 
   return {
     data,

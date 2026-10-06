@@ -39,7 +39,7 @@ export function ReviewCompanyHitCard({
               <span>{t("review.noIdentifiers")}</span>
             ) : null}
           </div>
-          {hit.tags.length > 0 ? (
+          {hit.tags?.length ? (
             <p className="text-xs text-gray-02">{hit.tags.join(", ")}</p>
           ) : null}
         </div>
