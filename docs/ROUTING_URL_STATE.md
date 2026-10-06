@@ -94,6 +94,13 @@ The route is **`/jobbstatus`** only. **Live** and **Archive** are in-page tabs (
 Invalid `source` values fall back to Live. Switching to Live **removes** the `source` query param (cleaner default URL).
 
 - `/climate-plans`
+- **In-page views** (query params):
+  - `/climate-plans` — By measure (default; omit `tab` or `?tab=measures`)
+  - `/climate-plans?tab=taxonomy`
+  - `/climate-plans?tab=explore` — Explore data
+  - Explore subviews: `view=map|alignment|goals|tef|anatomy` (default `map`)
+  - Map: `kpi=uniqueCommitments`, `geo=municipality|region`, `tefGroup=…`, `muni=Nässjö`
+  - Alignment: `emissionsYear=latest|plan`
 
 ### Upload (query params)
 
