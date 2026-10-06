@@ -21,6 +21,7 @@ import { CollapsibleSection } from "@/ui/collapsible-section";
 import { MarkdownVectorPagesDisplay } from "@/ui/markdown-display";
 import { PdfHighlightViewer, PdfHighlightPanel } from "./PdfHighlightViewer";
 import { ResizableSplitView } from "./ResizableSplitView";
+import { RecoveredImagesGallery } from "./RecoveredImagesGallery";
 import { Button } from "@/ui/button";
 import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -1971,6 +1972,15 @@ export function StepResultDialog({
     </div>
   ) : null;
 
+  // Same dialog-level data as sourceMarkdownSection above (fetched once
+  // per plan, not per step) — shown on every step's dialog, not just
+  // docling's, since a reviewer checking e.g. extractCommitments'
+  // output for a fromRecoveredImage commitment needs to see the actual
+  // picture it came from just as much as someone checking docling itself.
+  const recoveredImagesSection = (
+    <RecoveredImagesGallery images={detail?.recoveredImages ?? []} />
+  );
+
   const dialogDescription =
     step === "documentReferences" ? (
       "Collected by extractCommitments across all sections, then deduplicated by groupDocumentReferences — this view itself isn't a separate pipeline step."
@@ -2030,6 +2040,7 @@ export function StepResultDialog({
               </div>
               {content}
               {sourceMarkdownSection}
+              {recoveredImagesSection}
             </>
           }
           right={
@@ -2063,6 +2074,7 @@ export function StepResultDialog({
           <div className="mt-4 min-w-0 overflow-x-hidden">
             {content}
             {sourceMarkdownSection}
+            {recoveredImagesSection}
           </div>
           {pdfViewer && (
             <PdfHighlightViewer

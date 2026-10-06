@@ -28,6 +28,8 @@ import {
   PDF_PARSING_QUEUES,
 } from "./hooks/usePdfParsingJobs";
 import { ReviewingAsField } from "./components/ReviewingAsField";
+import { RecoveredImagesGallery } from "./components/RecoveredImagesGallery";
+import { useRecoveredImages } from "./hooks/useRecoveredImages";
 
 const COMMITMENT_STEPS = [
   "extractMunicipality",
@@ -60,7 +62,7 @@ interface PlanRowProps {
     step: string,
     runId?: string,
   ) => void;
-  onPdfJobClick: (job: QueueJob) => void;
+  onPdfJobClick: (job: QueueJob, planId: string) => void;
 }
 
 function StepStatusPill({
@@ -194,7 +196,9 @@ function PlanRow({ plan, onStepClick, onPdfJobClick }: PlanRowProps) {
                   job ? derivePdfJobStatus(job) === "processing" : false
                 }
                 jobExists={job !== undefined}
-                onClick={() => job && onPdfJobClick(toQueueJobPlaceholder(job))}
+                onClick={() =>
+                  job && onPdfJobClick(toQueueJobPlaceholder(job), plan.id)
+                }
               />
             );
           })}
@@ -291,6 +295,12 @@ export function ClimatePipelineTab() {
   // not climate-plans-pipeline's own PipelineStepRun rows, so they reuse
   // jobbstatus's JobDetailsDialog directly instead of StepResultDialog.
   const [pdfJob, setPdfJob] = useState<QueueJob | null>(null);
+  const [pdfJobPlanId, setPdfJobPlanId] = useState<string | null>(null);
+  // Only doclingParsePDF recovers images — parsePdf's own dialog has
+  // nothing to show here.
+  const recoveredImages = useRecoveredImages(
+    pdfJob?.queueId === "doclingParsePDF" ? pdfJobPlanId : null,
+  );
   const appliedDeepLinkRef = useRef<string | null>(null);
 
   // Apply ?planId=&step= once per deep-link value. Do not re-apply on every
@@ -381,7 +391,10 @@ export function ClimatePipelineTab() {
               key={plan.id}
               plan={plan}
               onStepClick={handleStepClick}
-              onPdfJobClick={setPdfJob}
+              onPdfJobClick={(job, planId) => {
+                setPdfJob(job);
+                setPdfJobPlanId(planId);
+              }}
             />
           ))}
         </div>
@@ -407,9 +420,14 @@ export function ClimatePipelineTab() {
         job={pdfJob}
         isOpen={pdfJob !== null}
         onOpenChange={(open) => {
-          if (!open) setPdfJob(null);
+          if (!open) {
+            setPdfJob(null);
+            setPdfJobPlanId(null);
+          }
         }}
-      />
+      >
+        <RecoveredImagesGallery images={recoveredImages} />
+      </JobDetailsDialog>
     </div>
   );
 }

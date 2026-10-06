@@ -129,6 +129,29 @@ export interface ExtractedMeasure {
   score: MeasureScore | null;
 }
 
+/** A picture docling recovered from the source PDF — its layout model
+ * drops OCR text found inside picture-classified regions otherwise (see
+ * climate-plans-pipeline's RecoveredImage). description/ocrText already
+ * got folded into `markdown` in the picture's place; this is kept
+ * separately so a reviewer can see which actual image a given
+ * description/commitment (see Commitment.fromRecoveredImage) came from.
+ * thumbnail is a small (400px max dim) base64 JPEG, no data-URI prefix —
+ * good for "is this the right picture", not for reading fine print at
+ * high zoom. */
+export interface RecoveredImage {
+  id: string;
+  pictureIndex: number;
+  page: number | null;
+  description: string | null;
+  ocrText: string | null;
+  thumbnail: string;
+  /** False when the picture had too little OCR-recognized text to be
+   * worth a VLM call (skipped entirely to save the cost, not a failure).
+   * Kept on every row, not just ones with a description/ocrText, so a
+   * reviewer can audit whether this gate is catching the right pictures. */
+  hasText: boolean;
+}
+
 export interface ClimatePlanDetail {
   id: string;
   url: string;
@@ -150,6 +173,7 @@ export interface ClimatePlanDetail {
   documentReferences: DocumentReference[];
   extractedMeasures: ExtractedMeasure[];
   reviews?: PipelineReview[];
+  recoveredImages: RecoveredImage[];
 }
 
 export function useClimatePlanDetail(planId: string | null) {
