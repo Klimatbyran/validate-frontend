@@ -25,6 +25,7 @@ export const PIPELINE_TAB_SEGMENTS = {
     "workflow",
     "debug",
     "errors",
+    "suspicious",
     "review",
     "editor",
   ],
