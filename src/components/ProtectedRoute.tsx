@@ -1,17 +1,12 @@
 /**
- * Route guard that blocks unauthenticated access and shows a login prompt.
+ * Route guard that blocks unauthenticated access with an inline login prompt
+ * (does not trap navigation in a non-dismissible dialog).
  */
 
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/ui/dialog";
+import { Callout } from "@/ui/callout";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -31,26 +26,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!isAuthenticated) {
     return (
-      <Dialog open={true} onOpenChange={() => {}}>
-        <DialogContent
-          className="sm:max-w-md [&_button.absolute]:hidden"
-          onPointerDownOutside={(event) => event.preventDefault()}
-          onEscapeKeyDown={(event) => event.preventDefault()}
-        >
-          <DialogHeader>
-            <DialogTitle>{t("auth.loginRequired")}</DialogTitle>
-            <DialogDescription>{t("auth.loginRequiredTab")}</DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 pt-4">
-            <Button onClick={login} className="w-full">
-              {t("auth.loginWithGitHub")}
-            </Button>
-            <p className="text-sm text-gray-02 text-center">
-              {t("auth.redirectToGitHub")}
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <Callout variant="info">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-blue-03/90">
+            {t("auth.loginRequiredTab")}
+          </p>
+          <Button size="sm" onClick={login} className="shrink-0">
+            {t("auth.loginWithGitHub")}
+          </Button>
+        </div>
+      </Callout>
     );
   }
 

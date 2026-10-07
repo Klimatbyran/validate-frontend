@@ -2328,7 +2328,6 @@
   "suspicious": {
     "title": "Suspicious data",
     "subtitle": "Data points that disagree with the data around them — peer companies, the company's own history, or the rest of the same report. Reads from local, stage or production, and covers both AI-generated and manually validated values.",
-    "prodBadge": "Production",
     "loading": "Scanning data…",
     "loadFailed": "Could not load data",
     "exportCsv": "Export CSV",
@@ -2407,7 +2406,9 @@
       "sourceMismatch": "You are signed in against {{auth}} but viewing {{source}}. Saving writes to {{source}} and needs a login for that environment.",
       "periodMissing": "This reporting period cannot be updated (missing dates).",
       "notWritable": "This data point is calculated and cannot be edited here.",
-      "verifiedHint": "The saved value is marked as manually validated."
+      "verifiedHint": "The saved value is marked as manually validated.",
+      "scope2VerifiedShared": "Scope 2 market-based, location-based and unknown share one verified flag — saving marks all three as manually validated.",
+      "editorSourceMismatch": "Editor is signed in against {{auth}}, but this view is {{source}}."
     },
     "comparison": {
       "peerMedian": "Peer median",

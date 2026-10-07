@@ -6,7 +6,8 @@ import {
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import type { ReportingPeriodWriteBody } from "./write-value";
 
-function companiesReportingPeriodsUrl(
+/** Exported for tests — keep write URL selection next to the POST helper. */
+export function companiesReportingPeriodsUrl(
   source: ApiTarget,
   companyId: string,
 ): string {

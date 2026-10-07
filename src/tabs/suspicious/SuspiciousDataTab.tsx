@@ -1,5 +1,6 @@
 import React from "react";
 import { Download, RefreshCw } from "lucide-react";
+import { getUnearthTarget } from "@/config/api-env";
 import { useI18n } from "@/contexts/I18nContext";
 import { downloadCsv } from "@/lib/utils";
 import { Callout } from "@/ui/callout";
@@ -18,6 +19,7 @@ import {
 } from "./lib/filters";
 import { findingsToCsvRows, ruleLabelKey } from "./lib/finding-display";
 import {
+  availableSuspiciousDataSources,
   sourceLabelKey,
   type SuspiciousDataSource,
 } from "./lib/pipeline-source";
@@ -38,9 +40,17 @@ const VIEW_MODE_LABEL_KEYS: Record<SuspiciousViewMode, string> = {
   rules: "suspicious.view.rules",
 };
 
+function initialSuspiciousSource(): SuspiciousDataSource {
+  const target = getUnearthTarget();
+  const available = availableSuspiciousDataSources();
+  return available.includes(target) ? target : "prod";
+}
+
 export function SuspiciousDataTab() {
   const { t } = useI18n();
-  const [source, setSource] = React.useState<SuspiciousDataSource>("prod");
+  const [source, setSource] = React.useState<SuspiciousDataSource>(
+    initialSuspiciousSource,
+  );
   const { isLoading, error, fetchData, scan, companies } =
     useSuspiciousData(source);
 
@@ -163,7 +173,10 @@ export function SuspiciousDataTab() {
             />
           )}
           {viewMode === "companies" && (
-            <SuspiciousCompaniesTable companies={companySummaries} />
+            <SuspiciousCompaniesTable
+              companies={companySummaries}
+              source={source}
+            />
           )}
           {viewMode === "rules" && <SuspiciousRulesView findings={filtered} />}
         </>

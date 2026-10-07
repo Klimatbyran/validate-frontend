@@ -4,6 +4,7 @@ import {
   buildEmissionsPatch,
   buildReportingPeriodWriteBody,
   findPeriodForFinding,
+  isScope2DataPoint,
   isWritableDataPoint,
   parseInputNumber,
 } from "./write-value";
@@ -51,8 +52,16 @@ describe("buildEmissionsPatch", () => {
   });
 });
 
+describe("isScope2DataPoint", () => {
+  it("recognises the shared scope 2 fields", () => {
+    expect(isScope2DataPoint("scope2-mb")).toBe(true);
+    expect(isScope2DataPoint("scope2-lb")).toBe(true);
+    expect(isScope2DataPoint("scope1-total")).toBe(false);
+  });
+});
+
 describe("buildReportingPeriodWriteBody", () => {
-  it("keeps period dates and report id", () => {
+  it("keeps period dates, year and report id", () => {
     const body = buildReportingPeriodWriteBody(
       period,
       "scope1-total",
@@ -66,6 +75,7 @@ describe("buildReportingPeriodWriteBody", () => {
         {
           startDate: "2023-01-01",
           endDate: "2023-12-31",
+          year: "2023",
           companyReportId: "report-1",
           reportURL: "https://example.com/report.pdf",
           emissions: {
@@ -74,6 +84,22 @@ describe("buildReportingPeriodWriteBody", () => {
         },
       ],
     });
+  });
+
+  it("prefers top-level companyReportId over nested companyReport.id", () => {
+    const conflicting: ReportingPeriod = {
+      ...period,
+      companyReportId: "top-level",
+      companyReport: { id: "nested" },
+    };
+    const body = buildReportingPeriodWriteBody(
+      conflicting,
+      "scope1-total",
+      80,
+      "Fix",
+    );
+    expect(body?.companyReportId).toBe("top-level");
+    expect(body?.reportingPeriods[0]?.companyReportId).toBe("top-level");
   });
 
   it("refuses to build a body without a comment", () => {

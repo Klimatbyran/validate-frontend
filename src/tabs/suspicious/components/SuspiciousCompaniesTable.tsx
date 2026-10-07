@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
+import { getUnearthTarget } from "@/config/api-env";
 import { useI18n } from "@/contexts/I18nContext";
+import { editorCompanyPath } from "@/tabs/editor/lib/editor-routes";
 import { ClientTablePagination } from "@/ui/client-table-pagination";
 import {
   DataTable,
@@ -9,6 +11,10 @@ import {
 } from "@/ui/data-table";
 import type { SuspiciousCompanySummary } from "../types";
 import { useClientPagination } from "../hooks/useClientPagination";
+import {
+  sourceLabelKey,
+  type SuspiciousDataSource,
+} from "../lib/pipeline-source";
 
 const PAGE_SIZE = 50;
 
@@ -17,11 +23,14 @@ const headerClass =
 
 export function SuspiciousCompaniesTable({
   companies,
+  source,
 }: {
   companies: SuspiciousCompanySummary[];
+  source: SuspiciousDataSource;
 }) {
   const { t } = useI18n();
   const pagination = useClientPagination(companies, PAGE_SIZE);
+  const editorMatchesSource = getUnearthTarget() === source;
 
   return (
     <DataTableShell>
@@ -65,12 +74,24 @@ export function SuspiciousCompaniesTable({
                 {company.dataYears.join(", ")}
               </td>
               <td className="px-4 py-3 text-right">
-                <Link
-                  to={`/editor/company/${company.companyId}`}
-                  className="text-sm text-blue-03 hover:text-blue-02 transition-colors"
-                >
-                  {t("suspicious.detail.openInEditor")}
-                </Link>
+                {editorMatchesSource ? (
+                  <Link
+                    to={editorCompanyPath(company.companyId)}
+                    className="text-sm text-blue-03 hover:text-blue-02 transition-colors"
+                  >
+                    {t("suspicious.detail.openInEditor")}
+                  </Link>
+                ) : (
+                  <span
+                    className="text-sm text-gray-02"
+                    title={t("suspicious.detail.editorSourceMismatch", {
+                      auth: t(sourceLabelKey(getUnearthTarget())),
+                      source: t(sourceLabelKey(source)),
+                    })}
+                  >
+                    {t("suspicious.detail.openInEditor")}
+                  </span>
+                )}
               </td>
             </tr>
           ))}

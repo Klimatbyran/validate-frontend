@@ -2328,7 +2328,6 @@
   "suspicious": {
     "title": "Misstänkt data",
     "subtitle": "Datapunkter som inte stämmer med övriga data — andra bolag, bolagets egen historik eller resten av samma rapport. Läser från local, stage eller production och täcker både AI-genererade och manuellt validerade värden.",
-    "prodBadge": "Produktion",
     "loading": "Skannar data…",
     "loadFailed": "Kunde inte ladda data",
     "exportCsv": "Exportera CSV",
@@ -2407,7 +2406,9 @@
       "sourceMismatch": "Du är inloggad mot {{auth}} men tittar på {{source}}. Sparande skriver till {{source}} och kräver inloggning för den miljön.",
       "periodMissing": "Den här rapporteringsperioden kan inte uppdateras (saknar datum).",
       "notWritable": "Den här datapunkten är beräknad och kan inte redigeras här.",
-      "verifiedHint": "Det sparade värdet markeras som manuellt validerat."
+      "verifiedHint": "Det sparade värdet markeras som manuellt validerat.",
+      "scope2VerifiedShared": "Scope 2 marknadsbaserat, platsbaserat och unknown delar en verified-flagga — sparande markerar alla tre som manuellt validerade.",
+      "editorSourceMismatch": "Editorn är inloggad mot {{auth}}, men den här vyn är {{source}}."
     },
     "comparison": {
       "peerMedian": "Median för andra bolag",

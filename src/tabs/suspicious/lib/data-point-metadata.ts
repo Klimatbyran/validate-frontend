@@ -59,12 +59,12 @@ export function getDataPointMetadata(
  * Whether a value was manually validated or left as Garbo produced it.
  *
  * Uses the Editor's `isAIGenerated` so both tabs agree on what "verified"
- * means: a non-empty `verifiedBy` that is not Garbo itself.
+ * means — including the null-metadata case (`isAIGenerated(null)` is false,
+ * treated as verified rather than AI-generated).
  */
 export function resolveOrigin(
   metadata: DataPointMetadata | null,
 ): SuspicionOrigin {
-  if (!metadata) return "ai";
   return isAIGenerated(metadata) ? "ai" : "verified";
 }
 

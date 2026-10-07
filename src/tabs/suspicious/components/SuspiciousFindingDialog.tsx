@@ -1,10 +1,11 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { ExternalLink, FileText, PencilLine } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getUnearthTarget } from "@/config/api-env";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/contexts/I18nContext";
 import { getKlimatkollenCompanyPath } from "@/lib/company-routing";
+import { editorCompanyPath } from "@/tabs/editor/lib/editor-routes";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import type { Company } from "@/tabs/errors/types";
@@ -24,6 +25,7 @@ import { updateReportingPeriodsForSource } from "../lib/write-api";
 import {
   buildReportingPeriodWriteBody,
   findPeriodForFinding,
+  isScope2DataPoint,
   isWritableDataPoint,
   parseInputNumber,
 } from "../lib/write-value";
@@ -51,6 +53,8 @@ export function SuspiciousFindingDialog({
   onClose: () => void;
 }) {
   const { t, formatNumber } = useI18n();
+  const authTarget = getUnearthTarget();
+  const editorMatchesSource = authTarget === source;
 
   if (!finding) return null;
 
@@ -155,14 +159,27 @@ export function SuspiciousFindingDialog({
         />
 
         <div className="flex flex-wrap items-center gap-4 border-t border-gray-03/50 pt-4">
-          <Link
-            to={`/editor/company/${finding.companyId}`}
-            className={linkClass}
-            onClick={onClose}
-          >
-            <PencilLine className="w-4 h-4" />
-            {t("suspicious.detail.openInEditor")}
-          </Link>
+          {editorMatchesSource ? (
+            <Link
+              to={editorCompanyPath(finding.companyId)}
+              className={linkClass}
+              onClick={onClose}
+            >
+              <PencilLine className="w-4 h-4" />
+              {t("suspicious.detail.openInEditor")}
+            </Link>
+          ) : (
+            <span
+              className="inline-flex items-center gap-1.5 text-sm text-gray-02"
+              title={t("suspicious.detail.editorSourceMismatch", {
+                auth: t(sourceLabelKey(authTarget)),
+                source: t(sourceLabelKey(source)),
+              })}
+            >
+              <PencilLine className="w-4 h-4" />
+              {t("suspicious.detail.openInEditor")}
+            </span>
+          )}
           {finding.reportUrl ? (
             <a
               href={finding.reportUrl}
@@ -211,9 +228,11 @@ function CorrectionForm({
   const [comment, setComment] = useState("");
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const savingRef = useRef(false);
 
   const authTarget = getUnearthTarget();
   const sourceLabel = t(sourceLabelKey(source));
+  const isScope2 = isScope2DataPoint(finding.dataPointId);
 
   if (!isWritableDataPoint(finding.dataPointId)) {
     return <FormShell>{t("suspicious.detail.notWritable")}</FormShell>;
@@ -264,6 +283,7 @@ function CorrectionForm({
   };
 
   const handleConfirm = async () => {
+    if (savingRef.current) return;
     setError(null);
     const valid = validate();
     if (!valid) {
@@ -283,6 +303,7 @@ function CorrectionForm({
       return;
     }
 
+    savingRef.current = true;
     setStatus("saving");
     try {
       await updateReportingPeriodsForSource(source, finding.companyId, body);
@@ -295,6 +316,8 @@ function CorrectionForm({
           ? saveError.message
           : t("suspicious.detail.saveFailed"),
       );
+    } finally {
+      savingRef.current = false;
     }
   };
 
@@ -345,13 +368,20 @@ function CorrectionForm({
       <div className="flex flex-wrap items-center gap-3">
         {status === "confirming" ? (
           <>
-            <p className="text-sm text-amber-200">
-              {t("suspicious.detail.confirmPrompt", {
-                value: value.trim(),
-                source: sourceLabel,
-                company: finding.companyName,
-              })}
-            </p>
+            <div className="space-y-1">
+              <p className="text-sm text-amber-200">
+                {t("suspicious.detail.confirmPrompt", {
+                  value: value.trim(),
+                  source: sourceLabel,
+                  company: finding.companyName,
+                })}
+              </p>
+              {isScope2 ? (
+                <p className="text-xs text-amber-200/80">
+                  {t("suspicious.detail.scope2VerifiedShared")}
+                </p>
+              ) : null}
+            </div>
             <Button size="sm" onClick={handleConfirm}>
               {t("suspicious.detail.confirmSave")}
             </Button>
