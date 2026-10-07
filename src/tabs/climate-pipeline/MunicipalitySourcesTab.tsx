@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Loader2, Play, RefreshCw, ExternalLink, Pencil } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, Play, Plus, RefreshCw, ExternalLink, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/ui/button";
+import { Modal } from "@/ui/modal";
 import { cn } from "@/lib/utils";
 import {
   DataTableShell,
@@ -13,6 +14,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import {
   useMunicipalitySources,
   updateMunicipalitySource,
+  createMunicipalitySource,
   runMunicipalitySource,
   runMunicipalityRegion,
   type MunicipalitySource,
@@ -171,15 +173,37 @@ function EditableCell({
   );
 }
 
+const SOURCE_BADGE: Record<
+  MunicipalitySource["source"],
+  { labelKey: string; className: string } | null
+> = {
+  seed: null,
+  companion: {
+    labelKey: "municipalitySources.sourceCompanion",
+    className: "border-purple-03/40 bg-purple-03/10 text-purple-03",
+  },
+  manual: {
+    labelKey: "municipalitySources.sourceManual",
+    className: "border-gray-03 bg-gray-03/40 text-gray-02",
+  },
+};
+
 function MunicipalityRow({
   source,
+  showMunicipalityName,
   onChanged,
 }: {
   source: MunicipalitySource;
+  /** False for every row after the first in a municipality's group — the
+   * name only needs to appear once, with the rest distinguished by their
+   * own documentTitle underneath it. */
+  showMunicipalityName: boolean;
   onChanged: (next: MunicipalitySource) => void;
 }) {
+  const { t } = useI18n();
   const [isRunning, setIsRunning] = useState(false);
   const hasPlan = Boolean(source.url);
+  const badge = SOURCE_BADGE[source.source];
 
   const save = async (edit: MunicipalitySourceEdit) => {
     const updated = await updateMunicipalitySource(source.id, edit);
@@ -191,7 +215,9 @@ function MunicipalityRow({
     setIsRunning(true);
     try {
       await runMunicipalitySource(source.id, source.url);
-      toast.success(`Started pipeline for ${source.municipality}`);
+      toast.success(
+        `Started pipeline for ${source.municipality}${source.documentTitle ? ` (${source.documentTitle})` : ""}`,
+      );
       onChanged({ ...source, lastRunAt: new Date().toISOString() });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to start run");
@@ -208,16 +234,38 @@ function MunicipalityRow({
       )}
     >
       <td className="px-3 py-2 text-sm text-gray-01 align-top whitespace-nowrap">
-        <span className="flex items-center gap-2">
+        {showMunicipalityName ? (
+          <span className="flex items-center gap-2">
+            <span
+              className={cn(
+                "h-1.5 w-1.5 shrink-0 rounded-full",
+                hasPlan ? "bg-green-03" : "bg-orange-03",
+              )}
+              title={hasPlan ? "Plan found" : "No plan found yet"}
+            />
+            {source.municipality}
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 pl-3.5">
+            <span className="text-gray-03">↳</span>
+            <EditableCell
+              value={source.documentTitle ?? ""}
+              placeholder={t("municipalitySources.untitledDocument")}
+              className="text-gray-02"
+              onSave={(next) => save({ documentTitle: next || null })}
+            />
+          </span>
+        )}
+        {badge && (
           <span
             className={cn(
-              "h-1.5 w-1.5 shrink-0 rounded-full",
-              hasPlan ? "bg-green-03" : "bg-orange-03",
+              "ml-1.5 inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+              badge.className,
             )}
-            title={hasPlan ? "Plan found" : "No plan found yet"}
-          />
-          {source.municipality}
-        </span>
+          >
+            {t(badge.labelKey)}
+          </span>
+        )}
       </td>
       <td className="px-3 py-2 align-top whitespace-nowrap">
         <span className="inline-flex items-center rounded-full border border-blue-03/30 bg-blue-03/10 px-2 py-0.5 text-[11px] font-medium text-blue-03">
@@ -239,7 +287,7 @@ function MunicipalityRow({
             placeholder="https://…"
             multiline
             breakAll
-            onSave={(next) => save({ url: next || null })}
+            onSave={(next) => save({ url: next.trim() || null })}
           />
           {source.url && (
             <a
@@ -302,6 +350,112 @@ function MunicipalityRow({
   );
 }
 
+function AddDocumentModal({
+  open,
+  onOpenChange,
+  onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: (created: MunicipalitySource) => void;
+}) {
+  const { t } = useI18n();
+  const [municipality, setMunicipality] = useState("");
+  const [documentTitle, setDocumentTitle] = useState("");
+  const [url, setUrl] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const reset = () => {
+    setMunicipality("");
+    setDocumentTitle("");
+    setUrl("");
+  };
+
+  const handleSubmit = async () => {
+    if (!municipality.trim() || !documentTitle.trim()) return;
+    setIsSaving(true);
+    try {
+      const createdRow = await createMunicipalitySource({
+        municipality: municipality.trim(),
+        documentTitle: documentTitle.trim(),
+        url: url.trim() || null,
+      });
+      toast.success(
+        t("municipalitySources.addSuccess", { documentTitle, municipality }),
+      );
+      onCreated(createdRow);
+      reset();
+      onOpenChange(false);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : t("municipalitySources.addError"),
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      size="xl"
+      title={t("municipalitySources.addModalTitle")}
+      description={t("municipalitySources.addModalDescription")}
+    >
+      <div className="space-y-3 mt-2">
+        <label className="block text-sm">
+          <span className="text-gray-02">
+            {t("municipalitySources.addFieldMunicipality")}
+          </span>
+          <input
+            autoFocus
+            value={municipality}
+            onChange={(e) => setMunicipality(e.target.value)}
+            placeholder={t("municipalitySources.addFieldMunicipalityPlaceholder")}
+            className="mt-1 w-full h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2.5 text-sm text-gray-01 focus:outline-none focus:border-blue-03"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="text-gray-02">
+            {t("municipalitySources.addFieldDocumentTitle")}
+          </span>
+          <input
+            value={documentTitle}
+            onChange={(e) => setDocumentTitle(e.target.value)}
+            placeholder={t("municipalitySources.addFieldDocumentTitlePlaceholder")}
+            className="mt-1 w-full h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2.5 text-sm text-gray-01 focus:outline-none focus:border-blue-03"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="text-gray-02">
+            {t("municipalitySources.addFieldUrl")}
+          </span>
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://…"
+            className="mt-1 w-full h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2.5 text-sm text-gray-01 focus:outline-none focus:border-blue-03"
+          />
+        </label>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            {t("municipalitySources.addCancel")}
+          </Button>
+          <Button
+            type="button"
+            disabled={!municipality.trim() || !documentTitle.trim() || isSaving}
+            onClick={() => void handleSubmit()}
+          >
+            {isSaving && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+            {t("municipalitySources.addSubmit")}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 export function MunicipalitySourcesTab() {
   const { t } = useI18n();
   const [county, setCounty] = useState("");
@@ -309,10 +463,55 @@ export function MunicipalitySourcesTab() {
   const [overrides, setOverrides] = useState<Map<string, MunicipalitySource>>(
     new Map(),
   );
+  const [created, setCreated] = useState<MunicipalitySource[]>([]);
+  const [needsUrlOnly, setNeedsUrlOnly] = useState(false);
+  // A stable set of ids, not a live re-check against current url/source —
+  // filling in a row's url while this filter is on would otherwise yank
+  // the row out of the list mid-edit, which reads as the edit having
+  // failed. Recomputed when the filter is turned on, or when `sources`
+  // itself changes (a real refetch — county switch, explicit refresh),
+  // but not on every inline edit (those only touch `overrides`).
+  const [needsUrlSnapshot, setNeedsUrlSnapshot] = useState<Set<
+    string
+  > | null>(null);
   const [isRunningRegion, setIsRunningRegion] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
-  const rows = sources.map((s) => overrides.get(s.id) ?? s);
+  const needsUrl = (r: MunicipalitySource) => r.source !== "seed" && !r.url;
+
+  useEffect(() => {
+    if (!needsUrlOnly) {
+      setNeedsUrlSnapshot(null);
+      return;
+    }
+    setNeedsUrlSnapshot(new Set(sources.filter(needsUrl).map((r) => r.id)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally
+    // not depending on `needsUrl` (a fresh function every render) or
+    // `overrides`/`created` — see the state comment above.
+  }, [needsUrlOnly, sources]);
+
+  const merged = [
+    ...sources,
+    ...created.filter((c) => !sources.some((s) => s.id === c.id)),
+  ];
+  let rows = merged.map((s) => overrides.get(s.id) ?? s);
+  if (needsUrlSnapshot) {
+    rows = rows.filter((r) => needsUrlSnapshot.has(r.id));
+  }
   const foundCount = rows.filter((r) => r.url).length;
+  // Companion documents almost never have a url yet (someone has to go
+  // find it), so in practice this is close to foundCount — but once they
+  // do have one, a plain "run all" shouldn't silently sweep them in too;
+  // that's a separate, explicit choice (see the two buttons below).
+  const primaryFoundCount = rows.filter(
+    (r) => r.url && r.source === "seed",
+  ).length;
+  // Matches the snapshot while the filter is on, so the count next to the
+  // checkbox never disagrees with how many rows are actually showing —
+  // live otherwise, so toggling it on reflects the true current count.
+  const needsUrlCount = needsUrlSnapshot
+    ? needsUrlSnapshot.size
+    : merged.filter(needsUrl).length;
 
   const handleChanged = (next: MunicipalitySource) => {
     setOverrides((prev) => new Map(prev).set(next.id, next));
@@ -320,18 +519,25 @@ export function MunicipalitySourcesTab() {
 
   // Real cost: one real fetch + extraction per municipality with a url,
   // started all at once — confirm with the actual count first, same
-  // reasoning as the single-row run but scaled up.
-  const handleRunRegion = async () => {
-    if (!county || foundCount === 0) return;
+  // reasoning as the single-row run but scaled up. includeCompanions
+  // decides the subset: the municipality's own plans only, or those plus
+  // any companion/manual documents that also have a url.
+  const handleRunRegion = async (includeCompanions: boolean) => {
+    const toRun = rows.filter(
+      (r) => r.url && (includeCompanions || r.source === "seed"),
+    );
+    if (!county || toRun.length === 0) return;
     const confirmed = window.confirm(
-      `Start the pipeline for all ${foundCount} municipalities with a url in ${county}? This spends real API tokens — ${foundCount} real runs, not a test.`,
+      `Start the pipeline for ${toRun.length} document(s) with a url in ${county}${includeCompanions ? " (including companion documents)" : ""}? This spends real API tokens — ${toRun.length} real runs, not a test.`,
     );
     if (!confirmed) return;
 
     setIsRunningRegion(true);
     try {
-      const urls = rows.filter((r) => r.url).map((r) => r.url!);
-      const result = await runMunicipalityRegion(county, urls);
+      const result = await runMunicipalityRegion(
+        county,
+        toRun.map((r) => ({ id: r.id, url: r.url! })),
+      );
       toast.success(
         `Started ${result.started.length} run(s) in ${county}` +
           (result.skippedNoUrl.length > 0
@@ -342,7 +548,7 @@ export function MunicipalitySourcesTab() {
       setOverrides((prev) => {
         const next = new Map(prev);
         for (const started of result.started) {
-          const existing = sources.find((s) => s.id === started.id);
+          const existing = merged.find((s) => s.id === started.id);
           if (existing) next.set(started.id, { ...existing, lastRunAt: now });
         }
         return next;
@@ -356,6 +562,12 @@ export function MunicipalitySourcesTab() {
     }
   };
 
+  // Groups consecutive rows sharing a municipality (the list is already
+  // sorted by municipality from the API) so the name only renders once
+  // per group — every row after the first shows its own documentTitle
+  // instead.
+  let previousMunicipality: string | null = null;
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
@@ -367,15 +579,27 @@ export function MunicipalitySourcesTab() {
             {t("municipalitySources.subtitle")}
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={() => void refresh()}
-          aria-label={t("municipalitySources.refresh")}
-        >
-          <RefreshCw className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setIsAddOpen(true)}
+            aria-label={t("municipalitySources.addDocument")}
+            title={t("municipalitySources.addDocument")}
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => void refresh()}
+            aria-label={t("municipalitySources.refresh")}
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -394,6 +618,15 @@ export function MunicipalitySourcesTab() {
             ))}
           </select>
         </label>
+        <label className="flex items-center gap-1.5 text-xs text-gray-02">
+          <input
+            type="checkbox"
+            checked={needsUrlOnly}
+            onChange={(e) => setNeedsUrlOnly(e.target.checked)}
+            className="accent-purple-03"
+          />
+          {t("municipalitySources.needsUrl", { count: needsUrlCount })}
+        </label>
         <span className="text-xs text-gray-02">
           {t("municipalitySources.count", { count: rows.length })}
         </span>
@@ -408,22 +641,40 @@ export function MunicipalitySourcesTab() {
             </span>
           </span>
         )}
-        {county && foundCount > 0 && (
+        {county && primaryFoundCount > 0 && (
           <Button
             type="button"
             variant="outline"
             size="sm"
             disabled={isRunningRegion}
-            onClick={() => void handleRunRegion()}
-            className="border-green-03/40 text-green-03 hover:bg-green-03/10 hover:border-green-03"
-            title={`Start the pipeline for all ${foundCount} municipalities with a url in ${county}`}
+            onClick={() => void handleRunRegion(false)}
+            className="max-w-none whitespace-nowrap border-green-03/40 text-green-03 hover:bg-green-03/10 hover:border-green-03"
+            title={`Start the pipeline for ${primaryFoundCount} municipality document(s) with a url in ${county} — not their companion documents`}
           >
             {isRunningRegion ? (
               <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
             ) : (
               <Play className="h-3.5 w-3.5 mr-1.5" />
             )}
-            {t("municipalitySources.runRegion", { count: foundCount })}
+            {t("municipalitySources.runRegion", { count: primaryFoundCount })}
+          </Button>
+        )}
+        {county && foundCount > primaryFoundCount && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isRunningRegion}
+            onClick={() => void handleRunRegion(true)}
+            className="max-w-none whitespace-nowrap border-purple-03/40 text-purple-03 hover:bg-purple-03/10 hover:border-purple-03"
+            title={`Start the pipeline for all ${foundCount} documents with a url in ${county}, including companion documents`}
+          >
+            {isRunningRegion ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <Play className="h-3.5 w-3.5 mr-1.5" />
+            )}
+            {t("municipalitySources.runRegionWithCompanions", { count: foundCount })}
           </Button>
         )}
       </div>
@@ -473,17 +724,29 @@ export function MunicipalitySourcesTab() {
               </tr>
             </DataTableHead>
             <DataTableBody>
-              {rows.map((source) => (
-                <MunicipalityRow
-                  key={source.id}
-                  source={source}
-                  onChanged={handleChanged}
-                />
-              ))}
+              {rows.map((source) => {
+                const showMunicipalityName =
+                  source.municipality !== previousMunicipality;
+                previousMunicipality = source.municipality;
+                return (
+                  <MunicipalityRow
+                    key={source.id}
+                    source={source}
+                    showMunicipalityName={showMunicipalityName}
+                    onChanged={handleChanged}
+                  />
+                );
+              })}
             </DataTableBody>
           </DataTable>
         </DataTableShell>
       )}
+
+      <AddDocumentModal
+        open={isAddOpen}
+        onOpenChange={setIsAddOpen}
+        onCreated={(row) => setCreated((prev) => [...prev, row])}
+      />
     </div>
   );
 }

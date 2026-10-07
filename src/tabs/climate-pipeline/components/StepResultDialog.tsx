@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Loader2,
+  Check,
   ChevronsDown,
   ChevronsUp,
   Code,
@@ -9,6 +10,7 @@ import {
   FileText,
   FileWarning,
   Image,
+  Play,
   Plus,
   RotateCw,
   SearchCheck,
@@ -25,8 +27,13 @@ import { RecoveredImagesGallery } from "./RecoveredImagesGallery";
 import { Button } from "@/ui/button";
 import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
+import {
+  getClimatePlansPipelineApiUrl,
+  getClimatePlansPipelineWebhookUrl,
+  CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
+} from "@/config/api-env";
 import { authenticatedFetch } from "@/lib/api-helpers";
+import { createJobsFromUrls } from "@/tabs/upload/lib/upload-api";
 import { StatusPill } from "@/components/StatusPill";
 import {
   toSwimlaneStatus,
@@ -35,6 +42,7 @@ import {
 } from "../hooks/useClimatePipelinePlans";
 import {
   useClimatePlanDetail,
+  approvePlan,
   type ActivityShift,
   type Commitment,
   type DocumentReference,
@@ -901,6 +909,121 @@ function CommitmentReviewControls({
   );
 }
 
+/** Confirms extractMunicipality's guess (or a correction typed into
+ * ReviewControls' suggested-value field, if one's been entered there) and
+ * links this plan to a real Municipality row. This is the step that lets
+ * two plans for the same municipality — a klimatplan and a companion
+ * document, run separately — end up sharing one real relation instead of
+ * just matching on a loose name string, so it's deliberately placed on
+ * the extractMunicipality step itself rather than buried in a review
+ * flow. */
+function ApproveButton({
+  planId,
+  extractedName,
+  approvedName,
+  onApproved,
+}: {
+  planId: string;
+  extractedName: string | null;
+  approvedName: string | null;
+  onApproved: () => void;
+}) {
+  const [isApproving, setIsApproving] = useState(false);
+
+  if (approvedName) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-green-03">
+        <Check className="h-3.5 w-3.5" />
+        Approved
+      </span>
+    );
+  }
+
+  const handleApprove = async () => {
+    setIsApproving(true);
+    try {
+      const result = await approvePlan(planId);
+      toast.success(`Approved — linked to ${result.municipalityName}`);
+      onApproved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to approve");
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={!extractedName || isApproving}
+      onClick={() => void handleApprove()}
+      className="h-6 px-2 text-xs border-green-03/40 text-green-03 hover:bg-green-03/10 hover:border-green-03"
+      title={
+        extractedName
+          ? `Link this plan to the "${extractedName}" municipality`
+          : "No extracted name to approve yet"
+      }
+    >
+      {isApproving ? (
+        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+      ) : (
+        <Check className="w-3 h-3 mr-1" />
+      )}
+      Approve
+    </Button>
+  );
+}
+
+/** Same path the municipality-sources registry's Run button uses — a
+ * companion document is just another url to run through the real
+ * docling/Chroma pipeline, same as any other. Produces an entirely new,
+ * independent ClimatePlan (url is the unique key), not an update to the
+ * plan this reference was found on — there's nothing here to bookkeep
+ * afterward the way the registry's lastRunAt is, so a toast is enough. */
+function RunCompanionButton({ url, name }: { url: string; name: string }) {
+  const [isRunning, setIsRunning] = useState(false);
+
+  const handleRun = async () => {
+    setIsRunning(true);
+    try {
+      await createJobsFromUrls({
+        urls: [url],
+        autoApprove: false,
+        forceReindex: false,
+        readImages: true,
+        callbackUrl: getClimatePlansPipelineWebhookUrl(),
+        reportTypeSlug: CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
+      });
+      toast.success(`Started pipeline for "${name}"`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to start run");
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={isRunning}
+      onClick={handleRun}
+      className="h-6 px-2 text-xs border-green-03/40 text-green-03 hover:bg-green-03/10 hover:border-green-03"
+      title={`Start the pipeline for "${name}" as its own climate plan`}
+    >
+      {isRunning ? (
+        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+      ) : (
+        <Play className="w-3 h-3 mr-1" />
+      )}
+      Run
+    </Button>
+  );
+}
+
 function DocumentReferencesList({
   documentReferences,
 }: {
@@ -964,6 +1087,13 @@ function DocumentReferencesList({
             mentioned {group.members.length}×
           </span>
         )}
+        {group.relationship === "companion" &&
+          (() => {
+            const runUrl = group.members.find((m) => m.url)?.url;
+            return runUrl ? (
+              <RunCompanionButton url={runUrl} name={group.name} />
+            ) : null;
+          })()}
       </div>
       <div className="space-y-2 border-l-2 border-gray-03/50 pl-3">
         {group.members.map((ref) => (
@@ -1799,22 +1929,60 @@ export function StepResultDialog({
           extractedMunicipalityName: detail.extractedMunicipalityName,
           approvedMunicipalityName: detail.municipality?.name ?? null,
         };
+        const adoptedDisplay = detail.adoptedAt
+          ? new Date(detail.adoptedAt).toLocaleDateString()
+          : detail.adoptedAtText;
+        const coverageDisplay =
+          detail.coveragePeriodText ??
+          (detail.coveragePeriodStart
+            ? `${detail.coveragePeriodStart}–${detail.coveragePeriodEnd ?? "?"}`
+            : null);
         return (
-          <div className="space-y-3 text-sm min-w-0">
-            <div className="space-y-1">
-              <p>
-                <span className="text-gray-02">Extracted name: </span>
-                <span className="text-gray-01 break-words">
-                  {detail.extractedMunicipalityName ?? "—"}
-                </span>
-              </p>
-              <p>
-                <span className="text-gray-02">Approved municipality: </span>
-                <span className="text-gray-01 break-words">
-                  {detail.municipality?.name ?? "(not yet approved)"}
-                </span>
-              </p>
+          <div className="space-y-4 text-sm min-w-0">
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-gray-01 break-words">
+                {detail.documentTitle ?? "Untitled document"}
+              </h3>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <MetaChip label="Municipality" tone="relevance">
+                  {detail.municipality?.name ??
+                    detail.extractedMunicipalityName ??
+                    "—"}
+                </MetaChip>
+                {adoptedDisplay && (
+                  <MetaChip label="Adopted" tone="score">
+                    {adoptedDisplay}
+                  </MetaChip>
+                )}
+                {coverageDisplay && (
+                  <MetaChip label="Covers" tone="type">
+                    {coverageDisplay}
+                  </MetaChip>
+                )}
+                <ApproveButton
+                  planId={plan.id}
+                  extractedName={detail.extractedMunicipalityName}
+                  approvedName={detail.municipality?.name ?? null}
+                  onApproved={refresh}
+                />
+              </div>
+              {/* Only shown when it actually differs — the common case
+                  (approval just confirmed the extraction) doesn't need two
+                  near-identical lines competing for attention. */}
+              {detail.municipality &&
+                detail.extractedMunicipalityName &&
+                detail.municipality.name !== detail.extractedMunicipalityName && (
+                  <p className="text-xs text-gray-02">
+                    Originally extracted as &ldquo;
+                    {detail.extractedMunicipalityName}&rdquo;
+                  </p>
+                )}
             </div>
+            {detail.documentDescription && (
+              <p className="text-sm text-gray-01 border-l-2 border-gray-03 pl-3 italic">
+                {detail.documentDescription}
+              </p>
+            )}
             <QaFooter>
               <ReviewControls
                 planId={plan.id}
