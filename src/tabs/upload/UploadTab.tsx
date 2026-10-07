@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { FileText, Link2, PlayCircle } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
@@ -31,6 +31,10 @@ import {
   uploadPdfsToParsePdf,
 } from "./lib/upload-api";
 import { useTagOptions } from "./hooks/useTagOptions";
+import {
+  useMunicipalitySources,
+  createMunicipalitySource,
+} from "@/tabs/climate-pipeline/hooks/useMunicipalitySources";
 
 const UPLOADED_PREFIX = "uploaded:";
 
@@ -86,6 +90,19 @@ export function UploadTab() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [removeConfirm, setRemoveConfirm] =
     useState<RemoveConfirmTarget | null>(null);
+
+  // Optional — picking one here means we already know for certain which
+  // municipality this upload is, so there's nothing for extractMunicipality
+  // to guess or a human to approve after the fact (see
+  // climate-plans-pipeline's extractMunicipality: a MunicipalitySource row
+  // for the exact url being run auto-approves it). Left unset, a plan
+  // behaves exactly as it always has — a guess, then manual approval.
+  const [selectedMunicipality, setSelectedMunicipality] = useState("");
+  const { sources: municipalitySources } = useMunicipalitySources("");
+  const municipalityNames = useMemo(
+    () => [...new Set(municipalitySources.map((s) => s.municipality))].sort(),
+    [municipalitySources],
+  );
 
   const setViewTab = useCallback(
     (tab: UploadViewTab) => {
@@ -204,6 +221,20 @@ export function UploadTab() {
         ? result.uploads.filter((u) => u.reusedExisting).length
         : 0;
 
+      // Best-effort, same reasoning as the url-paste path — never blocks
+      // the upload that just succeeded. Only possible when the response
+      // actually carries each file's real publicUrl (the envelope shape).
+      if (selectedMunicipality && isUploadPdfsEnvelope(result)) {
+        await Promise.allSettled(
+          result.uploads.map((u) =>
+            createMunicipalitySource({
+              municipality: selectedMunicipality,
+              url: u.publicUrl,
+            }),
+          ),
+        );
+      }
+
       const newUrls: UrlInput[] = uploadedFiles.map(
         ({ file, id, company }) => ({
           url: `uploaded:${file.name}`,
@@ -248,6 +279,7 @@ export function UploadTab() {
     reportTypeSlug,
     readImages,
     forceRedescribeImages,
+    selectedMunicipality,
     t,
     refetchBatches,
   ]);
@@ -400,6 +432,18 @@ export function UploadTab() {
       );
       const succeededUrls = urls.filter((u) => !failedUrls.has(u));
 
+      // Best-effort — a failure here (e.g. this exact url was somehow
+      // already registered) must never block the real upload, which just
+      // succeeded. Falls back to today's guess-then-approve flow for
+      // whichever urls didn't get registered rather than erroring.
+      if (selectedMunicipality) {
+        await Promise.allSettled(
+          succeededUrls.map((url) =>
+            createMunicipalitySource({ municipality: selectedMunicipality, url }),
+          ),
+        );
+      }
+
       if (Array.isArray(cached) && cached.length > 0) {
         const reused = cached.filter(
           (c) => (c as { reusedExisting?: boolean })?.reusedExisting,
@@ -462,6 +506,7 @@ export function UploadTab() {
     reportTypeSlug,
     readImages,
     forceRedescribeImages,
+    selectedMunicipality,
     t,
     refetchBatches,
   ]);
@@ -563,6 +608,26 @@ export function UploadTab() {
         </TabsList>
 
         <TabsContent value="manual" className="space-y-6">
+          {isClimatePlansPipeline && (
+            <label className="block max-w-sm text-sm">
+              <span className="text-gray-02">
+                Municipality (optional) — skip the extraction guess and
+                approval step by confirming it up front
+              </span>
+              <select
+                className="mt-1 w-full h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
+                value={selectedMunicipality}
+                onChange={(e) => setSelectedMunicipality(e.target.value)}
+              >
+                <option value="">Let it guess (review after)</option>
+                {municipalityNames.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <Tabs
             value={uploadMode}
             onValueChange={(value) => setUploadMode(value as ManualUploadMode)}

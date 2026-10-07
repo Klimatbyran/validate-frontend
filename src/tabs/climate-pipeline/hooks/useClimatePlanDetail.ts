@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
+import { authenticatedFetch } from "@/lib/api-helpers";
 import type { PipelineReview } from "./usePipelineReviews";
 
 /** One sentence-level piece the model produced before this commitment's
@@ -158,6 +159,16 @@ export interface ClimatePlanDetail {
   extractedMunicipalityName: string | null;
   municipality: { id: string; name: string } | null;
   status: string;
+  /** Extracted alongside the municipality name, from the same document —
+   * lets this specific document be told apart from the municipality's
+   * other ones (its klimatplan vs. a companion åtgärdsplan, ...). */
+  documentTitle: string | null;
+  documentDescription: string | null;
+  adoptedAt: string | null;
+  adoptedAtText: string | null;
+  coveragePeriodStart: number | null;
+  coveragePeriodEnd: number | null;
+  coveragePeriodText: string | null;
   /** The full source document docling parsed — the same text every
    * commitment is verified/highlighted against. Null on a plan from before
    * this was persisted, or one whose markdown hasn't been fetched yet. */
@@ -174,6 +185,39 @@ export interface ClimatePlanDetail {
   extractedMeasures: ExtractedMeasure[];
   reviews?: PipelineReview[];
   recoveredImages: RecoveredImage[];
+}
+
+export interface ApprovedPlan {
+  id: string;
+  url: string;
+  municipalityId: string;
+  municipalityName: string;
+  status: string;
+}
+
+/** Confirms (or corrects, via municipalityName) extractMunicipality's
+ * guess — upserts a real Municipality row by that name (reusing one that
+ * already exists for it) and links this plan to it. This is what lets
+ * two plans for the same municipality (a klimatplan and a companion
+ * document, run separately) end up sharing one real Municipality
+ * relation rather than just matching on a loose name string. */
+export async function approvePlan(
+  planId: string,
+  municipalityName?: string,
+): Promise<ApprovedPlan> {
+  const res = await authenticatedFetch(
+    `${getClimatePlansPipelineApiUrl()}/plans/${planId}/approve`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(municipalityName ? { municipalityName } : {}),
+    },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `${res.status} ${res.statusText}`);
+  }
+  return (await res.json()) as ApprovedPlan;
 }
 
 export function useClimatePlanDetail(planId: string | null) {

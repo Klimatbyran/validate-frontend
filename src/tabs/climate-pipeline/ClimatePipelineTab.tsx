@@ -57,6 +57,19 @@ const DOCUMENT_REFERENCES_STEP = "documentReferences";
 
 interface PlanRowProps {
   plan: ClimatePipelinePlan;
+  /** The municipality's own several ClimatePlan rows (its klimatplan, a
+   * companion åtgärdsplan, ...) each need their own swimlane — this is
+   * that specific document's own label, not the municipality's name
+   * (which lives in the group header above, once per municipality, not
+   * repeated on every document's row). Falls back to a generic label
+   * when documentTitle wasn't extracted (e.g. an older plan from before
+   * that field existed) so a second document is never indistinguishable
+   * from the first. */
+  title: string;
+  /** Only passed for an ungrouped (single-document) municipality — a
+   * grouped one shows this once on the group header instead, not
+   * repeated on every sibling document's own row. */
+  county?: string | null;
   onStepClick: (
     plan: ClimatePipelinePlan,
     step: string,
@@ -98,13 +111,75 @@ function formatRunLabel(run: PipelineStepRun[]): string {
   return new Date(earliest.startedAt).toLocaleString();
 }
 
+/** Loose match so two ClimatePlan rows for the same municipality group
+ * together even before either is approved — approval is what links a
+ * plan to a Municipality row by exact name match, so a klimatplan and a
+ * companion åtgävdsplan run separately (two climatePlan rows, same
+ * underlying municipality) wouldn't share anything to group on yet
+ * without this. Mirrors the kommun/stad suffix handling the municipality
+ * registry's seed data needed for the same underlying reason. */
+function normalizeMunicipalityName(name: string | null): string {
+  if (!name) return "";
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/s?\s+(kommun|stad)$/, "");
+}
+
+interface MunicipalityGroup {
+  key: string;
+  displayName: string;
+  county: string | null;
+  plans: ClimatePipelinePlan[];
+}
+
+/** Groups in the order each municipality first appears in `plans` (which
+ * the API already returns newest-first) — Map preserves insertion order,
+ * so this needs no separate sort. displayName prefers an approved plan's
+ * municipality.name (the canonical, human-confirmed spelling) over a raw
+ * extractedMunicipalityName when both exist in the group. */
+function groupPlansByMunicipality(
+  plans: ClimatePipelinePlan[],
+): MunicipalityGroup[] {
+  const groups = new Map<string, MunicipalityGroup>();
+  for (const plan of plans) {
+    const rawName = plan.municipality?.name ?? plan.extractedMunicipalityName;
+    // A plan with no name at all yet (extraction still running) gets its
+    // own group keyed by id — never merged with anything else by guess.
+    const key = normalizeMunicipalityName(rawName) || plan.id;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.plans.push(plan);
+      // An approved plan's municipality.name is the canonical,
+      // human-confirmed spelling — prefer it over a raw extraction
+      // whenever one's available in the group.
+      if (plan.municipality?.name) existing.displayName = plan.municipality.name;
+      if (!existing.county && plan.county) existing.county = plan.county;
+    } else {
+      groups.set(key, {
+        key,
+        displayName: rawName ?? plan.url,
+        county: plan.county,
+        plans: [plan],
+      });
+    }
+  }
+  return [...groups.values()];
+}
+
 function stepsByRun(rows: PipelineStepRun[]): Map<string, PipelineStepRun[]> {
   const map = new Map<string, PipelineStepRun[]>();
   for (const r of rows) map.set(r.step, [r]);
   return map;
 }
 
-function PlanRow({ plan, onStepClick, onPdfJobClick }: PlanRowProps) {
+function PlanRow({
+  plan,
+  title,
+  county,
+  onStepClick,
+  onPdfJobClick,
+}: PlanRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { jobsByQueue: pdfJobsByQueue } = usePdfParsingJobs(plan.garboThreadId);
 
@@ -137,15 +212,19 @@ function PlanRow({ plan, onStepClick, onPdfJobClick }: PlanRowProps) {
   const previousRuns = runsNewestFirst.slice(1);
   const hasPreviousRuns = previousRuns.length > 0;
 
-  const name =
-    plan.municipality?.name ?? plan.extractedMunicipalityName ?? plan.url;
-
   return (
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] p-4 space-y-3">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1 flex items-center gap-3">
           <div className="min-w-0">
-            <h3 className="font-bold text-gray-01 truncate">{name}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-gray-01 truncate">{title}</h3>
+              {county && (
+                <span className="shrink-0 inline-flex items-center rounded-full border border-blue-03/30 bg-blue-03/10 px-2 py-0.5 text-[11px] font-medium text-blue-03">
+                  {county.replace(" län", "")}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-gray-02 truncate">{plan.url}</p>
             {plan.companionReferenceCount > 0 && (
               <button
@@ -386,17 +465,52 @@ export function ClimatePipelineTab() {
               {t("climatePipeline.pollError", { error })}
             </p>
           )}
-          {plans.map((plan) => (
-            <PlanRow
-              key={plan.id}
-              plan={plan}
-              onStepClick={handleStepClick}
-              onPdfJobClick={(job, planId) => {
-                setPdfJob(job);
-                setPdfJobPlanId(planId);
-              }}
-            />
-          ))}
+          {groupPlansByMunicipality(plans).map((group) =>
+            group.plans.length > 1 ? (
+              // A plain text label above a run of cards reads as applying to
+              // everything below it, not just this group's own two or three —
+              // a visible border makes the boundary unambiguous instead of
+              // relying on spacing alone to separate it from the next
+              // (ungrouped, single-document) municipality right after it.
+              <div
+                key={group.key}
+                className="rounded-[24px] border border-blue-03/30 bg-blue-03/5 p-3 space-y-2"
+              >
+                <h2 className="text-sm font-semibold text-gray-01 px-1 flex items-center gap-2">
+                  {group.displayName}
+                  {group.county && (
+                    <span className="shrink-0 inline-flex items-center rounded-full border border-blue-03/30 bg-blue-03/10 px-2 py-0.5 text-[11px] font-medium text-blue-03">
+                      {group.county.replace(" län", "")}
+                    </span>
+                  )}
+                </h2>
+                {group.plans.map((plan) => (
+                  <PlanRow
+                    key={plan.id}
+                    plan={plan}
+                    title={plan.documentTitle ?? "Untitled document"}
+                    onStepClick={handleStepClick}
+                    onPdfJobClick={(job, planId) => {
+                      setPdfJob(job);
+                      setPdfJobPlanId(planId);
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <PlanRow
+                key={group.plans[0].id}
+                plan={group.plans[0]}
+                title={group.displayName}
+                county={group.county}
+                onStepClick={handleStepClick}
+                onPdfJobClick={(job, planId) => {
+                  setPdfJob(job);
+                  setPdfJobPlanId(planId);
+                }}
+              />
+            ),
+          )}
         </div>
       )}
 
