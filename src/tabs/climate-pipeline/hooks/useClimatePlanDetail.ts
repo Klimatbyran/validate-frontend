@@ -63,8 +63,25 @@ export interface TransitionElementMatch {
   stableId: string;
   shortLabel: string;
   sectorPath: string;
+  description?: string;
   score: number;
   matchConfidence: "high" | "mid" | "low";
+  matchReasoning?: string;
+  // Whether the measure's own text directly names this match (vs. only a
+  // reasonable inference) — an LLM judgment, read straight from tePicker's
+  // judge() call, not computed from word overlap.
+  explicit?: boolean;
+  // Our own classification of this TE element into the same six Activity
+  // Shift categories the shift itself is classified into (see
+  // classifyTeTypes.ts) — temporary scaffolding until TEF sends real
+  // per-element categories. Compare against the shift's own `type` to see
+  // whether the two sides agree.
+  ourShiftType?: string | null;
+  // TEF's own undocumented binary tag — "shift" (genuine mode/technology
+  // change) or "improve" (same activity, done more efficiently/less of
+  // it). Kept for reference; not a reliable compatibility signal on its
+  // own (see ourShiftType).
+  type?: "shift" | "improve" | null;
 }
 
 /** Cosine candidates from the TE picker — may lack matchConfidence. */
@@ -72,7 +89,10 @@ export interface TransitionElementCandidate {
   stableId: string;
   shortLabel: string;
   sectorPath?: string;
+  description?: string;
   score: number;
+  ourShiftType?: string | null;
+  type?: "shift" | "improve" | null;
 }
 
 export type DocumentReferenceRelationship = "companion" | "related" | "initiative";
@@ -107,6 +127,14 @@ export interface ActivityShift {
     shortLabel: string;
     description: string;
   } | null;
+  // Outcome of tePicker's domain-specificity gate and structural grouping
+  // step — "specific" | "multiple_specific" | "too_narrow" | "ambiguous" |
+  // "none". transitionElementGroupLabel carries the broader-category label
+  // for "too_narrow"/"ambiguous" results (e.g. the shared sector ancestor,
+  // or the broader TE that should exist instead).
+  transitionElementGateDomain?: string | null;
+  transitionElementGroupKind?: string | null;
+  transitionElementGroupLabel?: string | null;
 }
 
 export interface MeasureScore {
