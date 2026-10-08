@@ -117,7 +117,15 @@ export type MapKpiId =
   | "parisMentioned"
   | "climateRelevantShare";
 
-export type ExploreViewId = "map" | "alignment" | "goals" | "tef" | "anatomy";
+export type ExploreViewId =
+  | "map"
+  | "alignment"
+  | "goals"
+  | "tef"
+  | "tef-framework"
+  | "anatomy";
 export type ClimatePlansTabId = "measures" | "taxonomy" | "explore";
 export type MapGeoLevel = "municipality" | "region";
 export type EmissionsYearMode = "latest" | "plan";
+export type TefFrameworkScope = "all" | "municipality" | "region";
+export type TefFrameworkMetric = "hits" | "strength" | "municipalities";
