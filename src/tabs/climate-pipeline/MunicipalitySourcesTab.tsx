@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { Loader2, Play, Plus, RefreshCw, ExternalLink, Pencil } from "lucide-react";
+import {
+  Loader2,
+  Play,
+  Plus,
+  RefreshCw,
+  ExternalLink,
+  Pencil,
+  Check,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
@@ -17,6 +26,7 @@ import {
   createMunicipalitySource,
   runMunicipalitySource,
   runMunicipalityRegion,
+  markMunicipalitySourceRun,
   type MunicipalitySource,
   type MunicipalitySourceEdit,
 } from "@/tabs/climate-pipeline/hooks/useMunicipalitySources";
@@ -218,11 +228,32 @@ function MunicipalityRow({
       toast.success(
         `Started pipeline for ${source.municipality}${source.documentTitle ? ` (${source.documentTitle})` : ""}`,
       );
-      onChanged({ ...source, lastRunAt: new Date().toISOString() });
+      onChanged({
+        ...source,
+        lastRunAt: new Date().toISOString(),
+        lastRunStatus: "started",
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to start run");
     } finally {
       setIsRunning(false);
+    }
+  };
+
+  // Manual correction for when the real trigger and the bookkeeping call
+  // that records it disagree with what's shown — e.g. a run genuinely
+  // started but the bookkeeping call itself failed separately. Rare by
+  // design (runMunicipalitySource/runMunicipalityRegion already report the
+  // real outcome), kept as a deliberate fallback rather than removed.
+  const handleMarkRun = async (status: "started" | "failed") => {
+    try {
+      const updated = await markMunicipalitySourceRun(source.id, status);
+      onChanged(updated);
+      toast.success(
+        `Marked ${source.municipality}${source.documentTitle ? ` (${source.documentTitle})` : ""} as ${status}`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update");
     }
   };
 
@@ -320,10 +351,24 @@ function MunicipalityRow({
         />
       </td>
       <td className="px-3 py-2 text-xs text-gray-02 align-top whitespace-nowrap">
-        {source.lastRunAt ? new Date(source.lastRunAt).toLocaleString() : "—"}
+        {source.lastRunAt ? (
+          <span className="flex items-center gap-1.5">
+            {new Date(source.lastRunAt).toLocaleString()}
+            {source.lastRunStatus === "failed" && (
+              <span
+                className="inline-flex items-center rounded-full border border-orange-03/40 bg-orange-03/10 px-1.5 py-0.5 text-[10px] font-medium text-orange-03"
+                title="A run was attempted but did not take -- not the same as never run"
+              >
+                failed
+              </span>
+            )}
+          </span>
+        ) : (
+          "—"
+        )}
       </td>
       <td className="px-3 py-2 align-top">
-        <div className="flex justify-center">
+        <div className="flex justify-center items-center gap-1">
           <Button
             type="button"
             variant="outline"
@@ -343,6 +388,26 @@ function MunicipalityRow({
             ) : (
               <Play className="h-3.5 w-3.5" />
             )}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => void handleMarkRun("started")}
+            title="Manually mark as run now (the real run already started but wasn't recorded)"
+            className="h-7 w-7 text-gray-02/60 hover:text-green-03"
+          >
+            <Check className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => void handleMarkRun("failed")}
+            title="Manually mark the last run attempt as failed"
+            className="h-7 w-7 text-gray-02/60 hover:text-orange-03"
+          >
+            <X className="h-3.5 w-3.5" />
           </Button>
         </div>
       </td>
@@ -538,24 +603,50 @@ export function MunicipalitySourcesTab() {
         county,
         toRun.map((r) => ({ id: r.id, url: r.url! })),
       );
-      toast.success(
+      const summary =
         `Started ${result.started.length} run(s) in ${county}` +
-          (result.skippedNoUrl.length > 0
-            ? ` (${result.skippedNoUrl.length} skipped, no url)`
-            : ""),
-      );
+        (result.failed.length > 0
+          ? ` — ${result.failed.length} failed: ${result.failed.map((f) => f.municipality).join(", ")}`
+          : "") +
+        (result.skippedNoUrl.length > 0
+          ? ` (${result.skippedNoUrl.length} skipped, no url)`
+          : "");
+      if (result.failed.length > 0) toast.error(summary);
+      else toast.success(summary);
+
       const now = new Date().toISOString();
       setOverrides((prev) => {
         const next = new Map(prev);
         for (const started of result.started) {
           const existing = merged.find((s) => s.id === started.id);
-          if (existing) next.set(started.id, { ...existing, lastRunAt: now });
+          if (existing)
+            next.set(started.id, {
+              ...existing,
+              lastRunAt: now,
+              lastRunStatus: "started",
+            });
+        }
+        for (const failed of result.failed) {
+          const existing = merged.find((s) => s.id === failed.id);
+          if (existing)
+            next.set(failed.id, {
+              ...existing,
+              lastRunAt: now,
+              lastRunStatus: "failed",
+            });
         }
         return next;
       });
     } catch (err) {
+      // The real trigger (createJobsFromUrls) already succeeded by this
+      // point -- only the bookkeeping call itself failed (even after its
+      // own retry). Naming every row here, not just a generic message, is
+      // what makes the manual "mark as run" action usable: the whole
+      // point is recovering from exactly this gap, so losing which rows
+      // were affected here would defeat it.
+      const names = toRun.map((r) => r.municipality).join(", ");
       toast.error(
-        err instanceof Error ? err.message : "Failed to start region run",
+        `${toRun.length} run(s) in ${county} likely started, but could not be recorded: ${err instanceof Error ? err.message : "unknown error"}. Affected: ${names}. Use the checkmark button on each row to mark it manually.`,
       );
     } finally {
       setIsRunningRegion(false);
