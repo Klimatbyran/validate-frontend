@@ -6,6 +6,12 @@ export const CONFIDENCE_WEIGHT: Record<MatchConfidence, number> = {
   low: 1,
 };
 
+export const CONFIDENCE_CLASSES: Record<MatchConfidence, string> = {
+  high: "bg-green-03/20 text-green-03 border-green-03/30",
+  mid: "bg-blue-03/20 text-blue-03 border-blue-03/30",
+  low: "bg-orange-03/20 text-orange-03 border-orange-03/30",
+};
+
 export function inferMatchConfidence(
   value: string | undefined,
   score: number | undefined,

@@ -6,6 +6,7 @@ import { MapKpiView } from "./MapKpiView";
 import { AlignmentView } from "./AlignmentView";
 import { GoalTrackingView } from "./GoalTrackingView";
 import { TefLandscapeView } from "./TefLandscapeView";
+import { TefFrameworkView } from "./TefFrameworkView";
 import { PlanAnatomyView } from "./PlanAnatomyView";
 import type { useClimatePlansExploreParams } from "../hooks/useClimatePlansExploreParams";
 
@@ -13,6 +14,7 @@ const VIEW_OPTIONS: { value: ExploreViewId; label: string }[] = [
   { value: "map", label: "KPI map" },
   { value: "alignment", label: "Emissions vs TEFs" },
   { value: "goals", label: "Goal tracking" },
+  { value: "tef-framework", label: "TEF framework" },
   { value: "tef", label: "TEF landscape" },
   { value: "anatomy", label: "Plan anatomy" },
 ];
@@ -83,6 +85,19 @@ export function ExploreDataView({
           dataset={data}
           selectedName={params.selectedName}
           onSelectName={params.setSelectedName}
+        />
+      ) : null}
+      {params.view === "tef-framework" ? (
+        <TefFrameworkView
+          records={data.municipalities}
+          scope={params.tefScope}
+          onScopeChange={params.setTefScope}
+          placeName={params.selectedName}
+          onPlaceNameChange={params.setSelectedName}
+          metric={params.tefMetric}
+          onMetricChange={params.setTefMetric}
+          selectedTefId={params.selectedTefId}
+          onSelectTefId={params.setSelectedTefId}
         />
       ) : null}
       {params.view === "tef" ? (

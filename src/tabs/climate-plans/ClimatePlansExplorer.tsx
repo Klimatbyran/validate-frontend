@@ -17,6 +17,7 @@ import { useMeasures } from "./hooks/useMeasures";
 import { useClimatePlansExploreParams } from "./hooks/useClimatePlansExploreParams";
 import { ExploreDataView } from "./explore/ExploreDataView";
 import { ViewModePills } from "@/ui/view-mode-pills";
+import { CONFIDENCE_CLASSES } from "./lib/tef-groups";
 import type {
   Measure,
   ActivityShift,
@@ -196,12 +197,6 @@ const CONFIDENCE_ORDER: Record<MatchConfidence, number> = {
   high: 3,
   mid: 2,
   low: 1,
-};
-
-const CONFIDENCE_CLASSES: Record<MatchConfidence, string> = {
-  high: "bg-green-03/20 text-green-03 border-green-03/30",
-  mid: "bg-blue-03/20 text-blue-03 border-blue-03/30",
-  low: "bg-orange-03/20 text-orange-03 border-orange-03/30",
 };
 
 function ConfidenceBadge({ confidence }: { confidence: MatchConfidence }) {
