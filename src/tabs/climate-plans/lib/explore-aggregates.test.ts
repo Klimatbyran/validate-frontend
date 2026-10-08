@@ -7,8 +7,10 @@ import {
 import {
   collectTefHits,
   countClimateCommitmentGroups,
+  interventionSpecificityShare,
   mapKpiValue,
   tefGroupStrengths,
+  topTefsByHitCount,
 } from "./explore-aggregates";
 import { alignmentRows } from "./explore-alignment";
 import { trackGoal } from "./explore-goals";
@@ -41,7 +43,7 @@ function measureWithTef(
           {
             stable_id: `${groupPath}-${confidence}`,
             short_label: "Shift",
-            description: "",
+            description: `TEF for ${groupPath}`,
             sector_path: groupPath,
             match_confidence: confidence,
           },
@@ -118,6 +120,52 @@ describe("TEF grouping and strength", () => {
     expect(strengths[0]?.group).toBe("Transport");
     expect(strengths[0]?.weightedStrength).toBeCloseTo((3 + 1) / 6);
   });
+
+  it("carries shift, intervention, and description on each hit", () => {
+    const [hit] = collectTefHits([measureWithTef("Transport > Road", "high")]);
+    expect(hit).toMatchObject({
+      description: "TEF for Transport > Road",
+      shiftFrom: "car",
+      shiftTo: "train",
+      need: "mobility",
+      shiftScore: 4,
+      interventionWho: "municipality",
+      interventionWhat: "bus",
+      interventionHow: "procurement",
+      interventionScore: 5,
+    });
+  });
+});
+
+describe("map detail quality helpers", () => {
+  it("measures who+what specificity share", () => {
+    const filled = measureWithTef("Transport > Road", "high");
+    const empty: MeasureRow = {
+      ...filled,
+      intervention_who: "none",
+      intervention_what: "none",
+    };
+    expect(interventionSpecificityShare([filled, empty])).toBeCloseTo(0.5);
+    expect(interventionSpecificityShare([])).toBeNull();
+  });
+
+  it("ranks top TEFs by hit count", () => {
+    const [sample] = collectTefHits([
+      measureWithTef("Transport > Road", "high"),
+    ]);
+    const ranked = topTefsByHitCount(
+      [
+        { ...sample!, stableId: "a", shortLabel: "T-1 - Rail" },
+        { ...sample!, stableId: "a", shortLabel: "T-1 - Rail" },
+        { ...sample!, stableId: "b", shortLabel: "T-2 - Steel" },
+      ],
+      2,
+    );
+    expect(ranked).toEqual([
+      { stableId: "a", shortLabel: "T-1 - Rail", hitCount: 2 },
+      { stableId: "b", shortLabel: "T-2 - Steel", hitCount: 1 },
+    ]);
+  });
 });
 
 describe("climate commitment groups", () => {
@@ -185,6 +233,15 @@ describe("emissions vs TEF alignment", () => {
           group: "Industry",
           confidence: "high",
           measureText: "bioeconomy",
+          description: "",
+          shiftFrom: "fossil",
+          shiftTo: "bio",
+          need: "materials",
+          shiftScore: 4,
+          interventionWho: "municipality",
+          interventionWhat: "procurement",
+          interventionHow: "policy",
+          interventionScore: 5,
         },
       ],
       adoptedYear: 2022,

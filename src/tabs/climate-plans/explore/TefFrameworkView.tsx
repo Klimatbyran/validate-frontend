@@ -263,6 +263,9 @@ function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
     return [...map.values()].sort((a, b) => b.hits.length - a.hits.length);
   }, [cell.hits]);
 
+  const description =
+    cell.hits.find((h) => h.description.trim())?.description ?? "";
+
   return (
     <div className="rounded-lg border border-gray-03/30 bg-gray-04/50 p-4 space-y-3">
       <div>
@@ -271,6 +274,9 @@ function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
         </div>
         <div className="text-lg font-semibold text-gray-01">{cell.title}</div>
         <div className="text-sm text-gray-02 mt-0.5">{cell.sectorPath}</div>
+        {description ? (
+          <p className="text-sm text-gray-01 mt-2 leading-snug">{description}</p>
+        ) : null}
       </div>
       <dl className="grid grid-cols-3 gap-2 text-sm">
         <Stat label="Hits" value={String(cell.hitCount)} />
@@ -291,28 +297,79 @@ function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
               </span>
             </div>
             {hits.map((hit, i) => (
-              <div
+              <TefHitCard
                 key={`${hit.municipalityId}-${i}`}
-                className="ml-4 rounded-lg border border-gray-03/30 bg-gray-05/40 p-3 space-y-2"
-              >
-                <div className="flex items-start gap-2">
-                  <span
-                    className={cn(
-                      "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border capitalize",
-                      CONFIDENCE_CLASSES[hit.confidence],
-                    )}
-                  >
-                    {hit.confidence}
-                  </span>
-                  <p className="text-sm text-gray-01 leading-snug italic">
-                    “{hit.measureText}”
-                  </p>
-                </div>
-              </div>
+                hit={hit}
+              />
             ))}
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function TefHitCard({ hit }: { hit: TefFrameworkCell["hits"][number] }) {
+  const whoWhatHow = [
+    { label: "Who", value: hit.interventionWho },
+    { label: "What", value: hit.interventionWhat },
+    { label: "How", value: hit.interventionHow },
+  ].filter(({ value }) => value && value !== "none");
+
+  return (
+    <div className="ml-4 rounded-lg border border-gray-03/30 bg-gray-05/40 p-3 space-y-2">
+      <div className="flex items-start gap-2">
+        <span
+          className={cn(
+            "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border capitalize shrink-0",
+            CONFIDENCE_CLASSES[hit.confidence],
+          )}
+        >
+          {hit.confidence}
+        </span>
+        <p className="text-sm text-gray-01 leading-snug italic">
+          “{hit.measureText}”
+        </p>
+      </div>
+      <div className="grid grid-cols-3 gap-2 text-sm">
+        {[
+          { label: "From", value: hit.shiftFrom },
+          { label: "To", value: hit.shiftTo },
+          { label: "Need", value: hit.need },
+        ].map(({ label, value }) => (
+          <div key={label}>
+            <div className="text-xs text-gray-02 font-medium mb-0.5">
+              {label}
+            </div>
+            <div className="text-gray-01">{value || "—"}</div>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 flex-wrap text-xs text-gray-02">
+        <span>
+          Shift{" "}
+          <span className="font-semibold tabular-nums text-gray-01">
+            {hit.shiftScore}/7
+          </span>
+        </span>
+        <span className="text-gray-03/60">·</span>
+        <span>
+          Intervention{" "}
+          <span className="font-semibold tabular-nums text-gray-01">
+            {hit.interventionScore}/7
+          </span>
+        </span>
+      </div>
+      {whoWhatHow.length > 0 ? (
+        <div className="flex gap-3 flex-wrap text-sm">
+          {whoWhatHow.map(({ label, value }) => (
+            <span key={label}>
+              <span className="text-gray-02 font-medium">{label}: </span>
+              <span className="text-gray-01">{value}</span>
+            </span>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

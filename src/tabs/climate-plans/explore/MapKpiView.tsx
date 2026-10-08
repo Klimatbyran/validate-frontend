@@ -3,10 +3,14 @@ import { MethodologyPanel } from "./MethodologyPanel";
 import { SwedenChoropleth } from "./SwedenChoropleth";
 import {
   MAP_KPI_META,
+  averageScore,
+  interventionSpecificityShare,
   mapKpiValue,
   mergeRegionRecords,
   tefGroupStrengths,
+  topTefsByHitCount,
 } from "../lib/explore-aggregates";
+import { tefTitleFromShortLabel } from "../lib/tef-framework";
 import type {
   ExploreMunicipalityRecord,
   MapGeoLevel,
@@ -91,6 +95,9 @@ export function MapKpiView({
   const selectedValue = selected
     ? mapKpiValue(selected, kpi, tefGroup === "all" ? null : tefGroup)
     : null;
+  const selectedTopTefs = selected
+    ? topTefsByHitCount(selected.tefHits)
+    : [];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)] gap-4 items-start">
@@ -226,7 +233,50 @@ export function MapKpiView({
                     : `${selected.markdownChars.toLocaleString()} chars (~${Math.max(1, Math.round(selected.markdownChars / 3000))} p.)`
                 }
               />
+              <Stat
+                label="Avg shift score"
+                value={formatAvgScore(
+                  averageScore(selected.measures, "activity_shift_score"),
+                )}
+              />
+              <Stat
+                label="Avg intervention"
+                value={formatAvgScore(
+                  averageScore(selected.measures, "intervention_score"),
+                )}
+              />
+              <Stat
+                label="Who+what filled"
+                value={formatShare(
+                  interventionSpecificityShare(selected.measures),
+                )}
+              />
             </dl>
+            {selectedTopTefs.length > 0 ? (
+              <div className="space-y-1.5">
+                <div className="text-xs font-semibold text-gray-02 uppercase">
+                  Top TEFs
+                </div>
+                <ul className="space-y-1">
+                  {selectedTopTefs.map((tef) => (
+                    <li
+                      key={tef.stableId}
+                      className="flex items-baseline justify-between gap-2 text-sm"
+                    >
+                      <span
+                        className="text-gray-01 truncate"
+                        title={tef.shortLabel}
+                      >
+                        {tefTitleFromShortLabel(tef.shortLabel)}
+                      </span>
+                      <span className="tabular-nums text-xs text-gray-02 shrink-0">
+                        {tef.hitCount}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             {tefGroupStrengths(selected.tefHits).length > 0 ? (
               <div className="space-y-1.5">
                 <div className="text-xs font-semibold text-gray-02 uppercase">
@@ -295,4 +345,14 @@ function Stat({ label, value }: { label: string; value: string }) {
       <div className="text-gray-01 font-medium tabular-nums">{value}</div>
     </div>
   );
+}
+
+function formatAvgScore(value: number | null): string {
+  if (value == null) return "—";
+  return `${value.toFixed(1)}/7`;
+}
+
+function formatShare(value: number | null): string {
+  if (value == null) return "—";
+  return `${Math.round(value * 100)}%`;
 }

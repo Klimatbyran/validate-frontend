@@ -29,11 +29,61 @@ export function collectTefHits(measures: Measure[]): TefHit[] {
           group: tefGroupFromSectorPath(match.sector_path),
           confidence: inferMatchConfidence(match.match_confidence, score),
           measureText: measure.measure_text,
+          description: match.description ?? "",
+          shiftFrom: shift.shift_from,
+          shiftTo: shift.shift_to,
+          need: shift.need,
+          shiftScore: shift.score,
+          interventionWho: measure.intervention_who,
+          interventionWhat: measure.intervention_what,
+          interventionHow: measure.intervention_how,
+          interventionScore: measure.intervention_score,
         });
       }
     }
   }
   return hits;
+}
+
+/** Share of measures with both intervention who and what filled (not "none"). */
+export function interventionSpecificityShare(
+  measures: Measure[],
+): number | null {
+  if (measures.length === 0) return null;
+  const filled = measures.filter(
+    (m) => m.intervention_who !== "none" && m.intervention_what !== "none",
+  ).length;
+  return filled / measures.length;
+}
+
+export interface TopTefSummary {
+  stableId: string;
+  shortLabel: string;
+  hitCount: number;
+}
+
+/** Top TEFs by hit count (stable_id), for map detail bridging to framework view. */
+export function topTefsByHitCount(
+  hits: TefHit[],
+  limit = 3,
+): TopTefSummary[] {
+  const byId = new Map<string, TopTefSummary>();
+  for (const hit of hits) {
+    const existing = byId.get(hit.stableId);
+    if (existing) existing.hitCount += 1;
+    else
+      byId.set(hit.stableId, {
+        stableId: hit.stableId,
+        shortLabel: hit.shortLabel,
+        hitCount: 1,
+      });
+  }
+  return [...byId.values()]
+    .sort(
+      (a, b) =>
+        b.hitCount - a.hitCount || a.shortLabel.localeCompare(b.shortLabel),
+    )
+    .slice(0, limit);
 }
 
 export function tefGroupStrengths(hits: TefHit[]): TefGroupStrength[] {

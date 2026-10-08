@@ -22,6 +22,16 @@ export interface TefHit {
   group: string;
   confidence: MatchConfidence;
   measureText: string;
+  /** Taxonomy match description when present. */
+  description: string;
+  shiftFrom: string;
+  shiftTo: string;
+  need: string;
+  shiftScore: number;
+  interventionWho: string;
+  interventionWhat: string;
+  interventionHow: string;
+  interventionScore: number;
 }
 
 export interface QuantifiedGoal {
