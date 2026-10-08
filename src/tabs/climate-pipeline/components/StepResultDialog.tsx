@@ -91,6 +91,11 @@ function getStepItemCount(
       return detail.extractedMeasures.length;
     case "scoreMeasures":
       return detail.extractedMeasures.length;
+    case "classifyActivityShiftTypes":
+      return detail.extractedMeasures.reduce(
+        (n, m) => n + (m.score?.activityShifts.length ?? 0),
+        0,
+      );
     case "matchTransitionElements":
       return detail.extractedMeasures.filter(
         (m) => m.score && m.score.activityShifts.length > 0,
@@ -287,6 +292,75 @@ function teConfidenceChipClass(
   return `${base} ${fill}`;
 }
 
+/** Whether the measure's own text directly names this match (explicit) vs.
+ * only a reasonable inference (implied) — an LLM judgment from tePicker's
+ * judge() call, not word-overlap. Undefined on matches made before this
+ * field existed. */
+function ExplicitBadge({ explicit }: { explicit: boolean | undefined }) {
+  if (explicit === undefined) return null;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] uppercase tracking-wide",
+        explicit
+          ? "border-green-03/40 bg-green-03/10 text-green-03"
+          : "border-gray-03 bg-gray-03/50 text-gray-01 font-semibold",
+      )}
+      title={
+        explicit
+          ? "The measure's own text directly names this match"
+          : "Only a reasonable inference — not directly named by the measure's text"
+      }
+    >
+      {explicit ? "explicit" : "implied"}
+    </span>
+  );
+}
+
+/** Our temporary classification of a TE element into the same six Activity
+ * Shift categories the shift itself uses (see classifyTeTypes.ts) —
+ * scaffolding until TEF sends real per-element categories. Green when it
+ * agrees with the shift's own type (the normal case, since tePicker's exact
+ * shift-type gate already filters to this), gray when the candidate has no
+ * classification yet, orange on the rare disagreement that slips through
+ * (e.g. a tree-sourced candidate added for domain coverage). */
+function ShiftTypePill({
+  ourShiftType,
+  shiftType,
+}: {
+  ourShiftType: string | null | undefined;
+  shiftType: string;
+}) {
+  if (!ourShiftType) {
+    return (
+      <span
+        className="inline-flex items-center rounded-md border border-gray-03 bg-gray-03/50 px-1.5 py-0.5 text-[10px] text-gray-01 font-semibold"
+        title="This match predates the shift-type classification -- rerun matchTransitionElements to get a real category"
+      >
+        unclassified
+      </span>
+    );
+  }
+  const agrees = ourShiftType === shiftType;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px]",
+        agrees
+          ? "border-green-03/40 bg-green-03/10 text-green-03"
+          : "border-orange-03/40 bg-orange-03/10 text-orange-03",
+      )}
+      title={
+        agrees
+          ? "This TE element's own category matches the shift's category"
+          : "This TE element's own category differs from the shift's category"
+      }
+    >
+      {ourShiftType}
+    </span>
+  );
+}
+
 function TeMatchAddSlots({
   shiftId,
   matchedIds,
@@ -434,9 +508,16 @@ function TeMatchAddSlots({
 function ActivityShiftTeBlock({
   shift,
   reviewCtx,
+  showMatches = true,
 }: {
   shift: ActivityShift;
   reviewCtx: ReviewContext;
+  // classifyActivityShiftTypes only sets type/typeReasoning -- the TE
+  // matches, candidates, and gate/group metadata on this same row all come
+  // from the LATER matchTransitionElements step, possibly from an older
+  // run. Showing them under classifyActivityShiftTypes's own dialog would
+  // make it look like this step did the matching itself.
+  showMatches?: boolean;
 }) {
   const [pendingAddSlotIds, setPendingAddSlotIds] = useState<string[]>([]);
 
@@ -482,18 +563,51 @@ function ActivityShiftTeBlock({
     setPendingAddSlotIds((ids) => [...ids, crypto.randomUUID()]);
   };
 
+  const groupKind = shift.transitionElementGroupKind;
+  const groupLabel = shift.transitionElementGroupLabel;
+
   return (
     <div className="pl-3 border-l-2 border-gray-03 space-y-3 min-w-0">
       <div className="flex flex-wrap items-center gap-2">
         <MetaChip label="Shift type" tone="type">
           {shift.type}
         </MetaChip>
+        {showMatches && shift.transitionElementGateDomain && (
+          <MetaChip label="Gate domain" tone="neutral">
+            {shift.transitionElementGateDomain}
+          </MetaChip>
+        )}
       </div>
-      <p className="text-xs text-gray-02 break-words">
+      {shift.typeReasoning && (
+        <p className="text-xs text-gray-02/80 italic break-words">
+          {shift.typeReasoning}
+        </p>
+      )}
+      <p className="text-sm text-gray-01 font-medium break-words">
         {shift.shiftFrom} → {shift.shiftTo}{" "}
-        <span className="text-gray-02/70">(need: {shift.need})</span>
+        <span className="text-xs text-gray-02 font-normal">
+          (need: {shift.need})
+        </span>
       </p>
-      {shift.transitionElementMatches.length === 0 ? (
+      {showMatches && groupKind === "too_narrow" && groupLabel && (
+        <p className="text-xs text-orange-03 bg-orange-03/10 border border-orange-03/20 rounded-md px-2 py-1.5">
+          Match is narrower than the shift's own wording — a broader TE
+          ("{groupLabel}") may fit better.
+        </p>
+      )}
+      {showMatches && groupKind === "ambiguous" && groupLabel && (
+        <p className="text-xs text-blue-03 bg-blue-03/10 border border-blue-03/20 rounded-md px-2 py-1.5">
+          Several candidates cluster under "{groupLabel}" — the shift's own
+          wording doesn't commit to one of them.
+        </p>
+      )}
+      {showMatches && groupKind === "multiple_specific" && (
+        <p className="text-xs text-gray-02 bg-gray-03/20 border border-gray-03/30 rounded-md px-2 py-1.5">
+          This shift names several distinct destinations — each match below
+          is independently valid, not competing alternatives.
+        </p>
+      )}
+      {!showMatches ? null : shift.transitionElementMatches.length === 0 ? (
         <div className="space-y-2">
           <p className="text-xs text-gray-02 italic">No matches</p>
           {canAddMore && (
@@ -527,15 +641,35 @@ function ActivityShiftTeBlock({
                 key={match.stableId}
                 className="rounded-md border border-gray-03/50 bg-gray-05/40 p-2 space-y-2 min-w-0"
               >
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${teConfidenceChipClass(match.matchConfidence, match.score)}`}
-                  title={`${match.shortLabel} · ${match.matchConfidence} · ${match.score.toFixed(2)}`}
-                >
-                  <span className="break-words">{match.shortLabel}</span>
-                  <span className="opacity-80 tabular-nums">
-                    {match.score.toFixed(2)}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${teConfidenceChipClass(match.matchConfidence, match.score)}`}
+                    title={`${match.shortLabel} · ${match.matchConfidence} · ${match.score.toFixed(2)}`}
+                  >
+                    <span className="break-words">{match.shortLabel}</span>
+                    <span className="opacity-80 tabular-nums">
+                      {match.score.toFixed(2)}
+                    </span>
                   </span>
-                </span>
+                  <ExplicitBadge explicit={match.explicit} />
+                  <ShiftTypePill
+                    ourShiftType={match.ourShiftType}
+                    shiftType={shift.type}
+                  />
+                  {match.type && (
+                    <span
+                      className="text-[10px] text-gray-02/60"
+                      title="TEF's own shift/improve tag — kept for reference, not a reliable compatibility signal on its own"
+                    >
+                      TEF: {match.type}
+                    </span>
+                  )}
+                </div>
+                {match.matchReasoning && (
+                  <p className="text-xs text-gray-01/80 break-words">
+                    {match.matchReasoning}
+                  </p>
+                )}
                 <QaFooter>
                   <ReviewControls
                     planId={reviewCtx.planId}
@@ -573,15 +707,17 @@ function ActivityShiftTeBlock({
           })}
         </div>
       )}
-      <TeMatchAddSlots
-        shiftId={shiftKey}
-        matchedIds={matchedIds}
-        allCandidates={allCandidates}
-        suggestedNew={suggestedNew}
-        reviewCtx={reviewCtx}
-        onRequestAddSlot={requestAddSlot}
-        pendingSlotIds={pendingAddSlotIds}
-      />
+      {showMatches && (
+        <TeMatchAddSlots
+          shiftId={shiftKey}
+          matchedIds={matchedIds}
+          allCandidates={allCandidates}
+          suggestedNew={suggestedNew}
+          reviewCtx={reviewCtx}
+          onRequestAddSlot={requestAddSlot}
+          pendingSlotIds={pendingAddSlotIds}
+        />
+      )}
     </div>
   );
 }
@@ -589,16 +725,22 @@ function ActivityShiftTeBlock({
 function TransitionElementsView({
   measures,
   reviewCtx,
+  showMatches = true,
 }: {
   measures: ExtractedMeasure[];
   reviewCtx: ReviewContext;
+  showMatches?: boolean;
 }) {
   const withShifts = measures.filter(
     (m) => m.score && m.score.activityShifts.length > 0,
   );
   if (withShifts.length === 0) {
     return (
-      <p className="text-sm text-gray-02">No activity shifts to match yet.</p>
+      <p className="text-sm text-gray-02">
+        {showMatches
+          ? "No activity shifts to match yet."
+          : "No activity shifts to classify yet."}
+      </p>
     );
   }
   return (
@@ -614,6 +756,7 @@ function TransitionElementsView({
               key={shift.id}
               shift={shift}
               reviewCtx={reviewCtx}
+              showMatches={showMatches}
             />
           ))}
         </div>
@@ -2084,6 +2227,14 @@ export function StepResultDialog({
             measures={detail.extractedMeasures}
             columns="score"
             reviewCtx={reviewCtx}
+          />
+        );
+      case "classifyActivityShiftTypes":
+        return (
+          <TransitionElementsView
+            measures={detail.extractedMeasures}
+            reviewCtx={reviewCtx}
+            showMatches={false}
           />
         );
       case "matchTransitionElements":

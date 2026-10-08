@@ -46,6 +46,7 @@ const COMMITMENT_STEPS = [
 const MEASURE_STEPS = [
   "extractMeasures",
   "scoreMeasures",
+  "classifyActivityShiftTypes",
   "matchTransitionElements",
 ] as const;
 
