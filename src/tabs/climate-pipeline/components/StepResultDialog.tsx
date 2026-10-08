@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Loader2,
+  Check,
   ChevronsDown,
   ChevronsUp,
   Code,
@@ -9,6 +10,7 @@ import {
   FileText,
   FileWarning,
   Image,
+  Play,
   Plus,
   RotateCw,
   SearchCheck,
@@ -21,11 +23,17 @@ import { CollapsibleSection } from "@/ui/collapsible-section";
 import { MarkdownVectorPagesDisplay } from "@/ui/markdown-display";
 import { PdfHighlightViewer, PdfHighlightPanel } from "./PdfHighlightViewer";
 import { ResizableSplitView } from "./ResizableSplitView";
+import { RecoveredImagesGallery } from "./RecoveredImagesGallery";
 import { Button } from "@/ui/button";
 import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
+import {
+  getClimatePlansPipelineApiUrl,
+  getClimatePlansPipelineWebhookUrl,
+  CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
+} from "@/config/api-env";
 import { authenticatedFetch } from "@/lib/api-helpers";
+import { createJobsFromUrls } from "@/tabs/upload/lib/upload-api";
 import { StatusPill } from "@/components/StatusPill";
 import {
   toSwimlaneStatus,
@@ -34,6 +42,7 @@ import {
 } from "../hooks/useClimatePipelinePlans";
 import {
   useClimatePlanDetail,
+  approvePlan,
   type ActivityShift,
   type Commitment,
   type DocumentReference,
@@ -103,6 +112,17 @@ interface ReviewContext {
 /** Survive extractCommitments delete+recreate by keying on stableId. */
 function commitmentEntityId(commitment: Commitment): string {
   return commitment.stableId;
+}
+
+/** A commitment's own text, split into independently-searchable parts when
+ * it was merged from several source sentences (see Commitment.extractionParts)
+ * — a merge doesn't always sit contiguously in the source, so searching for
+ * the whole merged text as one string would miss every part after the
+ * first. Falls back to [commitment.text] when there are no parts. */
+function commitmentParts(commitment: Commitment): string[] {
+  return commitment.extractionParts && commitment.extractionParts.length > 0
+    ? commitment.extractionParts.map((p) => p.text)
+    : [commitment.text];
 }
 
 /** Survive extractMeasures recreate when measure text is unchanged. */
@@ -889,6 +909,121 @@ function CommitmentReviewControls({
   );
 }
 
+/** Confirms extractMunicipality's guess (or a correction typed into
+ * ReviewControls' suggested-value field, if one's been entered there) and
+ * links this plan to a real Municipality row. This is the step that lets
+ * two plans for the same municipality — a klimatplan and a companion
+ * document, run separately — end up sharing one real relation instead of
+ * just matching on a loose name string, so it's deliberately placed on
+ * the extractMunicipality step itself rather than buried in a review
+ * flow. */
+function ApproveButton({
+  planId,
+  extractedName,
+  approvedName,
+  onApproved,
+}: {
+  planId: string;
+  extractedName: string | null;
+  approvedName: string | null;
+  onApproved: () => void;
+}) {
+  const [isApproving, setIsApproving] = useState(false);
+
+  if (approvedName) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-green-03">
+        <Check className="h-3.5 w-3.5" />
+        Approved
+      </span>
+    );
+  }
+
+  const handleApprove = async () => {
+    setIsApproving(true);
+    try {
+      const result = await approvePlan(planId);
+      toast.success(`Approved — linked to ${result.municipalityName}`);
+      onApproved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to approve");
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={!extractedName || isApproving}
+      onClick={() => void handleApprove()}
+      className="h-6 px-2 text-xs border-green-03/40 text-green-03 hover:bg-green-03/10 hover:border-green-03"
+      title={
+        extractedName
+          ? `Link this plan to the "${extractedName}" municipality`
+          : "No extracted name to approve yet"
+      }
+    >
+      {isApproving ? (
+        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+      ) : (
+        <Check className="w-3 h-3 mr-1" />
+      )}
+      Approve
+    </Button>
+  );
+}
+
+/** Same path the municipality-sources registry's Run button uses — a
+ * companion document is just another url to run through the real
+ * docling/Chroma pipeline, same as any other. Produces an entirely new,
+ * independent ClimatePlan (url is the unique key), not an update to the
+ * plan this reference was found on — there's nothing here to bookkeep
+ * afterward the way the registry's lastRunAt is, so a toast is enough. */
+function RunCompanionButton({ url, name }: { url: string; name: string }) {
+  const [isRunning, setIsRunning] = useState(false);
+
+  const handleRun = async () => {
+    setIsRunning(true);
+    try {
+      await createJobsFromUrls({
+        urls: [url],
+        autoApprove: false,
+        forceReindex: false,
+        readImages: true,
+        callbackUrl: getClimatePlansPipelineWebhookUrl(),
+        reportTypeSlug: CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
+      });
+      toast.success(`Started pipeline for "${name}"`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to start run");
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={isRunning}
+      onClick={handleRun}
+      className="h-6 px-2 text-xs border-green-03/40 text-green-03 hover:bg-green-03/10 hover:border-green-03"
+      title={`Start the pipeline for "${name}" as its own climate plan`}
+    >
+      {isRunning ? (
+        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+      ) : (
+        <Play className="w-3 h-3 mr-1" />
+      )}
+      Run
+    </Button>
+  );
+}
+
 function DocumentReferencesList({
   documentReferences,
 }: {
@@ -952,6 +1087,13 @@ function DocumentReferencesList({
             mentioned {group.members.length}×
           </span>
         )}
+        {group.relationship === "companion" &&
+          (() => {
+            const runUrl = group.members.find((m) => m.url)?.url;
+            return runUrl ? (
+              <RunCompanionButton url={runUrl} name={group.name} />
+            ) : null;
+          })()}
       </div>
       <div className="space-y-2 border-l-2 border-gray-03/50 pl-3">
         {group.members.map((ref) => (
@@ -1019,9 +1161,20 @@ function DocumentReferencesList({
 // regardless of how many commitments the plan has. Lifted to
 // StepResultDialog (rather than living inside CommitmentsList) so it can
 // decide whether the PDF opens as a modal or a side-by-side panel.
+// Green for "passed the climate filter" — gray for "filtered out" reuses
+// PdfHighlightViewer's own default secondary color, so only this one needs
+// defining here.
+const CLIMATE_PASSED_COLOR = "rgba(34, 197, 94, 0.45)";
+
 type PdfViewerState =
   | { mode: "focused"; commitment: Commitment }
-  | { mode: "all" };
+  | { mode: "all" }
+  // Only reachable from the climate-filter step's own "view all in PDF"
+  // button — colors verified commitments green/gray by whether they
+  // passed the climate filter instead of the usual flat yellow (see
+  // CLIMATE_PASSED_COLOR above; the gray side reuses PdfHighlightViewer's
+  // own default secondary color).
+  | { mode: "all-climate" };
 
 function CommitmentsList({
   commitments,
@@ -1029,6 +1182,8 @@ function CommitmentsList({
   columns,
   reviewCtx,
   allVerifiedPhrases,
+  climatePassedPhrases,
+  climateFilteredOutPhrases,
   pdfMissingPhrases,
   setPdfViewer,
 }: {
@@ -1037,6 +1192,10 @@ function CommitmentsList({
   columns: "extract" | "climate" | "actionable" | "similar" | "themes";
   reviewCtx: ReviewContext;
   allVerifiedPhrases: string[];
+  /** Only used when columns === "climate" — see the view-all-in-PDF button
+   * further down, which colors these green/gray instead of flat yellow. */
+  climatePassedPhrases: string[];
+  climateFilteredOutPhrases: string[];
   pdfMissingPhrases: Set<string>;
   setPdfViewer: (v: PdfViewerState | null) => void;
 }) {
@@ -1274,16 +1433,31 @@ function CommitmentsList({
 
   return (
     <div className="space-y-3">
-      {allVerifiedPhrases.length > 0 && (
-        <button
-          onClick={() => setPdfViewer({ mode: "all" })}
-          className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 bg-gray-03/40 px-2.5 py-1.5 text-xs text-gray-01 hover:bg-gray-03/60"
-          title="Open the source PDF with every verified commitment highlighted"
-        >
-          <SearchCheck className="w-3.5 h-3.5" />
-          View all {allVerifiedPhrases.length} verified passages in PDF
-        </button>
-      )}
+      {columns === "climate"
+        ? (climatePassedPhrases.length > 0 ||
+            climateFilteredOutPhrases.length > 0) && (
+            <button
+              onClick={() => setPdfViewer({ mode: "all-climate" })}
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 bg-gray-03/40 px-2.5 py-1.5 text-xs text-gray-01 hover:bg-gray-03/60"
+              title="Open the source PDF — climate-relevant commitments in green, filtered-out ones in gray"
+            >
+              <SearchCheck className="w-3.5 h-3.5" />
+              View all in PDF ({
+                climatePassedPhrases.length
+              } climate-relevant, {climateFilteredOutPhrases.length} filtered
+              out)
+            </button>
+          )
+        : allVerifiedPhrases.length > 0 && (
+            <button
+              onClick={() => setPdfViewer({ mode: "all" })}
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 bg-gray-03/40 px-2.5 py-1.5 text-xs text-gray-01 hover:bg-gray-03/60"
+              title="Open the source PDF with every verified commitment highlighted"
+            >
+              <SearchCheck className="w-3.5 h-3.5" />
+              View all {allVerifiedPhrases.length} verified passages in PDF
+            </button>
+          )}
       {pdfMissingPhrases.size > 0 && (
         <p className="rounded-md border border-pink-03/30 bg-pink-03/10 px-2.5 py-1.5 text-xs text-pink-03">
           {missingInView > 0
@@ -1656,11 +1830,7 @@ export function StepResultDialog({
   const verifiedCommitments = detail
     ? detail.commitments.filter((c) => !c.unverified)
     : [];
-  const allVerifiedPhrases = verifiedCommitments.flatMap((c) =>
-    c.extractionParts && c.extractionParts.length > 0
-      ? c.extractionParts.map((p) => p.text)
-      : [c.text],
-  );
+  const allVerifiedPhrases = verifiedCommitments.flatMap(commitmentParts);
   // Maps each searched part phrase back to the commitment it belongs to,
   // so "this part wasn't found" can be reported as "this commitment wasn't
   // fully found" via pdfMissingPhrases (keyed by commitment text, per the
@@ -1668,12 +1838,20 @@ export function StepResultDialog({
   // on.
   const partToCommitmentText = new Map<string, string>();
   for (const c of verifiedCommitments) {
-    const parts =
-      c.extractionParts && c.extractionParts.length > 0
-        ? c.extractionParts.map((p) => p.text)
-        : [c.text];
-    for (const part of parts) partToCommitmentText.set(part, c.text);
+    for (const part of commitmentParts(c))
+      partToCommitmentText.set(part, c.text);
   }
+  // Same split, but by whether each commitment passed the climate filter —
+  // feeds the "view all in PDF, climate-colored" button on that step (see
+  // CommitmentsList's columns === "climate" branch). Still only
+  // markdown-verified commitments — an unverified one can't be found in
+  // the PDF text layer either, there's nothing useful to highlight.
+  const climatePassedPhrases = verifiedCommitments
+    .filter((c) => c.climateRelevant)
+    .flatMap(commitmentParts);
+  const climateFilteredOutPhrases = verifiedCommitments
+    .filter((c) => !c.climateRelevant)
+    .flatMap(commitmentParts);
   const pdfUrl = detail
     ? `${getClimatePlansPipelineApiUrl()}/plans/${detail.id}/pdf`
     : "";
@@ -1751,22 +1929,60 @@ export function StepResultDialog({
           extractedMunicipalityName: detail.extractedMunicipalityName,
           approvedMunicipalityName: detail.municipality?.name ?? null,
         };
+        const adoptedDisplay = detail.adoptedAt
+          ? new Date(detail.adoptedAt).toLocaleDateString()
+          : detail.adoptedAtText;
+        const coverageDisplay =
+          detail.coveragePeriodText ??
+          (detail.coveragePeriodStart
+            ? `${detail.coveragePeriodStart}–${detail.coveragePeriodEnd ?? "?"}`
+            : null);
         return (
-          <div className="space-y-3 text-sm min-w-0">
-            <div className="space-y-1">
-              <p>
-                <span className="text-gray-02">Extracted name: </span>
-                <span className="text-gray-01 break-words">
-                  {detail.extractedMunicipalityName ?? "—"}
-                </span>
-              </p>
-              <p>
-                <span className="text-gray-02">Approved municipality: </span>
-                <span className="text-gray-01 break-words">
-                  {detail.municipality?.name ?? "(not yet approved)"}
-                </span>
-              </p>
+          <div className="space-y-4 text-sm min-w-0">
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-gray-01 break-words">
+                {detail.documentTitle ?? "Untitled document"}
+              </h3>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <MetaChip label="Municipality" tone="relevance">
+                  {detail.municipality?.name ??
+                    detail.extractedMunicipalityName ??
+                    "—"}
+                </MetaChip>
+                {adoptedDisplay && (
+                  <MetaChip label="Adopted" tone="score">
+                    {adoptedDisplay}
+                  </MetaChip>
+                )}
+                {coverageDisplay && (
+                  <MetaChip label="Covers" tone="type">
+                    {coverageDisplay}
+                  </MetaChip>
+                )}
+                <ApproveButton
+                  planId={plan.id}
+                  extractedName={detail.extractedMunicipalityName}
+                  approvedName={detail.municipality?.name ?? null}
+                  onApproved={refresh}
+                />
+              </div>
+              {/* Only shown when it actually differs — the common case
+                  (approval just confirmed the extraction) doesn't need two
+                  near-identical lines competing for attention. */}
+              {detail.municipality &&
+                detail.extractedMunicipalityName &&
+                detail.municipality.name !== detail.extractedMunicipalityName && (
+                  <p className="text-xs text-gray-02">
+                    Originally extracted as &ldquo;
+                    {detail.extractedMunicipalityName}&rdquo;
+                  </p>
+                )}
             </div>
+            {detail.documentDescription && (
+              <p className="text-sm text-gray-01 border-l-2 border-gray-03 pl-3 italic">
+                {detail.documentDescription}
+              </p>
+            )}
             <QaFooter>
               <ReviewControls
                 planId={plan.id}
@@ -1792,6 +2008,8 @@ export function StepResultDialog({
             columns="extract"
             reviewCtx={reviewCtx}
             allVerifiedPhrases={allVerifiedPhrases}
+            climatePassedPhrases={climatePassedPhrases}
+            climateFilteredOutPhrases={climateFilteredOutPhrases}
             pdfMissingPhrases={pdfMissingPhrases}
             setPdfViewer={setPdfViewer}
           />
@@ -1803,6 +2021,8 @@ export function StepResultDialog({
             columns="climate"
             reviewCtx={reviewCtx}
             allVerifiedPhrases={allVerifiedPhrases}
+            climatePassedPhrases={climatePassedPhrases}
+            climateFilteredOutPhrases={climateFilteredOutPhrases}
             pdfMissingPhrases={pdfMissingPhrases}
             setPdfViewer={setPdfViewer}
           />
@@ -1814,6 +2034,8 @@ export function StepResultDialog({
             columns="actionable"
             reviewCtx={reviewCtx}
             allVerifiedPhrases={allVerifiedPhrases}
+            climatePassedPhrases={climatePassedPhrases}
+            climateFilteredOutPhrases={climateFilteredOutPhrases}
             pdfMissingPhrases={pdfMissingPhrases}
             setPdfViewer={setPdfViewer}
           />
@@ -1827,6 +2049,8 @@ export function StepResultDialog({
             columns="similar"
             reviewCtx={reviewCtx}
             allVerifiedPhrases={allVerifiedPhrases}
+            climatePassedPhrases={climatePassedPhrases}
+            climateFilteredOutPhrases={climateFilteredOutPhrases}
             pdfMissingPhrases={pdfMissingPhrases}
             setPdfViewer={setPdfViewer}
           />
@@ -1840,6 +2064,8 @@ export function StepResultDialog({
             columns="themes"
             reviewCtx={reviewCtx}
             allVerifiedPhrases={allVerifiedPhrases}
+            climatePassedPhrases={climatePassedPhrases}
+            climateFilteredOutPhrases={climateFilteredOutPhrases}
             pdfMissingPhrases={pdfMissingPhrases}
             setPdfViewer={setPdfViewer}
           />
@@ -1880,6 +2106,14 @@ export function StepResultDialog({
   // have room for that, so the PDF still opens as its own full-screen
   // modal there (see the non-split branch below).
   const showSplitPanel = isLargeScreen && pdfViewer !== null;
+
+  // Climate step's PDF view shows green/gray (passed/filtered-out) instead
+  // of the usual flat yellow — bound to which step is active rather than
+  // pdfViewer.mode, since the panel below always shows the full background
+  // set regardless of mode ("focused" only adds a red overlay on top of
+  // it), so its color choice needs the same binding the modal's
+  // "all-climate" mode uses.
+  const isClimateStep = step === "filterCommitmentsClimate";
 
   const dialogTitle = (
     <div className="flex flex-wrap items-center gap-3">
@@ -1971,6 +2205,15 @@ export function StepResultDialog({
     </div>
   ) : null;
 
+  // Same dialog-level data as sourceMarkdownSection above (fetched once
+  // per plan, not per step) — shown on every step's dialog, not just
+  // docling's, since a reviewer checking e.g. extractCommitments'
+  // output for a fromRecoveredImage commitment needs to see the actual
+  // picture it came from just as much as someone checking docling itself.
+  const recoveredImagesSection = (
+    <RecoveredImagesGallery images={detail?.recoveredImages ?? []} />
+  );
+
   const dialogDescription =
     step === "documentReferences" ? (
       "Collected by extractCommitments across all sections, then deduplicated by groupDocumentReferences — this view itself isn't a separate pipeline step."
@@ -2030,6 +2273,7 @@ export function StepResultDialog({
               </div>
               {content}
               {sourceMarkdownSection}
+              {recoveredImagesSection}
             </>
           }
           right={
@@ -2037,12 +2281,20 @@ export function StepResultDialog({
               url={pdfUrl}
               // Always the full set (never just the one clicked
               // commitment) so the panel renders the same document with
-              // the same yellow highlights every time it's opened for
-              // this plan — clicking a different commitment's "Find in
-              // PDF" while the panel stays open then only has to move
-              // the red highlight (see PdfHighlightBody's refocus
-              // effect), not reload anything.
-              verifiedPhrases={allVerifiedPhrases}
+              // the same highlights every time it's opened for this plan
+              // — clicking a different commitment's "Find in PDF" while
+              // the panel stays open then only has to move the red
+              // highlight (see PdfHighlightBody's refocus effect), not
+              // reload anything. On the climate step this is the
+              // green/gray passed/filtered-out split instead of flat
+              // yellow (see isClimateStep above).
+              verifiedPhrases={
+                isClimateStep ? climatePassedPhrases : allVerifiedPhrases
+              }
+              verifiedColor={isClimateStep ? CLIMATE_PASSED_COLOR : undefined}
+              secondaryPhrases={
+                isClimateStep ? climateFilteredOutPhrases : undefined
+              }
               focusedPhrase={
                 pdfViewer?.mode === "focused"
                   ? pdfViewer.commitment.text
@@ -2063,6 +2315,7 @@ export function StepResultDialog({
           <div className="mt-4 min-w-0 overflow-x-hidden">
             {content}
             {sourceMarkdownSection}
+            {recoveredImagesSection}
           </div>
           {pdfViewer && (
             <PdfHighlightViewer
@@ -2072,7 +2325,21 @@ export function StepResultDialog({
               }}
               url={pdfUrl}
               verifiedPhrases={
-                pdfViewer.mode === "all" ? allVerifiedPhrases : []
+                pdfViewer.mode === "all-climate"
+                  ? climatePassedPhrases
+                  : pdfViewer.mode === "all"
+                    ? allVerifiedPhrases
+                    : []
+              }
+              verifiedColor={
+                pdfViewer.mode === "all-climate"
+                  ? CLIMATE_PASSED_COLOR
+                  : undefined
+              }
+              secondaryPhrases={
+                pdfViewer.mode === "all-climate"
+                  ? climateFilteredOutPhrases
+                  : undefined
               }
               focusedPhrase={
                 pdfViewer.mode === "focused"

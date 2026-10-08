@@ -43,6 +43,10 @@ interface JobDetailsDialogProps {
   yearData?: SwimlaneYearData;
   /** When true, this job is one of multiple runs for the same queue in this run (orange triangle on grid) */
   isRerun?: boolean;
+  /** Extra content appended after the job's own sections — e.g.
+   * ClimatePipelineTab's recovered-image gallery for a doclingParsePDF
+   * job, which this generic dialog has no reason to know about itself. */
+  children?: React.ReactNode;
 }
 
 export function JobDetailsDialog({
@@ -54,6 +58,7 @@ export function JobDetailsDialog({
   missingQueueId,
   yearData,
   isRerun = false,
+  children,
 }: JobDetailsDialogProps) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"user" | "technical">("user");
@@ -412,6 +417,7 @@ export function JobDetailsDialog({
           </>
         )}
       </div>
+      {children}
     </Modal>
   );
 }

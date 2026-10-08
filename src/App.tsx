@@ -8,10 +8,12 @@ import { ApiAccessTab } from "@/tabs/api-access/ApiAccessTab";
 import { ClimatePlansExplorer } from "@/tabs/climate-plans/ClimatePlansExplorer";
 import { ClimatePipelineTab } from "@/tabs/climate-pipeline/ClimatePipelineTab";
 import { ClimateQaReviewsTab } from "@/tabs/climate-pipeline/ClimateQaReviewsTab";
+import { MunicipalitySourcesTab } from "@/tabs/climate-pipeline/MunicipalitySourcesTab";
 import { DebugTab } from "@/tabs/debug/DebugTab";
 import { EditorTab } from "@/tabs/editor/EditorTab";
 import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
 import { JobbstatusTab } from "@/tabs/jobbstatus/JobbstatusTab";
+import { ManualReviewTab } from "@/tabs/manual-review/ManualReviewTab";
 import { OverviewTab } from "@/tabs/overview/OverviewTab";
 import { RegistryTab } from "@/tabs/registry/RegistryTab";
 import { UploadTab } from "@/tabs/upload/UploadTab";
@@ -43,6 +45,7 @@ function App() {
           <Route path="/workflow" element={<WorkflowTab />} />
           <Route path="/debug" element={<DebugTab />} />
           <Route path="/errors" element={<ErrorBrowserTab />} />
+          <Route path="/review" element={<ManualReviewTab />} />
           <Route path="/editor/company/:companyId" element={<EditorTab />} />
           <Route
             path="/editor/company"
@@ -52,6 +55,10 @@ function App() {
           <Route path="/climate-plans" element={<ClimatePlansExplorer />} />
           <Route path="/climate-pipeline" element={<ClimatePipelineTab />} />
           <Route path="/climate-qa-reviews" element={<ClimateQaReviewsTab />} />
+          <Route
+            path="/municipality-sources"
+            element={<MunicipalitySourcesTab />}
+          />
         </Route>
         <Route
           path="*"

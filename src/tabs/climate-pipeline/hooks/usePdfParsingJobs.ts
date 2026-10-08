@@ -69,9 +69,18 @@ export function toQueueJobPlaceholder(job: PdfParsingJob): QueueJob {
   };
 }
 
-/** Latest job per PDF-parsing queue for a given garbo threadId. Fetched
- * once per threadId (not polled) — supplementary visibility into a step
- * that normally completes well before a user is watching this tab. */
+const POLL_MS = 5000;
+
+/** Latest job per PDF-parsing queue for a given garbo threadId. Polls
+ * every 5s (same interval useClimatePipelinePlans uses) while any tracked
+ * job is still waiting/processing, same as the rest of this view — a
+ * single fetch on mount used to be enough back when this step always
+ * completed well before anyone looked, but the municipality-sources
+ * registry's Run button put people watching this tab from the moment a
+ * run starts, so a status that never updates past "waiting" reads as
+ * broken even though the job finished seconds later. Stops polling once
+ * every job has completed or failed, so a finished run doesn't poll
+ * forever. */
 export function usePdfParsingJobs(threadId: string | null | undefined) {
   const [jobsByQueue, setJobsByQueue] = useState<Map<string, PdfParsingJob>>(
     new Map(),
@@ -110,6 +119,18 @@ export function usePdfParsingJobs(threadId: string | null | undefined) {
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs]);
+
+  const isSettled =
+    jobsByQueue.size > 0 &&
+    [...jobsByQueue.values()].every(
+      (job) => derivePdfJobStatus(job) === "completed" || derivePdfJobStatus(job) === "failed",
+    );
+
+  useEffect(() => {
+    if (!threadId || isSettled) return;
+    const timer = window.setInterval(fetchJobs, POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [threadId, isSettled, fetchJobs]);
 
   return { jobsByQueue, isLoading, refresh: fetchJobs };
 }

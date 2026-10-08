@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/ui/tabs";
 import { Header } from "@/ui/header";
 import { Toaster } from "@/ui/sonner";
 import {
@@ -26,6 +26,7 @@ const TABS_WITH_SPACED_CONTENT = new Set<TopLevelTabSegment>([
   "registry",
   "overview",
   "editor",
+  "review",
 ]);
 
 function pipelineModeLabelKey(mode: PipelineMode): string {
@@ -52,6 +53,8 @@ function tabLabelKey(tab: TopLevelTabSegment): string {
       return "nav.debug";
     case "errors":
       return "nav.errorBrowser";
+    case "review":
+      return "nav.review";
     case "editor":
       return "nav.editor";
     case "climate-plans":
@@ -60,6 +63,8 @@ function tabLabelKey(tab: TopLevelTabSegment): string {
       return "nav.climatePipeline";
     case "climate-qa-reviews":
       return "nav.climateQaReviews";
+    case "municipality-sources":
+      return "nav.municipalitySources";
   }
 }
 
@@ -76,78 +81,78 @@ function MainNav() {
   const secondaryTabs = PIPELINE_TAB_SEGMENTS[pipelineMode];
 
   return (
-    <Tabs
-      value={tab}
-      onValueChange={(value) => {
-        navigate(`/${value}`, { replace: false });
-      }}
-      className="space-y-4"
-    >
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <TabsList className="bg-gray-04/50 backdrop-blur-sm">
-            {UNIVERSAL_TAB_SEGMENTS.map((segment) => {
-              if (segment === "access" && !isAuthenticated) return null;
-              return (
-                <TabsTrigger key={segment} value={segment}>
-                  {t(tabLabelKey(segment))}
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+    <div className="space-y-4">
+      <Tabs
+        value={tab}
+        onValueChange={(value) => {
+          navigate(`/${value}`, { replace: false });
+        }}
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <TabsList className="bg-gray-04/50 backdrop-blur-sm">
+              {UNIVERSAL_TAB_SEGMENTS.map((segment) => {
+                if (segment === "access" && !isAuthenticated) return null;
+                return (
+                  <TabsTrigger key={segment} value={segment}>
+                    {t(tabLabelKey(segment))}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
 
-          <div
-            role="group"
-            aria-label={t("nav.pipelineChoice")}
-            className="inline-flex h-12 items-center rounded-full bg-gray-04/50 p-1 text-gray-02 backdrop-blur-sm"
-          >
-            {PIPELINE_MODES.map((mode) => {
-              const isActive = pipelineMode === mode;
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  aria-pressed={isActive}
-                  onClick={() => setPipelineMode(mode)}
-                  className={cn(
-                    "inline-flex items-center justify-center whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-medium transition-all",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    isActive
-                      ? "bg-gray-01 text-gray-05 shadow-sm"
-                      : "text-gray-02 hover:text-gray-01",
-                  )}
-                >
-                  {t(pipelineModeLabelKey(mode))}
-                </button>
-              );
-            })}
+            <div
+              role="group"
+              aria-label={t("nav.pipelineChoice")}
+              className="inline-flex h-12 items-center rounded-full bg-gray-04/50 p-1 text-gray-02 backdrop-blur-sm"
+            >
+              {PIPELINE_MODES.map((mode) => {
+                const isActive = pipelineMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => setPipelineMode(mode)}
+                    className={cn(
+                      "inline-flex items-center justify-center whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-medium transition-all",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      isActive
+                        ? "bg-gray-01 text-gray-05 shadow-sm"
+                        : "text-gray-02 hover:text-gray-01",
+                    )}
+                  >
+                    {t(pipelineModeLabelKey(mode))}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        <TabsList className="bg-gray-04/50 backdrop-blur-sm self-start">
-          {secondaryTabs.map((segment) => (
-            <TabsTrigger key={segment} value={segment}>
-              {t(tabLabelKey(segment))}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </div>
+          <TabsList className="bg-gray-04/50 backdrop-blur-sm self-start">
+            {secondaryTabs.map((segment) => (
+              <TabsTrigger key={segment} value={segment}>
+                {t(tabLabelKey(segment))}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+      </Tabs>
 
       <AnimatePresence mode="popLayout" initial={false}>
-        <TabsContent key={tab} value={tab} asChild>
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className={
-              TABS_WITH_SPACED_CONTENT.has(tab) ? "space-y-6" : undefined
-            }
-          >
-            <Outlet />
-          </motion.div>
-        </TabsContent>
+        <motion.div
+          key={tab}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          className={
+            TABS_WITH_SPACED_CONTENT.has(tab) ? "mt-2 space-y-6" : "mt-2"
+          }
+        >
+          <Outlet />
+        </motion.div>
       </AnimatePresence>
-    </Tabs>
+    </div>
   );
 }
 

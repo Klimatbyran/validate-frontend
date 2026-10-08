@@ -43,6 +43,11 @@ export interface ClimatePipelinePlan {
    * this plan's document — lets the tab look up and show PDF-parsing
    * status alongside this plan's own pipeline steps. */
   garboThreadId: string | null;
+  /** Looked up from the municipality registry by name (county lives
+   * there, not on ClimatePlan itself) — null if this municipality has no
+   * registry row yet, or hasn't been extracted/approved far enough to
+   * resolve a name at all. */
+  county: string | null;
   /** Deduplicated by groupId (groupDocumentReferences) — cheap count so the
    * swimlane row can show a "N referenced documents" badge without
    * fetching each plan's full detail. */
@@ -52,6 +57,18 @@ export interface ClimatePipelinePlan {
    * parse may be incomplete. Used for the warning under the municipality
    * name, separate from the total reference count above. */
   companionReferenceCount: number;
+  /** Extracted alongside the municipality name, from the same document —
+   * lets one municipality's several distinct ClimatePlan rows (its
+   * klimatplan, a companion åtgärdsplan, ...) actually be told apart
+   * instead of all showing up identically labeled by municipality name
+   * alone. See climate-plans-pipeline's extractMunicipality prompt. */
+  documentTitle: string | null;
+  documentDescription: string | null;
+  adoptedAt: string | null;
+  adoptedAtText: string | null;
+  coveragePeriodStart: number | null;
+  coveragePeriodEnd: number | null;
+  coveragePeriodText: string | null;
 }
 
 const POLL_MS = 5000;

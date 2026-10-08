@@ -14,6 +14,9 @@ import {
   SectionCardBody,
 } from "@/ui/section-card";
 import { useMeasures } from "./hooks/useMeasures";
+import { useClimatePlansExploreParams } from "./hooks/useClimatePlansExploreParams";
+import { ExploreDataView } from "./explore/ExploreDataView";
+import { ViewModePills } from "@/ui/view-mode-pills";
 import type {
   Measure,
   ActivityShift,
@@ -901,12 +904,11 @@ function TaxonomyView({ data }: { data: MunicipalityMeasures[] }) {
 
 // ─── Root component ───────────────────────────────────────────────────────────
 
-type TopView = "measures" | "taxonomy";
-
 export function ClimatePlansExplorer() {
   const { data, isLoading, error } = useMeasures();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [topView, setTopView] = useState<TopView>("measures");
+  const params = useClimatePlansExploreParams();
+  const topView = params.tab;
 
   const municipality = useMemo(
     () =>
@@ -916,7 +918,7 @@ export function ClimatePlansExplorer() {
     [data, selectedId],
   );
 
-  if (isLoading) {
+  if (isLoading && topView !== "explore") {
     return (
       <div className="flex items-center justify-center py-24 text-gray-02">
         Loading measures data…
@@ -924,7 +926,7 @@ export function ClimatePlansExplorer() {
     );
   }
 
-  if (error) {
+  if (error && topView !== "explore") {
     return (
       <Callout variant="error" title="Failed to load measures">
         <p className="text-sm text-pink-03/80 mt-1">{error}</p>
@@ -932,7 +934,7 @@ export function ClimatePlansExplorer() {
     );
   }
 
-  if (data.length === 0) {
+  if (data.length === 0 && topView !== "explore") {
     return (
       <Callout variant="info" title="No data found">
         <p className="text-sm text-blue-03/80 mt-1">
@@ -957,28 +959,23 @@ export function ClimatePlansExplorer() {
           <p className="text-sm text-gray-02 mt-1">
             {topView === "measures"
               ? "Ranked by activity shift clarity and intervention specificity (1–7 scale)"
-              : "Browse taxonomy transition elements across all municipalities"}
+              : topView === "taxonomy"
+                ? "Browse taxonomy transition elements across all municipalities"
+                : "Aggregated map, alignment, and tracking views over the extracts we have so far"}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* View toggle */}
-          <div className="flex rounded-lg border border-gray-03/40 overflow-hidden text-sm">
-            {(["measures", "taxonomy"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setTopView(v)}
-                className={cn(
-                  "px-4 py-2 capitalize transition-colors",
-                  topView === v
-                    ? "bg-gray-03/50 text-gray-01 font-medium"
-                    : "text-gray-02 hover:text-gray-01 hover:bg-gray-04/60",
-                )}
-              >
-                {v === "measures" ? "By measure" : "By taxonomy"}
-              </button>
-            ))}
-          </div>
+          <ViewModePills
+            options={[
+              { value: "measures", label: "By measure" },
+              { value: "taxonomy", label: "By taxonomy" },
+              { value: "explore", label: "Explore data" },
+            ]}
+            value={topView}
+            onValueChange={params.setTab}
+            ariaLabel="Climate plan views"
+          />
 
           {/* Municipality selector — only relevant for measures view */}
           {topView === "measures" &&
@@ -1002,7 +999,9 @@ export function ClimatePlansExplorer() {
         </div>
       </div>
 
-      {topView === "taxonomy" ? (
+      {topView === "explore" ? (
+        <ExploreDataView params={params} />
+      ) : topView === "taxonomy" ? (
         <TaxonomyView data={data} />
       ) : municipality ? (
         <>
