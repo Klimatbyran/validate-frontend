@@ -304,7 +304,7 @@ function ExplicitBadge({ explicit }: { explicit: boolean | undefined }) {
         "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] uppercase tracking-wide",
         explicit
           ? "border-green-03/40 bg-green-03/10 text-green-03"
-          : "border-gray-03/50 bg-gray-03/20 text-gray-02",
+          : "border-gray-03 bg-gray-03/50 text-gray-01 font-semibold",
       )}
       title={
         explicit
@@ -333,7 +333,10 @@ function ShiftTypePill({
 }) {
   if (!ourShiftType) {
     return (
-      <span className="inline-flex items-center rounded-md border border-gray-03/40 bg-gray-03/15 px-1.5 py-0.5 text-[10px] text-gray-02/70">
+      <span
+        className="inline-flex items-center rounded-md border border-gray-03 bg-gray-03/50 px-1.5 py-0.5 text-[10px] text-gray-01 font-semibold"
+        title="This match predates the shift-type classification -- rerun matchTransitionElements to get a real category"
+      >
         unclassified
       </span>
     );
@@ -505,9 +508,16 @@ function TeMatchAddSlots({
 function ActivityShiftTeBlock({
   shift,
   reviewCtx,
+  showMatches = true,
 }: {
   shift: ActivityShift;
   reviewCtx: ReviewContext;
+  // classifyActivityShiftTypes only sets type/typeReasoning -- the TE
+  // matches, candidates, and gate/group metadata on this same row all come
+  // from the LATER matchTransitionElements step, possibly from an older
+  // run. Showing them under classifyActivityShiftTypes's own dialog would
+  // make it look like this step did the matching itself.
+  showMatches?: boolean;
 }) {
   const [pendingAddSlotIds, setPendingAddSlotIds] = useState<string[]>([]);
 
@@ -562,7 +572,7 @@ function ActivityShiftTeBlock({
         <MetaChip label="Shift type" tone="type">
           {shift.type}
         </MetaChip>
-        {shift.transitionElementGateDomain && (
+        {showMatches && shift.transitionElementGateDomain && (
           <MetaChip label="Gate domain" tone="neutral">
             {shift.transitionElementGateDomain}
           </MetaChip>
@@ -573,29 +583,31 @@ function ActivityShiftTeBlock({
           {shift.typeReasoning}
         </p>
       )}
-      <p className="text-xs text-gray-02 break-words">
+      <p className="text-sm text-gray-01 font-medium break-words">
         {shift.shiftFrom} → {shift.shiftTo}{" "}
-        <span className="text-gray-02/70">(need: {shift.need})</span>
+        <span className="text-xs text-gray-02 font-normal">
+          (need: {shift.need})
+        </span>
       </p>
-      {groupKind === "too_narrow" && groupLabel && (
+      {showMatches && groupKind === "too_narrow" && groupLabel && (
         <p className="text-xs text-orange-03 bg-orange-03/10 border border-orange-03/20 rounded-md px-2 py-1.5">
           Match is narrower than the shift's own wording — a broader TE
           ("{groupLabel}") may fit better.
         </p>
       )}
-      {groupKind === "ambiguous" && groupLabel && (
+      {showMatches && groupKind === "ambiguous" && groupLabel && (
         <p className="text-xs text-blue-03 bg-blue-03/10 border border-blue-03/20 rounded-md px-2 py-1.5">
           Several candidates cluster under "{groupLabel}" — the shift's own
           wording doesn't commit to one of them.
         </p>
       )}
-      {groupKind === "multiple_specific" && (
+      {showMatches && groupKind === "multiple_specific" && (
         <p className="text-xs text-gray-02 bg-gray-03/20 border border-gray-03/30 rounded-md px-2 py-1.5">
           This shift names several distinct destinations — each match below
           is independently valid, not competing alternatives.
         </p>
       )}
-      {shift.transitionElementMatches.length === 0 ? (
+      {!showMatches ? null : shift.transitionElementMatches.length === 0 ? (
         <div className="space-y-2">
           <p className="text-xs text-gray-02 italic">No matches</p>
           {canAddMore && (
@@ -654,7 +666,7 @@ function ActivityShiftTeBlock({
                   )}
                 </div>
                 {match.matchReasoning && (
-                  <p className="text-[11px] text-gray-02/70 italic break-words">
+                  <p className="text-xs text-gray-01/80 break-words">
                     {match.matchReasoning}
                   </p>
                 )}
@@ -695,15 +707,17 @@ function ActivityShiftTeBlock({
           })}
         </div>
       )}
-      <TeMatchAddSlots
-        shiftId={shiftKey}
-        matchedIds={matchedIds}
-        allCandidates={allCandidates}
-        suggestedNew={suggestedNew}
-        reviewCtx={reviewCtx}
-        onRequestAddSlot={requestAddSlot}
-        pendingSlotIds={pendingAddSlotIds}
-      />
+      {showMatches && (
+        <TeMatchAddSlots
+          shiftId={shiftKey}
+          matchedIds={matchedIds}
+          allCandidates={allCandidates}
+          suggestedNew={suggestedNew}
+          reviewCtx={reviewCtx}
+          onRequestAddSlot={requestAddSlot}
+          pendingSlotIds={pendingAddSlotIds}
+        />
+      )}
     </div>
   );
 }
@@ -711,16 +725,22 @@ function ActivityShiftTeBlock({
 function TransitionElementsView({
   measures,
   reviewCtx,
+  showMatches = true,
 }: {
   measures: ExtractedMeasure[];
   reviewCtx: ReviewContext;
+  showMatches?: boolean;
 }) {
   const withShifts = measures.filter(
     (m) => m.score && m.score.activityShifts.length > 0,
   );
   if (withShifts.length === 0) {
     return (
-      <p className="text-sm text-gray-02">No activity shifts to match yet.</p>
+      <p className="text-sm text-gray-02">
+        {showMatches
+          ? "No activity shifts to match yet."
+          : "No activity shifts to classify yet."}
+      </p>
     );
   }
   return (
@@ -736,6 +756,7 @@ function TransitionElementsView({
               key={shift.id}
               shift={shift}
               reviewCtx={reviewCtx}
+              showMatches={showMatches}
             />
           ))}
         </div>
@@ -2209,6 +2230,13 @@ export function StepResultDialog({
           />
         );
       case "classifyActivityShiftTypes":
+        return (
+          <TransitionElementsView
+            measures={detail.extractedMeasures}
+            reviewCtx={reviewCtx}
+            showMatches={false}
+          />
+        );
       case "matchTransitionElements":
         return (
           <TransitionElementsView
