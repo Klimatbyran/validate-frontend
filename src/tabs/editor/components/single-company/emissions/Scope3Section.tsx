@@ -118,6 +118,9 @@ export function Scope3Section({
                   rp.emissions?.scope3?.statedTotalEmissions
                     ?.metadata as GarboFieldMetadata | null
                 }
+                metadataHistory={
+                  rp.emissions?.scope3?.statedTotalEmissions?.metadataHistory
+                }
                 fieldLabel={t("editor.periodEditor.scope3StatedTotalShort", {
                   year: year || "",
                 })}
@@ -205,6 +208,7 @@ export function Scope3Section({
                 <MetadataDetailsDialog
                   fieldLabel={`${rowLabel} (${year || ""})`}
                   metadata={originalCat?.metadata as GarboFieldMetadata | null}
+                  metadataHistory={originalCat?.metadataHistory}
                 />
                 <IconActionButton
                   onClick={() =>

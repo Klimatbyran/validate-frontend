@@ -112,6 +112,7 @@ export function Scope3CategoriesSection({
         return {
           value: original?.total ?? null,
           metadata: (original?.metadata as GarboFieldMetadata | null) ?? null,
+          metadataHistory: original?.metadataHistory,
         };
       }}
       getEditedValueForCategory={(cat) => {

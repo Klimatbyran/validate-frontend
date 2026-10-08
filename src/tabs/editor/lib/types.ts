@@ -142,47 +142,61 @@ export interface GarboCompanyIdentifier {
 }
 
 export interface GarboFieldMetadata extends GarboMinimalMetadata {
+  id?: string;
   source?: string | null;
   comment?: string | null;
   sourceReference?: string | null;
   sourcePageUrl?: string | null;
+  /** Value before this history link was written (from API metadataHistory). */
+  previousValue?: unknown;
   createdAt?: string | null;
   updatedAt?: string | null;
   verifiedAt?: string | null;
   parsedAt?: string | null;
+  user?: { name?: string | null; bot?: boolean | null } | null;
 }
+
+/** Append-only metadata history chain for a datapoint (newest first). */
+export type GarboMetadataHistory = GarboFieldMetadata[];
 
 export interface GarboEmissionsSummary {
   scope1?: {
     total?: number | null;
     metadata?: GarboMinimalMetadata | null;
+    metadataHistory?: GarboMetadataHistory;
   } | null;
   scope2?: {
     mb?: number | null;
     lb?: number | null;
     unknown?: number | null;
     metadata?: GarboMinimalMetadata | null;
+    metadataHistory?: GarboMetadataHistory;
   } | null;
   scope1And2?: {
     total?: number | null;
     metadata?: GarboMinimalMetadata | null;
+    metadataHistory?: GarboMetadataHistory;
   } | null;
   scope3?: {
     metadata?: GarboMinimalMetadata | null;
+    metadataHistory?: GarboMetadataHistory;
     statedTotalEmissions?: {
       total?: number | null;
       metadata?: GarboMinimalMetadata | null;
+      metadataHistory?: GarboMetadataHistory;
     } | null;
     categories?: Array<{
       category: number;
       total?: number | null;
       metadata?: GarboMinimalMetadata | null;
+      metadataHistory?: GarboMetadataHistory;
     }>;
   } | null;
   biogenic?: { total?: number | null } | null;
   statedTotalEmissions?: {
     total?: number | null;
     metadata?: GarboMinimalMetadata | null;
+    metadataHistory?: GarboMetadataHistory;
   } | null;
 }
 
@@ -191,11 +205,13 @@ export interface GarboEconomySummary {
     value?: number | null;
     currency?: string | null;
     metadata?: GarboMinimalMetadata | null;
+    metadataHistory?: GarboMetadataHistory;
   } | null;
   employees?: {
     value?: number | null;
     unit?: string | null;
     metadata?: GarboMinimalMetadata | null;
+    metadataHistory?: GarboMetadataHistory;
   } | null;
 }
 
