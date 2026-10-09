@@ -74,15 +74,15 @@ These examples are meant to be copied by humans and AI tools.
 
 ### Top-level tabs (route)
 
-- `/upload`
+- `/upload` (default landing)
 - `/editor`
 - `/errors`
-- `/crawler`
-- `/registry`
 - `/jobbstatus`
 - `/workflow`
 - `/debug`
-- `/access` — API key management (auth-gated; tab is hidden in the nav until logged in)
+- Climate: `/climate-plans`, `/climate-pipeline`, `/climate-qa-reviews`, `/municipality-sources`
+
+Removed routes (`/overview`, `/registry`, `/crawler`, `/access`, `/review`) redirect to `/upload`.
 
 ### Jobbstatus (Live vs Archive)
 

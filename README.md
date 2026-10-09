@@ -87,7 +87,7 @@ The app talks to three backends:
 
 | Backend         | Used for                                          | Default host (stage)                 |
 | --------------- | ------------------------------------------------- | ------------------------------------ |
-| **Unearth API** | Auth, crawler, registry, api-access, errors tab   | `stage-api.unearthdata.ai`           |
+| **Unearth API** | Auth, company editor, errors tab                  | `stage-api.unearthdata.ai`           |
 | **Garbo API**   | Queue archive (Jobbstatus Archive, batch pickers) | `stage-api.klimatkollen.se`          |
 | **Pipeline**    | Live job status, upload, reruns                   | `stage-pipeline-api.klimatkollen.se` |
 

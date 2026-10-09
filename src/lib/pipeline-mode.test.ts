@@ -7,9 +7,9 @@ import {
 
 describe("pipelineModeForTab", () => {
   it("maps emissions tabs", () => {
-    expect(pipelineModeForTab("overview")).toBe("emissions");
+    expect(pipelineModeForTab("jobbstatus")).toBe("emissions");
     expect(pipelineModeForTab("editor")).toBe("emissions");
-    expect(pipelineModeForTab("review")).toBe("emissions");
+    expect(pipelineModeForTab("errors")).toBe("emissions");
   });
 
   it("maps climate-plans tabs", () => {
@@ -19,15 +19,13 @@ describe("pipelineModeForTab", () => {
   });
 
   it("returns null for universal tabs", () => {
-    expect(pipelineModeForTab("registry")).toBeNull();
     expect(pipelineModeForTab("upload")).toBeNull();
-    expect(pipelineModeForTab("access")).toBeNull();
   });
 });
 
 describe("isUniversalTab", () => {
   it("recognizes universal tabs", () => {
-    expect(isUniversalTab("registry")).toBe(true);
+    expect(isUniversalTab("upload")).toBe(true);
     expect(isUniversalTab("jobbstatus")).toBe(false);
   });
 });
@@ -41,6 +39,6 @@ describe("resolveInitialPipelineMode", () => {
   });
 
   it("falls back to emissions for universal tabs without storage", () => {
-    expect(resolveInitialPipelineMode("registry")).toBe("emissions");
+    expect(resolveInitialPipelineMode("upload")).toBe("emissions");
   });
 });

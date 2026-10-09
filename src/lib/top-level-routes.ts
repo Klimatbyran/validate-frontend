@@ -1,14 +1,10 @@
 /** First URL segment selects the main tab. See docs/ROUTING_URL_STATE.md. */
 export const TOP_LEVEL_TAB_SEGMENTS = [
-  "registry",
-  "overview",
   "upload",
-  "access",
   "jobbstatus",
   "workflow",
   "debug",
   "errors",
-  "review",
   "editor",
   "climate-plans",
   "climate-pipeline",
@@ -18,7 +14,7 @@ export const TOP_LEVEL_TAB_SEGMENTS = [
 
 export type TopLevelTabSegment = (typeof TOP_LEVEL_TAB_SEGMENTS)[number];
 
-export const DEFAULT_TOP_LEVEL_PATH = "/overview";
+export const DEFAULT_TOP_LEVEL_PATH = "/upload";
 
 export function firstPathSegment(pathname: string): string {
   return pathname.replace(/^\//, "").split("/")[0] ?? "";
