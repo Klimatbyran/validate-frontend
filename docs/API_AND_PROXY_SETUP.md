@@ -58,21 +58,11 @@ One Unearth API backend from `VITE_UNEARTH_TARGET` (legacy: `VITE_GARBO_TARGET`)
 
 Jobbstatus Archive, batch pickers, `POST /queue-archive/batches`. Helper: `getGarboQueueArchiveUrl()` → `/garbo-api/queue-archive/…` (deployed) or `/garbo-stage/api/queue-archive/…` (dev).
 
-Requires JWT from Unearth login (`garboAuthFetch`). Garbo also exposes the **same queue-archive handler** at `/api/internal-queue-archive` (X-API-Key) for server callers (e.g. Unearth overview backend) — keep both: staff browser vs integration, not interchangeable auth.
-
-**Pipeline auto-run** (staff JWT only — no X-API-Key twin): `GET|PATCH /pipeline-auto-run` via `getGarboPipelineAutoRunUrl()` → `/garbo-api/pipeline-auto-run` (deployed) or `/garbo-stage/api/pipeline-auto-run` (dev). Soft on/off for Garbo’s backlog drain worker; filter option lists for the UI still come from Unearth (report types, registry batches, coverage lists). Nginx still injects `X-API-Key` for consistency with other Garbo proxies; Garbo ignores it on this route and requires Bearer JWT.
+Requires JWT from Unearth login (`garboAuthFetch`). Garbo also exposes the **same queue-archive handler** at `/api/internal-queue-archive` (X-API-Key) for server callers — keep both: staff browser vs integration, not interchangeable auth.
 
 ### 4. Pipeline API – live job status
 
 `getPipelineApiBaseUrl()` → `/pipeline-stage`, etc.
-
-### 5. Overview tab
-
-`getUnearthApiBaseUrl()` + `/internal-validate-overview/{summary|summary/activity|prod-to-stage}` (X-API-Key via proxy). Overview aggregation is internal-only (no staff JWT route). Summary returns DB coverage stats and gap lists. `summary/activity?day=YYYY-MM-DD` returns day-scoped pipeline/archive activity (Europe/Stockholm). Prod → Stage requires `reportYears` or `allYears`; default page size 50. Prod → Stage runs use `STAGE_RUN_REPORTS_PIPELINE_CONFIG` (stage pipeline + Garbo batches only).
-
-The Unearth API loads companies for Prod → Stage via `GET /internal-pipeline/companies-overview` (local + peer). Deploy **stage and prod Unearth API together** so peer fetch does not 404.
-
-The API may return `warnings` (non-fatal: peer env missing, inferred deployment env, etc.) alongside Prod → Stage `rows` — the Overview tab surfaces these in a callout.
 
 ---
 

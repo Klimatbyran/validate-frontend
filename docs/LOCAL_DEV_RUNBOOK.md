@@ -97,7 +97,7 @@ Dev scripts (`npm run dev:local-db`, etc.) work on **Windows, macOS, and Linux**
 
 ## Scenario A — Browse restored prod data (most common)
 
-Use this when you have a Postgres backup and want to explore it in Validate (company editor, registry, overview).
+Use this when you have a Postgres backup and want to explore it in Validate (company editor, job status, upload).
 
 ### 1. Start containers (once)
 
@@ -395,7 +395,7 @@ Unearth API → **3000**. Garbo HTTP API → **3002**. Both can run together.
 
 ### 401 on Validate API calls
 
-See [Quick diagnosis](#quick-diagnosis) under Authentication & API keys. Common fixes: log in via GitHub OAuth (editor), or `ALLOW_ANONYMOUS_CLIENT_API=true` on local Unearth API (overview).
+See [Quick diagnosis](#quick-diagnosis) under Authentication & API keys. Common fixes: log in via GitHub OAuth (editor), or `ALLOW_ANONYMOUS_CLIENT_API=true` on local Unearth API where needed.
 
 ### Pipeline upload/rerun returns 401
 
@@ -444,7 +444,7 @@ Validate uses **two auth mechanisms** — not interchangeable:
 
 | Mechanism          | Header                              | Used for                                                                | Where configured                            |
 | ------------------ | ----------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------- |
-| **Staff JWT**      | `Authorization: Bearer <token>`     | Company editor, registry, crawler mutations, queue archive (staff path) | GitHub OAuth via Unearth API                |
+| **Staff JWT**      | `Authorization: Bearer <token>`     | Company editor, upload mutations, queue archive (staff path) | GitHub OAuth via Unearth API                |
 | **Client API key** | `X-API-Key: garb_<lookup>.<secret>` | Overview, Errors tab, integration routes (`/internal-*`)                | Validate Vite proxy (stage/prod paths only) |
 
 ### `ALLOW_ANONYMOUS_CLIENT_API` (Unearth API only)

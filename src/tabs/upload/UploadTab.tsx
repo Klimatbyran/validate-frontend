@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { FileText, Link2, PlayCircle } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { FileText, Link2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
@@ -13,7 +12,6 @@ import { FileUploadZone } from "./components/FileUploadZone";
 import { UrlUploadForm } from "./components/UrlUploadForm";
 import { UploadList } from "./components/UploadList";
 import { UploadRunOptions } from "./components/UploadRunOptions";
-import { AutoRunPanel } from "./components/AutoRunPanel";
 import { UploadedFile, UrlInput } from "./types";
 import { collectPdfFilesFromDataTransfer } from "@/lib/drag-drop-pdf-files";
 import { validateUrls, extractCompanyFromUrl } from "@/lib/utils";
@@ -38,7 +36,6 @@ import {
 
 const UPLOADED_PREFIX = "uploaded:";
 
-type UploadViewTab = "manual" | "autorun";
 type ManualUploadMode = "file" | "url";
 
 type RemoveConfirmTarget = {
@@ -48,18 +45,12 @@ type RemoveConfirmTarget = {
   submitted?: boolean;
 };
 
-function uploadViewFromSearchParams(params: URLSearchParams): UploadViewTab {
-  return params.get("tab") === "autorun" ? "autorun" : "manual";
-}
-
 export function UploadTab() {
   const { t } = useI18n();
   const { pipelineMode } = usePipelineMode();
   const { isAuthenticated, isLoading: authLoading, login } = useAuth();
   const hasTriggeredLoginRef = useRef(false);
   const isClimatePlansPipeline = pipelineMode === "climate-plans";
-  const [searchParams, setSearchParams] = useSearchParams();
-  const viewTab = uploadViewFromSearchParams(searchParams);
 
   const [uploadMode, setUploadMode] = useState<ManualUploadMode>("url");
   const [isDragging, setIsDragging] = useState(false);
@@ -103,28 +94,6 @@ export function UploadTab() {
     () => [...new Set(municipalitySources.map((s) => s.municipality))].sort(),
     [municipalitySources],
   );
-
-  const setViewTab = useCallback(
-    (tab: UploadViewTab) => {
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          if (tab === "autorun") next.set("tab", "autorun");
-          else next.delete("tab");
-          return next;
-        },
-        { replace: true },
-      );
-    },
-    [setSearchParams],
-  );
-
-  // Climate-plans mode has no auto-run; drop stale ?tab=autorun.
-  useEffect(() => {
-    if (isClimatePlansPipeline && viewTab === "autorun") {
-      setViewTab("manual");
-    }
-  }, [isClimatePlansPipeline, viewTab, setViewTab]);
 
   // Upload is the main entrypoint and performs write operations; require auth here.
   useEffect(() => {
@@ -587,167 +556,138 @@ export function UploadTab() {
 
   return (
     <div className="space-y-6">
+      {isClimatePlansPipeline && (
+        <label className="block max-w-sm text-sm">
+          <span className="text-gray-02">
+            Municipality (optional) — skip the extraction guess and approval
+            step by confirming it up front
+          </span>
+          <select
+            className="mt-1 w-full h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
+            value={selectedMunicipality}
+            onChange={(e) => setSelectedMunicipality(e.target.value)}
+          >
+            <option value="">Let it guess (review after)</option>
+            {municipalityNames.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <Tabs
-        value={viewTab}
-        onValueChange={(value) =>
-          setViewTab(value === "autorun" ? "autorun" : "manual")
-        }
+        value={uploadMode}
+        onValueChange={(value) => setUploadMode(value as ManualUploadMode)}
         className="w-full"
       >
         <TabsList className="inline-flex bg-gray-04/50 p-1 rounded-full">
-          <TabsTrigger value="manual" className="rounded-full">
+          <TabsTrigger value="url" className="rounded-full">
             <Link2 className="w-4 h-4 mr-2" />
-            {t("upload.manualTab")}
+            {t("upload.links")}
           </TabsTrigger>
-          {!isClimatePlansPipeline && (
-            <TabsTrigger value="autorun" className="rounded-full">
-              <PlayCircle className="w-4 h-4 mr-2" />
-              {t("upload.autoRun.tab")}
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="file" className="rounded-full">
+            <FileText className="w-4 h-4 mr-2" />
+            {t("upload.files")}
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="manual" className="space-y-6">
-          {isClimatePlansPipeline && (
-            <label className="block max-w-sm text-sm">
-              <span className="text-gray-02">
-                Municipality (optional) — skip the extraction guess and
-                approval step by confirming it up front
-              </span>
-              <select
-                className="mt-1 w-full h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
-                value={selectedMunicipality}
-                onChange={(e) => setSelectedMunicipality(e.target.value)}
-              >
-                <option value="">Let it guess (review after)</option>
-                {municipalityNames.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <Tabs
-            value={uploadMode}
-            onValueChange={(value) => setUploadMode(value as ManualUploadMode)}
-            className="w-full"
-          >
-            <TabsList className="inline-flex bg-gray-04/50 p-1 rounded-full">
-              <TabsTrigger value="url" className="rounded-full">
-                <Link2 className="w-4 h-4 mr-2" />
-                {t("upload.links")}
-              </TabsTrigger>
-              <TabsTrigger value="file" className="rounded-full">
-                <FileText className="w-4 h-4 mr-2" />
-                {t("upload.files")}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="url">
-              <UploadRunOptions
-                pipelineMode={pipelineMode}
-                forceRedescribeImages={forceRedescribeImagesToggle}
-                onForceRedescribeImagesChange={setForceRedescribeImagesToggle}
-                batch={{
-                  existingBatches,
-                  batchesLoading,
-                  batchDropdownChoice,
-                  onBatchDropdownChoiceChange: setBatchDropdownChoice,
-                  customBatchName,
-                  onCustomBatchNameChange: setCustomBatchName,
-                }}
-                tags={{
-                  tagOptions,
-                  tagsLoading,
-                  tagsError,
-                  selectedTags,
-                  onSelectedTagsChange: setSelectedTags,
-                }}
-                workers={{
-                  runAllWorkers,
-                  onRunAllWorkersChange: setRunAllWorkers,
-                  selectedWorkers,
-                  onSelectedWorkersChange: handleWorkerToggle,
-                  forceReindex,
-                  onForceReindexChange: setForceReindex,
-                  requireEmissionsPresence,
-                  onRequireEmissionsPresenceChange: setRequireEmissionsPresence,
-                  hideEmissionsPresenceToggle: isClimatePlansPipeline,
-                }}
-              />
-              <UrlUploadForm
-                urlInput={urlInput}
-                onUrlInputChange={setUrlInput}
-                autoApprove={autoApprove}
-                onAutoApproveChange={setAutoApprove}
-                pipelineMode={pipelineMode}
-                onSubmit={handleUrlSubmit}
-              />
-            </TabsContent>
-
-            <TabsContent value="file">
-              <UploadRunOptions
-                pipelineMode={pipelineMode}
-                forceRedescribeImages={forceRedescribeImagesToggle}
-                onForceRedescribeImagesChange={setForceRedescribeImagesToggle}
-                batch={{
-                  existingBatches,
-                  batchesLoading,
-                  batchDropdownChoice,
-                  onBatchDropdownChoiceChange: setBatchDropdownChoice,
-                  customBatchName,
-                  onCustomBatchNameChange: setCustomBatchName,
-                }}
-                tags={{
-                  tagOptions,
-                  tagsLoading,
-                  tagsError,
-                  selectedTags,
-                  onSelectedTagsChange: setSelectedTags,
-                }}
-                workers={{
-                  runAllWorkers,
-                  onRunAllWorkersChange: setRunAllWorkers,
-                  selectedWorkers,
-                  onSelectedWorkersChange: handleWorkerToggle,
-                  forceReindex,
-                  onForceReindexChange: setForceReindex,
-                  requireEmissionsPresence,
-                  onRequireEmissionsPresenceChange: setRequireEmissionsPresence,
-                  hideEmissionsPresenceToggle: isClimatePlansPipeline,
-                }}
-              />
-              <FileUploadZone
-                isDragging={isDragging}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onInputChange={handleFileInputChange}
-                uploadedFiles={uploadedFiles}
-                autoApprove={autoApprove}
-                onAutoApproveChange={setAutoApprove}
-                pipelineMode={pipelineMode}
-                onFileSubmit={handleFileSubmit}
-              />
-            </TabsContent>
-          </Tabs>
-
-          <UploadList
-            uploadMode={uploadMode}
-            uploadedFiles={uploadedFiles}
-            processedUrls={processedUrls}
-            onRemoveUploadedFile={handleRemoveUploadedFile}
-            onRemoveProcessedItem={handleRemoveProcessedItem}
+        <TabsContent value="url">
+          <UploadRunOptions
+            pipelineMode={pipelineMode}
+            forceRedescribeImages={forceRedescribeImagesToggle}
+            onForceRedescribeImagesChange={setForceRedescribeImagesToggle}
+            batch={{
+              existingBatches,
+              batchesLoading,
+              batchDropdownChoice,
+              onBatchDropdownChoiceChange: setBatchDropdownChoice,
+              customBatchName,
+              onCustomBatchNameChange: setCustomBatchName,
+            }}
+            tags={{
+              tagOptions,
+              tagsLoading,
+              tagsError,
+              selectedTags,
+              onSelectedTagsChange: setSelectedTags,
+            }}
+            workers={{
+              runAllWorkers,
+              onRunAllWorkersChange: setRunAllWorkers,
+              selectedWorkers,
+              onSelectedWorkersChange: handleWorkerToggle,
+              forceReindex,
+              onForceReindexChange: setForceReindex,
+              requireEmissionsPresence,
+              onRequireEmissionsPresenceChange: setRequireEmissionsPresence,
+              hideEmissionsPresenceToggle: isClimatePlansPipeline,
+            }}
+          />
+          <UrlUploadForm
+            urlInput={urlInput}
+            onUrlInputChange={setUrlInput}
+            autoApprove={autoApprove}
+            onAutoApproveChange={setAutoApprove}
+            pipelineMode={pipelineMode}
+            onSubmit={handleUrlSubmit}
           />
         </TabsContent>
 
-        {!isClimatePlansPipeline && (
-          <TabsContent value="autorun">
-            <AutoRunPanel />
-          </TabsContent>
-        )}
+        <TabsContent value="file">
+          <UploadRunOptions
+            pipelineMode={pipelineMode}
+            forceRedescribeImages={forceRedescribeImagesToggle}
+            onForceRedescribeImagesChange={setForceRedescribeImagesToggle}
+            batch={{
+              existingBatches,
+              batchesLoading,
+              batchDropdownChoice,
+              onBatchDropdownChoiceChange: setBatchDropdownChoice,
+              customBatchName,
+              onCustomBatchNameChange: setCustomBatchName,
+            }}
+            tags={{
+              tagOptions,
+              tagsLoading,
+              tagsError,
+              selectedTags,
+              onSelectedTagsChange: setSelectedTags,
+            }}
+            workers={{
+              runAllWorkers,
+              onRunAllWorkersChange: setRunAllWorkers,
+              selectedWorkers,
+              onSelectedWorkersChange: handleWorkerToggle,
+              forceReindex,
+              onForceReindexChange: setForceReindex,
+              requireEmissionsPresence,
+              onRequireEmissionsPresenceChange: setRequireEmissionsPresence,
+              hideEmissionsPresenceToggle: isClimatePlansPipeline,
+            }}
+          />
+          <FileUploadZone
+            isDragging={isDragging}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onInputChange={handleFileInputChange}
+            uploadedFiles={uploadedFiles}
+            autoApprove={autoApprove}
+            onAutoApproveChange={setAutoApprove}
+            pipelineMode={pipelineMode}
+            onFileSubmit={handleFileSubmit}
+          />
+        </TabsContent>
       </Tabs>
+
+      <UploadList
+        uploadMode={uploadMode}
+        uploadedFiles={uploadedFiles}
+        processedUrls={processedUrls}
+        onRemoveUploadedFile={handleRemoveUploadedFile}
+        onRemoveProcessedItem={handleRemoveProcessedItem}
+      />
 
       <ConfirmDialog
         open={!!removeConfirm}
