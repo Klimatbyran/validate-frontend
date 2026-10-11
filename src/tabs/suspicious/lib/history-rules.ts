@@ -3,6 +3,10 @@ import type {
   SuspicionFinding,
   SuspicionSeverity,
 } from "../types";
+import {
+  historySeriesFromObservations,
+  observationFindingFields,
+} from "./observation-fields";
 import { median, powerOfTenFactor, ratioFactor } from "./stats";
 import { SUSPICION_CONFIG } from "./suspicion-config";
 
@@ -21,34 +25,6 @@ function groupByCompanyAndDataPoint(
     else series.set(key, [observation]);
   }
   return series;
-}
-
-function findingBase(
-  observation: DataPointObservation,
-): Omit<
-  SuspicionFinding,
-  | "id"
-  | "rule"
-  | "severity"
-  | "score"
-  | "messageKey"
-  | "messageParams"
-  | "comparisons"
-> {
-  return {
-    companyId: observation.companyId,
-    companyName: observation.companyName,
-    wikidataId: observation.wikidataId,
-    tags: observation.tags,
-    dataYear: observation.dataYear,
-    reportYear: observation.reportYear,
-    reportUrl: observation.reportUrl,
-    dataPointId: observation.dataPointId,
-    dataPointLabel: observation.dataPointLabel,
-    value: observation.value,
-    origin: observation.origin,
-    verifiedByName: observation.verifiedByName,
-  };
 }
 
 /**
@@ -114,9 +90,14 @@ export function detectHistoryAnomalies(
         },
       ];
 
+      const historySeries = historySeriesFromObservations(
+        series,
+        observation.dataYear,
+      );
+
       if (isUnitScale) {
         findings.push({
-          ...findingBase(observation),
+          ...observationFindingFields(observation),
           id: `unit-scale-error:${observation.key}`,
           rule: "unit-scale-error",
           severity,
@@ -126,12 +107,13 @@ export function detectHistoryAnomalies(
             : "suspicious.rules.unitScaleError.messageBelow",
           messageParams: { factor: unitFactor },
           comparisons,
+          historySeries,
         });
         continue;
       }
 
       findings.push({
-        ...findingBase(observation),
+        ...observationFindingFields(observation),
         id: `year-over-year-jump:${observation.key}`,
         rule: "year-over-year-jump",
         severity,
@@ -144,6 +126,7 @@ export function detectHistoryAnomalies(
           otherYears: otherValues.length,
         },
         comparisons,
+        historySeries,
       });
     }
   }

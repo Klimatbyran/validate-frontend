@@ -53,12 +53,24 @@ export type SuspicionOrigin = "ai" | "verified";
 
 export const SUSPICION_ORIGINS = ["ai", "verified"] as const;
 
-/** Metadata as served for a single data point by the prod pipeline company list. */
+/** Metadata as served for a single data point by the pipeline company list. */
 export interface DataPointMetadata {
   verifiedBy?: { name: string } | null;
   user?: { name?: string | null } | null;
   source?: string | null;
   comment?: string | null;
+  /** Human page/section locator, e.g. "p. 42, GHG table". */
+  sourceReference?: string | null;
+  /** Internal stored PDF URL with #page=N deep link, when available. */
+  sourcePageUrl?: string | null;
+}
+
+/** One year in a company's own history for the flagged data point. */
+export interface HistoryYearValue {
+  year: number;
+  value: number;
+  /** True for the year that was flagged. */
+  isFlagged?: boolean;
 }
 
 /**
@@ -81,8 +93,15 @@ export interface DataPointObservation {
   dataPointLabel: string;
   scope: string;
   value: number;
+  /** Emissions unit from the API when present; otherwise tCO2e. */
+  unit: string;
   origin: SuspicionOrigin;
   verifiedByName: string | null;
+  sourceReference: string | null;
+  sourcePageUrl: string | null;
+  /** `metadata.source` when the extractor recorded one. */
+  extractionSource: string | null;
+  priorComment: string | null;
 }
 
 /** A supporting number shown next to the flagged value in the UI. */
@@ -110,8 +129,15 @@ export interface SuspicionFinding {
   dataPointId: string;
   dataPointLabel: string;
   value: number | null;
+  unit: string;
   origin: SuspicionOrigin;
   verifiedByName: string | null;
+  sourceReference: string | null;
+  sourcePageUrl: string | null;
+  extractionSource: string | null;
+  priorComment: string | null;
+  /** Present for history-based rules: every year in the company's series. */
+  historySeries?: HistoryYearValue[];
   /** i18n key + params describing why the value was flagged. */
   messageKey: string;
   messageParams: Record<string, string | number>;

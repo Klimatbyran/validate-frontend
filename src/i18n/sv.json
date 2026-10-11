@@ -2408,7 +2408,22 @@
       "notWritable": "Den här datapunkten är beräknad och kan inte redigeras här.",
       "verifiedHint": "Det sparade värdet markeras som manuellt validerat.",
       "scope2VerifiedShared": "Scope 2 marknadsbaserat, platsbaserat och unknown delar en verified-flagga — sparande markerar alla tre som manuellt validerade.",
-      "editorSourceMismatch": "Editorn är inloggad mot {{auth}}, men den här vyn är {{source}}."
+      "editorSourceMismatch": "Editorn är inloggad mot {{auth}}, men den här vyn är {{source}}.",
+      "unit": "Enhet",
+      "historyYears": "Bolagets historik för den här datapunkten",
+      "flaggedYear": "Flaggad",
+      "sourceTitle": "Källa i rapporten",
+      "sourceMissing": "Ingen sidreferens eller källförhandsvisning är kopplad till det här värdet.",
+      "sourceReference": "Källreferens",
+      "sourcePage": "Rapportsida",
+      "priorComment": "Tidigare kommentar",
+      "extractionSource": "Extraktionskälla",
+      "openSourcePage": "Öppna källsida",
+      "openSourcePageNewTab": "Öppna i ny flik",
+      "sourcePreviewTitle": "Förhandsvisning av källsida",
+      "sourcePreviewHint": "Förhandsvisning av den lagrade PDF-sidan när webbläsaren tillåter inbäddning. Använd länken om förhandsvisningen är tom.",
+      "signedAs": "Signerar som {{name}}",
+      "confirmSignedAs": "Korrigeringen tillskrivs {{name}}."
     },
     "comparison": {
       "peerMedian": "Median för andra bolag",

@@ -6,6 +6,7 @@ import type {
   SuspicionSeverity,
 } from "../types";
 import type { PeriodRecord } from "./observations";
+import { observationFindingFields } from "./observation-fields";
 import { ratioFactor, relativeDifference } from "./stats";
 import { SUSPICION_CONFIG } from "./suspicion-config";
 import {
@@ -32,22 +33,11 @@ function buildFinding(
   input: FindingInput,
 ): SuspicionFinding {
   return {
+    ...observationFindingFields(observation),
     id: `${input.rule}:${observation.key}`,
     rule: input.rule,
     severity: input.severity,
     score: input.score,
-    companyId: observation.companyId,
-    companyName: observation.companyName,
-    wikidataId: observation.wikidataId,
-    tags: observation.tags,
-    dataYear: observation.dataYear,
-    reportYear: observation.reportYear,
-    reportUrl: observation.reportUrl,
-    dataPointId: observation.dataPointId,
-    dataPointLabel: observation.dataPointLabel,
-    value: observation.value,
-    origin: observation.origin,
-    verifiedByName: observation.verifiedByName,
     messageKey: input.messageKey,
     messageParams: input.messageParams,
     comparisons: input.comparisons,

@@ -2408,7 +2408,22 @@
       "notWritable": "This data point is calculated and cannot be edited here.",
       "verifiedHint": "The saved value is marked as manually validated.",
       "scope2VerifiedShared": "Scope 2 market-based, location-based and unknown share one verified flag — saving marks all three as manually validated.",
-      "editorSourceMismatch": "Editor is signed in against {{auth}}, but this view is {{source}}."
+      "editorSourceMismatch": "Editor is signed in against {{auth}}, but this view is {{source}}.",
+      "unit": "Unit",
+      "historyYears": "Company history for this data point",
+      "flaggedYear": "Flagged",
+      "sourceTitle": "Source in the report",
+      "sourceMissing": "No page reference or source snapshot is attached to this value.",
+      "sourceReference": "Source reference",
+      "sourcePage": "Report page",
+      "priorComment": "Previous comment",
+      "extractionSource": "Extraction source",
+      "openSourcePage": "Open source page",
+      "openSourcePageNewTab": "Open in new tab",
+      "sourcePreviewTitle": "Source page preview",
+      "sourcePreviewHint": "Preview of the stored PDF page when the browser allows embedding. Use the link if the preview is blank.",
+      "signedAs": "Signing as {{name}}",
+      "confirmSignedAs": "This correction will be attributed to {{name}}."
     },
     "comparison": {
       "peerMedian": "Peer median",

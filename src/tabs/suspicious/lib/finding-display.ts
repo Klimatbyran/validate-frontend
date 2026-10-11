@@ -46,6 +46,28 @@ export function originLabelKey(origin: SuspicionOrigin): string {
   return `suspicious.origin.${origin}`;
 }
 
+/** Comparison cells that are emissions magnitudes (show the unit suffix). */
+const EMISSION_COMPARISON_LABEL_KEYS = new Set([
+  "suspicious.comparison.peerMedian",
+  "suspicious.comparison.ownYearsMedian",
+  "suspicious.comparison.statedScope3Total",
+  "suspicious.comparison.categorySum",
+  "suspicious.comparison.statedTotal",
+  "suspicious.comparison.scopeSum",
+  "suspicious.comparison.scope1",
+  "suspicious.comparison.scope2",
+  "suspicious.comparison.scope3",
+  "suspicious.comparison.scope2Mb",
+  "suspicious.comparison.scope2Lb",
+  "suspicious.comparison.sharedValue",
+  "suspicious.comparison.categoryValue",
+  "suspicious.comparison.difference",
+]);
+
+export function comparisonShowsUnit(labelKey: string): boolean {
+  return EMISSION_COMPARISON_LABEL_KEYS.has(labelKey);
+}
+
 /**
  * Localise the numbers inside a finding's message params. Rules stay free of
  * locale concerns by emitting raw numbers; the UI formats them on the way in.

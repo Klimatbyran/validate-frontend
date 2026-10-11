@@ -1,6 +1,7 @@
 import { Info, ExternalLink, FileText } from "lucide-react";
 import { useMemo } from "react";
 import { useI18n } from "@/contexts/I18nContext";
+import { trustedSourcePageUrl } from "@/lib/trusted-source-page-url";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import type { GarboFieldMetadata } from "../lib/types";
@@ -16,22 +17,6 @@ function hasAnyMetadata(metadata: GarboFieldMetadata | null | undefined) {
       metadata.verifiedBy ||
       metadata.updatedAt,
   );
-}
-
-/** Only linkify internal storage PDF deep links — never arbitrary hrefs. */
-function trustedSourcePageUrl(value: string | null | undefined): string | null {
-  const trimmed = value?.trim();
-  if (!trimmed) return null;
-  try {
-    const url = new URL(trimmed);
-    if (url.protocol !== "https:") return null;
-    if (!url.hostname.toLowerCase().endsWith("storage.googleapis.com")) {
-      return null;
-    }
-    return trimmed;
-  } catch {
-    return null;
-  }
 }
 
 export function MetadataDetailsDialog({

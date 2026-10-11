@@ -12,6 +12,7 @@ import type { Company } from "@/tabs/errors/types";
 import type { SuspicionFinding } from "../types";
 import {
   basisLabelKey,
+  comparisonShowsUnit,
   formatMessageParams,
   ruleBasis,
   ruleDescriptionKey,
@@ -29,6 +30,8 @@ import {
   isWritableDataPoint,
   parseInputNumber,
 } from "../lib/write-value";
+import { FindingSourcePreview } from "./FindingSourcePreview";
+import { HistorySeriesTable } from "./HistorySeriesTable";
 import { OriginBadge, SeverityBadge } from "./SuspicionBadges";
 
 const linkClass =
@@ -38,6 +41,17 @@ const inputClass =
   "h-10 w-full rounded-lg border border-gray-03 bg-gray-05 px-3 text-sm text-gray-01 outline-none placeholder:text-gray-02 transition-colors hover:border-gray-02 focus-visible:border-blue-03";
 
 type SaveStatus = "idle" | "confirming" | "saving" | "saved";
+
+function formatWithUnit(
+  value: number | null,
+  unit: string,
+  formatNumber: (n: number) => string,
+  display?: string,
+): string {
+  if (display) return display;
+  if (value === null) return "—";
+  return `${formatNumber(value)} ${unit}`;
+}
 
 export function SuspiciousFindingDialog({
   finding,
@@ -62,6 +76,7 @@ export function SuspiciousFindingDialog({
     finding.messageKey,
     formatMessageParams(finding.messageParams, formatNumber),
   );
+  const unit = finding.unit || "tCO2e";
 
   return (
     <Modal
@@ -85,6 +100,9 @@ export function SuspiciousFindingDialog({
             {t(ruleLabelKey(finding.rule))} ·{" "}
             {t(basisLabelKey(ruleBasis(finding.rule)))}
           </span>
+          <span className="rounded-full border border-gray-03 px-2 py-0.5 text-[11px] uppercase tracking-wide text-gray-02">
+            {unit}
+          </span>
         </div>
 
         <div className="rounded-lg border border-gray-03 bg-gray-05/60 p-4">
@@ -104,7 +122,7 @@ export function SuspiciousFindingDialog({
                 {t("suspicious.detail.flaggedValue")}
               </dt>
               <dd className="text-lg font-semibold text-gray-01">
-                {formatNumber(finding.value)}
+                {formatWithUnit(finding.value, unit, formatNumber)}
               </dd>
             </div>
             {finding.comparisons.map((comparison) => (
@@ -116,12 +134,22 @@ export function SuspiciousFindingDialog({
                   {t(comparison.labelKey, comparison.labelParams)}
                 </dt>
                 <dd className="text-lg font-semibold text-gray-01">
-                  {comparison.display ?? formatNumber(comparison.value)}
+                  {comparison.display
+                    ? comparison.display
+                    : comparisonShowsUnit(comparison.labelKey)
+                      ? formatWithUnit(comparison.value, unit, formatNumber)
+                      : comparison.value === null
+                        ? t("common.placeholderDash")
+                        : formatNumber(comparison.value)}
                 </dd>
               </div>
             ))}
           </dl>
         </div>
+
+        {finding.historySeries && finding.historySeries.length > 0 ? (
+          <HistorySeriesTable series={finding.historySeries} unit={unit} />
+        ) : null}
 
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
@@ -132,6 +160,10 @@ export function SuspiciousFindingDialog({
             {
               labelKey: "yearLabels.companyReportYearShort",
               value: finding.reportYear ? String(finding.reportYear) : null,
+            },
+            {
+              labelKey: "suspicious.detail.unit",
+              value: unit,
             },
             {
               labelKey: "suspicious.table.verifiedBy",
@@ -149,6 +181,13 @@ export function SuspiciousFindingDialog({
             </div>
           ))}
         </dl>
+
+        <FindingSourcePreview
+          sourceReference={finding.sourceReference}
+          sourcePageUrl={finding.sourcePageUrl}
+          extractionSource={finding.extractionSource}
+          priorComment={finding.priorComment}
+        />
 
         <CorrectionForm
           key={finding.id}
@@ -221,7 +260,7 @@ function CorrectionForm({
   onSaved: () => void | Promise<void>;
 }) {
   const { t } = useI18n();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [value, setValue] = useState(
     finding.value === null ? "" : String(finding.value),
   );
@@ -233,6 +272,8 @@ function CorrectionForm({
   const authTarget = getUnearthTarget();
   const sourceLabel = t(sourceLabelKey(source));
   const isScope2 = isScope2DataPoint(finding.dataPointId);
+  const signerName = user?.name?.trim() || null;
+  const unit = finding.unit || "tCO2e";
 
   if (!isWritableDataPoint(finding.dataPointId)) {
     return <FormShell>{t("suspicious.detail.notWritable")}</FormShell>;
@@ -323,14 +364,22 @@ function CorrectionForm({
 
   return (
     <div className="rounded-lg border border-gray-03 bg-gray-05/60 p-4 space-y-3">
-      <p className="text-xs uppercase tracking-wide text-gray-02">
-        {t("suspicious.detail.correctValue")}
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <p className="text-xs uppercase tracking-wide text-gray-02">
+          {t("suspicious.detail.correctValue")}
+        </p>
+        {signerName ? (
+          <p className="text-xs text-gray-02">
+            {t("suspicious.detail.signedAs", { name: signerName })}
+          </p>
+        ) : null}
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-[minmax(0,14rem)_1fr]">
         <label className="block">
           <span className="text-xs text-gray-02">
             {t("suspicious.detail.newValue")}
+            <span className="ml-1 text-gray-03">({unit})</span>
           </span>
           <input
             type="text"
@@ -371,11 +420,16 @@ function CorrectionForm({
             <div className="space-y-1">
               <p className="text-sm text-amber-200">
                 {t("suspicious.detail.confirmPrompt", {
-                  value: value.trim(),
+                  value: `${value.trim()} ${unit}`,
                   source: sourceLabel,
                   company: finding.companyName,
                 })}
               </p>
+              {signerName ? (
+                <p className="text-xs text-amber-200/80">
+                  {t("suspicious.detail.confirmSignedAs", { name: signerName })}
+                </p>
+              ) : null}
               {isScope2 ? (
                 <p className="text-xs text-amber-200/80">
                   {t("suspicious.detail.scope2VerifiedShared")}

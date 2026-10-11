@@ -168,6 +168,12 @@ describe("company history comparison", () => {
 
     expect(finding?.dataYear).toBe(2024);
     expect(finding?.messageParams.factor).toBe(40);
+    expect(finding?.historySeries).toEqual([
+      { year: 2021, value: 100, isFlagged: false },
+      { year: 2022, value: 110, isFlagged: false },
+      { year: 2023, value: 105, isFlagged: false },
+      { year: 2024, value: 4_200, isFlagged: true },
+    ]);
   });
 
   it("ignores ordinary year-on-year movement", () => {

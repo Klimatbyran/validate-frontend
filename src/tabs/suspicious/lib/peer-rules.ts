@@ -3,6 +3,7 @@ import type {
   SuspicionFinding,
   SuspicionSeverity,
 } from "../types";
+import { observationFindingFields } from "./observation-fields";
 import type { PeriodRecord } from "./observations";
 import {
   median,
@@ -142,22 +143,11 @@ export function detectPeerOutliers(
     for (const outlier of findPeerOutliers(group, SUSPICION_CONFIG.peer)) {
       const { observation } = outlier;
       findings.push({
+        ...observationFindingFields(observation),
         id: `peer-outlier:${observation.key}`,
         rule: "peer-outlier",
         severity: outlier.severity,
         score: Math.abs(outlier.z),
-        companyId: observation.companyId,
-        companyName: observation.companyName,
-        wikidataId: observation.wikidataId,
-        tags: observation.tags,
-        dataYear: observation.dataYear,
-        reportYear: observation.reportYear,
-        reportUrl: observation.reportUrl,
-        dataPointId: observation.dataPointId,
-        dataPointLabel: observation.dataPointLabel,
-        value: observation.value,
-        origin: observation.origin,
-        verifiedByName: observation.verifiedByName,
         messageKey: outlier.above
           ? "suspicious.rules.peerOutlier.messageAbove"
           : "suspicious.rules.peerOutlier.messageBelow",
@@ -223,22 +213,11 @@ export function detectPeerShareOutliers(
     for (const outlier of findPeerOutliers(group, SUSPICION_CONFIG.peerShare)) {
       const { observation } = outlier;
       findings.push({
+        ...observationFindingFields(observation),
         id: `peer-share-outlier:${observation.key}`,
         rule: "peer-share-outlier",
         severity: outlier.severity,
         score: Math.abs(outlier.z),
-        companyId: observation.companyId,
-        companyName: observation.companyName,
-        wikidataId: observation.wikidataId,
-        tags: observation.tags,
-        dataYear: observation.dataYear,
-        reportYear: observation.reportYear,
-        reportUrl: observation.reportUrl,
-        dataPointId: observation.dataPointId,
-        dataPointLabel: observation.dataPointLabel,
-        value: observation.value,
-        origin: observation.origin,
-        verifiedByName: observation.verifiedByName,
         messageKey: outlier.above
           ? "suspicious.rules.peerShareOutlier.messageAbove"
           : "suspicious.rules.peerShareOutlier.messageBelow",

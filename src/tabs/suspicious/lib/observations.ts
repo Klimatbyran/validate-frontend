@@ -13,8 +13,10 @@ import {
 import type { DataPointObservation } from "../types";
 import {
   getDataPointMetadata,
+  getDataPointUnit,
   resolveOrigin,
   resolveVerifierName,
+  trimMetaField,
 } from "./data-point-metadata";
 
 /**
@@ -85,8 +87,13 @@ function buildPeriodRecord(
       dataPointLabel: dataPoint.label,
       scope: dataPoint.scope,
       value,
+      unit: getDataPointUnit(period.emissions, dataPoint.id),
       origin: resolveOrigin(metadata),
       verifiedByName: resolveVerifierName(metadata),
+      sourceReference: trimMetaField(metadata?.sourceReference),
+      sourcePageUrl: trimMetaField(metadata?.sourcePageUrl),
+      extractionSource: trimMetaField(metadata?.source),
+      priorComment: trimMetaField(metadata?.comment),
     });
   }
 
