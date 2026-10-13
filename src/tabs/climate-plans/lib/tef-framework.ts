@@ -153,7 +153,9 @@ export function filterHitsByScope(
   scope: TefFrameworkScope,
   placeName: string | null,
 ): TefHitWithPlace[] {
-  if (scope === "all" || !placeName) return hits;
+  if (scope === "all") return hits;
+  // Scoped mode with no place selected must not fall back to "all".
+  if (!placeName) return [];
   if (scope === "municipality") {
     return hits.filter((hit) => namesMatch(hit.municipalityName, placeName));
   }
@@ -271,20 +273,33 @@ export function tefCellFill(
   return `rgb(${mix[0]}, ${mix[1]}, ${mix[2]})`;
 }
 
+/** True when the record has TEF hits or pipeline gate-domain shifts. */
+export function recordHasTefFrameworkSignal(
+  record: ExploreMunicipalityRecord,
+): boolean {
+  if (record.tefHits.length > 0) return true;
+  for (const measure of record.measures) {
+    for (const shift of measure.activity_shifts ?? []) {
+      if (shift.transition_element_gate_domain?.trim()) return true;
+    }
+  }
+  return false;
+}
+
 export function listScopePlaces(
   records: ExploreMunicipalityRecord[],
   scope: TefFrameworkScope,
 ): string[] {
   if (scope === "municipality") {
     return records
-      .filter((r) => r.tefHits.length > 0)
+      .filter(recordHasTefFrameworkSignal)
       .map((r) => r.name)
       .sort((a, b) => a.localeCompare(b, "sv"));
   }
   if (scope === "region") {
     const names = new Set<string>();
     for (const record of records) {
-      if (record.tefHits.length === 0) continue;
+      if (!recordHasTefFrameworkSignal(record)) continue;
       const region = record.regionName ?? record.county;
       if (region) names.add(region.replace(/\s+län$/i, "").trim());
     }

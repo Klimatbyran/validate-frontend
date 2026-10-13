@@ -107,7 +107,7 @@ export function TefFrameworkView({
     <div className="space-y-4">
       <MethodologyPanel
         data="transition_element_matches on scored measures (stable_id, short_label, sector_path, match_confidence). Gate domain from activity_shifts.transition_element_gate_domain (pipeline). Sector emissions from Unearth / SMHI territorial series. Sector columns follow the Transition Element Framework (T-1 Transport … T-6 Waste)."
-        calculation="Each cell is one TEF (stable_id). Hits = match rows in the selected scope. Strength = Σ confidence weights (high=3, mid=2, low=1) / (3 × hits). Municipalities = distinct municipalities with at least one match. Colour intensity is that metric scaled to the max cell in the current scope. Match rate on a header = gated shifts with ≥1 confirmed match / shifts gated to that top domain. Optional emission bars = sector tonnes / sum of mapped buckets (transport→transport, industry→industry, afolu→agriculture, buildings→heating, energy→energy, waste→waste) using each place’s latest year; machinery/product/other are excluded."
+        calculation="Each cell is one TEF (stable_id). Hits = match rows in the selected scope. Strength = Σ confidence weights (high=3, mid=2, low=1) / (3 × hits). Municipalities = distinct municipalities with at least one match. Colour intensity is that metric scaled to the max cell in the current scope. Match rate on a header = gated shifts with ≥1 confirmed match in the same top domain / shifts gated to that domain. Optional emission bars = sector tonnes / sum of mapped buckets (transport→transport, industry→industry, afolu→agriculture, buildings→heating, energy→energy, waste→waste) using each place’s latest year; machinery/product/other are excluded."
         extra="Scope mirrors the KPI map: all extracts, one region, or one municipality. Empty cells with a low match rate mean the domain appears in plans but TEF matching struggled — not that the topic is absent. Click a cell for a gist then expand places for quotes."
       />
 
@@ -171,7 +171,7 @@ export function TefFrameworkView({
             onChange={(e) => onShowEmissionsChange(e.target.checked)}
             className="rounded border-gray-03"
           />
-          Scale headers by emissions
+          Show emissions on headers
         </label>
 
         <span className="text-sm text-gray-02">
@@ -210,7 +210,10 @@ export function TefFrameworkView({
                     cellCount={column.cells.length}
                     rgb={column.rgb}
                     gate={
-                      gateRates.hasAnyGateData && gate && sectorId
+                      gateRates.hasAnyGateData &&
+                      gate &&
+                      sectorId &&
+                      gate.gated > 0
                         ? gate
                         : null
                     }
@@ -343,23 +346,17 @@ function SectorHeader({
             className="text-[10px] font-medium text-gray-01/90 tabular-nums"
             title="Confirmed TEF matches among activity shifts gated to this top domain"
           >
-            {gate.gated === 0
-              ? "no gated shifts"
-              : `${gate.matched}/${gate.gated} matched`}
+            {gate.matched}/{gate.gated} matched
           </div>
-          {gate.rate != null ? (
-            <div className="h-1 rounded-full bg-black/25 overflow-hidden">
-              <div
-                className={cn(
-                  "h-full rounded-full",
-                  gate.rate >= 0.5 ? "bg-white/90" : "bg-orange-03",
-                )}
-                style={{ width: `${Math.round(gate.rate * 100)}%` }}
-              />
-            </div>
-          ) : (
-            <div className="h-1 rounded-full bg-black/15" />
-          )}
+          <div className="h-1 rounded-full bg-black/25 overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full",
+                (gate.rate ?? 0) >= 0.5 ? "bg-white/90" : "bg-orange-03",
+              )}
+              style={{ width: `${Math.round((gate.rate ?? 0) * 100)}%` }}
+            />
+          </div>
         </div>
       ) : null}
       {showEmissions && emissions ? (

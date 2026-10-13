@@ -4,13 +4,16 @@ import type {
   TefFrameworkScope,
 } from "./explore-types";
 import { findSectorEmissions, pickEmissionsYear } from "./explore-alignment";
+import type { TransitionElementMatch } from "./measures-types";
 import { foldRegionName, namesMatch } from "./municipality-names";
 import {
   emissionBucketForSectorLabel,
+  tefGroupFromSectorPath,
   type EmissionBucket,
 } from "./tef-groups";
 import {
   TEF_SECTORS,
+  parseTefIndex,
   sectorIdFromGroup,
   sectorIdFromIndex,
   type TefSectorId,
@@ -34,7 +37,9 @@ export function filterRecordsByScope(
   scope: TefFrameworkScope,
   placeName: string | null,
 ): ExploreMunicipalityRecord[] {
-  if (scope === "all" || !placeName) return records;
+  if (scope === "all") return records;
+  // Scoped mode with no place selected must not fall back to "all".
+  if (!placeName) return [];
   if (scope === "municipality") {
     return records.filter((r) => namesMatch(r.name, placeName));
   }
@@ -61,14 +66,17 @@ export function tefSectorFromGateDomain(
   }
 
   const fromGroup = sectorIdFromGroup(trimmed);
-  if (fromGroup !== "other") return fromGroup;
+  return fromGroup === "other" ? null : fromGroup;
+}
 
-  const key = trimmed.toLowerCase();
-  for (const sector of TEF_SECTORS) {
-    if (sector.label.toLowerCase() === key) return sector.id;
-    if (sector.code.toLowerCase() === key) return sector.id;
-  }
-  return null;
+/** Top TEF sector for a confirmed match (index first, else sector_path group). */
+export function tefSectorFromMatch(
+  match: Pick<TransitionElementMatch, "short_label" | "sector_path">,
+): TefSectorId | null {
+  const fromIndex = sectorIdFromIndex(parseTefIndex(match.short_label));
+  if (fromIndex !== "other") return fromIndex;
+  const fromGroup = sectorIdFromGroup(tefGroupFromSectorPath(match.sector_path));
+  return fromGroup === "other" ? null : fromGroup;
 }
 
 export interface SectorEmissionShare {
@@ -130,7 +138,7 @@ export interface SectorGateMatchRate {
   sectorId: TefSectorId;
   /** Activity shifts gated to this top domain. */
   gated: number;
-  /** Gated shifts with ≥1 confirmed TEF match. */
+  /** Gated shifts with ≥1 confirmed TEF match in the same top domain. */
   matched: number;
   /** matched / gated, or null when gated is 0. */
   rate: number | null;
@@ -158,9 +166,10 @@ export function sectorGateMatchRates(
         if (!sectorId) continue;
         hasAnyGateData = true;
         gatedBySector[sectorId] += 1;
-        if ((shift.transition_element_matches ?? []).length > 0) {
-          matchedBySector[sectorId] += 1;
-        }
+        const sameDomainMatch = (shift.transition_element_matches ?? []).some(
+          (match) => tefSectorFromMatch(match) === sectorId,
+        );
+        if (sameDomainMatch) matchedBySector[sectorId] += 1;
       }
     }
   }

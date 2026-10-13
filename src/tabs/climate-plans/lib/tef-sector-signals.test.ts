@@ -2,14 +2,16 @@ import { describe, expect, it } from "vitest";
 import type { ExploreMunicipalityRecord } from "./explore-types";
 import type { Measure } from "./measures-types";
 import {
+  filterRecordsByScope,
   sectorEmissionSharesForScope,
   sectorGateMatchRates,
   tefSectorFromGateDomain,
+  tefSectorFromMatch,
 } from "./tef-sector-signals";
 
 function measureWithGate(
   domain: string | null,
-  matched: boolean,
+  matchSectorPath: string | null,
 ): Measure {
   return {
     measure_text: "measure",
@@ -25,17 +27,18 @@ function measureWithGate(
         type_reasoning: "",
         score: 4,
         reasoning: "",
-        transition_element_matches: matched
-          ? [
-              {
-                stable_id: "tef-1",
-                short_label: "Shift",
-                description: "",
-                sector_path: "Transport",
-                match_confidence: "high",
-              },
-            ]
-          : [],
+        transition_element_matches:
+          matchSectorPath == null
+            ? []
+            : [
+                {
+                  stable_id: "tef-1",
+                  short_label: "Shift",
+                  description: "",
+                  sector_path: matchSectorPath,
+                  match_confidence: "high",
+                },
+              ],
         transition_element_candidates: [],
         transition_element_gate_domain: domain,
       },
@@ -95,16 +98,34 @@ describe("tefSectorFromGateDomain", () => {
   });
 });
 
+describe("tefSectorFromMatch", () => {
+  it("prefers catalogue index then sector_path group", () => {
+    expect(
+      tefSectorFromMatch({
+        short_label: "T-6A1-TE-1 - Recycling",
+        sector_path: "Waste > Solids",
+      }),
+    ).toBe("waste");
+    expect(
+      tefSectorFromMatch({
+        short_label: "Shift",
+        sector_path: "Transport > Road",
+      }),
+    ).toBe("transport");
+  });
+});
+
 describe("sectorGateMatchRates", () => {
-  it("counts gated shifts and how many got a confirmed match", () => {
+  it("counts only same-domain confirmed matches", () => {
     const rows = [
       record({
         name: "Nässjö",
         measures: [
-          measureWithGate("Waste", true),
-          measureWithGate("waste", false),
-          measureWithGate("Transport", true),
-          measureWithGate(null, true),
+          // Waste gated, but match is Transport → not a waste match
+          measureWithGate("Waste", "Transport > Road"),
+          measureWithGate("waste", null),
+          measureWithGate("Transport", "Transport > Road"),
+          measureWithGate(null, "Transport > Road"),
         ],
       }),
     ];
@@ -117,13 +138,39 @@ describe("sectorGateMatchRates", () => {
     expect(bySector.waste).toEqual({
       sectorId: "waste",
       gated: 2,
-      matched: 1,
-      rate: 0.5,
+      matched: 0,
+      rate: 0,
     });
     expect(bySector.transport.gated).toBe(1);
     expect(bySector.transport.matched).toBe(1);
     expect(bySector.industry.gated).toBe(0);
     expect(bySector.industry.rate).toBeNull();
+  });
+
+  it("returns empty aggregates when scoped without a place", () => {
+    const rows = [
+      record({
+        name: "Nässjö",
+        measures: [measureWithGate("Waste", "Waste > Solids")],
+      }),
+    ];
+    const { bySector, hasAnyGateData } = sectorGateMatchRates(
+      rows,
+      "municipality",
+      null,
+    );
+    expect(hasAnyGateData).toBe(false);
+    expect(bySector.waste.gated).toBe(0);
+  });
+});
+
+describe("filterRecordsByScope", () => {
+  it("does not fall back to all records when place is missing", () => {
+    const rows = [record({ name: "Nässjö" }), record({ name: "Vaggeryd" })];
+    expect(filterRecordsByScope(rows, "region", null)).toEqual([]);
+    expect(filterRecordsByScope(rows, "municipality", "Nässjö")).toHaveLength(
+      1,
+    );
   });
 });
 
