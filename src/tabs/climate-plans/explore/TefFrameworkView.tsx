@@ -218,9 +218,7 @@ export function TefFrameworkView({
                         : null
                     }
                     emissions={
-                      showEmissions && emissions && sectorId
-                        ? emissions
-                        : null
+                      showEmissions && emissions && sectorId ? emissions : null
                     }
                     showEmissions={showEmissions}
                   />
@@ -236,8 +234,7 @@ export function TefFrameworkView({
                             const value = cellMetricValue(cell, metric);
                             const intensity =
                               maxMetric <= 0 ? 0 : value / maxMetric;
-                            const isSelected =
-                              selectedTefId === cell.stableId;
+                            const isSelected = selectedTefId === cell.stableId;
                             return (
                               <button
                                 key={cell.stableId}

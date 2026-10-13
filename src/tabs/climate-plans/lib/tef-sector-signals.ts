@@ -75,7 +75,9 @@ export function tefSectorFromMatch(
 ): TefSectorId | null {
   const fromIndex = sectorIdFromIndex(parseTefIndex(match.short_label));
   if (fromIndex !== "other") return fromIndex;
-  const fromGroup = sectorIdFromGroup(tefGroupFromSectorPath(match.sector_path));
+  const fromGroup = sectorIdFromGroup(
+    tefGroupFromSectorPath(match.sector_path),
+  );
   return fromGroup === "other" ? null : fromGroup;
 }
 
