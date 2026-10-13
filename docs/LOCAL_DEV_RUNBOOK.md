@@ -445,7 +445,7 @@ Validate uses **two auth mechanisms** — not interchangeable:
 | Mechanism          | Header                              | Used for                                                     | Where configured                            |
 | ------------------ | ----------------------------------- | ------------------------------------------------------------ | ------------------------------------------- |
 | **Staff JWT**      | `Authorization: Bearer <token>`     | Company editor, upload mutations, queue archive (staff path) | GitHub OAuth via Unearth API                |
-| **Client API key** | `X-API-Key: garb_<lookup>.<secret>` | Overview, Errors tab, integration routes (`/internal-*`)     | Validate Vite proxy (stage/prod paths only) |
+| **Client API key** | `X-API-Key: garb_<lookup>.<secret>` | Errors tab, integration routes (`/internal-*`)               | Validate Vite proxy (stage/prod paths only) |
 
 ### `ALLOW_ANONYMOUS_CLIENT_API` (Unearth API only)
 
@@ -462,7 +462,7 @@ ALLOW_ANONYMOUS_CLIENT_API=true
 | **When**     | Local dev with `VITE_UNEARTH_TARGET=local`      |
 | **Never**    | Production                                      |
 
-`/unearth-local` does not inject `X-API-Key`. Without this flag, Overview and other `/unearth-local/api/internal-*` routes return **401**.
+`/unearth-local` does not inject `X-API-Key`. Without this flag, `/unearth-local/api/internal-*` routes return **401**.
 
 ### Validate proxy: which paths inject `X-API-Key`
 
@@ -502,24 +502,22 @@ Requires `API_SECRET` in `.env`. For local integration routes, prefer `ALLOW_ANO
 
 ### API keys by scenario
 
-| Scenario                    | Unearth API `.env`                                           | Validate `.env.development`                                             | Login        |
-| --------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------- | ------------ |
-| **A — Local DB browse**     | `ALLOW_ANONYMOUS_CLIENT_API=true`                            | `npm run dev:local-db`                                                  | GitHub OAuth |
-| **B — Stage only**          | (no local API)                                               | `npm run dev:local`                                                     | GitHub OAuth |
-| **Local DB + pipeline**     | `ALLOW_ANONYMOUS_CLIENT_API=true`                            | `npm run dev:local-db-pipeline`                                         | GitHub OAuth |
-| **Full local**              | anonymous on Unearth; keys on Garbo if archive anonymous off | `npm run dev:local-full`                                                | GitHub OAuth |
-| **Local without anonymous** | `seed:client-api`; anonymous `false`                         | Overview on `/unearth-local` won’t work — use anonymous or stage target | GitHub OAuth |
+| Scenario                    | Unearth API `.env`                                           | Validate `.env.development`                                                    | Login        |
+| --------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------ | ------------ |
+| **A — Local DB browse**     | `ALLOW_ANONYMOUS_CLIENT_API=true`                            | `npm run dev:local-db`                                                         | GitHub OAuth |
+| **B — Stage only**          | (no local API)                                               | `npm run dev:local`                                                            | GitHub OAuth |
+| **Local DB + pipeline**     | `ALLOW_ANONYMOUS_CLIENT_API=true`                            | `npm run dev:local-db-pipeline`                                                | GitHub OAuth |
+| **Full local**              | anonymous on Unearth; keys on Garbo if archive anonymous off | `npm run dev:local-full`                                                       | GitHub OAuth |
+| **Local without anonymous** | `seed:client-api`; anonymous `false`                         | `/unearth-local` integration routes won’t work — use anonymous or stage target | GitHub OAuth |
 
 ### Quick diagnosis
 
-| Symptom                      | Likely cause               | Fix                                                        |
-| ---------------------------- | -------------------------- | ---------------------------------------------------------- |
-| 401 on company editor        | Not logged in              | GitHub OAuth login in Validate                             |
-| 401 on Overview (local)      | No key on `/unearth-local` | `ALLOW_ANONYMOUS_CLIENT_API=true` on Unearth API           |
-| 401 on Overview (stage)      | Missing/wrong proxy key    | `GARBO_STAGE_ALL_ACCESS_API_KEY` in Validate               |
-| 401 on Errors tab            | Missing stage or prod key  | Both `GARBO_STAGE_*` and `GARBO_PROD_*` in Validate        |
-| 403 on API route             | Key valid, wrong role      | Re-run `seed:client-api` with `GARBO_ALL_ACCESS_API_KEY`   |
-| 401 on pipeline upload/rerun | JWT mismatch               | Match `JWT_SECRET` in Unearth API and pipeline-api; log in |
+| Symptom                      | Likely cause              | Fix                                                        |
+| ---------------------------- | ------------------------- | ---------------------------------------------------------- |
+| 401 on company editor        | Not logged in             | GitHub OAuth login in Validate                             |
+| 401 on Errors tab            | Missing stage or prod key | Both `GARBO_STAGE_*` and `GARBO_PROD_*` in Validate        |
+| 403 on API route             | Key valid, wrong role     | Re-run `seed:client-api` with `GARBO_ALL_ACCESS_API_KEY`   |
+| 401 on pipeline upload/rerun | JWT mismatch              | Match `JWT_SECRET` in Unearth API and pipeline-api; log in |
 
 ---
 

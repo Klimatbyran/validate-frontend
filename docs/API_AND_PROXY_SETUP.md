@@ -13,7 +13,6 @@ How Validate talks to **Pipeline API**, **Unearth API**, and **Garbo API** in de
 | **Garbo API**    | `stage-api.klimatkollen.se`          | `/garbo-api/queue-archive/…` only |
 
 - **Errors tab** – always compares stage and prod **Unearth API** via `/unearth-stage-api/` and `/unearth-prod-api/` (ignores deployment target).
-- **Overview tab** – paginated views from Unearth `GET /internal-validate-overview/*` (X-API-Key via proxy; aggregation is server-side).
 
 In **development**, Vite proxies same-origin paths (see network tab table below).
 
