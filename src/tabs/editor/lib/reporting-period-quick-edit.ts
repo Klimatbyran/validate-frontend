@@ -47,9 +47,10 @@ export function quickEditScope3CategoryName(
   cat: number,
   t: (key: string, params?: Record<string, string | number>) => string,
 ): string {
-  const key = `editor.companies.scope3Categories.${cat}`;
-  const label = t(key);
-  if (!label || label === key)
+  // Keep the key as a `t(\`prefix.${cat}\`)` template so i18n-audit retains the
+  // editor.companies.scope3Categories.* tree (indirect t(key) is invisible to it).
+  const label = t(`editor.companies.scope3Categories.${cat}`);
+  if (!label || label === `editor.companies.scope3Categories.${cat}`)
     return t("editor.periodEditor.categoryUnknown", { n: cat });
   return label;
 }

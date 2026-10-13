@@ -147,7 +147,9 @@ function extractUsedKeysFromSource(srcRoot) {
   const reConcatPrefix = /\bt\s*\(\s*(['"])([^'"]+)\1\s*\+\s*[^)]+?\)/g;
   // Heuristic: any string literal that "looks like" a translation key (e.g. "jobstatus.overview.title")
   // This catches keys stored in maps/constants and later passed to `t()` indirectly.
-  const reLooksLikeKey = /(['"])([a-z][a-z0-9_]*(?:\.[A-Za-z0-9_-]+)+)\1/g;
+  // Allow camelCase segments (companyOverride.title, climateQaReviews.refresh).
+  const reLooksLikeKey =
+    /(['"])([A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_-]+)+)\1/g;
 
   for (const file of files) {
     const text = fs.readFileSync(file, "utf8");

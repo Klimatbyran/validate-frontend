@@ -37,9 +37,14 @@ function identifierTypeLabel(
   type: string,
   t: (key: string, params?: Record<string, string | number>) => string,
 ): string {
-  const key = `editor.singleCompanyView.mergeCompany.identifierTypes.${type}`;
-  const label = t(key);
-  return label === key ? type : label;
+  // Direct template `t()` so i18n-audit keeps identifierTypes.* keys.
+  const label = t(
+    `editor.singleCompanyView.mergeCompany.identifierTypes.${type}`,
+  );
+  return label ===
+    `editor.singleCompanyView.mergeCompany.identifierTypes.${type}`
+    ? type
+    : label;
 }
 
 export function CompanyMergeWizard({
