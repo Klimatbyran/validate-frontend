@@ -33,6 +33,8 @@ export interface ActivityShift {
   transition_element_matches: TransitionElementMatch[];
   transition_element_candidates: TransitionElementCandidate[];
   transition_element_suggested_new?: TransitionElementSuggestedNew;
+  /** LLM-classified TEF top domain (pipeline only), e.g. "Waste" or "T-6". */
+  transition_element_gate_domain?: string | null;
 }
 
 export interface Measure {

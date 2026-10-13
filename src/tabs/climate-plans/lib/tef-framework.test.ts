@@ -4,11 +4,14 @@ import {
   cellMetricValue,
   filterHitsByScope,
   groupCellsBySector,
+  listScopePlaces,
   parseTefIndex,
+  recordHasTefFrameworkSignal,
   sectorIdFromIndex,
   tefTitleFromShortLabel,
   type TefHitWithPlace,
 } from "./tef-framework";
+import type { ExploreMunicipalityRecord } from "./explore-types";
 
 function hit(
   partial: Partial<TefHitWithPlace> &
@@ -68,6 +71,7 @@ describe("TEF framework aggregation", () => {
     expect(filterHitsByScope(hits, "municipality", "Nässjö")).toHaveLength(1);
     expect(filterHitsByScope(hits, "region", "Jönköping")).toHaveLength(1);
     expect(filterHitsByScope(hits, "all", null)).toHaveLength(2);
+    expect(filterHitsByScope(hits, "municipality", null)).toHaveLength(0);
   });
 
   it("builds sector columns with hit and strength metrics", () => {
@@ -110,5 +114,70 @@ describe("TEF framework aggregation", () => {
     expect(columns.find((c) => c.sectorId === "industry")?.cells).toHaveLength(
       0,
     );
+  });
+});
+
+describe("listScopePlaces", () => {
+  it("includes municipalities with gate-domain data but no TEF hits", () => {
+    const records: ExploreMunicipalityRecord[] = [
+      {
+        id: "gate-only",
+        name: "Vaggeryd",
+        regionName: "Jönköping",
+        measures: [
+          {
+            measure_text: "waste sorting",
+            activity: "waste",
+            activity_shift_score: 3,
+            activity_shifts: [
+              {
+                activity: "waste",
+                shift_from: "landfill",
+                shift_to: "recycling",
+                need: "materials",
+                type: "Type Shift",
+                type_reasoning: "",
+                score: 3,
+                reasoning: "",
+                transition_element_matches: [],
+                transition_element_candidates: [],
+                transition_element_gate_domain: "Waste",
+              },
+            ],
+            intervention_who: "none",
+            intervention_when: "none",
+            intervention_what: "none",
+            intervention_how: "none",
+            intervention_score: 1,
+            intervention_reasoning: "",
+            intervention_type: "none",
+          },
+        ],
+        commitmentCount: 0,
+        commitmentSource: "measures-as-proxy",
+        climateRelevantCommitmentCount: null,
+        climateCommitmentGroupCount: null,
+        markdownChars: null,
+        tefHits: [],
+        goals: [],
+        hasQuantifiedTargets: null,
+        parisMentioned: null,
+        onePointFiveMentioned: null,
+        carbonBudgetReferenced: null,
+        documentTitle: null,
+        documentType: null,
+        adoptionDate: null,
+        planPeriodStart: null,
+        planPeriodEnd: null,
+        primaryFocus: null,
+        adoptedYear: null,
+        sourceUrl: null,
+        county: null,
+        dataSources: [],
+      },
+    ];
+    expect(recordHasTefFrameworkSignal(records[0]!)).toBe(true);
+    expect(listScopePlaces(records, "municipality")).toEqual(["Vaggeryd"]);
+    expect(listScopePlaces(records, "region")).toEqual(["Jönköping"]);
   });
 });

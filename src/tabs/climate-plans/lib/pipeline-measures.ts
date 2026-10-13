@@ -55,6 +55,7 @@ interface ApiActivityShift {
     shortLabel: string;
     description: string;
   } | null;
+  transitionElementGateDomain?: string | null;
 }
 
 interface ApiMeasureScore {
@@ -125,6 +126,7 @@ function toExplorerShift(shift: ApiActivityShift): ActivityShift {
           },
         }
       : {}),
+    transition_element_gate_domain: shift.transitionElementGateDomain ?? null,
   };
 }
 

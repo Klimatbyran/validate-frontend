@@ -76,6 +76,7 @@ export function useClimatePlansExploreParams() {
   const selectedName = searchParams.get("muni");
   const tefScope = pick(searchParams.get("tefScope"), TEF_SCOPES, "all");
   const tefMetric = pick(searchParams.get("tefMetric"), TEF_METRICS, "hits");
+  const tefEmissions = searchParams.get("tefEmissions") === "1";
   const selectedTefId = searchParams.get("tefId");
 
   const patch = useCallback(
@@ -108,6 +109,7 @@ export function useClimatePlansExploreParams() {
     selectedName,
     tefScope,
     tefMetric,
+    tefEmissions,
     selectedTefId,
     setTab: (value: ClimatePlansTabId) => patch({ tab: value }),
     setView: (value: ExploreViewId) => patch({ view: value }),
@@ -121,6 +123,8 @@ export function useClimatePlansExploreParams() {
     setSelectedName: (value: string) => patch({ muni: value }),
     setTefScope: (value: TefFrameworkScope) => patch({ tefScope: value }),
     setTefMetric: (value: TefFrameworkMetric) => patch({ tefMetric: value }),
+    setTefEmissions: (value: boolean) =>
+      patch({ tefEmissions: value ? "1" : null }),
     setSelectedTefId: (value: string) => patch({ tefId: value }),
   };
 }
