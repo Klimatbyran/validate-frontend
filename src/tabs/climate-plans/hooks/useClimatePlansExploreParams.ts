@@ -27,9 +27,9 @@ const YEAR_MODES: EmissionsYearMode[] = ["latest", "plan"];
 const ALIGN_LAYOUTS: AlignmentLayoutId[] = [
   "bars",
   "pies",
-  "table",
-  "gap",
   "stacked",
+  "gap",
+  "table",
 ];
 const ALIGN_VALUES: AlignmentValueMode[] = ["share", "absolute"];
 const TEF_SCOPES: TefFrameworkScope[] = ["all", "municipality", "region"];

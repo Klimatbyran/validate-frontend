@@ -18,7 +18,7 @@ export const BUCKET_FILL: Record<EmissionBucket, string> = {
   other: "#6b7280",
 };
 
-export function formatShare(share: number): string {
+function formatShare(share: number): string {
   return `${(share * 100).toFixed(0)}%`;
 }
 
