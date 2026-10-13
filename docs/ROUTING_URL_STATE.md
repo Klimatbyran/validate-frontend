@@ -101,7 +101,7 @@ Invalid `source` values fall back to Live. Switching to Live **removes** the `so
   - Explore subviews: `view=map|alignment|goals|tef-framework|tef|anatomy` (default `map`)
   - Map: `kpi=uniqueCommitments`, `geo=municipality|region`, `tefGroup=…`, `muni=Nässjö`
   - Alignment: `emissionsYear=latest|plan`
-  - TEF framework: `tefScope=all|region|municipality`, `tefMetric=hits|strength|municipalities`, `tefId=…`, `muni=…`
+  - TEF framework: `tefScope=all|region|municipality`, `tefMetric=hits|strength|municipalities`, `tefEmissions=1` (optional header emission shares), `tefId=…`, `muni=…`
 
 ### Upload (query params)
 

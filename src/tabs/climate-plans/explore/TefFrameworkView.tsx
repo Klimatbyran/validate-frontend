@@ -2,7 +2,10 @@ import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { MethodologyPanel } from "./MethodologyPanel";
 import { TefDetailPanel } from "./TefDetailPanel";
-import type { ExploreMunicipalityRecord } from "../lib/explore-types";
+import type {
+  ExploreMunicipalityRecord,
+  SectorYearEmissions,
+} from "../lib/explore-types";
 import {
   buildTefFrameworkCells,
   cellMetricValue,
@@ -14,7 +17,14 @@ import {
   tefCellFill,
   type TefFrameworkMetric,
   type TefFrameworkScope,
+  type TefSectorId,
 } from "../lib/tef-framework";
+import {
+  sectorEmissionSharesForScope,
+  sectorGateMatchRates,
+  type SectorEmissionShare,
+  type SectorGateMatchRate,
+} from "../lib/tef-sector-signals";
 
 const COLUMN_COUNTS: Record<string, number> = {
   transport: 3,
@@ -28,22 +38,28 @@ const COLUMN_COUNTS: Record<string, number> = {
 
 export function TefFrameworkView({
   records,
+  sectorEmissions,
   scope,
   onScopeChange,
   placeName,
   onPlaceNameChange,
   metric,
   onMetricChange,
+  showEmissions,
+  onShowEmissionsChange,
   selectedTefId,
   onSelectTefId,
 }: {
   records: ExploreMunicipalityRecord[];
+  sectorEmissions: SectorYearEmissions[];
   scope: TefFrameworkScope;
   onScopeChange: (scope: TefFrameworkScope) => void;
   placeName: string | null;
   onPlaceNameChange: (name: string) => void;
   metric: TefFrameworkMetric;
   onMetricChange: (metric: TefFrameworkMetric) => void;
+  showEmissions: boolean;
+  onShowEmissionsChange: (value: boolean) => void;
   selectedTefId: string | null;
   onSelectTefId: (id: string) => void;
 }) {
@@ -69,14 +85,30 @@ export function TefFrameworkView({
     return Math.max(...values, metric === "strength" ? 1 : 1);
   }, [cells, metric]);
 
+  const gateRates = useMemo(
+    () => sectorGateMatchRates(records, scope, effectivePlace),
+    [records, scope, effectivePlace],
+  );
+
+  const emissionShares = useMemo(
+    () =>
+      sectorEmissionSharesForScope(
+        records,
+        sectorEmissions,
+        scope,
+        effectivePlace,
+      ),
+    [records, sectorEmissions, scope, effectivePlace],
+  );
+
   const selected = cells.find((c) => c.stableId === selectedTefId) ?? null;
 
   return (
     <div className="space-y-4">
       <MethodologyPanel
-        data="transition_element_matches on scored measures (stable_id, short_label, sector_path, match_confidence). Sector columns follow the Transition Element Framework (T-1 Transport … T-6 Waste)."
-        calculation="Each cell is one TEF (stable_id). Hits = match rows in the selected scope. Strength = Σ confidence weights (high=3, mid=2, low=1) / (3 × hits). Municipalities = distinct municipalities with at least one match. Colour intensity is that metric scaled to the max cell in the current scope. Empty sector columns mean no matches yet — the full catalogue is larger than what we have extracted."
-        extra="Scope mirrors the KPI map: all extracts, one region, or one municipality. Click a cell for a gist (who/what/how fill, shift↔intervention balance, confidence) then expand places for quotes."
+        data="transition_element_matches on scored measures (stable_id, short_label, sector_path, match_confidence). Gate domain from activity_shifts.transition_element_gate_domain (pipeline). Sector emissions from Unearth / SMHI territorial series. Sector columns follow the Transition Element Framework (T-1 Transport … T-6 Waste)."
+        calculation="Each cell is one TEF (stable_id). Hits = match rows in the selected scope. Strength = Σ confidence weights (high=3, mid=2, low=1) / (3 × hits). Municipalities = distinct municipalities with at least one match. Colour intensity is that metric scaled to the max cell in the current scope. Match rate on a header = gated shifts with ≥1 confirmed match / shifts gated to that top domain. Optional emission bars = sector tonnes / sum of mapped buckets (transport→transport, industry→industry, afolu→agriculture, buildings→heating, energy→energy, waste→waste) using each place’s latest year; machinery/product/other are excluded."
+        extra="Scope mirrors the KPI map: all extracts, one region, or one municipality. Empty cells with a low match rate mean the domain appears in plans but TEF matching struggled — not that the topic is absent. Click a cell for a gist then expand places for quotes."
       />
 
       <div className="flex flex-wrap gap-2 items-center">
@@ -132,13 +164,23 @@ export function TefFrameworkView({
           <option value="municipalities">Colour by municipality count</option>
         </select>
 
+        <label className="inline-flex items-center gap-2 text-sm text-gray-01 cursor-pointer select-none px-2 py-1.5 rounded-md border border-gray-03/40 bg-gray-04/40">
+          <input
+            type="checkbox"
+            checked={showEmissions}
+            onChange={(e) => onShowEmissionsChange(e.target.checked)}
+            className="rounded border-gray-03"
+          />
+          Scale headers by emissions
+        </label>
+
         <span className="text-sm text-gray-02">
           {cells.length} TEFs · {cells.reduce((s, c) => s + c.hitCount, 0)} hits
           {scope !== "all" && effectivePlace ? ` · ${effectivePlace}` : ""}
         </span>
       </div>
 
-      {cells.length === 0 ? (
+      {cells.length === 0 && !gateRates.hasAnyGateData ? (
         <p className="text-sm text-gray-02 rounded-lg border border-gray-03/30 bg-gray-04/40 p-4">
           No TEF matches in this scope yet. Run more plans through{" "}
           <code className="font-mono text-xs">matchTransitionElements</code> or
@@ -152,19 +194,33 @@ export function TefFrameworkView({
                 column.cells,
                 COLUMN_COUNTS[column.sectorId] ?? 2,
               );
+              const sectorId =
+                column.sectorId === "other"
+                  ? null
+                  : (column.sectorId as TefSectorId);
+              const gate = sectorId ? gateRates.bySector[sectorId] : null;
+              const emissions = sectorId
+                ? emissionShares.bySector[sectorId]
+                : null;
               return (
                 <section key={column.sectorId} className="shrink-0">
-                  <div
-                    className="text-center text-xs font-semibold uppercase tracking-wide text-gray-01 rounded-t-md px-2 py-1.5 mb-1"
-                    style={{
-                      backgroundColor: tefCellFill(column.rgb, 0.55),
-                    }}
-                  >
-                    {column.label}
-                    <span className="block text-[10px] font-normal text-gray-01/80 normal-case tracking-normal">
-                      {column.code} · {column.cells.length}
-                    </span>
-                  </div>
+                  <SectorHeader
+                    label={column.label}
+                    code={column.code}
+                    cellCount={column.cells.length}
+                    rgb={column.rgb}
+                    gate={
+                      gateRates.hasAnyGateData && gate && sectorId
+                        ? gate
+                        : null
+                    }
+                    emissions={
+                      showEmissions && emissions && sectorId
+                        ? emissions
+                        : null
+                    }
+                    showEmissions={showEmissions}
+                  />
                   {column.cells.length === 0 ? (
                     <div className="w-28 h-16 rounded-md border border-dashed border-gray-03/40 flex items-center justify-center text-[10px] text-gray-02/70">
                       no matches
@@ -177,7 +233,8 @@ export function TefFrameworkView({
                             const value = cellMetricValue(cell, metric);
                             const intensity =
                               maxMetric <= 0 ? 0 : value / maxMetric;
-                            const selected = selectedTefId === cell.stableId;
+                            const isSelected =
+                              selectedTefId === cell.stableId;
                             return (
                               <button
                                 key={cell.stableId}
@@ -186,7 +243,7 @@ export function TefFrameworkView({
                                 onClick={() => onSelectTefId(cell.stableId)}
                                 className={cn(
                                   "w-14 h-14 rounded-md border text-left p-1 flex flex-col justify-between transition-transform hover:scale-[1.03]",
-                                  selected
+                                  isSelected
                                     ? "border-gray-01 ring-2 ring-gray-01/40"
                                     : "border-black/20",
                                 )}
@@ -229,6 +286,14 @@ export function TefFrameworkView({
             </a>
             . Cells are only TEFs present in our extracts — not the full
             catalogue.
+            {gateRates.hasAnyGateData
+              ? " Header match rates use pipeline gate domains."
+              : ""}
+            {showEmissions
+              ? emissionShares.totalTonnes > 0
+                ? " Emission bars use latest territorial sector totals in scope."
+                : " No sector emissions matched this scope yet."
+              : ""}
           </p>
         </div>
       )}
@@ -239,6 +304,81 @@ export function TefFrameworkView({
         <p className="text-sm text-gray-02 rounded-lg border border-gray-03/30 bg-gray-04/40 p-4">
           Click a TEF cell to see which municipalities and measures matched it.
         </p>
+      ) : null}
+    </div>
+  );
+}
+
+function SectorHeader({
+  label,
+  code,
+  cellCount,
+  rgb,
+  gate,
+  emissions,
+  showEmissions,
+}: {
+  label: string;
+  code: string;
+  cellCount: number;
+  rgb: readonly [number, number, number];
+  gate: SectorGateMatchRate | null;
+  emissions: SectorEmissionShare | null;
+  showEmissions: boolean;
+}) {
+  return (
+    <div
+      className="text-center text-xs font-semibold uppercase tracking-wide text-gray-01 rounded-t-md px-2 py-1.5 mb-1 space-y-1 min-w-[7rem]"
+      style={{
+        backgroundColor: tefCellFill(rgb, 0.55),
+      }}
+    >
+      <div>{label}</div>
+      <div className="text-[10px] font-normal text-gray-01/80 normal-case tracking-normal">
+        {code} · {cellCount}
+      </div>
+      {gate ? (
+        <div className="normal-case tracking-normal space-y-0.5">
+          <div
+            className="text-[10px] font-medium text-gray-01/90 tabular-nums"
+            title="Confirmed TEF matches among activity shifts gated to this top domain"
+          >
+            {gate.gated === 0
+              ? "no gated shifts"
+              : `${gate.matched}/${gate.gated} matched`}
+          </div>
+          {gate.rate != null ? (
+            <div className="h-1 rounded-full bg-black/25 overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full",
+                  gate.rate >= 0.5 ? "bg-white/90" : "bg-orange-03",
+                )}
+                style={{ width: `${Math.round(gate.rate * 100)}%` }}
+              />
+            </div>
+          ) : (
+            <div className="h-1 rounded-full bg-black/15" />
+          )}
+        </div>
+      ) : null}
+      {showEmissions && emissions ? (
+        <div className="normal-case tracking-normal space-y-0.5">
+          <div
+            className="text-[10px] font-medium text-gray-01/90 tabular-nums"
+            title={`${Math.round(emissions.tonnes).toLocaleString()} t CO₂e (latest year, mapped buckets)`}
+          >
+            {Math.round(emissions.share * 100)}% emissions
+          </div>
+          <div className="h-1.5 rounded-full bg-black/25 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-blue-03"
+              style={{
+                width: `${Math.round(emissions.share * 100)}%`,
+              }}
+            />
+          </div>
+        </div>
       ) : null}
     </div>
   );

@@ -90,12 +90,15 @@ export function ExploreDataView({
       {params.view === "tef-framework" ? (
         <TefFrameworkView
           records={data.municipalities}
+          sectorEmissions={data.sectorEmissions}
           scope={params.tefScope}
           onScopeChange={params.setTefScope}
           placeName={params.selectedName}
           onPlaceNameChange={params.setSelectedName}
           metric={params.tefMetric}
           onMetricChange={params.setTefMetric}
+          showEmissions={params.tefEmissions}
+          onShowEmissionsChange={params.setTefEmissions}
           selectedTefId={params.selectedTefId}
           onSelectTefId={params.setSelectedTefId}
         />
