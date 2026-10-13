@@ -442,10 +442,10 @@ Reference for stage/prod targets, the Errors tab, key seeding, and troubleshooti
 
 Validate uses **two auth mechanisms** — not interchangeable:
 
-| Mechanism          | Header                              | Used for                                                                | Where configured                            |
-| ------------------ | ----------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------- |
+| Mechanism          | Header                              | Used for                                                     | Where configured                            |
+| ------------------ | ----------------------------------- | ------------------------------------------------------------ | ------------------------------------------- |
 | **Staff JWT**      | `Authorization: Bearer <token>`     | Company editor, upload mutations, queue archive (staff path) | GitHub OAuth via Unearth API                |
-| **Client API key** | `X-API-Key: garb_<lookup>.<secret>` | Overview, Errors tab, integration routes (`/internal-*`)                | Validate Vite proxy (stage/prod paths only) |
+| **Client API key** | `X-API-Key: garb_<lookup>.<secret>` | Overview, Errors tab, integration routes (`/internal-*`)     | Validate Vite proxy (stage/prod paths only) |
 
 ### `ALLOW_ANONYMOUS_CLIENT_API` (Unearth API only)
 

@@ -408,7 +408,10 @@ export function UploadTab() {
       if (selectedMunicipality) {
         await Promise.allSettled(
           succeededUrls.map((url) =>
-            createMunicipalitySource({ municipality: selectedMunicipality, url }),
+            createMunicipalitySource({
+              municipality: selectedMunicipality,
+              url,
+            }),
           ),
         );
       }

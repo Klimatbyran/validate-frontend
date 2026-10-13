@@ -369,7 +369,6 @@ export function CompanyDetailTab({
                 </div>
               )}
             </section>
-
           </div>
         </div>
         <Button
