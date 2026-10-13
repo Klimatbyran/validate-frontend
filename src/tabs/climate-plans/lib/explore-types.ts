@@ -101,8 +101,16 @@ export interface AlignmentRow {
   bucket: EmissionBucket;
   emissionShare: number;
   tefShare: number;
+  /** Share gap: TEF share − emission share. */
   gap: number;
+  emissionTonnes: number;
+  tefCount: number;
 }
+
+export type AlignmentLayoutId = "bars" | "pies" | "table" | "gap" | "stacked";
+
+/** How dual charts label magnitudes (shares stay the geometry for pies/bars). */
+export type AlignmentValueMode = "share" | "absolute";
 
 export interface PipelineCommitment {
   text: string;

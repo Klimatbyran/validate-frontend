@@ -1,6 +1,8 @@
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import type {
+  AlignmentLayoutId,
+  AlignmentValueMode,
   ClimatePlansTabId,
   EmissionsYearMode,
   ExploreViewId,
@@ -22,6 +24,14 @@ const VIEWS: ExploreViewId[] = [
 ];
 const GEOS: MapGeoLevel[] = ["municipality", "region"];
 const YEAR_MODES: EmissionsYearMode[] = ["latest", "plan"];
+const ALIGN_LAYOUTS: AlignmentLayoutId[] = [
+  "bars",
+  "pies",
+  "stacked",
+  "gap",
+  "table",
+];
+const ALIGN_VALUES: AlignmentValueMode[] = ["share", "absolute"];
 const TEF_SCOPES: TefFrameworkScope[] = ["all", "municipality", "region"];
 const TEF_METRICS: TefFrameworkMetric[] = [
   "hits",
@@ -51,6 +61,16 @@ export function useClimatePlansExploreParams() {
     searchParams.get("emissionsYear"),
     YEAR_MODES,
     "latest",
+  );
+  const alignLayout = pick(
+    searchParams.get("alignLayout"),
+    ALIGN_LAYOUTS,
+    "bars",
+  );
+  const alignValues = pick(
+    searchParams.get("alignValues"),
+    ALIGN_VALUES,
+    "share",
   );
   const tefGroup = searchParams.get("tefGroup") || "all";
   const selectedName = searchParams.get("muni");
@@ -83,6 +103,8 @@ export function useClimatePlansExploreParams() {
     kpi,
     geo,
     yearMode,
+    alignLayout,
+    alignValues,
     tefGroup,
     selectedName,
     tefScope,
@@ -94,6 +116,9 @@ export function useClimatePlansExploreParams() {
     setKpi: (value: MapKpiId) => patch({ kpi: value }),
     setGeo: (value: MapGeoLevel) => patch({ geo: value }),
     setYearMode: (value: EmissionsYearMode) => patch({ emissionsYear: value }),
+    setAlignLayout: (value: AlignmentLayoutId) => patch({ alignLayout: value }),
+    setAlignValues: (value: AlignmentValueMode) =>
+      patch({ alignValues: value }),
     setTefGroup: (value: string) => patch({ tefGroup: value }),
     setSelectedName: (value: string) => patch({ muni: value }),
     setTefScope: (value: TefFrameworkScope) => patch({ tefScope: value }),
@@ -110,6 +135,8 @@ function isDefault(key: string, value: string): boolean {
   if (key === "kpi" && value === "uniqueCommitments") return true;
   if (key === "geo" && value === "municipality") return true;
   if (key === "emissionsYear" && value === "latest") return true;
+  if (key === "alignLayout" && value === "bars") return true;
+  if (key === "alignValues" && value === "share") return true;
   if (key === "tefGroup" && value === "all") return true;
   if (key === "tefScope" && value === "all") return true;
   if (key === "tefMetric" && value === "hits") return true;

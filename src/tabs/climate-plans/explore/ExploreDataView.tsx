@@ -78,6 +78,10 @@ export function ExploreDataView({
           onSelectName={params.setSelectedName}
           yearMode={params.yearMode}
           onYearModeChange={params.setYearMode}
+          layout={params.alignLayout}
+          onLayoutChange={params.setAlignLayout}
+          valueMode={params.alignValues}
+          onValueModeChange={params.setAlignValues}
         />
       ) : null}
       {params.view === "goals" ? (

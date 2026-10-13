@@ -261,8 +261,11 @@ describe("emissions vs TEF alignment", () => {
     const transport = rows.find((r) => r.bucket === "transport");
     const industry = rows.find((r) => r.bucket === "industry");
     expect(transport?.emissionShare).toBeCloseTo(0.7);
+    expect(transport?.emissionTonnes).toBe(70);
     expect(transport?.tefShare).toBe(0);
+    expect(transport?.tefCount).toBe(0);
     expect(industry?.tefShare).toBe(1);
+    expect(industry?.tefCount).toBe(1);
   });
 });
 
