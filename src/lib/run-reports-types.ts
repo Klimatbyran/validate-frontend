@@ -1,6 +1,5 @@
 /**
- * Minimal row for “run reports” / pipeline URL jobs (registry entries, crawler picks, etc.).
- * Keeps shared UI decoupled from `tabs/registry` types.
+ * Minimal row for pipeline URL jobs (upload, editor report runs, etc.).
  */
 export type RunReportListItem = {
   id?: string;
