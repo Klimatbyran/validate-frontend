@@ -1,15 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_TAB_FOR_PIPELINE_MODE,
   isUniversalTab,
+  PIPELINE_TAB_SEGMENTS,
   pipelineModeForTab,
   resolveInitialPipelineMode,
+  UNIVERSAL_TAB_SEGMENTS,
 } from "./pipeline-mode";
+import { DEFAULT_TOP_LEVEL_PATH } from "./top-level-routes";
 
 describe("pipelineModeForTab", () => {
   it("maps emissions tabs", () => {
-    expect(pipelineModeForTab("overview")).toBe("emissions");
+    expect(pipelineModeForTab("jobbstatus")).toBe("emissions");
     expect(pipelineModeForTab("editor")).toBe("emissions");
-    expect(pipelineModeForTab("review")).toBe("emissions");
+    expect(pipelineModeForTab("errors")).toBe("emissions");
   });
 
   it("maps climate-plans tabs", () => {
@@ -19,16 +23,44 @@ describe("pipelineModeForTab", () => {
   });
 
   it("returns null for universal tabs", () => {
-    expect(pipelineModeForTab("registry")).toBeNull();
     expect(pipelineModeForTab("upload")).toBeNull();
-    expect(pipelineModeForTab("access")).toBeNull();
   });
 });
 
 describe("isUniversalTab", () => {
   it("recognizes universal tabs", () => {
-    expect(isUniversalTab("registry")).toBe(true);
+    expect(isUniversalTab("upload")).toBe(true);
     expect(isUniversalTab("jobbstatus")).toBe(false);
+  });
+});
+
+describe("tab segment lists after Goffer migration slim", () => {
+  it("keeps upload as the only universal tab and default path", () => {
+    expect([...UNIVERSAL_TAB_SEGMENTS]).toEqual(["upload"]);
+    expect(DEFAULT_TOP_LEVEL_PATH).toBe("/upload");
+    expect(DEFAULT_TAB_FOR_PIPELINE_MODE.emissions).toBe("upload");
+    expect(DEFAULT_TAB_FOR_PIPELINE_MODE["climate-plans"]).toBe(
+      "climate-plans",
+    );
+  });
+
+  it("keeps the reduced emissions secondary tabs", () => {
+    expect([...PIPELINE_TAB_SEGMENTS.emissions]).toEqual([
+      "jobbstatus",
+      "workflow",
+      "debug",
+      "errors",
+      "editor",
+    ]);
+  });
+
+  it("keeps climate-plans secondary tabs", () => {
+    expect([...PIPELINE_TAB_SEGMENTS["climate-plans"]]).toEqual([
+      "climate-plans",
+      "climate-pipeline",
+      "climate-qa-reviews",
+      "municipality-sources",
+    ]);
   });
 });
 
@@ -41,6 +73,6 @@ describe("resolveInitialPipelineMode", () => {
   });
 
   it("falls back to emissions for universal tabs without storage", () => {
-    expect(resolveInitialPipelineMode("registry")).toBe("emissions");
+    expect(resolveInitialPipelineMode("upload")).toBe("emissions");
   });
 });

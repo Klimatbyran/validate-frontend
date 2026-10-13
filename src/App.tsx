@@ -4,7 +4,6 @@ import { AuthCallback } from "@/pages/AuthCallback";
 import { GlobalLoginModal } from "@/components/GlobalLoginModal";
 import SlideshowPage from "@/pages/SlideshowPage";
 import { MainLayout } from "@/layouts/MainLayout";
-import { ApiAccessTab } from "@/tabs/api-access/ApiAccessTab";
 import { ClimatePlansExplorer } from "@/tabs/climate-plans/ClimatePlansExplorer";
 import { ClimatePipelineTab } from "@/tabs/climate-pipeline/ClimatePipelineTab";
 import { ClimateQaReviewsTab } from "@/tabs/climate-pipeline/ClimateQaReviewsTab";
@@ -13,9 +12,6 @@ import { DebugTab } from "@/tabs/debug/DebugTab";
 import { EditorTab } from "@/tabs/editor/EditorTab";
 import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
 import { JobbstatusTab } from "@/tabs/jobbstatus/JobbstatusTab";
-import { ManualReviewTab } from "@/tabs/manual-review/ManualReviewTab";
-import { OverviewTab } from "@/tabs/overview/OverviewTab";
-import { RegistryTab } from "@/tabs/registry/RegistryTab";
 import { UploadTab } from "@/tabs/upload/UploadTab";
 import { WorkflowTab } from "@/tabs/workflow/WorkflowTab";
 import { DEFAULT_TOP_LEVEL_PATH } from "@/lib/top-level-routes";
@@ -35,17 +31,29 @@ function App() {
           />
           <Route
             path="/crawler"
-            element={<Navigate to="/overview" replace />}
+            element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />}
           />
-          <Route path="/registry" element={<RegistryTab />} />
-          <Route path="/overview" element={<OverviewTab />} />
+          <Route
+            path="/registry"
+            element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />}
+          />
+          <Route
+            path="/overview"
+            element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />}
+          />
+          <Route
+            path="/access"
+            element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />}
+          />
+          <Route
+            path="/review"
+            element={<Navigate to={DEFAULT_TOP_LEVEL_PATH} replace />}
+          />
           <Route path="/upload" element={<UploadTab />} />
-          <Route path="/access" element={<ApiAccessTab />} />
           <Route path="/jobbstatus" element={<JobbstatusTab />} />
           <Route path="/workflow" element={<WorkflowTab />} />
           <Route path="/debug" element={<DebugTab />} />
           <Route path="/errors" element={<ErrorBrowserTab />} />
-          <Route path="/review" element={<ManualReviewTab />} />
           <Route path="/editor/company/:companyId" element={<EditorTab />} />
           <Route
             path="/editor/company"

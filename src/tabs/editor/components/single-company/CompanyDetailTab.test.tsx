@@ -22,10 +22,6 @@ vi.mock("../../lib/companies-api", () => ({
   deleteCompany: vi.fn(),
 }));
 
-vi.mock("@/tabs/overview/lib/coverage-api", () => ({
-  fetchCoverageCompanyMatches: vi.fn().mockResolvedValue([]),
-}));
-
 vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),

@@ -10,24 +10,14 @@ export const PIPELINE_MODE_STORAGE_KEY = "validate.pipelineMode";
 
 /** Always available regardless of pipeline mode. */
 export const UNIVERSAL_TAB_SEGMENTS = [
-  "registry",
   "upload",
-  "access",
 ] as const satisfies readonly TopLevelTabSegment[];
 
 export type UniversalTabSegment = (typeof UNIVERSAL_TAB_SEGMENTS)[number];
 
 /** Secondary tabs shown after a pipeline is selected. */
 export const PIPELINE_TAB_SEGMENTS = {
-  emissions: [
-    "overview",
-    "jobbstatus",
-    "workflow",
-    "debug",
-    "errors",
-    "review",
-    "editor",
-  ],
+  emissions: ["jobbstatus", "workflow", "debug", "errors", "editor"],
   "climate-plans": [
     "climate-plans",
     "climate-pipeline",
@@ -37,7 +27,7 @@ export const PIPELINE_TAB_SEGMENTS = {
 } as const satisfies Record<PipelineMode, readonly TopLevelTabSegment[]>;
 
 export const DEFAULT_TAB_FOR_PIPELINE_MODE = {
-  emissions: "overview",
+  emissions: "upload",
   "climate-plans": "climate-plans",
 } as const satisfies Record<PipelineMode, TopLevelTabSegment>;
 

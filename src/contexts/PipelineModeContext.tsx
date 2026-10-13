@@ -30,7 +30,7 @@ const PipelineModeContext = createContext<PipelineModeContextValue | undefined>(
 );
 
 function tabFromLocation(pathname: string): TopLevelTabSegment {
-  return topLevelTabFromPathname(pathname) ?? "overview";
+  return topLevelTabFromPathname(pathname) ?? "upload";
 }
 
 export function PipelineModeProvider({ children }: { children: ReactNode }) {

@@ -18,15 +18,11 @@ import {
   type TopLevelTabSegment,
   topLevelTabFromPathname,
 } from "@/lib/top-level-routes";
-import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
 const TABS_WITH_SPACED_CONTENT = new Set<TopLevelTabSegment>([
   "jobbstatus",
-  "registry",
-  "overview",
   "editor",
-  "review",
 ]);
 
 function pipelineModeLabelKey(mode: PipelineMode): string {
@@ -37,14 +33,8 @@ function pipelineModeLabelKey(mode: PipelineMode): string {
 
 function tabLabelKey(tab: TopLevelTabSegment): string {
   switch (tab) {
-    case "registry":
-      return "nav.registry";
     case "upload":
       return "nav.upload";
-    case "access":
-      return "nav.apiAccess";
-    case "overview":
-      return "nav.overview";
     case "jobbstatus":
       return "nav.jobStatus";
     case "workflow":
@@ -53,8 +43,6 @@ function tabLabelKey(tab: TopLevelTabSegment): string {
       return "nav.debug";
     case "errors":
       return "nav.errorBrowser";
-    case "review":
-      return "nav.review";
     case "editor":
       return "nav.editor";
     case "climate-plans":
@@ -70,7 +58,6 @@ function tabLabelKey(tab: TopLevelTabSegment): string {
 
 function MainNav() {
   const { t } = useI18n();
-  const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { pipelineMode, setPipelineMode } = usePipelineMode();
@@ -91,14 +78,11 @@ function MainNav() {
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <TabsList className="bg-gray-04/50 backdrop-blur-sm">
-              {UNIVERSAL_TAB_SEGMENTS.map((segment) => {
-                if (segment === "access" && !isAuthenticated) return null;
-                return (
-                  <TabsTrigger key={segment} value={segment}>
-                    {t(tabLabelKey(segment))}
-                  </TabsTrigger>
-                );
-              })}
+              {UNIVERSAL_TAB_SEGMENTS.map((segment) => (
+                <TabsTrigger key={segment} value={segment}>
+                  {t(tabLabelKey(segment))}
+                </TabsTrigger>
+              ))}
             </TabsList>
 
             <div

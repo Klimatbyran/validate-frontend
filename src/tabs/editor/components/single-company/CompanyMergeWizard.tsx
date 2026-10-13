@@ -4,16 +4,21 @@ import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import { toast } from "sonner";
-import { searchCoverageCompanies } from "@/tabs/overview/lib/coverage-api";
-import type { CoverageCompanySearchHit } from "@/tabs/overview/lib/coverage-types";
 import {
   applyCompanyMerge,
+  listCompaniesIndex,
   previewCompanyMerge,
   type CompanyMergeFieldKey,
   type CompanyMergePreview,
 } from "../../lib/companies-api";
 
 type Step = "pick-source" | "review" | "confirm";
+
+type MergeSearchHit = {
+  id: string;
+  name: string;
+  wikidataId?: string | null;
+};
 
 type Props = {
   open: boolean;
@@ -32,9 +37,14 @@ function identifierTypeLabel(
   type: string,
   t: (key: string, params?: Record<string, string | number>) => string,
 ): string {
-  const key = `editor.singleCompanyView.mergeCompany.identifierTypes.${type}`;
-  const label = t(key);
-  return label === key ? type : label;
+  // Direct template `t()` so i18n-audit keeps identifierTypes.* keys.
+  const label = t(
+    `editor.singleCompanyView.mergeCompany.identifierTypes.${type}`,
+  );
+  return label ===
+    `editor.singleCompanyView.mergeCompany.identifierTypes.${type}`
+    ? type
+    : label;
 }
 
 export function CompanyMergeWizard({
@@ -47,10 +57,11 @@ export function CompanyMergeWizard({
   const { t } = useI18n();
   const [step, setStep] = useState<Step>("pick-source");
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchHits, setSearchHits] = useState<CoverageCompanySearchHit[]>([]);
+  const [searchHits, setSearchHits] = useState<MergeSearchHit[]>([]);
   const [searching, setSearching] = useState(false);
-  const [selectedSource, setSelectedSource] =
-    useState<CoverageCompanySearchHit | null>(null);
+  const [selectedSource, setSelectedSource] = useState<MergeSearchHit | null>(
+    null,
+  );
   const [preview, setPreview] = useState<CompanyMergePreview | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [fieldChoices, setFieldChoices] = useState<
@@ -88,11 +99,18 @@ export function CompanyMergeWizard({
     let cancelled = false;
     const timer = window.setTimeout(() => {
       setSearching(true);
-      searchCoverageCompanies(q)
-        .then((hits) => {
+      listCompaniesIndex({ q, limit: 13 })
+        .then((result) => {
           if (cancelled) return;
           setSearchHits(
-            hits.filter((hit) => hit.id !== survivorCompanyId).slice(0, 12),
+            result.companies
+              .filter((hit) => hit.id !== survivorCompanyId)
+              .slice(0, 12)
+              .map((hit) => ({
+                id: hit.id,
+                name: hit.name,
+                wikidataId: hit.wikidataId,
+              })),
           );
         })
         .catch(() => {
