@@ -107,12 +107,7 @@ export interface AlignmentRow {
   tefCount: number;
 }
 
-export type AlignmentLayoutId =
-  | "bars"
-  | "pies"
-  | "table"
-  | "gap"
-  | "stacked";
+export type AlignmentLayoutId = "bars" | "pies" | "table" | "gap" | "stacked";
 
 /** How dual charts label magnitudes (shares stay the geometry for pies/bars). */
 export type AlignmentValueMode = "share" | "absolute";

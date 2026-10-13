@@ -114,8 +114,7 @@ export function useClimatePlansExploreParams() {
     setKpi: (value: MapKpiId) => patch({ kpi: value }),
     setGeo: (value: MapGeoLevel) => patch({ geo: value }),
     setYearMode: (value: EmissionsYearMode) => patch({ emissionsYear: value }),
-    setAlignLayout: (value: AlignmentLayoutId) =>
-      patch({ alignLayout: value }),
+    setAlignLayout: (value: AlignmentLayoutId) => patch({ alignLayout: value }),
     setAlignValues: (value: AlignmentValueMode) =>
       patch({ alignValues: value }),
     setTefGroup: (value: string) => patch({ tefGroup: value }),

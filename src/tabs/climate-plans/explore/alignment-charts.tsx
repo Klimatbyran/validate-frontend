@@ -1,9 +1,6 @@
 import { cn } from "@/lib/utils";
 import { EMISSION_BUCKET_LABEL, type EmissionBucket } from "../lib/tef-groups";
-import type {
-  AlignmentRow,
-  AlignmentValueMode,
-} from "../lib/explore-types";
+import type { AlignmentRow, AlignmentValueMode } from "../lib/explore-types";
 
 /** Stable colours per bucket so pies / stacks stay comparable. */
 export const BUCKET_FILL: Record<EmissionBucket, string> = {
@@ -125,12 +122,7 @@ export function SharePie({
         aria-label={title}
       >
         {paths.length === 0 ? (
-          <circle
-            cx={cx}
-            cy={cy}
-            r={r}
-            className="fill-gray-03/30"
-          />
+          <circle cx={cx} cy={cy} r={r} className="fill-gray-03/30" />
         ) : (
           paths.map((p) => (
             <path
@@ -160,13 +152,7 @@ export function SharePie({
   );
 }
 
-export function DualBar({
-  emission,
-  tef,
-}: {
-  emission: number;
-  tef: number;
-}) {
+export function DualBar({ emission, tef }: { emission: number; tef: number }) {
   return (
     <div className="space-y-1">
       <div className="h-2 rounded-full bg-gray-03/30">

@@ -266,10 +266,7 @@ export function AlignmentView({
                       {tefLabel(row, valueMode)}
                     </span>
                   </div>
-                  <DualBar
-                    emission={row.emissionShare}
-                    tef={row.tefShare}
-                  />
+                  <DualBar emission={row.emissionShare} tef={row.tefShare} />
                 </div>
               ))}
             </div>
