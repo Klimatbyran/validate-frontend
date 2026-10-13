@@ -100,7 +100,14 @@ export function alignmentRows(
     .map((bucket) => {
       const emissionShare = emissionShares[bucket] ?? 0;
       const tefShare = tefShares[bucket] ?? 0;
-      return { bucket, emissionShare, tefShare, gap: tefShare - emissionShare };
+      return {
+        bucket,
+        emissionShare,
+        tefShare,
+        gap: tefShare - emissionShare,
+        emissionTonnes: emissionCounts[bucket],
+        tefCount: tefCounts[bucket],
+      };
     })
     .filter((row) => row.emissionShare > 0 || row.tefShare > 0)
     .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap));
