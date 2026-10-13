@@ -94,12 +94,13 @@ export function CompanyMergeWizard({
     let cancelled = false;
     const timer = window.setTimeout(() => {
       setSearching(true);
-      listCompaniesIndex({ q, limit: 12 })
+      listCompaniesIndex({ q, limit: 13 })
         .then((result) => {
           if (cancelled) return;
           setSearchHits(
             result.companies
               .filter((hit) => hit.id !== survivorCompanyId)
+              .slice(0, 12)
               .map((hit) => ({
                 id: hit.id,
                 name: hit.name,

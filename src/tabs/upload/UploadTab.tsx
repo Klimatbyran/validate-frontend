@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { FileText, Link2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import { toast } from "sonner";
@@ -6,6 +6,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import { usePipelineMode } from "@/contexts/PipelineModeContext";
 import { useBatches } from "@/hooks/useBatches";
 import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/ui/button";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { LoadingSpinner } from "@/ui/loading-spinner";
 import { FileUploadZone } from "./components/FileUploadZone";
@@ -49,7 +50,6 @@ export function UploadTab() {
   const { t } = useI18n();
   const { pipelineMode } = usePipelineMode();
   const { isAuthenticated, isLoading: authLoading, login } = useAuth();
-  const hasTriggeredLoginRef = useRef(false);
   const isClimatePlansPipeline = pipelineMode === "climate-plans";
 
   const [uploadMode, setUploadMode] = useState<ManualUploadMode>("url");
@@ -94,15 +94,6 @@ export function UploadTab() {
     () => [...new Set(municipalitySources.map((s) => s.municipality))].sort(),
     [municipalitySources],
   );
-
-  // Upload is the main entrypoint and performs write operations; require auth here.
-  useEffect(() => {
-    if (authLoading) return;
-    if (isAuthenticated) return;
-    if (hasTriggeredLoginRef.current) return;
-    hasTriggeredLoginRef.current = true;
-    login();
-  }, [authLoading, isAuthenticated, login]);
 
   const runOnly =
     !isClimatePlansPipeline && !runAllWorkers && selectedWorkers.length > 0
@@ -549,10 +540,23 @@ export function UploadTab() {
         : t("upload.confirmRemoveLink", { name: removeConfirm.name })
     : "";
 
-  if (authLoading || !isAuthenticated) {
+  if (authLoading) {
     return (
       <div className="flex justify-center py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
-        <LoadingSpinner label={t("auth.loginRequired")} />
+        <LoadingSpinner label={t("common.loading")} />
+      </div>
+    );
+  }
+
+  // Default landing is /upload; do not auto-redirect to GitHub OAuth — that
+  // loops on failed login "Back" and after logout from this tab.
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-12 bg-gray-04/80 backdrop-blur-sm rounded-lg">
+        <p className="text-sm text-gray-02 text-center max-w-md">
+          {t("auth.loginRequiredMessage")}
+        </p>
+        <Button onClick={() => login()}>{t("auth.loginWithGitHub")}</Button>
       </div>
     );
   }
