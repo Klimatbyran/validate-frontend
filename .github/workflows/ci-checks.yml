@@ -1,17 +1,26 @@
 name: CI (Type Check, Lint, Format, Audit, Build)
 
+# Runs on non-draft PRs only (not on merge to main — merge already requires
+# green checks). Draft PRs skip all jobs (saves Actions minutes); converting
+# to ready re-runs.
+
 permissions:
   contents: read
 
 on:
   pull_request:
-  push:
-    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   type-check:
     name: Type Check
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,7 +39,9 @@ jobs:
 
   lint:
     name: Lint
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,7 +60,9 @@ jobs:
 
   format:
     name: Format
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -71,11 +84,7 @@ jobs:
           set -euo pipefail
 
           head_sha="${{ github.sha }}"
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            base_sha="${{ github.event.pull_request.base.sha }}"
-          else
-            base_sha="${{ github.event.before }}"
-          fi
+          base_sha="${{ github.event.pull_request.base.sha }}"
 
           if [[ -z "${base_sha}" ]]; then
             echo "No base SHA available; skipping Prettier check."
@@ -97,7 +106,9 @@ jobs:
 
   audit:
     name: Audit
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -116,7 +127,9 @@ jobs:
 
   build:
     name: Build
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
