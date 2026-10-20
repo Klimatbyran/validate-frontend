@@ -62,9 +62,7 @@ export function GoalTrackingView({
 
   const atlasItems = useMemo(() => {
     const records =
-      atlasScope === "all" || !selected
-        ? dataset.municipalities
-        : [selected];
+      atlasScope === "all" || !selected ? dataset.municipalities : [selected];
     const items: GoalAtlasItem[] = [];
     for (const record of records) {
       const tracked = trackMunicipalityGoals(
@@ -85,7 +83,13 @@ export function GoalTrackingView({
       });
     }
     return items;
-  }, [atlasScope, dataset.municipalities, dataset.sectorEmissions, nowYear, selected]);
+  }, [
+    atlasScope,
+    dataset.municipalities,
+    dataset.sectorEmissions,
+    nowYear,
+    selected,
+  ]);
 
   const focusMunicipality = (name: string) => {
     onSelectName(name);

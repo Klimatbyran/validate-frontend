@@ -73,7 +73,9 @@ export function GoalAtlasView({
       <div className="relative overflow-hidden rounded-xl border border-gray-03/30 bg-gradient-to-br from-gray-05/90 via-gray-04/50 to-gray-05/80 p-5 min-h-[22rem]">
         <div className="flex flex-wrap gap-6 justify-center items-start content-start">
           {clusters.map((cluster) => {
-            const { size, positions } = layoutClusterNodes(cluster.items.length);
+            const { size, positions } = layoutClusterNodes(
+              cluster.items.length,
+            );
             return (
               <section
                 key={cluster.key}

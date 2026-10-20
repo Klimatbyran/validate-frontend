@@ -30,9 +30,7 @@ export const REDUCTION_BANDS = [
 
 export type ReductionBandKey = (typeof REDUCTION_BANDS)[number]["key"];
 
-export function reductionBandKey(
-  percent: number | null,
-): ReductionBandKey {
+export function reductionBandKey(percent: number | null): ReductionBandKey {
   if (percent == null) return "unquantified";
   if (percent >= 100) return "net-zero";
   if (percent >= 75) return "75-99";
@@ -56,16 +54,14 @@ export function deadlineBucket(
   return "far";
 }
 
-const DEADLINE_META: Record<
-  DeadlineBucket,
-  { label: string; accent: number }
-> = {
-  passed: { label: "Deadline passed", accent: 1 },
-  near: { label: "Within 2 years", accent: 0.85 },
-  mid: { label: "3–10 years out", accent: 0.55 },
-  far: { label: "Beyond 10 years", accent: 0.3 },
-  unknown: { label: "No target year", accent: 0.1 },
-};
+const DEADLINE_META: Record<DeadlineBucket, { label: string; accent: number }> =
+  {
+    passed: { label: "Deadline passed", accent: 1 },
+    near: { label: "Within 2 years", accent: 0.85 },
+    mid: { label: "3–10 years out", accent: 0.55 },
+    far: { label: "Beyond 10 years", accent: 0.3 },
+    unknown: { label: "No target year", accent: 0.1 },
+  };
 
 /** Shared status labels for list + atlas. */
 export const GOAL_STATUS_LABEL: Record<GoalTrackStatus, string> = {
@@ -116,9 +112,10 @@ const NODE_GAP = 6;
  * Concentric-ring positions so dense clusters don't overlap.
  * Returns cluster diameter and per-item offsets from center.
  */
-export function layoutClusterNodes(
-  count: number,
-): { size: number; positions: { x: number; y: number }[] } {
+export function layoutClusterNodes(count: number): {
+  size: number;
+  positions: { x: number; y: number }[];
+} {
   if (count <= 0) return { size: 120, positions: [] };
   if (count === 1) return { size: 120, positions: [{ x: 0, y: 0 }] };
 
@@ -199,13 +196,7 @@ export function clusterGoalAtlas(
   }
 
   if (groupBy === "deadline") {
-    const order: DeadlineBucket[] = [
-      "passed",
-      "near",
-      "mid",
-      "far",
-      "unknown",
-    ];
+    const order: DeadlineBucket[] = ["passed", "near", "mid", "far", "unknown"];
     return order
       .map((bucket) => ({
         key: bucket,

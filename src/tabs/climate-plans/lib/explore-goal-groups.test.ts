@@ -94,7 +94,11 @@ describe("clusterGoalAtlas", () => {
       [
         item({ id: "a", goal: { reductionPercent: 50 }, status: "off-track" }),
         item({ id: "b", goal: { reductionPercent: 100 }, status: "too-early" }),
-        item({ id: "c", goal: { reductionPercent: null }, status: "not-quantified" }),
+        item({
+          id: "c",
+          goal: { reductionPercent: null },
+          status: "not-quantified",
+        }),
       ],
       "reduction",
       2026,
@@ -111,7 +115,11 @@ describe("clusterGoalAtlas", () => {
     const clusters = clusterGoalAtlas(
       [
         item({ id: "a", parisMentioned: true, goal: { reductionPercent: 50 } }),
-        item({ id: "b", parisMentioned: false, goal: { reductionPercent: 10 } }),
+        item({
+          id: "b",
+          parisMentioned: false,
+          goal: { reductionPercent: 10 },
+        }),
         item({ id: "c", parisMentioned: null, goal: { reductionPercent: 20 } }),
       ],
       "paris",

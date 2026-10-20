@@ -25,10 +25,7 @@ function measure(partial: Partial<Measure>): Measure {
   };
 }
 
-function record(
-  name: string,
-  measures: Measure[],
-): ExploreMunicipalityRecord {
+function record(name: string, measures: Measure[]): ExploreMunicipalityRecord {
   return {
     id: name.toLowerCase(),
     name,

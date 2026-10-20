@@ -52,10 +52,7 @@ export function ShiftsInterventionsView({
   const points = useMemo(() => collectMeasurePoints(records), [records]);
   const flows = useMemo(() => buildShiftFlows(records), [records]);
   const types = useMemo(() => interventionTypeBuckets(records), [records]);
-  const allHits = useMemo(
-    () => records.flatMap((r) => r.tefHits),
-    [records],
-  );
+  const allHits = useMemo(() => records.flatMap((r) => r.tefHits), [records]);
   const tefCoverage = useMemo(
     () => tefHitInterventionCoverage(allHits),
     [allHits],
@@ -126,7 +123,9 @@ export function ShiftsInterventionsView({
         />
       ) : null}
       {layout === "flows" ? <FlowsLayout flows={flows} /> : null}
-      {layout === "types" ? <TypesLayout types={types} points={points} /> : null}
+      {layout === "types" ? (
+        <TypesLayout types={types} points={points} />
+      ) : null}
     </div>
   );
 }
@@ -204,7 +203,9 @@ function CompareLayout({
               <th className="text-left px-3 py-2 font-medium">Municipality</th>
               <th className="text-right px-3 py-2 font-medium">Measures</th>
               <th className="text-right px-3 py-2 font-medium">Shifts &gt;1</th>
-              <th className="text-right px-3 py-2 font-medium">Interv. &gt;1</th>
+              <th className="text-right px-3 py-2 font-medium">
+                Interv. &gt;1
+              </th>
               <th className="text-left px-3 py-2 font-medium min-w-[12rem]">
                 Avg shift vs intervention
               </th>
@@ -344,7 +345,9 @@ function ScoreScatter({ points }: { points: MeasureShiftInterventionPoint[] }) {
   }, [points]);
 
   if (points.length === 0) {
-    return <p className="text-sm text-gray-02">No measures in this selection.</p>;
+    return (
+      <p className="text-sm text-gray-02">No measures in this selection.</p>
+    );
   }
 
   const maxCount = Math.max(...bubbles.map((b) => b.count), 1);
@@ -394,11 +397,7 @@ function ScoreScatter({ points }: { points: MeasureShiftInterventionPoint[] }) {
   );
 }
 
-function FlowsLayout({
-  flows,
-}: {
-  flows: ReturnType<typeof buildShiftFlows>;
-}) {
+function FlowsLayout({ flows }: { flows: ReturnType<typeof buildShiftFlows> }) {
   if (flows.length === 0) {
     return (
       <p className="text-sm text-gray-02 rounded-lg border border-gray-03/30 p-4">

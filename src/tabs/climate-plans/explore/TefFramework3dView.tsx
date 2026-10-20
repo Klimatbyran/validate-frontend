@@ -535,9 +535,7 @@ function TefCubeGrid({
                 frontValue={expanded ? undefined : valueLabel}
                 frontTitle={expanded ? cell.title : undefined}
                 frontMeta={
-                  expanded
-                    ? `${cell.index ?? code} · ${valueLabel}`
-                    : undefined
+                  expanded ? `${cell.index ?? code} · ${valueLabel}` : undefined
                 }
               />
             </svg>
