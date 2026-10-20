@@ -874,7 +874,8 @@
       "saveToApiEndpointLabel": "Endpoint",
       "saveToApiKeysLabel": "Keys",
       "saveToApiErrorLabel": "Error",
-      "saveToApiJobIdLabel": "Job id"
+      "saveToApiJobIdLabel": "Job id",
+      "toastNoWikidataSuccess": "Marked as no Wikidata ID — job completing without linking"
     },
     "activeLabel": "Active",
     "yearsOfData": "{{count}} year of data",
@@ -1261,7 +1262,11 @@
     "wikidataIdLabel": "Wikidata ID",
     "metadata": "Metadata",
     "source": "Source",
-    "comment": "Comment"
+    "comment": "Comment",
+    "noWikidataTitle": "No Wikidata ID",
+    "noWikidataDescription": "Use when the company has no Wikidata entry, or none of the options are a clear match. Completes this step without saving a Wikidata ID.",
+    "noWikidataButton": "Confirm: no Wikidata ID",
+    "approvedNoWikidata": "Approved (no Wikidata ID)"
   },
   "companyLink": {
     "title": "Company link",

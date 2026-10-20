@@ -60,6 +60,7 @@ export function JobActionRequiredSection({
 
   const {
     handleWikidataApprove,
+    handleWikidataNoId,
     handleWikidataOverride,
     handleCompanyLinkApprove,
     handleCompanyNameOverride,
@@ -138,6 +139,7 @@ export function JobActionRequiredSection({
       isLoadingApprovalDetails={isLoadingApprovalDetails}
       onCompanyLinkApprove={handleCompanyLinkApprove}
       onWikidataApprove={handleWikidataApprove}
+      onWikidataNoId={handleWikidataNoId}
       onWikidataOverride={handleWikidataOverride}
       onCompanyNameOverride={handleCompanyNameOverride}
     />

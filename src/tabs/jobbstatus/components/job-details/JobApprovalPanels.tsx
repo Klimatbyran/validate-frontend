@@ -25,8 +25,10 @@ interface JobApprovalPanelsProps {
     companyId?: string;
     createNew?: boolean;
     displayName?: string;
+    companyName?: string;
   }) => void;
   onWikidataApprove: () => void;
+  onWikidataNoId: () => void;
   onWikidataOverride: (overrideWikidataId: string) => void;
   onCompanyNameOverride: (overrideCompanyName: string) => void;
 }
@@ -41,6 +43,7 @@ export function JobApprovalPanels({
   isLoadingApprovalDetails,
   onCompanyLinkApprove,
   onWikidataApprove,
+  onWikidataNoId,
   onWikidataOverride,
   onCompanyNameOverride,
 }: JobApprovalPanelsProps) {
@@ -87,6 +90,7 @@ export function JobApprovalPanels({
           data={wikidataApprovalData}
           onOverride={onWikidataOverride}
           onApprove={onWikidataApprove}
+          onApproveNoWikidata={onWikidataNoId}
         />
       ) : null}
 

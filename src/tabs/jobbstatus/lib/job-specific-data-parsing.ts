@@ -142,8 +142,13 @@ export interface WikidataApprovalWikidata {
 }
 
 export interface WikidataApprovalData {
-  status: "approved" | "pending_approval" | "approved_unverified";
-  wikidata: WikidataApprovalWikidata;
+  status:
+    | "approved"
+    | "pending_approval"
+    | "approved_unverified"
+    | "approved_no_wikidata";
+  /** Present for pending/approved Q-id paths; omitted after no-Wikidata confirmation. */
+  wikidata?: WikidataApprovalWikidata;
   message?: string;
   metadata?: {
     source?: string;
@@ -151,6 +156,8 @@ export interface WikidataApprovalData {
   };
   autoApproved?: boolean;
   verifiedByUserId?: string;
+  /** Staff confirmed the company has no usable Wikidata ID. */
+  noWikidata?: boolean;
 }
 
 function approvalSummary(
@@ -187,17 +194,16 @@ function wikidataFromJobData(
   };
 }
 
+function approvalHasNoWikidata(approval: Record<string, unknown>): boolean {
+  const newValue = (approval.data as { newValue?: { noWikidata?: unknown } })
+    ?.newValue;
+  return newValue?.noWikidata === true;
+}
+
 function wikidataApprovalFromApprovalObject(
   approval: Record<string, unknown>,
   jobData?: Record<string, unknown>,
 ): WikidataApprovalData | null {
-  const wikidata =
-    (approval.data as { newValue?: { wikidata?: WikidataApprovalWikidata } })
-      ?.newValue?.wikidata ?? wikidataFromJobData(jobData);
-  if (!wikidata?.node) {
-    return null;
-  }
-
   const autoApproved = Boolean(jobData?.autoApprove);
   const verifiedByUserId =
     typeof approval.verifiedByUserId === "string"
@@ -205,6 +211,38 @@ function wikidataApprovalFromApprovalObject(
       : undefined;
   const metadata =
     (approval.metadata as WikidataApprovalData["metadata"]) || {};
+  const noWikidata = approvalHasNoWikidata(approval);
+
+  if (approval.approved === true && noWikidata) {
+    return {
+      status: "approved_no_wikidata",
+      message: approvalSummary(approval),
+      metadata,
+      autoApproved,
+      verifiedByUserId,
+      noWikidata: true,
+    };
+  }
+
+  const rawWikidata = (
+    approval.data as {
+      newValue?: { wikidata?: WikidataApprovalWikidata | null };
+    }
+  )?.newValue?.wikidata;
+  const wikidata =
+    rawWikidata && typeof rawWikidata === "object" && rawWikidata.node
+      ? {
+          node: rawWikidata.node.trim(),
+          url:
+            rawWikidata.url?.trim() ||
+            `https://www.wikidata.org/wiki/${rawWikidata.node.trim()}`,
+          label: rawWikidata.label?.trim() || rawWikidata.node.trim(),
+          description: rawWikidata.description?.trim(),
+        }
+      : wikidataFromJobData(jobData);
+  if (!wikidata?.node) {
+    return null;
+  }
 
   if (approval.approved === false) {
     return {
@@ -275,6 +313,8 @@ export interface CompanyLinkApprovalData {
   extractedName: string;
   candidates: CompanyLinkCandidate[];
   selectedCompanyId?: string;
+  /** Name of the linked company when approved (useful for search picks not in candidates). */
+  selectedCompanyName?: string;
   createNew?: boolean;
   allowCreateNew?: boolean;
   partialNameMatch?: boolean;
@@ -341,6 +381,10 @@ function companyLinkApprovalFromApprovalObject(
       selectedCompanyId:
         typeof newValue?.companyId === "string"
           ? newValue.companyId
+          : undefined,
+      selectedCompanyName:
+        typeof newValue?.companyName === "string" && newValue.companyName.trim()
+          ? newValue.companyName.trim()
           : undefined,
       createNew: Boolean(newValue?.createNew),
       displayName:

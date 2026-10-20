@@ -27,6 +27,61 @@ describe("getWikidataApprovalData", () => {
       wikidata: { node: "Q123", label: "Test Co" },
     });
   });
+
+  it("marks approved no-wikidata decisions without exposing a Q-id", () => {
+    const job = {
+      data: {
+        approval: {
+          type: "wikidata",
+          approved: true,
+          verifiedByUserId: "user-1",
+          summary: "Wikidata selection for Test Co",
+          data: {
+            newValue: {
+              noWikidata: true,
+              wikidata: null,
+            },
+          },
+        },
+      },
+    };
+
+    expect(getWikidataApprovalData(job as any)).toEqual({
+      status: "approved_no_wikidata",
+      noWikidata: true,
+      message: "Wikidata selection for Test Co",
+      metadata: {},
+      autoApproved: false,
+      verifiedByUserId: "user-1",
+    });
+  });
+
+  it("still recognizes no-wikidata when a stale suggested Q-id remains merged in", () => {
+    const job = {
+      data: {
+        approval: {
+          type: "wikidata",
+          approved: true,
+          data: {
+            newValue: {
+              noWikidata: true,
+              wikidata: {
+                node: "Q123",
+                url: "https://www.wikidata.org/wiki/Q123",
+                label: "Test Co",
+              },
+            },
+          },
+        },
+      },
+    };
+
+    expect(getWikidataApprovalData(job as any)).toMatchObject({
+      status: "approved_no_wikidata",
+      noWikidata: true,
+    });
+    expect(getWikidataApprovalData(job as any)?.wikidata).toBeUndefined();
+  });
 });
 
 describe("getCompanyLinkApprovalData", () => {
@@ -120,6 +175,32 @@ describe("getCompanyLinkApprovalData", () => {
     expect(getCompanyLinkApprovalData(job as any)).toMatchObject({
       status: "approved",
       selectedCompanyId: "alfa-1",
+      createNew: false,
+    });
+  });
+
+  it("parses approved search pick companyName", () => {
+    const job = {
+      data: {
+        approval: {
+          type: "companyLink",
+          approved: true,
+          data: {
+            newValue: {
+              extractedName: "The Group",
+              candidates: [{ id: "candidate-1", name: "The Adecco Group" }],
+              companyId: "searched-company-id",
+              companyName: "The Right Group AB",
+            },
+          },
+        },
+      },
+    };
+
+    expect(getCompanyLinkApprovalData(job as any)).toMatchObject({
+      status: "approved",
+      selectedCompanyId: "searched-company-id",
+      selectedCompanyName: "The Right Group AB",
       createNew: false,
     });
   });
