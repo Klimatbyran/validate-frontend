@@ -16,9 +16,19 @@ import type {
   SectorGateMatchRate,
 } from "../lib/tef-sector-signals";
 
-const MIN_PILLAR_PX = 28;
-const MAX_PILLAR_PX = 220;
+const MIN_PILLAR_H = 36;
+const MAX_PILLAR_H = 200;
+/** Fixed TEF cube size for now — later maps to emission-reduction effectiveness. */
+const TEF_CUBE = 22;
+const TEF_CUBE_DEPTH = 8;
+const PILLAR_W = 88;
+const PILLAR_DEPTH = 28;
 
+/**
+ * Isometric boxes are drawn as SVG polygons (no CSS rotateX/skew on a parent
+ * scene). Parent 3D transforms were rasterizing the whole strip and making
+ * edges + type look soft/blurry.
+ */
 export function TefFramework3dView({
   columns,
   emissionShares,
@@ -59,24 +69,10 @@ export function TefFramework3dView({
     return max;
   }, [columns, emissionShares]);
 
-  const visibleColumns =
-    selectedSectorId == null
-      ? columns
-      : columns.filter((c) => c.sectorId === selectedSectorId);
-
   return (
-    <div className="space-y-4">
-      <div
-        className="relative overflow-x-auto rounded-lg border border-gray-03/30 bg-gradient-to-b from-gray-05/80 to-gray-04/40 p-6"
-        style={{ perspective: "900px" }}
-      >
-        <div
-          className="flex gap-8 min-w-max items-end justify-center pt-8 pb-4 px-4"
-          style={{
-            transform: "rotateX(12deg) rotateZ(-2deg)",
-            transformStyle: "preserve-3d",
-          }}
-        >
+    <div className="space-y-3 w-full">
+      <div className="relative w-full rounded-lg border border-gray-03/30 bg-gray-05/40 px-3 py-5 sm:px-5 sm:py-6">
+        <div className="grid w-full gap-3 sm:gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6 items-start">
           {columns.map((column) => {
             const sectorId =
               column.sectorId === "other"
@@ -98,223 +94,295 @@ export function TefFramework3dView({
                   ? 0
                   : tonnes / maxTonnes;
             const heightPx =
-              MIN_PILLAR_PX + heightRatio * (MAX_PILLAR_PX - MIN_PILLAR_PX);
+              MIN_PILLAR_H + heightRatio * (MAX_PILLAR_H - MIN_PILLAR_H);
             const isSelected = selectedSectorId === column.sectorId;
             const hitSum = column.cells.reduce((s, c) => s + c.hitCount, 0);
 
             return (
-              <button
+              <SectorColumn
                 key={column.sectorId}
-                type="button"
-                onClick={() =>
+                column={column}
+                heightPx={heightPx}
+                share={share}
+                tonnes={tonnes}
+                hitSum={hitSum}
+                gate={gate && gate.gated > 0 ? gate : null}
+                selected={isSelected}
+                metric={metric}
+                maxMetric={maxMetric}
+                selectedTefId={selectedTefId}
+                onSelectSector={() =>
                   onSelectSectorId(isSelected ? null : column.sectorId)
                 }
-                className={cn(
-                  "group relative flex flex-col items-center gap-2 outline-none",
-                  isSelected && "z-10",
-                )}
-                title={`${column.label}: ${Math.round(share * 100)}% · ${Math.round(tonnes).toLocaleString()} t · ${hitSum} TEF hits`}
-              >
-                <SectorPillar
-                  label={column.label}
-                  code={column.code}
-                  rgb={column.rgb}
-                  heightPx={heightPx}
-                  share={share}
-                  tonnes={tonnes}
-                  hitSum={hitSum}
-                  cellCount={column.cells.length}
-                  gate={gate && gate.gated > 0 ? gate : null}
-                  selected={isSelected}
-                />
-              </button>
+                onSelectTefId={onSelectTefId}
+              />
             );
           })}
         </div>
-        <div
-          className="mx-auto mt-2 h-2 max-w-3xl rounded-full bg-gray-03/25"
-          aria-hidden
-        />
-        <p className="text-xs text-gray-02 mt-3 text-center">
+
+        <p className="text-xs text-gray-02 mt-5 text-center max-w-4xl mx-auto">
           Pillar height ={" "}
           {heightMode === "share"
             ? "sector share of mapped territorial emissions in scope"
             : "sector tonnes relative to the tallest sector in scope"}
-          . Click a pillar to list its TEF cells below.
+          . Cubes under each pillar are TEFs in this scope — size is fixed for
+          now; later it will scale with how much each TEF reduces emissions.
           {emissionShares.totalTonnes <= 0
             ? " No sector emissions matched this scope yet — pillars stay at minimum height."
             : ""}
         </p>
       </div>
-
-      {selectedSectorId ? (
-        <SectorCellStrip
-          columns={visibleColumns}
-          metric={metric}
-          maxMetric={maxMetric}
-          selectedTefId={selectedTefId}
-          onSelectTefId={onSelectTefId}
-        />
-      ) : (
-        <p className="text-sm text-gray-02 rounded-lg border border-gray-03/30 bg-gray-04/40 p-4">
-          Select a sector pillar to browse the TEF cells that matched in this
-          scope.
-        </p>
-      )}
     </div>
   );
 }
 
-function SectorPillar({
-  label,
-  code,
-  rgb,
+function SectorColumn({
+  column,
   heightPx,
   share,
   tonnes,
   hitSum,
-  cellCount,
   gate,
   selected,
+  metric,
+  maxMetric,
+  selectedTefId,
+  onSelectSector,
+  onSelectTefId,
 }: {
-  label: string;
-  code: string;
-  rgb: readonly [number, number, number];
+  column: TefFrameworkSectorColumn;
   heightPx: number;
   share: number;
   tonnes: number;
   hitSum: number;
-  cellCount: number;
   gate: SectorGateMatchRate | null;
   selected: boolean;
+  metric: TefFrameworkMetric;
+  maxMetric: number;
+  selectedTefId: string | null;
+  onSelectSector: () => void;
+  onSelectTefId: (id: string) => void;
 }) {
-  const face = tefCellFill(rgb, selected ? 0.85 : 0.65);
-  const side = tefCellFill(rgb, selected ? 0.55 : 0.4);
-  const top = tefCellFill(rgb, selected ? 0.95 : 0.75);
+  const svgW = PILLAR_W + PILLAR_DEPTH;
+  const svgH = heightPx + PILLAR_DEPTH + 4;
 
   return (
-    <div className="flex flex-col items-center w-[5.5rem]">
-      <div
-        className={cn(
-          "relative w-16 transition-transform duration-300 group-hover:-translate-y-1",
-          selected && "ring-2 ring-gray-01/50 rounded-sm",
-        )}
-        style={{ height: heightPx, transformStyle: "preserve-3d" }}
+    <div
+      className={cn(
+        "flex flex-col items-center min-w-0 rounded-lg px-1 py-2 transition-colors",
+        selected ? "bg-gray-03/25 ring-1 ring-gray-01/30" : "hover:bg-gray-04/40",
+      )}
+    >
+      <button
+        type="button"
+        onClick={onSelectSector}
+        className="group flex flex-col items-center gap-2 outline-none w-full"
+        title={`${column.label}: ${Math.round(share * 100)}% · ${Math.round(tonnes).toLocaleString()} t · ${hitSum} TEF hits`}
       >
-        {/* front face */}
-        <div
-          className="absolute inset-0 rounded-sm border border-black/20 flex flex-col justify-end p-1.5"
-          style={{ backgroundColor: face }}
+        <svg
+          width={svgW}
+          height={svgH}
+          viewBox={`0 0 ${svgW} ${svgH}`}
+          className="shrink-0 overflow-visible"
+          shapeRendering="geometricPrecision"
+          aria-hidden
         >
-          <span className="text-[10px] font-semibold tabular-nums text-white leading-tight">
-            {Math.round(share * 100)}%
-          </span>
-          <span className="text-[9px] text-white/80 tabular-nums">
-            {Math.round(tonnes).toLocaleString()} t
-          </span>
-        </div>
-        {/* right face */}
-        <div
-          className="absolute top-0 right-0 w-3 h-full rounded-r-sm border border-black/15 origin-left"
-          style={{
-            backgroundColor: side,
-            transform: "translateX(100%) skewY(-20deg)",
-          }}
-          aria-hidden
-        />
-        {/* top face */}
-        <div
-          className="absolute left-0 right-0 h-3 rounded-t-sm border border-black/10 origin-bottom"
-          style={{
-            backgroundColor: top,
-            transform: "translateY(-100%) skewX(-20deg)",
-            top: 0,
-          }}
-          aria-hidden
-        />
-      </div>
-      <div className="mt-3 text-center space-y-0.5">
-        <div className="text-xs font-semibold text-gray-01 uppercase tracking-wide">
-          {label}
-        </div>
-        <div className="text-[10px] text-gray-02">
-          {code} · {cellCount} TEFs · {hitSum} hits
-        </div>
-        {gate ? (
-          <div className="text-[10px] text-gray-02 tabular-nums">
-            gate {gate.matched}/{gate.gated}
+          <IsoBox
+            x={0}
+            y={svgH - heightPx - PILLAR_DEPTH}
+            w={PILLAR_W}
+            h={heightPx}
+            d={PILLAR_DEPTH}
+            rgb={column.rgb}
+            intensity={selected ? 0.88 : 0.7}
+            selected={selected}
+          />
+        </svg>
+
+        <div className="text-center space-y-0.5 px-0.5">
+          <div className="text-[11px] font-semibold text-gray-01 uppercase tracking-wide leading-tight">
+            {column.label}
           </div>
-        ) : null}
-      </div>
+          <div className="text-[11px] font-semibold tabular-nums text-gray-01">
+            {Math.round(share * 100)}%
+            <span className="text-gray-02 font-normal">
+              {" "}
+              · {Math.round(tonnes).toLocaleString()} t
+            </span>
+          </div>
+          <div className="text-[10px] text-gray-02">
+            {column.code} · {column.cells.length} TEFs · {hitSum} hits
+          </div>
+          {gate ? (
+            <div className="text-[10px] text-gray-02 tabular-nums">
+              gate {gate.matched}/{gate.gated}
+            </div>
+          ) : null}
+        </div>
+      </button>
+
+      <TefCubeGrid
+        cells={column.cells}
+        rgb={column.rgb}
+        metric={metric}
+        maxMetric={maxMetric}
+        selectedTefId={selectedTefId}
+        onSelectTefId={onSelectTefId}
+      />
     </div>
   );
 }
 
-function SectorCellStrip({
-  columns,
+function TefCubeGrid({
+  cells,
+  rgb,
   metric,
   maxMetric,
   selectedTefId,
   onSelectTefId,
 }: {
-  columns: TefFrameworkSectorColumn[];
+  cells: TefFrameworkCell[];
+  rgb: readonly [number, number, number];
   metric: TefFrameworkMetric;
   maxMetric: number;
   selectedTefId: string | null;
   onSelectTefId: (id: string) => void;
 }) {
-  const cells: TefFrameworkCell[] = columns.flatMap((c) => c.cells);
   if (cells.length === 0) {
     return (
-      <p className="text-sm text-gray-02 rounded-lg border border-dashed border-gray-03/40 p-4">
-        No TEF matches in this sector for the current scope.
-      </p>
+      <div className="mt-3 w-full text-center text-[10px] text-gray-02/70 border border-dashed border-gray-03/40 rounded-md py-3">
+        no matches
+      </div>
     );
   }
 
-  const column = columns[0];
+  const cubeSvg = TEF_CUBE + TEF_CUBE_DEPTH;
+
   return (
-    <div className="rounded-lg border border-gray-03/30 bg-gray-05/30 p-4 space-y-3">
-      <div className="flex items-baseline justify-between gap-3 flex-wrap">
-        <h3 className="text-sm font-semibold text-gray-01">
-          {column?.label ?? "Sector"} TEF cells
-        </h3>
-        <span className="text-xs text-gray-02">{cells.length} cells</span>
-      </div>
-      <div className="flex flex-wrap gap-1.5">
-        {cells.map((cell) => {
-          const value = cellMetricValue(cell, metric);
-          const intensity = maxMetric <= 0 ? 0 : value / maxMetric;
-          const isSelected = selectedTefId === cell.stableId;
-          return (
-            <button
-              key={cell.stableId}
-              type="button"
-              title={`${cell.index ?? cell.stableId}: ${cell.title}`}
-              onClick={() => onSelectTefId(cell.stableId)}
-              className={cn(
-                "w-14 h-14 rounded-md border text-left p-1 flex flex-col justify-between transition-transform hover:scale-[1.03]",
-                isSelected
-                  ? "border-gray-01 ring-2 ring-gray-01/40"
-                  : "border-black/20",
-              )}
-              style={{
-                backgroundColor: tefCellFill(
-                  column?.rgb ?? [107, 114, 128],
-                  intensity,
-                ),
-              }}
+    <div className="mt-3 w-full flex flex-wrap justify-center gap-x-1.5 gap-y-2 content-start">
+      {cells.map((cell) => {
+        const value = cellMetricValue(cell, metric);
+        const intensity = maxMetric <= 0 ? 0.45 : 0.35 + 0.55 * (value / maxMetric);
+        const isSelected = selectedTefId === cell.stableId;
+        const short =
+          cell.index?.replace(/^T-\d/, "") ?? cell.stableId.slice(0, 6);
+
+        return (
+          <button
+            key={cell.stableId}
+            type="button"
+            title={`${cell.index ?? cell.stableId}: ${cell.title} (${metric === "strength" ? `${Math.round(value * 100)}%` : value})`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectTefId(cell.stableId);
+            }}
+            className={cn(
+              "relative shrink-0 outline-none transition-transform hover:-translate-y-0.5",
+              isSelected && "z-10",
+            )}
+            style={{ width: cubeSvg, height: cubeSvg + 12 }}
+          >
+            <svg
+              width={cubeSvg}
+              height={cubeSvg}
+              viewBox={`0 0 ${cubeSvg} ${cubeSvg}`}
+              className="block overflow-visible"
+              shapeRendering="geometricPrecision"
+              aria-hidden
             >
-              <span className="text-[9px] leading-tight font-mono text-white/90 line-clamp-2">
-                {cell.index?.replace(/^T-\d/, "") ?? cell.stableId.slice(0, 8)}
-              </span>
-              <span className="text-[10px] font-semibold tabular-nums text-white">
-                {metric === "strength" ? `${Math.round(value * 100)}%` : value}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+              <IsoBox
+                x={0}
+                y={0}
+                w={TEF_CUBE}
+                h={TEF_CUBE - TEF_CUBE_DEPTH}
+                d={TEF_CUBE_DEPTH}
+                rgb={rgb}
+                intensity={intensity}
+                selected={isSelected}
+              />
+            </svg>
+            <span className="absolute inset-x-0 bottom-0 text-[8px] leading-none font-mono text-gray-01/90 text-center truncate px-0.5">
+              {short}
+            </span>
+          </button>
+        );
+      })}
     </div>
+  );
+}
+
+/** Flat isometric box: left(front), right, top faces as polygons. */
+function IsoBox({
+  x,
+  y,
+  w,
+  h,
+  d,
+  rgb,
+  intensity,
+  selected,
+}: {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  d: number;
+  rgb: readonly [number, number, number];
+  intensity: number;
+  selected: boolean;
+}) {
+  // Classic 2:1 isometric: depth projects up-right by (d, -d/2) visually;
+  // we use (d * 0.7, -d * 0.5) for a readable upright bar look.
+  const dx = d * 0.72;
+  const dy = d * 0.42;
+
+  const front = tefCellFill(rgb, intensity);
+  const side = tefCellFill(rgb, Math.max(0.15, intensity - 0.22));
+  const top = tefCellFill(rgb, Math.min(1, intensity + 0.18));
+  const stroke = selected ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.35)";
+  const strokeW = selected ? 1.25 : 0.75;
+
+  // Front face (left parallelogram-ish rectangle in iso)
+  const f0 = `${x},${y + dy}`;
+  const f1 = `${x + w},${y + dy}`;
+  const f2 = `${x + w},${y + dy + h}`;
+  const f3 = `${x},${y + dy + h}`;
+
+  // Right face
+  const r0 = `${x + w},${y + dy}`;
+  const r1 = `${x + w + dx},${y}`;
+  const r2 = `${x + w + dx},${y + h}`;
+  const r3 = `${x + w},${y + dy + h}`;
+
+  // Top face
+  const t0 = `${x},${y + dy}`;
+  const t1 = `${x + dx},${y}`;
+  const t2 = `${x + w + dx},${y}`;
+  const t3 = `${x + w},${y + dy}`;
+
+  return (
+    <g>
+      <polygon
+        points={`${t0} ${t1} ${t2} ${t3}`}
+        fill={top}
+        stroke={stroke}
+        strokeWidth={strokeW}
+        strokeLinejoin="miter"
+      />
+      <polygon
+        points={`${r0} ${r1} ${r2} ${r3}`}
+        fill={side}
+        stroke={stroke}
+        strokeWidth={strokeW}
+        strokeLinejoin="miter"
+      />
+      <polygon
+        points={`${f0} ${f1} ${f2} ${f3}`}
+        fill={front}
+        stroke={stroke}
+        strokeWidth={strokeW}
+        strokeLinejoin="miter"
+      />
+    </g>
   );
 }

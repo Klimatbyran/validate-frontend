@@ -141,10 +141,23 @@ function MainNav() {
 }
 
 export function MainLayout() {
+  const location = useLocation();
+  const tab = topLevelTabFromPathname(location.pathname);
+  const wideClimate =
+    tab === "climate-plans" ||
+    tab === "climate-pipeline" ||
+    tab === "climate-qa-reviews" ||
+    tab === "municipality-sources";
+
   return (
     <div className="min-h-screen bg-gray-05 p-8">
       <Toaster />
-      <div className="max-w-[1400px] mx-auto">
+      <div
+        className={cn(
+          "mx-auto",
+          wideClimate ? "max-w-[1680px]" : "max-w-[1400px]",
+        )}
+      >
         <Header />
         <PipelineModeProvider>
           <MainNav />
