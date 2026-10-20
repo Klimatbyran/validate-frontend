@@ -19,8 +19,8 @@ import type {
 const MIN_PILLAR_H = 40;
 const MAX_PILLAR_H = 220;
 /** Fixed TEF cube size for now — later maps to emission-reduction effectiveness. */
-const TEF_CUBE = 26;
-const TEF_CUBE_DEPTH = 9;
+const TEF_CUBE = 28;
+const TEF_CUBE_DEPTH = 14;
 const PILLAR_W = 112;
 const PILLAR_DEPTH = 32;
 
@@ -255,7 +255,8 @@ function TefCubeGrid({
     );
   }
 
-  const cubeSvg = TEF_CUBE + TEF_CUBE_DEPTH;
+  const cubeSvgW = TEF_CUBE + TEF_CUBE_DEPTH * 0.72;
+  const cubeSvgH = TEF_CUBE + TEF_CUBE_DEPTH * 0.42 + 2;
 
   return (
     <div className="mt-3 w-full flex flex-wrap justify-center gap-x-1.5 gap-y-2 content-start">
@@ -279,21 +280,21 @@ function TefCubeGrid({
               "relative shrink-0 outline-none transition-transform hover:-translate-y-0.5",
               isSelected && "z-10",
             )}
-            style={{ width: cubeSvg, height: cubeSvg }}
+            style={{ width: cubeSvgW, height: cubeSvgH }}
             aria-label={short}
           >
             <svg
-              width={cubeSvg}
-              height={cubeSvg}
-              viewBox={`0 0 ${cubeSvg} ${cubeSvg}`}
+              width={cubeSvgW}
+              height={cubeSvgH}
+              viewBox={`0 0 ${cubeSvgW} ${cubeSvgH}`}
               className="block overflow-visible"
               aria-hidden
             >
               <IsoBox
                 x={0}
-                y={0}
+                y={TEF_CUBE_DEPTH * 0.42}
                 w={TEF_CUBE}
-                h={TEF_CUBE - TEF_CUBE_DEPTH}
+                h={TEF_CUBE}
                 d={TEF_CUBE_DEPTH}
                 rgb={rgb}
                 intensity={intensity}
