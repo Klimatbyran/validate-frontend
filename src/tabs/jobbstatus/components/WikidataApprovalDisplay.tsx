@@ -16,12 +16,14 @@ interface WikidataApprovalDisplayProps {
   data: WikidataApprovalData;
   onOverride?: (overrideWikidataId: string) => void;
   onApprove?: () => void;
+  onApproveNoWikidata?: () => void;
 }
 
 export function WikidataApprovalDisplay({
   data,
   onOverride,
   onApprove,
+  onApproveNoWikidata,
 }: WikidataApprovalDisplayProps) {
   const { t } = useI18n();
   const [overrideId, setOverrideId] = useState("");
@@ -29,6 +31,7 @@ export function WikidataApprovalDisplay({
 
   const isApproved = data.status === "approved";
   const isApprovedUnverified = data.status === "approved_unverified";
+  const isApprovedNoWikidata = data.status === "approved_no_wikidata";
   const isPending = data.status === "pending_approval";
 
   const handleOverrideChange = (value: string) => {
@@ -76,6 +79,13 @@ export function WikidataApprovalDisplay({
               {t("wikidata.approved")}
             </span>
           </div>
+        ) : isApprovedNoWikidata ? (
+          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-green-03/20 border border-green-03">
+            <Check className="w-4 h-4 text-green-03" />
+            <span className="text-sm font-medium text-green-03">
+              {t("wikidata.approvedNoWikidata")}
+            </span>
+          </div>
         ) : isApprovedUnverified ? (
           <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-green-02/20 border border-green-02">
             <ShieldAlert className="w-4 h-4 text-green-02" />
@@ -84,9 +94,9 @@ export function WikidataApprovalDisplay({
             </span>
           </div>
         ) : (
-          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-orange-03/20 border border-orange-03">
-            <AlertCircle className="w-4 h-4 text-orange-03" />
-            <span className="text-sm font-medium text-orange-03">
+          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-purple-03/20 border border-purple-03">
+            <AlertCircle className="w-4 h-4 text-purple-03" />
+            <span className="text-sm font-medium text-purple-03">
               {t("wikidata.pendingApproval")}
             </span>
           </div>
@@ -95,7 +105,11 @@ export function WikidataApprovalDisplay({
 
       {/* Message */}
       {data.message ? (
-        <Callout variant={isApproved ? "success" : "warning"}>
+        <Callout
+          variant={
+            isApproved || isApprovedNoWikidata ? "success" : "warning"
+          }
+        >
           {data.message}
         </Callout>
       ) : null}
@@ -161,6 +175,23 @@ export function WikidataApprovalDisplay({
           >
             <Check className="w-4 h-4 mr-2" />
             {t("wikidata.approveButton")}
+          </Button>
+        </Callout>
+      )}
+
+      {/* No Wikidata ID — complete without assigning */}
+      {isPending && (
+        <Callout
+          variant="warning"
+          title={t("wikidata.noWikidataTitle")}
+          description={t("wikidata.noWikidataDescription")}
+        >
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onApproveNoWikidata?.()}
+          >
+            {t("wikidata.noWikidataButton")}
           </Button>
         </Callout>
       )}

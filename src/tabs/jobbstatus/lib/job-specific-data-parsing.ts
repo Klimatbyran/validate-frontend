@@ -142,7 +142,11 @@ export interface WikidataApprovalWikidata {
 }
 
 export interface WikidataApprovalData {
-  status: "approved" | "pending_approval" | "approved_unverified";
+  status:
+    | "approved"
+    | "pending_approval"
+    | "approved_unverified"
+    | "approved_no_wikidata";
   wikidata: WikidataApprovalWikidata;
   message?: string;
   metadata?: {
@@ -151,6 +155,8 @@ export interface WikidataApprovalData {
   };
   autoApproved?: boolean;
   verifiedByUserId?: string;
+  /** Staff confirmed the company has no usable Wikidata ID. */
+  noWikidata?: boolean;
 }
 
 function approvalSummary(
@@ -187,6 +193,12 @@ function wikidataFromJobData(
   };
 }
 
+function approvalHasNoWikidata(approval: Record<string, unknown>): boolean {
+  const newValue = (approval.data as { newValue?: { noWikidata?: unknown } })
+    ?.newValue;
+  return newValue?.noWikidata === true;
+}
+
 function wikidataApprovalFromApprovalObject(
   approval: Record<string, unknown>,
   jobData?: Record<string, unknown>,
@@ -205,6 +217,7 @@ function wikidataApprovalFromApprovalObject(
       : undefined;
   const metadata =
     (approval.metadata as WikidataApprovalData["metadata"]) || {};
+  const noWikidata = approvalHasNoWikidata(approval);
 
   if (approval.approved === false) {
     return {
@@ -218,6 +231,17 @@ function wikidataApprovalFromApprovalObject(
   }
 
   if (approval.approved === true) {
+    if (noWikidata) {
+      return {
+        status: "approved_no_wikidata",
+        wikidata,
+        message: approvalSummary(approval),
+        metadata,
+        autoApproved,
+        verifiedByUserId,
+        noWikidata: true,
+      };
+    }
     const status =
       autoApproved && !verifiedByUserId ? "approved_unverified" : "approved";
     return {
@@ -275,6 +299,8 @@ export interface CompanyLinkApprovalData {
   extractedName: string;
   candidates: CompanyLinkCandidate[];
   selectedCompanyId?: string;
+  /** Name of the linked company when approved (useful for search picks not in candidates). */
+  selectedCompanyName?: string;
   createNew?: boolean;
   allowCreateNew?: boolean;
   partialNameMatch?: boolean;
@@ -341,6 +367,10 @@ function companyLinkApprovalFromApprovalObject(
       selectedCompanyId:
         typeof newValue?.companyId === "string"
           ? newValue.companyId
+          : undefined,
+      selectedCompanyName:
+        typeof newValue?.companyName === "string" && newValue.companyName.trim()
+          ? newValue.companyName.trim()
           : undefined,
       createNew: Boolean(newValue?.createNew),
       displayName:

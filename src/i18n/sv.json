@@ -874,7 +874,8 @@
       "saveToApiEndpointLabel": "Slutpunkt",
       "saveToApiKeysLabel": "Nycklar",
       "saveToApiErrorLabel": "Fel",
-      "saveToApiJobIdLabel": "Jobb-id"
+      "saveToApiJobIdLabel": "Jobb-id",
+      "toastNoWikidataSuccess": "Markerat som inget Wikidata-ID — jobbet slutförs utan koppling"
     },
     "activeLabel": "Aktiv",
     "yearsOfData": "{{count}} år data",
@@ -1261,7 +1262,11 @@
     "wikidataIdLabel": "Wikidata ID",
     "metadata": "Metadata",
     "source": "Källa",
-    "comment": "Kommentar"
+    "comment": "Kommentar",
+    "noWikidataTitle": "Inget Wikidata-ID",
+    "noWikidataDescription": "Använd när bolaget saknar Wikidata-post, eller när inget alternativ är en tydlig match. Slutför steget utan att spara något Wikidata-ID.",
+    "noWikidataButton": "Bekräfta: inget Wikidata-ID",
+    "approvedNoWikidata": "Godkänd (inget Wikidata-ID)"
   },
   "companyLink": {
     "title": "Bolagskoppling",
