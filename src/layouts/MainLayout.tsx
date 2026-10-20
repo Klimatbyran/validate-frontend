@@ -155,7 +155,7 @@ export function MainLayout() {
       <div
         className={cn(
           "mx-auto",
-          wideClimate ? "max-w-[1680px]" : "max-w-[1400px]",
+          wideClimate ? "max-w-[1800px]" : "max-w-[1400px]",
         )}
       >
         <Header />

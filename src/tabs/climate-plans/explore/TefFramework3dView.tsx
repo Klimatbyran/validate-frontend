@@ -16,13 +16,13 @@ import type {
   SectorGateMatchRate,
 } from "../lib/tef-sector-signals";
 
-const MIN_PILLAR_H = 36;
-const MAX_PILLAR_H = 200;
+const MIN_PILLAR_H = 40;
+const MAX_PILLAR_H = 220;
 /** Fixed TEF cube size for now — later maps to emission-reduction effectiveness. */
-const TEF_CUBE = 22;
-const TEF_CUBE_DEPTH = 8;
-const PILLAR_W = 88;
-const PILLAR_DEPTH = 28;
+const TEF_CUBE = 26;
+const TEF_CUBE_DEPTH = 9;
+const PILLAR_W = 112;
+const PILLAR_DEPTH = 32;
 
 /**
  * Isometric boxes are drawn as SVG polygons (no CSS rotateX/skew on a parent
@@ -72,7 +72,7 @@ export function TefFramework3dView({
   return (
     <div className="space-y-3 w-full">
       <div className="relative w-full rounded-lg border border-gray-03/30 bg-gray-05/40 px-3 py-5 sm:px-5 sm:py-6">
-        <div className="grid w-full gap-3 sm:gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6 items-start">
+        <div className="grid w-full gap-4 sm:gap-5 grid-cols-2 md:grid-cols-3 xl:grid-cols-6 items-start justify-items-stretch">
           {columns.map((column) => {
             const sectorId =
               column.sectorId === "other"
@@ -183,8 +183,7 @@ function SectorColumn({
           width={svgW}
           height={svgH}
           viewBox={`0 0 ${svgW} ${svgH}`}
-          className="shrink-0 overflow-visible"
-          shapeRendering="geometricPrecision"
+          className="shrink-0 overflow-visible mx-auto"
           aria-hidden
         >
           <IsoBox
@@ -280,14 +279,14 @@ function TefCubeGrid({
               "relative shrink-0 outline-none transition-transform hover:-translate-y-0.5",
               isSelected && "z-10",
             )}
-            style={{ width: cubeSvg, height: cubeSvg + 12 }}
+            style={{ width: cubeSvg, height: cubeSvg }}
+            aria-label={short}
           >
             <svg
               width={cubeSvg}
               height={cubeSvg}
               viewBox={`0 0 ${cubeSvg} ${cubeSvg}`}
               className="block overflow-visible"
-              shapeRendering="geometricPrecision"
               aria-hidden
             >
               <IsoBox
@@ -301,9 +300,6 @@ function TefCubeGrid({
                 selected={isSelected}
               />
             </svg>
-            <span className="absolute inset-x-0 bottom-0 text-[8px] leading-none font-mono text-gray-01/90 text-center truncate px-0.5">
-              {short}
-            </span>
           </button>
         );
       })}
