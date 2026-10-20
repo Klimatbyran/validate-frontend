@@ -5,6 +5,7 @@ import type { ExploreViewId } from "../lib/explore-types";
 import { MapKpiView } from "./MapKpiView";
 import { AlignmentView } from "./AlignmentView";
 import { GoalTrackingView } from "./GoalTrackingView";
+import { ShiftsInterventionsView } from "./ShiftsInterventionsView";
 import { TefLandscapeView } from "./TefLandscapeView";
 import { TefFrameworkView } from "./TefFrameworkView";
 import { PlanAnatomyView } from "./PlanAnatomyView";
@@ -14,6 +15,7 @@ const VIEW_OPTIONS: { value: ExploreViewId; label: string }[] = [
   { value: "map", label: "KPI map" },
   { value: "alignment", label: "Emissions vs TEFs" },
   { value: "goals", label: "Goal tracking" },
+  { value: "shifts", label: "Shifts & interventions" },
   { value: "tef-framework", label: "TEF framework" },
   { value: "tef", label: "TEF landscape" },
   { value: "anatomy", label: "Plan anatomy" },
@@ -89,6 +91,21 @@ export function ExploreDataView({
           dataset={data}
           selectedName={params.selectedName}
           onSelectName={params.setSelectedName}
+          layout={params.goalsLayout}
+          onLayoutChange={params.setGoalsLayout}
+          groupBy={params.goalsGroupBy}
+          onGroupByChange={params.setGoalsGroupBy}
+          atlasScope={params.goalsAtlasScope}
+          onAtlasScopeChange={params.setGoalsAtlasScope}
+        />
+      ) : null}
+      {params.view === "shifts" ? (
+        <ShiftsInterventionsView
+          records={data.municipalities}
+          layout={params.shiftsLayout}
+          onLayoutChange={params.setShiftsLayout}
+          selectedName={params.selectedName}
+          onSelectName={params.setSelectedName}
         />
       ) : null}
       {params.view === "tef-framework" ? (
@@ -103,6 +120,10 @@ export function ExploreDataView({
           onMetricChange={params.setTefMetric}
           showEmissions={params.tefEmissions}
           onShowEmissionsChange={params.setTefEmissions}
+          layout={params.tefLayout}
+          onLayoutChange={params.setTefLayout}
+          heightMode={params.tefHeight}
+          onHeightModeChange={params.setTefHeight}
           selectedTefId={params.selectedTefId}
           onSelectTefId={params.setSelectedTefId}
         />

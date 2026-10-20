@@ -1,10 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { ViewModePills } from "@/ui/view-mode-pills";
 import { MethodologyPanel } from "./MethodologyPanel";
 import { TefDetailPanel } from "./TefDetailPanel";
+import { TefFramework3dView } from "./TefFramework3dView";
 import type {
   ExploreMunicipalityRecord,
   SectorYearEmissions,
+  TefFrameworkHeightMode,
+  TefFrameworkLayout,
 } from "../lib/explore-types";
 import {
   buildTefFrameworkCells,
@@ -47,6 +51,10 @@ export function TefFrameworkView({
   onMetricChange,
   showEmissions,
   onShowEmissionsChange,
+  layout,
+  onLayoutChange,
+  heightMode,
+  onHeightModeChange,
   selectedTefId,
   onSelectTefId,
 }: {
@@ -60,9 +68,16 @@ export function TefFrameworkView({
   onMetricChange: (metric: TefFrameworkMetric) => void;
   showEmissions: boolean;
   onShowEmissionsChange: (value: boolean) => void;
+  layout: TefFrameworkLayout;
+  onLayoutChange: (layout: TefFrameworkLayout) => void;
+  heightMode: TefFrameworkHeightMode;
+  onHeightModeChange: (mode: TefFrameworkHeightMode) => void;
   selectedTefId: string | null;
   onSelectTefId: (id: string) => void;
 }) {
+  const [selectedSectorId, setSelectedSectorId] = useState<
+    TefSectorId | "other" | null
+  >(null);
   const places = useMemo(
     () => listScopePlaces(records, scope),
     [records, scope],
@@ -107,11 +122,22 @@ export function TefFrameworkView({
     <div className="space-y-4">
       <MethodologyPanel
         data="transition_element_matches on scored measures (stable_id, short_label, sector_path, match_confidence). Gate domain from activity_shifts.transition_element_gate_domain (pipeline). Sector emissions from Unearth / SMHI territorial series. Sector columns follow the Transition Element Framework (T-1 Transport … T-6 Waste)."
-        calculation="Each cell is one TEF (stable_id). Hits = match rows in the selected scope. Strength = Σ confidence weights (high=3, mid=2, low=1) / (3 × hits). Municipalities = distinct municipalities with at least one match. Colour intensity is that metric scaled to the max cell in the current scope. Match rate on a header = gated shifts with ≥1 confirmed match in the same top domain / shifts gated to that domain. Optional emission bars = sector tonnes / sum of mapped buckets (transport→transport, industry→industry, afolu→agriculture, buildings→heating, energy→energy, waste→waste) using each place’s latest year; machinery/product/other are excluded."
-        extra="Scope mirrors the KPI map: all extracts, one region, or one municipality. Empty cells with a low match rate mean the domain appears in plans but TEF matching struggled — not that the topic is absent. Click a cell for a gist then expand places for quotes."
+        calculation="Each cell is one TEF (stable_id). Hits = match rows in the selected scope. Strength = Σ confidence weights (high=3, mid=2, low=1) / (3 × hits). Municipalities = distinct municipalities with at least one match. Colour intensity is that metric scaled to the max cell in the current scope. Match rate on a header = gated shifts with ≥1 confirmed match in the same top domain / shifts gated to that domain. Optional emission bars = sector tonnes / sum of mapped buckets (transport→transport, industry→industry, afolu→agriculture, buildings→heating, energy→energy, waste→waste) using each place’s latest year; machinery/product/other are excluded. 3D layout: SVG isometric pillars (height = emission share or relative tonnes); TEF cubes under each sector (click a sector to expand with named cubes). Cube size is fixed until we can attribute reduction effectiveness."
+        extra="Scope mirrors the KPI map: all extracts, one region, or one municipality. Empty cells with a low match rate mean the domain appears in plans but TEF matching struggled — not that the topic is absent. Click a catalogue cell or a 3D TEF cube for a gist then expand places for quotes."
       />
 
       <div className="flex flex-wrap gap-2 items-center">
+        <ViewModePills
+          options={[
+            { value: "grid", label: "Catalogue" },
+            { value: "3d", label: "3D emissions" },
+          ]}
+          value={layout}
+          onValueChange={onLayoutChange}
+          ariaLabel="TEF framework layout"
+          className="rounded-lg"
+        />
+
         <div className="flex rounded-lg overflow-hidden border border-gray-03/40 text-sm">
           {(
             [
@@ -164,15 +190,28 @@ export function TefFrameworkView({
           <option value="municipalities">Colour by municipality count</option>
         </select>
 
-        <label className="inline-flex items-center gap-2 text-sm text-gray-01 cursor-pointer select-none px-2 py-1.5 rounded-md border border-gray-03/40 bg-gray-04/40">
-          <input
-            type="checkbox"
-            checked={showEmissions}
-            onChange={(e) => onShowEmissionsChange(e.target.checked)}
-            className="rounded border-gray-03"
-          />
-          Show emissions on headers
-        </label>
+        {layout === "3d" ? (
+          <select
+            value={heightMode}
+            onChange={(e) =>
+              onHeightModeChange(e.target.value as TefFrameworkHeightMode)
+            }
+            className="text-sm bg-gray-04 border border-gray-03/50 text-gray-01 rounded px-3 py-2"
+          >
+            <option value="share">Height by emission %</option>
+            <option value="tonnes">Height by tonnes</option>
+          </select>
+        ) : (
+          <label className="inline-flex items-center gap-2 text-sm text-gray-01 cursor-pointer select-none px-2 py-1.5 rounded-md border border-gray-03/40 bg-gray-04/40">
+            <input
+              type="checkbox"
+              checked={showEmissions}
+              onChange={(e) => onShowEmissionsChange(e.target.checked)}
+              className="rounded border-gray-03"
+            />
+            Show emissions on headers
+          </label>
+        )}
 
         <span className="text-sm text-gray-02">
           {cells.length} TEFs · {cells.reduce((s, c) => s + c.hitCount, 0)} hits
@@ -186,6 +225,19 @@ export function TefFrameworkView({
           <code className="font-mono text-xs">matchTransitionElements</code> or
           widen the scope.
         </p>
+      ) : layout === "3d" ? (
+        <TefFramework3dView
+          columns={columns}
+          emissionShares={emissionShares}
+          gateRates={gateRates}
+          heightMode={heightMode}
+          metric={metric}
+          maxMetric={maxMetric}
+          selectedTefId={selectedTefId}
+          onSelectTefId={onSelectTefId}
+          selectedSectorId={selectedSectorId}
+          onSelectSectorId={setSelectedSectorId}
+        />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-gray-03/30 bg-gray-05/30 p-4">
           <div className="flex gap-3 min-w-max items-start">
