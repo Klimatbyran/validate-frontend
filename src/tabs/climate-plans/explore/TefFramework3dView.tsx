@@ -19,10 +19,10 @@ import type {
 const MIN_PILLAR_H = 40;
 const MAX_PILLAR_H = 220;
 /** Fixed TEF cube size for now — later maps to emission-reduction effectiveness. */
-const TEF_CUBE = 28;
+const TEF_CUBE = 36;
 const TEF_CUBE_DEPTH = 14;
-const PILLAR_W = 112;
-const PILLAR_DEPTH = 32;
+const PILLAR_W = 100;
+const PILLAR_DEPTH = 28;
 
 /**
  * Isometric boxes are drawn as SVG polygons (no CSS rotateX/skew on a parent
@@ -58,21 +58,43 @@ export function TefFramework3dView({
   selectedSectorId: TefSectorId | "other" | null;
   onSelectSectorId: (id: TefSectorId | "other" | null) => void;
 }) {
-  const maxTonnes = useMemo(() => {
-    let max = 0;
+  const columnHeights = useMemo(() => {
+    let maxTonnes = 0;
     for (const column of columns) {
       if (column.sectorId === "other") continue;
       const tonnes =
         emissionShares.bySector[column.sectorId as TefSectorId]?.tonnes ?? 0;
-      if (tonnes > max) max = tonnes;
+      if (tonnes > maxTonnes) maxTonnes = tonnes;
     }
-    return max;
-  }, [columns, emissionShares]);
+
+    const heights = new Map<string, number>();
+    let maxHeightPx = MIN_PILLAR_H;
+    for (const column of columns) {
+      const sectorId =
+        column.sectorId === "other" ? null : (column.sectorId as TefSectorId);
+      const emissions = sectorId ? emissionShares.bySector[sectorId] : null;
+      const share = emissions?.share ?? 0;
+      const tonnes = emissions?.tonnes ?? 0;
+      const heightRatio =
+        heightMode === "share"
+          ? share
+          : maxTonnes <= 0
+            ? 0
+            : tonnes / maxTonnes;
+      const heightPx =
+        MIN_PILLAR_H + heightRatio * (MAX_PILLAR_H - MIN_PILLAR_H);
+      heights.set(column.sectorId, heightPx);
+      if (heightPx > maxHeightPx) maxHeightPx = heightPx;
+    }
+    return { heights, maxHeightPx, maxTonnes };
+  }, [columns, emissionShares, heightMode]);
+
+  const pillarSvgH = columnHeights.maxHeightPx + PILLAR_DEPTH + 4;
 
   return (
     <div className="space-y-3 w-full">
-      <div className="relative w-full rounded-lg border border-gray-03/30 bg-gray-05/40 px-3 py-5 sm:px-5 sm:py-6">
-        <div className="grid w-full gap-4 sm:gap-5 grid-cols-2 md:grid-cols-3 xl:grid-cols-6 items-start justify-items-stretch">
+      <div className="relative w-full rounded-lg border border-gray-03/30 bg-gray-05/40 px-2 py-4 sm:px-3 sm:py-5">
+        <div className="grid w-full gap-1.5 sm:gap-2 grid-cols-2 md:grid-cols-3 xl:grid-cols-6 items-start justify-items-stretch">
           {columns.map((column) => {
             const sectorId =
               column.sectorId === "other"
@@ -87,14 +109,8 @@ export function TefFramework3dView({
                 : null;
             const share = emissions?.share ?? 0;
             const tonnes = emissions?.tonnes ?? 0;
-            const heightRatio =
-              heightMode === "share"
-                ? share
-                : maxTonnes <= 0
-                  ? 0
-                  : tonnes / maxTonnes;
             const heightPx =
-              MIN_PILLAR_H + heightRatio * (MAX_PILLAR_H - MIN_PILLAR_H);
+              columnHeights.heights.get(column.sectorId) ?? MIN_PILLAR_H;
             const isSelected = selectedSectorId === column.sectorId;
             const hitSum = column.cells.reduce((s, c) => s + c.hitCount, 0);
 
@@ -103,6 +119,7 @@ export function TefFramework3dView({
                 key={column.sectorId}
                 column={column}
                 heightPx={heightPx}
+                pillarSvgH={pillarSvgH}
                 share={share}
                 tonnes={tonnes}
                 hitSum={hitSum}
@@ -120,13 +137,13 @@ export function TefFramework3dView({
           })}
         </div>
 
-        <p className="text-xs text-gray-02 mt-5 text-center max-w-4xl mx-auto">
-          Pillar height ={" "}
+        <p className="text-xs text-gray-02 mt-4 text-center max-w-4xl mx-auto">
+          Pillars are bottom-aligned so heights compare across sectors (
           {heightMode === "share"
-            ? "sector share of mapped territorial emissions in scope"
-            : "sector tonnes relative to the tallest sector in scope"}
-          . Cubes under each pillar are TEFs in this scope — size is fixed for
-          now; later it will scale with how much each TEF reduces emissions.
+            ? "share of mapped territorial emissions"
+            : "tonnes vs tallest sector"}
+          ). Cubes are TEFs in this scope — size fixed for now; later it scales
+          with reduction effectiveness.
           {emissionShares.totalTonnes <= 0
             ? " No sector emissions matched this scope yet — pillars stay at minimum height."
             : ""}
@@ -139,6 +156,7 @@ export function TefFramework3dView({
 function SectorColumn({
   column,
   heightPx,
+  pillarSvgH,
   share,
   tonnes,
   hitSum,
@@ -152,6 +170,7 @@ function SectorColumn({
 }: {
   column: TefFrameworkSectorColumn;
   heightPx: number;
+  pillarSvgH: number;
   share: number;
   tonnes: number;
   hitSum: number;
@@ -164,31 +183,31 @@ function SectorColumn({
   onSelectTefId: (id: string) => void;
 }) {
   const svgW = PILLAR_W + PILLAR_DEPTH;
-  const svgH = heightPx + PILLAR_DEPTH + 4;
 
   return (
     <div
       className={cn(
-        "flex flex-col items-center min-w-0 rounded-lg px-1 py-2 transition-colors",
+        "flex flex-col items-center min-w-0 rounded-md px-0.5 py-1.5 transition-colors",
         selected ? "bg-gray-03/25 ring-1 ring-gray-01/30" : "hover:bg-gray-04/40",
       )}
     >
       <button
         type="button"
         onClick={onSelectSector}
-        className="group flex flex-col items-center gap-2 outline-none w-full"
+        className="group flex flex-col items-center gap-1.5 outline-none w-full"
         title={`${column.label}: ${Math.round(share * 100)}% · ${Math.round(tonnes).toLocaleString()} t · ${hitSum} TEF hits`}
       >
+        {/* Shared svg height + bottom-placed box → comparable pillar heights */}
         <svg
           width={svgW}
-          height={svgH}
-          viewBox={`0 0 ${svgW} ${svgH}`}
-          className="shrink-0 overflow-visible mx-auto"
+          height={pillarSvgH}
+          viewBox={`0 0 ${svgW} ${pillarSvgH}`}
+          className="shrink-0 overflow-visible mx-auto block"
           aria-hidden
         >
           <IsoBox
             x={0}
-            y={svgH - heightPx - PILLAR_DEPTH}
+            y={pillarSvgH - heightPx - PILLAR_DEPTH * 0.42}
             w={PILLAR_W}
             h={heightPx}
             d={PILLAR_DEPTH}
@@ -249,29 +268,34 @@ function TefCubeGrid({
 }) {
   if (cells.length === 0) {
     return (
-      <div className="mt-3 w-full text-center text-[10px] text-gray-02/70 border border-dashed border-gray-03/40 rounded-md py-3">
+      <div className="mt-2 w-full text-center text-[10px] text-gray-02/70 border border-dashed border-gray-03/40 rounded-md py-2">
         no matches
       </div>
     );
   }
 
-  const cubeSvgW = TEF_CUBE + TEF_CUBE_DEPTH * 0.72;
-  const cubeSvgH = TEF_CUBE + TEF_CUBE_DEPTH * 0.42 + 2;
+  const dx = TEF_CUBE_DEPTH * 0.72;
+  const dy = TEF_CUBE_DEPTH * 0.42;
+  const cubeSvgW = Math.ceil(TEF_CUBE + dx);
+  const cubeSvgH = Math.ceil(TEF_CUBE + dy + 2);
 
   return (
-    <div className="mt-3 w-full flex flex-wrap justify-center gap-x-1.5 gap-y-2 content-start">
+    <div className="mt-2 w-full flex flex-wrap justify-center gap-x-1 gap-y-1.5 content-start">
       {cells.map((cell) => {
         const value = cellMetricValue(cell, metric);
-        const intensity = maxMetric <= 0 ? 0.45 : 0.35 + 0.55 * (value / maxMetric);
+        const intensity =
+          maxMetric <= 0 ? 0.45 : 0.35 + 0.55 * (value / maxMetric);
         const isSelected = selectedTefId === cell.stableId;
         const short =
           cell.index?.replace(/^T-\d/, "") ?? cell.stableId.slice(0, 6);
+        const valueLabel =
+          metric === "strength" ? `${Math.round(value * 100)}%` : String(value);
 
         return (
           <button
             key={cell.stableId}
             type="button"
-            title={`${cell.index ?? cell.stableId}: ${cell.title} (${metric === "strength" ? `${Math.round(value * 100)}%` : value})`}
+            title={`${cell.index ?? cell.stableId}: ${cell.title} (${valueLabel})`}
             onClick={(e) => {
               e.stopPropagation();
               onSelectTefId(cell.stableId);
@@ -281,7 +305,7 @@ function TefCubeGrid({
               isSelected && "z-10",
             )}
             style={{ width: cubeSvgW, height: cubeSvgH }}
-            aria-label={short}
+            aria-label={`${short} ${valueLabel}`}
           >
             <svg
               width={cubeSvgW}
@@ -292,13 +316,15 @@ function TefCubeGrid({
             >
               <IsoBox
                 x={0}
-                y={TEF_CUBE_DEPTH * 0.42}
+                y={0}
                 w={TEF_CUBE}
                 h={TEF_CUBE}
                 d={TEF_CUBE_DEPTH}
                 rgb={rgb}
                 intensity={intensity}
                 selected={isSelected}
+                frontLabel={short}
+                frontValue={valueLabel}
               />
             </svg>
           </button>
@@ -318,6 +344,8 @@ function IsoBox({
   rgb,
   intensity,
   selected,
+  frontLabel,
+  frontValue,
 }: {
   x: number;
   y: number;
@@ -327,9 +355,9 @@ function IsoBox({
   rgb: readonly [number, number, number];
   intensity: number;
   selected: boolean;
+  frontLabel?: string;
+  frontValue?: string;
 }) {
-  // Classic 2:1 isometric: depth projects up-right by (d, -d/2) visually;
-  // we use (d * 0.7, -d * 0.5) for a readable upright bar look.
   const dx = d * 0.72;
   const dy = d * 0.42;
 
@@ -339,23 +367,24 @@ function IsoBox({
   const stroke = selected ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.35)";
   const strokeW = selected ? 1.25 : 0.75;
 
-  // Front face (left parallelogram-ish rectangle in iso)
   const f0 = `${x},${y + dy}`;
   const f1 = `${x + w},${y + dy}`;
   const f2 = `${x + w},${y + dy + h}`;
   const f3 = `${x},${y + dy + h}`;
 
-  // Right face
   const r0 = `${x + w},${y + dy}`;
   const r1 = `${x + w + dx},${y}`;
   const r2 = `${x + w + dx},${y + h}`;
   const r3 = `${x + w},${y + dy + h}`;
 
-  // Top face
   const t0 = `${x},${y + dy}`;
   const t1 = `${x + dx},${y}`;
   const t2 = `${x + w + dx},${y}`;
   const t3 = `${x + w},${y + dy}`;
+
+  const textX = x + w / 2;
+  const labelY = y + dy + h * 0.38;
+  const valueY = y + dy + h * 0.68;
 
   return (
     <g>
@@ -380,6 +409,47 @@ function IsoBox({
         strokeWidth={strokeW}
         strokeLinejoin="miter"
       />
+      {frontLabel || frontValue ? (
+        <g
+          style={{
+            fontFamily:
+              'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+          }}
+        >
+          {frontLabel ? (
+            <text
+              x={textX}
+              y={labelY}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="rgba(255,255,255,0.92)"
+              fontSize={Math.max(7, Math.min(9, w * 0.22))}
+              fontWeight={500}
+            >
+              {truncateFaceLabel(frontLabel, w)}
+            </text>
+          ) : null}
+          {frontValue ? (
+            <text
+              x={textX}
+              y={valueY}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#ffffff"
+              fontSize={Math.max(9, Math.min(12, w * 0.28))}
+              fontWeight={700}
+            >
+              {frontValue}
+            </text>
+          ) : null}
+        </g>
+      ) : null}
     </g>
   );
+}
+
+function truncateFaceLabel(label: string, faceW: number): string {
+  const maxChars = faceW >= 34 ? 8 : faceW >= 28 ? 7 : 6;
+  if (label.length <= maxChars) return label;
+  return `${label.slice(0, maxChars - 1)}…`;
 }
