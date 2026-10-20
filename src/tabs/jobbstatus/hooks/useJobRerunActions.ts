@@ -44,100 +44,77 @@ export function useJobRerunActions({
     }
   }, [job?.queueId, job?.id, setDetailed]);
 
-  const handleWikidataApprove = useCallback(async () => {
-    if (!effectiveJob?.queueId || !effectiveJob?.id) {
-      toast.error(t("jobstatus.jobdetails.toastCannotApprove"));
-      return;
-    }
-    try {
-      const response = await authenticatedFetch(
-        getPipelineUrl(
-          `/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
-        ),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            data: {
-              approval: {
-                approved: true,
-                ...(user?.id && { verifiedByUserId: user.id }),
-              },
-            },
-          }),
-        },
-      );
-      if (!response.ok) {
-        const errorText = await response.text();
-        toast.error(
-          t("jobstatus.jobdetails.toastApproveError", {
-            message: errorText || t("upload.unknownError"),
-          }),
-        );
+  const approveWikidataJob = useCallback(
+    async (options: {
+      successToastKey:
+        | "jobstatus.jobdetails.toastApproveSuccess"
+        | "jobstatus.jobdetails.toastNoWikidataSuccess";
+      newValue?: {
+        noWikidata: true;
+        wikidata: null;
+      };
+    }) => {
+      if (!effectiveJob?.queueId || !effectiveJob?.id) {
+        toast.error(t("jobstatus.jobdetails.toastCannotApprove"));
         return;
       }
-      toast.success(t("jobstatus.jobdetails.toastApproveSuccess"));
-      await refreshJobData();
-    } catch (error) {
-      toast.error(
-        t("jobstatus.jobdetails.toastApproveFailed", {
-          message:
-            error instanceof Error ? error.message : t("upload.unknownError"),
-        }),
-      );
-    }
-  }, [effectiveJob?.queueId, effectiveJob?.id, refreshJobData, t, user?.id]);
-
-  const handleWikidataNoId = useCallback(async () => {
-    if (!effectiveJob?.queueId || !effectiveJob?.id) {
-      toast.error(t("jobstatus.jobdetails.toastCannotApprove"));
-      return;
-    }
-    try {
-      const response = await authenticatedFetch(
-        getPipelineUrl(
-          `/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
-        ),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            data: {
-              approval: {
-                approved: true,
-                ...(user?.id && { verifiedByUserId: user.id }),
-                data: {
-                  newValue: {
-                    noWikidata: true,
-                    // Clear suggested Q-id so deep-merge cannot keep a rejected candidate.
-                    wikidata: null,
-                  },
+      try {
+        const response = await authenticatedFetch(
+          getPipelineUrl(
+            `/queues/${encodeURIComponent(effectiveJob.queueId)}/${encodeURIComponent(effectiveJob.id)}/rerun`,
+          ),
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              data: {
+                approval: {
+                  approved: true,
+                  ...(user?.id && { verifiedByUserId: user.id }),
+                  ...(options.newValue && {
+                    data: { newValue: options.newValue },
+                  }),
                 },
               },
-            },
-          }),
-        },
-      );
-      if (!response.ok) {
-        const errorText = await response.text();
+            }),
+          },
+        );
+        if (!response.ok) {
+          const errorText = await response.text();
+          toast.error(
+            t("jobstatus.jobdetails.toastApproveError", {
+              message: errorText || t("upload.unknownError"),
+            }),
+          );
+          return;
+        }
+        toast.success(t(options.successToastKey));
+        await refreshJobData();
+      } catch (error) {
         toast.error(
-          t("jobstatus.jobdetails.toastApproveError", {
-            message: errorText || t("upload.unknownError"),
+          t("jobstatus.jobdetails.toastApproveFailed", {
+            message:
+              error instanceof Error ? error.message : t("upload.unknownError"),
           }),
         );
-        return;
       }
-      toast.success(t("jobstatus.jobdetails.toastNoWikidataSuccess"));
-      await refreshJobData();
-    } catch (error) {
-      toast.error(
-        t("jobstatus.jobdetails.toastApproveFailed", {
-          message:
-            error instanceof Error ? error.message : t("upload.unknownError"),
-        }),
-      );
-    }
-  }, [effectiveJob?.queueId, effectiveJob?.id, refreshJobData, t, user?.id]);
+    },
+    [effectiveJob?.queueId, effectiveJob?.id, refreshJobData, t, user?.id],
+  );
+
+  const handleWikidataApprove = useCallback(() => {
+    return approveWikidataJob({
+      successToastKey: "jobstatus.jobdetails.toastApproveSuccess",
+    });
+  }, [approveWikidataJob]);
+
+  const handleWikidataNoId = useCallback(() => {
+    return approveWikidataJob({
+      successToastKey: "jobstatus.jobdetails.toastNoWikidataSuccess",
+      // Clear suggested Q-id so deep-merge cannot keep a rejected candidate.
+      newValue: { noWikidata: true, wikidata: null },
+    });
+  }, [approveWikidataJob]);
 
   const handleWikidataOverride = useCallback(
     async (overrideWikidataId: string) => {
