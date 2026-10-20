@@ -147,7 +147,8 @@ export interface WikidataApprovalData {
     | "pending_approval"
     | "approved_unverified"
     | "approved_no_wikidata";
-  wikidata: WikidataApprovalWikidata;
+  /** Present for pending/approved Q-id paths; omitted after no-Wikidata confirmation. */
+  wikidata?: WikidataApprovalWikidata;
   message?: string;
   metadata?: {
     source?: string;
@@ -203,13 +204,6 @@ function wikidataApprovalFromApprovalObject(
   approval: Record<string, unknown>,
   jobData?: Record<string, unknown>,
 ): WikidataApprovalData | null {
-  const wikidata =
-    (approval.data as { newValue?: { wikidata?: WikidataApprovalWikidata } })
-      ?.newValue?.wikidata ?? wikidataFromJobData(jobData);
-  if (!wikidata?.node) {
-    return null;
-  }
-
   const autoApproved = Boolean(jobData?.autoApprove);
   const verifiedByUserId =
     typeof approval.verifiedByUserId === "string"
@@ -218,6 +212,37 @@ function wikidataApprovalFromApprovalObject(
   const metadata =
     (approval.metadata as WikidataApprovalData["metadata"]) || {};
   const noWikidata = approvalHasNoWikidata(approval);
+
+  if (approval.approved === true && noWikidata) {
+    return {
+      status: "approved_no_wikidata",
+      message: approvalSummary(approval),
+      metadata,
+      autoApproved,
+      verifiedByUserId,
+      noWikidata: true,
+    };
+  }
+
+  const rawWikidata = (
+    approval.data as {
+      newValue?: { wikidata?: WikidataApprovalWikidata | null };
+    }
+  )?.newValue?.wikidata;
+  const wikidata =
+    rawWikidata && typeof rawWikidata === "object" && rawWikidata.node
+      ? {
+          node: rawWikidata.node.trim(),
+          url:
+            rawWikidata.url?.trim() ||
+            `https://www.wikidata.org/wiki/${rawWikidata.node.trim()}`,
+          label: rawWikidata.label?.trim() || rawWikidata.node.trim(),
+          description: rawWikidata.description?.trim(),
+        }
+      : wikidataFromJobData(jobData);
+  if (!wikidata?.node) {
+    return null;
+  }
 
   if (approval.approved === false) {
     return {
@@ -231,17 +256,6 @@ function wikidataApprovalFromApprovalObject(
   }
 
   if (approval.approved === true) {
-    if (noWikidata) {
-      return {
-        status: "approved_no_wikidata",
-        wikidata,
-        message: approvalSummary(approval),
-        metadata,
-        autoApproved,
-        verifiedByUserId,
-        noWikidata: true,
-      };
-    }
     const status =
       autoApproved && !verifiedByUserId ? "approved_unverified" : "approved";
     return {

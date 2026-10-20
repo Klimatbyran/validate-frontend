@@ -269,7 +269,11 @@ export function JobSpecificDataView({
     const fromProcessed =
       (processedData as any)?.wikidataId ||
       (processedData as any)?.wikidata?.node;
-    const fromApproval = wikidataApprovalData?.wikidata?.node;
+    // Suggested Q-id on a "no Wikidata" approval must not be treated as assigned.
+    const fromApproval =
+      wikidataApprovalData?.status === "approved_no_wikidata"
+        ? undefined
+        : wikidataApprovalData?.wikidata?.node;
     const candidate = fromJob || fromProcessed || fromApproval;
     if (!candidate) return undefined;
     const id = typeof candidate === "string" ? candidate : String(candidate);

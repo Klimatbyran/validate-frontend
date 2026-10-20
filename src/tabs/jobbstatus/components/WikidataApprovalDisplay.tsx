@@ -94,9 +94,9 @@ export function WikidataApprovalDisplay({
             </span>
           </div>
         ) : (
-          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-purple-03/20 border border-purple-03">
-            <AlertCircle className="w-4 h-4 text-purple-03" />
-            <span className="text-sm font-medium text-purple-03">
+          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-orange-03/20 border border-orange-03">
+            <AlertCircle className="w-4 h-4 text-orange-03" />
+            <span className="text-sm font-medium text-orange-03">
               {t("wikidata.pendingApproval")}
             </span>
           </div>
@@ -106,59 +106,61 @@ export function WikidataApprovalDisplay({
       {/* Message */}
       {data.message ? (
         <Callout
-          variant={
-            isApproved || isApprovedNoWikidata ? "success" : "warning"
-          }
+          variant={isApproved || isApprovedNoWikidata ? "success" : "warning"}
         >
           {data.message}
         </Callout>
       ) : null}
 
-      {/* Wikidata Information */}
-      <div className="bg-gray-03/20 rounded-lg p-4 space-y-3">
-        <h4 className="text-base font-medium text-gray-01">
-          {t("wikidata.wikidataInfo")}
-        </h4>
+      {/* Wikidata Information — hidden after no-Wikidata confirmation */}
+      {data.wikidata ? (
+        <div className="bg-gray-03/20 rounded-lg p-4 space-y-3">
+          <h4 className="text-base font-medium text-gray-01">
+            {t("wikidata.wikidataInfo")}
+          </h4>
 
-        <div className="space-y-2">
-          <div>
-            <div className="text-xs text-gray-02 mb-1">{t("wikidata.id")}</div>
-            <div className="flex items-center space-x-2">
-              <code className="text-sm font-mono text-gray-01 bg-gray-04 px-2 py-1 rounded">
-                {data.wikidata.node}
-              </code>
-              <Button variant="ghost" size="sm" asChild className="h-7 px-2">
-                <a
-                  href={data.wikidata.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center text-blue-03 hover:text-blue-04"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </Button>
-            </div>
-          </div>
-
-          <div>
-            <div className="text-xs text-gray-02 mb-1">
-              {t("wikidata.name")}
-            </div>
-            <div className="text-sm text-gray-01">{data.wikidata.label}</div>
-          </div>
-
-          {data.wikidata.description && (
+          <div className="space-y-2">
             <div>
               <div className="text-xs text-gray-02 mb-1">
-                {t("wikidata.description")}
+                {t("wikidata.id")}
               </div>
-              <div className="text-sm text-gray-01">
-                {data.wikidata.description}
+              <div className="flex items-center space-x-2">
+                <code className="text-sm font-mono text-gray-01 bg-gray-04 px-2 py-1 rounded">
+                  {data.wikidata.node}
+                </code>
+                <Button variant="ghost" size="sm" asChild className="h-7 px-2">
+                  <a
+                    href={data.wikidata.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center text-blue-03 hover:text-blue-04"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </Button>
               </div>
             </div>
-          )}
+
+            <div>
+              <div className="text-xs text-gray-02 mb-1">
+                {t("wikidata.name")}
+              </div>
+              <div className="text-sm text-gray-01">{data.wikidata.label}</div>
+            </div>
+
+            {data.wikidata.description && (
+              <div>
+                <div className="text-xs text-gray-02 mb-1">
+                  {t("wikidata.description")}
+                </div>
+                <div className="text-sm text-gray-01">
+                  {data.wikidata.description}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {/* Approve Section (only for pending_approval) */}
       {isPending && (

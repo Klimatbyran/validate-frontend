@@ -28,7 +28,7 @@ describe("getWikidataApprovalData", () => {
     });
   });
 
-  it("marks approved no-wikidata decisions without treating them as Q-id approval", () => {
+  it("marks approved no-wikidata decisions without exposing a Q-id", () => {
     const job = {
       data: {
         approval: {
@@ -36,6 +36,32 @@ describe("getWikidataApprovalData", () => {
           approved: true,
           verifiedByUserId: "user-1",
           summary: "Wikidata selection for Test Co",
+          data: {
+            newValue: {
+              noWikidata: true,
+              wikidata: null,
+            },
+          },
+        },
+      },
+    };
+
+    expect(getWikidataApprovalData(job as any)).toEqual({
+      status: "approved_no_wikidata",
+      noWikidata: true,
+      message: "Wikidata selection for Test Co",
+      metadata: {},
+      autoApproved: false,
+      verifiedByUserId: "user-1",
+    });
+  });
+
+  it("still recognizes no-wikidata when a stale suggested Q-id remains merged in", () => {
+    const job = {
+      data: {
+        approval: {
+          type: "wikidata",
+          approved: true,
           data: {
             newValue: {
               noWikidata: true,
@@ -53,9 +79,8 @@ describe("getWikidataApprovalData", () => {
     expect(getWikidataApprovalData(job as any)).toMatchObject({
       status: "approved_no_wikidata",
       noWikidata: true,
-      wikidata: { node: "Q123", label: "Test Co" },
-      verifiedByUserId: "user-1",
     });
+    expect(getWikidataApprovalData(job as any)?.wikidata).toBeUndefined();
   });
 });
 

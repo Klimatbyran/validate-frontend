@@ -109,6 +109,8 @@ export function useJobRerunActions({
                 data: {
                   newValue: {
                     noWikidata: true,
+                    // Clear suggested Q-id so deep-merge cannot keep a rejected candidate.
+                    wikidata: null,
                   },
                 },
               },

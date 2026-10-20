@@ -59,7 +59,7 @@ export function JobApprovalPanels({
   if (!hasPanels) return null;
 
   return (
-    <div className="mb-4 space-y-4 rounded-lg border border-purple-03/40 bg-purple-03/5 p-4">
+    <div className="mb-4 space-y-4 rounded-lg border border-orange-03/40 bg-orange-03/5 p-4">
       <h3 className="text-lg font-medium text-gray-01">
         {t("jobstatus.jobdetails.actionRequiredTitle")}
       </h3>
