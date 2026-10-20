@@ -6,6 +6,7 @@ import type {
   ExploreMunicipalityRecord,
   ShiftsLayoutId,
 } from "../lib/explore-types";
+import { namesMatch } from "../lib/municipality-names";
 import {
   buildShiftFlows,
   collectMeasurePoints,
@@ -13,6 +14,7 @@ import {
   interventionTypeBuckets,
   summarizeMunicipalities,
   tefHitInterventionCoverage,
+  type MeasureShiftInterventionPoint,
 } from "../lib/explore-shifts";
 
 const LAYOUTS: { id: ShiftsLayoutId; label: string; hint: string }[] = [
@@ -24,7 +26,7 @@ const LAYOUTS: { id: ShiftsLayoutId; label: string; hint: string }[] = [
   {
     id: "flows",
     label: "Activity flows",
-    hint: "Most common shift_from → shift_to pairs across extracts",
+    hint: "Most common shift_from → shift_to pairs across extracts (top 12)",
   },
   {
     id: "types",
@@ -59,6 +61,14 @@ export function ShiftsInterventionsView({
     [allHits],
   );
 
+  const matchedMunicipality = useMemo(() => {
+    if (!selectedName) return null;
+    return (
+      summaries.find((row) => namesMatch(row.municipalityName, selectedName))
+        ?.municipalityName ?? null
+    );
+  }, [selectedName, summaries]);
+
   const layoutMeta = LAYOUTS.find((l) => l.id === layout) ?? LAYOUTS[0];
   const shiftPresent = points.filter((p) =>
     dimensionPresent(p.activityShiftScore),
@@ -71,7 +81,7 @@ export function ShiftsInterventionsView({
     <div className="space-y-4">
       <MethodologyPanel
         data="Per measure: activity_shift_score + activity_shifts[] (from/to/need + TEF matches) versus intervention_who/when/what/how + intervention_score + intervention_type. TEF framework hits are produced from activity shifts — interventions are a separate specificity axis."
-        calculation="Present = score > 1. Municipality averages are mean scores across measures. Flow edges count identical shift_from→shift_to pairs. Type buckets group intervention_type (none/direct/indirect/enabling)."
+        calculation="Present = score > 1. Municipality averages are mean scores across measures. Flow edges count identical shift_from→shift_to pairs (empty none→none pairs omitted). Type buckets group intervention_type (none/direct/indirect/enabling)."
         extra={layoutMeta.hint}
       />
 
@@ -91,9 +101,7 @@ export function ShiftsInterventionsView({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatCard
           label="Avg activity-shift score"
-          value={formatAvg(
-            points.map((p) => p.activityShiftScore),
-          )}
+          value={formatAvg(points.map((p) => p.activityShiftScore))}
           hint="Clarity of from→to in the measure text"
         />
         <StatCard
@@ -103,8 +111,8 @@ export function ShiftsInterventionsView({
         />
         <StatCard
           label="TEF hits naming who / what"
-          value={`${tefCoverage.withInterventionWho}/${tefCoverage.withInterventionWhat}`}
-          hint={`who / what filled on ${allHits.length} TEF-linked measure hits`}
+          value={`who ${tefCoverage.withInterventionWho} · what ${tefCoverage.withInterventionWhat}`}
+          hint={`of ${tefCoverage.total} TEF-linked measure hits`}
         />
       </div>
 
@@ -112,6 +120,7 @@ export function ShiftsInterventionsView({
         <CompareLayout
           summaries={summaries}
           points={points}
+          matchedMunicipality={matchedMunicipality}
           selectedName={selectedName}
           onSelectName={onSelectName}
         />
@@ -153,20 +162,41 @@ function StatCard({
 function CompareLayout({
   summaries,
   points,
+  matchedMunicipality,
   selectedName,
   onSelectName,
 }: {
   summaries: ReturnType<typeof summarizeMunicipalities>;
-  points: ReturnType<typeof collectMeasurePoints>;
+  points: MeasureShiftInterventionPoint[];
+  matchedMunicipality: string | null;
   selectedName: string | null;
   onSelectName: (name: string) => void;
 }) {
-  const selectedPoints = selectedName
-    ? points.filter((p) => p.municipalityName === selectedName)
-    : points.slice(0, 40);
+  const selectedPoints = matchedMunicipality
+    ? points.filter((p) => namesMatch(p.municipalityName, matchedMunicipality))
+    : points;
+
+  const staleSelection = Boolean(selectedName && !matchedMunicipality);
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        {matchedMunicipality || staleSelection ? (
+          <button
+            type="button"
+            onClick={() => onSelectName("")}
+            className="text-sm px-3 py-1.5 rounded-md border border-gray-03/50 text-gray-01 hover:bg-gray-03/30"
+          >
+            All municipalities
+          </button>
+        ) : null}
+        {staleSelection ? (
+          <span className="text-xs text-orange-03">
+            “{selectedName}” is not a municipality with measures — showing all.
+          </span>
+        ) : null}
+      </div>
+
       <div className="overflow-x-auto rounded-lg border border-gray-03/30">
         <table className="min-w-full text-sm">
           <thead>
@@ -183,18 +213,25 @@ function CompareLayout({
           </thead>
           <tbody>
             {summaries.map((row) => {
-              const selected = row.municipalityName === selectedName;
+              const selected = matchedMunicipality
+                ? namesMatch(row.municipalityName, matchedMunicipality)
+                : false;
               return (
                 <tr
                   key={row.municipalityId}
                   className={cn(
-                    "border-b border-gray-03/20 cursor-pointer",
+                    "border-b border-gray-03/20",
                     selected ? "bg-gray-03/20" : "hover:bg-gray-04/60",
                   )}
-                  onClick={() => onSelectName(row.municipalityName)}
                 >
                   <td className="px-3 py-2 text-gray-01 whitespace-nowrap">
-                    {row.municipalityName}
+                    <button
+                      type="button"
+                      className="text-left hover:underline"
+                      onClick={() => onSelectName(row.municipalityName)}
+                    >
+                      {row.municipalityName}
+                    </button>
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums text-gray-01">
                     {row.measureCount}
@@ -227,9 +264,9 @@ function CompareLayout({
             Measure scatter (shift score × intervention score)
           </h3>
           <span className="text-xs text-gray-02">
-            {selectedName
-              ? selectedName
-              : `Showing first ${Math.min(40, points.length)} of ${points.length}`}
+            {matchedMunicipality
+              ? matchedMunicipality
+              : `${selectedPoints.length} measures (bubble = count at score pair)`}
           </span>
         </div>
         <ScoreScatter points={selectedPoints} />
@@ -275,30 +312,65 @@ function DualScoreBar({
   );
 }
 
-function ScoreScatter({
-  points,
-}: {
-  points: ReturnType<typeof collectMeasurePoints>;
-}) {
+function ScoreScatter({ points }: { points: MeasureShiftInterventionPoint[] }) {
+  const bubbles = useMemo(() => {
+    const byKey = new Map<
+      string,
+      {
+        activityShiftScore: number;
+        interventionScore: number;
+        count: number;
+        withTef: number;
+        typed: number;
+        sample: string;
+      }
+    >();
+    for (const point of points) {
+      const key = `${point.activityShiftScore}:${point.interventionScore}`;
+      const existing = byKey.get(key) ?? {
+        activityShiftScore: point.activityShiftScore,
+        interventionScore: point.interventionScore,
+        count: 0,
+        withTef: 0,
+        typed: 0,
+        sample: point.measureText,
+      };
+      existing.count += 1;
+      if (point.tefMatchCount > 0) existing.withTef += 1;
+      if (point.interventionType !== "none") existing.typed += 1;
+      byKey.set(key, existing);
+    }
+    return [...byKey.values()];
+  }, [points]);
+
   if (points.length === 0) {
     return <p className="text-sm text-gray-02">No measures in this selection.</p>;
   }
+
+  const maxCount = Math.max(...bubbles.map((b) => b.count), 1);
+
   return (
     <div className="relative h-56 rounded-md border border-gray-03/30 bg-gray-04/40">
       <div className="absolute left-8 right-3 top-3 bottom-8 border-l border-b border-gray-03/40">
-        {points.map((point, i) => {
-          const x = ((point.activityShiftScore - 1) / 6) * 100;
-          const y = ((point.interventionScore - 1) / 6) * 100;
+        {bubbles.map((bubble) => {
+          const x = ((bubble.activityShiftScore - 1) / 6) * 100;
+          const y = ((bubble.interventionScore - 1) / 6) * 100;
+          const size = 8 + (bubble.count / maxCount) * 16;
           return (
             <div
-              key={`${point.municipalityId}-${i}`}
+              key={`${bubble.activityShiftScore}:${bubble.interventionScore}`}
               className={cn(
-                "absolute w-2.5 h-2.5 rounded-full -translate-x-1/2 translate-y-1/2 border border-black/20",
-                point.tefMatchCount > 0 ? "bg-blue-03" : "bg-gray-02/70",
-                point.interventionType !== "none" && "ring-1 ring-orange-03/60",
+                "absolute rounded-full -translate-x-1/2 translate-y-1/2 border border-black/20",
+                bubble.withTef > 0 ? "bg-blue-03/80" : "bg-gray-02/70",
+                bubble.typed > 0 && "ring-1 ring-orange-03/60",
               )}
-              style={{ left: `${x}%`, bottom: `${y}%` }}
-              title={`${point.municipalityName}: shift ${point.activityShiftScore}, intervention ${point.interventionScore}\n${point.measureText.slice(0, 120)}`}
+              style={{
+                left: `${x}%`,
+                bottom: `${y}%`,
+                width: size,
+                height: size,
+              }}
+              title={`shift ${bubble.activityShiftScore} × intervention ${bubble.interventionScore}: ${bubble.count} measures\n${bubble.sample.slice(0, 120)}`}
             />
           );
         })}
@@ -337,6 +409,7 @@ function FlowsLayout({
   const maxCount = Math.max(...flows.map((f) => f.count), 1);
   return (
     <div className="space-y-2">
+      <p className="text-xs text-gray-02">Top {flows.length} activity flows</p>
       {flows.map((flow) => (
         <div
           key={`${flow.from}→${flow.to}`}
@@ -371,7 +444,7 @@ function TypesLayout({
   points,
 }: {
   types: ReturnType<typeof interventionTypeBuckets>;
-  points: ReturnType<typeof collectMeasurePoints>;
+  points: MeasureShiftInterventionPoint[];
 }) {
   const maxCount = Math.max(...types.map((t) => t.count), 1);
   const componentCoverage = {

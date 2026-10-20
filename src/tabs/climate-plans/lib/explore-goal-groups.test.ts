@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   clusterGoalAtlas,
   deadlineBucket,
+  layoutClusterNodes,
   reductionBandKey,
   type GoalAtlasItem,
 } from "./explore-goal-groups";
@@ -63,10 +64,27 @@ describe("reductionBandKey", () => {
 describe("deadlineBucket", () => {
   it("classifies target years relative to now", () => {
     expect(deadlineBucket(goal({ targetYear: 2020 }), 2026)).toBe("passed");
-    expect(deadlineBucket(goal({ targetYear: 2027 }), 2026)).toBe("near");
-    expect(deadlineBucket(goal({ targetYear: 2032 }), 2026)).toBe("mid");
-    expect(deadlineBucket(goal({ targetYear: 2045 }), 2026)).toBe("far");
+    expect(deadlineBucket(goal({ targetYear: 2026 }), 2026)).toBe("near");
+    expect(deadlineBucket(goal({ targetYear: 2028 }), 2026)).toBe("near");
+    expect(deadlineBucket(goal({ targetYear: 2029 }), 2026)).toBe("mid");
+    expect(deadlineBucket(goal({ targetYear: 2036 }), 2026)).toBe("mid");
+    expect(deadlineBucket(goal({ targetYear: 2037 }), 2026)).toBe("far");
     expect(deadlineBucket(goal({ targetYear: null }), 2026)).toBe("unknown");
+  });
+});
+
+describe("layoutClusterNodes", () => {
+  it("keeps dense clusters from stacking on one tiny ring", () => {
+    const { positions, size } = layoutClusterNodes(10);
+    expect(positions).toHaveLength(10);
+    expect(size).toBeGreaterThan(140);
+    const minDist = positions.slice(1).reduce((min, pos) => {
+      const prev = positions[0];
+      const d = Math.hypot(pos.x - prev.x, pos.y - prev.y);
+      return Math.min(min, d);
+    }, Infinity);
+    // Center vs first ring should leave room for 36px nodes.
+    expect(minDist).toBeGreaterThanOrEqual(36);
   });
 });
 

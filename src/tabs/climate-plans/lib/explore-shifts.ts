@@ -23,7 +23,6 @@ export interface MeasureShiftInterventionPoint {
   activityShiftScore: number;
   interventionScore: number;
   interventionType: string;
-  shiftCount: number;
   tefMatchCount: number;
   hasWho: boolean;
   hasWhat: boolean;
@@ -40,7 +39,6 @@ export interface MunicipalityShiftSummary {
   avgActivityShiftScore: number;
   avgInterventionScore: number;
   tefHitCount: number;
-  typedInterventionCount: number;
 }
 
 function isPresent(value: string | null | undefined): boolean {
@@ -54,7 +52,12 @@ function average(values: number[]): number {
 
 function normalizeLabel(value: string): string {
   const trimmed = value.trim();
-  return trimmed || "(unspecified)";
+  if (!trimmed || trimmed.toLowerCase() === "none") return "(unspecified)";
+  return trimmed;
+}
+
+function isUnspecifiedLabel(value: string): boolean {
+  return value === "(unspecified)";
 }
 
 /** Score > 1 means the dimension was judged present in the measure. */
@@ -68,7 +71,6 @@ export function collectMeasurePoints(
   const points: MeasureShiftInterventionPoint[] = [];
   for (const record of records) {
     for (const measure of record.measures) {
-      const tefMatchCount = countTefMatches(measure);
       points.push({
         municipalityId: record.id,
         municipalityName: record.name,
@@ -76,8 +78,7 @@ export function collectMeasurePoints(
         activityShiftScore: measure.activity_shift_score,
         interventionScore: measure.intervention_score,
         interventionType: measure.intervention_type || "none",
-        shiftCount: measure.activity_shifts?.length ?? 0,
-        tefMatchCount,
+        tefMatchCount: countTefMatches(measure),
         hasWho: isPresent(measure.intervention_who),
         hasWhat: isPresent(measure.intervention_what),
         hasWhen: isPresent(measure.intervention_when),
@@ -117,9 +118,6 @@ export function summarizeMunicipalities(
         avgActivityShiftScore: average(shiftScores),
         avgInterventionScore: average(interventionScores),
         tefHitCount: record.tefHits.length,
-        typedInterventionCount: measures.filter(
-          (m) => m.intervention_type && m.intervention_type !== "none",
-        ).length,
       };
     })
     .filter((row) => row.measureCount > 0)
@@ -147,6 +145,8 @@ export function buildShiftFlows(
       for (const shift of measure.activity_shifts ?? []) {
         const from = normalizeLabel(shift.shift_from);
         const to = normalizeLabel(shift.shift_to);
+        // Skip empty noise pairs like none→none.
+        if (isUnspecifiedLabel(from) && isUnspecifiedLabel(to)) continue;
         const key = `${from.toLowerCase()}→${to.toLowerCase()}`;
         const existing = byKey.get(key) ?? {
           from,
@@ -208,27 +208,17 @@ export function interventionTypeBuckets(
     });
 }
 
-/** TEF hits carry both shift and intervention fields from the matched measure. */
+/** TEF hits carry intervention who/what filled from the matched measure. */
 export function tefHitInterventionCoverage(hits: TefHit[]): {
   withInterventionWho: number;
   withInterventionWhat: number;
-  avgInterventionScore: number;
-  avgShiftScore: number;
+  total: number;
 } {
-  if (hits.length === 0) {
-    return {
-      withInterventionWho: 0,
-      withInterventionWhat: 0,
-      avgInterventionScore: 0,
-      avgShiftScore: 0,
-    };
-  }
   return {
     withInterventionWho: hits.filter((h) => isPresent(h.interventionWho))
       .length,
     withInterventionWhat: hits.filter((h) => isPresent(h.interventionWhat))
       .length,
-    avgInterventionScore: average(hits.map((h) => h.interventionScore)),
-    avgShiftScore: average(hits.map((h) => h.shiftScore)),
+    total: hits.length,
   };
 }

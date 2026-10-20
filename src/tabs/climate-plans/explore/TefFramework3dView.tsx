@@ -9,14 +9,14 @@ import {
   type TefFrameworkCell,
   type TefFrameworkSectorColumn,
   type TefSectorId,
-  tefCellFill,
 } from "../lib/tef-framework";
 import type {
   SectorEmissionShare,
   SectorGateMatchRate,
 } from "../lib/tef-sector-signals";
+import { IsoBox } from "./tef-iso-box";
 
-const MIN_PILLAR_H = 44;
+const MIN_VISIBLE_PILLAR_H = 8;
 const MAX_PILLAR_H = 240;
 /** Compact overview cubes — size fixed until effectiveness attribution. */
 const TEF_CUBE = 44;
@@ -65,29 +65,38 @@ export function TefFramework3dView({
 }) {
   const columnHeights = useMemo(() => {
     let maxTonnes = 0;
+    let maxShare = 0;
     for (const column of columns) {
       if (column.sectorId === "other") continue;
-      const tonnes =
-        emissionShares.bySector[column.sectorId as TefSectorId]?.tonnes ?? 0;
-      if (tonnes > maxTonnes) maxTonnes = tonnes;
+      const row = emissionShares.bySector[column.sectorId as TefSectorId];
+      if (!row) continue;
+      if (row.tonnes > maxTonnes) maxTonnes = row.tonnes;
+      if (row.share > maxShare) maxShare = row.share;
     }
 
     const heights = new Map<string, number>();
-    let maxHeightPx = MIN_PILLAR_H;
+    let maxHeightPx = MIN_VISIBLE_PILLAR_H;
     for (const column of columns) {
-      const sectorId =
-        column.sectorId === "other" ? null : (column.sectorId as TefSectorId);
-      const emissions = sectorId ? emissionShares.bySector[sectorId] : null;
-      const share = emissions?.share ?? 0;
-      const tonnes = emissions?.tonnes ?? 0;
+      if (column.sectorId === "other") {
+        heights.set(column.sectorId, MIN_VISIBLE_PILLAR_H);
+        continue;
+      }
+      const row = emissionShares.bySector[column.sectorId as TefSectorId];
+      const share = row?.share ?? 0;
+      const tonnes = row?.tonnes ?? 0;
+      // Both modes scale to the tallest mapped sector so heights compare.
       const heightRatio =
         heightMode === "share"
-          ? share
+          ? maxShare <= 0
+            ? 0
+            : share / maxShare
           : maxTonnes <= 0
             ? 0
             : tonnes / maxTonnes;
-      const heightPx =
-        MIN_PILLAR_H + heightRatio * (MAX_PILLAR_H - MIN_PILLAR_H);
+      const heightPx = Math.max(
+        MIN_VISIBLE_PILLAR_H,
+        heightRatio * MAX_PILLAR_H,
+      );
       heights.set(column.sectorId, heightPx);
       if (heightPx > maxHeightPx) maxHeightPx = heightPx;
     }
@@ -100,6 +109,15 @@ export function TefFramework3dView({
       ? null
       : (columns.find((c) => c.sectorId === selectedSectorId) ?? null);
 
+  const overviewCols =
+    columns.length >= 7
+      ? "grid-cols-2 md:grid-cols-3 xl:grid-cols-7"
+      : columns.length === 5
+        ? "grid-cols-2 md:grid-cols-3 xl:grid-cols-5"
+        : columns.length <= 4
+          ? "grid-cols-2 md:grid-cols-4"
+          : "grid-cols-2 md:grid-cols-3 xl:grid-cols-6";
+
   return (
     <div className="space-y-3 w-full">
       <div className="relative w-full rounded-lg border border-gray-03/30 bg-gray-05/40 px-2 py-4 sm:px-3 sm:py-5">
@@ -107,19 +125,20 @@ export function TefFramework3dView({
           <ExpandedSectorView
             column={expandedColumn}
             heightPx={
-              columnHeights.heights.get(expandedColumn.sectorId) ?? MIN_PILLAR_H
+              columnHeights.heights.get(expandedColumn.sectorId) ??
+              MIN_VISIBLE_PILLAR_H
             }
             pillarSvgH={pillarSvgH}
             share={
               expandedColumn.sectorId === "other"
-                ? 0
+                ? null
                 : (emissionShares.bySector[
                     expandedColumn.sectorId as TefSectorId
                   ]?.share ?? 0)
             }
             tonnes={
               expandedColumn.sectorId === "other"
-                ? 0
+                ? null
                 : (emissionShares.bySector[
                     expandedColumn.sectorId as TefSectorId
                   ]?.tonnes ?? 0)
@@ -139,7 +158,12 @@ export function TefFramework3dView({
             onBack={() => onSelectSectorId(null)}
           />
         ) : (
-          <div className="grid w-full gap-1.5 sm:gap-2 grid-cols-2 md:grid-cols-3 xl:grid-cols-6 items-start justify-items-stretch">
+          <div
+            className={cn(
+              "grid w-full gap-1.5 sm:gap-2 items-start justify-items-stretch",
+              overviewCols,
+            )}
+          >
             {columns.map((column) => {
               const sectorId =
                 column.sectorId === "other"
@@ -152,10 +176,9 @@ export function TefFramework3dView({
                 sectorId && gateRates.hasAnyGateData
                   ? gateRates.bySector[sectorId]
                   : null;
-              const share = emissions?.share ?? 0;
-              const tonnes = emissions?.tonnes ?? 0;
               const heightPx =
-                columnHeights.heights.get(column.sectorId) ?? MIN_PILLAR_H;
+                columnHeights.heights.get(column.sectorId) ??
+                MIN_VISIBLE_PILLAR_H;
               const hitSum = column.cells.reduce((s, c) => s + c.hitCount, 0);
 
               return (
@@ -164,8 +187,8 @@ export function TefFramework3dView({
                   column={column}
                   heightPx={heightPx}
                   pillarSvgH={pillarSvgH}
-                  share={share}
-                  tonnes={tonnes}
+                  share={sectorId ? (emissions?.share ?? 0) : null}
+                  tonnes={sectorId ? (emissions?.tonnes ?? 0) : null}
                   hitSum={hitSum}
                   gate={gate && gate.gated > 0 ? gate : null}
                   metric={metric}
@@ -182,10 +205,8 @@ export function TefFramework3dView({
         <p className="text-xs text-gray-02 mt-4 text-center max-w-4xl mx-auto">
           {expandedColumn
             ? "Expanded sector — cubes show TEF names. Click a cube for detail, or Back to all sectors."
-            : `Pillars are bottom-aligned (${
-                heightMode === "share"
-                  ? "emission share"
-                  : "tonnes vs tallest sector"
+            : `Pillars are bottom-aligned and scaled to the tallest mapped sector (${
+                heightMode === "share" ? "by emission share" : "by tonnes"
               }). Click a sector to expand it with named TEF cubes.`}
           {emissionShares.totalTonnes <= 0
             ? " No sector emissions matched this scope yet — pillars stay at minimum height."
@@ -212,8 +233,8 @@ function ExpandedSectorView({
   column: TefFrameworkSectorColumn;
   heightPx: number;
   pillarSvgH: number;
-  share: number;
-  tonnes: number;
+  share: number | null;
+  tonnes: number | null;
   gate: SectorGateMatchRate | null;
   metric: TefFrameworkMetric;
   maxMetric: number;
@@ -240,12 +261,7 @@ function ExpandedSectorView({
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 items-start">
-        <button
-          type="button"
-          onClick={onBack}
-          className="shrink-0 flex flex-col items-center gap-2 outline-none rounded-md px-3 py-2 hover:bg-gray-04/50"
-          title="Back to all sectors"
-        >
+        <div className="shrink-0 flex flex-col items-center gap-2 rounded-md px-3 py-2">
           <svg
             width={svgW}
             height={pillarSvgH}
@@ -264,27 +280,17 @@ function ExpandedSectorView({
               selected
             />
           </svg>
-          <div className="text-center space-y-0.5">
-            <div className="text-sm font-semibold text-gray-01 uppercase tracking-wide">
-              {column.label}
-            </div>
-            <div className="text-sm font-semibold tabular-nums text-gray-01">
-              {Math.round(share * 100)}%
-              <span className="text-gray-02 font-normal text-xs">
-                {" "}
-                · {Math.round(tonnes).toLocaleString()} t
-              </span>
-            </div>
-            <div className="text-xs text-gray-02">
-              {column.code} · {column.cells.length} TEFs · {hitSum} hits
-            </div>
-            {gate ? (
-              <div className="text-xs text-gray-02 tabular-nums">
-                gate {gate.matched}/{gate.gated}
-              </div>
-            ) : null}
-          </div>
-        </button>
+          <SectorMeta
+            label={column.label}
+            code={column.code}
+            cellCount={column.cells.length}
+            hitSum={hitSum}
+            share={share}
+            tonnes={tonnes}
+            gate={gate}
+            large
+          />
+        </div>
 
         <TefCubeGrid
           cells={column.cells}
@@ -318,8 +324,8 @@ function SectorColumn({
   column: TefFrameworkSectorColumn;
   heightPx: number;
   pillarSvgH: number;
-  share: number;
-  tonnes: number;
+  share: number | null;
+  tonnes: number | null;
   hitSum: number;
   gate: SectorGateMatchRate | null;
   metric: TefFrameworkMetric;
@@ -336,7 +342,7 @@ function SectorColumn({
         type="button"
         onClick={onSelectSector}
         className="group flex flex-col items-center gap-1.5 outline-none w-full"
-        title={`Expand ${column.label}: ${Math.round(share * 100)}% · ${Math.round(tonnes).toLocaleString()} t · ${hitSum} TEF hits`}
+        title={`Expand ${column.label}`}
       >
         <svg
           width={svgW}
@@ -356,27 +362,15 @@ function SectorColumn({
             selected={false}
           />
         </svg>
-
-        <div className="text-center space-y-0.5 px-0.5">
-          <div className="text-[11px] font-semibold text-gray-01 uppercase tracking-wide leading-tight">
-            {column.label}
-          </div>
-          <div className="text-[11px] font-semibold tabular-nums text-gray-01">
-            {Math.round(share * 100)}%
-            <span className="text-gray-02 font-normal">
-              {" "}
-              · {Math.round(tonnes).toLocaleString()} t
-            </span>
-          </div>
-          <div className="text-[10px] text-gray-02">
-            {column.code} · {column.cells.length} TEFs · {hitSum} hits
-          </div>
-          {gate ? (
-            <div className="text-[10px] text-gray-02 tabular-nums">
-              gate {gate.matched}/{gate.gated}
-            </div>
-          ) : null}
-        </div>
+        <SectorMeta
+          label={column.label}
+          code={column.code}
+          cellCount={column.cells.length}
+          hitSum={hitSum}
+          share={share}
+          tonnes={tonnes}
+          gate={gate}
+        />
       </button>
 
       <TefCubeGrid
@@ -388,6 +382,66 @@ function SectorColumn({
         onSelectTefId={onSelectTefId}
         mode="compact"
       />
+    </div>
+  );
+}
+
+function SectorMeta({
+  label,
+  code,
+  cellCount,
+  hitSum,
+  share,
+  tonnes,
+  gate,
+  large,
+}: {
+  label: string;
+  code: string;
+  cellCount: number;
+  hitSum: number;
+  share: number | null;
+  tonnes: number | null;
+  gate: SectorGateMatchRate | null;
+  large?: boolean;
+}) {
+  const emissionsLabel =
+    share == null || tonnes == null
+      ? "emissions not mapped"
+      : `${Math.round(share * 100)}% · ${Math.round(tonnes).toLocaleString()} t`;
+
+  return (
+    <div className="text-center space-y-0.5 px-0.5">
+      <div
+        className={cn(
+          "font-semibold text-gray-01 uppercase tracking-wide leading-tight",
+          large ? "text-sm" : "text-[11px]",
+        )}
+      >
+        {label}
+      </div>
+      <div
+        className={cn(
+          "font-semibold tabular-nums text-gray-01",
+          large ? "text-sm" : "text-[11px]",
+          share == null && "font-normal text-gray-02",
+        )}
+      >
+        {emissionsLabel}
+      </div>
+      <div className={cn("text-gray-02", large ? "text-xs" : "text-[10px]")}>
+        {code} · {cellCount} TEFs · {hitSum} hits
+      </div>
+      {gate ? (
+        <div
+          className={cn(
+            "text-gray-02 tabular-nums",
+            large ? "text-xs" : "text-[10px]",
+          )}
+        >
+          gate {gate.matched}/{gate.gated}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -441,7 +495,7 @@ function TefCubeGrid({
       {cells.map((cell) => {
         const value = cellMetricValue(cell, metric);
         const intensity =
-          maxMetric <= 0 ? 0.45 : 0.35 + 0.55 * (value / maxMetric);
+          maxMetric <= 0 ? 0.45 : Math.max(0.2, value / maxMetric);
         const isSelected = selectedTefId === cell.stableId;
         const code =
           cell.index?.replace(/^T-\d/, "") ?? cell.stableId.slice(0, 6);
@@ -453,10 +507,7 @@ function TefCubeGrid({
             key={cell.stableId}
             type="button"
             title={`${cell.index ?? cell.stableId}: ${cell.title} (${valueLabel})`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectTefId(cell.stableId);
-            }}
+            onClick={() => onSelectTefId(cell.stableId)}
             className={cn(
               "relative shrink-0 outline-none transition-transform hover:-translate-y-0.5",
               isSelected && "z-10",
@@ -495,178 +546,4 @@ function TefCubeGrid({
       })}
     </div>
   );
-}
-
-/** Flat isometric box: left(front), right, top faces as polygons. */
-function IsoBox({
-  x,
-  y,
-  w,
-  h,
-  d,
-  rgb,
-  intensity,
-  selected,
-  frontLabel,
-  frontValue,
-  frontTitle,
-  frontMeta,
-}: {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  d: number;
-  rgb: readonly [number, number, number];
-  intensity: number;
-  selected: boolean;
-  frontLabel?: string;
-  frontValue?: string;
-  /** Multi-line TEF name for expanded cubes (HTML via foreignObject). */
-  frontTitle?: string;
-  frontMeta?: string;
-}) {
-  const dx = d * 0.72;
-  const dy = d * 0.42;
-
-  const front = tefCellFill(rgb, intensity);
-  const side = tefCellFill(rgb, Math.max(0.15, intensity - 0.22));
-  const top = tefCellFill(rgb, Math.min(1, intensity + 0.18));
-  const stroke = selected ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.35)";
-  const strokeW = selected ? 1.25 : 0.75;
-
-  const f0 = `${x},${y + dy}`;
-  const f1 = `${x + w},${y + dy}`;
-  const f2 = `${x + w},${y + dy + h}`;
-  const f3 = `${x},${y + dy + h}`;
-
-  const r0 = `${x + w},${y + dy}`;
-  const r1 = `${x + w + dx},${y}`;
-  const r2 = `${x + w + dx},${y + h}`;
-  const r3 = `${x + w},${y + dy + h}`;
-
-  const t0 = `${x},${y + dy}`;
-  const t1 = `${x + dx},${y}`;
-  const t2 = `${x + w + dx},${y}`;
-  const t3 = `${x + w},${y + dy}`;
-
-  const textX = x + w / 2;
-  const labelY = y + dy + h * 0.36;
-  const valueY = y + dy + h * 0.68;
-  const pad = 6;
-
-  return (
-    <g>
-      <polygon
-        points={`${t0} ${t1} ${t2} ${t3}`}
-        fill={top}
-        stroke={stroke}
-        strokeWidth={strokeW}
-        strokeLinejoin="miter"
-      />
-      <polygon
-        points={`${r0} ${r1} ${r2} ${r3}`}
-        fill={side}
-        stroke={stroke}
-        strokeWidth={strokeW}
-        strokeLinejoin="miter"
-      />
-      <polygon
-        points={`${f0} ${f1} ${f2} ${f3}`}
-        fill={front}
-        stroke={stroke}
-        strokeWidth={strokeW}
-        strokeLinejoin="miter"
-      />
-      {frontTitle ? (
-        <foreignObject
-          x={x + pad}
-          y={y + dy + pad}
-          width={Math.max(0, w - pad * 2)}
-          height={Math.max(0, h - pad * 2)}
-        >
-          <div
-            xmlns="http://www.w3.org/1999/xhtml"
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              color: "#fff",
-              overflow: "hidden",
-              pointerEvents: "none",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: 600,
-                lineHeight: 1.25,
-                display: "-webkit-box",
-                WebkitLineClamp: 4,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              {frontTitle}
-            </div>
-            {frontMeta ? (
-              <div
-                style={{
-                  fontSize: "10px",
-                  fontFamily:
-                    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                  opacity: 0.9,
-                  marginTop: 4,
-                }}
-              >
-                {frontMeta}
-              </div>
-            ) : null}
-          </div>
-        </foreignObject>
-      ) : frontLabel || frontValue ? (
-        <g
-          style={{
-            fontFamily:
-              "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-          }}
-        >
-          {frontLabel ? (
-            <text
-              x={textX}
-              y={labelY}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="rgba(255,255,255,0.92)"
-              fontSize={Math.max(8, Math.min(10, w * 0.2))}
-              fontWeight={500}
-            >
-              {truncateFaceLabel(frontLabel, w)}
-            </text>
-          ) : null}
-          {frontValue ? (
-            <text
-              x={textX}
-              y={valueY}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="#ffffff"
-              fontSize={Math.max(10, Math.min(13, w * 0.26))}
-              fontWeight={700}
-            >
-              {frontValue}
-            </text>
-          ) : null}
-        </g>
-      ) : null}
-    </g>
-  );
-}
-
-function truncateFaceLabel(label: string, faceW: number): string {
-  const maxChars = faceW >= 42 ? 9 : faceW >= 36 ? 8 : 7;
-  if (label.length <= maxChars) return label;
-  return `${label.slice(0, maxChars - 1)}…`;
 }

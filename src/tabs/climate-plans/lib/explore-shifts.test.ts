@@ -131,7 +131,6 @@ describe("shift and intervention aggregates", () => {
     expect(rows[0]?.municipalityName).toBe("Nässjö");
     expect(rows[0]?.shiftPresentCount).toBe(1);
     expect(rows[0]?.interventionPresentCount).toBe(1);
-    expect(rows[0]?.typedInterventionCount).toBe(1);
   });
 
   it("builds shift flows across municipalities", () => {
@@ -141,6 +140,30 @@ describe("shift and intervention aggregates", () => {
     expect(flows[0]?.count).toBe(2);
     expect(flows[0]?.municipalities).toEqual(["Nässjö", "Värnamo"]);
     expect(flows[0]?.withTefMatch).toBe(1);
+  });
+
+  it("skips none→none flow noise", () => {
+    const noisy = [
+      record("X", [
+        measure({
+          activity_shifts: [
+            {
+              activity: "a",
+              shift_from: "none",
+              shift_to: "none",
+              need: "",
+              type: "",
+              type_reasoning: "",
+              score: 1,
+              reasoning: "",
+              transition_element_matches: [],
+              transition_element_candidates: [],
+            },
+          ],
+        }),
+      ]),
+    ];
+    expect(buildShiftFlows(noisy)).toEqual([]);
   });
 
   it("buckets intervention types", () => {

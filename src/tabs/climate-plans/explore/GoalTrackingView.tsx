@@ -5,7 +5,10 @@ import {
   trackMunicipalityGoals,
   type GoalTrackStatus,
 } from "../lib/explore-goals";
-import type { GoalAtlasItem } from "../lib/explore-goal-groups";
+import {
+  GOAL_STATUS_LABEL,
+  type GoalAtlasItem,
+} from "../lib/explore-goal-groups";
 import type {
   ExploreDataset,
   GoalsGroupById,
@@ -14,15 +17,6 @@ import type {
 import { namesMatch } from "../lib/municipality-names";
 import { cn } from "@/lib/utils";
 import { ViewModePills } from "@/ui/view-mode-pills";
-
-const STATUS_LABEL: Record<GoalTrackStatus, string> = {
-  "on-track": "On track",
-  "off-track": "Off track",
-  ahead: "Ahead",
-  "too-early": "Too early",
-  "missing-emissions": "No emissions series",
-  "not-quantified": "Not quantified",
-};
 
 const STATUS_CLASS: Record<GoalTrackStatus, string> = {
   "on-track": "bg-green-03/15 text-green-03 border-green-03/30",
@@ -80,7 +74,7 @@ export function GoalTrackingView({
       );
       tracked.forEach((row, index) => {
         items.push({
-          id: `${record.id}:${index}:${row.goal.description.slice(0, 40)}`,
+          id: `${record.id}:${index}`,
           municipalityId: record.id,
           municipalityName: record.name,
           parisMentioned: record.parisMentioned,
@@ -92,6 +86,11 @@ export function GoalTrackingView({
     }
     return items;
   }, [atlasScope, dataset.municipalities, dataset.sectorEmissions, nowYear, selected]);
+
+  const focusMunicipality = (name: string) => {
+    onSelectName(name);
+    onAtlasScopeChange("selected");
+  };
 
   return (
     <div className="space-y-4">
@@ -158,7 +157,7 @@ export function GoalTrackingView({
           groupBy={groupBy}
           onGroupByChange={onGroupByChange}
           nowYear={nowYear}
-          onSelectMunicipality={onSelectName}
+          onFocusMunicipality={focusMunicipality}
         />
       ) : selected && rows.length === 0 ? (
         <p className="text-sm text-gray-02">
@@ -190,7 +189,7 @@ function GoalCard({
             STATUS_CLASS[row.status],
           )}
         >
-          {STATUS_LABEL[row.status]}
+          {GOAL_STATUS_LABEL[row.status]}
         </span>
       </div>
       <div className="flex flex-wrap gap-2 text-xs text-gray-02">

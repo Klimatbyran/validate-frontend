@@ -4,6 +4,8 @@ import { ViewModePills } from "@/ui/view-mode-pills";
 import type { GoalsGroupById } from "../lib/explore-types";
 import {
   clusterGoalAtlas,
+  GOAL_STATUS_LABEL,
+  layoutClusterNodes,
   type GoalAtlasItem,
 } from "../lib/explore-goal-groups";
 import type { GoalTrackStatus } from "../lib/explore-goals";
@@ -30,23 +32,21 @@ export function GoalAtlasView({
   groupBy,
   onGroupByChange,
   nowYear,
-  onSelectMunicipality,
+  onFocusMunicipality,
 }: {
   items: GoalAtlasItem[];
   groupBy: GoalsGroupById;
   onGroupByChange: (value: GoalsGroupById) => void;
   nowYear: number;
-  onSelectMunicipality: (name: string) => void;
+  /** Focus atlas + list on this municipality (sets muni + selected scope). */
+  onFocusMunicipality: (name: string) => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const clusters = useMemo(
     () => clusterGoalAtlas(items, groupBy, nowYear),
     [items, groupBy, nowYear],
   );
-  const selected =
-    items.find((item) => item.id === selectedId) ??
-    clusters[0]?.items[0] ??
-    null;
+  const selected = items.find((item) => item.id === selectedId) ?? null;
 
   if (items.length === 0) {
     return (
@@ -70,51 +70,30 @@ export function GoalAtlasView({
         </span>
       </div>
 
-      <div
-        className="relative overflow-hidden rounded-xl border border-gray-03/30 bg-gradient-to-br from-gray-05/90 via-gray-04/50 to-gray-05/80 p-5 min-h-[22rem]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 20% 30%, rgba(59,130,246,0.08), transparent 40%), radial-gradient(circle at 80% 70%, rgba(34,197,94,0.07), transparent 35%)",
-        }}
-      >
+      <div className="relative overflow-hidden rounded-xl border border-gray-03/30 bg-gradient-to-br from-gray-05/90 via-gray-04/50 to-gray-05/80 p-5 min-h-[22rem]">
         <div className="flex flex-wrap gap-6 justify-center items-start content-start">
-          {clusters.map((cluster, clusterIndex) => {
-            const size = Math.min(
-              280,
-              120 + Math.sqrt(cluster.items.length) * 36,
-            );
+          {clusters.map((cluster) => {
+            const { size, positions } = layoutClusterNodes(cluster.items.length);
             return (
               <section
                 key={cluster.key}
                 className="relative flex flex-col items-center gap-2"
-                style={{
-                  animation: `goal-cluster-in 420ms ease-out ${clusterIndex * 40}ms both`,
-                }}
               >
                 <div
-                  className="relative rounded-full border border-gray-03/40 bg-gray-04/30 backdrop-blur-[1px] flex items-center justify-center"
+                  className="relative rounded-full border border-gray-03/40 bg-gray-04/30 flex items-center justify-center"
                   style={{
                     width: size,
                     height: size,
                     boxShadow: `inset 0 0 0 2px rgba(255,255,255,0.04), 0 0 0 1px rgba(${Math.round(40 + cluster.accent * 120)}, ${Math.round(100 + cluster.accent * 80)}, ${Math.round(140 - cluster.accent * 60)}, 0.25)`,
                   }}
                 >
-                  {/* orbit ring */}
                   <div
                     className="absolute inset-3 rounded-full border border-dashed border-gray-03/30 pointer-events-none"
                     aria-hidden
                   />
-                  <div className="absolute inset-0 flex flex-wrap items-center justify-center gap-1.5 p-8 content-center">
+                  <div className="absolute inset-0">
                     {cluster.items.map((item, i) => {
-                      const angle =
-                        (i / Math.max(cluster.items.length, 1)) * Math.PI * 2 -
-                        Math.PI / 2;
-                      const radius =
-                        cluster.items.length <= 1
-                          ? 0
-                          : Math.min(size / 2 - 28, 18 + cluster.items.length * 2);
-                      const x = Math.cos(angle) * radius;
-                      const y = Math.sin(angle) * radius;
+                      const pos = positions[i] ?? { x: 0, y: 0 };
                       const isSelected = selected?.id === item.id;
                       const reduction = item.row.goal.reductionPercent;
                       return (
@@ -131,8 +110,8 @@ export function GoalAtlasView({
                             "text-white",
                           )}
                           style={{
-                            left: `calc(50% + ${x}px)`,
-                            top: `calc(50% + ${y}px)`,
+                            left: `calc(50% + ${pos.x}px)`,
+                            top: `calc(50% + ${pos.y}px)`,
                             opacity: 0.85 + (reduction != null ? 0.15 : 0),
                           }}
                           title={`${item.municipalityName}: ${item.row.goal.description}`}
@@ -158,8 +137,7 @@ export function GoalAtlasView({
         </div>
         <p className="text-[11px] text-gray-02 mt-4 text-center">
           Each node is one goal; number = reduction %. Colour = track status.
-          Clusters rearrange by the axis above — not a standard chart on
-          purpose.
+          Dense clusters use concentric rings so nodes stay clickable.
         </p>
       </div>
 
@@ -170,9 +148,9 @@ export function GoalAtlasView({
               <button
                 type="button"
                 className="text-xs text-blue-03 hover:underline"
-                onClick={() => onSelectMunicipality(selected.municipalityName)}
+                onClick={() => onFocusMunicipality(selected.municipalityName)}
               >
-                {selected.municipalityName}
+                Focus {selected.municipalityName}
               </button>
               <p className="text-sm text-gray-01">
                 {selected.row.goal.description}
@@ -180,11 +158,10 @@ export function GoalAtlasView({
             </div>
             <span
               className={cn(
-                "shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full border capitalize",
-                "border-gray-03/40 text-gray-01",
+                "shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full border border-gray-03/40 text-gray-01",
               )}
             >
-              {selected.row.status.replace(/-/g, " ")}
+              {GOAL_STATUS_LABEL[selected.row.status]}
             </span>
           </div>
           <div className="flex flex-wrap gap-2 text-xs text-gray-02">
@@ -210,14 +187,9 @@ export function GoalAtlasView({
           </div>
           <p className="text-xs text-gray-02">{selected.row.explanation}</p>
         </div>
-      ) : null}
-
-      <style>{`
-        @keyframes goal-cluster-in {
-          from { opacity: 0; transform: translateY(8px) scale(0.96); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
+      ) : (
+        <p className="text-sm text-gray-02">Click a goal node for detail.</p>
+      )}
     </div>
   );
 }
