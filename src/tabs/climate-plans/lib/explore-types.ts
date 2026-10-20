@@ -139,6 +139,7 @@ export type ExploreViewId =
   | "map"
   | "alignment"
   | "goals"
+  | "shifts"
   | "tef"
   | "tef-framework"
   | "anatomy";
@@ -147,3 +148,16 @@ export type MapGeoLevel = "municipality" | "region";
 export type EmissionsYearMode = "latest" | "plan";
 export type TefFrameworkScope = "all" | "municipality" | "region";
 export type TefFrameworkMetric = "hits" | "strength" | "municipalities";
+/** Grid = catalogue heatmap; 3d = emission-scaled sector pillars. */
+export type TefFrameworkLayout = "grid" | "3d";
+/** How 3d pillar height is scaled. */
+export type TefFrameworkHeightMode = "share" | "tonnes";
+export type GoalsLayoutId = "list" | "atlas";
+/** Atlas clustering axis for goal grouping. */
+export type GoalsGroupById =
+  | "reduction"
+  | "status"
+  | "deadline"
+  | "paris"
+  | "scope";
+export type ShiftsLayoutId = "compare" | "flows" | "types";

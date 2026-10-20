@@ -1,11 +1,19 @@
+import { useMemo } from "react";
 import { MethodologyPanel } from "./MethodologyPanel";
+import { GoalAtlasView } from "./GoalAtlasView";
 import {
   trackMunicipalityGoals,
   type GoalTrackStatus,
 } from "../lib/explore-goals";
-import type { ExploreDataset } from "../lib/explore-types";
+import type { GoalAtlasItem } from "../lib/explore-goal-groups";
+import type {
+  ExploreDataset,
+  GoalsGroupById,
+  GoalsLayoutId,
+} from "../lib/explore-types";
 import { namesMatch } from "../lib/municipality-names";
 import { cn } from "@/lib/utils";
+import { ViewModePills } from "@/ui/view-mode-pills";
 
 const STATUS_LABEL: Record<GoalTrackStatus, string> = {
   "on-track": "On track",
@@ -29,10 +37,22 @@ export function GoalTrackingView({
   dataset,
   selectedName,
   onSelectName,
+  layout,
+  onLayoutChange,
+  groupBy,
+  onGroupByChange,
+  atlasScope,
+  onAtlasScopeChange,
 }: {
   dataset: ExploreDataset;
   selectedName: string | null;
   onSelectName: (name: string) => void;
+  layout: GoalsLayoutId;
+  onLayoutChange: (layout: GoalsLayoutId) => void;
+  groupBy: GoalsGroupById;
+  onGroupByChange: (groupBy: GoalsGroupById) => void;
+  atlasScope: "selected" | "all";
+  onAtlasScopeChange: (scope: "selected" | "all") => void;
 }) {
   const selected =
     dataset.municipalities.find((row) =>
@@ -46,25 +66,101 @@ export function GoalTrackingView({
     ? trackMunicipalityGoals(selected, dataset.sectorEmissions, nowYear)
     : [];
 
+  const atlasItems = useMemo(() => {
+    const records =
+      atlasScope === "all" || !selected
+        ? dataset.municipalities
+        : [selected];
+    const items: GoalAtlasItem[] = [];
+    for (const record of records) {
+      const tracked = trackMunicipalityGoals(
+        record,
+        dataset.sectorEmissions,
+        nowYear,
+      );
+      tracked.forEach((row, index) => {
+        items.push({
+          id: `${record.id}:${index}:${row.goal.description.slice(0, 40)}`,
+          municipalityId: record.id,
+          municipalityName: record.name,
+          parisMentioned: record.parisMentioned,
+          onePointFiveMentioned: record.onePointFiveMentioned,
+          carbonBudgetReferenced: record.carbonBudgetReferenced,
+          row,
+        });
+      });
+    }
+    return items;
+  }, [atlasScope, dataset.municipalities, dataset.sectorEmissions, nowYear, selected]);
+
   return (
     <div className="space-y-4">
       <MethodologyPanel
-        data="Goals: emission_targets.own_commitments (static JSON today). Trajectory: sum of territorial sector tonnes for the closest year to baseline_year and to now."
-        calculation="If a goal has reduction_percentage, baseline_year, and target_year: expected remaining share = 1 − (p/100) × elapsed, elapsed = (latest−baseline)/(target−baseline). Actual remaining = latest total / baseline total. Off-track if actual remaining is >5pp above the linear path; ahead if >5pp below."
+        data="Goals: emission_targets.own_commitments (static JSON today). Trajectory: sum of territorial sector tonnes for the closest year to baseline_year and to now. Paris / 1.5° / carbon-budget flags come from framework_alignment on the same extract (plan-level, not per goal)."
+        calculation="If a goal has reduction_percentage, baseline_year, and target_year: expected remaining share = 1 − (p/100) × elapsed, elapsed = (latest−baseline)/(target−baseline). Actual remaining = latest total / baseline total. Off-track if actual remaining is >5pp above the linear path; ahead if >5pp below. Atlas clusters goals by reduction band, track status, deadline proximity, Paris plan flag, or scope."
         extra="Territorial SMHI totals are a poor proxy for municipal-operations (scope 1+2) goals — those rows will often look 'off track' or 'missing'. That is intentional: it shows which goals we can actually score with public emissions today."
       />
-      <select
-        value={selected?.name ?? ""}
-        onChange={(e) => onSelectName(e.target.value)}
-        className="text-sm bg-gray-04 border border-gray-03/50 text-gray-01 rounded px-3 py-2"
-      >
-        {dataset.municipalities.map((row) => (
-          <option key={row.id} value={row.name}>
-            {row.name} ({row.goals.length} goals)
-          </option>
-        ))}
-      </select>
-      {selected && rows.length === 0 ? (
+
+      <div className="flex flex-wrap gap-2 items-center">
+        <ViewModePills
+          options={[
+            { value: "list", label: "List" },
+            { value: "atlas", label: "Atlas" },
+          ]}
+          value={layout}
+          onValueChange={onLayoutChange}
+          ariaLabel="Goal tracking layouts"
+        />
+
+        {layout === "list" || atlasScope === "selected" ? (
+          <select
+            value={selected?.name ?? ""}
+            onChange={(e) => onSelectName(e.target.value)}
+            className="text-sm bg-gray-04 border border-gray-03/50 text-gray-01 rounded px-3 py-2"
+          >
+            {dataset.municipalities.map((row) => (
+              <option key={row.id} value={row.name}>
+                {row.name} ({row.goals.length} goals)
+              </option>
+            ))}
+          </select>
+        ) : null}
+
+        {layout === "atlas" ? (
+          <div className="flex rounded-lg overflow-hidden border border-gray-03/40 text-sm">
+            {(
+              [
+                ["selected", "This municipality"],
+                ["all", "All extracts"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onAtlasScopeChange(value)}
+                className={cn(
+                  "px-3 py-2",
+                  atlasScope === value
+                    ? "bg-gray-03/50 text-gray-01"
+                    : "text-gray-02 hover:text-gray-01",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      {layout === "atlas" ? (
+        <GoalAtlasView
+          items={atlasItems}
+          groupBy={groupBy}
+          onGroupByChange={onGroupByChange}
+          nowYear={nowYear}
+          onSelectMunicipality={onSelectName}
+        />
+      ) : selected && rows.length === 0 ? (
         <p className="text-sm text-gray-02">
           No own_commitments extracted for this municipality yet.
         </p>
