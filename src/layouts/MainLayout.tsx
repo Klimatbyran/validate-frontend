@@ -53,6 +53,8 @@ function tabLabelKey(tab: TopLevelTabSegment): string {
       return "nav.climateQaReviews";
     case "municipality-sources":
       return "nav.municipalitySources";
+    case "shadow-taxonomy":
+      return "nav.shadowTaxonomy";
   }
 }
 

@@ -71,17 +71,27 @@ export interface TransitionElementMatch {
   // reasonable inference) — an LLM judgment, read straight from tePicker's
   // judge() call, not computed from word overlap.
   explicit?: boolean;
-  // Our own classification of this TE element into the same six Activity
-  // Shift categories the shift itself is classified into (see
-  // classifyTeTypes.ts) — temporary scaffolding until TEF sends real
-  // per-element categories. Compare against the shift's own `type` to see
-  // whether the two sides agree.
+  // TEF's own category for this element ("Type Shift", "Resource Shift", …).
+  // Compare with the shift's `type` (Prisma enum, e.g. TypeShift).
+  activityShiftCategory?: string | null;
+  actsOnLabels?: string[];
+  shiftsToLabels?: string[];
+  // Older runs, from before TEF shipped activityShiftCategory.
   ourShiftType?: string | null;
-  // TEF's own undocumented binary tag — "shift" (genuine mode/technology
-  // change) or "improve" (same activity, done more efficiently/less of
-  // it). Kept for reference; not a reliable compatibility signal on its
-  // own (see ourShiftType).
+  legacyExportType?: "shift" | "improve" | null;
   type?: "shift" | "improve" | null;
+}
+
+/** Real TEF element the second-pass review found after the primary pass missed it. */
+export interface RecoveredTransitionElement {
+  stableId: string;
+  shortLabel: string;
+  sectorPath?: string;
+  description?: string;
+  score: number;
+  activityShiftCategory?: string | null;
+  actsOnLabels?: string[];
+  shiftsToLabels?: string[];
 }
 
 /** Cosine candidates from the TE picker — may lack matchConfidence. */
@@ -91,11 +101,28 @@ export interface TransitionElementCandidate {
   sectorPath?: string;
   description?: string;
   score: number;
+  activityShiftCategory?: string | null;
+  actsOnLabels?: string[];
+  shiftsToLabels?: string[];
   ourShiftType?: string | null;
+  legacyExportType?: "shift" | "improve" | null;
   type?: "shift" | "improve" | null;
 }
 
-export type DocumentReferenceRelationship = "companion" | "related" | "initiative";
+/** Shadow taxonomy element the reviewer attached when the real TEF had a gap. */
+export interface ShadowTransitionElementRef {
+  id: string;
+  shortLabel: string;
+  description: string;
+  activityShiftCategory: string;
+  sectorPath: string | null;
+  status: string;
+}
+
+export type DocumentReferenceRelationship =
+  | "companion"
+  | "related"
+  | "initiative";
 
 export interface DocumentReference {
   id: string;
@@ -135,6 +162,13 @@ export interface ActivityShift {
   transitionElementGateDomain?: string | null;
   transitionElementGroupKind?: string | null;
   transitionElementGroupLabel?: string | null;
+  // Second-pass review, only present when the primary outcome was weak
+  // (none / too_narrow / ambiguous). See reviewWeakMatch.ts.
+  aiReviewCategory?: string | null;
+  aiReviewExplanation?: string | null;
+  aiRecoveredMatch?: RecoveredTransitionElement | null;
+  shadowElementId?: string | null;
+  shadowElement?: ShadowTransitionElementRef | null;
 }
 
 export interface MeasureScore {
