@@ -45,6 +45,9 @@ import {
   approvePlan,
   type ActivityShift,
   type Commitment,
+  type RecoveredTransitionElement,
+  type TransitionElementCandidate,
+  type TransitionElementMatch,
   type DocumentReference,
   type DocumentReferenceRelationship,
   type ExtractedMeasure,
@@ -67,6 +70,16 @@ import {
   teMatchSelectEditor,
   themeSuggestEditor,
 } from "./structuredSuggestEditors";
+import {
+  aiReviewHeadline,
+  aiReviewPillLabel,
+  legacyExportTag,
+  matchMechanismLine,
+  matchOutcomeLabel,
+  reviewerChosenStableId,
+  shiftTypesAgree,
+  tefCategoryOf,
+} from "../lib/tef-match-display";
 
 /** Count of items shown in each step's dialog — same filters the dialog
  * content itself applies, so the title badge always matches what's below. */
@@ -192,16 +205,20 @@ function MetaChip({
   label,
   children,
   tone = "neutral",
+  large = false,
 }: {
   label: string;
   children: React.ReactNode;
   tone?: MetaChipTone;
+  large?: boolean;
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${metaChipToneClass(tone)}`}
+      className={`inline-flex items-center gap-1.5 rounded-md border ${large ? "px-2.5 py-1.5 text-sm" : "px-2 py-1 text-xs"} ${metaChipToneClass(tone)}`}
     >
-      <span className="uppercase tracking-wide text-[10px] opacity-80">
+      <span
+        className={`uppercase tracking-wide opacity-80 ${large ? "text-xs" : "text-[10px]"}`}
+      >
         {label}
       </span>
       <span className="font-semibold tabular-nums">{children}</span>
@@ -233,17 +250,21 @@ function scoreStrengthClass(score: number | null | undefined): string {
 function ScoreChip({
   label,
   score,
+  large = false,
 }: {
   label: string;
   score: number | null | undefined;
+  large?: boolean;
 }) {
   const display = score ?? "—";
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs tabular-nums ${scoreStrengthClass(score)}`}
+      className={`inline-flex items-center gap-1.5 rounded-md border tabular-nums ${large ? "px-2.5 py-1.5 text-sm" : "px-2 py-1 text-xs"} ${scoreStrengthClass(score)}`}
       title={`${label}: ${display} (1 weak → 7 strong)`}
     >
-      <span className="uppercase tracking-wide text-[10px] opacity-80">
+      <span
+        className={`uppercase tracking-wide opacity-80 ${large ? "text-xs" : "text-[10px]"}`}
+      >
         {label}
       </span>
       <span>{display}</span>
@@ -301,7 +322,7 @@ function ExplicitBadge({ explicit }: { explicit: boolean | undefined }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] uppercase tracking-wide",
+        "inline-flex items-center rounded-md border px-2 py-1 text-xs uppercase tracking-wide",
         explicit
           ? "border-green-03/40 bg-green-03/10 text-green-03"
           : "border-gray-03 bg-gray-03/50 text-gray-01 font-semibold",
@@ -317,48 +338,380 @@ function ExplicitBadge({ explicit }: { explicit: boolean | undefined }) {
   );
 }
 
-/** Our temporary classification of a TE element into the same six Activity
- * Shift categories the shift itself uses (see classifyTeTypes.ts) —
- * scaffolding until TEF sends real per-element categories. Green when it
- * agrees with the shift's own type (the normal case, since tePicker's exact
- * shift-type gate already filters to this), gray when the candidate has no
- * classification yet, orange on the rare disagreement that slips through
- * (e.g. a tree-sourced candidate added for domain coverage). */
-function ShiftTypePill({
-  ourShiftType,
+function outcomeTone(kind: string | null | undefined): MetaChipTone {
+  if (kind === "specific" || kind === "multiple_specific") return "relevance";
+  if (kind === "ambiguous") return "score";
+  if (kind === "too_narrow" || kind === "none") return "type";
+  return "neutral";
+}
+
+function TefCategoryPill({
+  category,
   shiftType,
 }: {
-  ourShiftType: string | null | undefined;
+  category: string | null;
   shiftType: string;
 }) {
-  if (!ourShiftType) {
-    return (
-      <span
-        className="inline-flex items-center rounded-md border border-gray-03 bg-gray-03/50 px-1.5 py-0.5 text-[10px] text-gray-01 font-semibold"
-        title="This match predates the shift-type classification -- rerun matchTransitionElements to get a real category"
-      >
-        unclassified
-      </span>
-    );
-  }
-  const agrees = ourShiftType === shiftType;
+  if (!category) return null;
+  const agrees = shiftTypesAgree(shiftType, category);
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px]",
+        "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm",
         agrees
           ? "border-green-03/40 bg-green-03/10 text-green-03"
           : "border-orange-03/40 bg-orange-03/10 text-orange-03",
       )}
       title={
         agrees
-          ? "This TE element's own category matches the shift's category"
-          : "This TE element's own category differs from the shift's category"
+          ? "TEF's category matches our classification of this shift"
+          : "TEF's category differs from our classification of this shift"
       }
     >
-      {ourShiftType}
+      <span className="uppercase tracking-wide text-xs opacity-80">TEF</span>
+      <span className="font-semibold">{category}</span>
     </span>
   );
+}
+
+function ConfidenceScore({
+  confidence,
+  score,
+}: {
+  confidence: "high" | "mid" | "low" | undefined;
+  score: number;
+}) {
+  const label = confidence
+    ? `${confidence} · ${score.toFixed(4)}`
+    : score.toFixed(4);
+  const tone = confidence
+    ? teConfidenceChipClass(confidence, score)
+    : "border-gray-03 bg-gray-03/40 text-gray-01";
+  return (
+    <span
+      className={`inline-flex items-center rounded-md border px-2.5 py-1.5 text-sm tabular-nums ${tone}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function LegacyExportTag({ tag }: { tag: string | null }) {
+  if (!tag) return null;
+  return (
+    <span
+      className="text-xs text-gray-02/60"
+      title="Older TEF shift/improve tag — not a reliable category"
+    >
+      Legacy: {tag}
+    </span>
+  );
+}
+
+type TeMatchView =
+  | TransitionElementMatch
+  | RecoveredTransitionElement
+  | TransitionElementCandidate;
+
+type MatchSource = "primary" | "judge" | "retrieval" | "shadow";
+
+function SourcePill({ kind }: { kind: MatchSource }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md border px-2 py-1 text-xs font-semibold uppercase tracking-wide",
+        sourcePillClass(kind),
+      )}
+      title={sourcePillTitle(kind)}
+    >
+      {sourcePillLabel(kind)}
+    </span>
+  );
+}
+
+function sourcePillLabel(source: MatchSource): string {
+  if (source === "primary") return "Primary";
+  if (source === "judge") return "Judge error";
+  if (source === "retrieval") return "Taxonomy miss";
+  return "Shadow TEF · reviewer";
+}
+
+function sourcePillClass(source: MatchSource): string {
+  if (source === "judge")
+    return "border-orange-03/50 bg-orange-03/15 text-orange-03";
+  if (source === "retrieval")
+    return "border-blue-03/50 bg-blue-03/15 text-blue-03";
+  if (source === "shadow")
+    return "border-purple-03/40 bg-purple-03/10 text-purple-03";
+  return "border-gray-03 bg-gray-03/50 text-gray-01";
+}
+
+function sourcePillTitle(source: MatchSource): string {
+  if (source === "judge") {
+    return "The AI reviewer says the first matcher should have accepted this candidate.";
+  }
+  if (source === "retrieval") {
+    return "The AI reviewer found this existing TEF after the first search missed it.";
+  }
+  if (source === "shadow") {
+    return "The AI reviewer added this shadow element during review.";
+  }
+  return "Accepted by the first matcher. The reviewer did not add this one.";
+}
+
+function ReviewVerdictPill({ category }: { category: string }) {
+  const label = aiReviewPillLabel(category);
+  if (!label) return null;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md border px-2.5 py-1.5 text-sm font-semibold",
+        reviewVerdictClass(category),
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
+function reviewVerdictClass(category: string): string {
+  if (category === "JUDGE_ERROR")
+    return "border-orange-03/50 bg-orange-03/15 text-orange-03";
+  if (category === "RETRIEVAL_MISS")
+    return "border-blue-03/50 bg-blue-03/15 text-blue-03";
+  if (category === "TAXONOMY_GAP")
+    return "border-purple-03/40 bg-purple-03/10 text-purple-03";
+  if (category === "ENABLING_NOT_SHIFT")
+    return "border-teal-03/50 bg-teal-03/15 text-teal-03";
+  return "border-gray-03 bg-gray-03/50 text-gray-01";
+}
+
+function TeMatchBody({
+  match,
+  shiftType,
+  matchSource = null,
+}: {
+  match: TeMatchView;
+  shiftType: string;
+  matchSource?: MatchSource | null;
+}) {
+  const mechanism = matchMechanismLine(match);
+  return (
+    <div className="space-y-1.5 min-w-0">
+      <TeMatchTitle stableId={match.stableId} shortLabel={match.shortLabel} />
+      <div className="flex flex-wrap items-center gap-1.5">
+        {matchSource && <SourcePill kind={matchSource} />}
+        {"explicit" in match && <ExplicitBadge explicit={match.explicit} />}
+        <ConfidenceScore
+          confidence={
+            "matchConfidence" in match ? match.matchConfidence : undefined
+          }
+          score={match.score}
+        />
+        <TefCategoryPill
+          category={tefCategoryOf(match)}
+          shiftType={shiftType}
+        />
+        <LegacyExportTag tag={legacyExportTag(match)} />
+      </div>
+      {match.sectorPath && (
+        <p className="text-sm text-gray-02 break-words">{match.sectorPath}</p>
+      )}
+      {mechanism && (
+        <p className="text-sm text-gray-01/80 break-words">{mechanism}</p>
+      )}
+    </div>
+  );
+}
+
+function TeMatchTitle({
+  stableId,
+  shortLabel,
+}: {
+  stableId: string;
+  shortLabel: string;
+}) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+      <span className="font-mono text-sm text-gray-02">{stableId}</span>
+      <span className="text-base font-medium text-gray-01 break-words">
+        {shortLabel}
+      </span>
+    </div>
+  );
+}
+
+function ShiftMetaRow({
+  shift,
+  showMatches,
+}: {
+  shift: ActivityShift;
+  showMatches: boolean;
+}) {
+  const outcome = showMatches
+    ? matchOutcomeLabel(
+        shift.transitionElementGroupKind,
+        shift.transitionElementGateDomain,
+        shift.transitionElementGroupLabel,
+      )
+    : null;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <MetaChip label="Ours" tone="type" large>
+        {shift.type}
+      </MetaChip>
+      <ScoreChip label="Score" score={shift.score} large />
+      {outcome && (
+        <MetaChip
+          label="Outcome"
+          tone={outcomeTone(shift.transitionElementGroupKind)}
+          large
+        >
+          {outcome}
+        </MetaChip>
+      )}
+      {showMatches && shift.aiReviewCategory && (
+        <ReviewVerdictPill category={shift.aiReviewCategory} />
+      )}
+    </div>
+  );
+}
+
+function ShiftContextLine({
+  shift,
+  showDomain,
+}: {
+  shift: ActivityShift;
+  showDomain: boolean;
+}) {
+  const domain = shift.transitionElementGateDomain;
+  return (
+    <p className="text-sm text-gray-02 break-words">
+      Activity: {shift.activity} · Need: {shift.need}
+      {showDomain && domain ? ` · Domain: ${domain}` : ""}
+    </p>
+  );
+}
+
+function MatchOutcomeNotes({
+  groupKind,
+  groupLabel,
+}: {
+  groupKind: string | null | undefined;
+  groupLabel: string | null | undefined;
+}) {
+  if (groupKind === "too_narrow" && groupLabel) {
+    return (
+      <p className="text-sm text-orange-03 bg-orange-03/10 border border-orange-03/20 rounded-md px-2.5 py-2">
+        Match is narrower than the shift's own wording — a broader TE (&ldquo;
+        {groupLabel}&rdquo;) may fit better.
+      </p>
+    );
+  }
+  if (groupKind === "ambiguous" && groupLabel) {
+    return (
+      <p className="text-sm text-blue-03 bg-blue-03/10 border border-blue-03/20 rounded-md px-2.5 py-2">
+        Several candidates cluster under &ldquo;{groupLabel}&rdquo; — the
+        shift's own wording doesn't commit to one of them.
+      </p>
+    );
+  }
+  if (groupKind === "multiple_specific") {
+    return (
+      <p className="text-sm text-gray-02 bg-gray-03/20 border border-gray-03/30 rounded-md px-2.5 py-2">
+        This shift names several distinct destinations — each match below is
+        independently valid, not competing alternatives.
+      </p>
+    );
+  }
+  return null;
+}
+
+function ProposedElementCard({
+  suggested,
+  hasExistingMatch,
+}: {
+  suggested: { shortLabel: string; description: string };
+  hasExistingMatch: boolean;
+}) {
+  return (
+    <div className="rounded-md border border-gray-03/50 p-2 space-y-1">
+      <p className="text-xs uppercase tracking-wide text-gray-02 font-medium">
+        {hasExistingMatch
+          ? "Broader element proposed"
+          : "No existing match — new element proposed"}
+      </p>
+      <p className="text-base text-gray-01 break-words">
+        <span className="font-medium">{suggested.shortLabel}</span>
+        {suggested.description ? ` — ${suggested.description}` : ""}
+      </p>
+    </div>
+  );
+}
+
+function opinionFrameClass(category: string | null | undefined): string {
+  if (category === "JUDGE_ERROR") return "border-orange-03/25";
+  if (category === "RETRIEVAL_MISS") return "border-blue-03/25";
+  if (category === "TAXONOMY_GAP") return "border-purple-03/25";
+  if (category === "ENABLING_NOT_SHIFT") return "border-teal-03/25";
+  return "border-gray-03/50";
+}
+
+function OpinionLabel() {
+  return (
+    <span className="inline-flex items-center rounded-md border border-gray-02/50 bg-gray-04 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-01">
+      AI second opinion
+    </span>
+  );
+}
+
+function AiSecondOpinion({
+  category,
+  explanation,
+}: {
+  category: string | null | undefined;
+  explanation: string | null | undefined;
+}) {
+  const headline = aiReviewHeadline(category);
+  if (!headline && !explanation) return null;
+  return (
+    <div
+      className={cn(
+        "rounded-md border p-2.5 space-y-2",
+        opinionFrameClass(category),
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-1.5">
+        <OpinionLabel />
+        {category && <ReviewVerdictPill category={category} />}
+      </div>
+      <OpinionBody explanation={explanation} headline={headline} />
+    </div>
+  );
+}
+
+function OpinionBody({
+  explanation,
+  headline,
+}: {
+  explanation: string | null | undefined;
+  headline: string | null;
+}) {
+  if (explanation) {
+    return <p className="text-sm text-gray-02 break-words">{explanation}</p>;
+  }
+  return <p className="text-sm text-gray-02">{headline}</p>;
+}
+
+function recoveredMatchToShow(
+  shift: ActivityShift,
+): RecoveredTransitionElement | null {
+  const recovered = shift.aiRecoveredMatch;
+  if (!recovered?.stableId) return null;
+  const alreadyListed = shift.transitionElementMatches.some(
+    (match) => match.stableId === recovered.stableId,
+  );
+  return alreadyListed ? null : recovered;
 }
 
 function TeMatchAddSlots({
@@ -505,6 +858,179 @@ function TeMatchAddSlots({
   );
 }
 
+function ListedTeMatch({
+  match,
+  shiftKey,
+  shiftType,
+  matchSource,
+  allCandidates,
+  canAddMore,
+  requestAddSlot,
+  reviewCtx,
+}: {
+  match: TransitionElementMatch;
+  shiftKey: string;
+  shiftType: string;
+  matchSource: MatchSource | null;
+  allCandidates: Array<{ stableId: string; shortLabel: string; score: number }>;
+  canAddMore: boolean;
+  requestAddSlot: () => void;
+  reviewCtx: ReviewContext;
+}) {
+  const entityId = `${shiftKey}:${match.stableId}`;
+  const entityKey = reviewKey(reviewCtx.step, "teMatch", entityId);
+  return (
+    <div className="rounded-md border border-gray-03/50 bg-gray-05/40 p-2 space-y-2 min-w-0">
+      <TeMatchBody
+        match={match}
+        shiftType={shiftType}
+        matchSource={matchSource}
+      />
+      <QaFooter>
+        <ReviewControls
+          planId={reviewCtx.planId}
+          step={reviewCtx.step}
+          entityType="teMatch"
+          entityId={entityId}
+          reviewedSnapshot={{
+            activityShiftId: shiftKey,
+            match,
+            candidates: allCandidates,
+          }}
+          review={reviewCtx.reviewsByEntity.get(entityKey)}
+          defaultSuggestedValue={{
+            selectedStableId: match.stableId,
+            selectedShortLabel: match.shortLabel,
+          }}
+          suggestEditor={teMatchSelectEditor({
+            current: {
+              stableId: match.stableId,
+              shortLabel: match.shortLabel,
+              score: match.score,
+            },
+            candidates: allCandidates,
+          })}
+          onAdd={canAddMore ? requestAddSlot : undefined}
+          addTitle="Add another TE match"
+          addDisabled={!canAddMore}
+          onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
+        />
+      </QaFooter>
+    </div>
+  );
+}
+
+function AddMatchButton({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div className="rounded-md border border-dashed border-blue-03/40 bg-blue-03/5 p-2">
+      <div className="flex flex-wrap items-center gap-1">
+        <span className="text-[10px] uppercase tracking-wide text-gray-02 mr-1">
+          QA
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0 text-gray-02 hover:text-blue-03"
+          title="Add a TE match"
+          onClick={onAdd}
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </Button>
+        <span className="text-xs text-blue-03">Add a TE match</span>
+      </div>
+    </div>
+  );
+}
+
+function EmptyMatchPrompt({
+  hasProposal,
+  canAddMore,
+  onAdd,
+}: {
+  hasProposal: boolean;
+  canAddMore: boolean;
+  onAdd: () => void;
+}) {
+  if (hasProposal && !canAddMore) return null;
+  return (
+    <div className="space-y-2">
+      {!hasProposal && (
+        <p className="text-sm text-gray-02 italic">No matches</p>
+      )}
+      {canAddMore && <AddMatchButton onAdd={onAdd} />}
+    </div>
+  );
+}
+
+function RecoveredMatchCard({
+  match,
+  shiftType,
+}: {
+  match: RecoveredTransitionElement;
+  shiftType: string;
+}) {
+  return (
+    <div className="rounded-md border border-blue-03/40 bg-blue-03/5 p-2">
+      <TeMatchBody match={match} shiftType={shiftType} matchSource="retrieval" />
+    </div>
+  );
+}
+
+function JudgePickCard({
+  match,
+  shiftType,
+}: {
+  match: TransitionElementCandidate;
+  shiftType: string;
+}) {
+  return (
+    <div className="rounded-md border border-orange-03/40 bg-orange-03/5 p-2">
+      <TeMatchBody match={match} shiftType={shiftType} matchSource="judge" />
+    </div>
+  );
+}
+
+function shadowShortLabel(shift: ActivityShift): string | undefined {
+  return (
+    shift.shadowElement?.shortLabel ??
+    shift.transitionElementSuggestedNew?.shortLabel
+  );
+}
+
+function shadowDescription(shift: ActivityShift): string | undefined {
+  return (
+    shift.shadowElement?.description ??
+    shift.transitionElementSuggestedNew?.description
+  );
+}
+
+function ShadowElementName({ label }: { label: string }) {
+  return (
+    <p className="text-base font-medium text-gray-01 break-words">{label}</p>
+  );
+}
+
+function ShadowMatchCard({ shift }: { shift: ActivityShift }) {
+  const label = shadowShortLabel(shift);
+  const description = shadowDescription(shift);
+  return (
+    <div className="rounded-md border border-purple-03/30 bg-purple-03/5 p-2 space-y-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <SourcePill kind="shadow" />
+        <TefCategoryPill
+          category={shift.shadowElement?.activityShiftCategory ?? null}
+          shiftType={shift.type}
+        />
+      </div>
+      {label && <ShadowElementName label={label} />}
+      {description && (
+        <p className="text-sm text-gray-02 break-words">{description}</p>
+      )}
+    </div>
+  );
+}
+
 function ActivityShiftTeBlock({
   shift,
   reviewCtx,
@@ -565,147 +1091,67 @@ function ActivityShiftTeBlock({
 
   const groupKind = shift.transitionElementGroupKind;
   const groupLabel = shift.transitionElementGroupLabel;
+  const hasMatches = shift.transitionElementMatches.length > 0;
+  const recovered = showMatches ? recoveredMatchToShow(shift) : null;
+  const reviewerPickId = reviewerPickIdFor(shift);
+  const promotedCandidate = promotedJudgeCandidate(
+    shift,
+    reviewerPickId,
+    matchedIds,
+  );
+  const hasShadow = showMatches && Boolean(shift.shadowElementId);
+  const hasDisplayedMatch =
+    hasMatches || Boolean(recovered) || Boolean(promotedCandidate) || hasShadow;
 
   return (
     <div className="pl-3 border-l-2 border-gray-03 space-y-3 min-w-0">
-      <div className="flex flex-wrap items-center gap-2">
-        <MetaChip label="Shift type" tone="type">
-          {shift.type}
-        </MetaChip>
-        {showMatches && shift.transitionElementGateDomain && (
-          <MetaChip label="Gate domain" tone="neutral">
-            {shift.transitionElementGateDomain}
-          </MetaChip>
-        )}
-      </div>
+      <ShiftStatement from={shift.shiftFrom} to={shift.shiftTo} />
+      <ShiftMetaRow shift={shift} showMatches={showMatches} />
       {shift.typeReasoning && (
-        <p className="text-xs text-gray-02/80 italic break-words">
+        <p className="text-sm text-gray-02/80 italic break-words">
           {shift.typeReasoning}
         </p>
       )}
-      <p className="text-sm text-gray-01 font-medium break-words">
-        {shift.shiftFrom} → {shift.shiftTo}{" "}
-        <span className="text-xs text-gray-02 font-normal">
-          (need: {shift.need})
-        </span>
-      </p>
-      {showMatches && groupKind === "too_narrow" && groupLabel && (
-        <p className="text-xs text-orange-03 bg-orange-03/10 border border-orange-03/20 rounded-md px-2 py-1.5">
-          Match is narrower than the shift's own wording — a broader TE
-          ("{groupLabel}") may fit better.
-        </p>
+      <ShiftContextLine shift={shift} showDomain={showMatches} />
+      {showMatches && (
+        <MatchOutcomeNotes groupKind={groupKind} groupLabel={groupLabel} />
       )}
-      {showMatches && groupKind === "ambiguous" && groupLabel && (
-        <p className="text-xs text-blue-03 bg-blue-03/10 border border-blue-03/20 rounded-md px-2 py-1.5">
-          Several candidates cluster under "{groupLabel}" — the shift's own
-          wording doesn't commit to one of them.
-        </p>
+      {showMatches && hasMatches && (
+        <ListedMatches
+          shift={shift}
+          shiftKey={shiftKey}
+          reviewerPickId={reviewerPickId}
+          allCandidates={allCandidates}
+          canAddMore={canAddMore}
+          requestAddSlot={requestAddSlot}
+          reviewCtx={reviewCtx}
+        />
       )}
-      {showMatches && groupKind === "multiple_specific" && (
-        <p className="text-xs text-gray-02 bg-gray-03/20 border border-gray-03/30 rounded-md px-2 py-1.5">
-          This shift names several distinct destinations — each match below
-          is independently valid, not competing alternatives.
-        </p>
+      {promotedCandidate && (
+        <JudgePickCard match={promotedCandidate} shiftType={shift.type} />
       )}
-      {!showMatches ? null : shift.transitionElementMatches.length === 0 ? (
-        <div className="space-y-2">
-          <p className="text-xs text-gray-02 italic">No matches</p>
-          {canAddMore && (
-            <div className="rounded-md border border-dashed border-blue-03/40 bg-blue-03/5 p-2">
-              <div className="flex flex-wrap items-center gap-1">
-                <span className="text-[10px] uppercase tracking-wide text-gray-02 mr-1">
-                  QA
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-gray-02 hover:text-blue-03"
-                  title="Add a TE match"
-                  onClick={requestAddSlot}
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </Button>
-                <span className="text-xs text-blue-03">Add a TE match</span>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {shift.transitionElementMatches.map((match) => {
-            const entityId = `${shiftKey}:${match.stableId}`;
-            const entityKey = reviewKey(reviewCtx.step, "teMatch", entityId);
-            return (
-              <div
-                key={match.stableId}
-                className="rounded-md border border-gray-03/50 bg-gray-05/40 p-2 space-y-2 min-w-0"
-              >
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${teConfidenceChipClass(match.matchConfidence, match.score)}`}
-                    title={`${match.shortLabel} · ${match.matchConfidence} · ${match.score.toFixed(2)}`}
-                  >
-                    <span className="break-words">{match.shortLabel}</span>
-                    <span className="opacity-80 tabular-nums">
-                      {match.score.toFixed(2)}
-                    </span>
-                  </span>
-                  <ExplicitBadge explicit={match.explicit} />
-                  <ShiftTypePill
-                    ourShiftType={match.ourShiftType}
-                    shiftType={shift.type}
-                  />
-                  {match.type && (
-                    <span
-                      className="text-[10px] text-gray-02/60"
-                      title="TEF's own shift/improve tag — kept for reference, not a reliable compatibility signal on its own"
-                    >
-                      TEF: {match.type}
-                    </span>
-                  )}
-                </div>
-                {match.matchReasoning && (
-                  <p className="text-xs text-gray-01/80 break-words">
-                    {match.matchReasoning}
-                  </p>
-                )}
-                <QaFooter>
-                  <ReviewControls
-                    planId={reviewCtx.planId}
-                    step={reviewCtx.step}
-                    entityType="teMatch"
-                    entityId={entityId}
-                    reviewedSnapshot={{
-                      activityShiftId: shiftKey,
-                      match,
-                      candidates: allCandidates,
-                    }}
-                    review={reviewCtx.reviewsByEntity.get(entityKey)}
-                    defaultSuggestedValue={{
-                      selectedStableId: match.stableId,
-                      selectedShortLabel: match.shortLabel,
-                    }}
-                    suggestEditor={teMatchSelectEditor({
-                      current: {
-                        stableId: match.stableId,
-                        shortLabel: match.shortLabel,
-                        score: match.score,
-                      },
-                      candidates: allCandidates,
-                    })}
-                    onAdd={canAddMore ? requestAddSlot : undefined}
-                    addTitle="Add another TE match"
-                    addDisabled={!canAddMore}
-                    onChanged={(next) =>
-                      reviewCtx.onReviewChanged(next, entityKey)
-                    }
-                  />
-                </QaFooter>
-              </div>
-            );
-          })}
-        </div>
+      {recovered && (
+        <RecoveredMatchCard match={recovered} shiftType={shift.type} />
+      )}
+      {hasShadow && <ShadowMatchCard shift={shift} />}
+      {showMatches && !hasDisplayedMatch && (
+        <EmptyMatchPrompt
+          hasProposal={Boolean(suggestedNew)}
+          canAddMore={canAddMore}
+          onAdd={requestAddSlot}
+        />
+      )}
+      {showMatches && suggestedNew && !hasShadow && (
+        <ProposedElementCard
+          suggested={suggestedNew}
+          hasExistingMatch={hasMatches}
+        />
+      )}
+      {showMatches && (
+        <AiSecondOpinion
+          category={shift.aiReviewCategory}
+          explanation={shift.aiReviewExplanation}
+        />
       )}
       {showMatches && (
         <TeMatchAddSlots
@@ -719,6 +1165,94 @@ function ActivityShiftTeBlock({
         />
       )}
     </div>
+  );
+}
+
+function ListedMatches({
+  shift,
+  shiftKey,
+  reviewerPickId,
+  allCandidates,
+  canAddMore,
+  requestAddSlot,
+  reviewCtx,
+}: {
+  shift: ActivityShift;
+  shiftKey: string;
+  reviewerPickId: string | null;
+  allCandidates: Array<{ stableId: string; shortLabel: string; score: number }>;
+  canAddMore: boolean;
+  requestAddSlot: () => void;
+  reviewCtx: ReviewContext;
+}) {
+  const labelSources = Boolean(shift.aiReviewCategory);
+  return (
+    <div className="space-y-2">
+      {shift.transitionElementMatches.map((match) => (
+        <ListedTeMatch
+          key={match.stableId}
+          match={match}
+          shiftKey={shiftKey}
+          shiftType={shift.type}
+          matchSource={listedMatchSource(
+            labelSources,
+            reviewerPickId,
+            match.stableId,
+          )}
+          allCandidates={allCandidates}
+          canAddMore={canAddMore}
+          requestAddSlot={requestAddSlot}
+          reviewCtx={reviewCtx}
+        />
+      ))}
+    </div>
+  );
+}
+
+function listedMatchSource(
+  labelSources: boolean,
+  reviewerPickId: string | null,
+  stableId: string,
+): MatchSource | null {
+  if (!labelSources) return null;
+  if (reviewerPickId === stableId) return "judge";
+  return "primary";
+}
+
+function reviewerPickIdFor(shift: ActivityShift): string | null {
+  if (shift.aiReviewCategory !== "JUDGE_ERROR") return null;
+  const candidateIds = (shift.transitionElementCandidates ?? []).map(
+    (candidate) => candidate.stableId,
+  );
+  return reviewerChosenStableId(shift.aiReviewExplanation, candidateIds);
+}
+
+function promotedJudgeCandidate(
+  shift: ActivityShift,
+  reviewerPickId: string | null,
+  matchedIds: Set<string>,
+): TransitionElementCandidate | null {
+  if (!reviewerPickId || matchedIds.has(reviewerPickId)) return null;
+  return (
+    shift.transitionElementCandidates?.find(
+      (candidate) => candidate.stableId === reviewerPickId,
+    ) ?? null
+  );
+}
+
+function CommitmentText({ text }: { text: string }) {
+  return (
+    <p className="text-lg font-semibold leading-snug text-gray-01 break-words">
+      {text}
+    </p>
+  );
+}
+
+function ShiftStatement({ from, to }: { from: string; to: string }) {
+  return (
+    <p className="text-base font-medium text-gray-01 break-words">
+      {from} → {to}
+    </p>
   );
 }
 
@@ -748,9 +1282,9 @@ function TransitionElementsView({
       {withShifts.map((m) => (
         <div
           key={m.id}
-          className="bg-gray-03/30 rounded-lg p-3 space-y-3 min-w-0"
+          className="rounded-lg border border-gray-03/70 bg-gray-04/50 p-4 space-y-4 min-w-0"
         >
-          <p className="text-sm text-gray-01 break-words">{m.measureText}</p>
+          <CommitmentText text={m.measureText} />
           {m.score!.activityShifts.map((shift) => (
             <ActivityShiftTeBlock
               key={shift.id}
@@ -2114,7 +2648,8 @@ export function StepResultDialog({
                   near-identical lines competing for attention. */}
               {detail.municipality &&
                 detail.extractedMunicipalityName &&
-                detail.municipality.name !== detail.extractedMunicipalityName && (
+                detail.municipality.name !==
+                  detail.extractedMunicipalityName && (
                   <p className="text-xs text-gray-02">
                     Originally extracted as &ldquo;
                     {detail.extractedMunicipalityName}&rdquo;
