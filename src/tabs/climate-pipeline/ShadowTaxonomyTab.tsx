@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Loader2, RefreshCw, Check, X, Undo2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, RefreshCw, Trash2, Check, X, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
+import { ConfirmDialog } from "@/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import {
   useShadowElements,
   updateShadowElementStatus,
+  deleteAllShadowElements,
   type ShadowElement,
   type ShadowElementStatus,
   type ShadowElementQuality,
@@ -258,6 +260,8 @@ export function ShadowTaxonomyTab() {
   const [overrides, setOverrides] = useState<Map<string, ShadowElement>>(
     new Map(),
   );
+  const [isRemoveAllOpen, setIsRemoveAllOpen] = useState(false);
+  const [isRemovingAll, setIsRemovingAll] = useState(false);
 
   const rows = visibleShadowElements(elements, overrides, statusFilter, qualityFilter);
 
@@ -275,6 +279,23 @@ export function ShadowTaxonomyTab() {
     void refresh();
   };
 
+  const handleRemoveAll = async () => {
+    setIsRemovingAll(true);
+    try {
+      const { deletedCount } = await deleteAllShadowElements();
+      setOverrides(new Map());
+      await refresh();
+      toast.success(t("shadowTaxonomy.removeAllSuccess", { count: deletedCount }));
+      setIsRemoveAllOpen(false);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : t("shadowTaxonomy.removeAllError"),
+      );
+    } finally {
+      setIsRemovingAll(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
@@ -286,16 +307,40 @@ export function ShadowTaxonomyTab() {
             {t("shadowTaxonomy.subtitle")}
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={handleRefresh}
-          aria-label={t("shadowTaxonomy.refresh")}
-        >
-          <RefreshCw className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={handleRefresh}
+            aria-label={t("shadowTaxonomy.refresh")}
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsRemoveAllOpen(true)}
+            disabled={elements.length === 0}
+            className="border-pink-03/40 text-pink-03 hover:bg-pink-03/10 hover:border-pink-03"
+          >
+            <Trash2 className="w-4 h-4 mr-1.5" />
+            {t("shadowTaxonomy.removeAll")}
+          </Button>
+        </div>
       </div>
+
+      <ConfirmDialog
+        open={isRemoveAllOpen}
+        onOpenChange={setIsRemoveAllOpen}
+        title={t("shadowTaxonomy.removeAllTitle")}
+        description={t("shadowTaxonomy.removeAllDescription")}
+        cancelLabel={t("shadowTaxonomy.removeAllCancel")}
+        confirmLabel={t("shadowTaxonomy.removeAllConfirm")}
+        confirmVariant="danger"
+        onConfirm={handleRemoveAll}
+        isLoading={isRemovingAll}
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-xs text-gray-02 flex items-center gap-2">

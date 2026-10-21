@@ -76,6 +76,17 @@ export function useShadowElements() {
   return { elements, isLoading, error, refresh: fetchElements };
 }
 
+export async function deleteAllShadowElements(): Promise<{ deletedCount: number }> {
+  const res = await authenticatedFetch(`${getClimatePlansPipelineApiUrl()}/shadow-elements`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `${res.status} ${res.statusText}`);
+  }
+  return (await res.json()) as { deletedCount: number };
+}
+
 export async function updateShadowElementStatus(
   id: string,
   status: ShadowElementStatus,
