@@ -1094,11 +1094,9 @@ function ActivityShiftTeBlock({
   const hasMatches = shift.transitionElementMatches.length > 0;
   const recovered = showMatches ? recoveredMatchToShow(shift) : null;
   const reviewerPickId = reviewerPickIdFor(shift);
-  const promotedCandidate = promotedJudgeCandidate(
-    shift,
-    reviewerPickId,
-    matchedIds,
-  );
+  const promotedCandidate = showMatches
+    ? promotedJudgeCandidate(shift, reviewerPickId, matchedIds)
+    : null;
   const hasShadow = showMatches && Boolean(shift.shadowElementId);
   const hasDisplayedMatch =
     hasMatches || Boolean(recovered) || Boolean(promotedCandidate) || hasShadow;
