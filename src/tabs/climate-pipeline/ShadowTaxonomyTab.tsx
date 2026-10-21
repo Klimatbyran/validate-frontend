@@ -53,10 +53,14 @@ function ShadowElementCard({
 }) {
   const { t } = useI18n();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  // Tracks WHICH action is in flight, not just whether one is -- promote,
+  // reject, and restore share one save path, so a boolean can only ever
+  // light up one button's spinner regardless of which button was clicked.
+  const [pendingStatus, setPendingStatus] = useState<ShadowElementStatus | null>(null);
+  const isSaving = pendingStatus !== null;
 
   const setStatus = async (status: ShadowElementStatus) => {
-    setIsSaving(true);
+    setPendingStatus(status);
     try {
       const updated = await updateShadowElementStatus(element.id, status);
       onChanged(updated);
@@ -72,7 +76,7 @@ function ShadowElementCard({
         err instanceof Error ? err.message : t("shadowTaxonomy.updateError"),
       );
     } finally {
-      setIsSaving(false);
+      setPendingStatus(null);
     }
   };
 
@@ -128,7 +132,7 @@ function ShadowElementCard({
               title={t("shadowTaxonomy.promote")}
               className="border-green-03/40 text-green-03 hover:bg-green-03/10 hover:border-green-03"
             >
-              {isSaving ? (
+              {pendingStatus === "promoted" ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <Check className="h-3.5 w-3.5" />
@@ -145,7 +149,11 @@ function ShadowElementCard({
               title={t("shadowTaxonomy.reject")}
               className="border-gray-03 text-gray-02 hover:bg-gray-03/40"
             >
-              <X className="h-3.5 w-3.5" />
+              {pendingStatus === "rejected" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <X className="h-3.5 w-3.5" />
+              )}
             </Button>
           )}
           {element.status !== "preliminary" && (
@@ -158,7 +166,11 @@ function ShadowElementCard({
               title={t("shadowTaxonomy.restore")}
               className="text-gray-02/60 hover:text-purple-03"
             >
-              <Undo2 className="h-3.5 w-3.5" />
+              {pendingStatus === "preliminary" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Undo2 className="h-3.5 w-3.5" />
+              )}
             </Button>
           )}
         </div>
@@ -253,6 +265,16 @@ export function ShadowTaxonomyTab() {
     setOverrides((prev) => new Map(prev).set(next.id, keepLoadedDetail(elements, prev, next)));
   };
 
+  // overrides exists only to show a status change immediately without
+  // waiting on a refetch -- once a real refetch happens, its freshly loaded
+  // elements are the source of truth again, so drop the overrides or a
+  // promoted/rejected/restored element's attachments stay frozen at
+  // whatever they were when it was last changed, even after refresh.
+  const handleRefresh = () => {
+    setOverrides(new Map());
+    void refresh();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
@@ -268,7 +290,7 @@ export function ShadowTaxonomyTab() {
           type="button"
           variant="outline"
           size="icon"
-          onClick={() => void refresh()}
+          onClick={handleRefresh}
           aria-label={t("shadowTaxonomy.refresh")}
         >
           <RefreshCw className="w-4 h-4" />

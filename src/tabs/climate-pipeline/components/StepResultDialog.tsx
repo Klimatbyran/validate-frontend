@@ -945,17 +945,19 @@ function AddMatchButton({ onAdd }: { onAdd: () => void }) {
 
 function EmptyMatchPrompt({
   hasProposal,
+  hasOtherDisplay,
   canAddMore,
   onAdd,
 }: {
   hasProposal: boolean;
+  hasOtherDisplay: boolean;
   canAddMore: boolean;
   onAdd: () => void;
 }) {
-  if (hasProposal && !canAddMore) return null;
+  if ((hasProposal || hasOtherDisplay) && !canAddMore) return null;
   return (
     <div className="space-y-2">
-      {!hasProposal && (
+      {!hasProposal && !hasOtherDisplay && (
         <p className="text-sm text-gray-02 italic">No matches</p>
       )}
       {canAddMore && <AddMatchButton onAdd={onAdd} />}
@@ -1098,8 +1100,14 @@ function ActivityShiftTeBlock({
     ? promotedJudgeCandidate(shift, reviewerPickId, matchedIds)
     : null;
   const hasShadow = showMatches && Boolean(shift.shadowElementId);
-  const hasDisplayedMatch =
-    hasMatches || Boolean(recovered) || Boolean(promotedCandidate) || hasShadow;
+  // recovered/promotedCandidate/hasShadow are review-step cards with no add
+  // action of their own -- they're exactly what's shown when the primary
+  // pass found nothing (hasMatches=false), so gating the add button on
+  // "any card is displayed" hid it on precisely the shifts that most need a
+  // manual correction. The add button only needs to know whether the
+  // PRIMARY match list (which has its own per-row add affordance) is empty.
+  const hasOtherReviewCard =
+    Boolean(recovered) || Boolean(promotedCandidate) || hasShadow;
 
   return (
     <div className="pl-3 border-l-2 border-gray-03 space-y-3 min-w-0">
@@ -1132,9 +1140,10 @@ function ActivityShiftTeBlock({
         <RecoveredMatchCard match={recovered} shiftType={shift.type} />
       )}
       {hasShadow && <ShadowMatchCard shift={shift} />}
-      {showMatches && !hasDisplayedMatch && (
+      {showMatches && !hasMatches && (
         <EmptyMatchPrompt
           hasProposal={Boolean(suggestedNew)}
+          hasOtherDisplay={hasOtherReviewCard}
           canAddMore={canAddMore}
           onAdd={requestAddSlot}
         />
