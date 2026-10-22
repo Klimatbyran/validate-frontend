@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Loader2, RefreshCw, Trash2, GitMerge, Check, X, Undo2, Link2Off } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, RefreshCw, Trash2, GitMerge, ShieldCheck, Check, X, Undo2, Link2Off } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
@@ -20,10 +20,12 @@ import {
   fetchMergeCandidates,
   confirmShadowElementMerges,
   unlinkShadowElement,
+  fetchRealTaxonomyOverlaps,
   type ShadowElement,
   type ShadowElementStatus,
   type ShadowElementQuality,
   type MergeGroup,
+  type RealTaxonomyOverlap,
 } from "./hooks/useShadowElements";
 
 const STATUS_STYLE: Record<ShadowElementStatus, string> = {
@@ -469,6 +471,112 @@ function MergeReviewDialog({
   );
 }
 
+function RealOverlapReviewDialog({
+  open,
+  onOpenChange,
+  overlaps,
+  isLoading,
+  isConfirming,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  overlaps: RealTaxonomyOverlap[];
+  isLoading: boolean;
+  isConfirming: boolean;
+  onConfirm: (shadowElementIds: string[]) => void;
+}) {
+  const { t } = useI18n();
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+
+  // Nothing checked by default -- unlike the merge dialog, this check is
+  // inherently fuzzier (a flag can be wrong, e.g. a narrower real entry
+  // mistaken for covering a broader shadow), so it should never default to
+  // "act on everything proposed."
+  useEffect(() => {
+    setChecked(new Set());
+  }, [overlaps]);
+
+  const toggle = (id: string) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t("shadowTaxonomy.realOverlapReviewTitle")}</DialogTitle>
+          <DialogDescription>{t("shadowTaxonomy.realOverlapReviewDescription")}</DialogDescription>
+        </DialogHeader>
+
+        {isLoading && (
+          <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-02">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {t("shadowTaxonomy.realOverlapReviewLoading")}
+          </div>
+        )}
+        {!isLoading && overlaps.length === 0 && (
+          <p className="text-sm text-gray-02 py-6 text-center">
+            {t("shadowTaxonomy.realOverlapReviewEmpty")}
+          </p>
+        )}
+        {!isLoading && overlaps.length > 0 && (
+          <div className="space-y-3">
+            {overlaps.map((o) => (
+              <div
+                key={o.shadowElementId}
+                className="rounded-xl border border-gray-03 p-3 flex items-start gap-3"
+              >
+                <input
+                  type="checkbox"
+                  checked={checked.has(o.shadowElementId)}
+                  onChange={() => toggle(o.shadowElementId)}
+                  className="mt-1.5 shrink-0"
+                  aria-label="Reject this shadow element"
+                />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-01">{o.shadowShortLabel}</p>
+                    <p className="text-xs text-gray-02">{o.shadowDescription}</p>
+                  </div>
+                  <div className="rounded-lg bg-blue-03/10 border border-blue-03/30 p-2">
+                    <p className="text-[11px] font-medium text-blue-03 uppercase tracking-wide">
+                      {t("shadowTaxonomy.realOverlapRealLabel")}
+                    </p>
+                    <p className="text-sm text-gray-01">{o.realShortLabel}</p>
+                    <p className="text-xs text-gray-02">{o.realDescription}</p>
+                  </div>
+                  <p className="text-xs text-gray-02 italic">{o.reasoning}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            {t("shadowTaxonomy.realOverlapReviewCancel")}
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            disabled={isConfirming || checked.size === 0}
+            onClick={() => onConfirm([...checked])}
+          >
+            {isConfirming && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {t("shadowTaxonomy.realOverlapReviewConfirm", { count: checked.size })}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function ShadowTaxonomyTab() {
   const { t } = useI18n();
   const { elements, isLoading, error, refresh } = useShadowElements();
@@ -483,6 +591,10 @@ export function ShadowTaxonomyTab() {
   const [isLoadingMergeCandidates, setIsLoadingMergeCandidates] = useState(false);
   const [mergeGroups, setMergeGroups] = useState<MergeGroup[]>([]);
   const [isConfirmingMerges, setIsConfirmingMerges] = useState(false);
+  const [isRealOverlapReviewOpen, setIsRealOverlapReviewOpen] = useState(false);
+  const [isLoadingRealOverlaps, setIsLoadingRealOverlaps] = useState(false);
+  const [realOverlaps, setRealOverlaps] = useState<RealTaxonomyOverlap[]>([]);
+  const [isRejectingOverlaps, setIsRejectingOverlaps] = useState(false);
 
   const rows = visibleShadowElements(elements, overrides, statusFilter, qualityFilter);
 
@@ -560,6 +672,38 @@ export function ShadowTaxonomyTab() {
     }
   };
 
+  const handleOpenRealOverlapReview = async () => {
+    setIsRealOverlapReviewOpen(true);
+    setIsLoadingRealOverlaps(true);
+    try {
+      setRealOverlaps(await fetchRealTaxonomyOverlaps());
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : t("shadowTaxonomy.realOverlapCandidatesError"),
+      );
+      setIsRealOverlapReviewOpen(false);
+    } finally {
+      setIsLoadingRealOverlaps(false);
+    }
+  };
+
+  const handleRejectOverlaps = async (shadowElementIds: string[]) => {
+    setIsRejectingOverlaps(true);
+    try {
+      await Promise.all(shadowElementIds.map((id) => updateShadowElementStatus(id, "rejected")));
+      setOverrides(new Map());
+      await refresh();
+      toast.success(t("shadowTaxonomy.realOverlapRejectSuccess", { count: shadowElementIds.length }));
+      setIsRealOverlapReviewOpen(false);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : t("shadowTaxonomy.realOverlapRejectError"),
+      );
+    } finally {
+      setIsRejectingOverlaps(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
@@ -593,6 +737,15 @@ export function ShadowTaxonomyTab() {
           <Button
             type="button"
             variant="outline"
+            onClick={() => void handleOpenRealOverlapReview()}
+            disabled={elements.length === 0}
+          >
+            <ShieldCheck className="w-4 h-4 mr-1.5" />
+            {t("shadowTaxonomy.checkRealTef")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => setIsRemoveAllOpen(true)}
             disabled={elements.length === 0}
             className="border-pink-03/40 text-pink-03 hover:bg-pink-03/10 hover:border-pink-03"
@@ -610,6 +763,15 @@ export function ShadowTaxonomyTab() {
         isLoading={isLoadingMergeCandidates}
         isConfirming={isConfirmingMerges}
         onConfirm={handleConfirmMerges}
+      />
+
+      <RealOverlapReviewDialog
+        open={isRealOverlapReviewOpen}
+        onOpenChange={setIsRealOverlapReviewOpen}
+        overlaps={realOverlaps}
+        isLoading={isLoadingRealOverlaps}
+        isConfirming={isRejectingOverlaps}
+        onConfirm={handleRejectOverlaps}
       />
 
       <ConfirmDialog

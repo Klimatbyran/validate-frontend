@@ -76,6 +76,16 @@ export interface MergeGroup {
   members: MergeGroupMember[];
 }
 
+export interface RealTaxonomyOverlap {
+  shadowElementId: string;
+  shadowShortLabel: string;
+  shadowDescription: string;
+  realStableId: string;
+  realShortLabel: string;
+  realDescription: string;
+  reasoning: string;
+}
+
 export function useShadowElements() {
   const [elements, setElements] = useState<ShadowElement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -146,6 +156,20 @@ export async function confirmShadowElementMerges(
     throw new Error(text || `${res.status} ${res.statusText}`);
   }
   return (await res.json()) as { mergedCount: number };
+}
+
+/** Read-only audit against the real taxonomy -- proposes overlaps, writes
+ * nothing. Confirming a flag is just the existing reject action
+ * (updateShadowElementStatus below), not a separate endpoint. */
+export async function fetchRealTaxonomyOverlaps(): Promise<RealTaxonomyOverlap[]> {
+  const res = await authenticatedFetch(`${getClimatePlansPipelineApiUrl()}/shadow-elements/real-taxonomy-overlaps`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `${res.status} ${res.statusText}`);
+  }
+  return (await res.json()) as RealTaxonomyOverlap[];
 }
 
 /** Reverts one merged element back to standalone preliminary. */
