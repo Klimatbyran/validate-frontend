@@ -137,6 +137,7 @@
     "statusPreliminary": "Preliminär",
     "statusPromoted": "Godkänd",
     "statusRejected": "Avslagen",
+    "statusMerged": "Sammanslagen",
     "filterQuality": "Kvalitet",
     "qualitySpecific": "Specifik",
     "qualitySpecificHint": "Kopplad till en mätbar aktivitet — behöver inte avgränsas ytterligare.",
@@ -155,7 +156,23 @@
     "promoteSuccess": "Godkände \"{{label}}\"",
     "rejectSuccess": "Avslog \"{{label}}\"",
     "restoreSuccess": "Återställde \"{{label}}\" till preliminär",
-    "updateError": "Kunde inte uppdatera status"
+    "updateError": "Kunde inte uppdatera status",
+    "mergeDuplicates": "Slå ihop dubbletter",
+    "mergedIntoCount": "{{count}} sammanslagna till detta",
+    "unlink": "Koppla loss",
+    "unlinkSuccess": "Kopplade loss \"{{label}}\"",
+    "unlinkError": "Kunde inte koppla loss",
+    "mergeReviewTitle": "Granska föreslagna sammanslagningar",
+    "mergeReviewDescription": "Varje grupp nedan ser ut att vara samma verkliga lucka, bara olika formulerad. Inget flyttas eller tas bort fysiskt -- ett sammanslaget element behåller sin egen data och kan kopplas loss igen senare. Bocka ur element som inte hör dit, eller hoppa över en hel grupp.",
+    "mergeReviewLoading": "Letar efter dubbletter…",
+    "mergeReviewEmpty": "Inga dubbelgrupper hittades.",
+    "mergeReviewCanonicalHint": "Behålls som den är -- allt annat i gruppen slås ihop med detta",
+    "mergeReviewCancel": "Avbryt",
+    "mergeReviewConfirm": "Bekräfta {{count}} sammanslagning",
+    "mergeReviewConfirmPlural": "Bekräfta {{count}} sammanslagningar",
+    "mergeSuccess": "Slog ihop {{count}} element",
+    "mergeError": "Kunde inte slå ihop",
+    "mergeCandidatesError": "Kunde inte leta efter dubbletter"
   },
   "editor": {
     "companyDetail": {

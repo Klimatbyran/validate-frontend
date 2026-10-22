@@ -1,23 +1,36 @@
-import { useState } from "react";
-import { ChevronDown, ChevronUp, Loader2, RefreshCw, Trash2, Check, X, Undo2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronDown, ChevronUp, Loader2, RefreshCw, Trash2, GitMerge, Check, X, Undo2, Link2Off } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
   useShadowElements,
   updateShadowElementStatus,
   deleteAllShadowElements,
+  fetchMergeCandidates,
+  confirmShadowElementMerges,
+  unlinkShadowElement,
   type ShadowElement,
   type ShadowElementStatus,
   type ShadowElementQuality,
+  type MergeGroup,
 } from "./hooks/useShadowElements";
 
 const STATUS_STYLE: Record<ShadowElementStatus, string> = {
   preliminary: "border-purple-03/40 bg-purple-03/10 text-purple-03",
   promoted: "border-green-03/40 bg-green-03/10 text-green-03",
   rejected: "border-gray-03 bg-gray-03/40 text-gray-02",
+  merged: "border-gray-03 bg-gray-03/20 text-gray-02/80",
 };
 
 const QUALITY_STYLE: Record<ShadowElementQuality, string> = {
@@ -49,9 +62,11 @@ function keepLoadedDetail(
 function ShadowElementCard({
   element,
   onChanged,
+  onUnlink,
 }: {
   element: ShadowElement;
   onChanged: (next: ShadowElement) => void;
+  onUnlink: (id: string, label: string) => void;
 }) {
   const { t } = useI18n();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -60,6 +75,7 @@ function ShadowElementCard({
   // light up one button's spinner regardless of which button was clicked.
   const [pendingStatus, setPendingStatus] = useState<ShadowElementStatus | null>(null);
   const isSaving = pendingStatus !== null;
+  const isMerged = element.status === "merged";
 
   const setStatus = async (status: ShadowElementStatus) => {
     setPendingStatus(status);
@@ -108,6 +124,12 @@ function ShadowElementCard({
             >
               {t(`shadowTaxonomy.quality${element.qualityGrade[0].toUpperCase()}${element.qualityGrade.slice(1)}`)}
             </span>
+            {element.mergedElements.length > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-gray-03 bg-gray-03/20 px-2 py-0.5 text-[11px] font-medium text-gray-02">
+                <GitMerge className="h-3 w-3" />
+                {t("shadowTaxonomy.mergedIntoCount", { count: element.mergedElements.length })}
+              </span>
+            )}
           </div>
           <p className="text-sm text-gray-02 mt-1">{element.description}</p>
           <button
@@ -124,62 +146,98 @@ function ShadowElementCard({
           </button>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {element.status !== "promoted" && (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              disabled={isSaving}
-              onClick={() => void setStatus("promoted")}
-              title={t("shadowTaxonomy.promote")}
-              className="border-green-03/40 text-green-03 hover:bg-green-03/10 hover:border-green-03"
-            >
-              {pendingStatus === "promoted" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Check className="h-3.5 w-3.5" />
-              )}
-            </Button>
-          )}
-          {element.status !== "rejected" && (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              disabled={isSaving}
-              onClick={() => void setStatus("rejected")}
-              title={t("shadowTaxonomy.reject")}
-              className="border-gray-03 text-gray-02 hover:bg-gray-03/40"
-            >
-              {pendingStatus === "rejected" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <X className="h-3.5 w-3.5" />
-              )}
-            </Button>
-          )}
-          {element.status !== "preliminary" && (
+          {isMerged ? (
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              disabled={isSaving}
-              onClick={() => void setStatus("preliminary")}
-              title={t("shadowTaxonomy.restore")}
+              onClick={() => onUnlink(element.id, element.shortLabel)}
+              title={t("shadowTaxonomy.unlink")}
               className="text-gray-02/60 hover:text-purple-03"
             >
-              {pendingStatus === "preliminary" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Undo2 className="h-3.5 w-3.5" />
-              )}
+              <Link2Off className="h-3.5 w-3.5" />
             </Button>
+          ) : (
+            <>
+              {element.status !== "promoted" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={isSaving}
+                  onClick={() => void setStatus("promoted")}
+                  title={t("shadowTaxonomy.promote")}
+                  className="border-green-03/40 text-green-03 hover:bg-green-03/10 hover:border-green-03"
+                >
+                  {pendingStatus === "promoted" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Check className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              )}
+              {element.status !== "rejected" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={isSaving}
+                  onClick={() => void setStatus("rejected")}
+                  title={t("shadowTaxonomy.reject")}
+                  className="border-gray-03 text-gray-02 hover:bg-gray-03/40"
+                >
+                  {pendingStatus === "rejected" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <X className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              )}
+              {element.status !== "preliminary" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={isSaving}
+                  onClick={() => void setStatus("preliminary")}
+                  title={t("shadowTaxonomy.restore")}
+                  className="text-gray-02/60 hover:text-purple-03"
+                >
+                  {pendingStatus === "preliminary" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Undo2 className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>
 
       {isExpanded && (
         <div className="border-t border-gray-03/50 pt-3 space-y-2">
+          {element.mergedElements.map((m) => (
+            <div
+              key={m.id}
+              className="rounded-lg bg-gray-03/10 p-3 flex items-start justify-between gap-3"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-01">{m.shortLabel}</p>
+                <p className="text-xs text-gray-02">{m.description}</p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => onUnlink(m.id, m.shortLabel)}
+                title={t("shadowTaxonomy.unlink")}
+                className="shrink-0 text-gray-02/60 hover:text-purple-03"
+              >
+                <Link2Off className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
           {element.attachments.map((a) => (
             <div
               key={a.shiftId}
@@ -247,9 +305,168 @@ function visibleShadowElements(
 ): ShadowElement[] {
   return elements
     .map((element) => overrides.get(element.id) ?? element)
-    .filter((element) => !statusFilter || element.status === statusFilter)
+    // "All" (empty filter) deliberately excludes merged -- that's the whole
+    // point of merging, to get it out of the default view. Still reachable
+    // by explicitly picking "Merged" in the filter, for the unlink workflow.
+    .filter((element) => (statusFilter ? element.status === statusFilter : element.status !== "merged"))
     .filter((element) => !qualityFilter || element.qualityGrade === qualityFilter)
     .sort(byMostAttached);
+}
+
+interface GroupSelection {
+  canonicalId: string;
+  excludedIds: Set<string>;
+}
+
+function MergeReviewDialog({
+  open,
+  onOpenChange,
+  groups,
+  isLoading,
+  isConfirming,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  groups: MergeGroup[];
+  isLoading: boolean;
+  isConfirming: boolean;
+  onConfirm: (groups: { canonicalId: string; mergedIds: string[] }[]) => void;
+}) {
+  const { t } = useI18n();
+  const [selections, setSelections] = useState<GroupSelection[]>([]);
+
+  // Reset selections whenever a fresh set of groups comes in (a new
+  // fetchMergeCandidates call always returns new objects, so this only
+  // fires when the dialog is reopened/reloaded, not on every render).
+  useEffect(() => {
+    setSelections(
+      groups.map((g) => ({ canonicalId: g.suggestedCanonicalId, excludedIds: new Set<string>() })),
+    );
+  }, [groups]);
+
+  const setCanonical = (groupIndex: number, id: string) => {
+    setSelections((prev) => prev.map((s, i) => (i === groupIndex ? { ...s, canonicalId: id } : s)));
+  };
+
+  const toggleExcluded = (groupIndex: number, id: string) => {
+    setSelections((prev) =>
+      prev.map((s, i) => {
+        if (i !== groupIndex) return s;
+        const next = new Set(s.excludedIds);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return { ...s, excludedIds: next };
+      }),
+    );
+  };
+
+  // A group with everything unchecked (or only the canonical left) just
+  // drops out -- nothing to confirm there.
+  const finalGroups = groups
+    .map((g, i) => {
+      const sel = selections[i];
+      if (!sel) return null;
+      const mergedIds = g.members
+        .filter((m) => m.id !== sel.canonicalId && !sel.excludedIds.has(m.id))
+        .map((m) => m.id);
+      return mergedIds.length > 0 ? { canonicalId: sel.canonicalId, mergedIds } : null;
+    })
+    .filter((g): g is { canonicalId: string; mergedIds: string[] } => g !== null);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t("shadowTaxonomy.mergeReviewTitle")}</DialogTitle>
+          <DialogDescription>{t("shadowTaxonomy.mergeReviewDescription")}</DialogDescription>
+        </DialogHeader>
+
+        {isLoading && (
+          <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-02">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {t("shadowTaxonomy.mergeReviewLoading")}
+          </div>
+        )}
+        {!isLoading && groups.length === 0 && (
+          <p className="text-sm text-gray-02 py-6 text-center">
+            {t("shadowTaxonomy.mergeReviewEmpty")}
+          </p>
+        )}
+        {!isLoading && groups.length > 0 && (
+          <div className="space-y-4">
+            {groups.map((g, groupIndex) => {
+              const sel = selections[groupIndex];
+              if (!sel) return null;
+              return (
+                <div key={groupIndex} className="rounded-xl border border-gray-03 p-3 space-y-2">
+                  {g.members.map((m) => {
+                    const isCanonical = m.id === sel.canonicalId;
+                    const isExcluded = sel.excludedIds.has(m.id);
+                    return (
+                      <div
+                        key={m.id}
+                        className={cn(
+                          "flex items-start gap-3 rounded-lg p-2",
+                          isCanonical ? "bg-green-03/10" : isExcluded ? "opacity-40" : "bg-gray-05/50",
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name={`canonical-${groupIndex}`}
+                          checked={isCanonical}
+                          onChange={() => setCanonical(groupIndex, m.id)}
+                          className="mt-1.5"
+                          aria-label="Keep as canonical"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-01">{m.shortLabel}</p>
+                          <p className="text-xs text-gray-02">{m.description}</p>
+                          {isCanonical && (
+                            <p className="text-xs text-green-03 mt-1">
+                              {t("shadowTaxonomy.mergeReviewCanonicalHint")}
+                            </p>
+                          )}
+                        </div>
+                        {!isCanonical && (
+                          <input
+                            type="checkbox"
+                            checked={!isExcluded}
+                            onChange={() => toggleExcluded(groupIndex, m.id)}
+                            className="mt-1.5 shrink-0"
+                            aria-label="Include in merge"
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            {t("shadowTaxonomy.mergeReviewCancel")}
+          </Button>
+          <Button
+            type="button"
+            disabled={isConfirming || finalGroups.length === 0}
+            onClick={() => onConfirm(finalGroups)}
+          >
+            {isConfirming && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {t(
+              finalGroups.length === 1
+                ? "shadowTaxonomy.mergeReviewConfirm"
+                : "shadowTaxonomy.mergeReviewConfirmPlural",
+              { count: finalGroups.length },
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export function ShadowTaxonomyTab() {
@@ -262,6 +479,10 @@ export function ShadowTaxonomyTab() {
   );
   const [isRemoveAllOpen, setIsRemoveAllOpen] = useState(false);
   const [isRemovingAll, setIsRemovingAll] = useState(false);
+  const [isMergeReviewOpen, setIsMergeReviewOpen] = useState(false);
+  const [isLoadingMergeCandidates, setIsLoadingMergeCandidates] = useState(false);
+  const [mergeGroups, setMergeGroups] = useState<MergeGroup[]>([]);
+  const [isConfirmingMerges, setIsConfirmingMerges] = useState(false);
 
   const rows = visibleShadowElements(elements, overrides, statusFilter, qualityFilter);
 
@@ -296,6 +517,49 @@ export function ShadowTaxonomyTab() {
     }
   };
 
+  const handleOpenMergeReview = async () => {
+    setIsMergeReviewOpen(true);
+    setIsLoadingMergeCandidates(true);
+    try {
+      setMergeGroups(await fetchMergeCandidates());
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : t("shadowTaxonomy.mergeCandidatesError"),
+      );
+      setIsMergeReviewOpen(false);
+    } finally {
+      setIsLoadingMergeCandidates(false);
+    }
+  };
+
+  const handleConfirmMerges = async (
+    groups: { canonicalId: string; mergedIds: string[] }[],
+  ) => {
+    setIsConfirmingMerges(true);
+    try {
+      const { mergedCount } = await confirmShadowElementMerges(groups);
+      setOverrides(new Map());
+      await refresh();
+      toast.success(t("shadowTaxonomy.mergeSuccess", { count: mergedCount }));
+      setIsMergeReviewOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("shadowTaxonomy.mergeError"));
+    } finally {
+      setIsConfirmingMerges(false);
+    }
+  };
+
+  const handleUnlink = async (id: string, label: string) => {
+    try {
+      await unlinkShadowElement(id);
+      setOverrides(new Map());
+      await refresh();
+      toast.success(t("shadowTaxonomy.unlinkSuccess", { label }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("shadowTaxonomy.unlinkError"));
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
@@ -320,6 +584,15 @@ export function ShadowTaxonomyTab() {
           <Button
             type="button"
             variant="outline"
+            onClick={() => void handleOpenMergeReview()}
+            disabled={elements.length === 0}
+          >
+            <GitMerge className="w-4 h-4 mr-1.5" />
+            {t("shadowTaxonomy.mergeDuplicates")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => setIsRemoveAllOpen(true)}
             disabled={elements.length === 0}
             className="border-pink-03/40 text-pink-03 hover:bg-pink-03/10 hover:border-pink-03"
@@ -329,6 +602,15 @@ export function ShadowTaxonomyTab() {
           </Button>
         </div>
       </div>
+
+      <MergeReviewDialog
+        open={isMergeReviewOpen}
+        onOpenChange={setIsMergeReviewOpen}
+        groups={mergeGroups}
+        isLoading={isLoadingMergeCandidates}
+        isConfirming={isConfirmingMerges}
+        onConfirm={handleConfirmMerges}
+      />
 
       <ConfirmDialog
         open={isRemoveAllOpen}
@@ -358,6 +640,7 @@ export function ShadowTaxonomyTab() {
             </option>
             <option value="promoted">{t("shadowTaxonomy.statusPromoted")}</option>
             <option value="rejected">{t("shadowTaxonomy.statusRejected")}</option>
+            <option value="merged">{t("shadowTaxonomy.statusMerged")}</option>
           </select>
         </label>
         <label className="text-xs text-gray-02 flex items-center gap-2">
@@ -392,7 +675,7 @@ export function ShadowTaxonomyTab() {
       {!isLoading && rows.length > 0 && (
         <div className="space-y-3">
           {rows.map((el) => (
-            <ShadowElementCard key={el.id} element={el} onChanged={handleChanged} />
+            <ShadowElementCard key={el.id} element={el} onChanged={handleChanged} onUnlink={(id, label) => void handleUnlink(id, label)} />
           ))}
         </div>
       )}
