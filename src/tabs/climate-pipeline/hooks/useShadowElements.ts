@@ -86,6 +86,21 @@ export interface RealTaxonomyOverlap {
   reasoning: string;
 }
 
+export interface RecoveredShiftSummary {
+  shiftId: string;
+  municipalityName: string | null;
+  shiftFrom: string;
+  shiftTo: string;
+}
+
+export interface RejectWithRecoveryResult {
+  shadowElementId: string;
+  shadowShortLabel: string;
+  realStableId: string;
+  realShortLabel: string;
+  recoveredShifts: RecoveredShiftSummary[];
+}
+
 export function useShadowElements() {
   const [elements, setElements] = useState<ShadowElement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -159,8 +174,7 @@ export async function confirmShadowElementMerges(
 }
 
 /** Read-only audit against the real taxonomy -- proposes overlaps, writes
- * nothing. Confirming a flag is just the existing reject action
- * (updateShadowElementStatus below), not a separate endpoint. */
+ * nothing. */
 export async function fetchRealTaxonomyOverlaps(): Promise<RealTaxonomyOverlap[]> {
   const res = await authenticatedFetch(`${getClimatePlansPipelineApiUrl()}/shadow-elements/real-taxonomy-overlaps`, {
     method: "POST",
@@ -170,6 +184,24 @@ export async function fetchRealTaxonomyOverlaps(): Promise<RealTaxonomyOverlap[]
     throw new Error(text || `${res.status} ${res.statusText}`);
   }
   return (await res.json()) as RealTaxonomyOverlap[];
+}
+
+/** Confirms specific overlaps a reviewer checked -- rejects each shadow
+ * element and attaches the real TE as a recovered match on every shift
+ * that was pointing at it, so the connection isn't lost. */
+export async function rejectShadowElementsWithRecovery(
+  items: { shadowElementId: string; realStableId: string }[],
+): Promise<RejectWithRecoveryResult[]> {
+  const res = await authenticatedFetch(`${getClimatePlansPipelineApiUrl()}/shadow-elements/reject-with-recovery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `${res.status} ${res.statusText}`);
+  }
+  return (await res.json()) as RejectWithRecoveryResult[];
 }
 
 /** Reverts one merged element back to standalone preliminary. */

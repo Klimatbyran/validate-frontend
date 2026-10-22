@@ -21,11 +21,13 @@ import {
   confirmShadowElementMerges,
   unlinkShadowElement,
   fetchRealTaxonomyOverlaps,
+  rejectShadowElementsWithRecovery,
   type ShadowElement,
   type ShadowElementStatus,
   type ShadowElementQuality,
   type MergeGroup,
   type RealTaxonomyOverlap,
+  type RejectWithRecoveryResult,
 } from "./hooks/useShadowElements";
 
 const STATUS_STYLE: Record<ShadowElementStatus, string> = {
@@ -477,6 +479,7 @@ function RealOverlapReviewDialog({
   overlaps,
   isLoading,
   isConfirming,
+  recoveryResults,
   onConfirm,
 }: {
   open: boolean;
@@ -484,7 +487,10 @@ function RealOverlapReviewDialog({
   overlaps: RealTaxonomyOverlap[];
   isLoading: boolean;
   isConfirming: boolean;
-  onConfirm: (shadowElementIds: string[]) => void;
+  // Set once confirming succeeds -- switches the dialog from the checklist
+  // to a one-liner summary of what got recovered, instead of auto-closing.
+  recoveryResults: RejectWithRecoveryResult[] | null;
+  onConfirm: (items: { shadowElementId: string; realStableId: string }[]) => void;
 }) {
   const { t } = useI18n();
   const [checked, setChecked] = useState<Set<string>>(new Set());
@@ -505,6 +511,53 @@ function RealOverlapReviewDialog({
       return next;
     });
   };
+
+  const handleConfirm = () => {
+    const items = overlaps
+      .filter((o) => checked.has(o.shadowElementId))
+      .map((o) => ({ shadowElementId: o.shadowElementId, realStableId: o.realStableId }));
+    onConfirm(items);
+  };
+
+  if (recoveryResults) {
+    const totalShifts = recoveryResults.reduce((sum, r) => sum + r.recoveredShifts.length, 0);
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("shadowTaxonomy.realOverlapDoneTitle", { count: recoveryResults.length })}</DialogTitle>
+            <DialogDescription>{t("shadowTaxonomy.realOverlapDoneDescription")}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {recoveryResults.map((r) => (
+              <div key={r.shadowElementId} className="rounded-xl border border-gray-03 p-3 space-y-2">
+                <p className="text-sm text-gray-02">
+                  <span className="line-through">{r.shadowShortLabel}</span>
+                  {" → "}
+                  <span className="font-medium text-gray-01">{r.realShortLabel}</span>
+                </p>
+                <div className="space-y-1">
+                  {r.recoveredShifts.map((s) => (
+                    <p key={s.shiftId} className="text-xs text-gray-02 font-mono">
+                      {s.municipalityName ?? "Unknown municipality"}: {s.shiftFrom} → {s.shiftTo}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {totalShifts === 0 && (
+              <p className="text-xs text-gray-02 italic">No shifts were attached to the replaced elements.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => onOpenChange(false)}>
+              {t("shadowTaxonomy.realOverlapDoneClose")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -537,7 +590,7 @@ function RealOverlapReviewDialog({
                   checked={checked.has(o.shadowElementId)}
                   onChange={() => toggle(o.shadowElementId)}
                   className="mt-1.5 shrink-0"
-                  aria-label="Reject this shadow element"
+                  aria-label="Replace this shadow element with the real TEF match"
                 />
                 <div className="min-w-0 flex-1 space-y-2">
                   <div>
@@ -566,7 +619,7 @@ function RealOverlapReviewDialog({
             type="button"
             variant="danger"
             disabled={isConfirming || checked.size === 0}
-            onClick={() => onConfirm([...checked])}
+            onClick={handleConfirm}
           >
             {isConfirming && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {t("shadowTaxonomy.realOverlapReviewConfirm", { count: checked.size })}
@@ -595,6 +648,7 @@ export function ShadowTaxonomyTab() {
   const [isLoadingRealOverlaps, setIsLoadingRealOverlaps] = useState(false);
   const [realOverlaps, setRealOverlaps] = useState<RealTaxonomyOverlap[]>([]);
   const [isRejectingOverlaps, setIsRejectingOverlaps] = useState(false);
+  const [recoveryResults, setRecoveryResults] = useState<RejectWithRecoveryResult[] | null>(null);
 
   const rows = visibleShadowElements(elements, overrides, statusFilter, qualityFilter);
 
@@ -674,6 +728,7 @@ export function ShadowTaxonomyTab() {
 
   const handleOpenRealOverlapReview = async () => {
     setIsRealOverlapReviewOpen(true);
+    setRecoveryResults(null);
     setIsLoadingRealOverlaps(true);
     try {
       setRealOverlaps(await fetchRealTaxonomyOverlaps());
@@ -687,14 +742,15 @@ export function ShadowTaxonomyTab() {
     }
   };
 
-  const handleRejectOverlaps = async (shadowElementIds: string[]) => {
+  const handleRejectOverlaps = async (
+    items: { shadowElementId: string; realStableId: string }[],
+  ) => {
     setIsRejectingOverlaps(true);
     try {
-      await Promise.all(shadowElementIds.map((id) => updateShadowElementStatus(id, "rejected")));
+      const results = await rejectShadowElementsWithRecovery(items);
       setOverrides(new Map());
       await refresh();
-      toast.success(t("shadowTaxonomy.realOverlapRejectSuccess", { count: shadowElementIds.length }));
-      setIsRealOverlapReviewOpen(false);
+      setRecoveryResults(results);
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : t("shadowTaxonomy.realOverlapRejectError"),
@@ -771,6 +827,7 @@ export function ShadowTaxonomyTab() {
         overlaps={realOverlaps}
         isLoading={isLoadingRealOverlaps}
         isConfirming={isRejectingOverlaps}
+        recoveryResults={recoveryResults}
         onConfirm={handleRejectOverlaps}
       />
 

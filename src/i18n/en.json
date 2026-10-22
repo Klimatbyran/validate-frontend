@@ -175,15 +175,17 @@
     "mergeCandidatesError": "Failed to look for duplicates",
     "checkRealTef": "Check against TEF",
     "realOverlapReviewTitle": "Possible overlaps with the real taxonomy",
-    "realOverlapReviewDescription": "Each pair below is flagged as possibly covering the same real-world mechanism as an existing TEF entry -- deliberately conservative, so a flag can still be wrong (e.g. the real entry might only be one narrower example of a broader gap). Nothing is checked by default. Review the reasoning and check only the ones you agree with, then confirm to reject them.",
+    "realOverlapReviewDescription": "Each pair below is flagged as possibly covering the same real-world mechanism as an existing TEF entry -- deliberately conservative, so a flag can still be wrong (e.g. the real entry might only be one narrower example of a broader gap). Nothing is checked by default. Review the reasoning and check only the ones you agree with.",
     "realOverlapReviewLoading": "Checking against the real taxonomy…",
     "realOverlapReviewEmpty": "No overlaps found.",
     "realOverlapRealLabel": "Real TEF entry",
     "realOverlapReviewCancel": "Cancel",
-    "realOverlapReviewConfirm": "Reject {{count}} selected",
-    "realOverlapRejectSuccess": "Rejected {{count}} element(s)",
-    "realOverlapRejectError": "Failed to reject selected elements",
-    "realOverlapCandidatesError": "Failed to check against the real taxonomy"
+    "realOverlapReviewConfirm": "Replace with selected TEF ({{count}})",
+    "realOverlapRejectError": "Failed to replace selected elements",
+    "realOverlapCandidatesError": "Failed to check against the real taxonomy",
+    "realOverlapDoneTitle": "Replaced {{count}} shadow element(s) with their real TEF match",
+    "realOverlapDoneDescription": "Each shift below now points at the real TEF entry instead of the rejected shadow element.",
+    "realOverlapDoneClose": "Close"
   },
   "editor": {
     "title": "Editor",

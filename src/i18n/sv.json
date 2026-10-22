@@ -175,15 +175,17 @@
     "mergeCandidatesError": "Kunde inte leta efter dubbletter",
     "checkRealTef": "Kontrollera mot TEF",
     "realOverlapReviewTitle": "Möjliga överlapp med den riktiga taxonomin",
-    "realOverlapReviewDescription": "Varje par nedan är flaggat som att möjligen täcka samma verkliga mekanism som en befintlig TEF-post -- avsiktligt försiktigt, så en flagga kan ändå vara fel (t.ex. kan den riktiga posten bara vara ett smalare exempel på en bredare lucka). Inget är ikryssat som standard. Granska resonemanget och kryssa bara i de du håller med om, bekräfta sedan för att avslå dem.",
+    "realOverlapReviewDescription": "Varje par nedan är flaggat som att möjligen täcka samma verkliga mekanism som en befintlig TEF-post -- avsiktligt försiktigt, så en flagga kan ändå vara fel (t.ex. kan den riktiga posten bara vara ett smalare exempel på en bredare lucka). Inget är ikryssat som standard. Granska resonemanget och kryssa bara i de du håller med om.",
     "realOverlapReviewLoading": "Kontrollerar mot den riktiga taxonomin…",
     "realOverlapReviewEmpty": "Inga överlapp hittades.",
     "realOverlapRealLabel": "Riktig TEF-post",
     "realOverlapReviewCancel": "Avbryt",
-    "realOverlapReviewConfirm": "Avslå {{count}} markerade",
-    "realOverlapRejectSuccess": "Avslog {{count}} element",
-    "realOverlapRejectError": "Kunde inte avslå markerade element",
-    "realOverlapCandidatesError": "Kunde inte kontrollera mot den riktiga taxonomin"
+    "realOverlapReviewConfirm": "Ersätt med vald TEF ({{count}})",
+    "realOverlapRejectError": "Kunde inte ersätta markerade element",
+    "realOverlapCandidatesError": "Kunde inte kontrollera mot den riktiga taxonomin",
+    "realOverlapDoneTitle": "Ersatte {{count}} skuggelement med deras riktiga TEF-matchning",
+    "realOverlapDoneDescription": "Varje skift nedan pekar nu på den riktiga TEF-posten istället för det avslagna skuggelementet.",
+    "realOverlapDoneClose": "Stäng"
   },
   "editor": {
     "companyDetail": {
