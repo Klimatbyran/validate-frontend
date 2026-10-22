@@ -28,6 +28,8 @@ import {
   type MergeGroup,
   type RealTaxonomyOverlap,
   type RejectWithRecoveryResult,
+  type RecoveredShiftSummary,
+  type ExistingRealMatch,
 } from "./hooks/useShadowElements";
 
 const STATUS_STYLE: Record<ShadowElementStatus, string> = {
@@ -476,6 +478,53 @@ function MergeReviewDialog({
   );
 }
 
+function otherRealMatches(
+  shift: RecoveredShiftSummary,
+  proposedStableId: string,
+): ExistingRealMatch[] {
+  const matches = shift.existingRealMatches ?? [];
+  return matches.filter((match) => match.stableId !== proposedStableId);
+}
+
+function OtherTefMatchPills({ matches }: { matches: ExistingRealMatch[] }) {
+  const { t } = useI18n();
+  if (matches.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-1 pt-0.5">
+      <span className="text-[10px] font-medium uppercase tracking-wide text-gray-02">
+        {t("shadowTaxonomy.realOverlapOtherMatches")}
+      </span>
+      {matches.map((match) => (
+        <span
+          key={match.stableId}
+          title={match.stableId}
+          className="inline-flex items-center rounded-full border border-blue-03/30 bg-blue-03/10 px-2 py-0.5 text-[10px] font-medium text-blue-03"
+        >
+          {match.shortLabel}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function AttachedCommitment({
+  shift,
+  proposedStableId,
+}: {
+  shift: RecoveredShiftSummary;
+  proposedStableId: string;
+}) {
+  return (
+    <div className="space-y-0.5">
+      <p className="text-xs text-gray-02 font-mono">
+        {shift.municipalityName ?? "Unknown municipality"}: {shift.shiftFrom} → {shift.shiftTo}
+      </p>
+      <p className="text-xs text-gray-02 italic">"{shift.measureText}"</p>
+      <OtherTefMatchPills matches={otherRealMatches(shift, proposedStableId)} />
+    </div>
+  );
+}
+
 function RealOverlapReviewDialog({
   open,
   onOpenChange,
@@ -544,14 +593,13 @@ function RealOverlapReviewDialog({
                   {" → "}
                   <span className="font-medium text-gray-01">{r.realShortLabel}</span>
                 </p>
-                <div className="space-y-1.5">
-                  {r.recoveredShifts.map((s) => (
-                    <div key={s.shiftId} className="space-y-0.5">
-                      <p className="text-xs text-gray-02 font-mono">
-                        {s.municipalityName ?? "Unknown municipality"}: {s.shiftFrom} → {s.shiftTo}
-                      </p>
-                      <p className="text-xs text-gray-02 italic">"{s.measureText}"</p>
-                    </div>
+                <div className="space-y-2">
+                  {r.recoveredShifts.map((shift) => (
+                    <AttachedCommitment
+                      key={shift.shiftId}
+                      shift={shift}
+                      proposedStableId={r.realStableId}
+                    />
                   ))}
                 </div>
               </div>
@@ -628,17 +676,16 @@ function RealOverlapReviewDialog({
                   </div>
                   <p className="text-xs text-gray-02 italic">{o.reasoning}</p>
                   {o.attachedShifts.length > 0 && (
-                    <div className="space-y-0.5">
+                    <div className="space-y-2">
                       <p className="text-[11px] font-medium text-gray-02 uppercase tracking-wide">
                         {t("shadowTaxonomy.realOverlapAttachedLabel", { count: o.attachedShifts.length })}
                       </p>
-                      {o.attachedShifts.map((s) => (
-                        <div key={s.shiftId} className="space-y-0.5">
-                          <p className="text-xs text-gray-02 font-mono">
-                            {s.municipalityName ?? "Unknown municipality"}: {s.shiftFrom} → {s.shiftTo}
-                          </p>
-                          <p className="text-xs text-gray-02 italic">"{s.measureText}"</p>
-                        </div>
+                      {o.attachedShifts.map((shift) => (
+                        <AttachedCommitment
+                          key={shift.shiftId}
+                          shift={shift}
+                          proposedStableId={o.realStableId}
+                        />
                       ))}
                     </div>
                   )}

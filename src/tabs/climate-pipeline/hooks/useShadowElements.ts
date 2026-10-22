@@ -87,12 +87,21 @@ export interface RealTaxonomyOverlap {
   attachedShifts: RecoveredShiftSummary[];
 }
 
+export interface ExistingRealMatch {
+  stableId: string;
+  shortLabel: string;
+}
+
 export interface RecoveredShiftSummary {
   shiftId: string;
   municipalityName: string | null;
   shiftFrom: string;
   shiftTo: string;
   measureText: string;
+  // Real TEF matches the primary pass already attached to this commitment,
+  // aside from the overlap being reviewed. Optional so a response from a
+  // pipeline that predates this field still renders.
+  existingRealMatches?: ExistingRealMatch[];
 }
 
 export interface RejectWithRecoveryResult {
