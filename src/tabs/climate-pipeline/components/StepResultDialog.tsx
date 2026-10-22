@@ -1016,16 +1016,37 @@ function ShadowElementName({ label }: { label: string }) {
 function ShadowMatchCard({ shift }: { shift: ActivityShift }) {
   const label = shadowShortLabel(shift);
   const description = shadowDescription(shift);
+  // A rejected shadow is wrong -- the connection is deliberately kept (see
+  // the API's PATCH .../status handler) so this shift doesn't get lost,
+  // but it must never look like an ordinary trustworthy match. Greyed out
+  // and explicitly flagged instead of styled like a normal shadow match.
+  const isRejected = shift.shadowElement?.status === "rejected";
   return (
-    <div className="rounded-md border border-purple-03/30 bg-purple-03/5 p-2 space-y-1.5">
+    <div
+      className={cn(
+        "rounded-md border p-2 space-y-1.5",
+        isRejected
+          ? "border-gray-03 bg-gray-03/10 opacity-70"
+          : "border-purple-03/30 bg-purple-03/5",
+      )}
+    >
       <div className="flex flex-wrap items-center gap-1.5">
         <SourcePill kind="shadow" />
         <TefCategoryPill
           category={shift.shadowElement?.activityShiftCategory ?? null}
           shiftType={shift.type}
         />
+        {isRejected && (
+          <span className="inline-flex items-center rounded-md border border-red-500/50 bg-red-500/10 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-red-400">
+            Rejected -- needs manual reattachment
+          </span>
+        )}
       </div>
-      {label && <ShadowElementName label={label} />}
+      {label && (
+        <ShadowElementName
+          label={isRejected ? `${label} (rejected)` : label}
+        />
+      )}
       {description && (
         <p className="text-sm text-gray-02 break-words">{description}</p>
       )}
