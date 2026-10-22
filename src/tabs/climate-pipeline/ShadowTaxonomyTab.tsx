@@ -309,10 +309,13 @@ function visibleShadowElements(
 ): ShadowElement[] {
   return elements
     .map((element) => overrides.get(element.id) ?? element)
-    // "All" (empty filter) deliberately excludes merged -- that's the whole
-    // point of merging, to get it out of the default view. Still reachable
-    // by explicitly picking "Merged" in the filter, for the unlink workflow.
-    .filter((element) => (statusFilter ? element.status === statusFilter : element.status !== "merged"))
+    // "All" (empty filter) deliberately excludes merged and rejected --
+    // both are settled, no-longer-needs-attention states, same reasoning
+    // as merged. Still reachable by explicitly picking that status in the
+    // filter (e.g. for the unlink workflow, or to double check a reject).
+    .filter((element) =>
+      statusFilter ? element.status === statusFilter : element.status !== "merged" && element.status !== "rejected",
+    )
     .filter((element) => !qualityFilter || element.qualityGrade === qualityFilter)
     .sort(byMostAttached);
 }
