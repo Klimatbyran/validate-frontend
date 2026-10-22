@@ -84,6 +84,7 @@ export interface RealTaxonomyOverlap {
   realShortLabel: string;
   realDescription: string;
   reasoning: string;
+  attachedShifts: RecoveredShiftSummary[];
 }
 
 export interface RecoveredShiftSummary {
@@ -91,6 +92,7 @@ export interface RecoveredShiftSummary {
   municipalityName: string | null;
   shiftFrom: string;
   shiftTo: string;
+  measureText: string;
 }
 
 export interface RejectWithRecoveryResult {

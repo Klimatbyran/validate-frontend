@@ -179,6 +179,8 @@
     "realOverlapReviewLoading": "Checking against the real taxonomy…",
     "realOverlapReviewEmpty": "No overlaps found.",
     "realOverlapRealLabel": "Real TEF entry",
+    "realOverlapAttachedLabel": "{{count}} commitment(s) that will move to this real entry",
+    "realOverlapRecompute": "Recompute",
     "realOverlapReviewCancel": "Cancel",
     "realOverlapReviewConfirm": "Replace with selected TEF ({{count}})",
     "realOverlapRejectError": "Failed to replace selected elements",

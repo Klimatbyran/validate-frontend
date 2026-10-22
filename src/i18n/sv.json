@@ -179,6 +179,8 @@
     "realOverlapReviewLoading": "Kontrollerar mot den riktiga taxonomin…",
     "realOverlapReviewEmpty": "Inga överlapp hittades.",
     "realOverlapRealLabel": "Riktig TEF-post",
+    "realOverlapAttachedLabel": "{{count}} åtagande(n) som flyttas till denna riktiga post",
+    "realOverlapRecompute": "Räkna om",
     "realOverlapReviewCancel": "Avbryt",
     "realOverlapReviewConfirm": "Ersätt med vald TEF ({{count}})",
     "realOverlapRejectError": "Kunde inte ersätta markerade element",

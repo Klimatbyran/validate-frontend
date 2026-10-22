@@ -484,6 +484,7 @@ function RealOverlapReviewDialog({
   isConfirming,
   recoveryResults,
   onConfirm,
+  onRecompute,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -494,6 +495,10 @@ function RealOverlapReviewDialog({
   // to a one-liner summary of what got recovered, instead of auto-closing.
   recoveryResults: RejectWithRecoveryResult[] | null;
   onConfirm: (items: { shadowElementId: string; realStableId: string }[]) => void;
+  // Forces a fresh check -- the list is otherwise cached client-side (see
+  // ShadowTaxonomyTab's hasCheckedOverlaps) so reopening this dialog
+  // doesn't re-spend LLM calls on a list the reviewer hasn't acted on yet.
+  onRecompute: () => void;
 }) {
   const { t } = useI18n();
   const [checked, setChecked] = useState<Set<string>>(new Set());
@@ -539,11 +544,14 @@ function RealOverlapReviewDialog({
                   {" → "}
                   <span className="font-medium text-gray-01">{r.realShortLabel}</span>
                 </p>
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   {r.recoveredShifts.map((s) => (
-                    <p key={s.shiftId} className="text-xs text-gray-02 font-mono">
-                      {s.municipalityName ?? "Unknown municipality"}: {s.shiftFrom} → {s.shiftTo}
-                    </p>
+                    <div key={s.shiftId} className="space-y-0.5">
+                      <p className="text-xs text-gray-02 font-mono">
+                        {s.municipalityName ?? "Unknown municipality"}: {s.shiftFrom} → {s.shiftTo}
+                      </p>
+                      <p className="text-xs text-gray-02 italic">"{s.measureText}"</p>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -569,6 +577,17 @@ function RealOverlapReviewDialog({
           <DialogTitle>{t("shadowTaxonomy.realOverlapReviewTitle")}</DialogTitle>
           <DialogDescription>{t("shadowTaxonomy.realOverlapReviewDescription")}</DialogDescription>
         </DialogHeader>
+
+        {!isLoading && (
+          <button
+            type="button"
+            onClick={onRecompute}
+            className="flex items-center gap-1.5 text-xs text-blue-03 hover:text-blue-04 hover:underline self-start"
+          >
+            <RefreshCw className="w-3 h-3" />
+            {t("shadowTaxonomy.realOverlapRecompute")}
+          </button>
+        )}
 
         {isLoading && (
           <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-02">
@@ -608,6 +627,21 @@ function RealOverlapReviewDialog({
                     <p className="text-xs text-gray-02">{o.realDescription}</p>
                   </div>
                   <p className="text-xs text-gray-02 italic">{o.reasoning}</p>
+                  {o.attachedShifts.length > 0 && (
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] font-medium text-gray-02 uppercase tracking-wide">
+                        {t("shadowTaxonomy.realOverlapAttachedLabel", { count: o.attachedShifts.length })}
+                      </p>
+                      {o.attachedShifts.map((s) => (
+                        <div key={s.shiftId} className="space-y-0.5">
+                          <p className="text-xs text-gray-02 font-mono">
+                            {s.municipalityName ?? "Unknown municipality"}: {s.shiftFrom} → {s.shiftTo}
+                          </p>
+                          <p className="text-xs text-gray-02 italic">"{s.measureText}"</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -650,6 +684,10 @@ export function ShadowTaxonomyTab() {
   const [isRealOverlapReviewOpen, setIsRealOverlapReviewOpen] = useState(false);
   const [isLoadingRealOverlaps, setIsLoadingRealOverlaps] = useState(false);
   const [realOverlaps, setRealOverlaps] = useState<RealTaxonomyOverlap[]>([]);
+  // Separate from realOverlaps.length === 0 on purpose -- a legitimate
+  // "nothing found" result must stay cached too, not look indistinguishable
+  // from "never checked yet" and re-trigger a refetch on every reopen.
+  const [hasCheckedOverlaps, setHasCheckedOverlaps] = useState(false);
   const [isRejectingOverlaps, setIsRejectingOverlaps] = useState(false);
   const [recoveryResults, setRecoveryResults] = useState<RejectWithRecoveryResult[] | null>(null);
 
@@ -675,6 +713,7 @@ export function ShadowTaxonomyTab() {
       const { deletedCount } = await deleteAllShadowElements();
       setOverrides(new Map());
       await refresh();
+      setHasCheckedOverlaps(false);
       toast.success(t("shadowTaxonomy.removeAllSuccess", { count: deletedCount }));
       setIsRemoveAllOpen(false);
     } catch (err) {
@@ -709,6 +748,7 @@ export function ShadowTaxonomyTab() {
       const { mergedCount } = await confirmShadowElementMerges(groups);
       setOverrides(new Map());
       await refresh();
+      setHasCheckedOverlaps(false);
       toast.success(t("shadowTaxonomy.mergeSuccess", { count: mergedCount }));
       setIsMergeReviewOpen(false);
     } catch (err) {
@@ -723,26 +763,35 @@ export function ShadowTaxonomyTab() {
       await unlinkShadowElement(id);
       setOverrides(new Map());
       await refresh();
+      setHasCheckedOverlaps(false);
       toast.success(t("shadowTaxonomy.unlinkSuccess", { label }));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("shadowTaxonomy.unlinkError"));
     }
   };
 
-  const handleOpenRealOverlapReview = async () => {
-    setIsRealOverlapReviewOpen(true);
-    setRecoveryResults(null);
+  const handleRecomputeOverlaps = async () => {
     setIsLoadingRealOverlaps(true);
     try {
       setRealOverlaps(await fetchRealTaxonomyOverlaps());
+      setHasCheckedOverlaps(true);
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : t("shadowTaxonomy.realOverlapCandidatesError"),
       );
-      setIsRealOverlapReviewOpen(false);
     } finally {
       setIsLoadingRealOverlaps(false);
     }
+  };
+
+  // Only auto-fetches the first time -- reopening the dialog later shows
+  // whatever's already cached in realOverlaps instead of re-spending LLM
+  // calls on a list the reviewer hasn't acted on yet. "Recompute" inside
+  // the dialog forces a fresh check explicitly.
+  const handleOpenRealOverlapReview = async () => {
+    setIsRealOverlapReviewOpen(true);
+    setRecoveryResults(null);
+    if (!hasCheckedOverlaps) await handleRecomputeOverlaps();
   };
 
   const handleRejectOverlaps = async (
@@ -753,6 +802,7 @@ export function ShadowTaxonomyTab() {
       const results = await rejectShadowElementsWithRecovery(items);
       setOverrides(new Map());
       await refresh();
+      setHasCheckedOverlaps(false);
       setRecoveryResults(results);
     } catch (err) {
       toast.error(
@@ -832,6 +882,7 @@ export function ShadowTaxonomyTab() {
         isConfirming={isRejectingOverlaps}
         recoveryResults={recoveryResults}
         onConfirm={handleRejectOverlaps}
+        onRecompute={() => void handleRecomputeOverlaps()}
       />
 
       <ConfirmDialog
