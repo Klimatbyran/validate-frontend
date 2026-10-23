@@ -56,6 +56,30 @@ const MEASURE_STEPS = [
  * than a step pill. */
 const DOCUMENT_REFERENCES_STEP = "documentReferences";
 
+/** Swimlane order for StepResultDialog prev/next arrows (PDF-parse pills
+ * use a different dialog and are not included). */
+function detailViewSteps(plan: ClimatePipelinePlan): string[] {
+  const steps: string[] = [...COMMITMENT_STEPS];
+  if (plan.documentReferenceCount > 0) {
+    steps.push(DOCUMENT_REFERENCES_STEP);
+  }
+  steps.push(...MEASURE_STEPS);
+  return steps;
+}
+
+function adjacentDetailSteps(
+  plan: ClimatePipelinePlan,
+  step: string,
+): { prev: string | null; next: string | null } {
+  const steps = detailViewSteps(plan);
+  const index = steps.indexOf(step);
+  if (index < 0) return { prev: null, next: null };
+  return {
+    prev: index > 0 ? steps[index - 1]! : null,
+    next: index < steps.length - 1 ? steps[index + 1]! : null,
+  };
+}
+
 interface PlanRowProps {
   plan: ClimatePipelinePlan;
   /** The municipality's own several ClimatePlan rows (its klimatplan, a
@@ -154,7 +178,8 @@ function groupPlansByMunicipality(
       // An approved plan's municipality.name is the canonical,
       // human-confirmed spelling — prefer it over a raw extraction
       // whenever one's available in the group.
-      if (plan.municipality?.name) existing.displayName = plan.municipality.name;
+      if (plan.municipality?.name)
+        existing.displayName = plan.municipality.name;
       if (!existing.county && plan.county) existing.county = plan.county;
     } else {
       groups.set(key, {
@@ -529,6 +554,18 @@ export function ClimatePipelineTab() {
           }
         }}
         onRerun={refresh}
+        adjacentSteps={
+          dialogPlan && dialogStep
+            ? adjacentDetailSteps(dialogPlan, dialogStep)
+            : undefined
+        }
+        onNavigateStep={(nextStep) => {
+          setDialogStep(nextStep);
+          // Always show the latest run for the target worker — previous-run
+          // context is step-specific and shouldn't follow across arrows.
+          setDialogRunId(null);
+          clearDeepLinkParams();
+        }}
       />
 
       <JobDetailsDialog

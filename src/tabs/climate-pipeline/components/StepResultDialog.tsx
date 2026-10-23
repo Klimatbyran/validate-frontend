@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Loader2,
   Check,
@@ -10,6 +10,8 @@ import {
   FileText,
   FileWarning,
   Image,
+  ChevronLeft,
+  ChevronRight,
   Play,
   Plus,
   RotateCw,
@@ -59,6 +61,8 @@ import {
   type PipelineReview,
 } from "../hooks/usePipelineReviews";
 import { ReviewControls } from "./ReviewControls";
+import { StepReviewMode } from "./StepReviewMode";
+import { QaReviewToolbar } from "./QaReviewToolbar";
 import {
   COMMITMENT_THEME_OPTIONS,
   actionableFilterSuggestEditor,
@@ -71,6 +75,25 @@ import {
   themeSuggestEditor,
 } from "./structuredSuggestEditors";
 import {
+  activityShiftEntityKey,
+  commitmentEntityId,
+  measureEntityId,
+} from "../lib/stepReviewEntities";
+import {
+  buildStepReviewItems,
+  commitmentsForStep,
+  countByQaStatus,
+  filterByQaStatus,
+  filterCommitmentsByQaStatus,
+  filterMeasuresByQaStatus,
+  filterTeMatchesForListView,
+  getReviewableItemCount,
+  getStepReviewPrompt,
+  stepSupportsReviewMode,
+  type QaStatusFilter,
+  type StepViewMode,
+} from "../lib/stepReviewQueue";
+import {
   aiReviewHeadline,
   aiReviewPillLabel,
   legacyExportTag,
@@ -80,6 +103,7 @@ import {
   shiftTypesAgree,
   tefCategoryOf,
 } from "../lib/tef-match-display";
+import { StepReviewItemCard } from "./StepReviewItemCard";
 
 /** Count of items shown in each step's dialog — same filters the dialog
  * content itself applies, so the title badge always matches what's below. */
@@ -87,32 +111,16 @@ function getStepItemCount(
   step: string,
   detail: ClimatePlanDetail,
 ): number | null {
+  const reviewable = getReviewableItemCount(step, detail);
+  if (reviewable !== null) return reviewable;
   switch (step) {
     case "documentReferences":
       return detail.documentReferences.length;
-    case "extractCommitments":
-      return detail.commitments.length;
-    case "filterCommitmentsClimate":
-      return detail.commitments.length;
-    case "filterCommitmentsActionable":
-      return detail.commitments.filter((c) => c.climateRelevant).length;
-    case "groupCommitmentsSimilar":
-    case "groupCommitmentsThemes":
-      return detail.commitments.filter((c) => c.climateRelevant && c.actionable)
-        .length;
-    case "extractMeasures":
-      return detail.extractedMeasures.length;
-    case "scoreMeasures":
-      return detail.extractedMeasures.length;
     case "classifyActivityShiftTypes":
       return detail.extractedMeasures.reduce(
         (n, m) => n + (m.score?.activityShifts.length ?? 0),
         0,
       );
-    case "matchTransitionElements":
-      return detail.extractedMeasures.filter(
-        (m) => m.score && m.score.activityShifts.length > 0,
-      ).length;
     default:
       return null;
   }
@@ -127,11 +135,6 @@ interface ReviewContext {
   onReviewChanged: (review: PipelineReview | null, key: string) => void;
 }
 
-/** Survive extractCommitments delete+recreate by keying on stableId. */
-function commitmentEntityId(commitment: Commitment): string {
-  return commitment.stableId;
-}
-
 /** A commitment's own text, split into independently-searchable parts when
  * it was merged from several source sentences (see Commitment.extractionParts)
  * — a merge doesn't always sit contiguously in the source, so searching for
@@ -141,28 +144,6 @@ function commitmentParts(commitment: Commitment): string[] {
   return commitment.extractionParts && commitment.extractionParts.length > 0
     ? commitment.extractionParts.map((p) => p.text)
     : [commitment.text];
-}
-
-/** Survive extractMeasures recreate when measure text is unchanged. */
-function measureEntityId(measure: ExtractedMeasure): string {
-  let hash = 0;
-  for (let i = 0; i < measure.measureText.length; i++) {
-    hash = (hash * 31 + measure.measureText.charCodeAt(i)) | 0;
-  }
-  return `measure:${(hash >>> 0).toString(36)}`;
-}
-
-/** Survive scoreMeasures recreate when shift content is unchanged. */
-function activityShiftEntityKey(shift: ActivityShift): string {
-  return [
-    shift.type,
-    shift.shiftFrom,
-    shift.shiftTo,
-    shift.need,
-    shift.activity,
-  ]
-    .join("|")
-    .slice(0, 200);
 }
 
 function documentReferenceTone(
@@ -178,7 +159,7 @@ function documentReferenceTone(
   }
 }
 
-function QaFooter({ children }: { children: React.ReactNode }) {
+function QaFooter({ children }: { children: ReactNode }) {
   return (
     <div className="mt-3 pt-2 border-t border-gray-03/60 min-w-0">
       {children}
@@ -974,7 +955,11 @@ function RecoveredMatchCard({
 }) {
   return (
     <div className="rounded-md border border-blue-03/40 bg-blue-03/5 p-2">
-      <TeMatchBody match={match} shiftType={shiftType} matchSource="retrieval" />
+      <TeMatchBody
+        match={match}
+        shiftType={shiftType}
+        matchSource="retrieval"
+      />
     </div>
   );
 }
@@ -1043,9 +1028,7 @@ function ShadowMatchCard({ shift }: { shift: ActivityShift }) {
         )}
       </div>
       {label && (
-        <ShadowElementName
-          label={isRejected ? `${label} (rejected)` : label}
-        />
+        <ShadowElementName label={isRejected ? `${label} (rejected)` : label} />
       )}
       {description && (
         <p className="text-sm text-gray-02 break-words">{description}</p>
@@ -1058,6 +1041,13 @@ function ActivityShiftTeBlock({
   shift,
   reviewCtx,
   showMatches = true,
+  /** When set, only these matches are rendered; add-slot logic still uses
+   * every id in `shift.transitionElementMatches` (plus optional extras). */
+  visibleMatches,
+  /** Extra known match ids when `shift.transitionElementMatches` was
+   * narrowed for display — prefer leaving the full array on `shift`. */
+  knownMatchedIds,
+  hideAddSlots = false,
 }: {
   shift: ActivityShift;
   reviewCtx: ReviewContext;
@@ -1067,13 +1057,20 @@ function ActivityShiftTeBlock({
   // run. Showing them under classifyActivityShiftTypes's own dialog would
   // make it look like this step did the matching itself.
   showMatches?: boolean;
+  visibleMatches?: TransitionElementMatch[];
+  knownMatchedIds?: Iterable<string>;
+  hideAddSlots?: boolean;
 }) {
   const [pendingAddSlotIds, setPendingAddSlotIds] = useState<string[]>([]);
 
   const shiftKey = activityShiftEntityKey(shift);
-  const matchedIds = new Set(
-    shift.transitionElementMatches.map((match) => match.stableId),
-  );
+  const matchedIds = new Set<string>([
+    ...shift.transitionElementMatches.map((match) => match.stableId),
+    ...(knownMatchedIds ?? []),
+  ]);
+  const matchesToShow = visibleMatches ?? shift.transitionElementMatches;
+  const focusingSingleMatch =
+    visibleMatches !== undefined && visibleMatches.length === 1;
   const allCandidates = (shift.transitionElementCandidates ?? []).map((c) => ({
     stableId: c.stableId,
     shortLabel: c.shortLabel,
@@ -1140,28 +1137,29 @@ function ActivityShiftTeBlock({
         </p>
       )}
       <ShiftContextLine shift={shift} showDomain={showMatches} />
-      {showMatches && (
+      {showMatches && !focusingSingleMatch && (
         <MatchOutcomeNotes groupKind={groupKind} groupLabel={groupLabel} />
       )}
-      {showMatches && hasMatches && (
+      {showMatches && matchesToShow.length > 0 && (
         <ListedMatches
+          matches={matchesToShow}
           shift={shift}
           shiftKey={shiftKey}
           reviewerPickId={reviewerPickId}
           allCandidates={allCandidates}
-          canAddMore={canAddMore}
+          canAddMore={!hideAddSlots && canAddMore}
           requestAddSlot={requestAddSlot}
           reviewCtx={reviewCtx}
         />
       )}
-      {promotedCandidate && (
+      {!focusingSingleMatch && promotedCandidate && (
         <JudgePickCard match={promotedCandidate} shiftType={shift.type} />
       )}
-      {recovered && (
+      {!focusingSingleMatch && recovered && (
         <RecoveredMatchCard match={recovered} shiftType={shift.type} />
       )}
-      {hasShadow && <ShadowMatchCard shift={shift} />}
-      {showMatches && !hasMatches && (
+      {!focusingSingleMatch && hasShadow && <ShadowMatchCard shift={shift} />}
+      {showMatches && !hideAddSlots && matchesToShow.length === 0 && (
         <EmptyMatchPrompt
           hasProposal={Boolean(suggestedNew)}
           hasOtherDisplay={hasOtherReviewCard}
@@ -1169,19 +1167,19 @@ function ActivityShiftTeBlock({
           onAdd={requestAddSlot}
         />
       )}
-      {showMatches && suggestedNew && !hasShadow && (
+      {showMatches && !focusingSingleMatch && suggestedNew && !hasShadow && (
         <ProposedElementCard
           suggested={suggestedNew}
           hasExistingMatch={hasMatches}
         />
       )}
-      {showMatches && (
+      {showMatches && !focusingSingleMatch && (
         <AiSecondOpinion
           category={shift.aiReviewCategory}
           explanation={shift.aiReviewExplanation}
         />
       )}
-      {showMatches && (
+      {showMatches && !hideAddSlots && (
         <TeMatchAddSlots
           shiftId={shiftKey}
           matchedIds={matchedIds}
@@ -1198,6 +1196,7 @@ function ActivityShiftTeBlock({
 
 function ListedMatches({
   shift,
+  matches,
   shiftKey,
   reviewerPickId,
   allCandidates,
@@ -1206,6 +1205,7 @@ function ListedMatches({
   reviewCtx,
 }: {
   shift: ActivityShift;
+  matches: TransitionElementMatch[];
   shiftKey: string;
   reviewerPickId: string | null;
   allCandidates: Array<{ stableId: string; shortLabel: string; score: number }>;
@@ -1216,7 +1216,7 @@ function ListedMatches({
   const labelSources = Boolean(shift.aiReviewCategory);
   return (
     <div className="space-y-2">
-      {shift.transitionElementMatches.map((match) => (
+      {matches.map((match) => (
         <ListedTeMatch
           key={match.stableId}
           match={match}
@@ -1288,10 +1288,14 @@ function TransitionElementsView({
   measures,
   reviewCtx,
   showMatches = true,
+  visibleMatchIdsByShiftKey,
 }: {
   measures: ExtractedMeasure[];
   reviewCtx: ReviewContext;
   showMatches?: boolean;
+  /** When present, limits which matches render per shift (full match
+   * arrays on each shift stay intact for add-slot logic). */
+  visibleMatchIdsByShiftKey?: Map<string, Set<string>>;
 }) {
   const withShifts = measures.filter(
     (m) => m.score && m.score.activityShifts.length > 0,
@@ -1313,14 +1317,25 @@ function TransitionElementsView({
           className="rounded-lg border border-gray-03/70 bg-gray-04/50 p-4 space-y-4 min-w-0"
         >
           <CommitmentText text={m.measureText} />
-          {m.score!.activityShifts.map((shift) => (
-            <ActivityShiftTeBlock
-              key={shift.id}
-              shift={shift}
-              reviewCtx={reviewCtx}
-              showMatches={showMatches}
-            />
-          ))}
+          {m.score!.activityShifts.map((shift) => {
+            const shiftKey = activityShiftEntityKey(shift);
+            const visibleIds = visibleMatchIdsByShiftKey?.get(shiftKey);
+            const visibleMatches =
+              visibleIds === undefined
+                ? undefined
+                : shift.transitionElementMatches.filter((match) =>
+                    visibleIds.has(match.stableId),
+                  );
+            return (
+              <ActivityShiftTeBlock
+                key={shift.id}
+                shift={shift}
+                reviewCtx={reviewCtx}
+                showMatches={showMatches}
+                visibleMatches={visibleMatches}
+              />
+            );
+          })}
         </div>
       ))}
     </div>
@@ -1451,6 +1466,9 @@ interface StepResultDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRerun?: () => void;
+  /** Adjacent swimlane workers for outside-modal prev/next arrows. */
+  adjacentSteps?: { prev: string | null; next: string | null };
+  onNavigateStep?: (step: string) => void;
 }
 
 function YesNo({ value }: { value: boolean | null }) {
@@ -1891,6 +1909,15 @@ function CommitmentsList({
   climateFilteredOutPhrases,
   pdfMissingPhrases,
   setPdfViewer,
+  /** Hide list-only chrome (bulk PDF, groundedness filters, group headers
+   * copy) so Review mode can show one clean card. */
+  focusSingle = false,
+  /** Review mode for theme/similar: one group with its section header,
+   * without the list-wide intro line. */
+  focusGroup = false,
+  /** Full eligible set for suggest editors — when the visible list is
+   * filtered or single-item, options still cover every group/theme. */
+  optionCommitments,
 }: {
   commitments: Commitment[];
   documentReferences?: DocumentReference[];
@@ -1903,7 +1930,11 @@ function CommitmentsList({
   climateFilteredOutPhrases: string[];
   pdfMissingPhrases: Set<string>;
   setPdfViewer: (v: PdfViewerState | null) => void;
+  focusSingle?: boolean;
+  focusGroup?: boolean;
+  optionCommitments?: Commitment[];
 }) {
+  const optionsSource = optionCommitments ?? commitments;
   // Declared before the early return below so it's called unconditionally
   // on every render, per rules of hooks — only used by the default
   // (extract/climate/actionable) list further down, not the grouped
@@ -1939,7 +1970,13 @@ function CommitmentsList({
         singletons.push(c);
       }
     }
-    const groupOptions = [...groups.keys()];
+    const groupOptions = [
+      ...new Set(
+        optionsSource
+          .map((c) => c.similarGroupId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
 
     const renderCommitmentRow = (c: Commitment) => {
       const entityKey = reviewKey(
@@ -1986,12 +2023,23 @@ function CommitmentsList({
       );
     };
 
+    if (focusSingle) {
+      return (
+        <ul className="divide-y divide-gray-03/40 rounded-lg border border-gray-03/60 bg-gray-03/15">
+          {commitments.map(renderCommitmentRow)}
+        </ul>
+      );
+    }
+
     return (
       <div className="space-y-3">
-        <p className="text-xs text-gray-02">
-          {groups.size} duplicate group(s), {singletons.length} unique
-          commitment(s) — QA is still per commitment
-        </p>
+        {!focusGroup && (
+          <p className="text-xs text-gray-02">
+            {groups.size} duplicate group(s), {singletons.length} unique
+            commitment(s) — mark each commitment; Review mode walks one group at
+            a time
+          </p>
+        )}
         {[...groups.entries()]
           .sort(([, a], [, b]) => b.length - a.length)
           .map(([groupId, members]) => (
@@ -2045,18 +2093,82 @@ function CommitmentsList({
     }
     const themeOptions = [
       ...COMMITMENT_THEME_OPTIONS,
-      ...[...byTheme.keys()].filter(
+      ...[
+        ...new Set(
+          optionsSource
+            .map((c) => c.theme)
+            .filter((theme): theme is string => Boolean(theme)),
+        ),
+      ].filter(
         (key) =>
           key !== "(none)" &&
           !(COMMITMENT_THEME_OPTIONS as readonly string[]).includes(key),
       ),
     ];
 
+    const renderThemeRow = (c: Commitment) => {
+      const entityKey = reviewKey(
+        reviewCtx.step,
+        "commitment",
+        commitmentEntityId(c),
+      );
+      return (
+        <li key={c.id} className="min-w-0 space-y-1.5 px-3 py-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[11px] text-gray-02">
+              {c.stableId}
+            </span>
+            <FoundInDocumentFlag unverified={c.unverified} />
+            {c.fromRecoveredImage && <ImageSourceFlag />}
+            {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
+            <OriginFlag originatesFrom={c.originatesFrom} />
+          </div>
+          <p className="text-sm text-gray-01 break-words">{c.text}</p>
+          <QaFooter>
+            <ReviewControls
+              planId={reviewCtx.planId}
+              step={reviewCtx.step}
+              entityType="commitment"
+              entityId={commitmentEntityId(c)}
+              reviewedSnapshot={{
+                id: c.id,
+                stableId: c.stableId,
+                text: c.text,
+                theme: c.theme,
+                unverified: c.unverified,
+                foundInDocument: !c.unverified,
+              }}
+              review={reviewCtx.reviewsByEntity.get(entityKey)}
+              defaultSuggestedValue={{
+                theme: c.theme ?? "other",
+              }}
+              suggestEditor={themeSuggestEditor(
+                c.theme ?? "(none)",
+                themeOptions,
+              )}
+              onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
+            />
+          </QaFooter>
+        </li>
+      );
+    };
+
+    if (focusSingle) {
+      return (
+        <ul className="divide-y divide-gray-03/40 rounded-lg border border-gray-03/60 bg-gray-03/15">
+          {commitments.map(renderThemeRow)}
+        </ul>
+      );
+    }
+
     return (
       <div className="space-y-3">
-        <p className="text-xs text-gray-02">
-          Commitments grouped by theme — QA is still per commitment
-        </p>
+        {!focusGroup && (
+          <p className="text-xs text-gray-02">
+            Commitments grouped by theme — mark each commitment; Review mode
+            walks one theme at a time
+          </p>
+        )}
         {[...byTheme.entries()]
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([theme, members]) => (
@@ -2073,56 +2185,7 @@ function CommitmentsList({
                 </span>
               </header>
               <ul className="divide-y divide-gray-03/40">
-                {members.map((c) => {
-                  const entityKey = reviewKey(
-                    reviewCtx.step,
-                    "commitment",
-                    commitmentEntityId(c),
-                  );
-                  return (
-                    <li key={c.id} className="min-w-0 space-y-1.5 px-3 py-2.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-[11px] text-gray-02">
-                          {c.stableId}
-                        </span>
-                        <FoundInDocumentFlag unverified={c.unverified} />
-                        {c.fromRecoveredImage && <ImageSourceFlag />}
-                        {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
-                        <OriginFlag originatesFrom={c.originatesFrom} />
-                      </div>
-                      <p className="text-sm text-gray-01 break-words">
-                        {c.text}
-                      </p>
-                      <QaFooter>
-                        <ReviewControls
-                          planId={reviewCtx.planId}
-                          step={reviewCtx.step}
-                          entityType="commitment"
-                          entityId={commitmentEntityId(c)}
-                          reviewedSnapshot={{
-                            id: c.id,
-                            stableId: c.stableId,
-                            text: c.text,
-                            theme: c.theme,
-                            unverified: c.unverified,
-                            foundInDocument: !c.unverified,
-                          }}
-                          review={reviewCtx.reviewsByEntity.get(entityKey)}
-                          defaultSuggestedValue={{
-                            theme: c.theme ?? "other",
-                          }}
-                          suggestEditor={themeSuggestEditor(
-                            c.theme ?? "(none)",
-                            themeOptions,
-                          )}
-                          onChanged={(next) =>
-                            reviewCtx.onReviewChanged(next, entityKey)
-                          }
-                        />
-                      </QaFooter>
-                    </li>
-                  );
-                })}
+                {members.map(renderThemeRow)}
               </ul>
             </section>
           ))}
@@ -2138,39 +2201,40 @@ function CommitmentsList({
 
   return (
     <div className="space-y-3">
-      {columns === "climate"
-        ? (climatePassedPhrases.length > 0 ||
-            climateFilteredOutPhrases.length > 0) && (
-            <button
-              onClick={() => setPdfViewer({ mode: "all-climate" })}
-              className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 bg-gray-03/40 px-2.5 py-1.5 text-xs text-gray-01 hover:bg-gray-03/60"
-              title="Open the source PDF — climate-relevant commitments in green, filtered-out ones in gray"
-            >
-              <SearchCheck className="w-3.5 h-3.5" />
-              View all in PDF ({
-                climatePassedPhrases.length
-              } climate-relevant, {climateFilteredOutPhrases.length} filtered
-              out)
-            </button>
-          )
-        : allVerifiedPhrases.length > 0 && (
-            <button
-              onClick={() => setPdfViewer({ mode: "all" })}
-              className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 bg-gray-03/40 px-2.5 py-1.5 text-xs text-gray-01 hover:bg-gray-03/60"
-              title="Open the source PDF with every verified commitment highlighted"
-            >
-              <SearchCheck className="w-3.5 h-3.5" />
-              View all {allVerifiedPhrases.length} verified passages in PDF
-            </button>
-          )}
-      {pdfMissingPhrases.size > 0 && (
+      {!focusSingle &&
+        (columns === "climate"
+          ? (climatePassedPhrases.length > 0 ||
+              climateFilteredOutPhrases.length > 0) && (
+              <button
+                onClick={() => setPdfViewer({ mode: "all-climate" })}
+                className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 bg-gray-03/40 px-2.5 py-1.5 text-xs text-gray-01 hover:bg-gray-03/60"
+                title="Open the source PDF — climate-relevant commitments in green, filtered-out ones in gray"
+              >
+                <SearchCheck className="w-3.5 h-3.5" />
+                View all in PDF ({
+                  climatePassedPhrases.length
+                } climate-relevant, {climateFilteredOutPhrases.length} filtered
+                out)
+              </button>
+            )
+          : allVerifiedPhrases.length > 0 && (
+              <button
+                onClick={() => setPdfViewer({ mode: "all" })}
+                className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 bg-gray-03/40 px-2.5 py-1.5 text-xs text-gray-01 hover:bg-gray-03/60"
+                title="Open the source PDF with every verified commitment highlighted"
+              >
+                <SearchCheck className="w-3.5 h-3.5" />
+                View all {allVerifiedPhrases.length} verified passages in PDF
+              </button>
+            ))}
+      {!focusSingle && pdfMissingPhrases.size > 0 && (
         <p className="rounded-md border border-pink-03/30 bg-pink-03/10 px-2.5 py-1.5 text-xs text-pink-03">
           {missingInView > 0
             ? `${missingInView} markdown-verified commitment(s) in this list weren't found in the PDF text layer after search — marked “Not in PDF text” for manual check.`
             : `${pdfMissingPhrases.size} markdown-verified commitment(s) weren't found in the PDF text layer (may be on another step's filtered list).`}
         </p>
       )}
-      {columns === "extract" && (
+      {!focusSingle && columns === "extract" && (
         <p className="text-xs text-gray-02">
           <span className="text-gray-01">In markdown / Not in markdown</span>{" "}
           shows whether the quote was found in the plan markdown.{" "}
@@ -2179,50 +2243,51 @@ function CommitmentsList({
           where the PDF's own text layer search still couldn't locate them.
         </p>
       )}
-      {(commitments.some((c) => c.unverified) ||
-        pdfMissingPhrases.size > 0) && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            onClick={() => setFlagFilter("all")}
-            className={cn(
-              "rounded-md border px-2.5 py-1 text-xs font-medium",
-              flagFilter === "all"
-                ? "border-gray-01/40 bg-gray-01/10 text-gray-01"
-                : "border-gray-03 bg-gray-03/20 text-gray-02 hover:bg-gray-03/40",
-            )}
-          >
-            All ({commitments.length})
-          </button>
-          <button
-            onClick={() => setFlagFilter("not-in-markdown")}
-            className={cn(
-              "rounded-md border px-2.5 py-1 text-xs font-medium",
-              flagFilter === "not-in-markdown"
-                ? "border-orange-03/50 bg-orange-03/15 text-orange-03"
-                : "border-gray-03 bg-gray-03/20 text-gray-02 hover:bg-gray-03/40",
-            )}
-          >
-            Not in markdown ({commitments.filter((c) => c.unverified).length})
-          </button>
-          <button
-            onClick={() => setFlagFilter("not-in-pdf")}
-            disabled={pdfMissingPhrases.size === 0}
-            title={
-              pdfMissingPhrases.size === 0
-                ? 'Open "View all verified passages in PDF" above first to run this check'
-                : undefined
-            }
-            className={cn(
-              "rounded-md border px-2.5 py-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-40",
-              flagFilter === "not-in-pdf"
-                ? "border-pink-03/50 bg-pink-03/15 text-pink-03"
-                : "border-gray-03 bg-gray-03/20 text-gray-02 hover:bg-gray-03/40",
-            )}
-          >
-            Not in PDF text ({missingInView})
-          </button>
-        </div>
-      )}
+      {!focusSingle &&
+        (commitments.some((c) => c.unverified) ||
+          pdfMissingPhrases.size > 0) && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              onClick={() => setFlagFilter("all")}
+              className={cn(
+                "rounded-md border px-2.5 py-1 text-xs font-medium",
+                flagFilter === "all"
+                  ? "border-gray-01/40 bg-gray-01/10 text-gray-01"
+                  : "border-gray-03 bg-gray-03/20 text-gray-02 hover:bg-gray-03/40",
+              )}
+            >
+              All ({commitments.length})
+            </button>
+            <button
+              onClick={() => setFlagFilter("not-in-markdown")}
+              className={cn(
+                "rounded-md border px-2.5 py-1 text-xs font-medium",
+                flagFilter === "not-in-markdown"
+                  ? "border-orange-03/50 bg-orange-03/15 text-orange-03"
+                  : "border-gray-03 bg-gray-03/20 text-gray-02 hover:bg-gray-03/40",
+              )}
+            >
+              Not in markdown ({commitments.filter((c) => c.unverified).length})
+            </button>
+            <button
+              onClick={() => setFlagFilter("not-in-pdf")}
+              disabled={pdfMissingPhrases.size === 0}
+              title={
+                pdfMissingPhrases.size === 0
+                  ? 'Open "View all verified passages in PDF" above first to run this check'
+                  : undefined
+              }
+              className={cn(
+                "rounded-md border px-2.5 py-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-40",
+                flagFilter === "not-in-pdf"
+                  ? "border-pink-03/50 bg-pink-03/15 text-pink-03"
+                  : "border-gray-03 bg-gray-03/20 text-gray-02 hover:bg-gray-03/40",
+              )}
+            >
+              Not in PDF text ({missingInView})
+            </button>
+          </div>
+        )}
       {filteredCommitments.length === 0 ? (
         <p className="text-sm text-gray-02">
           No commitments match this filter.
@@ -2433,6 +2498,41 @@ function MeasuresList({
   );
 }
 
+function StepNavArrow({
+  direction,
+  stepName,
+  onClick,
+}: {
+  direction: "prev" | "next";
+  stepName: string;
+  onClick: () => void;
+}) {
+  const Icon = direction === "prev" ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={stepName}
+      aria-label={
+        direction === "prev"
+          ? `Previous worker: ${stepName}`
+          : `Next worker: ${stepName}`
+      }
+      className={cn(
+        "flex max-w-[9.5rem] flex-col items-center gap-1 rounded-xl border border-gray-03/80",
+        "bg-gray-04/95 px-2.5 py-2.5 text-gray-01 shadow-lg backdrop-blur",
+        "hover:border-blue-03/50 hover:bg-gray-03/80 hover:text-blue-03",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-03",
+      )}
+    >
+      <Icon className="h-5 w-5 shrink-0" />
+      <span className="line-clamp-2 text-center text-[10px] font-medium leading-tight">
+        {stepName}
+      </span>
+    </button>
+  );
+}
+
 export function StepResultDialog({
   plan,
   step,
@@ -2440,6 +2540,8 @@ export function StepResultDialog({
   open,
   onOpenChange,
   onRerun,
+  adjacentSteps,
+  onNavigateStep,
 }: StepResultDialogProps) {
   const { detail, isLoading, error, refresh } = useClimatePlanDetail(
     open ? (plan?.id ?? null) : null,
@@ -2459,6 +2561,9 @@ export function StepResultDialog({
   // below this, the PDF instead opens as its own full-screen modal (see
   // the return statement below).
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
+  const [viewMode, setViewMode] = useState<StepViewMode>("list");
+  const [qaFilter, setQaFilter] = useState<QaStatusFilter>("all");
+  const [reviewIndex, setReviewIndex] = useState(0);
 
   const reviewsByEntity = useMemo(() => {
     if (localReviews) return localReviews;
@@ -2477,6 +2582,35 @@ export function StepResultDialog({
     setPdfMissingPhrases(new Set());
   }, [plan?.id, step, open]);
 
+  // Fresh dialog session / different step: start on list with All.
+  useEffect(() => {
+    setViewMode("list");
+    setQaFilter("all");
+    setReviewIndex(0);
+  }, [plan?.id, step, open]);
+
+  // Changing filter or entering review mode restarts at the first item.
+  useEffect(() => {
+    setReviewIndex(0);
+  }, [qaFilter, viewMode]);
+
+  // Clamp when the filtered queue shrinks (e.g. OK under Not reviewed).
+  useEffect(() => {
+    if (!detail || !step || !stepSupportsReviewMode(step)) return;
+    const items = filterByQaStatus(
+      buildStepReviewItems(step, detail),
+      step,
+      reviewsByEntity,
+      qaFilter,
+    );
+    if (items.length === 0) {
+      if (reviewIndex !== 0) setReviewIndex(0);
+      return;
+    }
+    const max = items.length - 1;
+    if (reviewIndex > max) setReviewIndex(max);
+  }, [detail, step, reviewsByEntity, qaFilter, reviewIndex]);
+
   // Opening the split panel swaps the commitments list into a whole new
   // parent (plain scroll div -> ResizableSplitView's left pane), so React
   // remounts it at scroll position 0 — losing the spot the user was just
@@ -2490,17 +2624,21 @@ export function StepResultDialog({
 
   if (!plan || !step) return null;
 
-  const stepRuns = plan.pipelineSteps.filter((s) => s.step === step);
+  // Local const so nested helpers keep `string` after the null guard
+  // (function declarations would not retain the narrowing).
+  const stepId = step;
+
+  const stepRuns = plan.pipelineSteps.filter((s) => s.step === stepId);
   const run = runId
     ? (stepRuns.find((s) => s.runId === runId) ?? stepRuns[0])
     : stepRuns[0];
   const previousRuns = stepRuns.slice(1);
-  const itemCount = detail ? getStepItemCount(step, detail) : null;
+  const itemCount = detail ? getStepItemCount(stepId, detail) : null;
   const viewingPastRun = Boolean(runId) && run !== stepRuns[0];
 
   const reviewCtx: ReviewContext = {
     planId: plan.id,
-    step,
+    step: stepId,
     reviewsByEntity,
     onReviewChanged: (next, key) => {
       setLocalReviews((prev) => {
@@ -2602,6 +2740,68 @@ export function StepResultDialog({
     });
   }
 
+  const supportsReviewMode = stepSupportsReviewMode(stepId);
+  const reviewPrompt = getStepReviewPrompt(stepId);
+  const allReviewItems = detail ? buildStepReviewItems(stepId, detail) : [];
+  const filteredReviewItems = filterByQaStatus(
+    allReviewItems,
+    stepId,
+    reviewsByEntity,
+    qaFilter,
+  );
+  const qaCounts = countByQaStatus(allReviewItems, stepId, reviewsByEntity);
+  const safeReviewIndex =
+    filteredReviewItems.length === 0
+      ? 0
+      : Math.min(Math.max(reviewIndex, 0), filteredReviewItems.length - 1);
+
+  const optionCommitments = detail ? commitmentsForStep(stepId, detail) : [];
+
+  const sharedCommitmentListProps = {
+    reviewCtx,
+    allVerifiedPhrases,
+    climatePassedPhrases,
+    climateFilteredOutPhrases,
+    pdfMissingPhrases,
+    setPdfViewer,
+    optionCommitments,
+  };
+
+  function renderCommitmentsList(
+    commitments: Commitment[],
+    columns: "extract" | "climate" | "actionable" | "similar" | "themes",
+    documentReferences?: DocumentReference[],
+  ) {
+    const filtered = filterCommitmentsByQaStatus(
+      commitments,
+      stepId,
+      reviewsByEntity,
+      qaFilter,
+    );
+    if (filtered.length === 0 && qaFilter !== "all") {
+      return (
+        <p className="text-sm text-gray-02">No items match this filter.</p>
+      );
+    }
+    return (
+      <CommitmentsList
+        commitments={filtered}
+        documentReferences={documentReferences}
+        columns={columns}
+        {...sharedCommitmentListProps}
+      />
+    );
+  }
+
+  function renderFilteredOrEmpty(isEmpty: boolean, node: ReactNode): ReactNode {
+    if (isEmpty && qaFilter !== "all") {
+      return (
+        <p className="text-sm text-gray-02">No items match this filter.</p>
+      );
+    }
+    return node;
+  }
+
   const content = (() => {
     if (isLoading || !detail) {
       return (
@@ -2612,6 +2812,56 @@ export function StepResultDialog({
     }
     if (error) {
       return <p className="text-sm text-pink-03">Could not load: {error}</p>;
+    }
+
+    if (supportsReviewMode && viewMode === "review" && reviewPrompt) {
+      const current = filteredReviewItems[safeReviewIndex] ?? null;
+      if (!current) {
+        return (
+          <StepReviewMode
+            prompt={reviewPrompt}
+            itemCount={0}
+            index={0}
+            onIndexChange={setReviewIndex}
+            className="h-full min-h-0"
+          >
+            {null}
+          </StepReviewMode>
+        );
+      }
+      return (
+        <StepReviewItemCard
+          key={current.entityId}
+          item={current}
+          reviewCtx={reviewCtx}
+          optionCommitments={optionCommitments}
+          pdfMissingPhrases={pdfMissingPhrases}
+          onFindInPdf={(commitment) =>
+            setPdfViewer({ mode: "focused", commitment })
+          }
+          onNavigateToEntityId={(entityId) => {
+            const idx = filteredReviewItems.findIndex(
+              (item) => item.entityId === entityId,
+            );
+            if (idx >= 0) setReviewIndex(idx);
+          }}
+        >
+          {({ body, dock, contextLabel, subProgress }) => (
+            <StepReviewMode
+              prompt={reviewPrompt}
+              itemCount={filteredReviewItems.length}
+              index={safeReviewIndex}
+              onIndexChange={setReviewIndex}
+              contextLabel={contextLabel}
+              subProgress={subProgress}
+              footer={dock}
+              className="h-full min-h-0"
+            >
+              {body}
+            </StepReviewMode>
+          )}
+        </StepReviewItemCard>
+      );
     }
 
     switch (step) {
@@ -2707,91 +2957,60 @@ export function StepResultDialog({
         );
       }
       case "extractCommitments":
-        return (
-          <CommitmentsList
-            commitments={detail.commitments}
-            documentReferences={detail.documentReferences}
-            columns="extract"
-            reviewCtx={reviewCtx}
-            allVerifiedPhrases={allVerifiedPhrases}
-            climatePassedPhrases={climatePassedPhrases}
-            climateFilteredOutPhrases={climateFilteredOutPhrases}
-            pdfMissingPhrases={pdfMissingPhrases}
-            setPdfViewer={setPdfViewer}
-          />
+        return renderCommitmentsList(
+          detail.commitments,
+          "extract",
+          detail.documentReferences,
         );
       case "filterCommitmentsClimate":
-        return (
-          <CommitmentsList
-            commitments={detail.commitments}
-            columns="climate"
-            reviewCtx={reviewCtx}
-            allVerifiedPhrases={allVerifiedPhrases}
-            climatePassedPhrases={climatePassedPhrases}
-            climateFilteredOutPhrases={climateFilteredOutPhrases}
-            pdfMissingPhrases={pdfMissingPhrases}
-            setPdfViewer={setPdfViewer}
-          />
-        );
+        return renderCommitmentsList(detail.commitments, "climate");
       case "filterCommitmentsActionable":
-        return (
-          <CommitmentsList
-            commitments={detail.commitments.filter((c) => c.climateRelevant)}
-            columns="actionable"
-            reviewCtx={reviewCtx}
-            allVerifiedPhrases={allVerifiedPhrases}
-            climatePassedPhrases={climatePassedPhrases}
-            climateFilteredOutPhrases={climateFilteredOutPhrases}
-            pdfMissingPhrases={pdfMissingPhrases}
-            setPdfViewer={setPdfViewer}
-          />
+        return renderCommitmentsList(
+          detail.commitments.filter((c) => c.climateRelevant),
+          "actionable",
         );
       case "groupCommitmentsSimilar":
-        return (
-          <CommitmentsList
-            commitments={detail.commitments.filter(
-              (c) => c.climateRelevant && c.actionable,
-            )}
-            columns="similar"
-            reviewCtx={reviewCtx}
-            allVerifiedPhrases={allVerifiedPhrases}
-            climatePassedPhrases={climatePassedPhrases}
-            climateFilteredOutPhrases={climateFilteredOutPhrases}
-            pdfMissingPhrases={pdfMissingPhrases}
-            setPdfViewer={setPdfViewer}
-          />
+        return renderCommitmentsList(
+          detail.commitments.filter((c) => c.climateRelevant && c.actionable),
+          "similar",
         );
       case "groupCommitmentsThemes":
-        return (
-          <CommitmentsList
-            commitments={detail.commitments.filter(
-              (c) => c.climateRelevant && c.actionable,
-            )}
-            columns="themes"
-            reviewCtx={reviewCtx}
-            allVerifiedPhrases={allVerifiedPhrases}
-            climatePassedPhrases={climatePassedPhrases}
-            climateFilteredOutPhrases={climateFilteredOutPhrases}
-            pdfMissingPhrases={pdfMissingPhrases}
-            setPdfViewer={setPdfViewer}
-          />
+        return renderCommitmentsList(
+          detail.commitments.filter((c) => c.climateRelevant && c.actionable),
+          "themes",
         );
-      case "extractMeasures":
-        return (
+      case "extractMeasures": {
+        const measures = filterMeasuresByQaStatus(
+          detail.extractedMeasures,
+          stepId,
+          reviewsByEntity,
+          qaFilter,
+        );
+        return renderFilteredOrEmpty(
+          measures.length === 0,
           <MeasuresList
-            measures={detail.extractedMeasures}
+            measures={measures}
             columns="extract"
             reviewCtx={reviewCtx}
-          />
+          />,
         );
-      case "scoreMeasures":
-        return (
+      }
+      case "scoreMeasures": {
+        const measures = filterMeasuresByQaStatus(
+          detail.extractedMeasures,
+          stepId,
+          reviewsByEntity,
+          qaFilter,
+        );
+        return renderFilteredOrEmpty(
+          measures.length === 0,
           <MeasuresList
-            measures={detail.extractedMeasures}
+            measures={measures}
             columns="score"
             reviewCtx={reviewCtx}
-          />
+          />,
         );
+      }
       case "classifyActivityShiftTypes":
         return (
           <TransitionElementsView
@@ -2800,13 +3019,25 @@ export function StepResultDialog({
             showMatches={false}
           />
         );
-      case "matchTransitionElements":
-        return (
+      case "matchTransitionElements": {
+        const { measures, visibleMatchIdsByShiftKey } =
+          filterTeMatchesForListView(
+            detail.extractedMeasures,
+            stepId,
+            reviewsByEntity,
+            qaFilter,
+          );
+        return renderFilteredOrEmpty(
+          measures.length === 0,
           <TransitionElementsView
-            measures={detail.extractedMeasures}
+            measures={measures}
             reviewCtx={reviewCtx}
-          />
+            visibleMatchIdsByShiftKey={
+              qaFilter === "all" ? undefined : visibleMatchIdsByShiftKey
+            }
+          />,
         );
+      }
       default:
         return (
           <p className="text-sm text-gray-02">No details for this step.</p>
@@ -2829,15 +3060,28 @@ export function StepResultDialog({
   // "all-climate" mode uses.
   const isClimateStep = step === "filterCommitmentsClimate";
 
+  const qaToolbar = supportsReviewMode ? (
+    <div className="mt-2">
+      <QaReviewToolbar
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        qaFilter={qaFilter}
+        onQaFilterChange={setQaFilter}
+        counts={qaCounts}
+      />
+    </div>
+  ) : null;
+
+  // Keep interactive controls out of DialogTitle / <h2> for a11y.
   const dialogTitle = (
     <div className="flex flex-wrap items-center gap-3">
-      <span>{step}</span>
+      <span>{stepId}</span>
       {itemCount !== null && (
         <span className="text-xs font-normal text-gray-02">
           {itemCount} {itemCount === 1 ? "item" : "items"}
         </span>
       )}
-      {step !== "documentReferences" && (
+      {stepId !== "documentReferences" && (
         <>
           <StatusPill
             label={run?.status ?? "pending"}
@@ -2846,7 +3090,7 @@ export function StepResultDialog({
           />
           <RerunButton
             planId={plan.id}
-            step={step}
+            step={stepId}
             onRerun={() => {
               refresh();
               onRerun?.();
@@ -2957,12 +3201,34 @@ export function StepResultDialog({
       "This step hasn't run yet."
     );
 
+  const sideNav =
+    onNavigateStep && adjacentSteps
+      ? {
+          left: adjacentSteps.prev ? (
+            <StepNavArrow
+              direction="prev"
+              stepName={adjacentSteps.prev}
+              onClick={() => onNavigateStep(adjacentSteps.prev!)}
+            />
+          ) : undefined,
+          right: adjacentSteps.next ? (
+            <StepNavArrow
+              direction="next"
+              stepName={adjacentSteps.next}
+              onClick={() => onNavigateStep(adjacentSteps.next!)}
+            />
+          ) : undefined,
+        }
+      : undefined;
+
   return (
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      size={showSplitPanel ? "full" : "6xl"}
-      scrollable={!showSplitPanel}
+      size={showSplitPanel || viewMode === "review" ? "full" : "6xl"}
+      scrollable={!showSplitPanel && viewMode !== "review"}
+      fillHeight={showSplitPanel || viewMode === "review"}
+      sideNav={sideNav}
       // The split-view case moves this into the left pane instead (see
       // below) — the shared header would otherwise push the PDF pane down
       // by however tall the run's timing/QA/previous-runs block happens
@@ -2970,25 +3236,32 @@ export function StepResultDialog({
       // PDF pane doesn't need any of that context; the commitments list
       // does.
       title={showSplitPanel ? undefined : dialogTitle}
-      description={showSplitPanel ? undefined : dialogDescription}
+      description={
+        showSplitPanel || viewMode === "review" ? undefined : dialogDescription
+      }
     >
       {showSplitPanel ? (
         <ResizableSplitView
           className="min-h-0 flex-1"
           left={
-            <>
-              <div className="sticky top-0 z-10 mb-3 border-b border-gray-03 bg-gray-04 pb-3">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="shrink-0 mb-3 border-b border-gray-03 bg-gray-04 pb-3">
                 <h2 className="text-lg font-medium text-gray-01">
                   {dialogTitle}
                 </h2>
-                <div className="mt-1 text-sm text-gray-02">
-                  {dialogDescription}
-                </div>
+                {viewMode !== "review" && (
+                  <div className="mt-1 text-sm text-gray-02">
+                    {dialogDescription}
+                  </div>
+                )}
+                {qaToolbar}
               </div>
-              {content}
-              {sourceMarkdownSection}
-              {recoveredImagesSection}
-            </>
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                {content}
+              </div>
+              {viewMode !== "review" && sourceMarkdownSection}
+              {viewMode !== "review" && recoveredImagesSection}
+            </div>
           }
           right={
             <PdfHighlightPanel
@@ -3024,8 +3297,16 @@ export function StepResultDialog({
             />
           }
         />
+      ) : viewMode === "review" ? (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="mb-3 shrink-0">{qaToolbar}</div>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {content}
+          </div>
+        </div>
       ) : (
         <>
+          {qaToolbar}
           <div className="mt-4 min-w-0 overflow-x-hidden">
             {content}
             {sourceMarkdownSection}
