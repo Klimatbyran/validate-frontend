@@ -37,6 +37,19 @@ interface ModalProps {
   footer?: React.ReactNode;
   size?: ModalSize;
   scrollable?: boolean;
+  /**
+   * Force a fixed-height flex column (like `size="full"`) so children can
+   * use `flex-1` + internal scroll — e.g. review mode's sticky dock.
+   */
+  fillHeight?: boolean;
+  /**
+   * Rendered visually outside the dialog card (left/right), but still
+   * inside DialogContent so focus trap / outside-click keep working.
+   */
+  sideNav?: {
+    left?: React.ReactNode;
+    right?: React.ReactNode;
+  };
 }
 
 export function Modal({
@@ -49,6 +62,8 @@ export function Modal({
   footer,
   size = "3xl",
   scrollable = false,
+  fillHeight: fillHeightProp,
+  sideNav,
 }: ModalProps) {
   const dialogProps = open !== undefined ? { open, onOpenChange } : {};
   // "full" size is only ever used for content that needs to consume real
@@ -60,7 +75,16 @@ export function Modal({
   // lets the header take whatever it needs and the content area fill
   // whatever's left, instead of a hardcoded height guessing where the
   // header ends.
-  const fillHeight = size === "full";
+  const fillHeight = fillHeightProp ?? size === "full";
+  const hasSideNav = Boolean(sideNav?.left || sideNav?.right);
+  // Side arrows sit outside the card via absolute offsets, so the shell
+  // needs overflow-visible — but DialogContent defaults to `grid`, and a
+  // grid + max-height + overflow-visible combination lets min-content
+  // defeat the height cap (modal grows taller than the viewport, then
+  // translateY(-50%) parks most of it off-screen). Force flex whenever
+  // we need a capped height so the box stays 90vh and only paints arrows
+  // outside.
+  const cappedHeight = fillHeight || scrollable;
 
   return (
     <Dialog {...dialogProps}>
@@ -68,20 +92,42 @@ export function Modal({
       <DialogContent
         className={cn(
           sizeClass[size],
-          scrollable && "max-h-[90vh] overflow-auto",
-          // h-[90vh], not max-h — max-height only caps a flex column, it
-          // doesn't make it grow to fill available space in the first
-          // place. Without a real height here, the flex-1 children below
-          // (the split view, and the PDF panel inside it) had nothing to
-          // distribute and just shrank to their content's natural size.
-          fillHeight && "flex h-[90vh] flex-col overflow-hidden",
+          // Leave gutters for outside arrows when the dialog would otherwise
+          // span nearly the full viewport (size="full").
+          hasSideNav && size === "full" && "max-w-[calc(100vw-7.5rem)]",
+          cappedHeight && "flex min-h-0 flex-col",
+          scrollable && "max-h-[90vh]",
+          fillHeight && "h-[90vh]",
+          // Arrows paint outside; body scroll lives on the inner wrapper.
+          // Do NOT add `relative` here — DialogContent is already `fixed`,
+          // and twMerge would replace `fixed` with `relative`, dropping the
+          // modal out of the viewport into document flow.
+          hasSideNav && cappedHeight && "overflow-visible",
+          !hasSideNav && scrollable && "overflow-auto",
+          !hasSideNav && fillHeight && "overflow-hidden",
         )}
       >
+        {sideNav?.left ? (
+          <div className="absolute top-1/2 left-0 z-[60] -translate-x-[calc(100%+0.75rem)] -translate-y-1/2">
+            {sideNav.left}
+          </div>
+        ) : null}
+        {sideNav?.right ? (
+          <div className="absolute top-1/2 right-0 z-[60] translate-x-[calc(100%+0.75rem)] -translate-y-1/2">
+            {sideNav.right}
+          </div>
+        ) : null}
         {title || description ? (
-          <DialogHeader className={cn(fillHeight && "shrink-0")}>
+          <DialogHeader className={cn(cappedHeight && "shrink-0")}>
             {title && <DialogTitle>{title}</DialogTitle>}
             {description && (
-              <DialogDescription>{description}</DialogDescription>
+              <DialogDescription asChild={typeof description !== "string"}>
+                {typeof description === "string" ? (
+                  description
+                ) : (
+                  <div>{description}</div>
+                )}
+              </DialogDescription>
             )}
           </DialogHeader>
         ) : (
@@ -92,7 +138,16 @@ export function Modal({
           // down) — sr-only keeps it out of the way visually.
           <DialogTitle className="sr-only">Dialog</DialogTitle>
         )}
-        {fillHeight ? (
+        {hasSideNav && cappedHeight ? (
+          <div
+            className={cn(
+              "flex min-h-0 flex-1 flex-col",
+              fillHeight ? "overflow-hidden" : "overflow-auto",
+            )}
+          >
+            {children}
+          </div>
+        ) : fillHeight ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {children}
           </div>
@@ -100,7 +155,7 @@ export function Modal({
           children
         )}
         {footer && (
-          <DialogFooter className={cn(fillHeight && "shrink-0")}>
+          <DialogFooter className={cn(cappedHeight && "shrink-0")}>
             {footer}
           </DialogFooter>
         )}

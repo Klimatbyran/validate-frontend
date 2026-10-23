@@ -1,0 +1,1142 @@
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Check, SearchCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/ui/button";
+import type {
+  ActivityShift,
+  Commitment,
+  ExtractedMeasure,
+  TransitionElementMatch,
+} from "../hooks/useClimatePlanDetail";
+import {
+  reviewKey,
+  upsertPipelineReview,
+  type PipelineReview,
+} from "../hooks/usePipelineReviews";
+import { useAuth } from "@/hooks/useAuth";
+import { resolveQaReviewerForSave } from "../lib/qaReviewerIdentity";
+import {
+  activityShiftEntityKey,
+  commitmentEntityId,
+  measureEntityId,
+  teMatchEntityId,
+} from "../lib/stepReviewEntities";
+import type { StepReviewItem } from "../lib/stepReviewQueue";
+import {
+  aiReviewHeadline,
+  canonicalShiftType,
+  legacyExportTag,
+  matchMechanismLine,
+  matchOutcomeLabel,
+  shiftTypesAgree,
+  tefCategoryOf,
+} from "../lib/tef-match-display";
+import { ReviewControls } from "./ReviewControls";
+import {
+  COMMITMENT_THEME_OPTIONS,
+  actionableFilterSuggestEditor,
+  climateFilterSuggestEditor,
+  extractCommitmentSuggestEditor,
+  similarGroupSuggestEditor,
+  teMatchSelectEditor,
+  themeSuggestEditor,
+} from "./structuredSuggestEditors";
+
+export interface ReviewCardContext {
+  planId: string;
+  step: string;
+  reviewsByEntity: Map<string, PipelineReview>;
+  onReviewChanged: (review: PipelineReview | null, key: string) => void;
+}
+
+export interface ReviewItemSlots {
+  contextLabel: string;
+  subProgress?: string;
+  body: ReactNode;
+  dock: ReactNode;
+}
+
+interface StepReviewItemCardProps {
+  item: StepReviewItem;
+  reviewCtx: ReviewCardContext;
+  optionCommitments?: Commitment[];
+  pdfMissingPhrases?: Set<string>;
+  onFindInPdf?: (commitment: Commitment) => void;
+  /** Jump the review queue to another entity (TE sibling matches). */
+  onNavigateToEntityId?: (entityId: string) => void;
+  children: (slots: ReviewItemSlots) => ReactNode;
+}
+
+function SoftChip({
+  children,
+  tone = "neutral",
+}: {
+  children: ReactNode;
+  tone?: "neutral" | "ok" | "warn" | "info";
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium",
+        tone === "ok" && "border-green-03/40 bg-green-03/10 text-green-03",
+        tone === "warn" && "border-orange-03/40 bg-orange-03/10 text-orange-03",
+        tone === "info" && "border-blue-03/40 bg-blue-03/10 text-blue-03",
+        tone === "neutral" && "border-gray-03 bg-gray-03/40 text-gray-01",
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function Panel({
+  label,
+  children,
+  tone = "neutral",
+  className,
+}: {
+  label?: string;
+  children: ReactNode;
+  tone?: "neutral" | "match" | "shift" | "judge" | "ai";
+  className?: string;
+}) {
+  return (
+    <section
+      className={cn(
+        "space-y-2 rounded-lg border px-3.5 py-3",
+        tone === "match" && "border-blue-03/35 bg-blue-03/5",
+        tone === "shift" && "border-gray-03/70 bg-gray-03/20",
+        tone === "judge" && "border-green-03/30 bg-green-03/5",
+        tone === "ai" && "border-purple-03/30 bg-purple-03/5",
+        tone === "neutral" && "border-gray-03/60 bg-gray-03/15",
+        className,
+      )}
+    >
+      {label ? (
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-02">
+          {label}
+        </p>
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
+function JudgmentBand({
+  items,
+}: {
+  items: Array<{ label: string; value: string; ok?: boolean }>;
+}) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {items.map((item) => (
+        <div
+          key={item.label}
+          className={cn(
+            "rounded-lg border px-3 py-2.5",
+            item.ok === true && "border-green-03/40 bg-green-03/10",
+            item.ok === false && "border-orange-03/40 bg-orange-03/10",
+            item.ok === undefined && "border-gray-03/60 bg-gray-03/20",
+          )}
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-02">
+            {item.label}
+          </p>
+          <p
+            className={cn(
+              "mt-0.5 text-lg font-semibold",
+              item.ok === true && "text-green-03",
+              item.ok === false && "text-orange-03",
+              item.ok === undefined && "text-gray-01",
+            )}
+          >
+            {item.value}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ScoreTile({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="rounded-lg border border-gray-03/60 bg-gray-03/20 px-3 py-2.5 text-center">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-02">
+        {label}
+      </p>
+      <p className="mt-0.5 text-2xl font-semibold tabular-nums text-gray-01">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function commitmentSuggest(
+  commitment: Commitment,
+  columns: "extract" | "climate" | "actionable" | "similar" | "themes",
+  optionsSource: Commitment[],
+) {
+  const groupOptions = [
+    ...new Set(
+      optionsSource
+        .map((c) => c.similarGroupId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const themeOptions = [
+    ...COMMITMENT_THEME_OPTIONS,
+    ...[
+      ...new Set(
+        optionsSource
+          .map((c) => c.theme)
+          .filter((theme): theme is string => Boolean(theme)),
+      ),
+    ].filter(
+      (key) =>
+        key !== "(none)" &&
+        !(COMMITMENT_THEME_OPTIONS as readonly string[]).includes(key),
+    ),
+  ];
+
+  const suggestEditor =
+    columns === "climate"
+      ? climateFilterSuggestEditor({
+          climateRelevant: commitment.climateRelevant,
+          adaptation: commitment.adaptation,
+        })
+      : columns === "actionable"
+        ? actionableFilterSuggestEditor(commitment.actionable)
+        : columns === "similar"
+          ? similarGroupSuggestEditor(commitment.similarGroupId, groupOptions)
+          : columns === "themes"
+            ? themeSuggestEditor(commitment.theme ?? "(none)", themeOptions)
+            : extractCommitmentSuggestEditor({
+                unverified: commitment.unverified,
+              });
+
+  const defaultSuggestedValue =
+    columns === "climate"
+      ? {
+          climateRelevant: commitment.climateRelevant ?? false,
+          adaptation: commitment.adaptation,
+        }
+      : columns === "actionable"
+        ? { actionable: commitment.actionable ?? false }
+        : columns === "similar"
+          ? { similarGroupId: commitment.similarGroupId }
+          : columns === "themes"
+            ? { theme: commitment.theme ?? "other" }
+            : { foundInDocument: !commitment.unverified };
+
+  return { suggestEditor, defaultSuggestedValue };
+}
+
+function CommitmentDock({
+  commitment,
+  columns,
+  reviewCtx,
+  optionCommitments,
+  dockExtra,
+  dockHint,
+}: {
+  commitment: Commitment;
+  columns: "extract" | "climate" | "actionable" | "similar" | "themes";
+  reviewCtx: ReviewCardContext;
+  optionCommitments?: Commitment[];
+  dockExtra?: ReactNode;
+  dockHint?: string;
+}) {
+  const entityId = commitmentEntityId(commitment);
+  const entityKey = reviewKey(reviewCtx.step, "commitment", entityId);
+  const { suggestEditor, defaultSuggestedValue } = commitmentSuggest(
+    commitment,
+    columns,
+    optionCommitments ?? [commitment],
+  );
+
+  return (
+    <div className="space-y-2">
+      {dockHint ? (
+        <p className="text-center text-[11px] text-gray-02">{dockHint}</p>
+      ) : null}
+      <ReviewControls
+        variant="dock"
+        planId={reviewCtx.planId}
+        step={reviewCtx.step}
+        entityType="commitment"
+        entityId={entityId}
+        reviewedSnapshot={{
+          stableId: commitment.stableId,
+          text: commitment.text,
+          climateRelevant: commitment.climateRelevant,
+          adaptation: commitment.adaptation,
+          actionable: commitment.actionable,
+          similarGroupId: commitment.similarGroupId,
+          theme: commitment.theme,
+          unverified: commitment.unverified,
+          foundInDocument: !commitment.unverified,
+        }}
+        review={reviewCtx.reviewsByEntity.get(entityKey)}
+        defaultSuggestedValue={defaultSuggestedValue}
+        suggestEditor={suggestEditor}
+        onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
+        dockExtra={dockExtra}
+      />
+    </div>
+  );
+}
+
+/** Extract / climate / actionable — single commitment, judgment-first. */
+function SingleCommitmentSlots({
+  commitment,
+  columns,
+  reviewCtx,
+  optionCommitments,
+  pdfMissingPhrases,
+  onFindInPdf,
+  children,
+}: {
+  commitment: Commitment;
+  columns: "extract" | "climate" | "actionable";
+  reviewCtx: ReviewCardContext;
+  optionCommitments?: Commitment[];
+  pdfMissingPhrases?: Set<string>;
+  onFindInPdf?: (commitment: Commitment) => void;
+  children: (slots: ReviewItemSlots) => ReactNode;
+}) {
+  const contextLabel =
+    columns === "climate"
+      ? "Climate filter"
+      : columns === "actionable"
+        ? "Actionable filter"
+        : "Extract commitment";
+
+  const body = (
+    <div className="space-y-4">
+      {columns === "climate" && (
+        <JudgmentBand
+          items={[
+            {
+              label: "Climate relevant",
+              value: commitment.climateRelevant ? "Yes" : "No",
+              ok: Boolean(commitment.climateRelevant),
+            },
+            {
+              label: "Adaptation",
+              value: commitment.adaptation ? "Yes" : "No",
+              ok: commitment.adaptation ? true : undefined,
+            },
+          ]}
+        />
+      )}
+      {columns === "actionable" && (
+        <JudgmentBand
+          items={[
+            {
+              label: "Actionable",
+              value: commitment.actionable ? "Yes" : "No",
+              ok: Boolean(commitment.actionable),
+            },
+          ]}
+        />
+      )}
+
+      <Panel>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[11px] text-gray-02">
+            {commitment.stableId}
+          </span>
+          <SoftChip tone={commitment.unverified ? "warn" : "ok"}>
+            {commitment.unverified ? "Not in markdown" : "In markdown"}
+          </SoftChip>
+          {columns === "extract" && commitment.type && (
+            <SoftChip>Type: {commitment.type}</SoftChip>
+          )}
+          {commitment.fromRecoveredImage && (
+            <SoftChip tone="info">From image</SoftChip>
+          )}
+          {pdfMissingPhrases?.has(commitment.text) && (
+            <SoftChip tone="warn">Not in PDF text</SoftChip>
+          )}
+          {!commitment.unverified && onFindInPdf && (
+            <button
+              type="button"
+              onClick={() => onFindInPdf(commitment)}
+              className="inline-flex items-center gap-1 rounded-md border border-gray-03 px-2 py-1 text-xs text-gray-01 hover:bg-gray-03/40"
+            >
+              <SearchCheck className="h-3 w-3" />
+              Find in PDF
+            </button>
+          )}
+        </div>
+        <p className="text-lg font-medium leading-snug text-gray-01 break-words whitespace-pre-wrap">
+          {commitment.text}
+        </p>
+        {commitment.section && (
+          <p className="text-xs text-gray-02">Section: {commitment.section}</p>
+        )}
+        {commitment.originatesFrom && (
+          <p className="text-xs text-gray-02">
+            Originates from: {commitment.originatesFrom}
+          </p>
+        )}
+      </Panel>
+
+      {columns === "climate" && commitment.climateFilterReason && (
+        <Panel label="Why this judgment" tone="judge">
+          <p className="text-sm leading-relaxed text-gray-01 break-words">
+            {commitment.climateFilterReason}
+          </p>
+        </Panel>
+      )}
+      {columns === "actionable" && commitment.actionableReason && (
+        <Panel label="Why this judgment" tone="judge">
+          <p className="text-sm leading-relaxed text-gray-01 break-words">
+            {commitment.actionableReason}
+          </p>
+        </Panel>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      {children({
+        contextLabel,
+        body,
+        dock: (
+          <CommitmentDock
+            commitment={commitment}
+            columns={columns}
+            reviewCtx={reviewCtx}
+            optionCommitments={optionCommitments}
+          />
+        ),
+      })}
+    </>
+  );
+}
+
+/**
+ * Themes / similar: keep the whole group visible so you can compare
+ * members. Select one row to Flag/Suggest; Approve-all covers the group.
+ */
+function GroupReviewSlots({
+  groupLabel,
+  columns,
+  commitments,
+  reviewCtx,
+  optionCommitments,
+  children,
+}: {
+  groupLabel: string;
+  columns: "similar" | "themes";
+  commitments: Commitment[];
+  reviewCtx: ReviewCardContext;
+  optionCommitments?: Commitment[];
+  children: (slots: ReviewItemSlots) => ReactNode;
+}) {
+  const { user } = useAuth();
+  const [selectedId, setSelectedId] = useState<string | null>(
+    () => commitments[0]?.id ?? null,
+  );
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stillThere = commitments.some((c) => c.id === selectedId);
+    if (!stillThere) setSelectedId(commitments[0]?.id ?? null);
+    setBulkError(null);
+  }, [groupLabel, commitments, selectedId]);
+
+  const memberStatuses = useMemo(
+    () =>
+      commitments.map((c) => {
+        const key = reviewKey(
+          reviewCtx.step,
+          "commitment",
+          commitmentEntityId(c),
+        );
+        return reviewCtx.reviewsByEntity.get(key)?.status;
+      }),
+    [commitments, reviewCtx.reviewsByEntity, reviewCtx.step],
+  );
+
+  const selected =
+    commitments.find((c) => c.id === selectedId) ?? commitments[0] ?? null;
+  const unreviewedCount = memberStatuses.filter((s) => s !== "OK").length;
+  const okCount = memberStatuses.filter((s) => s === "OK").length;
+
+  const approveAll = async () => {
+    setBulkBusy(true);
+    setBulkError(null);
+    try {
+      for (const c of commitments) {
+        const entityId = commitmentEntityId(c);
+        const key = reviewKey(reviewCtx.step, "commitment", entityId);
+        const existing = reviewCtx.reviewsByEntity.get(key);
+        if (existing?.status === "OK") continue;
+        const saved = await upsertPipelineReview(reviewCtx.planId, {
+          step: reviewCtx.step,
+          entityType: "commitment",
+          entityId,
+          reviewedSnapshot: {
+            stableId: c.stableId,
+            text: c.text,
+            similarGroupId: c.similarGroupId,
+            theme: c.theme,
+            unverified: c.unverified,
+            foundInDocument: !c.unverified,
+          },
+          status: "OK",
+          comment: existing?.comment ?? null,
+          suggestedValue: existing?.suggestedValue,
+          reviewedBy: resolveQaReviewerForSave(user),
+        });
+        reviewCtx.onReviewChanged(saved, key);
+      }
+    } catch (err) {
+      setBulkError(
+        err instanceof Error ? err.message : "Failed to approve group",
+      );
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  if (!selected) {
+    return (
+      <>{children({ contextLabel: groupLabel, body: null, dock: null })}</>
+    );
+  }
+
+  const isTheme = columns === "themes";
+  const contextLabel = isTheme
+    ? `Theme · ${groupLabel}`
+    : groupLabel === "Unique"
+      ? "Unique commitment"
+      : "Duplicate group";
+
+  const body = (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h3 className="text-2xl font-semibold capitalize leading-tight text-gray-01">
+            {isTheme ? groupLabel : groupLabel}
+          </h3>
+          <p className="mt-1 text-xs text-gray-02">
+            {commitments.length}{" "}
+            {commitments.length === 1 ? "commitment" : "commitments"}
+            {okCount > 0 ? ` · ${okCount} marked OK` : ""}
+            {" · "}
+            select a row to flag or reassign
+          </p>
+        </div>
+      </div>
+
+      <ul className="divide-y divide-gray-03/50 overflow-hidden rounded-lg border border-gray-03/70 bg-gray-04/40">
+        {commitments.map((c, i) => {
+          const status = memberStatuses[i];
+          const isSelected = c.id === selected.id;
+          return (
+            <li key={c.id}>
+              <button
+                type="button"
+                onClick={() => setSelectedId(c.id)}
+                className={cn(
+                  "flex w-full gap-3 px-3 py-3 text-left transition-colors",
+                  isSelected ? "bg-blue-03/10" : "hover:bg-gray-03/25",
+                )}
+              >
+                <span
+                  className={cn(
+                    "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-[11px] font-semibold tabular-nums",
+                    status === "OK" &&
+                      "border-green-03/50 bg-green-03/15 text-green-03",
+                    status &&
+                      status !== "OK" &&
+                      "border-orange-03/50 bg-orange-03/15 text-orange-03",
+                    !status &&
+                      isSelected &&
+                      "border-blue-03/50 bg-blue-03/15 text-blue-03",
+                    !status &&
+                      !isSelected &&
+                      "border-gray-03 bg-gray-03/30 text-gray-02",
+                  )}
+                >
+                  {status === "OK" ? "✓" : i + 1}
+                </span>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-[11px] text-gray-02">
+                      {c.stableId}
+                    </span>
+                    {c.unverified && (
+                      <SoftChip tone="warn">Not in markdown</SoftChip>
+                    )}
+                    {status && status !== "OK" && (
+                      <SoftChip tone="warn">
+                        {status.replace("_", " ")}
+                      </SoftChip>
+                    )}
+                  </div>
+                  <p className="text-sm leading-snug text-gray-01 break-words whitespace-pre-wrap">
+                    {c.text}
+                  </p>
+                </div>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+
+  const dockExtra = (
+    <div className="space-y-1 pt-1">
+      {commitments.length > 1 && unreviewedCount > 0 && (
+        <Button
+          type="button"
+          className="h-11 w-full gap-2 text-sm font-semibold bg-green-03/20 text-green-03 hover:bg-green-03/30"
+          disabled={bulkBusy}
+          onClick={approveAll}
+        >
+          {bulkBusy ? (
+            "Approving…"
+          ) : (
+            <>
+              <Check className="h-4 w-4" />
+              {isTheme
+                ? `Approve theme (${unreviewedCount} left)`
+                : `Approve group (${unreviewedCount} left)`}
+            </>
+          )}
+        </Button>
+      )}
+      {bulkError && <p className="text-xs text-pink-03">{bulkError}</p>}
+    </div>
+  );
+
+  return (
+    <>
+      {children({
+        contextLabel,
+        subProgress:
+          commitments.length > 1
+            ? `${okCount}/${commitments.length} verified · editing ${selected.stableId}`
+            : undefined,
+        body,
+        dock: (
+          <CommitmentDock
+            commitment={selected}
+            columns={columns}
+            reviewCtx={reviewCtx}
+            optionCommitments={optionCommitments}
+            dockHint={
+              commitments.length > 1
+                ? `Dock applies to selected: ${selected.stableId}`
+                : undefined
+            }
+            dockExtra={dockExtra}
+          />
+        ),
+      })}
+    </>
+  );
+}
+
+function MeasureSlots({
+  measure,
+  columns,
+  reviewCtx,
+  children,
+}: {
+  measure: ExtractedMeasure;
+  columns: "extract" | "score";
+  reviewCtx: ReviewCardContext;
+  children: (slots: ReviewItemSlots) => ReactNode;
+}) {
+  const entityId = measureEntityId(measure);
+  const entityKey = reviewKey(reviewCtx.step, "measure", entityId);
+  const snapshot =
+    columns === "extract"
+      ? {
+          measureText: measure.measureText,
+          climateRelevanceScore: measure.climateRelevanceScore,
+        }
+      : {
+          measureText: measure.measureText,
+          activityShiftScore: measure.score?.activityShiftScore ?? null,
+          interventionScore: measure.score?.interventionScore ?? null,
+          interventionType: measure.score?.interventionType ?? null,
+        };
+
+  const body =
+    columns === "extract" ? (
+      <div className="space-y-4">
+        <JudgmentBand
+          items={[
+            {
+              label: "Climate relevance",
+              value: String(measure.climateRelevanceScore ?? "—"),
+              ok:
+                measure.climateRelevanceScore === "high"
+                  ? true
+                  : measure.climateRelevanceScore === "low"
+                    ? false
+                    : undefined,
+            },
+          ]}
+        />
+        <Panel label="Measure">
+          <p className="text-lg font-medium leading-snug text-gray-01 break-words whitespace-pre-wrap">
+            {measure.measureText}
+          </p>
+        </Panel>
+      </div>
+    ) : (
+      <div className="space-y-4">
+        <div className="grid grid-cols-3 gap-2">
+          <ScoreTile
+            label="Activity shift"
+            value={measure.score?.activityShiftScore ?? "—"}
+          />
+          <ScoreTile
+            label="Intervention"
+            value={measure.score?.interventionScore ?? "—"}
+          />
+          <ScoreTile
+            label="Type"
+            value={
+              <span className="text-base font-semibold">
+                {measure.score?.interventionType ?? "—"}
+              </span>
+            }
+          />
+        </div>
+        <Panel label="Measure">
+          <p className="text-lg font-medium leading-snug text-gray-01 break-words whitespace-pre-wrap">
+            {measure.measureText}
+          </p>
+        </Panel>
+      </div>
+    );
+
+  const dock = (
+    <ReviewControls
+      variant="dock"
+      planId={reviewCtx.planId}
+      step={reviewCtx.step}
+      entityType="measure"
+      entityId={entityId}
+      reviewedSnapshot={snapshot}
+      review={reviewCtx.reviewsByEntity.get(entityKey)}
+      defaultSuggestedValue={snapshot}
+      onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
+    />
+  );
+
+  return (
+    <>
+      {children({
+        contextLabel: columns === "score" ? "Score measure" : "Extract measure",
+        body,
+        dock,
+      })}
+    </>
+  );
+}
+
+function TeMatchSlots({
+  measure,
+  shift,
+  match,
+  reviewCtx,
+  onNavigateToEntityId,
+  children,
+}: {
+  measure: ExtractedMeasure;
+  shift: ActivityShift;
+  match: TransitionElementMatch;
+  reviewCtx: ReviewCardContext;
+  onNavigateToEntityId?: (entityId: string) => void;
+  children: (slots: ReviewItemSlots) => ReactNode;
+}) {
+  const shiftKey = activityShiftEntityKey(shift);
+  const entityId = teMatchEntityId(shift, match.stableId);
+  const entityKey = reviewKey(reviewCtx.step, "teMatch", entityId);
+  const category = tefCategoryOf(match);
+  const legacy = legacyExportTag(match);
+  const mechanism = matchMechanismLine(match);
+  const outcome = matchOutcomeLabel(
+    shift.transitionElementGroupKind,
+    shift.transitionElementGateDomain,
+    shift.transitionElementGroupLabel,
+  );
+  const categoryAgrees =
+    category != null && shiftTypesAgree(category, shift.type);
+  const allCandidates = (shift.transitionElementCandidates ?? []).map((c) => ({
+    stableId: c.stableId,
+    shortLabel: c.shortLabel,
+    score: c.score,
+  }));
+
+  const siblings = shift.transitionElementMatches;
+  const matchIndex = Math.max(
+    0,
+    siblings.findIndex((m) => m.stableId === match.stableId),
+  );
+  const matchCount = siblings.length;
+
+  const body = (
+    <div className="space-y-3">
+      {/* Context first so the TEF decision has something to compare against. */}
+      <Panel label="Measure">
+        <p className="text-base font-medium leading-snug text-gray-01 break-words whitespace-pre-wrap">
+          {measure.measureText}
+        </p>
+      </Panel>
+
+      <Panel label="Activity shift" tone="shift">
+        <p className="text-lg font-semibold leading-snug text-gray-01 break-words">
+          {shift.shiftFrom} → {shift.shiftTo}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <SoftChip>Ours: {canonicalShiftType(shift.type)}</SoftChip>
+          <SoftChip>Score: {shift.score}</SoftChip>
+          {outcome && <SoftChip tone="info">{outcome}</SoftChip>}
+        </div>
+        <p className="text-xs text-gray-02 break-words">
+          Activity: {shift.activity}
+          {" · "}
+          Need: {shift.need}
+          {shift.transitionElementGateDomain
+            ? ` · Domain: ${shift.transitionElementGateDomain}`
+            : ""}
+        </p>
+        {shift.typeReasoning && (
+          <p className="text-sm italic leading-relaxed text-gray-02 break-words">
+            {shift.typeReasoning}
+          </p>
+        )}
+      </Panel>
+
+      {matchCount > 1 && (
+        <div className="space-y-2 rounded-lg border border-blue-03/35 bg-blue-03/5 px-3 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-blue-03">
+              {matchCount} TEF matches on this shift
+            </p>
+            <p className="text-xs tabular-nums text-gray-02">
+              Reviewing {matchIndex + 1} of {matchCount}
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {siblings.map((sibling, i) => {
+              const siblingId = teMatchEntityId(shift, sibling.stableId);
+              const siblingKey = reviewKey(
+                reviewCtx.step,
+                "teMatch",
+                siblingId,
+              );
+              const siblingStatus =
+                reviewCtx.reviewsByEntity.get(siblingKey)?.status;
+              const isCurrent = sibling.stableId === match.stableId;
+              return (
+                <button
+                  key={sibling.stableId}
+                  type="button"
+                  disabled={isCurrent || !onNavigateToEntityId}
+                  onClick={() => onNavigateToEntityId?.(siblingId)}
+                  className={cn(
+                    "flex w-full items-start gap-2 rounded-md border px-2.5 py-2 text-left text-xs transition-colors",
+                    isCurrent
+                      ? "border-blue-03/60 bg-blue-03/15 text-gray-01"
+                      : "border-gray-03/60 bg-gray-04/40 text-gray-02 hover:border-blue-03/40 hover:bg-blue-03/10 hover:text-gray-01",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[10px] font-semibold tabular-nums",
+                      siblingStatus === "OK" &&
+                        "border-green-03/50 bg-green-03/15 text-green-03",
+                      siblingStatus &&
+                        siblingStatus !== "OK" &&
+                        "border-orange-03/50 bg-orange-03/15 text-orange-03",
+                      !siblingStatus &&
+                        isCurrent &&
+                        "border-blue-03/50 bg-blue-03/20 text-blue-03",
+                      !siblingStatus &&
+                        !isCurrent &&
+                        "border-gray-03 text-gray-02",
+                    )}
+                  >
+                    {siblingStatus === "OK" ? "✓" : i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium leading-snug break-words text-gray-01">
+                      {sibling.shortLabel}
+                    </span>
+                    <span className="font-mono text-[10px] text-gray-02">
+                      {sibling.stableId}
+                      {" · "}
+                      {sibling.matchConfidence} · {sibling.score.toFixed(2)}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <Panel label="TEF match to review" tone="match">
+        <p className="font-mono text-[11px] text-gray-02">{match.stableId}</p>
+        <p className="text-2xl font-semibold leading-tight text-gray-01 break-words">
+          {match.shortLabel}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <SoftChip
+            tone={
+              match.matchConfidence === "high"
+                ? "ok"
+                : match.matchConfidence === "mid"
+                  ? "info"
+                  : "neutral"
+            }
+          >
+            {match.matchConfidence} · {match.score.toFixed(2)}
+          </SoftChip>
+          {match.explicit !== undefined && (
+            <SoftChip tone={match.explicit ? "ok" : "neutral"}>
+              {match.explicit ? "explicit" : "implied"}
+            </SoftChip>
+          )}
+          {category && (
+            <SoftChip tone={categoryAgrees ? "ok" : "warn"}>
+              TEF: {canonicalShiftType(category)}
+              {!categoryAgrees ? " ≠ our shift" : ""}
+            </SoftChip>
+          )}
+          {legacy && <SoftChip>Legacy: {legacy}</SoftChip>}
+        </div>
+        {match.sectorPath && (
+          <p className="text-xs text-gray-02 break-words">{match.sectorPath}</p>
+        )}
+        {mechanism && (
+          <div className="rounded-md border border-blue-03/20 bg-gray-04/50 px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-02">
+              Why this match
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-gray-01 break-words">
+              {mechanism}
+            </p>
+          </div>
+        )}
+      </Panel>
+
+      {shift.aiReviewCategory && (
+        <Panel label="AI second opinion" tone="ai">
+          <p className="text-sm font-medium text-gray-01">
+            {aiReviewHeadline(shift.aiReviewCategory)}
+          </p>
+          {shift.aiReviewExplanation && (
+            <p className="text-sm leading-relaxed text-gray-02 break-words">
+              {shift.aiReviewExplanation}
+            </p>
+          )}
+        </Panel>
+      )}
+    </div>
+  );
+
+  const dock = (
+    <ReviewControls
+      variant="dock"
+      planId={reviewCtx.planId}
+      step={reviewCtx.step}
+      entityType="teMatch"
+      entityId={entityId}
+      reviewedSnapshot={{
+        activityShiftId: shiftKey,
+        match,
+        candidates: allCandidates,
+      }}
+      review={reviewCtx.reviewsByEntity.get(entityKey)}
+      defaultSuggestedValue={{
+        selectedStableId: match.stableId,
+        selectedShortLabel: match.shortLabel,
+      }}
+      suggestEditor={teMatchSelectEditor({
+        current: {
+          stableId: match.stableId,
+          shortLabel: match.shortLabel,
+          score: match.score,
+        },
+        candidates: allCandidates,
+      })}
+      onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
+    />
+  );
+
+  return (
+    <>
+      {children({
+        contextLabel: "TEF match",
+        subProgress:
+          matchCount > 1
+            ? `Match ${matchIndex + 1} of ${matchCount} on this shift`
+            : undefined,
+        body,
+        dock,
+      })}
+    </>
+  );
+}
+
+function TeUnmatchedSlots({
+  measure,
+  shift,
+  children,
+}: {
+  measure: ExtractedMeasure;
+  shift: ActivityShift;
+  children: (slots: ReviewItemSlots) => ReactNode;
+}) {
+  const outcome = matchOutcomeLabel(
+    shift.transitionElementGroupKind,
+    shift.transitionElementGateDomain,
+    shift.transitionElementGroupLabel,
+  );
+
+  const body = (
+    <div className="space-y-3">
+      <Panel label="Measure">
+        <p className="text-base font-medium leading-snug text-gray-01 break-words whitespace-pre-wrap">
+          {measure.measureText}
+        </p>
+      </Panel>
+      <Panel label="Activity shift" tone="shift">
+        <p className="text-lg font-semibold text-gray-01 break-words">
+          {shift.shiftFrom} → {shift.shiftTo}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <SoftChip>Ours: {canonicalShiftType(shift.type)}</SoftChip>
+          <SoftChip>Score: {shift.score}</SoftChip>
+          {outcome && <SoftChip tone="warn">{outcome}</SoftChip>}
+        </div>
+        <p className="text-xs text-gray-02 break-words">
+          Activity: {shift.activity} · Need: {shift.need}
+        </p>
+      </Panel>
+      <Panel
+        tone="judge"
+        className="border-dashed border-orange-03/40 bg-orange-03/5"
+      >
+        <p className="text-lg font-semibold text-orange-03">No TEF match</p>
+        <p className="text-sm text-gray-02">
+          Switch to List view to add a match or inspect AI recovery / shadow
+          proposals — those actions stay on the list for now.
+        </p>
+      </Panel>
+      {shift.aiReviewCategory && (
+        <Panel label="AI second opinion" tone="ai">
+          <p className="text-sm font-medium text-gray-01">
+            {aiReviewHeadline(shift.aiReviewCategory)}
+          </p>
+          {shift.aiReviewExplanation && (
+            <p className="text-sm text-gray-02 break-words">
+              {shift.aiReviewExplanation}
+            </p>
+          )}
+        </Panel>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      {children({
+        contextLabel: "Unmatched shift",
+        body,
+        dock: (
+          <p className="text-center text-xs text-gray-02">
+            No QA mark here — use List view to add or recover a match.
+          </p>
+        ),
+      })}
+    </>
+  );
+}
+
+/**
+ * Per-worker review-mode layouts. List view must not use this — it only
+ * feeds the sticky-dock session via render props.
+ */
+export function StepReviewItemCard({
+  item,
+  reviewCtx,
+  optionCommitments,
+  pdfMissingPhrases,
+  onFindInPdf,
+  onNavigateToEntityId,
+  children,
+}: StepReviewItemCardProps) {
+  switch (item.kind) {
+    case "commitment":
+      return (
+        <SingleCommitmentSlots
+          commitment={item.commitment}
+          columns={item.columns as "extract" | "climate" | "actionable"}
+          reviewCtx={reviewCtx}
+          optionCommitments={optionCommitments}
+          pdfMissingPhrases={pdfMissingPhrases}
+          onFindInPdf={onFindInPdf}
+        >
+          {children}
+        </SingleCommitmentSlots>
+      );
+    case "commitmentGroup":
+      return (
+        <GroupReviewSlots
+          groupLabel={item.groupLabel}
+          columns={item.columns}
+          commitments={item.commitments}
+          reviewCtx={reviewCtx}
+          optionCommitments={optionCommitments}
+        >
+          {children}
+        </GroupReviewSlots>
+      );
+    case "measure":
+      return (
+        <MeasureSlots
+          measure={item.measure}
+          columns={item.columns}
+          reviewCtx={reviewCtx}
+        >
+          {children}
+        </MeasureSlots>
+      );
+    case "teMatch":
+      return (
+        <TeMatchSlots
+          measure={item.measure}
+          shift={item.shift}
+          match={item.match}
+          reviewCtx={reviewCtx}
+          onNavigateToEntityId={onNavigateToEntityId}
+        >
+          {children}
+        </TeMatchSlots>
+      );
+    case "teUnmatched":
+      return (
+        <TeUnmatchedSlots measure={item.measure} shift={item.shift}>
+          {children}
+        </TeUnmatchedSlots>
+      );
+    default:
+      return null;
+  }
+}
