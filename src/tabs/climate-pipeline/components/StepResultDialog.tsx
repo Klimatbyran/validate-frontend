@@ -3225,7 +3225,9 @@ export function StepResultDialog({
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      size={showSplitPanel || viewMode === "review" ? "full" : "6xl"}
+      // Review mode stays on 6xl (same as list) so prev/next arrows outside
+      // the card still fit on screen. Only the PDF split view needs full width.
+      size={showSplitPanel ? "full" : "6xl"}
       scrollable={!showSplitPanel && viewMode !== "review"}
       fillHeight={showSplitPanel || viewMode === "review"}
       sideNav={sideNav}
