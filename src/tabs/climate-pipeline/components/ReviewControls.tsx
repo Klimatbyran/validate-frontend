@@ -383,10 +383,7 @@ export function ReviewControls({
           <p className="truncate text-xs text-gray-02">“{review.comment}”</p>
         )}
         <div
-          className={cn(
-            "grid gap-2",
-            showOk ? "grid-cols-3" : "grid-cols-2",
-          )}
+          className={cn("grid gap-2", showOk ? "grid-cols-3" : "grid-cols-2")}
         >
           {showOk && (
             <Button

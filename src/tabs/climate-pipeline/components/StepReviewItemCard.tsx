@@ -1158,10 +1158,7 @@ function existingTeMatchAddIds(
 ): string[] {
   const ids: string[] = [];
   for (const review of reviewCtx.reviewsByEntity.values()) {
-    if (
-      review.step !== reviewCtx.step ||
-      review.entityType !== "teMatchAdd"
-    ) {
+    if (review.step !== reviewCtx.step || review.entityType !== "teMatchAdd") {
       continue;
     }
     if (
@@ -1313,9 +1310,7 @@ function TeUnmatchedSlots({
           suggestedNew: slotCanUseSuggestedNew ? suggestedNew : null,
         })}
         showOk={false}
-        onAdd={() =>
-          setPendingSlotIds((ids) => [...ids, crypto.randomUUID()])
-        }
+        onAdd={() => setPendingSlotIds((ids) => [...ids, crypto.randomUUID()])}
         addTitle="Add another TE match"
         onDismissUnsaved={
           dismissWhenUnsaved ? () => dismissPendingSlot(entityId) : undefined
@@ -1328,9 +1323,7 @@ function TeUnmatchedSlots({
   const statusBits = [
     "No TEF match",
     outcome,
-    shift.aiReviewCategory
-      ? aiReviewHeadline(shift.aiReviewCategory)
-      : null,
+    shift.aiReviewCategory ? aiReviewHeadline(shift.aiReviewCategory) : null,
     suggestedNew ? `Suggested: ${suggestedNew.shortLabel}` : null,
     allCandidates.length > 0
       ? `${allCandidates.length} candidate${allCandidates.length === 1 ? "" : "s"} in Add TEF`
@@ -1356,8 +1349,8 @@ function TeUnmatchedSlots({
           {statusBits.join(" · ")}
         </p>
         <p className="text-sm text-gray-02">
-          Use Add TEF in the dock to attach a candidate, accept a suggested
-          new TE, or propose your own label.
+          Use Add TEF in the dock to attach a candidate, accept a suggested new
+          TE, or propose your own label.
         </p>
       </Panel>
 

@@ -5,7 +5,11 @@ import { authenticatedFetch } from "@/lib/api-helpers";
 // "merged" is set only via confirmShadowElementMerges below, never via
 // updateShadowElementStatus's PATCH -- it always comes with a mergedIntoId,
 // which that endpoint doesn't accept.
-export type ShadowElementStatus = "preliminary" | "promoted" | "rejected" | "merged";
+export type ShadowElementStatus =
+  | "preliminary"
+  | "promoted"
+  | "rejected"
+  | "merged";
 
 // Set once by the mint check at creation time -- see reviewWeakMatch.ts's
 // buildMintCheckPrompt. "specific": tied to one measurable activity, no
@@ -144,10 +148,15 @@ export function useShadowElements() {
   return { elements, isLoading, error, refresh: fetchElements };
 }
 
-export async function deleteAllShadowElements(): Promise<{ deletedCount: number }> {
-  const res = await authenticatedFetch(`${getClimatePlansPipelineApiUrl()}/shadow-elements`, {
-    method: "DELETE",
-  });
+export async function deleteAllShadowElements(): Promise<{
+  deletedCount: number;
+}> {
+  const res = await authenticatedFetch(
+    `${getClimatePlansPipelineApiUrl()}/shadow-elements`,
+    {
+      method: "DELETE",
+    },
+  );
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `${res.status} ${res.statusText}`);
@@ -159,9 +168,12 @@ export async function deleteAllShadowElements(): Promise<{ deletedCount: number 
  * LLM calls server-side, so it's a POST behind auth even though it doesn't
  * mutate anything, same as every other authenticated action here. */
 export async function fetchMergeCandidates(): Promise<MergeGroup[]> {
-  const res = await authenticatedFetch(`${getClimatePlansPipelineApiUrl()}/shadow-elements/merge-candidates`, {
-    method: "POST",
-  });
+  const res = await authenticatedFetch(
+    `${getClimatePlansPipelineApiUrl()}/shadow-elements/merge-candidates`,
+    {
+      method: "POST",
+    },
+  );
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `${res.status} ${res.statusText}`);
@@ -174,11 +186,14 @@ export async function fetchMergeCandidates(): Promise<MergeGroup[]> {
 export async function confirmShadowElementMerges(
   groups: { canonicalId: string; mergedIds: string[] }[],
 ): Promise<{ mergedCount: number }> {
-  const res = await authenticatedFetch(`${getClimatePlansPipelineApiUrl()}/shadow-elements/merge`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ groups }),
-  });
+  const res = await authenticatedFetch(
+    `${getClimatePlansPipelineApiUrl()}/shadow-elements/merge`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groups }),
+    },
+  );
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `${res.status} ${res.statusText}`);
@@ -188,10 +203,15 @@ export async function confirmShadowElementMerges(
 
 /** Read-only audit against the real taxonomy -- proposes overlaps, writes
  * nothing. */
-export async function fetchRealTaxonomyOverlaps(): Promise<RealTaxonomyOverlap[]> {
-  const res = await authenticatedFetch(`${getClimatePlansPipelineApiUrl()}/shadow-elements/real-taxonomy-overlaps`, {
-    method: "POST",
-  });
+export async function fetchRealTaxonomyOverlaps(): Promise<
+  RealTaxonomyOverlap[]
+> {
+  const res = await authenticatedFetch(
+    `${getClimatePlansPipelineApiUrl()}/shadow-elements/real-taxonomy-overlaps`,
+    {
+      method: "POST",
+    },
+  );
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `${res.status} ${res.statusText}`);
@@ -205,11 +225,14 @@ export async function fetchRealTaxonomyOverlaps(): Promise<RealTaxonomyOverlap[]
 export async function rejectShadowElementsWithRecovery(
   items: { shadowElementId: string; realStableId: string }[],
 ): Promise<RejectWithRecoveryResult[]> {
-  const res = await authenticatedFetch(`${getClimatePlansPipelineApiUrl()}/shadow-elements/reject-with-recovery`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ items }),
-  });
+  const res = await authenticatedFetch(
+    `${getClimatePlansPipelineApiUrl()}/shadow-elements/reject-with-recovery`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    },
+  );
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `${res.status} ${res.statusText}`);
@@ -219,9 +242,12 @@ export async function rejectShadowElementsWithRecovery(
 
 /** Reverts one merged element back to standalone preliminary. */
 export async function unlinkShadowElement(id: string): Promise<void> {
-  const res = await authenticatedFetch(`${getClimatePlansPipelineApiUrl()}/shadow-elements/${id}/unlink`, {
-    method: "POST",
-  });
+  const res = await authenticatedFetch(
+    `${getClimatePlansPipelineApiUrl()}/shadow-elements/${id}/unlink`,
+    {
+      method: "POST",
+    },
+  );
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `${res.status} ${res.statusText}`);

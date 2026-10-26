@@ -602,7 +602,8 @@ export function teMatchAddEditor(args: {
                     action: "add",
                     selectedStableId: null,
                     selectedShortLabel: e.target.value,
-                    selectedDescription: suggestion?.selectedDescription ?? null,
+                    selectedDescription:
+                      suggestion?.selectedDescription ?? null,
                     isSuggestedNew: true,
                   } satisfies TeMatchAddSuggestion)
                 }
