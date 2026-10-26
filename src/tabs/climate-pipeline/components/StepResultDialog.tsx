@@ -1,22 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  Loader2,
-  Check,
-  ChevronsDown,
-  ChevronsUp,
-  Code,
-  Copy,
-  FileCheck,
-  FileText,
-  FileWarning,
-  Image,
-  Play,
-  Plus,
-  RotateCw,
-  SearchCheck,
-  Tags,
-  Target,
-} from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Code, Copy, FileText, Loader2, Tags } from "lucide-react";
 import { toast } from "sonner";
 import { Modal } from "@/ui/modal";
 import { CollapsibleSection } from "@/ui/collapsible-section";
@@ -25,33 +8,18 @@ import { PdfHighlightViewer, PdfHighlightPanel } from "./PdfHighlightViewer";
 import { ResizableSplitView } from "./ResizableSplitView";
 import { RecoveredImagesGallery } from "./RecoveredImagesGallery";
 import { Button } from "@/ui/button";
-import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import {
-  getClimatePlansPipelineApiUrl,
-  getClimatePlansPipelineWebhookUrl,
-  CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
-} from "@/config/api-env";
-import { authenticatedFetch } from "@/lib/api-helpers";
-import { createJobsFromUrls } from "@/tabs/upload/lib/upload-api";
+import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
 import { StatusPill } from "@/components/StatusPill";
 import {
   toSwimlaneStatus,
   type ClimatePipelinePlan,
-  type PipelineStepRun,
 } from "../hooks/useClimatePipelinePlans";
 import {
   useClimatePlanDetail,
-  approvePlan,
-  type ActivityShift,
-  type Commitment,
-  type RecoveredTransitionElement,
-  type TransitionElementCandidate,
-  type TransitionElementMatch,
-  type DocumentReference,
-  type DocumentReferenceRelationship,
-  type ExtractedMeasure,
   type ClimatePlanDetail,
+  type Commitment,
+  type DocumentReference,
 } from "../hooks/useClimatePlanDetail";
 import {
   indexReviewsByEntity,
@@ -59,27 +27,39 @@ import {
   type PipelineReview,
 } from "../hooks/usePipelineReviews";
 import { ReviewControls } from "./ReviewControls";
+import { StepReviewMode } from "./StepReviewMode";
+import { QaReviewToolbar } from "./QaReviewToolbar";
+import { StepReviewItemCard } from "./StepReviewItemCard";
 import {
-  COMMITMENT_THEME_OPTIONS,
-  actionableFilterSuggestEditor,
-  climateFilterSuggestEditor,
-  extractCommitmentSuggestEditor,
-  isTeMatchAddSuggestion,
-  similarGroupSuggestEditor,
-  teMatchAddEditor,
-  teMatchSelectEditor,
-  themeSuggestEditor,
-} from "./structuredSuggestEditors";
+  buildStepReviewItems,
+  commitmentsForStep,
+  countByQaStatus,
+  filterByQaStatus,
+  filterCommitmentsByQaStatus,
+  filterMeasuresByQaStatus,
+  filterTeMatchesForListView,
+  getReviewableItemCount,
+  getStepReviewPrompt,
+  stepSupportsReviewMode,
+  type QaStatusFilter,
+  type StepViewMode,
+} from "../lib/stepReviewQueue";
+import type { ReviewContext } from "./reviewContext";
+import { MetaChip, QaFooter } from "./stepResultListUi";
+import { TransitionElementsView } from "./TransitionElementsList";
+import { CommitmentsList, DocumentReferencesList } from "./CommitmentsList";
 import {
-  aiReviewHeadline,
-  aiReviewPillLabel,
-  legacyExportTag,
-  matchMechanismLine,
-  matchOutcomeLabel,
-  reviewerChosenStableId,
-  shiftTypesAgree,
-  tefCategoryOf,
-} from "../lib/tef-match-display";
+  CLIMATE_PASSED_COLOR,
+  commitmentParts,
+  type PdfViewerState,
+} from "./commitmentPdf";
+import { MeasuresList } from "./MeasuresList";
+import {
+  ApproveButton,
+  PreviousStepRuns,
+  RerunButton,
+  StepNavArrow,
+} from "./stepResultDialogChrome";
 
 /** Count of items shown in each step's dialog — same filters the dialog
  * content itself applies, so the title badge always matches what's below. */
@@ -87,1362 +67,22 @@ function getStepItemCount(
   step: string,
   detail: ClimatePlanDetail,
 ): number | null {
+  const reviewable = getReviewableItemCount(step, detail);
+  if (reviewable !== null) return reviewable;
   switch (step) {
     case "documentReferences":
       return detail.documentReferences.length;
-    case "extractCommitments":
-      return detail.commitments.length;
-    case "filterCommitmentsClimate":
-      return detail.commitments.length;
-    case "filterCommitmentsActionable":
-      return detail.commitments.filter((c) => c.climateRelevant).length;
-    case "groupCommitmentsSimilar":
-    case "groupCommitmentsThemes":
-      return detail.commitments.filter((c) => c.climateRelevant && c.actionable)
-        .length;
-    case "extractMeasures":
-      return detail.extractedMeasures.length;
-    case "scoreMeasures":
-      return detail.extractedMeasures.length;
     case "classifyActivityShiftTypes":
       return detail.extractedMeasures.reduce(
         (n, m) => n + (m.score?.activityShifts.length ?? 0),
         0,
       );
-    case "matchTransitionElements":
-      return detail.extractedMeasures.filter(
-        (m) => m.score && m.score.activityShifts.length > 0,
-      ).length;
     default:
       return null;
   }
 }
 
-type ReviewLookup = Map<string, PipelineReview>;
-
-interface ReviewContext {
-  planId: string;
-  step: string;
-  reviewsByEntity: ReviewLookup;
-  onReviewChanged: (review: PipelineReview | null, key: string) => void;
-}
-
-/** Survive extractCommitments delete+recreate by keying on stableId. */
-function commitmentEntityId(commitment: Commitment): string {
-  return commitment.stableId;
-}
-
-/** A commitment's own text, split into independently-searchable parts when
- * it was merged from several source sentences (see Commitment.extractionParts)
- * — a merge doesn't always sit contiguously in the source, so searching for
- * the whole merged text as one string would miss every part after the
- * first. Falls back to [commitment.text] when there are no parts. */
-function commitmentParts(commitment: Commitment): string[] {
-  return commitment.extractionParts && commitment.extractionParts.length > 0
-    ? commitment.extractionParts.map((p) => p.text)
-    : [commitment.text];
-}
-
-/** Survive extractMeasures recreate when measure text is unchanged. */
-function measureEntityId(measure: ExtractedMeasure): string {
-  let hash = 0;
-  for (let i = 0; i < measure.measureText.length; i++) {
-    hash = (hash * 31 + measure.measureText.charCodeAt(i)) | 0;
-  }
-  return `measure:${(hash >>> 0).toString(36)}`;
-}
-
-/** Survive scoreMeasures recreate when shift content is unchanged. */
-function activityShiftEntityKey(shift: ActivityShift): string {
-  return [
-    shift.type,
-    shift.shiftFrom,
-    shift.shiftTo,
-    shift.need,
-    shift.activity,
-  ]
-    .join("|")
-    .slice(0, 200);
-}
-
-function documentReferenceTone(
-  relationship: DocumentReferenceRelationship,
-): MetaChipTone {
-  switch (relationship) {
-    case "companion":
-      return "type";
-    case "initiative":
-      return "relevance";
-    default:
-      return "score";
-  }
-}
-
-function QaFooter({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mt-3 pt-2 border-t border-gray-03/60 min-w-0">
-      {children}
-    </div>
-  );
-}
-
-type MetaChipTone = "neutral" | "score" | "type" | "relevance";
-
-function metaChipToneClass(tone: MetaChipTone): string {
-  switch (tone) {
-    case "score":
-      return "border-blue-03/40 bg-blue-03/15 text-blue-03";
-    case "type":
-      return "border-orange-03/40 bg-orange-03/15 text-orange-03";
-    case "relevance":
-      return "border-green-03/40 bg-green-03/15 text-green-03";
-    default:
-      return "border-gray-03 bg-gray-03/40 text-gray-01";
-  }
-}
-
-function MetaChip({
-  label,
-  children,
-  tone = "neutral",
-  large = false,
-}: {
-  label: string;
-  children: React.ReactNode;
-  tone?: MetaChipTone;
-  large?: boolean;
-}) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-md border ${large ? "px-2.5 py-1.5 text-sm" : "px-2 py-1 text-xs"} ${metaChipToneClass(tone)}`}
-    >
-      <span
-        className={`uppercase tracking-wide opacity-80 ${large ? "text-xs" : "text-[10px]"}`}
-      >
-        {label}
-      </span>
-      <span className="font-semibold tabular-nums">{children}</span>
-    </span>
-  );
-}
-
-/** Visual weight for 1–7 scores: all stay readable; higher = stronger fill/type. */
-function scoreStrengthClass(score: number | null | undefined): string {
-  const level = Math.min(7, Math.max(1, Math.round(score ?? 1)));
-  switch (level) {
-    case 1:
-      return "border-blue-03/25 bg-blue-03/8 text-blue-03/65 font-medium";
-    case 2:
-      return "border-blue-03/30 bg-blue-03/12 text-blue-03/75 font-medium";
-    case 3:
-      return "border-blue-03/40 bg-blue-03/18 text-blue-03/85 font-semibold";
-    case 4:
-      return "border-blue-03/50 bg-blue-03/25 text-blue-03 font-semibold";
-    case 5:
-      return "border-blue-03/60 bg-blue-03/35 text-blue-03 font-bold";
-    case 6:
-      return "border-blue-03/80 bg-blue-03/45 text-blue-03 font-bold";
-    default:
-      return "border-blue-03 bg-blue-03/55 text-blue-03 font-bold ring-1 ring-blue-03/50";
-  }
-}
-
-function ScoreChip({
-  label,
-  score,
-  large = false,
-}: {
-  label: string;
-  score: number | null | undefined;
-  large?: boolean;
-}) {
-  const display = score ?? "—";
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-md border tabular-nums ${large ? "px-2.5 py-1.5 text-sm" : "px-2 py-1 text-xs"} ${scoreStrengthClass(score)}`}
-      title={`${label}: ${display} (1 weak → 7 strong)`}
-    >
-      <span
-        className={`uppercase tracking-wide opacity-80 ${large ? "text-xs" : "text-[10px]"}`}
-      >
-        {label}
-      </span>
-      <span>{display}</span>
-    </span>
-  );
-}
-
-function teConfidenceChipClass(
-  confidence: "high" | "mid" | "low",
-  score: number,
-): string {
-  // Blend confidence with similarity score (typically ~0–1) for fill strength.
-  const strength = Math.min(
-    7,
-    Math.max(
-      1,
-      Math.round(
-        (confidence === "high" ? 5 : confidence === "mid" ? 3 : 1) + score * 2,
-      ),
-    ),
-  );
-  const base =
-    confidence === "high"
-      ? "border-green-03 text-green-03"
-      : confidence === "mid"
-        ? "border-blue-03 text-blue-03"
-        : "border-gray-02 text-gray-02";
-  const fill =
-    strength >= 6
-      ? confidence === "high"
-        ? "bg-green-03/45 font-bold"
-        : confidence === "mid"
-          ? "bg-blue-03/45 font-bold"
-          : "bg-gray-03/60 font-semibold"
-      : strength >= 4
-        ? confidence === "high"
-          ? "bg-green-03/30 font-semibold"
-          : confidence === "mid"
-            ? "bg-blue-03/30 font-semibold"
-            : "bg-gray-03/40 font-medium"
-        : confidence === "high"
-          ? "bg-green-03/15 font-medium"
-          : confidence === "mid"
-            ? "bg-blue-03/15 font-medium"
-            : "bg-gray-03/25 font-medium";
-  return `${base} ${fill}`;
-}
-
-/** Whether the measure's own text directly names this match (explicit) vs.
- * only a reasonable inference (implied) — an LLM judgment from tePicker's
- * judge() call, not word-overlap. Undefined on matches made before this
- * field existed. */
-function ExplicitBadge({ explicit }: { explicit: boolean | undefined }) {
-  if (explicit === undefined) return null;
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md border px-2 py-1 text-xs uppercase tracking-wide",
-        explicit
-          ? "border-green-03/40 bg-green-03/10 text-green-03"
-          : "border-gray-03 bg-gray-03/50 text-gray-01 font-semibold",
-      )}
-      title={
-        explicit
-          ? "The measure's own text directly names this match"
-          : "Only a reasonable inference — not directly named by the measure's text"
-      }
-    >
-      {explicit ? "explicit" : "implied"}
-    </span>
-  );
-}
-
-function outcomeTone(kind: string | null | undefined): MetaChipTone {
-  if (kind === "specific" || kind === "multiple_specific") return "relevance";
-  if (kind === "ambiguous") return "score";
-  if (kind === "too_narrow" || kind === "none") return "type";
-  return "neutral";
-}
-
-function TefCategoryPill({
-  category,
-  shiftType,
-}: {
-  category: string | null;
-  shiftType: string;
-}) {
-  if (!category) return null;
-  const agrees = shiftTypesAgree(shiftType, category);
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm",
-        agrees
-          ? "border-green-03/40 bg-green-03/10 text-green-03"
-          : "border-orange-03/40 bg-orange-03/10 text-orange-03",
-      )}
-      title={
-        agrees
-          ? "TEF's category matches our classification of this shift"
-          : "TEF's category differs from our classification of this shift"
-      }
-    >
-      <span className="uppercase tracking-wide text-xs opacity-80">TEF</span>
-      <span className="font-semibold">{category}</span>
-    </span>
-  );
-}
-
-function ConfidenceScore({
-  confidence,
-  score,
-}: {
-  confidence: "high" | "mid" | "low" | undefined;
-  score: number;
-}) {
-  const label = confidence
-    ? `${confidence} · ${score.toFixed(4)}`
-    : score.toFixed(4);
-  const tone = confidence
-    ? teConfidenceChipClass(confidence, score)
-    : "border-gray-03 bg-gray-03/40 text-gray-01";
-  return (
-    <span
-      className={`inline-flex items-center rounded-md border px-2.5 py-1.5 text-sm tabular-nums ${tone}`}
-    >
-      {label}
-    </span>
-  );
-}
-
-function LegacyExportTag({ tag }: { tag: string | null }) {
-  if (!tag) return null;
-  return (
-    <span
-      className="text-xs text-gray-02/60"
-      title="Older TEF shift/improve tag — not a reliable category"
-    >
-      Legacy: {tag}
-    </span>
-  );
-}
-
-type TeMatchView =
-  | TransitionElementMatch
-  | RecoveredTransitionElement
-  | TransitionElementCandidate;
-
-type MatchSource = "primary" | "judge" | "retrieval" | "shadow";
-
-function SourcePill({ kind }: { kind: MatchSource }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md border px-2 py-1 text-xs font-semibold uppercase tracking-wide",
-        sourcePillClass(kind),
-      )}
-      title={sourcePillTitle(kind)}
-    >
-      {sourcePillLabel(kind)}
-    </span>
-  );
-}
-
-function sourcePillLabel(source: MatchSource): string {
-  if (source === "primary") return "Primary";
-  if (source === "judge") return "Judge error";
-  if (source === "retrieval") return "Taxonomy miss";
-  return "Shadow TEF · reviewer";
-}
-
-function sourcePillClass(source: MatchSource): string {
-  if (source === "judge")
-    return "border-orange-03/50 bg-orange-03/15 text-orange-03";
-  if (source === "retrieval")
-    return "border-blue-03/50 bg-blue-03/15 text-blue-03";
-  if (source === "shadow")
-    return "border-purple-03/40 bg-purple-03/10 text-purple-03";
-  return "border-gray-03 bg-gray-03/50 text-gray-01";
-}
-
-function sourcePillTitle(source: MatchSource): string {
-  if (source === "judge") {
-    return "The AI reviewer says the first matcher should have accepted this candidate.";
-  }
-  if (source === "retrieval") {
-    return "The AI reviewer found this existing TEF after the first search missed it.";
-  }
-  if (source === "shadow") {
-    return "The AI reviewer added this shadow element during review.";
-  }
-  return "Accepted by the first matcher. The reviewer did not add this one.";
-}
-
-function ReviewVerdictPill({ category }: { category: string }) {
-  const label = aiReviewPillLabel(category);
-  if (!label) return null;
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md border px-2.5 py-1.5 text-sm font-semibold",
-        reviewVerdictClass(category),
-      )}
-    >
-      {label}
-    </span>
-  );
-}
-
-function reviewVerdictClass(category: string): string {
-  if (category === "JUDGE_ERROR")
-    return "border-orange-03/50 bg-orange-03/15 text-orange-03";
-  if (category === "RETRIEVAL_MISS")
-    return "border-blue-03/50 bg-blue-03/15 text-blue-03";
-  if (category === "TAXONOMY_GAP")
-    return "border-purple-03/40 bg-purple-03/10 text-purple-03";
-  if (category === "ENABLING_NOT_SHIFT")
-    return "border-teal-03/50 bg-teal-03/15 text-teal-03";
-  return "border-gray-03 bg-gray-03/50 text-gray-01";
-}
-
-function TeMatchBody({
-  match,
-  shiftType,
-  matchSource = null,
-}: {
-  match: TeMatchView;
-  shiftType: string;
-  matchSource?: MatchSource | null;
-}) {
-  const mechanism = matchMechanismLine(match);
-  return (
-    <div className="space-y-1.5 min-w-0">
-      <TeMatchTitle stableId={match.stableId} shortLabel={match.shortLabel} />
-      <div className="flex flex-wrap items-center gap-1.5">
-        {matchSource && <SourcePill kind={matchSource} />}
-        {"explicit" in match && <ExplicitBadge explicit={match.explicit} />}
-        <ConfidenceScore
-          confidence={
-            "matchConfidence" in match ? match.matchConfidence : undefined
-          }
-          score={match.score}
-        />
-        <TefCategoryPill
-          category={tefCategoryOf(match)}
-          shiftType={shiftType}
-        />
-        <LegacyExportTag tag={legacyExportTag(match)} />
-      </div>
-      {match.sectorPath && (
-        <p className="text-sm text-gray-02 break-words">{match.sectorPath}</p>
-      )}
-      {mechanism && (
-        <p className="text-sm text-gray-01/80 break-words">{mechanism}</p>
-      )}
-    </div>
-  );
-}
-
-function TeMatchTitle({
-  stableId,
-  shortLabel,
-}: {
-  stableId: string;
-  shortLabel: string;
-}) {
-  return (
-    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-      <span className="font-mono text-sm text-gray-02">{stableId}</span>
-      <span className="text-base font-medium text-gray-01 break-words">
-        {shortLabel}
-      </span>
-    </div>
-  );
-}
-
-function ShiftMetaRow({
-  shift,
-  showMatches,
-}: {
-  shift: ActivityShift;
-  showMatches: boolean;
-}) {
-  const outcome = showMatches
-    ? matchOutcomeLabel(
-        shift.transitionElementGroupKind,
-        shift.transitionElementGateDomain,
-        shift.transitionElementGroupLabel,
-      )
-    : null;
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <MetaChip label="Ours" tone="type" large>
-        {shift.type}
-      </MetaChip>
-      <ScoreChip label="Score" score={shift.score} large />
-      {outcome && (
-        <MetaChip
-          label="Outcome"
-          tone={outcomeTone(shift.transitionElementGroupKind)}
-          large
-        >
-          {outcome}
-        </MetaChip>
-      )}
-      {showMatches && shift.aiReviewCategory && (
-        <ReviewVerdictPill category={shift.aiReviewCategory} />
-      )}
-    </div>
-  );
-}
-
-function ShiftContextLine({
-  shift,
-  showDomain,
-}: {
-  shift: ActivityShift;
-  showDomain: boolean;
-}) {
-  const domain = shift.transitionElementGateDomain;
-  return (
-    <p className="text-sm text-gray-02 break-words">
-      Activity: {shift.activity} · Need: {shift.need}
-      {showDomain && domain ? ` · Domain: ${domain}` : ""}
-    </p>
-  );
-}
-
-function MatchOutcomeNotes({
-  groupKind,
-  groupLabel,
-}: {
-  groupKind: string | null | undefined;
-  groupLabel: string | null | undefined;
-}) {
-  if (groupKind === "too_narrow" && groupLabel) {
-    return (
-      <p className="text-sm text-orange-03 bg-orange-03/10 border border-orange-03/20 rounded-md px-2.5 py-2">
-        Match is narrower than the shift's own wording — a broader TE (&ldquo;
-        {groupLabel}&rdquo;) may fit better.
-      </p>
-    );
-  }
-  if (groupKind === "ambiguous" && groupLabel) {
-    return (
-      <p className="text-sm text-blue-03 bg-blue-03/10 border border-blue-03/20 rounded-md px-2.5 py-2">
-        Several candidates cluster under &ldquo;{groupLabel}&rdquo; — the
-        shift's own wording doesn't commit to one of them.
-      </p>
-    );
-  }
-  if (groupKind === "multiple_specific") {
-    return (
-      <p className="text-sm text-gray-02 bg-gray-03/20 border border-gray-03/30 rounded-md px-2.5 py-2">
-        This shift names several distinct destinations — each match below is
-        independently valid, not competing alternatives.
-      </p>
-    );
-  }
-  return null;
-}
-
-function ProposedElementCard({
-  suggested,
-  hasExistingMatch,
-}: {
-  suggested: { shortLabel: string; description: string };
-  hasExistingMatch: boolean;
-}) {
-  return (
-    <div className="rounded-md border border-gray-03/50 p-2 space-y-1">
-      <p className="text-xs uppercase tracking-wide text-gray-02 font-medium">
-        {hasExistingMatch
-          ? "Broader element proposed"
-          : "No existing match — new element proposed"}
-      </p>
-      <p className="text-base text-gray-01 break-words">
-        <span className="font-medium">{suggested.shortLabel}</span>
-        {suggested.description ? ` — ${suggested.description}` : ""}
-      </p>
-    </div>
-  );
-}
-
-function opinionFrameClass(category: string | null | undefined): string {
-  if (category === "JUDGE_ERROR") return "border-orange-03/25";
-  if (category === "RETRIEVAL_MISS") return "border-blue-03/25";
-  if (category === "TAXONOMY_GAP") return "border-purple-03/25";
-  if (category === "ENABLING_NOT_SHIFT") return "border-teal-03/25";
-  return "border-gray-03/50";
-}
-
-function OpinionLabel() {
-  return (
-    <span className="inline-flex items-center rounded-md border border-gray-02/50 bg-gray-04 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-01">
-      AI second opinion
-    </span>
-  );
-}
-
-function AiSecondOpinion({
-  category,
-  explanation,
-}: {
-  category: string | null | undefined;
-  explanation: string | null | undefined;
-}) {
-  const headline = aiReviewHeadline(category);
-  if (!headline && !explanation) return null;
-  return (
-    <div
-      className={cn(
-        "rounded-md border p-2.5 space-y-2",
-        opinionFrameClass(category),
-      )}
-    >
-      <div className="flex flex-wrap items-center gap-1.5">
-        <OpinionLabel />
-        {category && <ReviewVerdictPill category={category} />}
-      </div>
-      <OpinionBody explanation={explanation} headline={headline} />
-    </div>
-  );
-}
-
-function OpinionBody({
-  explanation,
-  headline,
-}: {
-  explanation: string | null | undefined;
-  headline: string | null;
-}) {
-  if (explanation) {
-    return <p className="text-sm text-gray-02 break-words">{explanation}</p>;
-  }
-  return <p className="text-sm text-gray-02">{headline}</p>;
-}
-
-function recoveredMatchToShow(
-  shift: ActivityShift,
-): RecoveredTransitionElement | null {
-  const recovered = shift.aiRecoveredMatch;
-  if (!recovered?.stableId) return null;
-  const alreadyListed = shift.transitionElementMatches.some(
-    (match) => match.stableId === recovered.stableId,
-  );
-  return alreadyListed ? null : recovered;
-}
-
-function TeMatchAddSlots({
-  shiftId,
-  matchedIds,
-  allCandidates,
-  suggestedNew,
-  reviewCtx,
-  onRequestAddSlot,
-  pendingSlotIds,
-}: {
-  shiftId: string;
-  matchedIds: Set<string>;
-  allCandidates: Array<{ stableId: string; shortLabel: string; score: number }>;
-  suggestedNew: { shortLabel: string; description: string } | null;
-  reviewCtx: ReviewContext;
-  onRequestAddSlot: () => void;
-  pendingSlotIds: string[];
-}) {
-  const existingEntityIds: string[] = [];
-  for (const review of reviewCtx.reviewsByEntity.values()) {
-    if (review.step !== reviewCtx.step || review.entityType !== "teMatchAdd") {
-      continue;
-    }
-    const isLegacy = review.entityId === shiftId;
-    const isSlot = review.entityId.startsWith(`${shiftId}:add:`);
-    if (isLegacy || isSlot) existingEntityIds.push(review.entityId);
-  }
-
-  const pendingEntityIds = pendingSlotIds
-    .map((slotId) => `${shiftId}:add:${slotId}`)
-    .filter((entityId) => !existingEntityIds.includes(entityId));
-
-  const addEntityIds = [...existingEntityIds, ...pendingEntityIds];
-
-  const claimedStableIds = new Set<string>();
-  for (const entityId of addEntityIds) {
-    const key = reviewKey(reviewCtx.step, "teMatchAdd", entityId);
-    const review = reviewCtx.reviewsByEntity.get(key);
-    if (
-      isTeMatchAddSuggestion(review?.suggestedValue) &&
-      review.suggestedValue.selectedStableId
-    ) {
-      claimedStableIds.add(review.suggestedValue.selectedStableId);
-    }
-  }
-
-  if (addEntityIds.length === 0) return null;
-
-  return (
-    <div className="space-y-2">
-      {addEntityIds.map((entityId) => {
-        const entityKey = reviewKey(reviewCtx.step, "teMatchAdd", entityId);
-        const review = reviewCtx.reviewsByEntity.get(entityKey);
-        const selectedInThis =
-          isTeMatchAddSuggestion(review?.suggestedValue) &&
-          review.suggestedValue.selectedStableId
-            ? review.suggestedValue.selectedStableId
-            : null;
-        const addableCandidates = allCandidates.filter(
-          (c) =>
-            !matchedIds.has(c.stableId) &&
-            (!claimedStableIds.has(c.stableId) ||
-              c.stableId === selectedInThis),
-        );
-        const canUseSuggestedNew =
-          Boolean(suggestedNew) &&
-          !addEntityIds.some((otherId) => {
-            if (otherId === entityId) return false;
-            const other = reviewCtx.reviewsByEntity.get(
-              reviewKey(reviewCtx.step, "teMatchAdd", otherId),
-            );
-            return (
-              isTeMatchAddSuggestion(other?.suggestedValue) &&
-              other.suggestedValue.isSuggestedNew
-            );
-          });
-
-        return (
-          <div
-            key={entityId}
-            className="rounded-md border border-dashed border-blue-03/40 bg-blue-03/5 p-2 space-y-2 min-w-0"
-          >
-            <p className="text-xs font-medium text-blue-03">
-              Suggested add
-              {isTeMatchAddSuggestion(review?.suggestedValue) &&
-              review.suggestedValue.selectedShortLabel
-                ? `: ${review.suggestedValue.selectedShortLabel}`
-                : ""}
-            </p>
-            <QaFooter>
-              <ReviewControls
-                planId={reviewCtx.planId}
-                step={reviewCtx.step}
-                entityType="teMatchAdd"
-                entityId={entityId}
-                reviewedSnapshot={{
-                  activityShiftId: shiftId,
-                  currentMatchIds: [...matchedIds],
-                  addableCandidates,
-                  suggestedNew: canUseSuggestedNew ? suggestedNew : null,
-                }}
-                review={review}
-                initialPanel={review ? null : "suggest"}
-                defaultSuggestedValue={
-                  addableCandidates[0]
-                    ? {
-                        action: "add" as const,
-                        selectedStableId: addableCandidates[0].stableId,
-                        selectedShortLabel: addableCandidates[0].shortLabel,
-                      }
-                    : canUseSuggestedNew && suggestedNew
-                      ? {
-                          action: "add" as const,
-                          selectedStableId: null,
-                          selectedShortLabel: suggestedNew.shortLabel,
-                          selectedDescription: suggestedNew.description,
-                          isSuggestedNew: true,
-                        }
-                      : {
-                          action: "add" as const,
-                          selectedStableId: null,
-                          selectedShortLabel: "",
-                        }
-                }
-                suggestEditor={teMatchAddEditor({
-                  candidates: addableCandidates,
-                  suggestedNew: canUseSuggestedNew ? suggestedNew : null,
-                })}
-                showOk={false}
-                onAdd={onRequestAddSlot}
-                addTitle="Add another TE match"
-                addDisabled={
-                  addableCandidates.filter((c) => c.stableId !== selectedInThis)
-                    .length === 0 && !canUseSuggestedNew
-                }
-                onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
-              />
-            </QaFooter>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function ListedTeMatch({
-  match,
-  shiftKey,
-  shiftType,
-  matchSource,
-  allCandidates,
-  canAddMore,
-  requestAddSlot,
-  reviewCtx,
-}: {
-  match: TransitionElementMatch;
-  shiftKey: string;
-  shiftType: string;
-  matchSource: MatchSource | null;
-  allCandidates: Array<{ stableId: string; shortLabel: string; score: number }>;
-  canAddMore: boolean;
-  requestAddSlot: () => void;
-  reviewCtx: ReviewContext;
-}) {
-  const entityId = `${shiftKey}:${match.stableId}`;
-  const entityKey = reviewKey(reviewCtx.step, "teMatch", entityId);
-  return (
-    <div className="rounded-md border border-gray-03/50 bg-gray-05/40 p-2 space-y-2 min-w-0">
-      <TeMatchBody
-        match={match}
-        shiftType={shiftType}
-        matchSource={matchSource}
-      />
-      <QaFooter>
-        <ReviewControls
-          planId={reviewCtx.planId}
-          step={reviewCtx.step}
-          entityType="teMatch"
-          entityId={entityId}
-          reviewedSnapshot={{
-            activityShiftId: shiftKey,
-            match,
-            candidates: allCandidates,
-          }}
-          review={reviewCtx.reviewsByEntity.get(entityKey)}
-          defaultSuggestedValue={{
-            selectedStableId: match.stableId,
-            selectedShortLabel: match.shortLabel,
-          }}
-          suggestEditor={teMatchSelectEditor({
-            current: {
-              stableId: match.stableId,
-              shortLabel: match.shortLabel,
-              score: match.score,
-            },
-            candidates: allCandidates,
-          })}
-          onAdd={canAddMore ? requestAddSlot : undefined}
-          addTitle="Add another TE match"
-          addDisabled={!canAddMore}
-          onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
-        />
-      </QaFooter>
-    </div>
-  );
-}
-
-function AddMatchButton({ onAdd }: { onAdd: () => void }) {
-  return (
-    <div className="rounded-md border border-dashed border-blue-03/40 bg-blue-03/5 p-2">
-      <div className="flex flex-wrap items-center gap-1">
-        <span className="text-[10px] uppercase tracking-wide text-gray-02 mr-1">
-          QA
-        </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0 text-gray-02 hover:text-blue-03"
-          title="Add a TE match"
-          onClick={onAdd}
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </Button>
-        <span className="text-xs text-blue-03">Add a TE match</span>
-      </div>
-    </div>
-  );
-}
-
-function EmptyMatchPrompt({
-  hasProposal,
-  hasOtherDisplay,
-  canAddMore,
-  onAdd,
-}: {
-  hasProposal: boolean;
-  hasOtherDisplay: boolean;
-  canAddMore: boolean;
-  onAdd: () => void;
-}) {
-  if ((hasProposal || hasOtherDisplay) && !canAddMore) return null;
-  return (
-    <div className="space-y-2">
-      {!hasProposal && !hasOtherDisplay && (
-        <p className="text-sm text-gray-02 italic">No matches</p>
-      )}
-      {canAddMore && <AddMatchButton onAdd={onAdd} />}
-    </div>
-  );
-}
-
-function RecoveredMatchCard({
-  match,
-  shiftType,
-}: {
-  match: RecoveredTransitionElement;
-  shiftType: string;
-}) {
-  return (
-    <div className="rounded-md border border-blue-03/40 bg-blue-03/5 p-2">
-      <TeMatchBody match={match} shiftType={shiftType} matchSource="retrieval" />
-    </div>
-  );
-}
-
-function JudgePickCard({
-  match,
-  shiftType,
-}: {
-  match: TransitionElementCandidate;
-  shiftType: string;
-}) {
-  return (
-    <div className="rounded-md border border-orange-03/40 bg-orange-03/5 p-2">
-      <TeMatchBody match={match} shiftType={shiftType} matchSource="judge" />
-    </div>
-  );
-}
-
-function shadowShortLabel(shift: ActivityShift): string | undefined {
-  return (
-    shift.shadowElement?.shortLabel ??
-    shift.transitionElementSuggestedNew?.shortLabel
-  );
-}
-
-function shadowDescription(shift: ActivityShift): string | undefined {
-  return (
-    shift.shadowElement?.description ??
-    shift.transitionElementSuggestedNew?.description
-  );
-}
-
-function ShadowElementName({ label }: { label: string }) {
-  return (
-    <p className="text-base font-medium text-gray-01 break-words">{label}</p>
-  );
-}
-
-function ShadowMatchCard({ shift }: { shift: ActivityShift }) {
-  const label = shadowShortLabel(shift);
-  const description = shadowDescription(shift);
-  // A rejected shadow is wrong -- the connection is deliberately kept (see
-  // the API's PATCH .../status handler) so this shift doesn't get lost,
-  // but it must never look like an ordinary trustworthy match. Greyed out
-  // and explicitly flagged instead of styled like a normal shadow match.
-  const isRejected = shift.shadowElement?.status === "rejected";
-  return (
-    <div
-      className={cn(
-        "rounded-md border p-2 space-y-1.5",
-        isRejected
-          ? "border-gray-03 bg-gray-03/10 opacity-70"
-          : "border-purple-03/30 bg-purple-03/5",
-      )}
-    >
-      <div className="flex flex-wrap items-center gap-1.5">
-        <SourcePill kind="shadow" />
-        <TefCategoryPill
-          category={shift.shadowElement?.activityShiftCategory ?? null}
-          shiftType={shift.type}
-        />
-        {isRejected && (
-          <span className="inline-flex items-center rounded-md border border-red-500/50 bg-red-500/10 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-red-400">
-            Rejected -- needs manual reattachment
-          </span>
-        )}
-      </div>
-      {label && (
-        <ShadowElementName
-          label={isRejected ? `${label} (rejected)` : label}
-        />
-      )}
-      {description && (
-        <p className="text-sm text-gray-02 break-words">{description}</p>
-      )}
-    </div>
-  );
-}
-
-function ActivityShiftTeBlock({
-  shift,
-  reviewCtx,
-  showMatches = true,
-}: {
-  shift: ActivityShift;
-  reviewCtx: ReviewContext;
-  // classifyActivityShiftTypes only sets type/typeReasoning -- the TE
-  // matches, candidates, and gate/group metadata on this same row all come
-  // from the LATER matchTransitionElements step, possibly from an older
-  // run. Showing them under classifyActivityShiftTypes's own dialog would
-  // make it look like this step did the matching itself.
-  showMatches?: boolean;
-}) {
-  const [pendingAddSlotIds, setPendingAddSlotIds] = useState<string[]>([]);
-
-  const shiftKey = activityShiftEntityKey(shift);
-  const matchedIds = new Set(
-    shift.transitionElementMatches.map((match) => match.stableId),
-  );
-  const allCandidates = (shift.transitionElementCandidates ?? []).map((c) => ({
-    stableId: c.stableId,
-    shortLabel: c.shortLabel,
-    score: c.score,
-  }));
-  const suggestedNew = shift.transitionElementSuggestedNew ?? null;
-
-  const claimedByAdds = new Set<string>();
-  let hasSuggestedNewClaim = false;
-  for (const review of reviewCtx.reviewsByEntity.values()) {
-    if (review.step !== reviewCtx.step || review.entityType !== "teMatchAdd") {
-      continue;
-    }
-    if (
-      review.entityId !== shiftKey &&
-      !review.entityId.startsWith(`${shiftKey}:add:`)
-    ) {
-      continue;
-    }
-    if (!isTeMatchAddSuggestion(review.suggestedValue)) continue;
-    if (review.suggestedValue.selectedStableId) {
-      claimedByAdds.add(review.suggestedValue.selectedStableId);
-    }
-    if (review.suggestedValue.isSuggestedNew) hasSuggestedNewClaim = true;
-  }
-
-  const remainingAddable = allCandidates.filter(
-    (c) => !matchedIds.has(c.stableId) && !claimedByAdds.has(c.stableId),
-  );
-  const canAddMore =
-    remainingAddable.length > 0 ||
-    (Boolean(suggestedNew) && !hasSuggestedNewClaim);
-
-  const requestAddSlot = () => {
-    if (!canAddMore) return;
-    setPendingAddSlotIds((ids) => [...ids, crypto.randomUUID()]);
-  };
-
-  const groupKind = shift.transitionElementGroupKind;
-  const groupLabel = shift.transitionElementGroupLabel;
-  const hasMatches = shift.transitionElementMatches.length > 0;
-  const recovered = showMatches ? recoveredMatchToShow(shift) : null;
-  const reviewerPickId = reviewerPickIdFor(shift);
-  const promotedCandidate = showMatches
-    ? promotedJudgeCandidate(shift, reviewerPickId, matchedIds)
-    : null;
-  const hasShadow = showMatches && Boolean(shift.shadowElementId);
-  // recovered/promotedCandidate/hasShadow are review-step cards with no add
-  // action of their own -- they're exactly what's shown when the primary
-  // pass found nothing (hasMatches=false), so gating the add button on
-  // "any card is displayed" hid it on precisely the shifts that most need a
-  // manual correction. The add button only needs to know whether the
-  // PRIMARY match list (which has its own per-row add affordance) is empty.
-  const hasOtherReviewCard =
-    Boolean(recovered) || Boolean(promotedCandidate) || hasShadow;
-
-  return (
-    <div className="pl-3 border-l-2 border-gray-03 space-y-3 min-w-0">
-      <ShiftStatement from={shift.shiftFrom} to={shift.shiftTo} />
-      <ShiftMetaRow shift={shift} showMatches={showMatches} />
-      {shift.typeReasoning && (
-        <p className="text-sm text-gray-02/80 italic break-words">
-          {shift.typeReasoning}
-        </p>
-      )}
-      <ShiftContextLine shift={shift} showDomain={showMatches} />
-      {showMatches && (
-        <MatchOutcomeNotes groupKind={groupKind} groupLabel={groupLabel} />
-      )}
-      {showMatches && hasMatches && (
-        <ListedMatches
-          shift={shift}
-          shiftKey={shiftKey}
-          reviewerPickId={reviewerPickId}
-          allCandidates={allCandidates}
-          canAddMore={canAddMore}
-          requestAddSlot={requestAddSlot}
-          reviewCtx={reviewCtx}
-        />
-      )}
-      {promotedCandidate && (
-        <JudgePickCard match={promotedCandidate} shiftType={shift.type} />
-      )}
-      {recovered && (
-        <RecoveredMatchCard match={recovered} shiftType={shift.type} />
-      )}
-      {hasShadow && <ShadowMatchCard shift={shift} />}
-      {showMatches && !hasMatches && (
-        <EmptyMatchPrompt
-          hasProposal={Boolean(suggestedNew)}
-          hasOtherDisplay={hasOtherReviewCard}
-          canAddMore={canAddMore}
-          onAdd={requestAddSlot}
-        />
-      )}
-      {showMatches && suggestedNew && !hasShadow && (
-        <ProposedElementCard
-          suggested={suggestedNew}
-          hasExistingMatch={hasMatches}
-        />
-      )}
-      {showMatches && (
-        <AiSecondOpinion
-          category={shift.aiReviewCategory}
-          explanation={shift.aiReviewExplanation}
-        />
-      )}
-      {showMatches && (
-        <TeMatchAddSlots
-          shiftId={shiftKey}
-          matchedIds={matchedIds}
-          allCandidates={allCandidates}
-          suggestedNew={suggestedNew}
-          reviewCtx={reviewCtx}
-          onRequestAddSlot={requestAddSlot}
-          pendingSlotIds={pendingAddSlotIds}
-        />
-      )}
-    </div>
-  );
-}
-
-function ListedMatches({
-  shift,
-  shiftKey,
-  reviewerPickId,
-  allCandidates,
-  canAddMore,
-  requestAddSlot,
-  reviewCtx,
-}: {
-  shift: ActivityShift;
-  shiftKey: string;
-  reviewerPickId: string | null;
-  allCandidates: Array<{ stableId: string; shortLabel: string; score: number }>;
-  canAddMore: boolean;
-  requestAddSlot: () => void;
-  reviewCtx: ReviewContext;
-}) {
-  const labelSources = Boolean(shift.aiReviewCategory);
-  return (
-    <div className="space-y-2">
-      {shift.transitionElementMatches.map((match) => (
-        <ListedTeMatch
-          key={match.stableId}
-          match={match}
-          shiftKey={shiftKey}
-          shiftType={shift.type}
-          matchSource={listedMatchSource(
-            labelSources,
-            reviewerPickId,
-            match.stableId,
-          )}
-          allCandidates={allCandidates}
-          canAddMore={canAddMore}
-          requestAddSlot={requestAddSlot}
-          reviewCtx={reviewCtx}
-        />
-      ))}
-    </div>
-  );
-}
-
-function listedMatchSource(
-  labelSources: boolean,
-  reviewerPickId: string | null,
-  stableId: string,
-): MatchSource | null {
-  if (!labelSources) return null;
-  if (reviewerPickId === stableId) return "judge";
-  return "primary";
-}
-
-function reviewerPickIdFor(shift: ActivityShift): string | null {
-  if (shift.aiReviewCategory !== "JUDGE_ERROR") return null;
-  const candidateIds = (shift.transitionElementCandidates ?? []).map(
-    (candidate) => candidate.stableId,
-  );
-  return reviewerChosenStableId(shift.aiReviewExplanation, candidateIds);
-}
-
-function promotedJudgeCandidate(
-  shift: ActivityShift,
-  reviewerPickId: string | null,
-  matchedIds: Set<string>,
-): TransitionElementCandidate | null {
-  if (!reviewerPickId || matchedIds.has(reviewerPickId)) return null;
-  return (
-    shift.transitionElementCandidates?.find(
-      (candidate) => candidate.stableId === reviewerPickId,
-    ) ?? null
-  );
-}
-
-function CommitmentText({ text }: { text: string }) {
-  return (
-    <p className="text-lg font-semibold leading-snug text-gray-01 break-words">
-      {text}
-    </p>
-  );
-}
-
-function ShiftStatement({ from, to }: { from: string; to: string }) {
-  return (
-    <p className="text-base font-medium text-gray-01 break-words">
-      {from} → {to}
-    </p>
-  );
-}
-
-function TransitionElementsView({
-  measures,
-  reviewCtx,
-  showMatches = true,
-}: {
-  measures: ExtractedMeasure[];
-  reviewCtx: ReviewContext;
-  showMatches?: boolean;
-}) {
-  const withShifts = measures.filter(
-    (m) => m.score && m.score.activityShifts.length > 0,
-  );
-  if (withShifts.length === 0) {
-    return (
-      <p className="text-sm text-gray-02">
-        {showMatches
-          ? "No activity shifts to match yet."
-          : "No activity shifts to classify yet."}
-      </p>
-    );
-  }
-  return (
-    <div className="space-y-4">
-      {withShifts.map((m) => (
-        <div
-          key={m.id}
-          className="rounded-lg border border-gray-03/70 bg-gray-04/50 p-4 space-y-4 min-w-0"
-        >
-          <CommitmentText text={m.measureText} />
-          {m.score!.activityShifts.map((shift) => (
-            <ActivityShiftTeBlock
-              key={shift.id}
-              shift={shift}
-              reviewCtx={reviewCtx}
-              showMatches={showMatches}
-            />
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function PreviousStepRuns({ runs }: { runs: PipelineStepRun[] }) {
-  const [expanded, setExpanded] = useState(false);
-
-  if (runs.length === 0) return null;
-
-  return (
-    <div className="mt-1">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setExpanded((v) => !v)}
-        className="h-6 px-2 text-xs text-blue-03 hover:text-blue-04 hover:bg-blue-03/10"
-      >
-        {expanded ? (
-          <>
-            <ChevronsUp className="w-3 h-3 mr-1" /> Hide previous runs
-          </>
-        ) : (
-          <>
-            <ChevronsDown className="w-3 h-3 mr-1" /> {runs.length} previous{" "}
-            {runs.length === 1 ? "run" : "runs"}
-          </>
-        )}
-      </Button>
-      {expanded && (
-        <ul className="mt-2 space-y-1.5 border-l-2 border-gray-03 pl-3">
-          {runs.map((r, i) => (
-            <li key={i} className="flex items-center gap-2 text-xs">
-              <StatusPill
-                label={r.status}
-                status={toSwimlaneStatus(r.status)}
-                isActive={false}
-              />
-              <span className="text-gray-02">
-                {new Date(r.startedAt).toLocaleString()}
-                {r.completedAt &&
-                  ` · finished ${new Date(r.completedAt).toLocaleString()}`}
-              </span>
-              {r.error && <span className="text-pink-03">{r.error}</span>}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function RerunButton({
-  planId,
-  step,
-  onRerun,
-}: {
-  planId: string;
-  step: string;
-  onRerun: () => void;
-}) {
-  const [loadingMode, setLoadingMode] = useState<"cascade" | "single" | null>(
-    null,
-  );
-  const [error, setError] = useState<string | null>(null);
-
-  const handleClick = async (noCascade: boolean) => {
-    setLoadingMode(noCascade ? "single" : "cascade");
-    setError(null);
-    try {
-      const url = `${getClimatePlansPipelineApiUrl()}/plans/${planId}/rerun/${step}${
-        noCascade ? "?noCascade=true" : ""
-      }`;
-      const res = await authenticatedFetch(url, { method: "POST" });
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-      onRerun();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to rerun");
-    } finally {
-      setLoadingMode(null);
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => handleClick(false)}
-        disabled={loadingMode !== null}
-        className="h-7 px-3 text-xs"
-        title="Rerun this step and cascade through every step after it"
-      >
-        {loadingMode === "cascade" ? (
-          <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-        ) : (
-          <RotateCw className="w-3 h-3 mr-1.5" />
-        )}
-        Rerun from here
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => handleClick(true)}
-        disabled={loadingMode !== null}
-        className="h-7 px-3 text-xs"
-        title="Rerun only this step, without re-running anything downstream"
-      >
-        {loadingMode === "single" ? (
-          <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-        ) : (
-          <RotateCw className="w-3 h-3 mr-1.5" />
-        )}
-        Rerun only this step
-      </Button>
-      {error && <span className="text-xs text-pink-03">{error}</span>}
-    </div>
-  );
-}
-
-interface StepResultDialogProps {
+export interface StepResultDialogProps {
   plan: ClimatePipelinePlan | null;
   step: string | null;
   /** Set when opened from a previous-run pill — shows that specific run's
@@ -1451,986 +91,9 @@ interface StepResultDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRerun?: () => void;
-}
-
-function YesNo({ value }: { value: boolean | null }) {
-  if (value === null) return <span className="text-gray-02">—</span>;
-  return (
-    <span className={value ? "text-green-03" : "text-pink-03"}>
-      {value ? "Yes" : "No"}
-    </span>
-  );
-}
-
-/** Compact groundedness flag — visible on every commitment step. */
-function FoundInDocumentFlag({ unverified }: { unverified: boolean }) {
-  const found = !unverified;
-  return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium",
-        found
-          ? "border-green-03/40 bg-green-03/10 text-green-03"
-          : "border-orange-03/40 bg-orange-03/10 text-orange-03",
-      )}
-      title={
-        found
-          ? "Found in document — quote grounded in plan markdown"
-          : "Not found in document — may be invented or unfindable"
-      }
-    >
-      {found ? (
-        <FileCheck className="h-3 w-3" aria-hidden />
-      ) : (
-        <FileWarning className="h-3 w-3" aria-hidden />
-      )}
-      <span>{found ? "In markdown" : "Not in markdown"}</span>
-    </span>
-  );
-}
-
-/** Flags commitments sourced from a recovered image (OCR/AI description) —
- * these won't be findable via the PDF text layer's "Find in PDF" search. */
-function ImageSourceFlag() {
-  return (
-    <span
-      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-blue-03/40 bg-blue-03/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-03"
-      title="Extracted from a recovered image (OCR/AI description), not the document's text layer — not searchable in the PDF"
-    >
-      <Image className="h-3 w-3" aria-hidden />
-      <span>From image</span>
-    </span>
-  );
-}
-
-/** Shown after a PDF search couldn't re-locate a markdown-verified quote
- * in the pdf.js text layer — worth a manual look in the source PDF. */
-function NotFoundInPdfFlag() {
-  return (
-    <span
-      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-pink-03/40 bg-pink-03/10 px-1.5 py-0.5 text-[10px] font-medium text-pink-03"
-      title="Verified in plan markdown, but not found again in the PDF text layer — check manually if needed"
-    >
-      <FileWarning className="h-3 w-3" aria-hidden />
-      <span>Not in PDF text</span>
-    </span>
-  );
-}
-
-const ORIGIN_LABELS: Record<string, string> = {
-  region: "region",
-  national: "national",
-  eu: "EU",
-  other: "other",
-};
-
-/** Flags a commitment whose target/measure is explicitly attributed to
- * another body rather than being the municipality's own — not always a
- * numeric "goal", can equally be a measure someone else suggested.
- * Independent of actor: the municipality is usually still the one doing
- * the committing. Can name more than one body at once. */
-function OriginFlag({
-  originatesFrom,
-}: {
-  originatesFrom: Commitment["originatesFrom"];
-}) {
-  if (!originatesFrom || originatesFrom.length === 0) return null;
-  const label = originatesFrom.map((o) => ORIGIN_LABELS[o] ?? o).join(", ");
-  return (
-    <span
-      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-blue-03/40 bg-blue-03/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-03"
-      title={`Originates from ${label} — not a target/measure the municipality set itself`}
-    >
-      <Target className="h-3 w-3" aria-hidden />
-      <span>Originates from: {label}</span>
-    </span>
-  );
-}
-
-function CommitmentReviewControls({
-  commitment,
-  columns,
-  reviewCtx,
-}: {
-  commitment: Commitment;
-  columns: "extract" | "climate" | "actionable";
-  reviewCtx: ReviewContext;
-}) {
-  const entityKey = reviewKey(
-    reviewCtx.step,
-    "commitment",
-    commitmentEntityId(commitment),
-  );
-  const snapshot = {
-    stableId: commitment.stableId,
-    text: commitment.text,
-    climateRelevant: commitment.climateRelevant,
-    adaptation: commitment.adaptation,
-    climateFilterReason: commitment.climateFilterReason,
-    actionable: commitment.actionable,
-    actionableReason: commitment.actionableReason,
-    unverified: commitment.unverified,
-    foundInDocument: !commitment.unverified,
-    section: commitment.section,
-    type: commitment.type,
-  };
-
-  const defaultSuggestedValue =
-    columns === "climate"
-      ? {
-          climateRelevant: commitment.climateRelevant ?? false,
-          adaptation: commitment.adaptation,
-        }
-      : columns === "actionable"
-        ? { actionable: commitment.actionable ?? false }
-        : {
-            foundInDocument: !commitment.unverified,
-          };
-
-  const suggestEditor =
-    columns === "climate"
-      ? climateFilterSuggestEditor({
-          climateRelevant: commitment.climateRelevant,
-          adaptation: commitment.adaptation,
-        })
-      : columns === "actionable"
-        ? actionableFilterSuggestEditor(commitment.actionable)
-        : extractCommitmentSuggestEditor({
-            unverified: commitment.unverified,
-          });
-
-  return (
-    <ReviewControls
-      planId={reviewCtx.planId}
-      step={reviewCtx.step}
-      entityType="commitment"
-      entityId={commitmentEntityId(commitment)}
-      reviewedSnapshot={snapshot}
-      review={reviewCtx.reviewsByEntity.get(entityKey)}
-      defaultSuggestedValue={defaultSuggestedValue}
-      suggestEditor={suggestEditor}
-      onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
-    />
-  );
-}
-
-/** Confirms extractMunicipality's guess (or a correction typed into
- * ReviewControls' suggested-value field, if one's been entered there) and
- * links this plan to a real Municipality row. This is the step that lets
- * two plans for the same municipality — a klimatplan and a companion
- * document, run separately — end up sharing one real relation instead of
- * just matching on a loose name string, so it's deliberately placed on
- * the extractMunicipality step itself rather than buried in a review
- * flow. */
-function ApproveButton({
-  planId,
-  extractedName,
-  approvedName,
-  onApproved,
-}: {
-  planId: string;
-  extractedName: string | null;
-  approvedName: string | null;
-  onApproved: () => void;
-}) {
-  const [isApproving, setIsApproving] = useState(false);
-
-  if (approvedName) {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs text-green-03">
-        <Check className="h-3.5 w-3.5" />
-        Approved
-      </span>
-    );
-  }
-
-  const handleApprove = async () => {
-    setIsApproving(true);
-    try {
-      const result = await approvePlan(planId);
-      toast.success(`Approved — linked to ${result.municipalityName}`);
-      onApproved();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to approve");
-    } finally {
-      setIsApproving(false);
-    }
-  };
-
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      disabled={!extractedName || isApproving}
-      onClick={() => void handleApprove()}
-      className="h-6 px-2 text-xs border-green-03/40 text-green-03 hover:bg-green-03/10 hover:border-green-03"
-      title={
-        extractedName
-          ? `Link this plan to the "${extractedName}" municipality`
-          : "No extracted name to approve yet"
-      }
-    >
-      {isApproving ? (
-        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-      ) : (
-        <Check className="w-3 h-3 mr-1" />
-      )}
-      Approve
-    </Button>
-  );
-}
-
-/** Same path the municipality-sources registry's Run button uses — a
- * companion document is just another url to run through the real
- * docling/Chroma pipeline, same as any other. Produces an entirely new,
- * independent ClimatePlan (url is the unique key), not an update to the
- * plan this reference was found on — there's nothing here to bookkeep
- * afterward the way the registry's lastRunAt is, so a toast is enough. */
-function RunCompanionButton({ url, name }: { url: string; name: string }) {
-  const [isRunning, setIsRunning] = useState(false);
-
-  const handleRun = async () => {
-    setIsRunning(true);
-    try {
-      await createJobsFromUrls({
-        urls: [url],
-        autoApprove: false,
-        forceReindex: false,
-        readImages: true,
-        callbackUrl: getClimatePlansPipelineWebhookUrl(),
-        reportTypeSlug: CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
-      });
-      toast.success(`Started pipeline for "${name}"`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to start run");
-    } finally {
-      setIsRunning(false);
-    }
-  };
-
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      disabled={isRunning}
-      onClick={handleRun}
-      className="h-6 px-2 text-xs border-green-03/40 text-green-03 hover:bg-green-03/10 hover:border-green-03"
-      title={`Start the pipeline for "${name}" as its own climate plan`}
-    >
-      {isRunning ? (
-        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-      ) : (
-        <Play className="w-3 h-3 mr-1" />
-      )}
-      Run
-    </Button>
-  );
-}
-
-function DocumentReferencesList({
-  documentReferences,
-}: {
-  documentReferences: DocumentReference[];
-}) {
-  if (documentReferences.length === 0) {
-    return (
-      <p className="text-sm text-gray-02">
-        No referenced documents found in this plan.
-      </p>
-    );
-  }
-
-  // groupDocumentReferences assigns groupId to rows naming the same
-  // document from different sections — collapse those into one card so
-  // the list doesn't repeat "avfallsplan" and "Avfallsplan" separately.
-  // Ungrouped rows (groupId null) fall back to a group of one, keyed by
-  // their own id.
-  const groups = new Map<string, DocumentReference[]>();
-  for (const ref of documentReferences) {
-    const key = ref.groupId ?? ref.id;
-    const list = groups.get(key) ?? [];
-    list.push(ref);
-    groups.set(key, list);
-  }
-  // A group's relationship is whichever member is "companion" — one
-  // mention explicitly tying it to this plan's own measures outweighs
-  // other mentions that were merely topically relevant. "initiative" is
-  // the next strongest signal (an explicit adoption act), then "related".
-  const groupedRefs = [...groups.values()].map((members) => ({
-    name: members[0].name,
-    relationship: members.some((m) => m.relationship === "companion")
-      ? ("companion" as const)
-      : members.some((m) => m.relationship === "initiative")
-        ? ("initiative" as const)
-        : ("related" as const),
-    members,
-  }));
-
-  const companions = groupedRefs.filter((g) => g.relationship === "companion");
-  const initiatives = groupedRefs.filter(
-    (g) => g.relationship === "initiative",
-  );
-  const related = groupedRefs.filter((g) => g.relationship === "related");
-
-  const renderGroup = (group: (typeof groupedRefs)[number]) => (
-    <article
-      key={group.members[0].id}
-      className="rounded-lg border border-gray-03/50 bg-gray-03/20 p-3 min-w-0 space-y-2"
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <MetaChip
-          label="Relationship"
-          tone={documentReferenceTone(group.relationship)}
-        >
-          {group.relationship}
-        </MetaChip>
-        <span className="text-sm font-medium text-gray-01">{group.name}</span>
-        {group.members.length > 1 && (
-          <span className="text-xs text-gray-02">
-            mentioned {group.members.length}×
-          </span>
-        )}
-        {group.relationship === "companion" &&
-          (() => {
-            const runUrl = group.members.find((m) => m.url)?.url;
-            return runUrl ? (
-              <RunCompanionButton url={runUrl} name={group.name} />
-            ) : null;
-          })()}
-      </div>
-      <div className="space-y-2 border-l-2 border-gray-03/50 pl-3">
-        {group.members.map((ref) => (
-          <div key={ref.id} className="space-y-0.5">
-            <p className="text-xs text-gray-02 break-words">
-              Section: {ref.section}
-            </p>
-            <p className="text-sm text-gray-01 break-words">
-              &ldquo;{ref.quote}&rdquo;
-            </p>
-            <p className="text-xs italic text-gray-02 break-words">
-              {ref.reasoning}
-            </p>
-            {ref.url && (
-              <a
-                href={ref.url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-block break-all text-xs text-blue-500 underline"
-              >
-                {ref.url}
-              </a>
-            )}
-          </div>
-        ))}
-      </div>
-    </article>
-  );
-
-  return (
-    <div className="space-y-4">
-      {companions.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-02">
-            Companion — likely holds this plan&apos;s own measures (
-            {companions.length})
-          </p>
-          <div className="space-y-2">{companions.map(renderGroup)}</div>
-        </div>
-      )}
-      {initiatives.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-02">
-            Initiative — a regional/national program the municipality has
-            explicitly joined ({initiatives.length})
-          </p>
-          <div className="space-y-2">{initiatives.map(renderGroup)}</div>
-        </div>
-      )}
-      {related.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-02">
-            Related documents ({related.length})
-          </p>
-          <div className="space-y-2">{related.map(renderGroup)}</div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// "focused" only searches for the one clicked commitment — much cheaper
-// than "all", which searches every verified phrase against every page.
-// Keeping them separate means a single "Find in PDF" click stays fast
-// regardless of how many commitments the plan has. Lifted to
-// StepResultDialog (rather than living inside CommitmentsList) so it can
-// decide whether the PDF opens as a modal or a side-by-side panel.
-// Green for "passed the climate filter" — gray for "filtered out" reuses
-// PdfHighlightViewer's own default secondary color, so only this one needs
-// defining here.
-const CLIMATE_PASSED_COLOR = "rgba(34, 197, 94, 0.45)";
-
-type PdfViewerState =
-  | { mode: "focused"; commitment: Commitment }
-  | { mode: "all" }
-  // Only reachable from the climate-filter step's own "view all in PDF"
-  // button — colors verified commitments green/gray by whether they
-  // passed the climate filter instead of the usual flat yellow (see
-  // CLIMATE_PASSED_COLOR above; the gray side reuses PdfHighlightViewer's
-  // own default secondary color).
-  | { mode: "all-climate" };
-
-function CommitmentsList({
-  commitments,
-  documentReferences,
-  columns,
-  reviewCtx,
-  allVerifiedPhrases,
-  climatePassedPhrases,
-  climateFilteredOutPhrases,
-  pdfMissingPhrases,
-  setPdfViewer,
-}: {
-  commitments: Commitment[];
-  documentReferences?: DocumentReference[];
-  columns: "extract" | "climate" | "actionable" | "similar" | "themes";
-  reviewCtx: ReviewContext;
-  allVerifiedPhrases: string[];
-  /** Only used when columns === "climate" — see the view-all-in-PDF button
-   * further down, which colors these green/gray instead of flat yellow. */
-  climatePassedPhrases: string[];
-  climateFilteredOutPhrases: string[];
-  pdfMissingPhrases: Set<string>;
-  setPdfViewer: (v: PdfViewerState | null) => void;
-}) {
-  // Declared before the early return below so it's called unconditionally
-  // on every render, per rules of hooks — only used by the default
-  // (extract/climate/actionable) list further down, not the grouped
-  // similar/themes views.
-  const [flagFilter, setFlagFilter] = useState<
-    "all" | "not-in-markdown" | "not-in-pdf"
-  >("all");
-
-  if (commitments.length === 0) {
-    return <p className="text-sm text-gray-02">No commitments yet.</p>;
-  }
-
-  const referencesBySection = new Map<string, DocumentReference[]>();
-  for (const ref of documentReferences ?? []) {
-    const list = referencesBySection.get(ref.section) ?? [];
-    list.push(ref);
-    referencesBySection.set(ref.section, list);
-  }
-
-  const missingInView = commitments.filter((c) =>
-    pdfMissingPhrases.has(c.text),
-  ).length;
-
-  if (columns === "similar") {
-    const groups = new Map<string, Commitment[]>();
-    const singletons: Commitment[] = [];
-    for (const c of commitments) {
-      if (c.similarGroupId) {
-        const list = groups.get(c.similarGroupId) ?? [];
-        list.push(c);
-        groups.set(c.similarGroupId, list);
-      } else {
-        singletons.push(c);
-      }
-    }
-    const groupOptions = [...groups.keys()];
-
-    const renderCommitmentRow = (c: Commitment) => {
-      const entityKey = reviewKey(
-        reviewCtx.step,
-        "commitment",
-        commitmentEntityId(c),
-      );
-      return (
-        <li key={c.id} className="min-w-0 space-y-1.5 px-3 py-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[11px] text-gray-02">
-              {c.stableId}
-            </span>
-            <FoundInDocumentFlag unverified={c.unverified} />
-            {c.fromRecoveredImage && <ImageSourceFlag />}
-            {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
-            <OriginFlag originatesFrom={c.originatesFrom} />
-          </div>
-          <p className="text-sm text-gray-01 break-words">{c.text}</p>
-          <QaFooter>
-            <ReviewControls
-              planId={reviewCtx.planId}
-              step={reviewCtx.step}
-              entityType="commitment"
-              entityId={commitmentEntityId(c)}
-              reviewedSnapshot={{
-                id: c.id,
-                stableId: c.stableId,
-                text: c.text,
-                similarGroupId: c.similarGroupId,
-                unverified: c.unverified,
-                foundInDocument: !c.unverified,
-              }}
-              review={reviewCtx.reviewsByEntity.get(entityKey)}
-              defaultSuggestedValue={{ similarGroupId: c.similarGroupId }}
-              suggestEditor={similarGroupSuggestEditor(
-                c.similarGroupId,
-                groupOptions,
-              )}
-              onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
-            />
-          </QaFooter>
-        </li>
-      );
-    };
-
-    return (
-      <div className="space-y-3">
-        <p className="text-xs text-gray-02">
-          {groups.size} duplicate group(s), {singletons.length} unique
-          commitment(s) — QA is still per commitment
-        </p>
-        {[...groups.entries()]
-          .sort(([, a], [, b]) => b.length - a.length)
-          .map(([groupId, members]) => (
-            <section
-              key={groupId}
-              className="min-w-0 overflow-hidden rounded-lg border border-gray-03/60 bg-gray-03/15"
-            >
-              <header className="flex flex-wrap items-center gap-2 border-b border-gray-03/50 bg-gray-03/40 px-3 py-2">
-                <span className="text-sm font-semibold text-gray-01">
-                  Duplicate group
-                </span>
-                <span className="rounded-full bg-gray-04/60 px-2 py-0.5 text-[11px] tabular-nums text-gray-02">
-                  {members.length}
-                </span>
-                <span
-                  className="max-w-full truncate font-mono text-[10px] text-gray-02"
-                  title={groupId}
-                >
-                  {groupId}
-                </span>
-              </header>
-              <ul className="divide-y divide-gray-03/40">
-                {members.map(renderCommitmentRow)}
-              </ul>
-            </section>
-          ))}
-        {singletons.length > 0 && (
-          <section className="min-w-0 overflow-hidden rounded-lg border border-gray-03/60 bg-gray-03/15">
-            <header className="flex flex-wrap items-center gap-2 border-b border-gray-03/50 bg-gray-03/40 px-3 py-2">
-              <span className="text-sm font-semibold text-gray-01">Unique</span>
-              <span className="rounded-full bg-gray-04/60 px-2 py-0.5 text-[11px] tabular-nums text-gray-02">
-                {singletons.length}
-              </span>
-            </header>
-            <ul className="divide-y divide-gray-03/40">
-              {singletons.map(renderCommitmentRow)}
-            </ul>
-          </section>
-        )}
-      </div>
-    );
-  }
-
-  if (columns === "themes") {
-    const byTheme = new Map<string, Commitment[]>();
-    for (const c of commitments) {
-      const key = c.theme ?? "(none)";
-      const list = byTheme.get(key) ?? [];
-      list.push(c);
-      byTheme.set(key, list);
-    }
-    const themeOptions = [
-      ...COMMITMENT_THEME_OPTIONS,
-      ...[...byTheme.keys()].filter(
-        (key) =>
-          key !== "(none)" &&
-          !(COMMITMENT_THEME_OPTIONS as readonly string[]).includes(key),
-      ),
-    ];
-
-    return (
-      <div className="space-y-3">
-        <p className="text-xs text-gray-02">
-          Commitments grouped by theme — QA is still per commitment
-        </p>
-        {[...byTheme.entries()]
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([theme, members]) => (
-            <section
-              key={theme}
-              className="min-w-0 overflow-hidden rounded-lg border border-gray-03/60 bg-gray-03/15"
-            >
-              <header className="flex flex-wrap items-center gap-2 border-b border-gray-03/50 bg-gray-03/40 px-3 py-2">
-                <span className="text-sm font-semibold capitalize text-gray-01">
-                  {theme}
-                </span>
-                <span className="rounded-full bg-gray-04/60 px-2 py-0.5 text-[11px] tabular-nums text-gray-02">
-                  {members.length}
-                </span>
-              </header>
-              <ul className="divide-y divide-gray-03/40">
-                {members.map((c) => {
-                  const entityKey = reviewKey(
-                    reviewCtx.step,
-                    "commitment",
-                    commitmentEntityId(c),
-                  );
-                  return (
-                    <li key={c.id} className="min-w-0 space-y-1.5 px-3 py-2.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-[11px] text-gray-02">
-                          {c.stableId}
-                        </span>
-                        <FoundInDocumentFlag unverified={c.unverified} />
-                        {c.fromRecoveredImage && <ImageSourceFlag />}
-                        {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
-                        <OriginFlag originatesFrom={c.originatesFrom} />
-                      </div>
-                      <p className="text-sm text-gray-01 break-words">
-                        {c.text}
-                      </p>
-                      <QaFooter>
-                        <ReviewControls
-                          planId={reviewCtx.planId}
-                          step={reviewCtx.step}
-                          entityType="commitment"
-                          entityId={commitmentEntityId(c)}
-                          reviewedSnapshot={{
-                            id: c.id,
-                            stableId: c.stableId,
-                            text: c.text,
-                            theme: c.theme,
-                            unverified: c.unverified,
-                            foundInDocument: !c.unverified,
-                          }}
-                          review={reviewCtx.reviewsByEntity.get(entityKey)}
-                          defaultSuggestedValue={{
-                            theme: c.theme ?? "other",
-                          }}
-                          suggestEditor={themeSuggestEditor(
-                            c.theme ?? "(none)",
-                            themeOptions,
-                          )}
-                          onChanged={(next) =>
-                            reviewCtx.onReviewChanged(next, entityKey)
-                          }
-                        />
-                      </QaFooter>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          ))}
-      </div>
-    );
-  }
-
-  const filteredCommitments = commitments.filter((c) => {
-    if (flagFilter === "not-in-markdown") return c.unverified;
-    if (flagFilter === "not-in-pdf") return pdfMissingPhrases.has(c.text);
-    return true;
-  });
-
-  return (
-    <div className="space-y-3">
-      {columns === "climate"
-        ? (climatePassedPhrases.length > 0 ||
-            climateFilteredOutPhrases.length > 0) && (
-            <button
-              onClick={() => setPdfViewer({ mode: "all-climate" })}
-              className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 bg-gray-03/40 px-2.5 py-1.5 text-xs text-gray-01 hover:bg-gray-03/60"
-              title="Open the source PDF — climate-relevant commitments in green, filtered-out ones in gray"
-            >
-              <SearchCheck className="w-3.5 h-3.5" />
-              View all in PDF ({
-                climatePassedPhrases.length
-              } climate-relevant, {climateFilteredOutPhrases.length} filtered
-              out)
-            </button>
-          )
-        : allVerifiedPhrases.length > 0 && (
-            <button
-              onClick={() => setPdfViewer({ mode: "all" })}
-              className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 bg-gray-03/40 px-2.5 py-1.5 text-xs text-gray-01 hover:bg-gray-03/60"
-              title="Open the source PDF with every verified commitment highlighted"
-            >
-              <SearchCheck className="w-3.5 h-3.5" />
-              View all {allVerifiedPhrases.length} verified passages in PDF
-            </button>
-          )}
-      {pdfMissingPhrases.size > 0 && (
-        <p className="rounded-md border border-pink-03/30 bg-pink-03/10 px-2.5 py-1.5 text-xs text-pink-03">
-          {missingInView > 0
-            ? `${missingInView} markdown-verified commitment(s) in this list weren't found in the PDF text layer after search — marked “Not in PDF text” for manual check.`
-            : `${pdfMissingPhrases.size} markdown-verified commitment(s) weren't found in the PDF text layer (may be on another step's filtered list).`}
-        </p>
-      )}
-      {columns === "extract" && (
-        <p className="text-xs text-gray-02">
-          <span className="text-gray-01">In markdown / Not in markdown</span>{" "}
-          shows whether the quote was found in the plan markdown.{" "}
-          <span className="text-gray-01">Not in PDF text</span> is a second,
-          separate check — it only ever appears on markdown-verified quotes
-          where the PDF's own text layer search still couldn't locate them.
-        </p>
-      )}
-      {(commitments.some((c) => c.unverified) ||
-        pdfMissingPhrases.size > 0) && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            onClick={() => setFlagFilter("all")}
-            className={cn(
-              "rounded-md border px-2.5 py-1 text-xs font-medium",
-              flagFilter === "all"
-                ? "border-gray-01/40 bg-gray-01/10 text-gray-01"
-                : "border-gray-03 bg-gray-03/20 text-gray-02 hover:bg-gray-03/40",
-            )}
-          >
-            All ({commitments.length})
-          </button>
-          <button
-            onClick={() => setFlagFilter("not-in-markdown")}
-            className={cn(
-              "rounded-md border px-2.5 py-1 text-xs font-medium",
-              flagFilter === "not-in-markdown"
-                ? "border-orange-03/50 bg-orange-03/15 text-orange-03"
-                : "border-gray-03 bg-gray-03/20 text-gray-02 hover:bg-gray-03/40",
-            )}
-          >
-            Not in markdown ({commitments.filter((c) => c.unverified).length})
-          </button>
-          <button
-            onClick={() => setFlagFilter("not-in-pdf")}
-            disabled={pdfMissingPhrases.size === 0}
-            title={
-              pdfMissingPhrases.size === 0
-                ? 'Open "View all verified passages in PDF" above first to run this check'
-                : undefined
-            }
-            className={cn(
-              "rounded-md border px-2.5 py-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-40",
-              flagFilter === "not-in-pdf"
-                ? "border-pink-03/50 bg-pink-03/15 text-pink-03"
-                : "border-gray-03 bg-gray-03/20 text-gray-02 hover:bg-gray-03/40",
-            )}
-          >
-            Not in PDF text ({missingInView})
-          </button>
-        </div>
-      )}
-      {filteredCommitments.length === 0 ? (
-        <p className="text-sm text-gray-02">
-          No commitments match this filter.
-        </p>
-      ) : (
-        filteredCommitments.map((c, idx) => (
-          <div key={c.id} id={`commitment-${c.id}`} className="space-y-3">
-            {columns === "extract" &&
-              c.section !== filteredCommitments[idx - 1]?.section &&
-              referencesBySection.get(c.section)?.map((ref) => (
-                <div
-                  key={ref.id}
-                  className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-gray-01"
-                >
-                  <p className="flex flex-wrap items-center gap-2 font-medium">
-                    <MetaChip
-                      label="Relationship"
-                      tone={documentReferenceTone(ref.relationship)}
-                    >
-                      {ref.relationship}
-                    </MetaChip>
-                    This section references: {ref.name}
-                  </p>
-                  <p className="mt-1 text-xs text-gray-02 break-words">
-                    &ldquo;{ref.quote}&rdquo;
-                  </p>
-                  <p className="mt-1 text-xs italic text-gray-02 break-words">
-                    {ref.reasoning}
-                  </p>
-                  {ref.url && (
-                    <a
-                      href={ref.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-1 inline-block break-all text-xs text-blue-500 underline"
-                    >
-                      {ref.url}
-                    </a>
-                  )}
-                </div>
-              ))}
-            <article className="rounded-lg border border-gray-03/50 bg-gray-03/20 p-3 min-w-0 space-y-2">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="font-mono text-xs text-gray-02">
-                  {c.stableId}
-                </span>
-                <FoundInDocumentFlag unverified={c.unverified} />
-                {c.fromRecoveredImage && <ImageSourceFlag />}
-                {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
-                <OriginFlag originatesFrom={c.originatesFrom} />
-                {!c.unverified && (
-                  <button
-                    onClick={() =>
-                      setPdfViewer({ mode: "focused", commitment: c })
-                    }
-                    className="inline-flex items-center gap-1 rounded-md border border-gray-03 bg-gray-03/40 px-2 py-1 text-xs text-gray-01 hover:bg-gray-03/60"
-                    title={
-                      c.fromRecoveredImage
-                        ? "Search for this passage in the source PDF — docling routed it through image recovery, but the PDF sometimes has real selectable text there anyway"
-                        : "Find and highlight this passage in the source PDF"
-                    }
-                  >
-                    <SearchCheck className="w-3 h-3" />
-                    Find in PDF
-                  </button>
-                )}
-                {columns === "extract" && (
-                  <MetaChip label="Type">{c.type}</MetaChip>
-                )}
-                {columns === "climate" && (
-                  <>
-                    <MetaChip label="Climate">
-                      <YesNo value={c.climateRelevant} />
-                    </MetaChip>
-                    <MetaChip label="Adaptation">
-                      <YesNo value={c.adaptation} />
-                    </MetaChip>
-                  </>
-                )}
-                {columns === "actionable" && (
-                  <MetaChip label="Actionable">
-                    <YesNo value={c.actionable} />
-                  </MetaChip>
-                )}
-              </div>
-              <p className="text-sm text-gray-01 break-words whitespace-pre-wrap">
-                {c.text}
-              </p>
-              {c.type === "TABLE" &&
-                c.tableMetadata &&
-                c.tableMetadata.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {c.tableMetadata.map((field, i) => (
-                      <MetaChip key={i} label={field.label}>
-                        {field.value}
-                      </MetaChip>
-                    ))}
-                  </div>
-                )}
-              {columns === "extract" && c.section && (
-                <p className="text-xs text-gray-02 break-words">
-                  Section: {c.section}
-                </p>
-              )}
-              {columns === "climate" && c.climateFilterReason && (
-                <p className="text-xs text-gray-02 break-words">
-                  {c.climateFilterReason}
-                </p>
-              )}
-              {columns === "actionable" && c.actionableReason && (
-                <p className="text-xs text-gray-02 break-words">
-                  {c.actionableReason}
-                </p>
-              )}
-              <QaFooter>
-                <CommitmentReviewControls
-                  commitment={c}
-                  columns={columns}
-                  reviewCtx={reviewCtx}
-                />
-              </QaFooter>
-            </article>
-          </div>
-        ))
-      )}
-    </div>
-  );
-}
-
-function MeasuresList({
-  measures,
-  columns,
-  reviewCtx,
-}: {
-  measures: ExtractedMeasure[];
-  columns: "extract" | "score";
-  reviewCtx: ReviewContext;
-}) {
-  if (measures.length === 0) {
-    return <p className="text-sm text-gray-02">No measures yet.</p>;
-  }
-  return (
-    <div className="space-y-3">
-      {measures.map((m) => {
-        const entityKey = reviewKey(
-          reviewCtx.step,
-          "measure",
-          measureEntityId(m),
-        );
-        const snapshot =
-          columns === "extract"
-            ? {
-                measureText: m.measureText,
-                climateRelevanceScore: m.climateRelevanceScore,
-              }
-            : {
-                measureText: m.measureText,
-                activityShiftScore: m.score?.activityShiftScore ?? null,
-                interventionScore: m.score?.interventionScore ?? null,
-                interventionType: m.score?.interventionType ?? null,
-              };
-        return (
-          <article
-            key={m.id}
-            className="rounded-lg border border-gray-03/50 bg-gray-03/20 p-3 min-w-0 space-y-2"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              {columns === "extract" && (
-                <MetaChip label="Relevance" tone="relevance">
-                  {m.climateRelevanceScore}
-                </MetaChip>
-              )}
-              {columns === "score" && (
-                <>
-                  <ScoreChip
-                    label="Activity shift"
-                    score={m.score?.activityShiftScore}
-                  />
-                  <ScoreChip
-                    label="Intervention"
-                    score={m.score?.interventionScore}
-                  />
-                  <MetaChip label="Type" tone="type">
-                    {m.score?.interventionType ?? "—"}
-                  </MetaChip>
-                </>
-              )}
-            </div>
-            <p className="text-sm text-gray-01 break-words whitespace-pre-wrap">
-              {m.measureText}
-            </p>
-            <QaFooter>
-              <ReviewControls
-                planId={reviewCtx.planId}
-                step={reviewCtx.step}
-                entityType="measure"
-                entityId={measureEntityId(m)}
-                reviewedSnapshot={snapshot}
-                review={reviewCtx.reviewsByEntity.get(entityKey)}
-                defaultSuggestedValue={snapshot}
-                onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
-              />
-            </QaFooter>
-          </article>
-        );
-      })}
-    </div>
-  );
+  /** Adjacent swimlane workers for outside-modal prev/next arrows. */
+  adjacentSteps?: { prev: string | null; next: string | null };
+  onNavigateStep?: (step: string) => void;
 }
 
 export function StepResultDialog({
@@ -2440,6 +103,8 @@ export function StepResultDialog({
   open,
   onOpenChange,
   onRerun,
+  adjacentSteps,
+  onNavigateStep,
 }: StepResultDialogProps) {
   const { detail, isLoading, error, refresh } = useClimatePlanDetail(
     open ? (plan?.id ?? null) : null,
@@ -2459,6 +124,9 @@ export function StepResultDialog({
   // below this, the PDF instead opens as its own full-screen modal (see
   // the return statement below).
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
+  const [viewMode, setViewMode] = useState<StepViewMode>("list");
+  const [qaFilter, setQaFilter] = useState<QaStatusFilter>("all");
+  const [reviewIndex, setReviewIndex] = useState(0);
 
   const reviewsByEntity = useMemo(() => {
     if (localReviews) return localReviews;
@@ -2477,6 +145,35 @@ export function StepResultDialog({
     setPdfMissingPhrases(new Set());
   }, [plan?.id, step, open]);
 
+  // Fresh dialog session / different step: start on list with All.
+  useEffect(() => {
+    setViewMode("list");
+    setQaFilter("all");
+    setReviewIndex(0);
+  }, [plan?.id, step, open]);
+
+  // Changing filter or entering review mode restarts at the first item.
+  useEffect(() => {
+    setReviewIndex(0);
+  }, [qaFilter, viewMode]);
+
+  // Clamp when the filtered queue shrinks (e.g. OK under Not reviewed).
+  useEffect(() => {
+    if (!detail || !step || !stepSupportsReviewMode(step)) return;
+    const items = filterByQaStatus(
+      buildStepReviewItems(step, detail),
+      step,
+      reviewsByEntity,
+      qaFilter,
+    );
+    if (items.length === 0) {
+      if (reviewIndex !== 0) setReviewIndex(0);
+      return;
+    }
+    const max = items.length - 1;
+    if (reviewIndex > max) setReviewIndex(max);
+  }, [detail, step, reviewsByEntity, qaFilter, reviewIndex]);
+
   // Opening the split panel swaps the commitments list into a whole new
   // parent (plain scroll div -> ResizableSplitView's left pane), so React
   // remounts it at scroll position 0 — losing the spot the user was just
@@ -2490,17 +187,21 @@ export function StepResultDialog({
 
   if (!plan || !step) return null;
 
-  const stepRuns = plan.pipelineSteps.filter((s) => s.step === step);
+  // Local const so nested helpers keep `string` after the null guard
+  // (function declarations would not retain the narrowing).
+  const stepId = step;
+
+  const stepRuns = plan.pipelineSteps.filter((s) => s.step === stepId);
   const run = runId
     ? (stepRuns.find((s) => s.runId === runId) ?? stepRuns[0])
     : stepRuns[0];
   const previousRuns = stepRuns.slice(1);
-  const itemCount = detail ? getStepItemCount(step, detail) : null;
+  const itemCount = detail ? getStepItemCount(stepId, detail) : null;
   const viewingPastRun = Boolean(runId) && run !== stepRuns[0];
 
   const reviewCtx: ReviewContext = {
     planId: plan.id,
-    step,
+    step: stepId,
     reviewsByEntity,
     onReviewChanged: (next, key) => {
       setLocalReviews((prev) => {
@@ -2510,6 +211,15 @@ export function StepResultDialog({
         return base;
       });
     },
+    onAdvanceAfterOk:
+      viewMode === "review"
+        ? () => {
+            // Under not-reviewed, the OK'd item leaves the queue and the next
+            // item slides into this index — stay put. Otherwise step forward.
+            if (qaFilter === "not-reviewed") return;
+            setReviewIndex((i) => i + 1);
+          }
+        : undefined,
   };
 
   // Whole-plan list, independent of which step's filtered view is open —
@@ -2602,6 +312,68 @@ export function StepResultDialog({
     });
   }
 
+  const supportsReviewMode = stepSupportsReviewMode(stepId);
+  const reviewPrompt = getStepReviewPrompt(stepId);
+  const allReviewItems = detail ? buildStepReviewItems(stepId, detail) : [];
+  const filteredReviewItems = filterByQaStatus(
+    allReviewItems,
+    stepId,
+    reviewsByEntity,
+    qaFilter,
+  );
+  const qaCounts = countByQaStatus(allReviewItems, stepId, reviewsByEntity);
+  const safeReviewIndex =
+    filteredReviewItems.length === 0
+      ? 0
+      : Math.min(Math.max(reviewIndex, 0), filteredReviewItems.length - 1);
+
+  const optionCommitments = detail ? commitmentsForStep(stepId, detail) : [];
+
+  const sharedCommitmentListProps = {
+    reviewCtx,
+    allVerifiedPhrases,
+    climatePassedPhrases,
+    climateFilteredOutPhrases,
+    pdfMissingPhrases,
+    setPdfViewer,
+    optionCommitments,
+  };
+
+  function renderCommitmentsList(
+    commitments: Commitment[],
+    columns: "extract" | "climate" | "actionable" | "similar" | "themes",
+    documentReferences?: DocumentReference[],
+  ) {
+    const filtered = filterCommitmentsByQaStatus(
+      commitments,
+      stepId,
+      reviewsByEntity,
+      qaFilter,
+    );
+    if (filtered.length === 0 && qaFilter !== "all") {
+      return (
+        <p className="text-sm text-gray-02">No items match this filter.</p>
+      );
+    }
+    return (
+      <CommitmentsList
+        commitments={filtered}
+        documentReferences={documentReferences}
+        columns={columns}
+        {...sharedCommitmentListProps}
+      />
+    );
+  }
+
+  function renderFilteredOrEmpty(isEmpty: boolean, node: ReactNode): ReactNode {
+    if (isEmpty && qaFilter !== "all") {
+      return (
+        <p className="text-sm text-gray-02">No items match this filter.</p>
+      );
+    }
+    return node;
+  }
+
   const content = (() => {
     if (isLoading || !detail) {
       return (
@@ -2612,6 +384,56 @@ export function StepResultDialog({
     }
     if (error) {
       return <p className="text-sm text-pink-03">Could not load: {error}</p>;
+    }
+
+    if (supportsReviewMode && viewMode === "review" && reviewPrompt) {
+      const current = filteredReviewItems[safeReviewIndex] ?? null;
+      if (!current) {
+        return (
+          <StepReviewMode
+            prompt={reviewPrompt}
+            itemCount={0}
+            index={0}
+            onIndexChange={setReviewIndex}
+            className="h-full min-h-0"
+          >
+            {null}
+          </StepReviewMode>
+        );
+      }
+      return (
+        <StepReviewItemCard
+          key={current.entityId}
+          item={current}
+          reviewCtx={reviewCtx}
+          optionCommitments={optionCommitments}
+          pdfMissingPhrases={pdfMissingPhrases}
+          onFindInPdf={(commitment) =>
+            setPdfViewer({ mode: "focused", commitment })
+          }
+          onNavigateToEntityId={(entityId) => {
+            const idx = filteredReviewItems.findIndex(
+              (item) => item.entityId === entityId,
+            );
+            if (idx >= 0) setReviewIndex(idx);
+          }}
+        >
+          {({ body, dock, contextLabel, subProgress }) => (
+            <StepReviewMode
+              prompt={reviewPrompt}
+              itemCount={filteredReviewItems.length}
+              index={safeReviewIndex}
+              onIndexChange={setReviewIndex}
+              contextLabel={contextLabel}
+              subProgress={subProgress}
+              footer={dock}
+              className="h-full min-h-0"
+            >
+              {body}
+            </StepReviewMode>
+          )}
+        </StepReviewItemCard>
+      );
     }
 
     switch (step) {
@@ -2707,91 +529,60 @@ export function StepResultDialog({
         );
       }
       case "extractCommitments":
-        return (
-          <CommitmentsList
-            commitments={detail.commitments}
-            documentReferences={detail.documentReferences}
-            columns="extract"
-            reviewCtx={reviewCtx}
-            allVerifiedPhrases={allVerifiedPhrases}
-            climatePassedPhrases={climatePassedPhrases}
-            climateFilteredOutPhrases={climateFilteredOutPhrases}
-            pdfMissingPhrases={pdfMissingPhrases}
-            setPdfViewer={setPdfViewer}
-          />
+        return renderCommitmentsList(
+          detail.commitments,
+          "extract",
+          detail.documentReferences,
         );
       case "filterCommitmentsClimate":
-        return (
-          <CommitmentsList
-            commitments={detail.commitments}
-            columns="climate"
-            reviewCtx={reviewCtx}
-            allVerifiedPhrases={allVerifiedPhrases}
-            climatePassedPhrases={climatePassedPhrases}
-            climateFilteredOutPhrases={climateFilteredOutPhrases}
-            pdfMissingPhrases={pdfMissingPhrases}
-            setPdfViewer={setPdfViewer}
-          />
-        );
+        return renderCommitmentsList(detail.commitments, "climate");
       case "filterCommitmentsActionable":
-        return (
-          <CommitmentsList
-            commitments={detail.commitments.filter((c) => c.climateRelevant)}
-            columns="actionable"
-            reviewCtx={reviewCtx}
-            allVerifiedPhrases={allVerifiedPhrases}
-            climatePassedPhrases={climatePassedPhrases}
-            climateFilteredOutPhrases={climateFilteredOutPhrases}
-            pdfMissingPhrases={pdfMissingPhrases}
-            setPdfViewer={setPdfViewer}
-          />
+        return renderCommitmentsList(
+          detail.commitments.filter((c) => c.climateRelevant),
+          "actionable",
         );
       case "groupCommitmentsSimilar":
-        return (
-          <CommitmentsList
-            commitments={detail.commitments.filter(
-              (c) => c.climateRelevant && c.actionable,
-            )}
-            columns="similar"
-            reviewCtx={reviewCtx}
-            allVerifiedPhrases={allVerifiedPhrases}
-            climatePassedPhrases={climatePassedPhrases}
-            climateFilteredOutPhrases={climateFilteredOutPhrases}
-            pdfMissingPhrases={pdfMissingPhrases}
-            setPdfViewer={setPdfViewer}
-          />
+        return renderCommitmentsList(
+          detail.commitments.filter((c) => c.climateRelevant && c.actionable),
+          "similar",
         );
       case "groupCommitmentsThemes":
-        return (
-          <CommitmentsList
-            commitments={detail.commitments.filter(
-              (c) => c.climateRelevant && c.actionable,
-            )}
-            columns="themes"
-            reviewCtx={reviewCtx}
-            allVerifiedPhrases={allVerifiedPhrases}
-            climatePassedPhrases={climatePassedPhrases}
-            climateFilteredOutPhrases={climateFilteredOutPhrases}
-            pdfMissingPhrases={pdfMissingPhrases}
-            setPdfViewer={setPdfViewer}
-          />
+        return renderCommitmentsList(
+          detail.commitments.filter((c) => c.climateRelevant && c.actionable),
+          "themes",
         );
-      case "extractMeasures":
-        return (
+      case "extractMeasures": {
+        const measures = filterMeasuresByQaStatus(
+          detail.extractedMeasures,
+          stepId,
+          reviewsByEntity,
+          qaFilter,
+        );
+        return renderFilteredOrEmpty(
+          measures.length === 0,
           <MeasuresList
-            measures={detail.extractedMeasures}
+            measures={measures}
             columns="extract"
             reviewCtx={reviewCtx}
-          />
+          />,
         );
-      case "scoreMeasures":
-        return (
+      }
+      case "scoreMeasures": {
+        const measures = filterMeasuresByQaStatus(
+          detail.extractedMeasures,
+          stepId,
+          reviewsByEntity,
+          qaFilter,
+        );
+        return renderFilteredOrEmpty(
+          measures.length === 0,
           <MeasuresList
-            measures={detail.extractedMeasures}
+            measures={measures}
             columns="score"
             reviewCtx={reviewCtx}
-          />
+          />,
         );
+      }
       case "classifyActivityShiftTypes":
         return (
           <TransitionElementsView
@@ -2800,13 +591,25 @@ export function StepResultDialog({
             showMatches={false}
           />
         );
-      case "matchTransitionElements":
-        return (
+      case "matchTransitionElements": {
+        const { measures, visibleMatchIdsByShiftKey } =
+          filterTeMatchesForListView(
+            detail.extractedMeasures,
+            stepId,
+            reviewsByEntity,
+            qaFilter,
+          );
+        return renderFilteredOrEmpty(
+          measures.length === 0,
           <TransitionElementsView
-            measures={detail.extractedMeasures}
+            measures={measures}
             reviewCtx={reviewCtx}
-          />
+            visibleMatchIdsByShiftKey={
+              qaFilter === "all" ? undefined : visibleMatchIdsByShiftKey
+            }
+          />,
         );
+      }
       default:
         return (
           <p className="text-sm text-gray-02">No details for this step.</p>
@@ -2829,15 +632,28 @@ export function StepResultDialog({
   // "all-climate" mode uses.
   const isClimateStep = step === "filterCommitmentsClimate";
 
+  const qaToolbar = supportsReviewMode ? (
+    <div className="mt-2">
+      <QaReviewToolbar
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        qaFilter={qaFilter}
+        onQaFilterChange={setQaFilter}
+        counts={qaCounts}
+      />
+    </div>
+  ) : null;
+
+  // Keep interactive controls out of DialogTitle / <h2> for a11y.
   const dialogTitle = (
     <div className="flex flex-wrap items-center gap-3">
-      <span>{step}</span>
+      <span>{stepId}</span>
       {itemCount !== null && (
         <span className="text-xs font-normal text-gray-02">
           {itemCount} {itemCount === 1 ? "item" : "items"}
         </span>
       )}
-      {step !== "documentReferences" && (
+      {stepId !== "documentReferences" && (
         <>
           <StatusPill
             label={run?.status ?? "pending"}
@@ -2846,7 +662,7 @@ export function StepResultDialog({
           />
           <RerunButton
             planId={plan.id}
-            step={step}
+            step={stepId}
             onRerun={() => {
               refresh();
               onRerun?.();
@@ -2957,12 +773,36 @@ export function StepResultDialog({
       "This step hasn't run yet."
     );
 
+  const sideNav =
+    onNavigateStep && adjacentSteps
+      ? {
+          left: adjacentSteps.prev ? (
+            <StepNavArrow
+              direction="prev"
+              stepName={adjacentSteps.prev}
+              onClick={() => onNavigateStep(adjacentSteps.prev!)}
+            />
+          ) : undefined,
+          right: adjacentSteps.next ? (
+            <StepNavArrow
+              direction="next"
+              stepName={adjacentSteps.next}
+              onClick={() => onNavigateStep(adjacentSteps.next!)}
+            />
+          ) : undefined,
+        }
+      : undefined;
+
   return (
     <Modal
       open={open}
       onOpenChange={onOpenChange}
+      // Review mode stays on 6xl (same as list) so prev/next arrows outside
+      // the card still fit on screen. Only the PDF split view needs full width.
       size={showSplitPanel ? "full" : "6xl"}
-      scrollable={!showSplitPanel}
+      scrollable={!showSplitPanel && viewMode !== "review"}
+      fillHeight={showSplitPanel || viewMode === "review"}
+      sideNav={sideNav}
       // The split-view case moves this into the left pane instead (see
       // below) — the shared header would otherwise push the PDF pane down
       // by however tall the run's timing/QA/previous-runs block happens
@@ -2970,25 +810,32 @@ export function StepResultDialog({
       // PDF pane doesn't need any of that context; the commitments list
       // does.
       title={showSplitPanel ? undefined : dialogTitle}
-      description={showSplitPanel ? undefined : dialogDescription}
+      description={
+        showSplitPanel || viewMode === "review" ? undefined : dialogDescription
+      }
     >
       {showSplitPanel ? (
         <ResizableSplitView
           className="min-h-0 flex-1"
           left={
-            <>
-              <div className="sticky top-0 z-10 mb-3 border-b border-gray-03 bg-gray-04 pb-3">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="shrink-0 mb-3 border-b border-gray-03 bg-gray-04 pb-3">
                 <h2 className="text-lg font-medium text-gray-01">
                   {dialogTitle}
                 </h2>
-                <div className="mt-1 text-sm text-gray-02">
-                  {dialogDescription}
-                </div>
+                {viewMode !== "review" && (
+                  <div className="mt-1 text-sm text-gray-02">
+                    {dialogDescription}
+                  </div>
+                )}
+                {qaToolbar}
               </div>
-              {content}
-              {sourceMarkdownSection}
-              {recoveredImagesSection}
-            </>
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                {content}
+              </div>
+              {viewMode !== "review" && sourceMarkdownSection}
+              {viewMode !== "review" && recoveredImagesSection}
+            </div>
           }
           right={
             <PdfHighlightPanel
@@ -3024,8 +871,16 @@ export function StepResultDialog({
             />
           }
         />
+      ) : viewMode === "review" ? (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="mb-3 shrink-0">{qaToolbar}</div>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {content}
+          </div>
+        </div>
       ) : (
         <>
+          {qaToolbar}
           <div className="mt-4 min-w-0 overflow-x-hidden">
             {content}
             {sourceMarkdownSection}

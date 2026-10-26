@@ -60,6 +60,7 @@ describe("tab segment lists after Goffer migration slim", () => {
       "climate-pipeline",
       "climate-qa-reviews",
       "municipality-sources",
+      "shadow-taxonomy",
     ]);
   });
 });

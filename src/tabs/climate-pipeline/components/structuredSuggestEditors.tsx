@@ -462,6 +462,7 @@ export function teMatchAddEditor(args: {
 }): SuggestEditorConfig {
   const { candidates, suggestedNew } = args;
   const suggestedNewValue = "__suggested_new__";
+  const customNewValue = "__custom_new__";
   const unsetValue = "";
 
   const options = [
@@ -478,11 +479,21 @@ export function teMatchAddEditor(args: {
           },
         ]
       : []),
+    { value: customNewValue, label: "Propose a new TE…" },
   ];
 
   const labelById = new Map(
     candidates.map((c) => [c.stableId, c.shortLabel] as const),
   );
+
+  const isCustomDraft = (suggestion: TeMatchAddSuggestion | null) =>
+    Boolean(
+      suggestion &&
+        !suggestion.selectedStableId &&
+        suggestion.isSuggestedNew &&
+        (!suggestedNew ||
+          suggestion.selectedShortLabel !== suggestedNew.shortLabel),
+    );
 
   return {
     title: "Add a TE match",
@@ -514,63 +525,92 @@ export function teMatchAddEditor(args: {
         action: "add",
         selectedStableId: null,
         selectedShortLabel: "",
+        isSuggestedNew: true,
       } satisfies TeMatchAddSuggestion;
     },
     render: ({ draft, setDraft }) => {
       const suggestion = isTeMatchAddSuggestion(draft) ? draft : null;
-      const selectValue = suggestion?.isSuggestedNew
-        ? suggestedNewValue
-        : (suggestion?.selectedStableId ?? unsetValue);
-
-      if (options.length <= 1) {
-        return (
-          <p className="text-xs text-gray-02 italic">
-            No unused candidates available to add on this shift.
-          </p>
-        );
-      }
+      const custom = isCustomDraft(suggestion);
+      const selectValue = custom
+        ? customNewValue
+        : suggestion?.isSuggestedNew && suggestedNew
+          ? suggestedNewValue
+          : (suggestion?.selectedStableId ?? unsetValue);
 
       return (
-        <label className="flex flex-col gap-1 text-xs text-gray-02">
-          Add transition element
-          <select
-            className="h-9 max-w-full rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
-            value={selectValue}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === unsetValue) {
+        <div className="space-y-2">
+          <label className="flex flex-col gap-1 text-xs text-gray-02">
+            Add transition element
+            <select
+              className="h-9 max-w-full rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
+              value={selectValue}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === unsetValue) {
+                  setDraft({
+                    action: "add",
+                    selectedStableId: null,
+                    selectedShortLabel: "",
+                  } satisfies TeMatchAddSuggestion);
+                  return;
+                }
+                if (value === suggestedNewValue && suggestedNew) {
+                  setDraft({
+                    action: "add",
+                    selectedStableId: null,
+                    selectedShortLabel: suggestedNew.shortLabel,
+                    selectedDescription: suggestedNew.description,
+                    isSuggestedNew: true,
+                  } satisfies TeMatchAddSuggestion);
+                  return;
+                }
+                if (value === customNewValue) {
+                  setDraft({
+                    action: "add",
+                    selectedStableId: null,
+                    selectedShortLabel: "",
+                    selectedDescription: null,
+                    isSuggestedNew: true,
+                  } satisfies TeMatchAddSuggestion);
+                  return;
+                }
                 setDraft({
                   action: "add",
-                  selectedStableId: null,
-                  selectedShortLabel: "",
+                  selectedStableId: value,
+                  selectedShortLabel: labelById.get(value) ?? "",
+                  isSuggestedNew: false,
                 } satisfies TeMatchAddSuggestion);
-                return;
-              }
-              if (value === suggestedNewValue && suggestedNew) {
-                setDraft({
-                  action: "add",
-                  selectedStableId: null,
-                  selectedShortLabel: suggestedNew.shortLabel,
-                  selectedDescription: suggestedNew.description,
-                  isSuggestedNew: true,
-                } satisfies TeMatchAddSuggestion);
-                return;
-              }
-              setDraft({
-                action: "add",
-                selectedStableId: value,
-                selectedShortLabel: labelById.get(value) ?? "",
-                isSuggestedNew: false,
-              } satisfies TeMatchAddSuggestion);
-            }}
-          >
-            {options.map((option) => (
-              <option key={option.value || "unset"} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+              }}
+            >
+              {options.map((option) => (
+                <option key={option.value || "unset"} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {custom && (
+            <label className="flex flex-col gap-1 text-xs text-gray-02">
+              Proposed TE label
+              <input
+                type="text"
+                className="h-9 max-w-full rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
+                value={suggestion?.selectedShortLabel ?? ""}
+                placeholder="Short label for the missing TE"
+                onChange={(e) =>
+                  setDraft({
+                    action: "add",
+                    selectedStableId: null,
+                    selectedShortLabel: e.target.value,
+                    selectedDescription:
+                      suggestion?.selectedDescription ?? null,
+                    isSuggestedNew: true,
+                  } satisfies TeMatchAddSuggestion)
+                }
+              />
+            </label>
+          )}
+        </div>
       );
     },
   };

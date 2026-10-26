@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Check, MessageSquare, Pencil, Plus, Loader2, X } from "lucide-react";
 import { Button } from "@/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,17 @@ import {
 } from "../hooks/usePipelineReviews";
 import { resolveQaReviewerForSave } from "../lib/qaReviewerIdentity";
 import { isTeMatchAddSuggestion } from "./structuredSuggestEditors";
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    target.isContentEditable
+  );
+}
 
 export interface SuggestEditorConfig {
   title: string;
@@ -44,7 +55,21 @@ interface ReviewControlsProps {
   showOk?: boolean;
   /** Open comment/suggest panel on mount (e.g. newly added TE slot). */
   initialPanel?: "comment" | "suggest" | null;
+  /**
+   * Called when the editor is closed without a saved review — used to drop
+   * ephemeral "add another" slots so empty dashed boxes don't linger.
+   */
+  onDismissUnsaved?: () => void;
   onChanged: (review: PipelineReview | null) => void;
+  /** After a successful Looks good save — e.g. advance the review queue. */
+  onAdvanceAfterOk?: () => void;
+  /**
+   * `inline` = compact icon row (list view).
+   * `dock` = large sticky action buttons (review mode).
+   */
+  variant?: "inline" | "dock";
+  /** Extra actions rendered under the dock buttons (e.g. approve whole group). */
+  dockExtra?: ReactNode;
 }
 
 function statusTone(status: ReviewStatus | undefined): string {
@@ -75,7 +100,11 @@ export function ReviewControls({
   addDisabled = false,
   showOk = true,
   initialPanel = null,
+  onDismissUnsaved,
   onChanged,
+  onAdvanceAfterOk,
+  variant = "inline",
+  dockExtra,
 }: ReviewControlsProps) {
   const [panel, setPanel] = useState<"comment" | "suggest" | null>(
     initialPanel,
@@ -95,11 +124,19 @@ export function ReviewControls({
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
+  const closePanel = () => {
+    setPanel(null);
+    setError(null);
+    // Ephemeral add slots only exist while editing — drop them if nothing
+    // was saved so empty "Suggested add" chrome doesn't pile up.
+    if (!review) onDismissUnsaved?.();
+  };
+
   const save = async (input: {
     status: ReviewStatus;
     comment?: string | null;
     suggestedValue?: unknown;
-  }) => {
+  }): Promise<boolean> => {
     setIsSaving(true);
     setError(null);
     try {
@@ -115,8 +152,10 @@ export function ReviewControls({
       });
       onChanged(saved);
       setPanel(null);
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save review");
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -144,11 +183,12 @@ export function ReviewControls({
       return;
     }
     // Keep any existing suggestion — marking OK must not wipe SUGGESTED_FIX data.
-    await save({
+    const ok = await save({
       status: "OK",
       comment: review?.comment ?? null,
       suggestedValue: review?.suggestedValue,
     });
+    if (ok) onAdvanceAfterOk?.();
   };
 
   const saveComment = async () => {
@@ -181,13 +221,14 @@ export function ReviewControls({
 
   const saveSuggestion = async () => {
     if (suggestEditor) {
-      if (
-        isTeMatchAddSuggestion(suggestDraft) &&
-        !suggestDraft.selectedStableId &&
-        !suggestDraft.isSuggestedNew
-      ) {
-        setError("Select a transition element to add");
-        return;
+      if (isTeMatchAddSuggestion(suggestDraft)) {
+        const hasStable = Boolean(suggestDraft.selectedStableId);
+        const hasLabel = Boolean(suggestDraft.selectedShortLabel?.trim());
+        // isSuggestedNew alone is not enough — empty custom drafts must not save.
+        if (!hasStable && !hasLabel) {
+          setError("Select or describe a transition element to add");
+          return;
+        }
       }
       await save({
         status: "SUGGESTED_FIX",
@@ -211,6 +252,10 @@ export function ReviewControls({
   };
 
   const openSuggest = () => {
+    if (panel === "suggest") {
+      closePanel();
+      return;
+    }
     setComment(review?.comment ?? "");
     if (suggestEditor) {
       setSuggestDraft(
@@ -225,8 +270,202 @@ export function ReviewControls({
         ),
       );
     }
-    setPanel((p) => (p === "suggest" ? null : "suggest"));
+    setPanel("suggest");
   };
+
+  const openComment = () => {
+    if (panel === "comment") {
+      closePanel();
+      return;
+    }
+    setComment(review?.comment ?? "");
+    setPanel("comment");
+  };
+
+  // Dock shortcuts: 1 Looks good · 2 Flag · 3 Suggest/Add TEF.
+  // Disabled while a panel is open or the user is typing in a field.
+  useEffect(() => {
+    if (variant !== "dock") return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (panel !== null) return;
+      if (isSaving) return;
+      if (isTypingTarget(event.target)) return;
+      if (event.altKey || event.metaKey || event.ctrlKey) return;
+      if (event.key === "1" && showOk) {
+        event.preventDefault();
+        void markOk();
+      } else if (event.key === "2") {
+        event.preventDefault();
+        openComment();
+      } else if (event.key === "3") {
+        event.preventDefault();
+        openSuggest();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // markOk/openComment/openSuggest close over latest state via this render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- dock hotkeys
+  }, [variant, panel, isSaving, showOk, review, suggestDraft, comment]);
+
+  const panelBlock = panel ? (
+    <div className="w-full rounded-md border border-gray-03 bg-gray-05 p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-gray-01">
+          {panel === "comment"
+            ? "Comment"
+            : (suggestEditor?.title ?? "Suggested fix (JSON)")}
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0 text-gray-02 shrink-0"
+          onClick={closePanel}
+        >
+          <X className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+      {(panel === "comment" || panel === "suggest") && (
+        <textarea
+          className="w-full min-h-[4rem] rounded border border-gray-03 bg-gray-04/40 px-2 py-1 text-xs text-gray-01"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Optional note for pipeline improvement"
+        />
+      )}
+      {panel === "suggest" &&
+        (suggestEditor ? (
+          suggestEditor.render({
+            draft: suggestDraft,
+            setDraft: setSuggestDraft,
+          })
+        ) : (
+          <textarea
+            className="w-full min-h-[6rem] rounded border border-gray-03 bg-gray-04/40 px-2 py-1 font-mono text-xs text-gray-01"
+            value={suggestedText}
+            onChange={(e) => setSuggestedText(e.target.value)}
+          />
+        ))}
+      {error && <p className="text-xs text-pink-03">{error}</p>}
+      <div className="flex justify-end gap-1">
+        {review && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            disabled={isSaving}
+            onClick={clearReview}
+          >
+            Clear
+          </Button>
+        )}
+        <Button
+          type="button"
+          size="sm"
+          className="h-7 text-xs"
+          disabled={isSaving}
+          onClick={panel === "comment" ? saveComment : saveSuggestion}
+        >
+          {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save"}
+        </Button>
+      </div>
+    </div>
+  ) : null;
+
+  if (variant === "dock") {
+    return (
+      <div className="w-full min-w-0 space-y-2">
+        {panelBlock}
+        {error && !panel && <p className="text-xs text-pink-03">{error}</p>}
+        {review?.comment && !panel && (
+          <p className="truncate text-xs text-gray-02">“{review.comment}”</p>
+        )}
+        <div
+          className={cn("grid gap-2", showOk ? "grid-cols-3" : "grid-cols-2")}
+        >
+          {showOk && (
+            <Button
+              type="button"
+              className={cn(
+                "h-12 gap-2 text-sm font-semibold",
+                review?.status === "OK"
+                  ? "bg-green-03 text-gray-05 hover:bg-green-03/90"
+                  : "bg-green-03/15 text-green-03 hover:bg-green-03/25",
+              )}
+              disabled={isSaving}
+              onClick={markOk}
+            >
+              {isSaving && panel === null ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )}
+              Looks good
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              "h-12 gap-2 text-sm font-semibold",
+              review?.comment
+                ? "border-orange-03/50 bg-orange-03/10 text-orange-03"
+                : "text-gray-01",
+            )}
+            disabled={isSaving}
+            onClick={openComment}
+          >
+            <MessageSquare className="h-4 w-4" />
+            Flag
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              "h-12 gap-2 text-sm font-semibold",
+              review?.status === "SUGGESTED_FIX"
+                ? "border-blue-03/50 bg-blue-03/10 text-blue-03"
+                : "text-gray-01",
+            )}
+            disabled={isSaving}
+            onClick={openSuggest}
+          >
+            <Pencil className="h-4 w-4" />
+            {showOk ? "Suggest" : "Add TEF"}
+          </Button>
+        </div>
+        {onAdd && (
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-9 w-full text-xs"
+            disabled={isSaving || addDisabled}
+            onClick={onAdd}
+          >
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            {addTitle}
+          </Button>
+        )}
+        {review && (
+          <p
+            className={cn(
+              "text-center text-[10px] uppercase tracking-wide",
+              statusTone(review.status),
+            )}
+          >
+            {review.status.replace("_", " ")}
+          </p>
+        )}
+        <p className="text-center text-[10px] tabular-nums text-gray-02/80">
+          {showOk ? "1 Looks good · 2 Flag · 3 Suggest" : "2 Flag · 3 Add TEF"}
+          {" · ←/→ items"}
+        </p>
+        {dockExtra}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-w-0 space-y-2">
@@ -268,10 +507,7 @@ export function ReviewControls({
           )}
           title="Comment"
           disabled={isSaving}
-          onClick={() => {
-            setComment(review?.comment ?? "");
-            setPanel((p) => (p === "comment" ? null : "comment"));
-          }}
+          onClick={openComment}
         >
           <MessageSquare className="w-3.5 h-3.5" />
         </Button>
@@ -325,76 +561,7 @@ export function ReviewControls({
           </span>
         )}
       </div>
-
-      {panel && (
-        <div className="w-full rounded-md border border-gray-03 bg-gray-05 p-3 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-medium text-gray-01">
-              {panel === "comment"
-                ? "Comment"
-                : (suggestEditor?.title ?? "Suggested fix (JSON)")}
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 text-gray-02 shrink-0"
-              onClick={() => setPanel(null)}
-            >
-              <X className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-          {(panel === "comment" || panel === "suggest") && (
-            <textarea
-              className="w-full min-h-[4rem] rounded border border-gray-03 bg-gray-04/40 px-2 py-1 text-xs text-gray-01"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Optional note for pipeline improvement"
-            />
-          )}
-          {panel === "suggest" &&
-            (suggestEditor ? (
-              suggestEditor.render({
-                draft: suggestDraft,
-                setDraft: setSuggestDraft,
-              })
-            ) : (
-              <textarea
-                className="w-full min-h-[6rem] rounded border border-gray-03 bg-gray-04/40 px-2 py-1 font-mono text-xs text-gray-01"
-                value={suggestedText}
-                onChange={(e) => setSuggestedText(e.target.value)}
-              />
-            ))}
-          {error && <p className="text-xs text-pink-03">{error}</p>}
-          <div className="flex justify-end gap-1">
-            {review && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                disabled={isSaving}
-                onClick={clearReview}
-              >
-                Clear
-              </Button>
-            )}
-            <Button
-              type="button"
-              size="sm"
-              className="h-7 text-xs"
-              disabled={isSaving}
-              onClick={panel === "comment" ? saveComment : saveSuggestion}
-            >
-              {isSaving ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                "Save"
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
+      {panelBlock}
     </div>
   );
 }
