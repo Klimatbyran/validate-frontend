@@ -8,11 +8,7 @@ import type {
   ExtractedMeasure,
   TransitionElementMatch,
 } from "../hooks/useClimatePlanDetail";
-import {
-  reviewKey,
-  upsertPipelineReview,
-  type PipelineReview,
-} from "../hooks/usePipelineReviews";
+import { reviewKey, upsertPipelineReview } from "../hooks/usePipelineReviews";
 import { useAuth } from "@/hooks/useAuth";
 import { resolveQaReviewerForSave } from "../lib/qaReviewerIdentity";
 import {
@@ -43,15 +39,10 @@ import {
   teMatchSelectEditor,
   themeSuggestEditor,
 } from "./structuredSuggestEditors";
+import type { ReviewContext } from "./reviewContext";
 
-export interface ReviewCardContext {
-  planId: string;
-  step: string;
-  reviewsByEntity: Map<string, PipelineReview>;
-  onReviewChanged: (review: PipelineReview | null, key: string) => void;
-  /** Advance the review queue after Looks good (skipped when filter removes the item). */
-  onAdvanceAfterOk?: () => void;
-}
+/** @deprecated Prefer `ReviewContext` — kept as an alias for review-mode call sites. */
+export type ReviewCardContext = ReviewContext;
 
 export interface ReviewItemSlots {
   contextLabel: string;
