@@ -2,6 +2,7 @@
 // for ClimatePlansExplorer and the explore dataset.
 
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import type {
   Measure,
   ActivityShift,
@@ -162,7 +163,7 @@ function toExplorerMeasure(m: ApiExtractedMeasure): Measure {
 export async function fetchPipelineMeasures(): Promise<MunicipalityMeasures[]> {
   const base = getClimatePlansPipelineApiUrl();
   try {
-    const res = await fetch(`${base}/plans`);
+    const res = await garboAuthFetch(`${base}/plans`);
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
     const plans = (await res.json()) as ApiPlanListItem[];
 
@@ -174,7 +175,7 @@ export async function fetchPipelineMeasures(): Promise<MunicipalityMeasures[]> {
 
     const details = await Promise.all(
       scored.map(async (p) => {
-        const detailRes = await fetch(`${base}/plans/${p.id}`);
+        const detailRes = await garboAuthFetch(`${base}/plans/${p.id}`);
         if (!detailRes.ok) return null;
         return (await detailRes.json()) as ApiPlanDetail;
       }),
