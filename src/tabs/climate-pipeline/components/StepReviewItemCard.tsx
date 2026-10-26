@@ -947,7 +947,7 @@ function TeMatchSlots({
               {matchIndex + 1} of {matchCount}
             </p>
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
             {siblings.map((sibling, i) => {
               const siblingId = teMatchEntityId(shift, sibling.stableId);
               const siblingKey = reviewKey(
@@ -965,7 +965,7 @@ function TeMatchSlots({
                   disabled={isCurrent || !onNavigateToEntityId}
                   onClick={() => onNavigateToEntityId?.(siblingId)}
                   className={cn(
-                    "flex w-full items-start gap-2 rounded-md border px-2.5 py-2 text-left text-xs transition-colors",
+                    "flex min-w-0 w-full items-start gap-2 rounded-md border px-2.5 py-2 text-left text-xs transition-colors",
                     isCurrent
                       ? "border-blue-03/60 bg-blue-03/15 text-gray-01"
                       : "border-gray-03/60 bg-gray-04/40 text-gray-02 hover:border-blue-03/40 hover:bg-blue-03/10 hover:text-gray-01",
@@ -1312,16 +1312,26 @@ function TeUnmatchedSlots({
 
   const body = (
     <div className="space-y-3">
-      <div className="sticky top-0 z-10 -mx-1 space-y-1.5 rounded-lg border border-gray-03/70 bg-gray-04/95 px-3 py-2.5 backdrop-blur">
-        <p className="text-xs leading-snug text-gray-02 line-clamp-2 break-words">
-          {measure.measureText}
-        </p>
-        <p className="text-sm font-semibold leading-snug text-gray-01 break-words">
-          {shift.shiftFrom} → {shift.shiftTo}
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          <SoftChip>Ours: {canonicalShiftType(shift.type)}</SoftChip>
-          <SoftChip>Score: {shift.score}</SoftChip>
+      <div className="sticky top-0 z-10 -mx-1 space-y-2 rounded-lg border border-gray-03/70 bg-gray-04/95 px-3.5 py-3 backdrop-blur">
+        <div className="space-y-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-02">
+            Measure
+          </p>
+          <p className="text-lg font-semibold leading-snug text-gray-01 break-words whitespace-pre-wrap">
+            {measure.measureText}
+          </p>
+        </div>
+        <div className="space-y-1 border-t border-gray-03/50 pt-2">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-02">
+            Activity shift
+          </p>
+          <p className="text-base font-medium leading-snug text-gray-01 break-words">
+            {shift.shiftFrom} → {shift.shiftTo}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            <SoftChip>Ours: {canonicalShiftType(shift.type)}</SoftChip>
+            <SoftChip>Score: {shift.score}</SoftChip>
+          </div>
         </div>
       </div>
 
