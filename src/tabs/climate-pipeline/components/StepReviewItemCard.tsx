@@ -918,7 +918,7 @@ function TeMatchSlots({
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-02">
             Measure
           </p>
-          <p className="text-lg font-semibold leading-snug text-gray-01 break-words whitespace-pre-wrap">
+          <p className="text-lg font-normal leading-snug text-gray-01 break-words whitespace-pre-wrap">
             {measure.measureText}
           </p>
         </div>
