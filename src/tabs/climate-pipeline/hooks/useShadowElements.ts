@@ -55,6 +55,8 @@ export interface ShadowElement {
   sectorPath: string | null;
   status: ShadowElementStatus;
   qualityGrade: ShadowElementQuality;
+  /** Reviewer note from the shadow-taxonomy UI; independent of status. */
+  comment: string | null;
   createdAt: string;
   origin: ShadowElementOrigin | null;
   // Union of this element's own attachments and everything merged into it.
@@ -236,6 +238,26 @@ export async function updateShadowElementStatus(
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
+    },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `${res.status} ${res.statusText}`);
+  }
+  return (await res.json()) as ShadowElement;
+}
+
+/** Saves or clears a reviewer note without changing status. Empty/null clears. */
+export async function updateShadowElementComment(
+  id: string,
+  comment: string | null,
+): Promise<ShadowElement> {
+  const res = await authenticatedFetch(
+    `${getClimatePlansPipelineApiUrl()}/shadow-elements/${id}/comment`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment }),
     },
   );
   if (!res.ok) {

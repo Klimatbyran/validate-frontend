@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Loader2, RefreshCw, Trash2, GitMerge, ShieldCheck, Check, X, Undo2, Link2Off } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, RefreshCw, Trash2, GitMerge, ShieldCheck, Check, X, Undo2, Link2Off, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import {
   useShadowElements,
   updateShadowElementStatus,
+  updateShadowElementComment,
   deleteAllShadowElements,
   fetchMergeCandidates,
   confirmShadowElementMerges,
@@ -62,7 +63,13 @@ function keepLoadedDetail(
   const loaded =
     overrides.get(next.id) ?? elements.find((element) => element.id === next.id);
   if (!loaded?.attachments) return next;
-  return { ...loaded, status: next.status };
+  // Status/comment PATCH responses are raw rows without attachments —
+  // keep the already-loaded detail and only overlay the fields that changed.
+  return {
+    ...loaded,
+    status: next.status ?? loaded.status,
+    comment: next.comment !== undefined ? next.comment : loaded.comment,
+  };
 }
 
 function ShadowElementCard({
@@ -80,8 +87,12 @@ function ShadowElementCard({
   // reject, and restore share one save path, so a boolean can only ever
   // light up one button's spinner regardless of which button was clicked.
   const [pendingStatus, setPendingStatus] = useState<ShadowElementStatus | null>(null);
-  const isSaving = pendingStatus !== null;
+  const [commentOpen, setCommentOpen] = useState(false);
+  const [commentDraft, setCommentDraft] = useState(element.comment ?? "");
+  const [isSavingComment, setIsSavingComment] = useState(false);
+  const isSaving = pendingStatus !== null || isSavingComment;
   const isMerged = element.status === "merged";
+  const hasComment = Boolean(element.comment?.trim());
 
   const setStatus = async (status: ShadowElementStatus) => {
     setPendingStatus(status);
@@ -101,6 +112,57 @@ function ShadowElementCard({
       );
     } finally {
       setPendingStatus(null);
+    }
+  };
+
+  const openComment = () => {
+    setCommentDraft(element.comment ?? "");
+    setCommentOpen((open) => !open);
+  };
+
+  const saveComment = async () => {
+    setIsSavingComment(true);
+    try {
+      const trimmed = commentDraft.trim();
+      const updated = await updateShadowElementComment(
+        element.id,
+        trimmed.length > 0 ? trimmed : null,
+      );
+      onChanged(updated);
+      setCommentOpen(false);
+      toast.success(
+        t(
+          trimmed.length > 0
+            ? "shadowTaxonomy.commentSuccess"
+            : "shadowTaxonomy.commentCleared",
+          { label: element.shortLabel },
+        ),
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : t("shadowTaxonomy.commentError"),
+      );
+    } finally {
+      setIsSavingComment(false);
+    }
+  };
+
+  const clearComment = async () => {
+    setCommentDraft("");
+    setIsSavingComment(true);
+    try {
+      const updated = await updateShadowElementComment(element.id, null);
+      onChanged(updated);
+      setCommentOpen(false);
+      toast.success(
+        t("shadowTaxonomy.commentCleared", { label: element.shortLabel }),
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : t("shadowTaxonomy.commentError"),
+      );
+    } finally {
+      setIsSavingComment(false);
     }
   };
 
@@ -138,6 +200,12 @@ function ShadowElementCard({
             )}
           </div>
           <p className="text-sm text-gray-02 mt-1">{element.description}</p>
+          {hasComment && !commentOpen && (
+            <p className="mt-2 text-xs text-orange-03/90 break-words">
+              <span className="font-medium">{t("shadowTaxonomy.commentLabel")}: </span>
+              “{element.comment}”
+            </p>
+          )}
           <button
             type="button"
             onClick={() => setIsExpanded((v) => !v)}
@@ -199,6 +267,21 @@ function ShadowElementCard({
                   )}
                 </Button>
               )}
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={isSaving}
+                onClick={openComment}
+                title={t("shadowTaxonomy.comment")}
+                className={cn(
+                  hasComment || commentOpen
+                    ? "border-orange-03/50 bg-orange-03/10 text-orange-03 hover:bg-orange-03/15"
+                    : "border-gray-03 text-gray-02 hover:bg-gray-03/40",
+                )}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+              </Button>
               {element.status !== "preliminary" && (
                 <Button
                   type="button"
@@ -220,6 +303,60 @@ function ShadowElementCard({
           )}
         </div>
       </div>
+
+      {commentOpen && !isMerged && (
+        <div className="rounded-lg border border-gray-03 bg-gray-05/60 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-medium text-gray-01">
+              {t("shadowTaxonomy.commentLabel")}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-gray-02 shrink-0"
+              onClick={() => setCommentOpen(false)}
+              disabled={isSavingComment}
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          <textarea
+            className="w-full min-h-[4.5rem] rounded border border-gray-03 bg-gray-04/40 px-2 py-1.5 text-sm text-gray-01"
+            value={commentDraft}
+            onChange={(e) => setCommentDraft(e.target.value)}
+            placeholder={t("shadowTaxonomy.commentPlaceholder")}
+            disabled={isSavingComment}
+          />
+          <div className="flex justify-end gap-1.5">
+            {hasComment && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={isSavingComment}
+                onClick={() => void clearComment()}
+              >
+                {t("shadowTaxonomy.commentClear")}
+              </Button>
+            )}
+            <Button
+              type="button"
+              size="sm"
+              className="h-7 text-xs"
+              disabled={isSavingComment}
+              onClick={() => void saveComment()}
+            >
+              {isSavingComment ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                t("shadowTaxonomy.commentSave")
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {isExpanded && (
         <div className="border-t border-gray-03/50 pt-3 space-y-2">
