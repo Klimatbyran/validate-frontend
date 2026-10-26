@@ -869,6 +869,49 @@ function MeasureSlots({
   );
 }
 
+/** Sticky measure + activity-shift strip shared by matched and unmatched TEF review. */
+function TefStickyContext({
+  measureText,
+  shiftFrom,
+  shiftTo,
+  shiftType,
+  score,
+  outcome,
+}: {
+  measureText: string;
+  shiftFrom: string;
+  shiftTo: string;
+  shiftType: string;
+  score: number | string;
+  outcome?: string | null;
+}) {
+  return (
+    <div className="sticky top-0 z-10 -mx-1 space-y-2 rounded-lg border border-gray-03/70 bg-gray-04/95 px-3.5 py-3 backdrop-blur">
+      <div className="space-y-1">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-02">
+          Measure
+        </p>
+        <p className="text-lg font-normal leading-snug text-gray-01 break-words whitespace-pre-wrap">
+          {measureText}
+        </p>
+      </div>
+      <div className="space-y-1 border-t border-gray-03/50 pt-2">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-02">
+          Activity shift
+        </p>
+        <p className="text-base font-normal leading-snug text-gray-01 break-words">
+          {shiftFrom} → {shiftTo}
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          <SoftChip>Ours: {canonicalShiftType(shiftType)}</SoftChip>
+          <SoftChip>Score: {score}</SoftChip>
+          {outcome ? <SoftChip tone="info">{outcome}</SoftChip> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TeMatchSlots({
   measure,
   shift,
@@ -912,30 +955,14 @@ function TeMatchSlots({
 
   const body = (
     <div className="space-y-3">
-      {/* Sticky context: measure statement is the thing the TEF must match. */}
-      <div className="sticky top-0 z-10 -mx-1 space-y-2 rounded-lg border border-gray-03/70 bg-gray-04/95 px-3.5 py-3 backdrop-blur">
-        <div className="space-y-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-02">
-            Measure
-          </p>
-          <p className="text-lg font-normal leading-snug text-gray-01 break-words whitespace-pre-wrap">
-            {measure.measureText}
-          </p>
-        </div>
-        <div className="space-y-1 border-t border-gray-03/50 pt-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-02">
-            Activity shift
-          </p>
-          <p className="text-base font-medium leading-snug text-gray-01 break-words">
-            {shift.shiftFrom} → {shift.shiftTo}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            <SoftChip>Ours: {canonicalShiftType(shift.type)}</SoftChip>
-            <SoftChip>Score: {shift.score}</SoftChip>
-            {outcome && <SoftChip tone="info">{outcome}</SoftChip>}
-          </div>
-        </div>
-      </div>
+      <TefStickyContext
+        measureText={measure.measureText}
+        shiftFrom={shift.shiftFrom}
+        shiftTo={shift.shiftTo}
+        shiftType={shift.type}
+        score={shift.score}
+        outcome={outcome}
+      />
 
       {matchCount > 1 && (
         <div className="space-y-2 rounded-lg border border-blue-03/35 bg-blue-03/5 px-3 py-2.5">
@@ -1312,28 +1339,14 @@ function TeUnmatchedSlots({
 
   const body = (
     <div className="space-y-3">
-      <div className="sticky top-0 z-10 -mx-1 space-y-2 rounded-lg border border-gray-03/70 bg-gray-04/95 px-3.5 py-3 backdrop-blur">
-        <div className="space-y-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-02">
-            Measure
-          </p>
-          <p className="text-lg font-semibold leading-snug text-gray-01 break-words whitespace-pre-wrap">
-            {measure.measureText}
-          </p>
-        </div>
-        <div className="space-y-1 border-t border-gray-03/50 pt-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-02">
-            Activity shift
-          </p>
-          <p className="text-base font-medium leading-snug text-gray-01 break-words">
-            {shift.shiftFrom} → {shift.shiftTo}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            <SoftChip>Ours: {canonicalShiftType(shift.type)}</SoftChip>
-            <SoftChip>Score: {shift.score}</SoftChip>
-          </div>
-        </div>
-      </div>
+      <TefStickyContext
+        measureText={measure.measureText}
+        shiftFrom={shift.shiftFrom}
+        shiftTo={shift.shiftTo}
+        shiftType={shift.type}
+        score={shift.score}
+        outcome={outcome}
+      />
 
       <Panel
         className="border-dashed border-orange-03/40 bg-orange-03/5"
