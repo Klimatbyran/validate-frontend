@@ -37,7 +37,9 @@ import {
   actionableFilterSuggestEditor,
   climateFilterSuggestEditor,
   extractCommitmentSuggestEditor,
+  isTeMatchAddSuggestion,
   similarGroupSuggestEditor,
+  teMatchAddEditor,
   teMatchSelectEditor,
   themeSuggestEditor,
 } from "./structuredSuggestEditors";
@@ -994,20 +996,167 @@ function TeMatchSlots({
   );
 }
 
+function existingTeMatchAddIds(
+  shiftKey: string,
+  reviewCtx: ReviewCardContext,
+): string[] {
+  const ids: string[] = [];
+  for (const review of reviewCtx.reviewsByEntity.values()) {
+    if (
+      review.step !== reviewCtx.step ||
+      review.entityType !== "teMatchAdd"
+    ) {
+      continue;
+    }
+    if (
+      review.entityId === shiftKey ||
+      review.entityId.startsWith(`${shiftKey}:add:`)
+    ) {
+      ids.push(review.entityId);
+    }
+  }
+  return ids;
+}
+
 function TeUnmatchedSlots({
   measure,
   shift,
+  reviewCtx,
   children,
 }: {
   measure: ExtractedMeasure;
   shift: ActivityShift;
+  reviewCtx: ReviewCardContext;
   children: (slots: ReviewItemSlots) => ReactNode;
 }) {
+  const shiftKey = activityShiftEntityKey(shift);
+  const matchedIds = new Set(
+    shift.transitionElementMatches.map((match) => match.stableId),
+  );
+  const allCandidates = (shift.transitionElementCandidates ?? []).map((c) => ({
+    stableId: c.stableId,
+    shortLabel: c.shortLabel,
+    score: c.score,
+  }));
+  const suggestedNew = shift.transitionElementSuggestedNew ?? null;
+  const [pendingSlotIds, setPendingSlotIds] = useState<string[]>([]);
+
+  const addEntityIds = useMemo(() => {
+    const ids = existingTeMatchAddIds(shiftKey, reviewCtx);
+    for (const slotId of pendingSlotIds) {
+      const entityId = `${shiftKey}:add:${slotId}`;
+      if (!ids.includes(entityId)) ids.push(entityId);
+    }
+    // Always keep one primary add slot so the sticky dock can suggest a TE.
+    if (ids.length === 0) ids.push(`${shiftKey}:add:review`);
+    return ids;
+  }, [shiftKey, reviewCtx, pendingSlotIds]);
+
+  const claimedStableIds = new Set<string>();
+  let suggestedNewClaimed = false;
+  for (const entityId of addEntityIds) {
+    const review = reviewCtx.reviewsByEntity.get(
+      reviewKey(reviewCtx.step, "teMatchAdd", entityId),
+    );
+    if (!isTeMatchAddSuggestion(review?.suggestedValue)) continue;
+    if (review.suggestedValue.selectedStableId) {
+      claimedStableIds.add(review.suggestedValue.selectedStableId);
+    }
+    if (review.suggestedValue.isSuggestedNew) suggestedNewClaimed = true;
+  }
+
+  const addableCandidates = allCandidates.filter(
+    (c) => !matchedIds.has(c.stableId) && !claimedStableIds.has(c.stableId),
+  );
+  const canUseSuggestedNew = Boolean(suggestedNew) && !suggestedNewClaimed;
+
+  const primaryEntityId = addEntityIds[0]!;
+  const extraEntityIds = addEntityIds.slice(1);
   const outcome = matchOutcomeLabel(
     shift.transitionElementGroupKind,
     shift.transitionElementGateDomain,
     shift.transitionElementGroupLabel,
   );
+
+  const defaultAddValue = (selectedInThis: string | null) => {
+    const preferred =
+      addableCandidates.find((c) => c.stableId === selectedInThis) ??
+      addableCandidates[0];
+    if (preferred) {
+      return {
+        action: "add" as const,
+        selectedStableId: preferred.stableId,
+        selectedShortLabel: preferred.shortLabel,
+      };
+    }
+    if (canUseSuggestedNew && suggestedNew) {
+      return {
+        action: "add" as const,
+        selectedStableId: null,
+        selectedShortLabel: suggestedNew.shortLabel,
+        selectedDescription: suggestedNew.description,
+        isSuggestedNew: true,
+      };
+    }
+    return {
+      action: "add" as const,
+      selectedStableId: null,
+      selectedShortLabel: "",
+      isSuggestedNew: true,
+    };
+  };
+
+  const renderAddControls = (
+    entityId: string,
+    variant: "dock" | "inline",
+  ) => {
+    const entityKey = reviewKey(reviewCtx.step, "teMatchAdd", entityId);
+    const review = reviewCtx.reviewsByEntity.get(entityKey);
+    const selectedInThis =
+      isTeMatchAddSuggestion(review?.suggestedValue) &&
+      review.suggestedValue.selectedStableId
+        ? review.suggestedValue.selectedStableId
+        : null;
+    const slotCandidates = allCandidates.filter(
+      (c) =>
+        !matchedIds.has(c.stableId) &&
+        (!claimedStableIds.has(c.stableId) || c.stableId === selectedInThis),
+    );
+    const slotCanUseSuggestedNew =
+      Boolean(suggestedNew) &&
+      (!suggestedNewClaimed ||
+        (isTeMatchAddSuggestion(review?.suggestedValue) &&
+          review.suggestedValue.isSuggestedNew));
+
+    return (
+      <ReviewControls
+        variant={variant}
+        planId={reviewCtx.planId}
+        step={reviewCtx.step}
+        entityType="teMatchAdd"
+        entityId={entityId}
+        reviewedSnapshot={{
+          activityShiftId: shiftKey,
+          currentMatchIds: [...matchedIds],
+          addableCandidates: slotCandidates,
+          suggestedNew: slotCanUseSuggestedNew ? suggestedNew : null,
+        }}
+        review={review}
+        initialPanel={review ? null : "suggest"}
+        defaultSuggestedValue={defaultAddValue(selectedInThis)}
+        suggestEditor={teMatchAddEditor({
+          candidates: slotCandidates,
+          suggestedNew: slotCanUseSuggestedNew ? suggestedNew : null,
+        })}
+        showOk={false}
+        onAdd={() =>
+          setPendingSlotIds((ids) => [...ids, crypto.randomUUID()])
+        }
+        addTitle="Add another TE match"
+        onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
+      />
+    );
+  };
 
   const body = (
     <div className="space-y-3">
@@ -1029,16 +1178,51 @@ function TeUnmatchedSlots({
           Activity: {shift.activity} · Need: {shift.need}
         </p>
       </Panel>
+
       <Panel
         tone="judge"
         className="border-dashed border-orange-03/40 bg-orange-03/5"
       >
         <p className="text-lg font-semibold text-orange-03">No TEF match</p>
         <p className="text-sm text-gray-02">
-          Switch to List view to add a match or inspect AI recovery / shadow
-          proposals — those actions stay on the list for now.
+          Use Suggest in the dock to attach an existing candidate, accept the
+          pipeline&apos;s proposed new TE, or write your own label.
         </p>
       </Panel>
+
+      {suggestedNew && (
+        <Panel label="Pipeline suggested new TE" tone="ai">
+          <p className="text-lg font-semibold text-gray-01 break-words">
+            {suggestedNew.shortLabel}
+          </p>
+          {suggestedNew.description && (
+            <p className="text-sm text-gray-02 break-words">
+              {suggestedNew.description}
+            </p>
+          )}
+        </Panel>
+      )}
+
+      {allCandidates.length > 0 && (
+        <Panel label="Nearby candidates">
+          <ul className="space-y-1.5">
+            {allCandidates.slice(0, 6).map((c) => (
+              <li
+                key={c.stableId}
+                className="flex items-baseline justify-between gap-2 text-sm"
+              >
+                <span className="min-w-0 break-words text-gray-01">
+                  {c.shortLabel}
+                </span>
+                <span className="shrink-0 font-mono text-[11px] text-gray-02">
+                  {c.score.toFixed(2)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
+
       {shift.aiReviewCategory && (
         <Panel label="AI second opinion" tone="ai">
           <p className="text-sm font-medium text-gray-01">
@@ -1051,6 +1235,28 @@ function TeUnmatchedSlots({
           )}
         </Panel>
       )}
+
+      {extraEntityIds.map((entityId) => {
+        const review = reviewCtx.reviewsByEntity.get(
+          reviewKey(reviewCtx.step, "teMatchAdd", entityId),
+        );
+        const label =
+          isTeMatchAddSuggestion(review?.suggestedValue) &&
+          review.suggestedValue.selectedShortLabel
+            ? review.suggestedValue.selectedShortLabel
+            : null;
+        return (
+          <div
+            key={entityId}
+            className="rounded-lg border border-dashed border-blue-03/40 bg-blue-03/5 p-3 space-y-2"
+          >
+            <p className="text-xs font-semibold text-blue-03">
+              Suggested add{label ? `: ${label}` : ""}
+            </p>
+            {renderAddControls(entityId, "inline")}
+          </div>
+        );
+      })}
     </div>
   );
 
@@ -1059,11 +1265,7 @@ function TeUnmatchedSlots({
       {children({
         contextLabel: "Unmatched shift",
         body,
-        dock: (
-          <p className="text-center text-xs text-gray-02">
-            No QA mark here — use List view to add or recover a match.
-          </p>
-        ),
+        dock: renderAddControls(primaryEntityId, "dock"),
       })}
     </>
   );
@@ -1132,7 +1334,11 @@ export function StepReviewItemCard({
       );
     case "teUnmatched":
       return (
-        <TeUnmatchedSlots measure={item.measure} shift={item.shift}>
+        <TeUnmatchedSlots
+          measure={item.measure}
+          shift={item.shift}
+          reviewCtx={reviewCtx}
+        >
           {children}
         </TeUnmatchedSlots>
       );

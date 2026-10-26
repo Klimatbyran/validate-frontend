@@ -193,9 +193,10 @@ export function ReviewControls({
       if (
         isTeMatchAddSuggestion(suggestDraft) &&
         !suggestDraft.selectedStableId &&
-        !suggestDraft.isSuggestedNew
+        !suggestDraft.isSuggestedNew &&
+        !suggestDraft.selectedShortLabel.trim()
       ) {
-        setError("Select a transition element to add");
+        setError("Select or describe a transition element to add");
         return;
       }
       await save({
@@ -311,7 +312,12 @@ export function ReviewControls({
         {review?.comment && !panel && (
           <p className="truncate text-xs text-gray-02">“{review.comment}”</p>
         )}
-        <div className="grid grid-cols-3 gap-2">
+        <div
+          className={cn(
+            "grid gap-2",
+            showOk ? "grid-cols-3" : "grid-cols-2",
+          )}
+        >
           {showOk && (
             <Button
               type="button"
@@ -337,7 +343,6 @@ export function ReviewControls({
             variant="outline"
             className={cn(
               "h-12 gap-2 text-sm font-semibold",
-              !showOk && "col-span-1",
               review?.comment
                 ? "border-orange-03/50 bg-orange-03/10 text-orange-03"
                 : "text-gray-01",
@@ -364,7 +369,7 @@ export function ReviewControls({
             onClick={openSuggest}
           >
             <Pencil className="h-4 w-4" />
-            Suggest
+            {showOk ? "Suggest" : "Add TEF"}
           </Button>
         </div>
         {onAdd && (
