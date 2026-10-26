@@ -1106,9 +1106,17 @@ function TeUnmatchedSlots({
     };
   };
 
+  const dismissPendingSlot = (entityId: string) => {
+    const prefix = `${shiftKey}:add:`;
+    if (!entityId.startsWith(prefix)) return;
+    const slotId = entityId.slice(prefix.length);
+    setPendingSlotIds((ids) => ids.filter((id) => id !== slotId));
+  };
+
   const renderAddControls = (
     entityId: string,
     variant: "dock" | "inline",
+    { dismissWhenUnsaved }: { dismissWhenUnsaved: boolean },
   ) => {
     const entityKey = reviewKey(reviewCtx.step, "teMatchAdd", entityId);
     const review = reviewCtx.reviewsByEntity.get(entityKey);
@@ -1153,6 +1161,9 @@ function TeUnmatchedSlots({
           setPendingSlotIds((ids) => [...ids, crypto.randomUUID()])
         }
         addTitle="Add another TE match"
+        onDismissUnsaved={
+          dismissWhenUnsaved ? () => dismissPendingSlot(entityId) : undefined
+        }
         onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
       />
     );
@@ -1240,6 +1251,11 @@ function TeUnmatchedSlots({
         const review = reviewCtx.reviewsByEntity.get(
           reviewKey(reviewCtx.step, "teMatchAdd", entityId),
         );
+        const isPendingExtra = pendingSlotIds.some(
+          (slotId) => `${shiftKey}:add:${slotId}` === entityId,
+        );
+        // Pending extras with no saved review only exist while editing —
+        // once dismissed they leave pendingSlotIds and disappear.
         const label =
           isTeMatchAddSuggestion(review?.suggestedValue) &&
           review.suggestedValue.selectedShortLabel
@@ -1253,7 +1269,9 @@ function TeUnmatchedSlots({
             <p className="text-xs font-semibold text-blue-03">
               Suggested add{label ? `: ${label}` : ""}
             </p>
-            {renderAddControls(entityId, "inline")}
+            {renderAddControls(entityId, "inline", {
+              dismissWhenUnsaved: isPendingExtra,
+            })}
           </div>
         );
       })}
@@ -1265,7 +1283,10 @@ function TeUnmatchedSlots({
       {children({
         contextLabel: "Unmatched shift",
         body,
-        dock: renderAddControls(primaryEntityId, "dock"),
+        dock: renderAddControls(primaryEntityId, "dock", {
+          // Primary dock slot stays; only extra pending boxes dismiss.
+          dismissWhenUnsaved: false,
+        }),
       })}
     </>
   );

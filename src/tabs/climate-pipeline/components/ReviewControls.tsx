@@ -44,6 +44,11 @@ interface ReviewControlsProps {
   showOk?: boolean;
   /** Open comment/suggest panel on mount (e.g. newly added TE slot). */
   initialPanel?: "comment" | "suggest" | null;
+  /**
+   * Called when the editor is closed without a saved review — used to drop
+   * ephemeral "add another" slots so empty dashed boxes don't linger.
+   */
+  onDismissUnsaved?: () => void;
   onChanged: (review: PipelineReview | null) => void;
   /**
    * `inline` = compact icon row (list view).
@@ -82,6 +87,7 @@ export function ReviewControls({
   addDisabled = false,
   showOk = true,
   initialPanel = null,
+  onDismissUnsaved,
   onChanged,
   variant = "inline",
   dockExtra,
@@ -103,6 +109,14 @@ export function ReviewControls({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+
+  const closePanel = () => {
+    setPanel(null);
+    setError(null);
+    // Ephemeral add slots only exist while editing — drop them if nothing
+    // was saved so empty "Suggested add" chrome doesn't pile up.
+    if (!review) onDismissUnsaved?.();
+  };
 
   const save = async (input: {
     status: ReviewStatus;
@@ -221,6 +235,10 @@ export function ReviewControls({
   };
 
   const openSuggest = () => {
+    if (panel === "suggest") {
+      closePanel();
+      return;
+    }
     setComment(review?.comment ?? "");
     if (suggestEditor) {
       setSuggestDraft(
@@ -235,7 +253,16 @@ export function ReviewControls({
         ),
       );
     }
-    setPanel((p) => (p === "suggest" ? null : "suggest"));
+    setPanel("suggest");
+  };
+
+  const openComment = () => {
+    if (panel === "comment") {
+      closePanel();
+      return;
+    }
+    setComment(review?.comment ?? "");
+    setPanel("comment");
   };
 
   const panelBlock = panel ? (
@@ -251,7 +278,7 @@ export function ReviewControls({
           variant="ghost"
           size="sm"
           className="h-6 w-6 p-0 text-gray-02 shrink-0"
-          onClick={() => setPanel(null)}
+          onClick={closePanel}
         >
           <X className="w-3.5 h-3.5" />
         </Button>
@@ -348,10 +375,7 @@ export function ReviewControls({
                 : "text-gray-01",
             )}
             disabled={isSaving}
-            onClick={() => {
-              setComment(review?.comment ?? "");
-              setPanel((p) => (p === "comment" ? null : "comment"));
-            }}
+            onClick={openComment}
           >
             <MessageSquare className="h-4 w-4" />
             Flag
@@ -439,10 +463,7 @@ export function ReviewControls({
           )}
           title="Comment"
           disabled={isSaving}
-          onClick={() => {
-            setComment(review?.comment ?? "");
-            setPanel((p) => (p === "comment" ? null : "comment"));
-          }}
+          onClick={openComment}
         >
           <MessageSquare className="w-3.5 h-3.5" />
         </Button>

@@ -702,6 +702,7 @@ function TeMatchAddSlots({
   suggestedNew,
   reviewCtx,
   onRequestAddSlot,
+  onDismissPendingSlot,
   pendingSlotIds,
 }: {
   shiftId: string;
@@ -710,6 +711,7 @@ function TeMatchAddSlots({
   suggestedNew: { shortLabel: string; description: string } | null;
   reviewCtx: ReviewContext;
   onRequestAddSlot: () => void;
+  onDismissPendingSlot: (slotId: string) => void;
   pendingSlotIds: string[];
 }) {
   const existingEntityIds: string[] = [];
@@ -828,6 +830,15 @@ function TeMatchAddSlots({
                 addDisabled={
                   addableCandidates.filter((c) => c.stableId !== selectedInThis)
                     .length === 0 && !canUseSuggestedNew
+                }
+                onDismissUnsaved={
+                  pendingEntityIds.includes(entityId)
+                    ? () => {
+                        const prefix = `${shiftId}:add:`;
+                        if (!entityId.startsWith(prefix)) return;
+                        onDismissPendingSlot(entityId.slice(prefix.length));
+                      }
+                    : undefined
                 }
                 onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
               />
@@ -1109,6 +1120,10 @@ function ActivityShiftTeBlock({
     setPendingAddSlotIds((ids) => [...ids, crypto.randomUUID()]);
   };
 
+  const dismissPendingSlot = (slotId: string) => {
+    setPendingAddSlotIds((ids) => ids.filter((id) => id !== slotId));
+  };
+
   const groupKind = shift.transitionElementGroupKind;
   const groupLabel = shift.transitionElementGroupLabel;
   const hasMatches = shift.transitionElementMatches.length > 0;
@@ -1187,6 +1202,7 @@ function ActivityShiftTeBlock({
           suggestedNew={suggestedNew}
           reviewCtx={reviewCtx}
           onRequestAddSlot={requestAddSlot}
+          onDismissPendingSlot={dismissPendingSlot}
           pendingSlotIds={pendingAddSlotIds}
         />
       )}
