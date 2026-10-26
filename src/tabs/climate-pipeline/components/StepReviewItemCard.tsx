@@ -912,18 +912,28 @@ function TeMatchSlots({
 
   const body = (
     <div className="space-y-3">
-      {/* Compact sticky context — full measure/shift detail stays in Details. */}
-      <div className="sticky top-0 z-10 -mx-1 space-y-1.5 rounded-lg border border-gray-03/70 bg-gray-04/95 px-3 py-2.5 backdrop-blur">
-        <p className="text-xs leading-snug text-gray-02 line-clamp-2 break-words">
-          {measure.measureText}
-        </p>
-        <p className="text-sm font-semibold leading-snug text-gray-01 break-words">
-          {shift.shiftFrom} → {shift.shiftTo}
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          <SoftChip>Ours: {canonicalShiftType(shift.type)}</SoftChip>
-          <SoftChip>Score: {shift.score}</SoftChip>
-          {outcome && <SoftChip tone="info">{outcome}</SoftChip>}
+      {/* Sticky context: measure statement is the thing the TEF must match. */}
+      <div className="sticky top-0 z-10 -mx-1 space-y-2 rounded-lg border border-gray-03/70 bg-gray-04/95 px-3.5 py-3 backdrop-blur">
+        <div className="space-y-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-02">
+            Measure
+          </p>
+          <p className="text-lg font-semibold leading-snug text-gray-01 break-words whitespace-pre-wrap">
+            {measure.measureText}
+          </p>
+        </div>
+        <div className="space-y-1 border-t border-gray-03/50 pt-2">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-02">
+            Activity shift
+          </p>
+          <p className="text-base font-medium leading-snug text-gray-01 break-words">
+            {shift.shiftFrom} → {shift.shiftTo}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            <SoftChip>Ours: {canonicalShiftType(shift.type)}</SoftChip>
+            <SoftChip>Score: {shift.score}</SoftChip>
+            {outcome && <SoftChip tone="info">{outcome}</SoftChip>}
+          </div>
         </div>
       </div>
 
