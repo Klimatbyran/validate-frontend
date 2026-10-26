@@ -424,4 +424,55 @@ describe("stepReviewQueue", () => {
       visibleMatchIdsByShiftKey.get(activityShiftEntityKey(shift))?.size,
     ).toBe(0);
   });
+
+  it("counts teMatchAdd reviews when filtering unmatched shifts", () => {
+    const unmatched = measureWithTeMatches(0);
+    const shift = unmatched.score!.activityShifts[0]!;
+    const shiftKey = activityShiftEntityKey(shift);
+    const items = buildStepReviewItems(
+      "matchTransitionElements",
+      detail({ extractedMeasures: [unmatched] }),
+    );
+    const reviews = new Map<string, PipelineReview>([
+      [
+        reviewKey(
+          "matchTransitionElements",
+          "teMatchAdd",
+          `${shiftKey}:add:review`,
+        ),
+        review({
+          step: "matchTransitionElements",
+          entityType: "teMatchAdd",
+          entityId: `${shiftKey}:add:review`,
+          status: "SUGGESTED_FIX",
+          comment: null,
+        }),
+      ],
+    ]);
+
+    expect(
+      filterByQaStatus(
+        items,
+        "matchTransitionElements",
+        reviews,
+        "not-reviewed",
+      ),
+    ).toHaveLength(0);
+    expect(
+      filterByQaStatus(
+        items,
+        "matchTransitionElements",
+        reviews,
+        "with-comment",
+      ),
+    ).toHaveLength(1);
+
+    const list = filterTeMatchesForListView(
+      [unmatched],
+      "matchTransitionElements",
+      reviews,
+      "not-reviewed",
+    );
+    expect(list.measures).toHaveLength(0);
+  });
 });

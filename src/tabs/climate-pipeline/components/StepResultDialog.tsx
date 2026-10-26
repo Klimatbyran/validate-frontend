@@ -133,6 +133,8 @@ interface ReviewContext {
   step: string;
   reviewsByEntity: ReviewLookup;
   onReviewChanged: (review: PipelineReview | null, key: string) => void;
+  /** Advance review queue after Looks good (review mode only). */
+  onAdvanceAfterOk?: () => void;
 }
 
 /** A commitment's own text, split into independently-searchable parts when
@@ -2664,6 +2666,15 @@ export function StepResultDialog({
         return base;
       });
     },
+    onAdvanceAfterOk:
+      viewMode === "review"
+        ? () => {
+            // Under not-reviewed, the OK'd item leaves the queue and the next
+            // item slides into this index — stay put. Otherwise step forward.
+            if (qaFilter === "not-reviewed") return;
+            setReviewIndex((i) => i + 1);
+          }
+        : undefined,
   };
 
   // Whole-plan list, independent of which step's filtered view is open —

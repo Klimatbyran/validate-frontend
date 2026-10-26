@@ -92,9 +92,13 @@ export function Modal({
       <DialogContent
         className={cn(
           sizeClass[size],
-          // Leave gutters for outside arrows when the dialog would otherwise
-          // span nearly the full viewport (size="full").
-          hasSideNav && size === "full" && "max-w-[calc(100vw-7.5rem)]",
+          // Outside arrows need a horizontal gutter for every size, not just
+          // full — 6xl review/list can still fill a mid-width viewport and
+          // clip the prev/next controls without this.
+          hasSideNav &&
+            (size === "full"
+              ? "max-w-[calc(100vw-7.5rem)]"
+              : "max-w-[min(72rem,calc(100vw-7.5rem))]"),
           cappedHeight && "flex min-h-0 flex-col",
           scrollable && "max-h-[90vh]",
           fillHeight && "h-[90vh]",

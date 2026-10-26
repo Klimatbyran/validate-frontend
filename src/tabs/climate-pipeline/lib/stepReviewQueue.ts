@@ -158,6 +158,46 @@ export function matchesQaFilter(
   }
 }
 
+/**
+ * Reviews that count toward an unmatched shift's QA state: the synthetic
+ * teMatch (__unmatched__) row plus any teMatchAdd suggestions for the shift.
+ * Add TEF saves as teMatchAdd, so filters must look there too.
+ */
+export function teUnmatchedRelatedReviews(
+  shift: ActivityShift,
+  step: string,
+  reviewsByEntity: Map<string, PipelineReview>,
+): PipelineReview[] {
+  const shiftKey = activityShiftEntityKey(shift);
+  const related: PipelineReview[] = [];
+  const unmatched = reviewsByEntity.get(
+    reviewKey(step, "teMatch", teUnmatchedEntityId(shift)),
+  );
+  if (unmatched) related.push(unmatched);
+  for (const review of reviewsByEntity.values()) {
+    if (review.step !== step || review.entityType !== "teMatchAdd") continue;
+    if (
+      review.entityId === shiftKey ||
+      review.entityId.startsWith(`${shiftKey}:add:`)
+    ) {
+      related.push(review);
+    }
+  }
+  return related;
+}
+
+export function unmatchedMatchesQaFilter(
+  shift: ActivityShift,
+  step: string,
+  reviewsByEntity: Map<string, PipelineReview>,
+  filter: QaStatusFilter,
+): boolean {
+  if (filter === "all") return true;
+  const related = teUnmatchedRelatedReviews(shift, step, reviewsByEntity);
+  if (filter === "not-reviewed") return related.length === 0;
+  return related.some((review) => matchesQaFilter(review, filter));
+}
+
 function buildThemeGroupItems(commitments: Commitment[]): StepReviewItem[] {
   const byTheme = new Map<string, Commitment[]>();
   for (const c of commitments) {
@@ -327,6 +367,14 @@ export function filterByQaStatus(
         filter,
       );
     }
+    if (item.kind === "teUnmatched") {
+      return unmatchedMatchesQaFilter(
+        item.shift,
+        step,
+        reviewsByEntity,
+        filter,
+      );
+    }
     const review = reviewsByEntity.get(
       reviewKey(step, item.entityType, item.entityId),
     );
@@ -422,10 +470,7 @@ export function filterTeMatchesForListView(
       const matches = shift.transitionElementMatches;
 
       if (matches.length === 0) {
-        const unmatchedReview = reviewsByEntity.get(
-          reviewKey(step, "teMatch", teUnmatchedEntityId(shift)),
-        );
-        if (matchesQaFilter(unmatchedReview, filter)) {
+        if (unmatchedMatchesQaFilter(shift, step, reviewsByEntity, filter)) {
           visibleMatchIdsByShiftKey.set(shiftKey, new Set());
           keptShifts.push(shift);
         }

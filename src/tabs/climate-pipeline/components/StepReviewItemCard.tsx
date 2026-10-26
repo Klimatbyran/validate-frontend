@@ -49,6 +49,8 @@ export interface ReviewCardContext {
   step: string;
   reviewsByEntity: Map<string, PipelineReview>;
   onReviewChanged: (review: PipelineReview | null, key: string) => void;
+  /** Advance the review queue after Looks good (skipped when filter removes the item). */
+  onAdvanceAfterOk?: () => void;
 }
 
 export interface ReviewItemSlots {
@@ -173,6 +175,31 @@ function ScoreTile({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
+/** Progressive disclosure for secondary evidence (IDs, long reasons, AI). */
+function Details({
+  label,
+  children,
+  defaultOpen = false,
+}: {
+  label: string;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="text-xs font-medium text-blue-03 hover:text-blue-04 hover:underline"
+      >
+        {open ? "Hide" : "Show"} {label}
+      </button>
+      {open ? <div className="space-y-2">{children}</div> : null}
+    </div>
+  );
+}
+
 function commitmentSuggest(
   commitment: Commitment,
   columns: "extract" | "climate" | "actionable" | "similar" | "themes",
@@ -282,6 +309,7 @@ function CommitmentDock({
         defaultSuggestedValue={defaultSuggestedValue}
         suggestEditor={suggestEditor}
         onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
+        onAdvanceAfterOk={reviewCtx.onAdvanceAfterOk}
         dockExtra={dockExtra}
       />
     </div>
@@ -312,6 +340,13 @@ function SingleCommitmentSlots({
       : columns === "actionable"
         ? "Actionable filter"
         : "Extract commitment";
+
+  const judgmentReason =
+    columns === "climate"
+      ? commitment.climateFilterReason
+      : columns === "actionable"
+        ? commitment.actionableReason
+        : null;
 
   const body = (
     <div className="space-y-4">
@@ -345,9 +380,6 @@ function SingleCommitmentSlots({
 
       <Panel>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-[11px] text-gray-02">
-            {commitment.stableId}
-          </span>
           <SoftChip tone={commitment.unverified ? "warn" : "ok"}>
             {commitment.unverified ? "Not in markdown" : "In markdown"}
           </SoftChip>
@@ -374,30 +406,32 @@ function SingleCommitmentSlots({
         <p className="text-lg font-medium leading-snug text-gray-01 break-words whitespace-pre-wrap">
           {commitment.text}
         </p>
-        {commitment.section && (
-          <p className="text-xs text-gray-02">Section: {commitment.section}</p>
-        )}
-        {commitment.originatesFrom && (
-          <p className="text-xs text-gray-02">
-            Originates from: {commitment.originatesFrom}
+        <Details label="ID & source">
+          <p className="font-mono text-[11px] text-gray-02">
+            {commitment.stableId}
           </p>
-        )}
+          {commitment.section && (
+            <p className="text-xs text-gray-02">
+              Section: {commitment.section}
+            </p>
+          )}
+          {commitment.originatesFrom && (
+            <p className="text-xs text-gray-02">
+              Originates from: {commitment.originatesFrom}
+            </p>
+          )}
+        </Details>
       </Panel>
 
-      {columns === "climate" && commitment.climateFilterReason && (
-        <Panel label="Why this judgment" tone="judge">
-          <p className="text-sm leading-relaxed text-gray-01 break-words">
-            {commitment.climateFilterReason}
-          </p>
-        </Panel>
-      )}
-      {columns === "actionable" && commitment.actionableReason && (
-        <Panel label="Why this judgment" tone="judge">
-          <p className="text-sm leading-relaxed text-gray-01 break-words">
-            {commitment.actionableReason}
-          </p>
-        </Panel>
-      )}
+      {judgmentReason ? (
+        <Details label="why this judgment">
+          <Panel tone="judge">
+            <p className="text-sm leading-relaxed text-gray-01 break-words">
+              {judgmentReason}
+            </p>
+          </Panel>
+        </Details>
+      ) : null}
     </div>
   );
 
@@ -410,6 +444,62 @@ function SingleCommitmentSlots({
           <CommitmentDock
             commitment={commitment}
             columns={columns}
+            reviewCtx={reviewCtx}
+            optionCommitments={optionCommitments}
+          />
+        ),
+      })}
+    </>
+  );
+}
+
+/** Similar-step unique commitments — single quote, not a 1-row group. */
+function UniqueCommitmentSlots({
+  commitment,
+  reviewCtx,
+  optionCommitments,
+  children,
+}: {
+  commitment: Commitment;
+  reviewCtx: ReviewCardContext;
+  optionCommitments?: Commitment[];
+  children: (slots: ReviewItemSlots) => ReactNode;
+}) {
+  const body = (
+    <div className="space-y-4">
+      <Panel>
+        <div className="flex flex-wrap items-center gap-2">
+          <SoftChip tone="info">Unique</SoftChip>
+          <SoftChip tone={commitment.unverified ? "warn" : "ok"}>
+            {commitment.unverified ? "Not in markdown" : "In markdown"}
+          </SoftChip>
+        </div>
+        <p className="text-lg font-medium leading-snug text-gray-01 break-words whitespace-pre-wrap">
+          {commitment.text}
+        </p>
+        <Details label="ID & source">
+          <p className="font-mono text-[11px] text-gray-02">
+            {commitment.stableId}
+          </p>
+          {commitment.section && (
+            <p className="text-xs text-gray-02">
+              Section: {commitment.section}
+            </p>
+          )}
+        </Details>
+      </Panel>
+    </div>
+  );
+
+  return (
+    <>
+      {children({
+        contextLabel: "Unique commitment",
+        body,
+        dock: (
+          <CommitmentDock
+            commitment={commitment}
+            columns="similar"
             reviewCtx={reviewCtx}
             optionCommitments={optionCommitments}
           />
@@ -521,20 +611,16 @@ function GroupReviewSlots({
 
   const body = (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h3 className="text-2xl font-semibold capitalize leading-tight text-gray-01">
-            {isTheme ? groupLabel : groupLabel}
-          </h3>
-          <p className="mt-1 text-xs text-gray-02">
-            {commitments.length}{" "}
-            {commitments.length === 1 ? "commitment" : "commitments"}
-            {okCount > 0 ? ` · ${okCount} marked OK` : ""}
-            {" · "}
-            select a row to flag or reassign
-          </p>
-        </div>
-      </div>
+      <p className="text-xs text-gray-02">
+        <span className="font-semibold capitalize text-gray-01">
+          {groupLabel}
+        </span>
+        {" · "}
+        {commitments.length}{" "}
+        {commitments.length === 1 ? "commitment" : "commitments"}
+        {okCount > 0 ? ` · ${okCount} OK` : ""}
+        {" · select a row to flag or reassign"}
+      </p>
 
       <ul className="divide-y divide-gray-03/50 overflow-hidden rounded-lg border border-gray-03/70 bg-gray-04/40">
         {commitments.map((c, i) => {
@@ -582,7 +668,12 @@ function GroupReviewSlots({
                       </SoftChip>
                     )}
                   </div>
-                  <p className="text-sm leading-snug text-gray-01 break-words whitespace-pre-wrap">
+                  <p
+                    className={cn(
+                      "text-sm leading-snug text-gray-01 break-words whitespace-pre-wrap",
+                      !isSelected && "line-clamp-2",
+                    )}
+                  >
                     {c.text}
                   </p>
                 </div>
@@ -673,6 +764,8 @@ function MeasureSlots({
           interventionType: measure.score?.interventionType ?? null,
         };
 
+  const shifts = measure.score?.activityShifts ?? [];
+
   const body =
     columns === "extract" ? (
       <div className="space-y-4">
@@ -721,6 +814,32 @@ function MeasureSlots({
             {measure.measureText}
           </p>
         </Panel>
+        {shifts.length > 0 ? (
+          <Details
+            label={
+              shifts.length === 1
+                ? "1 activity shift"
+                : `${shifts.length} activity shifts`
+            }
+          >
+            <ul className="space-y-1.5">
+              {shifts.slice(0, 5).map((shift) => (
+                <li
+                  key={activityShiftEntityKey(shift)}
+                  className="text-sm text-gray-01 break-words"
+                >
+                  <span className="font-medium">
+                    {shift.shiftFrom} → {shift.shiftTo}
+                  </span>
+                  <span className="text-xs text-gray-02">
+                    {" · "}
+                    {canonicalShiftType(shift.type)} · {shift.score}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Details>
+        ) : null}
       </div>
     );
 
@@ -735,6 +854,7 @@ function MeasureSlots({
       review={reviewCtx.reviewsByEntity.get(entityKey)}
       defaultSuggestedValue={snapshot}
       onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
+      onAdvanceAfterOk={reviewCtx.onAdvanceAfterOk}
     />
   );
 
@@ -792,36 +912,20 @@ function TeMatchSlots({
 
   const body = (
     <div className="space-y-3">
-      {/* Context first so the TEF decision has something to compare against. */}
-      <Panel label="Measure">
-        <p className="text-base font-medium leading-snug text-gray-01 break-words whitespace-pre-wrap">
+      {/* Compact sticky context — full measure/shift detail stays in Details. */}
+      <div className="sticky top-0 z-10 -mx-1 space-y-1.5 rounded-lg border border-gray-03/70 bg-gray-04/95 px-3 py-2.5 backdrop-blur">
+        <p className="text-xs leading-snug text-gray-02 line-clamp-2 break-words">
           {measure.measureText}
         </p>
-      </Panel>
-
-      <Panel label="Activity shift" tone="shift">
-        <p className="text-lg font-semibold leading-snug text-gray-01 break-words">
+        <p className="text-sm font-semibold leading-snug text-gray-01 break-words">
           {shift.shiftFrom} → {shift.shiftTo}
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           <SoftChip>Ours: {canonicalShiftType(shift.type)}</SoftChip>
           <SoftChip>Score: {shift.score}</SoftChip>
           {outcome && <SoftChip tone="info">{outcome}</SoftChip>}
         </div>
-        <p className="text-xs text-gray-02 break-words">
-          Activity: {shift.activity}
-          {" · "}
-          Need: {shift.need}
-          {shift.transitionElementGateDomain
-            ? ` · Domain: ${shift.transitionElementGateDomain}`
-            : ""}
-        </p>
-        {shift.typeReasoning && (
-          <p className="text-sm italic leading-relaxed text-gray-02 break-words">
-            {shift.typeReasoning}
-          </p>
-        )}
-      </Panel>
+      </div>
 
       {matchCount > 1 && (
         <div className="space-y-2 rounded-lg border border-blue-03/35 bg-blue-03/5 px-3 py-2.5">
@@ -830,7 +934,7 @@ function TeMatchSlots({
               {matchCount} TEF matches on this shift
             </p>
             <p className="text-xs tabular-nums text-gray-02">
-              Reviewing {matchIndex + 1} of {matchCount}
+              {matchIndex + 1} of {matchCount}
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
@@ -880,8 +984,6 @@ function TeMatchSlots({
                       {sibling.shortLabel}
                     </span>
                     <span className="font-mono text-[10px] text-gray-02">
-                      {sibling.stableId}
-                      {" · "}
                       {sibling.matchConfidence} · {sibling.score.toFixed(2)}
                     </span>
                   </span>
@@ -892,8 +994,10 @@ function TeMatchSlots({
         </div>
       )}
 
-      <Panel label="TEF match to review" tone="match">
-        <p className="font-mono text-[11px] text-gray-02">{match.stableId}</p>
+      <Panel tone="match">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-blue-03">
+          TEF match
+        </p>
         <p className="text-2xl font-semibold leading-tight text-gray-01 break-words">
           {match.shortLabel}
         </p>
@@ -920,10 +1024,25 @@ function TeMatchSlots({
               {!categoryAgrees ? " ≠ our shift" : ""}
             </SoftChip>
           )}
-          {legacy && <SoftChip>Legacy: {legacy}</SoftChip>}
         </div>
+      </Panel>
+
+      <Details label="match details">
+        <p className="font-mono text-[11px] text-gray-02">{match.stableId}</p>
         {match.sectorPath && (
           <p className="text-xs text-gray-02 break-words">{match.sectorPath}</p>
+        )}
+        {legacy && <SoftChip>Legacy: {legacy}</SoftChip>}
+        <p className="text-xs text-gray-02 break-words">
+          Activity: {shift.activity} · Need: {shift.need}
+          {shift.transitionElementGateDomain
+            ? ` · Domain: ${shift.transitionElementGateDomain}`
+            : ""}
+        </p>
+        {shift.typeReasoning && (
+          <p className="text-sm italic leading-relaxed text-gray-02 break-words">
+            {shift.typeReasoning}
+          </p>
         )}
         {mechanism && (
           <div className="rounded-md border border-blue-03/20 bg-gray-04/50 px-3 py-2">
@@ -935,20 +1054,19 @@ function TeMatchSlots({
             </p>
           </div>
         )}
-      </Panel>
-
-      {shift.aiReviewCategory && (
-        <Panel label="AI second opinion" tone="ai">
-          <p className="text-sm font-medium text-gray-01">
-            {aiReviewHeadline(shift.aiReviewCategory)}
-          </p>
-          {shift.aiReviewExplanation && (
-            <p className="text-sm leading-relaxed text-gray-02 break-words">
-              {shift.aiReviewExplanation}
+        {shift.aiReviewCategory && (
+          <Panel label="AI second opinion" tone="ai">
+            <p className="text-sm font-medium text-gray-01">
+              {aiReviewHeadline(shift.aiReviewCategory)}
             </p>
-          )}
-        </Panel>
-      )}
+            {shift.aiReviewExplanation && (
+              <p className="text-sm leading-relaxed text-gray-02 break-words">
+                {shift.aiReviewExplanation}
+              </p>
+            )}
+          </Panel>
+        )}
+      </Details>
     </div>
   );
 
@@ -978,6 +1096,7 @@ function TeMatchSlots({
         candidates: allCandidates,
       })}
       onChanged={(next) => reviewCtx.onReviewChanged(next, entityKey)}
+      onAdvanceAfterOk={reviewCtx.onAdvanceAfterOk}
     />
   );
 
@@ -1169,82 +1288,69 @@ function TeUnmatchedSlots({
     );
   };
 
+  const statusBits = [
+    "No TEF match",
+    outcome,
+    shift.aiReviewCategory
+      ? aiReviewHeadline(shift.aiReviewCategory)
+      : null,
+    suggestedNew ? `Suggested: ${suggestedNew.shortLabel}` : null,
+    allCandidates.length > 0
+      ? `${allCandidates.length} candidate${allCandidates.length === 1 ? "" : "s"} in Add TEF`
+      : null,
+  ].filter(Boolean);
+
   const body = (
     <div className="space-y-3">
-      <Panel label="Measure">
-        <p className="text-base font-medium leading-snug text-gray-01 break-words whitespace-pre-wrap">
+      <div className="sticky top-0 z-10 -mx-1 space-y-1.5 rounded-lg border border-gray-03/70 bg-gray-04/95 px-3 py-2.5 backdrop-blur">
+        <p className="text-xs leading-snug text-gray-02 line-clamp-2 break-words">
           {measure.measureText}
         </p>
-      </Panel>
-      <Panel label="Activity shift" tone="shift">
-        <p className="text-lg font-semibold text-gray-01 break-words">
+        <p className="text-sm font-semibold leading-snug text-gray-01 break-words">
           {shift.shiftFrom} → {shift.shiftTo}
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           <SoftChip>Ours: {canonicalShiftType(shift.type)}</SoftChip>
           <SoftChip>Score: {shift.score}</SoftChip>
-          {outcome && <SoftChip tone="warn">{outcome}</SoftChip>}
         </div>
-        <p className="text-xs text-gray-02 break-words">
-          Activity: {shift.activity} · Need: {shift.need}
-        </p>
-      </Panel>
+      </div>
 
       <Panel
-        tone="judge"
         className="border-dashed border-orange-03/40 bg-orange-03/5"
+        tone="judge"
       >
-        <p className="text-lg font-semibold text-orange-03">No TEF match</p>
+        <p className="text-base font-semibold text-orange-03 break-words">
+          {statusBits.join(" · ")}
+        </p>
         <p className="text-sm text-gray-02">
-          Use Suggest in the dock to attach an existing candidate, accept the
-          pipeline&apos;s proposed new TE, or write your own label.
+          Use Add TEF in the dock to attach a candidate, accept a suggested
+          new TE, or propose your own label.
         </p>
       </Panel>
 
-      {suggestedNew && (
-        <Panel label="Pipeline suggested new TE" tone="ai">
-          <p className="text-lg font-semibold text-gray-01 break-words">
-            {suggestedNew.shortLabel}
+      {(shift.aiReviewExplanation ||
+        suggestedNew?.description ||
+        shift.typeReasoning) && (
+        <Details label="context">
+          <p className="text-xs text-gray-02 break-words">
+            Activity: {shift.activity} · Need: {shift.need}
           </p>
-          {suggestedNew.description && (
-            <p className="text-sm text-gray-02 break-words">
-              {suggestedNew.description}
+          {shift.typeReasoning && (
+            <p className="text-sm italic text-gray-02 break-words">
+              {shift.typeReasoning}
             </p>
           )}
-        </Panel>
-      )}
-
-      {allCandidates.length > 0 && (
-        <Panel label="Nearby candidates">
-          <ul className="space-y-1.5">
-            {allCandidates.slice(0, 6).map((c) => (
-              <li
-                key={c.stableId}
-                className="flex items-baseline justify-between gap-2 text-sm"
-              >
-                <span className="min-w-0 break-words text-gray-01">
-                  {c.shortLabel}
-                </span>
-                <span className="shrink-0 font-mono text-[11px] text-gray-02">
-                  {c.score.toFixed(2)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      )}
-
-      {shift.aiReviewCategory && (
-        <Panel label="AI second opinion" tone="ai">
-          <p className="text-sm font-medium text-gray-01">
-            {aiReviewHeadline(shift.aiReviewCategory)}
-          </p>
+          {suggestedNew?.description && (
+            <p className="text-sm text-gray-02 break-words">
+              Suggested new: {suggestedNew.description}
+            </p>
+          )}
           {shift.aiReviewExplanation && (
             <p className="text-sm text-gray-02 break-words">
               {shift.aiReviewExplanation}
             </p>
           )}
-        </Panel>
+        </Details>
       )}
 
       {extraEntityIds.map((entityId) => {
@@ -1320,6 +1426,23 @@ export function StepReviewItemCard({
         </SingleCommitmentSlots>
       );
     case "commitmentGroup":
+      // Unique singletons are just one commitment — use the focused single
+      // layout instead of a one-row group list.
+      if (
+        item.groupLabel === "Unique" &&
+        item.commitments.length === 1 &&
+        item.commitments[0]
+      ) {
+        return (
+          <UniqueCommitmentSlots
+            commitment={item.commitments[0]}
+            reviewCtx={reviewCtx}
+            optionCommitments={optionCommitments}
+          >
+            {children}
+          </UniqueCommitmentSlots>
+        );
+      }
       return (
         <GroupReviewSlots
           groupLabel={item.groupLabel}
