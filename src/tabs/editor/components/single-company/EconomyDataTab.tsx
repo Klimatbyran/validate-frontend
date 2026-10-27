@@ -433,9 +433,7 @@ export function EconomyDataTab({
                           rp.economy?.turnover
                             ?.metadata as GarboFieldMetadata | null
                         }
-                        metadataHistory={
-                          rp.economy?.turnover?.metadataHistory
-                        }
+                        metadataHistory={rp.economy?.turnover?.metadataHistory}
                       >
                         <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-center">
                           <input
@@ -507,9 +505,7 @@ export function EconomyDataTab({
                           rp.economy?.employees
                             ?.metadata as GarboFieldMetadata | null
                         }
-                        metadataHistory={
-                          rp.economy?.employees?.metadataHistory
-                        }
+                        metadataHistory={rp.economy?.employees?.metadataHistory}
                       >
                         <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-center">
                           <input

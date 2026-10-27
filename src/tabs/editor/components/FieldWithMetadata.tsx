@@ -1,8 +1,5 @@
 import type { ReactNode } from "react";
-import type {
-  GarboFieldMetadata,
-  GarboMetadataHistory,
-} from "../lib/types";
+import type { GarboFieldMetadata, GarboMetadataHistory } from "../lib/types";
 import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
 
 export function FieldWithMetadata({

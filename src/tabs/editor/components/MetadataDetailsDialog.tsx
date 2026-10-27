@@ -3,10 +3,7 @@ import { useMemo } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
-import type {
-  GarboFieldMetadata,
-  GarboMetadataHistory,
-} from "../lib/types";
+import type { GarboFieldMetadata, GarboMetadataHistory } from "../lib/types";
 
 function hasAnyMetadata(metadata: GarboFieldMetadata | null | undefined) {
   if (!metadata) return false;
@@ -263,8 +260,7 @@ export function MetadataDetailsDialog({
                     ? ` (${t("editor.metadataDetails.bot")})`
                     : "";
                   const prev = formatPreviousValue(entry.previousValue);
-                  const entryVerified =
-                    entry.verifiedBy?.name?.trim() || null;
+                  const entryVerified = entry.verifiedBy?.name?.trim() || null;
                   const entryComment = entry.comment?.trim() || null;
                   const entrySource = entry.source?.trim() || null;
 

@@ -1,9 +1,6 @@
 import { BadgeCheck, Undo2 } from "lucide-react";
 import { IconActionButton } from "@/ui/icon-action-button";
-import type {
-  GarboFieldMetadata,
-  GarboMetadataHistory,
-} from "../lib/types";
+import type { GarboFieldMetadata, GarboMetadataHistory } from "../lib/types";
 import { MetadataDetailsDialog } from "./MetadataDetailsDialog";
 
 export function MetadataVerifyUndoActions({
