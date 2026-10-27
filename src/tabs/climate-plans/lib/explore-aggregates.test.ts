@@ -24,6 +24,7 @@ import type { Measure as MeasureRow } from "./measures-types";
 function measureWithTef(
   groupPath: string,
   confidence: "high" | "mid" | "low",
+  explicit?: boolean,
 ): MeasureRow {
   return {
     measure_text: `Measure ${groupPath} ${confidence}`,
@@ -46,6 +47,7 @@ function measureWithTef(
             description: `TEF for ${groupPath}`,
             sector_path: groupPath,
             match_confidence: confidence,
+            ...(typeof explicit === "boolean" ? { explicit } : {}),
           },
         ],
         transition_element_candidates: [],
@@ -134,6 +136,18 @@ describe("TEF grouping and strength", () => {
       interventionHow: "procurement",
       interventionScore: 5,
     });
+    expect(hit?.explicit).toBeUndefined();
+  });
+
+  it("forwards explicit / implied judgment when present on the match", () => {
+    const [implied] = collectTefHits([
+      measureWithTef("Transport > Road", "mid", false),
+    ]);
+    const [explicit] = collectTefHits([
+      measureWithTef("Transport > Road", "high", true),
+    ]);
+    expect(implied?.explicit).toBe(false);
+    expect(explicit?.explicit).toBe(true);
   });
 });
 

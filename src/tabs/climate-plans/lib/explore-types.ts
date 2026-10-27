@@ -24,6 +24,12 @@ export interface TefHit {
   measureText: string;
   /** Taxonomy match description when present. */
   description: string;
+  /**
+   * Whether the measure's own text directly names this TEF (explicit) vs only a
+   * reasonable inference (implied). Undefined on matches made before this field
+   * existed (static extracts / older pipeline runs).
+   */
+  explicit?: boolean;
   shiftFrom: string;
   shiftTo: string;
   need: string;
