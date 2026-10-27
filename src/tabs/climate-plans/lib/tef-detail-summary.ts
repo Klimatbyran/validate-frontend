@@ -12,6 +12,12 @@ export interface TefDetailSummary {
   /** 0 = all shift, 1 = all intervention; null when both averages missing. */
   interventionLean: number | null;
   confidence: Record<MatchConfidence, number>;
+  /** Hits where measure text directly names the TEF. */
+  explicitCount: number;
+  /** Hits judged as reasonable inference only. */
+  impliedCount: number;
+  /** Hits with no explicit/implied judgment (older extracts). */
+  unknownExplicitCount: number;
 }
 
 function isFilled(value: string): boolean {
@@ -33,6 +39,7 @@ export function summarizeTefHits(
     | "shiftScore"
     | "interventionScore"
     | "confidence"
+    | "explicit"
   >[],
   municipalityCount: number,
 ): TefDetailSummary {
@@ -44,6 +51,9 @@ export function summarizeTefHits(
   let whoFilled = 0;
   let whatFilled = 0;
   let howFilled = 0;
+  let explicitCount = 0;
+  let impliedCount = 0;
+  let unknownExplicitCount = 0;
   const shifts: number[] = [];
   const interventions: number[] = [];
 
@@ -54,6 +64,9 @@ export function summarizeTefHits(
     shifts.push(hit.shiftScore);
     interventions.push(hit.interventionScore);
     confidence[hit.confidence] += 1;
+    if (hit.explicit === true) explicitCount += 1;
+    else if (hit.explicit === false) impliedCount += 1;
+    else unknownExplicitCount += 1;
   }
 
   const avgShiftScore = average(shifts);
@@ -74,6 +87,9 @@ export function summarizeTefHits(
     avgInterventionScore,
     interventionLean,
     confidence,
+    explicitCount,
+    impliedCount,
+    unknownExplicitCount,
   };
 }
 
@@ -83,6 +99,9 @@ export type TefEvidenceFilter =
   | "how"
   | MatchConfidence
   | null;
+
+/** All matches, only implied, or everything that is not known-implied. */
+export type TefImpliedFilter = "all" | "implied" | "exclude-implied";
 
 export function hitMatchesEvidenceFilter(
   hit: Pick<
@@ -99,4 +118,14 @@ export function hitMatchesEvidenceFilter(
   if (filter === "what") return isFilled(hit.interventionWhat);
   if (filter === "how") return isFilled(hit.interventionHow);
   return hit.confidence === filter;
+}
+
+export function hitMatchesImpliedFilter(
+  hit: Pick<TefHit, "explicit">,
+  filter: TefImpliedFilter,
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "implied") return hit.explicit === false;
+  // exclude-implied: keep explicit + unlabeled (not known to be implied)
+  return hit.explicit !== false;
 }

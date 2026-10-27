@@ -30,6 +30,9 @@ export function collectTefHits(measures: Measure[]): TefHit[] {
           confidence: inferMatchConfidence(match.match_confidence, score),
           measureText: measure.measure_text,
           description: match.description ?? "",
+          ...(typeof match.explicit === "boolean"
+            ? { explicit: match.explicit }
+            : {}),
           shiftFrom: shift.shift_from,
           shiftTo: shift.shift_to,
           need: shift.need,

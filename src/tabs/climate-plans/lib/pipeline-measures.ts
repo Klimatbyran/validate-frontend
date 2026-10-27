@@ -30,6 +30,8 @@ interface ApiTransitionElementMatch {
   sectorPath: string;
   score: number;
   matchConfidence: "high" | "mid" | "low";
+  /** Present on matches from tePicker's judge() call; absent on older runs. */
+  explicit?: boolean;
 }
 
 interface ApiTransitionElementCandidate {
@@ -108,6 +110,7 @@ function toExplorerShift(shift: ApiActivityShift): ActivityShift {
       description: m.description,
       sector_path: m.sectorPath,
       match_confidence: m.matchConfidence,
+      ...(typeof m.explicit === "boolean" ? { explicit: m.explicit } : {}),
     })),
     transition_element_candidates: shift.transitionElementCandidates.map(
       (c) => ({

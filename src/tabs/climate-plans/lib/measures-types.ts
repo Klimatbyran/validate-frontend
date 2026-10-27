@@ -14,6 +14,8 @@ export interface TransitionElementMatch {
   description: string;
   sector_path: string;
   match_confidence: MatchConfidence;
+  /** LLM judgment: measure text directly names this match. Undefined on older data. */
+  explicit?: boolean;
 }
 
 export interface TransitionElementSuggestedNew {
