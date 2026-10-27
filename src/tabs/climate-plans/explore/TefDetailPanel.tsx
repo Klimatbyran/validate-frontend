@@ -33,8 +33,7 @@ export function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
     [cell.hits, cell.municipalityCount],
   );
 
-  const hasExplicitJudgment =
-    summary.explicitCount + summary.impliedCount > 0;
+  const hasExplicitJudgment = summary.explicitCount + summary.impliedCount > 0;
 
   const byMuni = useMemo(() => {
     const map = new Map<string, { name: string; hits: Hit[] }>();
@@ -440,7 +439,9 @@ function ConfidenceStrip({
               )}
             >
               {key}
-              <span className="tabular-nums font-normal opacity-80">{count}</span>
+              <span className="tabular-nums font-normal opacity-80">
+                {count}
+              </span>
             </button>
           );
         })}
@@ -456,7 +457,10 @@ function MuniMiniBars({ hits }: { hits: Hit[] }) {
     hits.reduce((s, h) => s + h.interventionScore, 0) /
     Math.max(hits.length, 1);
   return (
-    <div className="hidden sm:flex items-center gap-1 shrink-0" title="Avg shift / intervention">
+    <div
+      className="hidden sm:flex items-center gap-1 shrink-0"
+      title="Avg shift / intervention"
+    >
       <span className="w-8 h-1 rounded-full bg-gray-03/30 overflow-hidden">
         <span
           className="block h-full bg-blue-03"

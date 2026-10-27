@@ -93,12 +93,7 @@ export function summarizeTefHits(
   };
 }
 
-export type TefEvidenceFilter =
-  | "who"
-  | "what"
-  | "how"
-  | MatchConfidence
-  | null;
+export type TefEvidenceFilter = "who" | "what" | "how" | MatchConfidence | null;
 
 /** All matches, only implied, or everything that is not known-implied. */
 export type TefImpliedFilter = "all" | "implied" | "exclude-implied";
@@ -106,10 +101,7 @@ export type TefImpliedFilter = "all" | "implied" | "exclude-implied";
 export function hitMatchesEvidenceFilter(
   hit: Pick<
     TefHit,
-    | "interventionWho"
-    | "interventionWhat"
-    | "interventionHow"
-    | "confidence"
+    "interventionWho" | "interventionWhat" | "interventionHow" | "confidence"
   >,
   filter: TefEvidenceFilter,
 ): boolean {

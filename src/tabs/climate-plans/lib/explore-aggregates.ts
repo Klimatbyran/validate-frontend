@@ -66,10 +66,7 @@ export interface TopTefSummary {
 }
 
 /** Top TEFs by hit count (stable_id), for map detail bridging to framework view. */
-export function topTefsByHitCount(
-  hits: TefHit[],
-  limit = 3,
-): TopTefSummary[] {
+export function topTefsByHitCount(hits: TefHit[], limit = 3): TopTefSummary[] {
   const byId = new Map<string, TopTefSummary>();
   for (const hit of hits) {
     const existing = byId.get(hit.stableId);
