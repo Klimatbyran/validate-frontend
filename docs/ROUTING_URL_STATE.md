@@ -95,15 +95,14 @@ Invalid `source` values fall back to Live. Switching to Live **removes** the `so
 
 - `/climate-plans`
 - **In-page views** (query params):
-  - `/climate-plans` — By measure (default; omit `tab` or `?tab=measures`)
-  - `/climate-plans?tab=taxonomy`
-  - `/climate-plans?tab=explore` — Explore data
-  - Explore subviews: `view=map|alignment|goals|shifts|tef-framework|tef|anatomy` (default `map`)
+  - `/climate-plans` — Explore data (default; omit `tab` or `?tab=explore`)
+  - `/climate-plans?tab=measures` — By measure
+  - `/climate-plans?tab=taxonomy` — By taxonomy
+  - Explore subviews: `view=map|goals|shifts|tef-framework|anatomy` (default `map`)
   - Map: `kpi=uniqueCommitments`, `geo=municipality|region`, `tefGroup=…`, `muni=Nässjö`
-  - Alignment: `emissionsYear=latest|plan`, `alignLayout=bars|pies|stacked|gap|table` (default `bars`), `alignValues=share|absolute` (default `share`; labels on bars/table)
   - Goals: `goalsLayout=list|atlas` (default `list`), `goalsGroupBy=reduction|status|deadline|paris|scope` (atlas), `goalsAtlasScope=all|selected` (default `all`)
   - Shifts & interventions: `shiftsLayout=compare|flows|types` (default `compare`)
-  - TEF framework: `tefScope=all|region|municipality`, `tefMetric=hits|strength|municipalities`, `tefLayout=grid|3d` (default `grid`), `tefHeight=share|tonnes` (3d pillar height; default `share`), `tefEmissions=1` (optional header emission shares on grid), `tefId=…`, `muni=…`
+  - TEF framework: `tefScope=all|region|municipality`, `tefMetric=hits|strength|municipalities`, `tefLayout=3d|grid` (default `3d`), `tefHeight=share|tonnes` (3d pillar height; default `share`), `tefEmissions=1` (optional header emission shares on catalogue), `tefId=…`, `muni=…`
 
 ### Upload (query params)
 

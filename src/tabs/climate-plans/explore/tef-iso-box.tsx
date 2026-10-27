@@ -1,5 +1,16 @@
 import { tefCellFill } from "../lib/tef-framework";
 
+/**
+ * Forward-pitched isometric depth → screen offset.
+ * Higher dy than classic iso so top faces tip toward the viewer.
+ */
+export function isoDepthOffset(d: number): { dx: number; dy: number } {
+  return { dx: d * 0.55, dy: d * 0.68 };
+}
+
+/** Front-face height scale under the same pitch (keeps pillar height ratios). */
+export const ISO_FRONT_H_SCALE = 0.9;
+
 /** Flat isometric box: front, right, top faces as SVG polygons. */
 export function IsoBox({
   x,
@@ -29,8 +40,11 @@ export function IsoBox({
   frontTitle?: string;
   frontMeta?: string;
 }) {
-  const dx = d * 0.72;
-  const dy = d * 0.42;
+  const { dx, dy } = isoDepthOffset(d);
+  // Mild forward pitch: front face foreshortens uniformly so pillar height ratios stay comparable.
+  const frontH = h * ISO_FRONT_H_SCALE;
+  // Lean the front face slightly toward the viewer (top edge closer than bottom).
+  const lean = d * 0.12;
 
   const front = tefCellFill(rgb, intensity);
   const side = tefCellFill(rgb, Math.max(0.15, intensity - 0.22));
@@ -38,24 +52,25 @@ export function IsoBox({
   const stroke = selected ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.35)";
   const strokeW = selected ? 1.25 : 0.75;
 
-  const f0 = `${x},${y + dy}`;
-  const f1 = `${x + w},${y + dy}`;
-  const f2 = `${x + w},${y + dy + h}`;
-  const f3 = `${x},${y + dy + h}`;
+  // Front: parallelogram — top edge pulled toward camera (down-screen less than bottom).
+  const f0 = `${x + lean},${y + dy}`;
+  const f1 = `${x + w - lean},${y + dy}`;
+  const f2 = `${x + w},${y + dy + frontH}`;
+  const f3 = `${x},${y + dy + frontH}`;
 
-  const r0 = `${x + w},${y + dy}`;
-  const r1 = `${x + w + dx},${y}`;
-  const r2 = `${x + w + dx},${y + h}`;
-  const r3 = `${x + w},${y + dy + h}`;
+  const r0 = `${x + w - lean},${y + dy}`;
+  const r1 = `${x + w - lean + dx},${y}`;
+  const r2 = `${x + w + dx},${y + frontH}`;
+  const r3 = `${x + w},${y + dy + frontH}`;
 
-  const t0 = `${x},${y + dy}`;
-  const t1 = `${x + dx},${y}`;
-  const t2 = `${x + w + dx},${y}`;
-  const t3 = `${x + w},${y + dy}`;
+  const t0 = `${x + lean},${y + dy}`;
+  const t1 = `${x + lean + dx},${y}`;
+  const t2 = `${x + w - lean + dx},${y}`;
+  const t3 = `${x + w - lean},${y + dy}`;
 
   const textX = x + w / 2;
-  const labelY = y + dy + h * 0.36;
-  const valueY = y + dy + h * 0.68;
+  const labelY = y + dy + frontH * 0.36;
+  const valueY = y + dy + frontH * 0.68;
   const pad = 6;
 
   return (
@@ -83,10 +98,10 @@ export function IsoBox({
       />
       {frontTitle ? (
         <foreignObject
-          x={x + pad}
+          x={x + pad + lean * 0.5}
           y={y + dy + pad}
-          width={Math.max(0, w - pad * 2)}
-          height={Math.max(0, h - pad * 2)}
+          width={Math.max(0, w - pad * 2 - lean)}
+          height={Math.max(0, frontH - pad * 2)}
         >
           <div
             style={{

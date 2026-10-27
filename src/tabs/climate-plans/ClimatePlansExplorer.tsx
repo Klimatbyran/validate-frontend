@@ -952,20 +952,20 @@ export function ClimatePlansExplorer() {
             Climate Plan Measures
           </h1>
           <p className="text-sm text-gray-02 mt-1">
-            {topView === "measures"
-              ? "Ranked by activity shift clarity and intervention specificity (1–7 scale)"
+            {topView === "explore"
+              ? "Aggregated map and tracking views over the extracts we have so far"
               : topView === "taxonomy"
                 ? "Browse taxonomy transition elements across all municipalities"
-                : "Aggregated map, alignment, and tracking views over the extracts we have so far"}
+                : "Ranked by activity shift clarity and intervention specificity (1–7 scale)"}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <ViewModePills
             options={[
+              { value: "explore", label: "Explore data" },
               { value: "measures", label: "By measure" },
               { value: "taxonomy", label: "By taxonomy" },
-              { value: "explore", label: "Explore data" },
             ]}
             value={topView}
             onValueChange={params.setTab}

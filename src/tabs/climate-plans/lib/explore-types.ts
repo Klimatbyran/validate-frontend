@@ -3,7 +3,6 @@ import type {
   Measure,
   MunicipalityMeasures,
 } from "./measures-types";
-import type { EmissionBucket } from "./tef-groups";
 
 export type ExploreDataSource =
   | "static-measures"
@@ -103,21 +102,6 @@ export interface TefGroupStrength {
   highShare: number;
 }
 
-export interface AlignmentRow {
-  bucket: EmissionBucket;
-  emissionShare: number;
-  tefShare: number;
-  /** Share gap: TEF share − emission share. */
-  gap: number;
-  emissionTonnes: number;
-  tefCount: number;
-}
-
-export type AlignmentLayoutId = "bars" | "pies" | "table" | "gap" | "stacked";
-
-/** How dual charts label magnitudes (shares stay the geometry for pies/bars). */
-export type AlignmentValueMode = "share" | "absolute";
-
 export interface PipelineCommitment {
   text: string;
   climateRelevant: boolean | null;
@@ -143,19 +127,16 @@ export type MapKpiId =
 
 export type ExploreViewId =
   | "map"
-  | "alignment"
   | "goals"
   | "shifts"
-  | "tef"
   | "tef-framework"
   | "anatomy";
-export type ClimatePlansTabId = "measures" | "taxonomy" | "explore";
+export type ClimatePlansTabId = "explore" | "measures" | "taxonomy";
 export type MapGeoLevel = "municipality" | "region";
-export type EmissionsYearMode = "latest" | "plan";
 export type TefFrameworkScope = "all" | "municipality" | "region";
 export type TefFrameworkMetric = "hits" | "strength" | "municipalities";
-/** Grid = catalogue heatmap; 3d = emission-scaled sector pillars. */
-export type TefFrameworkLayout = "grid" | "3d";
+/** 3d = emission-scaled sector pillars (default); grid = catalogue heatmap. */
+export type TefFrameworkLayout = "3d" | "grid";
 /** How 3d pillar height is scaled. */
 export type TefFrameworkHeightMode = "share" | "tonnes";
 export type GoalsLayoutId = "list" | "atlas";

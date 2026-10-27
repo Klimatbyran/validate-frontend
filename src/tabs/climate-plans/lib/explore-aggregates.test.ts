@@ -12,7 +12,6 @@ import {
   tefGroupStrengths,
   topTefsByHitCount,
 } from "./explore-aggregates";
-import { alignmentRows } from "./explore-alignment";
 import { trackGoal } from "./explore-goals";
 import {
   emissionBucketForTefGroup,
@@ -233,53 +232,6 @@ describe("map KPIs", () => {
     expect(mapKpiValue(row, "climateRelevantShare", null).numeric).toBeCloseTo(
       0.75,
     );
-  });
-});
-
-describe("emissions vs TEF alignment", () => {
-  it("flags transport-heavy emissions vs industry TEFs", () => {
-    const row = record({
-      tefHits: [
-        {
-          stableId: "wood-1",
-          shortLabel: "Wood",
-          sectorPath: "Industry > Wood",
-          group: "Industry",
-          confidence: "high",
-          measureText: "bioeconomy",
-          description: "",
-          shiftFrom: "fossil",
-          shiftTo: "bio",
-          need: "materials",
-          shiftScore: 4,
-          interventionWho: "municipality",
-          interventionWhat: "procurement",
-          interventionHow: "policy",
-          interventionScore: 5,
-        },
-      ],
-      adoptedYear: 2022,
-    });
-    const { year, rows } = alignmentRows(
-      row,
-      {
-        municipalityName: "Nässjö",
-        byYear: {
-          "2022": { Transporter: 80, Industri: 20 },
-          "2023": { Transporter: 70, Industri: 30 },
-        },
-      },
-      "latest",
-    );
-    expect(year).toBe("2023");
-    const transport = rows.find((r) => r.bucket === "transport");
-    const industry = rows.find((r) => r.bucket === "industry");
-    expect(transport?.emissionShare).toBeCloseTo(0.7);
-    expect(transport?.emissionTonnes).toBe(70);
-    expect(transport?.tefShare).toBe(0);
-    expect(transport?.tefCount).toBe(0);
-    expect(industry?.tefShare).toBe(1);
-    expect(industry?.tefCount).toBe(1);
   });
 });
 
