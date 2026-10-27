@@ -135,8 +135,8 @@ export type ClimatePlansTabId = "explore" | "measures" | "taxonomy";
 export type MapGeoLevel = "municipality" | "region";
 export type TefFrameworkScope = "all" | "municipality" | "region";
 export type TefFrameworkMetric = "hits" | "strength" | "municipalities";
-/** Grid = catalogue heatmap; 3d = emission-scaled sector pillars. */
-export type TefFrameworkLayout = "grid" | "3d";
+/** 3d = emission-scaled sector pillars (default); grid = catalogue heatmap. */
+export type TefFrameworkLayout = "3d" | "grid";
 /** How 3d pillar height is scaled. */
 export type TefFrameworkHeightMode = "share" | "tonnes";
 export type GoalsLayoutId = "list" | "atlas";

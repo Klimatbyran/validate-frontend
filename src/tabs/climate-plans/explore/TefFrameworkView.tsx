@@ -129,8 +129,8 @@ export function TefFrameworkView({
       <div className="flex flex-wrap gap-2 items-center">
         <ViewModePills
           options={[
-            { value: "grid", label: "Catalogue" },
             { value: "3d", label: "3D emissions" },
+            { value: "grid", label: "Catalogue" },
           ]}
           value={layout}
           onValueChange={onLayoutChange}

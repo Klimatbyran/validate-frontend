@@ -102,7 +102,7 @@ Invalid `source` values fall back to Live. Switching to Live **removes** the `so
   - Map: `kpi=uniqueCommitments`, `geo=municipality|region`, `tefGroup=…`, `muni=Nässjö`
   - Goals: `goalsLayout=list|atlas` (default `list`), `goalsGroupBy=reduction|status|deadline|paris|scope` (atlas), `goalsAtlasScope=all|selected` (default `all`)
   - Shifts & interventions: `shiftsLayout=compare|flows|types` (default `compare`)
-  - TEF framework: `tefScope=all|region|municipality`, `tefMetric=hits|strength|municipalities`, `tefLayout=grid|3d` (default `grid`), `tefHeight=share|tonnes` (3d pillar height; default `share`), `tefEmissions=1` (optional header emission shares on grid), `tefId=…`, `muni=…`
+  - TEF framework: `tefScope=all|region|municipality`, `tefMetric=hits|strength|municipalities`, `tefLayout=3d|grid` (default `3d`), `tefHeight=share|tonnes` (3d pillar height; default `share`), `tefEmissions=1` (optional header emission shares on catalogue), `tefId=…`, `muni=…`
 
 ### Upload (query params)
 

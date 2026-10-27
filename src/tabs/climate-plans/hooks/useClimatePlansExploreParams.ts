@@ -30,7 +30,7 @@ const TEF_METRICS: TefFrameworkMetric[] = [
   "strength",
   "municipalities",
 ];
-const TEF_LAYOUTS: TefFrameworkLayout[] = ["grid", "3d"];
+const TEF_LAYOUTS: TefFrameworkLayout[] = ["3d", "grid"];
 const TEF_HEIGHT_MODES: TefFrameworkHeightMode[] = ["share", "tonnes"];
 const GOALS_LAYOUTS: GoalsLayoutId[] = ["list", "atlas"];
 const GOALS_GROUP_BY: GoalsGroupById[] = [
@@ -66,7 +66,7 @@ export function useClimatePlansExploreParams() {
   const tefScope = pick(searchParams.get("tefScope"), TEF_SCOPES, "all");
   const tefMetric = pick(searchParams.get("tefMetric"), TEF_METRICS, "hits");
   const tefEmissions = searchParams.get("tefEmissions") === "1";
-  const tefLayout = pick(searchParams.get("tefLayout"), TEF_LAYOUTS, "grid");
+  const tefLayout = pick(searchParams.get("tefLayout"), TEF_LAYOUTS, "3d");
   const tefHeight = pick(
     searchParams.get("tefHeight"),
     TEF_HEIGHT_MODES,
@@ -159,7 +159,7 @@ function isDefault(key: string, value: string): boolean {
   if (key === "tefGroup" && value === "all") return true;
   if (key === "tefScope" && value === "all") return true;
   if (key === "tefMetric" && value === "hits") return true;
-  if (key === "tefLayout" && value === "grid") return true;
+  if (key === "tefLayout" && value === "3d") return true;
   if (key === "tefHeight" && value === "share") return true;
   if (key === "goalsLayout" && value === "list") return true;
   if (key === "goalsGroupBy" && value === "reduction") return true;
