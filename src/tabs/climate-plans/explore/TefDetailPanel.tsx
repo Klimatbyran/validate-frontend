@@ -153,7 +153,16 @@ export function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
           ) : (
             <span className="text-xs text-gray-02">
               {hasExplicitJudgment
-                ? `${summary.explicitCount} explicit · ${summary.impliedCount} implied · expand a place for quotes`
+                ? [
+                    `${summary.explicitCount} explicit`,
+                    `${summary.impliedCount} implied`,
+                    summary.unknownExplicitCount > 0
+                      ? `${summary.unknownExplicitCount} unlabeled`
+                      : null,
+                    "expand a place for quotes",
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
                 : "Click a chip above to filter · expand a place for quotes"}
             </span>
           )}
