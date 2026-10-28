@@ -1,4 +1,6 @@
+import type { TefIconKind } from "../lib/tef-icon-kind";
 import { tefCellFill } from "../lib/tef-framework";
+import { TefCubeIcon } from "./tef-cube-icons";
 
 /**
  * Forward-pitched isometric depth → screen offset.
@@ -22,6 +24,7 @@ export function IsoBox({
   intensity,
   selected,
   frontLabel,
+  frontIcon,
   frontValue,
   frontTitle,
   frontMeta,
@@ -35,6 +38,8 @@ export function IsoBox({
   intensity: number;
   selected: boolean;
   frontLabel?: string;
+  /** Compact overview: glyph instead of TE index code. */
+  frontIcon?: TefIconKind;
   frontValue?: string;
   /** Multi-line TEF name for expanded cubes (HTML via foreignObject). */
   frontTitle?: string;
@@ -71,6 +76,10 @@ export function IsoBox({
   const textX = x + w / 2;
   const labelY = y + dy + frontH * 0.36;
   const valueY = y + dy + frontH * 0.68;
+  const iconCy = frontValue
+    ? y + dy + frontH * 0.34
+    : y + dy + frontH * 0.5;
+  const iconSize = Math.max(14, Math.min(20, w * 0.42));
   const pad = 6;
 
   return (
@@ -143,14 +152,16 @@ export function IsoBox({
             ) : null}
           </div>
         </foreignObject>
-      ) : frontLabel || frontValue ? (
+      ) : frontIcon || frontLabel || frontValue ? (
         <g
           style={{
             fontFamily:
               "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
           }}
         >
-          {frontLabel ? (
+          {frontIcon ? (
+            <TefCubeIcon kind={frontIcon} cx={textX} cy={iconCy} size={iconSize} />
+          ) : frontLabel ? (
             <text
               x={textX}
               y={labelY}

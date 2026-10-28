@@ -10,6 +10,7 @@ import {
   type TefFrameworkSectorColumn,
   type TefSectorId,
 } from "../lib/tef-framework";
+import { resolveTefIconKind } from "../lib/tef-icon-kind";
 import type {
   SectorEmissionShare,
   SectorGateMatchRate,
@@ -209,10 +210,10 @@ export function TefFramework3dView({
 
         <p className="text-xs text-gray-02 mt-4 text-center max-w-4xl mx-auto">
           {expandedColumn
-            ? "Expanded sector — cubes show TEF names. Click a cube for detail, or Back to all sectors."
+            ? "Expanded sector — cubes show TEF titles and catalogue codes. Click a cube for detail, or Back to all sectors."
             : `Pillars are bottom-aligned and scaled to the tallest mapped sector (${
                 heightMode === "share" ? "by emission share" : "by tonnes"
-              }). Click a sector to expand it with named TEF cubes.`}
+              }). Compact cubes use topic icons; click a sector to expand with TEF codes.`}
           {emissionShares.totalTonnes <= 0
             ? " No sector emissions matched this scope yet — pillars stay at minimum height."
             : ""}
@@ -503,10 +504,12 @@ function TefCubeGrid({
         const intensity =
           maxMetric <= 0 ? 0.45 : Math.max(0.2, value / maxMetric);
         const isSelected = selectedTefId === cell.stableId;
-        const code =
-          cell.index?.replace(/^T-\d/, "") ?? cell.stableId.slice(0, 6);
+        const code = formatTefFaceCode(cell);
         const valueLabel =
           metric === "strength" ? `${Math.round(value * 100)}%` : String(value);
+        const iconKind = expanded
+          ? undefined
+          : resolveTefIconKind(cell.title, cell.sectorPath);
 
         return (
           <button
@@ -537,11 +540,11 @@ function TefCubeGrid({
                 rgb={rgb}
                 intensity={intensity}
                 selected={isSelected}
-                frontLabel={expanded ? undefined : code}
+                frontIcon={iconKind}
                 frontValue={expanded ? undefined : valueLabel}
                 frontTitle={expanded ? cell.title : undefined}
                 frontMeta={
-                  expanded ? `${cell.index ?? code} · ${valueLabel}` : undefined
+                  expanded ? `${code} · ${valueLabel}` : undefined
                 }
               />
             </svg>
@@ -550,4 +553,10 @@ function TefCubeGrid({
       })}
     </div>
   );
+}
+
+/** Prefer catalogue index (e.g. T-1A1a-TE-6); fall back to a short id. */
+function formatTefFaceCode(cell: TefFrameworkCell): string {
+  if (cell.index) return cell.index;
+  return cell.stableId.slice(0, 10);
 }
