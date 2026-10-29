@@ -13,8 +13,10 @@ import type {
 } from "./explore-types";
 import {
   collectTefHits,
+  countAdaptationCommitments,
   countClimateCommitmentGroups,
   countClimateRelevantCommitments,
+  countOwnCommitments,
 } from "./explore-aggregates";
 import {
   foldPlaceName,
@@ -46,6 +48,9 @@ function emptyRecord(id: string, name: string): ExploreMunicipalityRecord {
     commitmentSource: "measures-as-proxy",
     climateRelevantCommitmentCount: null,
     climateCommitmentGroupCount: null,
+    adaptationCommitmentCount: null,
+    ownCommitmentCount: null,
+    companionReferenceCount: null,
     markdownChars: null,
     tefHits: [],
     documentTitle: null,
@@ -79,17 +84,34 @@ function addSource(
   if (!record.dataSources.includes(source)) record.dataSources.push(source);
 }
 
+/** Shape of GET /plans/:id used by loadPipelineExtras (detail, not list). */
 interface PipelinePlanListItem {
   id: string;
   extractedMunicipalityName: string | null;
   municipality: { id: string; name: string } | null;
   markdown?: string | null;
+  documentReferences?: Array<{
+    id: string;
+    groupId?: string | null;
+    relationship: string;
+  }>;
   commitments?: Array<{
     text: string;
     climateRelevant: boolean | null;
     actionable?: boolean | null;
     similarGroupId?: string | null;
+    adaptation?: boolean | null;
+    originatesFrom?: string[] | null;
   }>;
+}
+
+/** Deduped companion refs from plan detail. Null when the field was not loaded. */
+function companionRefCount(extra: PipelinePlanListItem): number | null {
+  if (!Array.isArray(extra.documentReferences)) return null;
+  const companions = extra.documentReferences.filter(
+    (r) => r.relationship === "companion",
+  );
+  return new Set(companions.map((r) => r.groupId ?? r.id)).size;
 }
 
 async function loadPipelineExtras(): Promise<PipelinePlanListItem[]> {
@@ -220,15 +242,30 @@ export async function loadExploreDataset(): Promise<ExploreDataset> {
     applyMeasures(record, row.measures, "pipeline-measures");
   }
 
+  // pipelineExtras preserves GET /plans order (newest first). First write
+  // wins so an older sibling plan for the same municipality cannot overwrite
+  // the newest plan's companions / commitments / markdown.
   for (const extra of pipelineExtras) {
     const name = extra.municipality?.name ?? extra.extractedMunicipalityName;
     if (!name) continue;
     const record = upsert(byKey, name, extra.id);
-    if (typeof extra.markdown === "string" && extra.markdown.length > 0) {
+    if (
+      record.markdownChars == null &&
+      typeof extra.markdown === "string" &&
+      extra.markdown.length > 0
+    ) {
       record.markdownChars = extra.markdown.length;
       addSource(record, "pipeline-markdown");
     }
-    if (Array.isArray(extra.commitments) && extra.commitments.length > 0) {
+    if (record.companionReferenceCount == null) {
+      const companions = companionRefCount(extra);
+      if (companions != null) record.companionReferenceCount = companions;
+    }
+    if (
+      record.commitmentSource !== "pipeline-commitments" &&
+      Array.isArray(extra.commitments) &&
+      extra.commitments.length > 0
+    ) {
       const unique = new Set(extra.commitments.map((c) => c.text));
       const pipelineCommitments: PipelineCommitment[] = extra.commitments.map(
         (c) => ({
@@ -236,6 +273,10 @@ export async function loadExploreDataset(): Promise<ExploreDataset> {
           climateRelevant: c.climateRelevant,
           actionable: c.actionable ?? null,
           similarGroupId: c.similarGroupId ?? null,
+          adaptation: c.adaptation ?? null,
+          originatesFrom: Array.isArray(c.originatesFrom)
+            ? c.originatesFrom
+            : [],
         }),
       );
       record.commitmentCount = unique.size;
@@ -244,6 +285,9 @@ export async function loadExploreDataset(): Promise<ExploreDataset> {
         countClimateRelevantCommitments(pipelineCommitments);
       record.climateCommitmentGroupCount =
         countClimateCommitmentGroups(pipelineCommitments);
+      record.adaptationCommitmentCount =
+        countAdaptationCommitments(pipelineCommitments);
+      record.ownCommitmentCount = countOwnCommitments(pipelineCommitments);
       addSource(record, "pipeline-commitments");
     }
   }
@@ -270,9 +314,7 @@ export async function loadExploreDataset(): Promise<ExploreDataset> {
   const namesForEmissions = municipalities
     .filter(
       (m) =>
-        m.measures.length > 0 ||
-        m.commitmentCount > 0 ||
-        m.tefHits.length > 0,
+        m.measures.length > 0 || m.commitmentCount > 0 || m.tefHits.length > 0,
     )
     .map((m) => m.name);
   const { rows: sectorEmissions, error: sectorEmissionsError } =

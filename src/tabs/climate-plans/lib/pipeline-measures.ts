@@ -57,6 +57,11 @@ interface ApiActivityShift {
     description: string;
   } | null;
   transitionElementGateDomain?: string | null;
+  shadowElement?: {
+    id: string;
+    status?: string | null;
+  } | null;
+  shadowElementId?: string | null;
 }
 
 interface ApiMeasureScore {
@@ -129,6 +134,8 @@ function toExplorerShift(shift: ApiActivityShift): ActivityShift {
         }
       : {}),
     transition_element_gate_domain: shift.transitionElementGateDomain ?? null,
+    shadow_element_id: shift.shadowElement?.id ?? shift.shadowElementId ?? null,
+    shadow_element_status: shift.shadowElement?.status ?? null,
   };
 }
 
@@ -149,10 +156,9 @@ function toExplorerMeasure(m: ApiExtractedMeasure): Measure {
   };
 }
 
-/** Fetches every plan that's been through scoreMeasures and returns them in
- * the same shape as the static measures JSON files. Returns [] (not a
- * thrown error) if the pipeline API is unreachable, so the static list
- * still renders on its own. */
+/** Fetches every plan that's been through scoreMeasures and returns them as
+ * MunicipalityMeasures[]. Returns [] (not a thrown error) if the pipeline
+ * API is unreachable. */
 export async function fetchPipelineMeasures(): Promise<MunicipalityMeasures[]> {
   const base = getClimatePlansPipelineApiUrl();
   try {
@@ -191,10 +197,7 @@ export async function fetchPipelineMeasures(): Promise<MunicipalityMeasures[]> {
       })
       .filter((m) => m.measures.length > 0);
   } catch (err) {
-    console.warn(
-      "[pipeline-measures] climate-plans-pipeline unreachable, showing static data only",
-      err,
-    );
+    console.warn("[pipeline-measures] climate-plans-pipeline unreachable", err);
     return [];
   }
 }
