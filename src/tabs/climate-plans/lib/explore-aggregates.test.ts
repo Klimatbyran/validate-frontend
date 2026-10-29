@@ -14,6 +14,7 @@ import {
   interventionActiveShare,
   interventionSpecificityShare,
   mapKpiValue,
+  mergeRegionRecords,
   shadowHitCount,
   tefGroupStrengths,
   tefMatchRate,
@@ -273,11 +274,24 @@ describe("map KPIs", () => {
     expect(shadowHitCount(measures)).toBe(1);
     expect(explicitTefShare(collectTefHits(measures))).toBe(1);
 
+    const rejectedShadow: MeasureRow = {
+      ...empty,
+      measure_text: "rejected-shadow",
+      activity_shifts: [
+        {
+          ...empty.activity_shifts[0]!,
+          shadow_element_id: "shadow-rejected",
+          shadow_element_status: "rejected",
+        },
+      ],
+    };
+    expect(shadowHitCount([...measures, rejectedShadow])).toBe(1);
+
     const row = record({ measures, tefHits: collectTefHits(measures) });
     expect(mapKpiValue(row, "measureCount", null).numeric).toBe(2);
-    expect(mapKpiValue(row, "interventionActiveShare", null).numeric).toBeCloseTo(
-      0.5,
-    );
+    expect(
+      mapKpiValue(row, "interventionActiveShare", null).numeric,
+    ).toBeCloseTo(0.5);
     expect(
       mapKpiValue(row, "interventionSpecificityShare", null).numeric,
     ).toBeCloseTo(0.5);
@@ -293,9 +307,17 @@ describe("map KPIs", () => {
     expect(mapKpiValue(row, "shadowHitCount", null).numeric).toBe(1);
   });
 
-  it("counts adaptation and own commitments", () => {
+  it("counts distinct adaptation and own commitment texts", () => {
     expect(
       countAdaptationCommitments([
+        {
+          text: "a",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: null,
+          adaptation: true,
+          originatesFrom: [],
+        },
         {
           text: "a",
           climateRelevant: true,
@@ -325,6 +347,14 @@ describe("map KPIs", () => {
           originatesFrom: [],
         },
         {
+          text: "a",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: null,
+          adaptation: false,
+          originatesFrom: [],
+        },
+        {
           text: "b",
           climateRelevant: true,
           actionable: true,
@@ -334,5 +364,30 @@ describe("map KPIs", () => {
         },
       ]),
     ).toBe(1);
+  });
+
+  it("keeps region planApproved null when any member status is unknown", () => {
+    const approved = record({ name: "A", planApproved: true });
+    const unknown = record({ name: "B", planApproved: null });
+    const merged = mergeRegionRecords([approved, unknown], "Jönköping");
+    expect(merged.planApproved).toBeNull();
+
+    const both = mergeRegionRecords(
+      [
+        record({ name: "A", planApproved: true }),
+        record({ name: "B", planApproved: true }),
+      ],
+      "Jönköping",
+    );
+    expect(both.planApproved).toBe(true);
+
+    const mixed = mergeRegionRecords(
+      [
+        record({ name: "A", planApproved: true }),
+        record({ name: "B", planApproved: false }),
+      ],
+      "Jönköping",
+    );
+    expect(mixed.planApproved).toBe(false);
   });
 });

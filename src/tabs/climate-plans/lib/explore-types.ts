@@ -52,7 +52,10 @@ export interface ExploreMunicipalityRecord {
   ownCommitmentCount: number | null;
   /** Deduped companion DocumentReference groups. Null when plan extras not loaded. */
   companionReferenceCount: number | null;
-  /** ClimatePlan.status === APPROVED. Null when plan extras not loaded. */
+  /**
+   * ClimatePlan.status === APPROVED (municipality-name match approved).
+   * Null when plan extras not loaded.
+   */
   planApproved: boolean | null;
   markdownChars: number | null;
   tefHits: TefHit[];
@@ -118,11 +121,7 @@ export type MapKpiId =
   | "companionReferenceCount"
   | "planApproved";
 
-export type ExploreViewId =
-  | "map"
-  | "shifts"
-  | "tef-framework"
-  | "anatomy";
+export type ExploreViewId = "map" | "shifts" | "tef-framework" | "anatomy";
 export type ClimatePlansTabId = "explore" | "measures" | "taxonomy";
 export type MapGeoLevel = "municipality" | "region";
 export type TefFrameworkScope = "all" | "municipality" | "region";

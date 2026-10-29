@@ -57,7 +57,10 @@ interface ApiActivityShift {
     description: string;
   } | null;
   transitionElementGateDomain?: string | null;
-  shadowElement?: { id: string } | null;
+  shadowElement?: {
+    id: string;
+    status?: string | null;
+  } | null;
   shadowElementId?: string | null;
 }
 
@@ -131,8 +134,8 @@ function toExplorerShift(shift: ApiActivityShift): ActivityShift {
         }
       : {}),
     transition_element_gate_domain: shift.transitionElementGateDomain ?? null,
-    shadow_element_id:
-      shift.shadowElement?.id ?? shift.shadowElementId ?? null,
+    shadow_element_id: shift.shadowElement?.id ?? shift.shadowElementId ?? null,
+    shadow_element_status: shift.shadowElement?.status ?? null,
   };
 }
 
@@ -194,10 +197,7 @@ export async function fetchPipelineMeasures(): Promise<MunicipalityMeasures[]> {
       })
       .filter((m) => m.measures.length > 0);
   } catch (err) {
-    console.warn(
-      "[pipeline-measures] climate-plans-pipeline unreachable",
-      err,
-    );
+    console.warn("[pipeline-measures] climate-plans-pipeline unreachable", err);
     return [];
   }
 }

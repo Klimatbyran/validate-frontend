@@ -39,6 +39,8 @@ export interface ActivityShift {
   transition_element_gate_domain?: string | null;
   /** Present when matchTransitionElements attached a shadow TEF gap. */
   shadow_element_id?: string | null;
+  /** Shadow taxonomy status when shadow_element_id is set. */
+  shadow_element_status?: string | null;
 }
 
 export interface Measure {

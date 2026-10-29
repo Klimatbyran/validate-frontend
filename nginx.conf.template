@@ -173,8 +173,9 @@ server {
         proxy_read_timeout 30s;
     }
 
-    # SPA routes that must not be treated as static directories (a leftover
-    # public/climate-plans/ folder previously made /climate-plans/ 403).
+    # Guard: if a local/public leftover recreates public/climate-plans/,
+    # nginx would otherwise treat /climate-plans/ as a directory (403).
+    # Geo assets live under /geo/sweden/ so this path should not exist.
     location = /climate-plans {
         try_files /index.html =404;
     }

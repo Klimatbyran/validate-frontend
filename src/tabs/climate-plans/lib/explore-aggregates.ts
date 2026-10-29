@@ -75,7 +75,9 @@ export function highScoreShare(
   threshold = 5,
 ): number | null {
   if (measures.length === 0) return null;
-  return measures.filter((m) => (m[key] ?? 0) >= threshold).length / measures.length;
+  return (
+    measures.filter((m) => (m[key] ?? 0) >= threshold).length / measures.length
+  );
 }
 
 /** Share of TEF hits judged explicit (ignores hits without the field). */
@@ -96,28 +98,40 @@ export function tefMatchRate(measures: Measure[]): number | null {
   return matched / measures.length;
 }
 
-/** Count of activity shifts attached to a shadow TEF element. */
+/**
+ * Count of activity shifts attached to an active shadow TEF element.
+ * Rejected/merged shadows keep their id on the API but are excluded here.
+ */
 export function shadowHitCount(measures: Measure[]): number {
   let count = 0;
   for (const measure of measures) {
     for (const shift of measure.activity_shifts ?? []) {
-      if (shift.shadow_element_id) count += 1;
+      if (!shift.shadow_element_id) continue;
+      const status = shift.shadow_element_status;
+      if (status === "rejected" || status === "merged") continue;
+      count += 1;
     }
   }
   return count;
 }
 
+/** Distinct commitment texts with adaptation === true (matches commitmentCount). */
 export function countAdaptationCommitments(
   commitments: PipelineCommitment[],
 ): number {
-  return commitments.filter((c) => c.adaptation === true).length;
+  return new Set(
+    commitments.filter((c) => c.adaptation === true).map((c) => c.text),
+  ).size;
 }
 
-/** Commitments whose target/measure is not attributed to region/national/EU/other. */
-export function countOwnCommitments(
-  commitments: PipelineCommitment[],
-): number {
-  return commitments.filter((c) => c.originatesFrom.length === 0).length;
+/**
+ * Distinct commitment texts whose target/measure is not attributed to
+ * region/national/EU/other (empty originatesFrom). Matches commitmentCount.
+ */
+export function countOwnCommitments(commitments: PipelineCommitment[]): number {
+  return new Set(
+    commitments.filter((c) => c.originatesFrom.length === 0).map((c) => c.text),
+  ).size;
 }
 
 export interface TopTefSummary {
@@ -477,10 +491,6 @@ export function mergeRegionRecords(
   const companions = records.every((r) => r.companionReferenceCount == null)
     ? null
     : records.reduce((s, r) => s + (r.companionReferenceCount ?? 0), 0);
-  const approvedFlags = records
-    .map((r) => r.planApproved)
-    .filter((v): v is boolean => v != null);
-
   return {
     id: `region:${regionName}`,
     name: regionName,
@@ -497,10 +507,11 @@ export function mergeRegionRecords(
     adaptationCommitmentCount: adaptation,
     ownCommitmentCount: own,
     companionReferenceCount: companions,
-    planApproved:
-      approvedFlags.length === 0
-        ? null
-        : approvedFlags.every((v) => v === true),
+    // Null unless every member municipality has a known status — otherwise
+    // a single APPROVED plan would paint the whole region green.
+    planApproved: records.every((r) => r.planApproved != null)
+      ? records.every((r) => r.planApproved === true)
+      : null,
     markdownChars,
     tefHits,
     documentTitle: null,
@@ -598,13 +609,14 @@ export const MAP_KPI_META: Record<
   adaptationShare: {
     label: "Adaptation share",
     data: "Commitment.adaptation from filterCommitmentsClimate.",
-    calculation: "adaptation === true count / extracted unique-text count.",
+    calculation:
+      "Distinct texts with adaptation === true / extracted unique-text count.",
   },
   ownCommitmentShare: {
     label: "Own commitment share",
     data: "Commitment.originatesFrom (region / national / eu / other).",
     calculation:
-      "Share of commitments with empty originatesFrom — municipality's own target/measure, not adopted from another body.",
+      "Distinct texts with empty originatesFrom / extracted unique-text count. Older rows default to empty originatesFrom, so they count as own.",
   },
   explicitTefShare: {
     label: "Explicit TEF share",
@@ -620,7 +632,8 @@ export const MAP_KPI_META: Record<
   shadowHitCount: {
     label: "Shadow TEF hits",
     data: "activity_shifts[].shadowElement after matchTransitionElements.",
-    calculation: "Count of activity shifts attached to a shadow TEF element.",
+    calculation:
+      "Count of activity shifts attached to a shadow TEF that is not rejected or merged.",
   },
   companionReferenceCount: {
     label: "Companion document refs",
@@ -629,8 +642,9 @@ export const MAP_KPI_META: Record<
       "Distinct companion groups — signals the plan may be incomplete without its åtgärdsplan/bilaga.",
   },
   planApproved: {
-    label: "Plan approved",
-    data: "ClimatePlan.status from the pipeline approve flow.",
-    calculation: "True when status === APPROVED. Region = all member plans approved.",
+    label: "Municipality match approved",
+    data: "ClimatePlan.status after approving the extracted municipality name (not a content/QA sign-off on the plan).",
+    calculation:
+      "True when status === APPROVED. Region = every member municipality is approved; null if any member status is unknown.",
   },
 };

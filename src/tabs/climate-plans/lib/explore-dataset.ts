@@ -85,13 +85,13 @@ function addSource(
   if (!record.dataSources.includes(source)) record.dataSources.push(source);
 }
 
+/** Shape of GET /plans/:id used by loadPipelineExtras (detail, not list). */
 interface PipelinePlanListItem {
   id: string;
   status?: "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | string;
   extractedMunicipalityName: string | null;
   municipality: { id: string; name: string } | null;
   markdown?: string | null;
-  companionReferenceCount?: number;
   documentReferences?: Array<{
     id: string;
     groupId?: string | null;
@@ -107,12 +107,12 @@ interface PipelinePlanListItem {
   }>;
 }
 
-function companionRefCount(extra: PipelinePlanListItem): number {
-  if (typeof extra.companionReferenceCount === "number") {
-    return extra.companionReferenceCount;
-  }
-  const refs = extra.documentReferences ?? [];
-  const companions = refs.filter((r) => r.relationship === "companion");
+/** Deduped companion refs from plan detail. Null when the field was not loaded. */
+function companionRefCount(extra: PipelinePlanListItem): number | null {
+  if (!Array.isArray(extra.documentReferences)) return null;
+  const companions = extra.documentReferences.filter(
+    (r) => r.relationship === "companion",
+  );
   return new Set(companions.map((r) => r.groupId ?? r.id)).size;
 }
 
@@ -244,19 +244,33 @@ export async function loadExploreDataset(): Promise<ExploreDataset> {
     applyMeasures(record, row.measures, "pipeline-measures");
   }
 
+  // pipelineExtras preserves GET /plans order (newest first). First write
+  // wins so an older sibling plan for the same municipality cannot overwrite
+  // the newest plan's status / companions / commitments / markdown.
   for (const extra of pipelineExtras) {
     const name = extra.municipality?.name ?? extra.extractedMunicipalityName;
     if (!name) continue;
     const record = upsert(byKey, name, extra.id);
-    if (typeof extra.markdown === "string" && extra.markdown.length > 0) {
+    if (
+      record.markdownChars == null &&
+      typeof extra.markdown === "string" &&
+      extra.markdown.length > 0
+    ) {
       record.markdownChars = extra.markdown.length;
       addSource(record, "pipeline-markdown");
     }
-    if (extra.status != null) {
+    if (record.planApproved == null && extra.status != null) {
       record.planApproved = extra.status === "APPROVED";
     }
-    record.companionReferenceCount = companionRefCount(extra);
-    if (Array.isArray(extra.commitments) && extra.commitments.length > 0) {
+    if (record.companionReferenceCount == null) {
+      const companions = companionRefCount(extra);
+      if (companions != null) record.companionReferenceCount = companions;
+    }
+    if (
+      record.commitmentSource !== "pipeline-commitments" &&
+      Array.isArray(extra.commitments) &&
+      extra.commitments.length > 0
+    ) {
       const unique = new Set(extra.commitments.map((c) => c.text));
       const pipelineCommitments: PipelineCommitment[] = extra.commitments.map(
         (c) => ({
@@ -305,9 +319,7 @@ export async function loadExploreDataset(): Promise<ExploreDataset> {
   const namesForEmissions = municipalities
     .filter(
       (m) =>
-        m.measures.length > 0 ||
-        m.commitmentCount > 0 ||
-        m.tefHits.length > 0,
+        m.measures.length > 0 || m.commitmentCount > 0 || m.tefHits.length > 0,
     )
     .map((m) => m.name);
   const { rows: sectorEmissions, error: sectorEmissionsError } =
