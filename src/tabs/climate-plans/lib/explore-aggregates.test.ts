@@ -6,10 +6,17 @@ import {
 } from "./municipality-names";
 import {
   collectTefHits,
+  countAdaptationCommitments,
   countClimateCommitmentGroups,
+  countOwnCommitments,
+  explicitTefShare,
+  highScoreShare,
+  interventionActiveShare,
   interventionSpecificityShare,
   mapKpiValue,
+  shadowHitCount,
   tefGroupStrengths,
+  tefMatchRate,
   topTefsByHitCount,
 } from "./explore-aggregates";
 import {
@@ -73,6 +80,10 @@ function record(
     commitmentSource: "pipeline-commitments",
     climateRelevantCommitmentCount: 3,
     climateCommitmentGroupCount: 2,
+    adaptationCommitmentCount: 1,
+    ownCommitmentCount: 3,
+    companionReferenceCount: 1,
+    planApproved: true,
     markdownChars: 12000,
     tefHits: [],
     documentTitle: "Strategi",
@@ -179,30 +190,40 @@ describe("climate commitment groups", () => {
           climateRelevant: true,
           actionable: true,
           similarGroupId: "g1",
+          adaptation: false,
+          originatesFrom: [],
         },
         {
           text: "a-dup",
           climateRelevant: true,
           actionable: true,
           similarGroupId: "g1",
+          adaptation: false,
+          originatesFrom: [],
         },
         {
           text: "b",
           climateRelevant: true,
           actionable: true,
           similarGroupId: null,
+          adaptation: false,
+          originatesFrom: [],
         },
         {
           text: "not-climate",
           climateRelevant: false,
           actionable: true,
           similarGroupId: null,
+          adaptation: false,
+          originatesFrom: [],
         },
         {
           text: "not-actionable",
           climateRelevant: true,
           actionable: false,
           similarGroupId: null,
+          adaptation: false,
+          originatesFrom: [],
         },
       ]),
     ).toBe(2);
@@ -220,5 +241,98 @@ describe("map KPIs", () => {
     expect(mapKpiValue(row, "climateRelevantShare", null).numeric).toBeCloseTo(
       0.75,
     );
+  });
+
+  it("computes measure quality and TEF KPIs from scored measures", () => {
+    const filled: MeasureRow = {
+      ...measureWithTef("Transport > Road", "high", true),
+      activity_shift_score: 6,
+      intervention_score: 6,
+    };
+    const empty: MeasureRow = {
+      ...filled,
+      measure_text: "empty",
+      intervention_who: "none",
+      intervention_what: "none",
+      intervention_type: "none",
+      intervention_score: 2,
+      activity_shift_score: 2,
+      activity_shifts: [
+        {
+          ...filled.activity_shifts[0]!,
+          transition_element_matches: [],
+          shadow_element_id: "shadow-1",
+        },
+      ],
+    };
+    const measures = [filled, empty];
+    expect(interventionActiveShare(measures)).toBeCloseTo(0.5);
+    expect(highScoreShare(measures, "intervention_score")).toBeCloseTo(0.5);
+    expect(highScoreShare(measures, "activity_shift_score")).toBeCloseTo(0.5);
+    expect(tefMatchRate(measures)).toBeCloseTo(0.5);
+    expect(shadowHitCount(measures)).toBe(1);
+    expect(explicitTefShare(collectTefHits(measures))).toBe(1);
+
+    const row = record({ measures, tefHits: collectTefHits(measures) });
+    expect(mapKpiValue(row, "measureCount", null).numeric).toBe(2);
+    expect(mapKpiValue(row, "interventionActiveShare", null).numeric).toBeCloseTo(
+      0.5,
+    );
+    expect(
+      mapKpiValue(row, "interventionSpecificityShare", null).numeric,
+    ).toBeCloseTo(0.5);
+    expect(mapKpiValue(row, "adaptationShare", null).numeric).toBeCloseTo(0.25);
+    expect(mapKpiValue(row, "ownCommitmentShare", null).numeric).toBeCloseTo(
+      0.75,
+    );
+    expect(mapKpiValue(row, "companionReferenceCount", null).numeric).toBe(1);
+    expect(mapKpiValue(row, "planApproved", null)).toMatchObject({
+      kind: "boolean",
+      booleanValue: true,
+    });
+    expect(mapKpiValue(row, "shadowHitCount", null).numeric).toBe(1);
+  });
+
+  it("counts adaptation and own commitments", () => {
+    expect(
+      countAdaptationCommitments([
+        {
+          text: "a",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: null,
+          adaptation: true,
+          originatesFrom: [],
+        },
+        {
+          text: "b",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: null,
+          adaptation: false,
+          originatesFrom: ["region"],
+        },
+      ]),
+    ).toBe(1);
+    expect(
+      countOwnCommitments([
+        {
+          text: "a",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: null,
+          adaptation: false,
+          originatesFrom: [],
+        },
+        {
+          text: "b",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: null,
+          adaptation: false,
+          originatesFrom: ["eu"],
+        },
+      ]),
+    ).toBe(1);
   });
 });

@@ -151,7 +151,7 @@ export function MapKpiView({
           values={values}
           selectedName={selectedName}
           onSelect={onSelectName}
-          booleanScale={false}
+          booleanScale={kpi === "planApproved"}
         />
         <p className="text-xs text-gray-02">
           Boundaries: simplified Valmyndigheten polygons via
@@ -176,22 +176,11 @@ export function MapKpiView({
             <div className="text-sm text-gray-01">
               <span className="text-gray-02">{meta.label}: </span>
               <span className="font-semibold tabular-nums">
-                {selectedValue?.kind === "boolean"
-                  ? selectedValue.booleanValue == null
-                    ? "—"
-                    : selectedValue.booleanValue
-                      ? "yes"
-                      : "no"
-                  : selectedValue?.numeric == null
-                    ? "—"
-                    : selectedValue.numeric.toFixed(
-                        selectedValue.numeric >= 10 ||
-                          Number.isInteger(selectedValue.numeric)
-                          ? 0
-                          : 2,
-                      )}
+                {formatSelectedKpi(selectedValue)}
               </span>
-              {selectedValue?.unit ? (
+              {selectedValue?.unit &&
+              selectedValue.kind !== "boolean" &&
+              selectedValue.unit !== "share" ? (
                 <span className="text-gray-02"> {selectedValue.unit}</span>
               ) : null}
             </div>
@@ -352,4 +341,19 @@ function formatAvgScore(value: number | null): string {
 function formatShare(value: number | null): string {
   if (value == null) return "—";
   return `${Math.round(value * 100)}%`;
+}
+
+function formatSelectedKpi(
+  value: ReturnType<typeof mapKpiValue> | null,
+): string {
+  if (!value) return "—";
+  if (value.kind === "boolean") {
+    if (value.booleanValue == null) return "—";
+    return value.booleanValue ? "yes" : "no";
+  }
+  if (value.numeric == null) return "—";
+  if (value.unit === "share") return formatShare(value.numeric);
+  return value.numeric.toFixed(
+    value.numeric >= 10 || Number.isInteger(value.numeric) ? 0 : 2,
+  );
 }

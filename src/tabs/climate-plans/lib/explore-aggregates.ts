@@ -59,6 +59,67 @@ export function interventionSpecificityShare(
   return filled / measures.length;
 }
 
+/** Share of measures with a scored intervention type (not "none"). */
+export function interventionActiveShare(measures: Measure[]): number | null {
+  if (measures.length === 0) return null;
+  const active = measures.filter(
+    (m) => m.intervention_type !== "none" && m.intervention_type !== "",
+  ).length;
+  return active / measures.length;
+}
+
+/** Share of measures whose score is at least `threshold` (default 5 = "high"). */
+export function highScoreShare(
+  measures: Measure[],
+  key: "activity_shift_score" | "intervention_score",
+  threshold = 5,
+): number | null {
+  if (measures.length === 0) return null;
+  return measures.filter((m) => (m[key] ?? 0) >= threshold).length / measures.length;
+}
+
+/** Share of TEF hits judged explicit (ignores hits without the field). */
+export function explicitTefShare(hits: TefHit[]): number | null {
+  const judged = hits.filter((h) => typeof h.explicit === "boolean");
+  if (judged.length === 0) return null;
+  return judged.filter((h) => h.explicit === true).length / judged.length;
+}
+
+/** Share of measures that produced at least one TEF match. */
+export function tefMatchRate(measures: Measure[]): number | null {
+  if (measures.length === 0) return null;
+  const matched = measures.filter((m) =>
+    (m.activity_shifts ?? []).some(
+      (s) => (s.transition_element_matches ?? []).length > 0,
+    ),
+  ).length;
+  return matched / measures.length;
+}
+
+/** Count of activity shifts attached to a shadow TEF element. */
+export function shadowHitCount(measures: Measure[]): number {
+  let count = 0;
+  for (const measure of measures) {
+    for (const shift of measure.activity_shifts ?? []) {
+      if (shift.shadow_element_id) count += 1;
+    }
+  }
+  return count;
+}
+
+export function countAdaptationCommitments(
+  commitments: PipelineCommitment[],
+): number {
+  return commitments.filter((c) => c.adaptation === true).length;
+}
+
+/** Commitments whose target/measure is not attributed to region/national/EU/other. */
+export function countOwnCommitments(
+  commitments: PipelineCommitment[],
+): number {
+  return commitments.filter((c) => c.originatesFrom.length === 0).length;
+}
+
 export interface TopTefSummary {
   stableId: string;
   shortLabel: string;
@@ -280,6 +341,111 @@ export function mapKpiValue(
         unit: "share",
       };
     }
+    case "measureCount":
+      return {
+        numeric: record.measures.length,
+        booleanValue: null,
+        kind: "numeric",
+        unit: "measures",
+      };
+    case "interventionActiveShare":
+      return {
+        numeric: interventionActiveShare(record.measures),
+        booleanValue: null,
+        kind: "numeric",
+        unit: "share",
+      };
+    case "interventionSpecificityShare":
+      return {
+        numeric: interventionSpecificityShare(record.measures),
+        booleanValue: null,
+        kind: "numeric",
+        unit: "share",
+      };
+    case "highInterventionShare":
+      return {
+        numeric: highScoreShare(record.measures, "intervention_score"),
+        booleanValue: null,
+        kind: "numeric",
+        unit: "share",
+      };
+    case "highActivityShiftShare":
+      return {
+        numeric: highScoreShare(record.measures, "activity_shift_score"),
+        booleanValue: null,
+        kind: "numeric",
+        unit: "share",
+      };
+    case "adaptationShare": {
+      if (
+        record.adaptationCommitmentCount == null ||
+        record.commitmentCount === 0
+      ) {
+        return {
+          numeric: null,
+          booleanValue: null,
+          kind: "numeric",
+          unit: "share",
+        };
+      }
+      return {
+        numeric: record.adaptationCommitmentCount / record.commitmentCount,
+        booleanValue: null,
+        kind: "numeric",
+        unit: "share",
+      };
+    }
+    case "ownCommitmentShare": {
+      if (record.ownCommitmentCount == null || record.commitmentCount === 0) {
+        return {
+          numeric: null,
+          booleanValue: null,
+          kind: "numeric",
+          unit: "share",
+        };
+      }
+      return {
+        numeric: record.ownCommitmentCount / record.commitmentCount,
+        booleanValue: null,
+        kind: "numeric",
+        unit: "share",
+      };
+    }
+    case "explicitTefShare":
+      return {
+        numeric: explicitTefShare(hits),
+        booleanValue: null,
+        kind: "numeric",
+        unit: "share",
+      };
+    case "tefMatchRate":
+      return {
+        numeric: tefMatchRate(record.measures),
+        booleanValue: null,
+        kind: "numeric",
+        unit: "share",
+      };
+    case "shadowHitCount":
+      return {
+        numeric: shadowHitCount(record.measures),
+        booleanValue: null,
+        kind: "numeric",
+        unit: "shadows",
+      };
+    case "companionReferenceCount":
+      return {
+        numeric: record.companionReferenceCount,
+        booleanValue: null,
+        kind: "numeric",
+        unit: "refs",
+      };
+    case "planApproved":
+      return {
+        numeric: null,
+        booleanValue: record.planApproved,
+        kind: "boolean",
+        unit: "",
+      };
   }
 }
 
@@ -302,6 +468,18 @@ export function mergeRegionRecords(
   )
     ? null
     : records.reduce((s, r) => s + (r.climateCommitmentGroupCount ?? 0), 0);
+  const adaptation = records.every((r) => r.adaptationCommitmentCount == null)
+    ? null
+    : records.reduce((s, r) => s + (r.adaptationCommitmentCount ?? 0), 0);
+  const own = records.every((r) => r.ownCommitmentCount == null)
+    ? null
+    : records.reduce((s, r) => s + (r.ownCommitmentCount ?? 0), 0);
+  const companions = records.every((r) => r.companionReferenceCount == null)
+    ? null
+    : records.reduce((s, r) => s + (r.companionReferenceCount ?? 0), 0);
+  const approvedFlags = records
+    .map((r) => r.planApproved)
+    .filter((v): v is boolean => v != null);
 
   return {
     id: `region:${regionName}`,
@@ -316,6 +494,13 @@ export function mergeRegionRecords(
       : "measures-as-proxy",
     climateRelevantCommitmentCount: climateRelevant,
     climateCommitmentGroupCount: climateGroups,
+    adaptationCommitmentCount: adaptation,
+    ownCommitmentCount: own,
+    companionReferenceCount: companions,
+    planApproved:
+      approvedFlags.length === 0
+        ? null
+        : approvedFlags.every((v) => v === true),
     markdownChars,
     tefHits,
     documentTitle: null,
@@ -384,5 +569,68 @@ export const MAP_KPI_META: Record<
     label: "Climate-relevant share",
     data: "Pipeline commitments.climateRelevant === true versus all extracted unique texts.",
     calculation: "climate-relevant row count / extracted unique-text count.",
+  },
+  measureCount: {
+    label: "Scored measures",
+    data: "ExtractedMeasure rows that have a MeasureScore (after extractMeasures + scoreMeasures).",
+    calculation: "Count of scored measures for the municipality.",
+  },
+  interventionActiveShare: {
+    label: "Intervention active share",
+    data: "measures[].intervention_type from scoreMeasures (direct / indirect / foundational / none).",
+    calculation: "Share where intervention_type is not none.",
+  },
+  interventionSpecificityShare: {
+    label: "Who+what specificity",
+    data: "measures[].intervention_who and intervention_what.",
+    calculation: "Share where both who and what are filled (not none).",
+  },
+  highInterventionShare: {
+    label: "High intervention share",
+    data: "measures[].intervention_score (1–7).",
+    calculation: "Share with intervention_score ≥ 5.",
+  },
+  highActivityShiftShare: {
+    label: "High activity-shift share",
+    data: "measures[].activity_shift_score (1–7).",
+    calculation: "Share with activity_shift_score ≥ 5.",
+  },
+  adaptationShare: {
+    label: "Adaptation share",
+    data: "Commitment.adaptation from filterCommitmentsClimate.",
+    calculation: "adaptation === true count / extracted unique-text count.",
+  },
+  ownCommitmentShare: {
+    label: "Own commitment share",
+    data: "Commitment.originatesFrom (region / national / eu / other).",
+    calculation:
+      "Share of commitments with empty originatesFrom — municipality's own target/measure, not adopted from another body.",
+  },
+  explicitTefShare: {
+    label: "Explicit TEF share",
+    data: "transition_element_matches[].explicit from tePicker judge().",
+    calculation:
+      "Among hits that carry the field: share where explicit === true. Null when no judged hits.",
+  },
+  tefMatchRate: {
+    label: "TEF match rate",
+    data: "activity_shifts[].transition_element_matches on scored measures.",
+    calculation: "Share of measures with at least one TEF match.",
+  },
+  shadowHitCount: {
+    label: "Shadow TEF hits",
+    data: "activity_shifts[].shadowElement after matchTransitionElements.",
+    calculation: "Count of activity shifts attached to a shadow TEF element.",
+  },
+  companionReferenceCount: {
+    label: "Companion document refs",
+    data: "DocumentReference rows with relationship === companion (deduped by groupId).",
+    calculation:
+      "Distinct companion groups — signals the plan may be incomplete without its åtgärdsplan/bilaga.",
+  },
+  planApproved: {
+    label: "Plan approved",
+    data: "ClimatePlan.status from the pipeline approve flow.",
+    calculation: "True when status === APPROVED. Region = all member plans approved.",
   },
 };

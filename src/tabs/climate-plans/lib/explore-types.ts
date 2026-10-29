@@ -46,6 +46,14 @@ export interface ExploreMunicipalityRecord {
   climateRelevantCommitmentCount: number | null;
   /** Unique similar-groups after climate + actionable filters. Null without pipeline commitments. */
   climateCommitmentGroupCount: number | null;
+  /** Commitments with adaptation === true. Null without pipeline commitments. */
+  adaptationCommitmentCount: number | null;
+  /** Commitments with empty originatesFrom (municipality's own). Null without pipeline. */
+  ownCommitmentCount: number | null;
+  /** Deduped companion DocumentReference groups. Null when plan extras not loaded. */
+  companionReferenceCount: number | null;
+  /** ClimatePlan.status === APPROVED. Null when plan extras not loaded. */
+  planApproved: boolean | null;
   markdownChars: number | null;
   tefHits: TefHit[];
   documentTitle: string | null;
@@ -82,6 +90,8 @@ export interface PipelineCommitment {
   climateRelevant: boolean | null;
   actionable: boolean | null;
   similarGroupId: string | null;
+  adaptation: boolean | null;
+  originatesFrom: string[];
 }
 
 export type MapKpiId =
@@ -94,7 +104,19 @@ export type MapKpiId =
   | "avgInterventionScore"
   | "avgActivityShiftScore"
   | "planChars"
-  | "climateRelevantShare";
+  | "climateRelevantShare"
+  | "measureCount"
+  | "interventionActiveShare"
+  | "interventionSpecificityShare"
+  | "highInterventionShare"
+  | "highActivityShiftShare"
+  | "adaptationShare"
+  | "ownCommitmentShare"
+  | "explicitTefShare"
+  | "tefMatchRate"
+  | "shadowHitCount"
+  | "companionReferenceCount"
+  | "planApproved";
 
 export type ExploreViewId =
   | "map"
