@@ -151,9 +151,7 @@ export function MapKpiView({
           values={values}
           selectedName={selectedName}
           onSelect={onSelectName}
-          booleanScale={
-            kpi === "hasQuantifiedTargets" || kpi === "parisMentioned"
-          }
+          booleanScale={false}
         />
         <p className="text-xs text-gray-02">
           Boundaries: simplified Valmyndigheten polygons via
@@ -218,7 +216,6 @@ export function MapKpiView({
                     : String(selected.climateCommitmentGroupCount)
                 }
               />
-              <Stat label="Goals" value={String(selected.goals.length)} />
               <Stat
                 label="Distinct TEFs"
                 value={String(

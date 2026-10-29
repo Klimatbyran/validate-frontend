@@ -5,12 +5,9 @@ import type {
 } from "./measures-types";
 
 export type ExploreDataSource =
-  | "static-measures"
   | "pipeline-measures"
   | "pipeline-commitments"
   | "pipeline-markdown"
-  | "static-emission-targets"
-  | "static-plan-scope"
   | "municipality-sources"
   | "unearth-sector-emissions";
 
@@ -26,7 +23,7 @@ export interface TefHit {
   /**
    * Whether the measure's own text directly names this TEF (explicit) vs only a
    * reasonable inference (implied). Undefined on matches made before this field
-   * existed (static extracts / older pipeline runs).
+   * existed (older pipeline runs).
    */
   explicit?: boolean;
   shiftFrom: string;
@@ -37,18 +34,6 @@ export interface TefHit {
   interventionWhat: string;
   interventionHow: string;
   interventionScore: number;
-}
-
-export interface QuantifiedGoal {
-  description: string;
-  reductionPercent: number | null;
-  baselineYear: number | null;
-  targetYear: number | null;
-  scope: string;
-  sector: string;
-  commitmentStrength: string;
-  goalType: string;
-  sourceQuote: string;
 }
 
 export interface ExploreMunicipalityRecord {
@@ -63,17 +48,7 @@ export interface ExploreMunicipalityRecord {
   climateCommitmentGroupCount: number | null;
   markdownChars: number | null;
   tefHits: TefHit[];
-  goals: QuantifiedGoal[];
-  hasQuantifiedTargets: boolean | null;
-  parisMentioned: boolean | null;
-  onePointFiveMentioned: boolean | null;
-  carbonBudgetReferenced: boolean | null;
   documentTitle: string | null;
-  documentType: string | null;
-  adoptionDate: string | null;
-  planPeriodStart: string | null;
-  planPeriodEnd: string | null;
-  primaryFocus: string | null;
   adoptedYear: number | null;
   sourceUrl: string | null;
   county: string | null;
@@ -113,21 +88,16 @@ export type MapKpiId =
   | "uniqueCommitments"
   | "climateRelevantCommitments"
   | "climateCommitmentGroups"
-  | "goalCount"
-  | "quantifiedGoalCount"
   | "distinctTefs"
   | "distinctTefGroups"
   | "tefGroupStrength"
   | "avgInterventionScore"
   | "avgActivityShiftScore"
   | "planChars"
-  | "hasQuantifiedTargets"
-  | "parisMentioned"
   | "climateRelevantShare";
 
 export type ExploreViewId =
   | "map"
-  | "goals"
   | "shifts"
   | "tef-framework"
   | "anatomy";
@@ -139,12 +109,4 @@ export type TefFrameworkMetric = "hits" | "strength" | "municipalities";
 export type TefFrameworkLayout = "3d" | "grid";
 /** How 3d pillar height is scaled. */
 export type TefFrameworkHeightMode = "share" | "tonnes";
-export type GoalsLayoutId = "list" | "atlas";
-/** Atlas clustering axis for goal grouping. */
-export type GoalsGroupById =
-  | "reduction"
-  | "status"
-  | "deadline"
-  | "paris"
-  | "scope";
 export type ShiftsLayoutId = "compare" | "flows" | "types";

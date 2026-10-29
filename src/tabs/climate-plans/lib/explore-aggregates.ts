@@ -209,20 +209,6 @@ export function mapKpiValue(
         kind: "numeric",
         unit: "groups",
       };
-    case "goalCount":
-      return {
-        numeric: record.goals.length,
-        booleanValue: null,
-        kind: "numeric",
-        unit: "goals",
-      };
-    case "quantifiedGoalCount":
-      return {
-        numeric: record.goals.filter((g) => g.reductionPercent != null).length,
-        booleanValue: null,
-        kind: "numeric",
-        unit: "goals",
-      };
     case "distinctTefs":
       return {
         numeric: new Set(hits.map((h) => h.stableId)).size,
@@ -275,28 +261,6 @@ export function mapKpiValue(
         kind: "numeric",
         unit: "chars",
       };
-    case "hasQuantifiedTargets":
-      return {
-        numeric: record.hasQuantifiedTargets
-          ? 1
-          : record.hasQuantifiedTargets == null
-            ? null
-            : 0,
-        booleanValue: record.hasQuantifiedTargets,
-        kind: "boolean",
-        unit: "yes/no",
-      };
-    case "parisMentioned":
-      return {
-        numeric: record.parisMentioned
-          ? 1
-          : record.parisMentioned == null
-            ? null
-            : 0,
-        booleanValue: record.parisMentioned,
-        kind: "boolean",
-        unit: "yes/no",
-      };
     case "climateRelevantShare": {
       if (
         record.climateRelevantCommitmentCount == null ||
@@ -325,7 +289,6 @@ export function mergeRegionRecords(
 ): ExploreMunicipalityRecord {
   const tefHits = records.flatMap((r) => r.tefHits);
   const measures = records.flatMap((r) => r.measures);
-  const goals = records.flatMap((r) => r.goals);
   const markdownChars = records.every((r) => r.markdownChars == null)
     ? null
     : records.reduce((s, r) => s + (r.markdownChars ?? 0), 0);
@@ -339,12 +302,6 @@ export function mergeRegionRecords(
   )
     ? null
     : records.reduce((s, r) => s + (r.climateCommitmentGroupCount ?? 0), 0);
-
-  const bools = (pick: (r: ExploreMunicipalityRecord) => boolean | null) => {
-    const known = records.map(pick).filter((v): v is boolean => v != null);
-    if (known.length === 0) return null;
-    return known.some(Boolean);
-  };
 
   return {
     id: `region:${regionName}`,
@@ -361,17 +318,7 @@ export function mergeRegionRecords(
     climateCommitmentGroupCount: climateGroups,
     markdownChars,
     tefHits,
-    goals,
-    hasQuantifiedTargets: bools((r) => r.hasQuantifiedTargets),
-    parisMentioned: bools((r) => r.parisMentioned),
-    onePointFiveMentioned: bools((r) => r.onePointFiveMentioned),
-    carbonBudgetReferenced: bools((r) => r.carbonBudgetReferenced),
     documentTitle: null,
-    documentType: null,
-    adoptionDate: null,
-    planPeriodStart: null,
-    planPeriodEnd: null,
-    primaryFocus: null,
     adoptedYear: null,
     sourceUrl: null,
     county: regionName,
@@ -385,13 +332,13 @@ export const MAP_KPI_META: Record<
 > = {
   uniqueCommitments: {
     label: "Extracted commitments",
-    data: "Pipeline Commitment rows after extractCommitments (all unique texts). Static files have no Commitment table, so unique scored measures are used as a proxy.",
+    data: "Pipeline Commitment rows after extractCommitments (all unique texts). Falls back to unique scored measures when commitment rows are not loaded yet.",
     calculation:
       "Set size of commitment.text. This is before climate / actionable filters and before similar-grouping.",
   },
   climateRelevantCommitments: {
     label: "Climate-relevant commitments",
-    data: "Pipeline filterCommitmentsClimate: Commitment.climateRelevant === true. Not available on static measures files.",
+    data: "Pipeline filterCommitmentsClimate: Commitment.climateRelevant === true.",
     calculation:
       "Row count where climateRelevant is true (null/false are excluded). Still one row per extracted commitment — duplicates have not been grouped yet.",
   },
@@ -401,20 +348,9 @@ export const MAP_KPI_META: Record<
     calculation:
       "Count distinct similarGroupId values, plus each climate+actionable commitment that has no group id (a singleton). That is the unique-commitment set the later measure steps see.",
   },
-  goalCount: {
-    label: "Goals in the plan",
-    data: "static-emission-targets own_commitments[] (and any pipeline-equivalent once it exists).",
-    calculation:
-      "Length of own_commitments. Includes qualitative and quantitative goals.",
-  },
-  quantifiedGoalCount: {
-    label: "Quantified reduction goals",
-    data: "own_commitments[].reduction_percentage when it parses as a number.",
-    calculation: "Count of goals with a numeric reduction_percentage.",
-  },
   distinctTefs: {
     label: "Distinct TEFs",
-    data: "activity_shifts[].transition_element_matches[].stable_id from scored measures.",
+    data: "activity_shifts[].transition_element_matches[].stable_id from scored pipeline measures.",
     calculation:
       "Set size of stable_id. Missing match_confidence is inferred from cosine score (≥0.55 high, ≥0.40 mid).",
   },
@@ -431,7 +367,7 @@ export const MAP_KPI_META: Record<
   },
   avgInterventionScore: {
     label: "Avg intervention score",
-    data: "measures[].intervention_score (1–7) from scoreMeasures / static JSON.",
+    data: "measures[].intervention_score (1–7) from scoreMeasures.",
     calculation: "Mean across measures for that municipality.",
   },
   avgActivityShiftScore: {
@@ -441,22 +377,12 @@ export const MAP_KPI_META: Record<
   },
   planChars: {
     label: "Plan length (markdown)",
-    data: "Pipeline plan.markdown character count after Docling. Static JSON extracts have no source document.",
+    data: "Pipeline plan.markdown character count after Docling.",
     calculation: "markdown.length. Rough page estimate = chars / 3000.",
-  },
-  hasQuantifiedTargets: {
-    label: "Has quantified targets",
-    data: "emission_targets.summary.has_quantified_targets.",
-    calculation: "Boolean as extracted. Grey = field missing.",
-  },
-  parisMentioned: {
-    label: "Paris mentioned",
-    data: "emission_targets.framework_alignment.paris_agreement_mentioned.",
-    calculation: "Boolean as extracted. Grey = field missing.",
   },
   climateRelevantShare: {
     label: "Climate-relevant share",
-    data: "Pipeline commitments.climateRelevant === true versus all extracted unique texts. Not available on static measures files.",
+    data: "Pipeline commitments.climateRelevant === true versus all extracted unique texts.",
     calculation: "climate-relevant row count / extracted unique-text count.",
   },
 };

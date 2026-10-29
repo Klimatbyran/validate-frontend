@@ -933,11 +933,8 @@ export function ClimatePlansExplorer() {
     return (
       <Callout variant="info" title="No data found">
         <p className="text-sm text-blue-03/80 mt-1">
-          Add municipality measures JSON files to{" "}
-          <code className="font-mono text-sm">
-            public/climate-plans/measures/
-          </code>
-          .
+          No scored measures from the climate-plans pipeline yet. Run a plan
+          through extractMeasures / scoreMeasures to populate this view.
         </p>
       </Callout>
     );

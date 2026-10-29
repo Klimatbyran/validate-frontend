@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import type { MunicipalityMeasures } from "../lib/measures-types";
 import { fetchPipelineMeasures } from "../lib/pipeline-measures";
-import { loadStaticMeasures } from "../lib/static-measures";
 
 export function useMeasures() {
   const [data, setData] = useState<MunicipalityMeasures[]>([]);
@@ -13,13 +12,10 @@ export function useMeasures() {
 
     async function load() {
       try {
-        const [staticResults, pipelineResults] = await Promise.all([
-          loadStaticMeasures(),
-          fetchPipelineMeasures(),
-        ]);
+        const pipelineResults = await fetchPipelineMeasures();
 
         if (!cancelled) {
-          setData([...staticResults, ...pipelineResults]);
+          setData(pipelineResults);
           setIsLoading(false);
         }
       } catch (err) {
