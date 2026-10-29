@@ -69,7 +69,6 @@ function record(
     adaptationCommitmentCount: null,
     ownCommitmentCount: null,
     companionReferenceCount: null,
-    planApproved: null,
     markdownChars: null,
     tefHits: [],
     documentTitle: null,

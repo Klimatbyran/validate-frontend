@@ -84,7 +84,6 @@ function record(
     adaptationCommitmentCount: 1,
     ownCommitmentCount: 3,
     companionReferenceCount: 1,
-    planApproved: true,
     markdownChars: 12000,
     tefHits: [],
     documentTitle: "Strategi",
@@ -300,10 +299,6 @@ describe("map KPIs", () => {
       0.75,
     );
     expect(mapKpiValue(row, "companionReferenceCount", null).numeric).toBe(1);
-    expect(mapKpiValue(row, "planApproved", null)).toMatchObject({
-      kind: "boolean",
-      booleanValue: true,
-    });
     expect(mapKpiValue(row, "shadowHitCount", null).numeric).toBe(1);
   });
 
@@ -366,28 +361,14 @@ describe("map KPIs", () => {
     ).toBe(1);
   });
 
-  it("keeps region planApproved null when any member status is unknown", () => {
-    const approved = record({ name: "A", planApproved: true });
-    const unknown = record({ name: "B", planApproved: null });
-    const merged = mergeRegionRecords([approved, unknown], "Jönköping");
-    expect(merged.planApproved).toBeNull();
-
-    const both = mergeRegionRecords(
+  it("sums companion refs when merging region records", () => {
+    const merged = mergeRegionRecords(
       [
-        record({ name: "A", planApproved: true }),
-        record({ name: "B", planApproved: true }),
+        record({ name: "A", companionReferenceCount: 1 }),
+        record({ name: "B", companionReferenceCount: 2 }),
       ],
       "Jönköping",
     );
-    expect(both.planApproved).toBe(true);
-
-    const mixed = mergeRegionRecords(
-      [
-        record({ name: "A", planApproved: true }),
-        record({ name: "B", planApproved: false }),
-      ],
-      "Jönköping",
-    );
-    expect(mixed.planApproved).toBe(false);
+    expect(merged.companionReferenceCount).toBe(3);
   });
 });

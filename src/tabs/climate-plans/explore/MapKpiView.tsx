@@ -95,9 +95,7 @@ export function MapKpiView({
   const selectedValue = selected
     ? mapKpiValue(selected, kpi, tefGroup === "all" ? null : tefGroup)
     : null;
-  const selectedTopTefs = selected
-    ? topTefsByHitCount(selected.tefHits)
-    : [];
+  const selectedTopTefs = selected ? topTefsByHitCount(selected.tefHits) : [];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)] gap-4 items-start">
@@ -151,7 +149,7 @@ export function MapKpiView({
           values={values}
           selectedName={selectedName}
           onSelect={onSelectName}
-          booleanScale={kpi === "planApproved"}
+          booleanScale={false}
         />
         <p className="text-xs text-gray-02">
           Boundaries: simplified Valmyndigheten polygons via

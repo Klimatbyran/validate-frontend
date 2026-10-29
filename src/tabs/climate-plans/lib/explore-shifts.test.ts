@@ -38,7 +38,6 @@ function record(name: string, measures: Measure[]): ExploreMunicipalityRecord {
     adaptationCommitmentCount: null,
     ownCommitmentCount: null,
     companionReferenceCount: null,
-    planApproved: null,
     markdownChars: null,
     tefHits: [],
     documentTitle: null,

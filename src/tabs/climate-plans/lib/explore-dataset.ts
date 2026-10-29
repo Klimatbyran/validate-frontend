@@ -51,7 +51,6 @@ function emptyRecord(id: string, name: string): ExploreMunicipalityRecord {
     adaptationCommitmentCount: null,
     ownCommitmentCount: null,
     companionReferenceCount: null,
-    planApproved: null,
     markdownChars: null,
     tefHits: [],
     documentTitle: null,
@@ -88,7 +87,6 @@ function addSource(
 /** Shape of GET /plans/:id used by loadPipelineExtras (detail, not list). */
 interface PipelinePlanListItem {
   id: string;
-  status?: "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | string;
   extractedMunicipalityName: string | null;
   municipality: { id: string; name: string } | null;
   markdown?: string | null;
@@ -246,7 +244,7 @@ export async function loadExploreDataset(): Promise<ExploreDataset> {
 
   // pipelineExtras preserves GET /plans order (newest first). First write
   // wins so an older sibling plan for the same municipality cannot overwrite
-  // the newest plan's status / companions / commitments / markdown.
+  // the newest plan's companions / commitments / markdown.
   for (const extra of pipelineExtras) {
     const name = extra.municipality?.name ?? extra.extractedMunicipalityName;
     if (!name) continue;
@@ -258,9 +256,6 @@ export async function loadExploreDataset(): Promise<ExploreDataset> {
     ) {
       record.markdownChars = extra.markdown.length;
       addSource(record, "pipeline-markdown");
-    }
-    if (record.planApproved == null && extra.status != null) {
-      record.planApproved = extra.status === "APPROVED";
     }
     if (record.companionReferenceCount == null) {
       const companions = companionRefCount(extra);

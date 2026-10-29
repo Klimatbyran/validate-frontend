@@ -453,13 +453,6 @@ export function mapKpiValue(
         kind: "numeric",
         unit: "refs",
       };
-    case "planApproved":
-      return {
-        numeric: null,
-        booleanValue: record.planApproved,
-        kind: "boolean",
-        unit: "",
-      };
   }
 }
 
@@ -507,11 +500,6 @@ export function mergeRegionRecords(
     adaptationCommitmentCount: adaptation,
     ownCommitmentCount: own,
     companionReferenceCount: companions,
-    // Null unless every member municipality has a known status — otherwise
-    // a single APPROVED plan would paint the whole region green.
-    planApproved: records.every((r) => r.planApproved != null)
-      ? records.every((r) => r.planApproved === true)
-      : null,
     markdownChars,
     tefHits,
     documentTitle: null,
@@ -640,11 +628,5 @@ export const MAP_KPI_META: Record<
     data: "DocumentReference rows with relationship === companion (deduped by groupId).",
     calculation:
       "Distinct companion groups — signals the plan may be incomplete without its åtgärdsplan/bilaga.",
-  },
-  planApproved: {
-    label: "Municipality match approved",
-    data: "ClimatePlan.status after approving the extracted municipality name (not a content/QA sign-off on the plan).",
-    calculation:
-      "True when status === APPROVED. Region = every member municipality is approved; null if any member status is unknown.",
   },
 };
