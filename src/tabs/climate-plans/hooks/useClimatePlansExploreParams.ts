@@ -3,8 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import type {
   ClimatePlansTabId,
   ExploreViewId,
-  GoalsGroupById,
-  GoalsLayoutId,
   MapGeoLevel,
   MapKpiId,
   ShiftsLayoutId,
@@ -16,13 +14,7 @@ import type {
 import { MAP_KPI_META } from "../lib/explore-aggregates";
 
 const TABS: ClimatePlansTabId[] = ["explore", "measures", "taxonomy"];
-const VIEWS: ExploreViewId[] = [
-  "map",
-  "goals",
-  "shifts",
-  "tef-framework",
-  "anatomy",
-];
+const VIEWS: ExploreViewId[] = ["map", "shifts", "tef-framework", "anatomy"];
 const GEOS: MapGeoLevel[] = ["municipality", "region"];
 const TEF_SCOPES: TefFrameworkScope[] = ["all", "municipality", "region"];
 const TEF_METRICS: TefFrameworkMetric[] = [
@@ -32,15 +24,6 @@ const TEF_METRICS: TefFrameworkMetric[] = [
 ];
 const TEF_LAYOUTS: TefFrameworkLayout[] = ["3d", "grid"];
 const TEF_HEIGHT_MODES: TefFrameworkHeightMode[] = ["share", "tonnes"];
-const GOALS_LAYOUTS: GoalsLayoutId[] = ["list", "atlas"];
-const GOALS_GROUP_BY: GoalsGroupById[] = [
-  "reduction",
-  "status",
-  "deadline",
-  "paris",
-  "scope",
-];
-const GOALS_ATLAS_SCOPES = ["selected", "all"] as const;
 const SHIFTS_LAYOUTS: ShiftsLayoutId[] = ["compare", "flows", "types"];
 const KPIS = Object.keys(MAP_KPI_META) as MapKpiId[];
 
@@ -71,21 +54,6 @@ export function useClimatePlansExploreParams() {
     searchParams.get("tefHeight"),
     TEF_HEIGHT_MODES,
     "share",
-  );
-  const goalsLayout = pick(
-    searchParams.get("goalsLayout"),
-    GOALS_LAYOUTS,
-    "list",
-  );
-  const goalsGroupBy = pick(
-    searchParams.get("goalsGroupBy"),
-    GOALS_GROUP_BY,
-    "reduction",
-  );
-  const goalsAtlasScope = pick(
-    searchParams.get("goalsAtlasScope"),
-    GOALS_ATLAS_SCOPES,
-    "all",
   );
   const shiftsLayout = pick(
     searchParams.get("shiftsLayout"),
@@ -124,9 +92,6 @@ export function useClimatePlansExploreParams() {
     tefEmissions,
     tefLayout,
     tefHeight,
-    goalsLayout,
-    goalsGroupBy,
-    goalsAtlasScope,
     shiftsLayout,
     selectedTefId,
     setTab: (value: ClimatePlansTabId) => patch({ tab: value }),
@@ -142,10 +107,6 @@ export function useClimatePlansExploreParams() {
     setTefLayout: (value: TefFrameworkLayout) => patch({ tefLayout: value }),
     setTefHeight: (value: TefFrameworkHeightMode) =>
       patch({ tefHeight: value }),
-    setGoalsLayout: (value: GoalsLayoutId) => patch({ goalsLayout: value }),
-    setGoalsGroupBy: (value: GoalsGroupById) => patch({ goalsGroupBy: value }),
-    setGoalsAtlasScope: (value: "selected" | "all") =>
-      patch({ goalsAtlasScope: value }),
     setShiftsLayout: (value: ShiftsLayoutId) => patch({ shiftsLayout: value }),
     setSelectedTefId: (value: string) => patch({ tefId: value }),
   };
@@ -161,9 +122,6 @@ function isDefault(key: string, value: string): boolean {
   if (key === "tefMetric" && value === "hits") return true;
   if (key === "tefLayout" && value === "3d") return true;
   if (key === "tefHeight" && value === "share") return true;
-  if (key === "goalsLayout" && value === "list") return true;
-  if (key === "goalsGroupBy" && value === "reduction") return true;
-  if (key === "goalsAtlasScope" && value === "all") return true;
   if (key === "shiftsLayout" && value === "compare") return true;
   return false;
 }

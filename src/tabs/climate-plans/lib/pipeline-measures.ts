@@ -1,6 +1,5 @@
-// Bridges climate-plans-pipeline's live output into the same
-// MunicipalityMeasures[] shape the static public/climate-plans/measures/*.json
-// files use, so ClimatePlansExplorer renders both without any UI changes.
+// Bridges climate-plans-pipeline's live output into MunicipalityMeasures[]
+// for ClimatePlansExplorer and the explore dataset.
 
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
 import type {

@@ -12,7 +12,6 @@ import {
   tefGroupStrengths,
   topTefsByHitCount,
 } from "./explore-aggregates";
-import { trackGoal } from "./explore-goals";
 import {
   emissionBucketForTefGroup,
   tefGroupFromSectorPath,
@@ -76,17 +75,7 @@ function record(
     climateCommitmentGroupCount: 2,
     markdownChars: 12000,
     tefHits: [],
-    goals: [],
-    hasQuantifiedTargets: true,
-    parisMentioned: true,
-    onePointFiveMentioned: true,
-    carbonBudgetReferenced: true,
     documentTitle: "Strategi",
-    documentType: "climate_strategy",
-    adoptionDate: "2024-10-31",
-    planPeriodStart: "2024",
-    planPeriodEnd: "2045",
-    primaryFocus: "mitigation",
     adoptedYear: 2024,
     sourceUrl: "https://example.test",
     county: "Jönköpings län",
@@ -221,45 +210,15 @@ describe("climate commitment groups", () => {
 });
 
 describe("map KPIs", () => {
-  it("returns commitment count and boolean Paris flag", () => {
+  it("returns commitment counts from live pipeline fields", () => {
     const row = record({});
     expect(mapKpiValue(row, "uniqueCommitments", null).numeric).toBe(4);
     expect(mapKpiValue(row, "climateRelevantCommitments", null).numeric).toBe(
       3,
     );
     expect(mapKpiValue(row, "climateCommitmentGroups", null).numeric).toBe(2);
-    expect(mapKpiValue(row, "parisMentioned", null).booleanValue).toBe(true);
     expect(mapKpiValue(row, "climateRelevantShare", null).numeric).toBeCloseTo(
       0.75,
     );
-  });
-});
-
-describe("goal tracking", () => {
-  it("marks a linear path off-track when emissions barely moved", () => {
-    const result = trackGoal(
-      {
-        description: "50% by 2030",
-        reductionPercent: 50,
-        baselineYear: 2020,
-        targetYear: 2030,
-        scope: "geographic_area",
-        sector: "",
-        commitmentStrength: "adopted_goal",
-        goalType: "emission_reduction",
-        sourceQuote: "",
-      },
-      {
-        municipalityName: "Nässjö",
-        byYear: {
-          "2020": { Transporter: 100 },
-          "2025": { Transporter: 98 },
-        },
-      },
-      2025,
-    );
-    expect(result.status).toBe("off-track");
-    expect(result.expectedRemainingShare).toBeCloseTo(0.75);
-    expect(result.actualRemainingShare).toBeCloseTo(0.98);
   });
 });
