@@ -504,12 +504,12 @@ function TefCubeGrid({
         const intensity =
           maxMetric <= 0 ? 0.45 : Math.max(0.2, value / maxMetric);
         const isSelected = selectedTefId === cell.stableId;
-        const code = formatTefFaceCode(cell);
         const valueLabel =
           metric === "strength" ? `${Math.round(value * 100)}%` : String(value);
         const iconKind = expanded
           ? undefined
           : resolveTefIconKind(cell.title, cell.sectorPath);
+        const faceCode = expanded ? formatTefFaceCode(cell) : null;
 
         return (
           <button
@@ -543,9 +543,7 @@ function TefCubeGrid({
                 frontIcon={iconKind}
                 frontValue={expanded ? undefined : valueLabel}
                 frontTitle={expanded ? cell.title : undefined}
-                frontMeta={
-                  expanded ? `${code} · ${valueLabel}` : undefined
-                }
+                frontMeta={faceCode ? `${faceCode} · ${valueLabel}` : undefined}
               />
             </svg>
           </button>
@@ -555,7 +553,7 @@ function TefCubeGrid({
   );
 }
 
-/** Prefer catalogue index (e.g. T-1A1a-TE-6); fall back to a short id. */
+/** Prefer catalogue index (e.g. T-1A1a-TE-6); fall back to a short stable id. */
 function formatTefFaceCode(cell: TefFrameworkCell): string {
   if (cell.index) return cell.index;
   return cell.stableId.slice(0, 10);

@@ -23,7 +23,6 @@ export function IsoBox({
   rgb,
   intensity,
   selected,
-  frontLabel,
   frontIcon,
   frontValue,
   frontTitle,
@@ -37,7 +36,6 @@ export function IsoBox({
   rgb: readonly [number, number, number];
   intensity: number;
   selected: boolean;
-  frontLabel?: string;
   /** Compact overview: glyph instead of TE index code. */
   frontIcon?: TefIconKind;
   frontValue?: string;
@@ -74,11 +72,8 @@ export function IsoBox({
   const t3 = `${x + w - lean},${y + dy}`;
 
   const textX = x + w / 2;
-  const labelY = y + dy + frontH * 0.36;
   const valueY = y + dy + frontH * 0.68;
-  const iconCy = frontValue
-    ? y + dy + frontH * 0.34
-    : y + dy + frontH * 0.5;
+  const iconCy = frontValue ? y + dy + frontH * 0.34 : y + dy + frontH * 0.5;
   const iconSize = Math.max(14, Math.min(20, w * 0.42));
   const pad = 6;
 
@@ -152,7 +147,7 @@ export function IsoBox({
             ) : null}
           </div>
         </foreignObject>
-      ) : frontIcon || frontLabel || frontValue ? (
+      ) : frontIcon || frontValue ? (
         <g
           style={{
             fontFamily:
@@ -160,19 +155,12 @@ export function IsoBox({
           }}
         >
           {frontIcon ? (
-            <TefCubeIcon kind={frontIcon} cx={textX} cy={iconCy} size={iconSize} />
-          ) : frontLabel ? (
-            <text
-              x={textX}
-              y={labelY}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="rgba(255,255,255,0.92)"
-              fontSize={Math.max(8, Math.min(10, w * 0.2))}
-              fontWeight={500}
-            >
-              {truncateFaceLabel(frontLabel, w)}
-            </text>
+            <TefCubeIcon
+              kind={frontIcon}
+              cx={textX}
+              cy={iconCy}
+              size={iconSize}
+            />
           ) : null}
           {frontValue ? (
             <text
@@ -191,10 +179,4 @@ export function IsoBox({
       ) : null}
     </g>
   );
-}
-
-function truncateFaceLabel(label: string, faceW: number): string {
-  const maxChars = faceW >= 42 ? 9 : 8;
-  if (label.length <= maxChars) return label;
-  return `${label.slice(0, maxChars - 1)}…`;
 }

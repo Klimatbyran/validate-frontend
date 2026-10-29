@@ -40,10 +40,17 @@ type Rule = { kind: TefIconKind; pattern: RegExp };
 
 /** First match wins — keep more specific patterns above broader ones. */
 const TITLE_RULES: Rule[] = [
-  { kind: "bike", pattern: /\b(bike|bikes|cycling|walking|motorcycle|cargo\s*bike)\b/i },
+  {
+    kind: "bike",
+    pattern: /\b(bike|bikes|cycling|walking|motorcycle|cargo\s*bike)\b/i,
+  },
   { kind: "bus", pattern: /\b(bus|busses|buses)\b/i },
   { kind: "train", pattern: /\b(rail|railway)\b/i },
-  { kind: "plane", pattern: /\b(air\b|airfreight|kerosene)\b/i },
+  {
+    kind: "plane",
+    pattern:
+      /\b(airplane|airplanes|aviation|airfreight|air\s+(?:passenger|freight|travel)|kerosene)\b/i,
+  },
   {
     kind: "ship",
     pattern: /\b(marine|lng\b|sea\b|freight.*\bsea|truck to sea)\b/i,
@@ -59,13 +66,23 @@ const TITLE_RULES: Rule[] = [
   },
   { kind: "wind", pattern: /\bwind\b/i },
   { kind: "solar", pattern: /\bsolar\b/i },
-  { kind: "hydro", pattern: /\bhydro\b/i },
+  // hydro / hydropower, but not hydrogen
+  { kind: "hydro", pattern: /\bhydro(?:power)?\b/i },
   { kind: "hydrogen", pattern: /\b(hydrogen|electrolysis)\b/i },
-  { kind: "bio", pattern: /\b(biomass|biofuel|biogas|chp from waste|chp from biomass)\b/i },
+  {
+    kind: "bio",
+    pattern: /\b(biomass|biofuel|biogas|chp from waste|chp from biomass)\b/i,
+  },
   { kind: "heatPump", pattern: /\bheat\s*pump/i },
+  // Stem match — do not require a word boundary after heat/cool (heating, cooling).
   {
     kind: "districtEnergy",
-    pattern: /\b(district\s*heat|district\s*cool|residual\s*heat|\bchp\b)\b/i,
+    pattern: /\bdistrict\s*(?:heat|cool)|residual\s*heat|\bchp\b/i,
+  },
+  // fossil-free before bare fossil
+  {
+    kind: "renewable",
+    pattern: /renewable|fossil[_ -]?free|electricity[_ -]?generation/i,
   },
   {
     kind: "fossil",
@@ -76,7 +93,8 @@ const TITLE_RULES: Rule[] = [
   { kind: "lighting", pattern: /\b(lighting|street\s*light)/i },
   {
     kind: "recycle",
-    pattern: /\b(recycl|reuse|compost|landfill|waste management|energy recovery from waste|food waste)\b/i,
+    pattern:
+      /\b(?:recycl|reuse|compost|landfill|waste management|energy recovery from waste|food waste)/i,
   },
   {
     kind: "food",
@@ -94,7 +112,7 @@ const TITLE_RULES: Rule[] = [
   {
     kind: "factory",
     pattern:
-      /\b(electricity in |cement|steel|glass|chemical|magnesium|lead industr|pulp|mineral industr|petroleum)\b/i,
+      /\belectricity in |cement|steel|glass|chemical|magnesium|lead industr|pulp|mineral industr|petroleum/i,
   },
   {
     kind: "building",
@@ -102,14 +120,9 @@ const TITLE_RULES: Rule[] = [
       /\b(retrofit|energy efficient|ac in |cooling|heating in|construction|housing|building|appliance)\b/i,
   },
   {
-    kind: "renewable",
-    pattern:
-      /renewable|fossil[_ -]?free[_ -]?electric|electricity[_ -]?generation/i,
-  },
-  {
     kind: "planning",
     pattern:
-      /\b(urban planning|transport planning|municipal facilit|utilisation of municipal)\b/i,
+      /\b(?:urban planning|transport planning|municipal facilit|utilisation of municipal)/i,
   },
   {
     kind: "resource",
@@ -124,17 +137,17 @@ const TITLE_RULES: Rule[] = [
 const PATH_RULES: Rule[] = [
   { kind: "bike", pattern: /\b(active|cycling|walking)\b/i },
   { kind: "train", pattern: /\brail\b/i },
-  { kind: "plane", pattern: /\bair\b/i },
+  { kind: "plane", pattern: /\b(aviation|airplane|air)\b/i },
   { kind: "ship", pattern: /\b(marine|shipping)\b/i },
   { kind: "truck", pattern: /\b(freight|truck|machinery)\b/i },
   { kind: "car", pattern: /\b(road|light duty|mobility)\b/i },
   { kind: "wind", pattern: /\bwind\b/i },
   { kind: "solar", pattern: /\bsolar\b/i },
-  { kind: "hydro", pattern: /\bhydro\b/i },
+  { kind: "hydro", pattern: /\bhydro(?:power)?\b/i },
   { kind: "hydrogen", pattern: /\bhydrogen\b/i },
   { kind: "districtEnergy", pattern: /\b(heat|combined heat|district)\b/i },
-  { kind: "recycle", pattern: /\b(waste|solid|recycl|compost)\b/i },
-  { kind: "nature", pattern: /\b(afolu|agricultur|forest|livestock|land)\b/i },
+  { kind: "recycle", pattern: /\b(?:waste|solid|recycl|compost)/i },
+  { kind: "nature", pattern: /\b(?:afolu|agricultur|forest|livestock|land)/i },
   { kind: "factory", pattern: /\b(industry|metal|mineral|chemical)\b/i },
   { kind: "building", pattern: /\b(building|residential|non.?residential)\b/i },
   { kind: "grid", pattern: /\b(electricity|energy supply)\b/i },
