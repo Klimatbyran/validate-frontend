@@ -173,6 +173,15 @@ server {
         proxy_read_timeout 30s;
     }
 
+    # SPA routes that must not be treated as static directories (a leftover
+    # public/climate-plans/ folder previously made /climate-plans/ 403).
+    location = /climate-plans {
+        try_files /index.html =404;
+    }
+    location = /climate-plans/ {
+        try_files /index.html =404;
+    }
+
     # Serve static files
     location / {
         try_files $uri $uri/ /index.html;

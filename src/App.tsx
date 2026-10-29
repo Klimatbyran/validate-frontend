@@ -62,6 +62,10 @@ function App() {
           />
           <Route path="/editor" element={<EditorTab />} />
           <Route path="/climate-plans" element={<ClimatePlansExplorer />} />
+          <Route
+            path="/climate-plans/"
+            element={<ClimatePlansExplorer />}
+          />
           <Route path="/climate-pipeline" element={<ClimatePipelineTab />} />
           <Route path="/climate-qa-reviews" element={<ClimateQaReviewsTab />} />
           <Route
