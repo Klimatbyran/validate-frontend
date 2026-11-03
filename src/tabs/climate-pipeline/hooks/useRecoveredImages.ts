@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import type { RecoveredImage } from "./useClimatePlanDetail";
 
 /** Lightweight — just the image gallery, for the docling job's own
@@ -15,7 +16,9 @@ export function useRecoveredImages(planId: string | null) {
       return;
     }
     let cancelled = false;
-    fetch(`${getClimatePlansPipelineApiUrl()}/plans/${planId}/images`)
+    garboAuthFetch(
+      `${getClimatePlansPipelineApiUrl()}/plans/${planId}/images`,
+    )
       .then((res) => {
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
         return res.json() as Promise<RecoveredImage[]>;
