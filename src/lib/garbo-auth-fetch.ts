@@ -6,7 +6,8 @@
 
 import { TOKEN_STORAGE_KEY } from "@/lib/auth-constants";
 
-function getAuthHeaders(): Record<string, string> {
+/** Bearer headers from stored staff JWT (empty object when logged out). */
+export function getGarboAuthHeaders(): Record<string, string> {
   const token =
     typeof localStorage !== "undefined"
       ? localStorage.getItem(TOKEN_STORAGE_KEY)
@@ -59,7 +60,7 @@ export async function garboAuthFetch(
 ): Promise<Response> {
   const { skipAuthRefresh, ...init } = options;
   const headers = new Headers(init.headers);
-  Object.entries(getAuthHeaders()).forEach(([k, v]) => headers.set(k, v));
+  Object.entries(getGarboAuthHeaders()).forEach(([k, v]) => headers.set(k, v));
   const res = await fetch(url, { ...init, headers, credentials: "omit" });
   if (!skipAuthRefresh) handleAuthResponse(res);
   return res;

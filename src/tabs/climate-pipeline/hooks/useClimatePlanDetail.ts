@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
 import { authenticatedFetch } from "@/lib/api-helpers";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import type { PipelineReview } from "./usePipelineReviews";
 
 /** One sentence-level piece the model produced before this commitment's
@@ -291,7 +292,7 @@ export function useClimatePlanDetail(planId: string | null) {
     if (!planId) return;
     setIsLoading(true);
     try {
-      const res = await fetch(
+      const res = await garboAuthFetch(
         `${getClimatePlansPipelineApiUrl()}/plans/${planId}`,
       );
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
