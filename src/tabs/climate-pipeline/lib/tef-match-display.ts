@@ -8,12 +8,28 @@ const SHIFT_TYPE_LABELS: Record<string, string> = {
 };
 
 const GROUP_KIND_LABELS: Record<string, string> = {
-  specific: "Specific",
-  multiple_specific: "Several matches",
-  too_narrow: "Too narrow",
-  ambiguous: "Ambiguous",
-  none: "No match",
+  match_is_specific: "Specific",
+  multiple_specific_matches: "Several matches",
+  match_is_too_narrow: "Too narrow",
+  match_is_ambiguous: "Ambiguous",
+  no_match_found: "No match",
 };
+
+// Renamed server-side for clarity (climate-plans-pipeline's tePicker.ts),
+// but transitionElementGroupKind is a plain string column, not backfilled
+// -- a shift matched before the rename still has the old value stored.
+// Normalize once here so every lookup below only has to know the new names.
+const OLD_GROUP_KIND_NAMES: Record<string, string> = {
+  specific: "match_is_specific",
+  multiple_specific: "multiple_specific_matches",
+  too_narrow: "match_is_too_narrow",
+  ambiguous: "match_is_ambiguous",
+  none: "no_match_found",
+};
+
+export function normalizeGroupKind(groupKind: string): string {
+  return OLD_GROUP_KIND_NAMES[groupKind] ?? groupKind;
+}
 
 const AI_REVIEW_HEADLINES: Record<string, string> = {
   CORRECT_NO_MATCH: "Confirmed: no match warranted",
@@ -69,8 +85,9 @@ export function matchOutcomeLabel(
   groupLabel: string | null | undefined,
 ): string | null {
   if (!groupKind) return null;
-  const base = outcomeBaseLabel(groupKind, gateDomain);
-  const extra = outcomeExtraLabel(groupKind, groupLabel);
+  const normalized = normalizeGroupKind(groupKind);
+  const base = outcomeBaseLabel(normalized, gateDomain);
+  const extra = outcomeExtraLabel(normalized, groupLabel);
   return extra ? `${base}: ${extra}` : base;
 }
 
@@ -78,7 +95,7 @@ function outcomeBaseLabel(
   groupKind: string,
   gateDomain: string | null | undefined,
 ): string {
-  if (groupKind === "none" && !gateDomain) return "No domain";
+  if (groupKind === "no_match_found" && !gateDomain) return "No domain";
   return GROUP_KIND_LABELS[groupKind] ?? groupKind;
 }
 
@@ -86,7 +103,7 @@ function outcomeExtraLabel(
   groupKind: string,
   groupLabel: string | null | undefined,
 ): string | null {
-  if (groupKind !== "none" && groupKind !== "too_narrow") return null;
+  if (groupKind !== "no_match_found" && groupKind !== "match_is_too_narrow") return null;
   if (!groupLabel || BOILERPLATE_GROUP_LABELS.has(groupLabel)) return null;
   return groupLabel;
 }
