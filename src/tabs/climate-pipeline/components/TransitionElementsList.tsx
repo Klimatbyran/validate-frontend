@@ -576,8 +576,8 @@ function TeMatchAddSlots({
                 entityType="teMatchAdd"
                 entityId={entityId}
                 reviewedSnapshot={{
-                  activityShiftId: shiftId,
                   measureText,
+                  activityShiftId: shiftId,
                   currentMatchIds: [...matchedIds],
                   addableCandidates,
                   suggestedNew: canUseSuggestedNew ? suggestedNew : null,
@@ -672,8 +672,8 @@ function ListedTeMatch({
           entityType="teMatch"
           entityId={entityId}
           reviewedSnapshot={{
-            activityShiftId: shiftKey,
             measureText,
+            activityShiftId: shiftKey,
             match,
             candidates: allCandidates,
           }}
