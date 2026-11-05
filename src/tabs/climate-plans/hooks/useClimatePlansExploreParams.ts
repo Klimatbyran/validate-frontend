@@ -1,13 +1,8 @@
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import type {
-  AlignmentLayoutId,
-  AlignmentValueMode,
   ClimatePlansTabId,
-  EmissionsYearMode,
   ExploreViewId,
-  GoalsGroupById,
-  GoalsLayoutId,
   MapGeoLevel,
   MapKpiId,
   ShiftsLayoutId,
@@ -18,43 +13,17 @@ import type {
 } from "../lib/explore-types";
 import { MAP_KPI_META } from "../lib/explore-aggregates";
 
-const TABS: ClimatePlansTabId[] = ["measures", "taxonomy", "explore"];
-const VIEWS: ExploreViewId[] = [
-  "map",
-  "alignment",
-  "goals",
-  "shifts",
-  "tef",
-  "tef-framework",
-  "anatomy",
-];
+const TABS: ClimatePlansTabId[] = ["explore", "measures", "taxonomy"];
+const VIEWS: ExploreViewId[] = ["map", "shifts", "tef-framework", "anatomy"];
 const GEOS: MapGeoLevel[] = ["municipality", "region"];
-const YEAR_MODES: EmissionsYearMode[] = ["latest", "plan"];
-const ALIGN_LAYOUTS: AlignmentLayoutId[] = [
-  "bars",
-  "pies",
-  "stacked",
-  "gap",
-  "table",
-];
-const ALIGN_VALUES: AlignmentValueMode[] = ["share", "absolute"];
 const TEF_SCOPES: TefFrameworkScope[] = ["all", "municipality", "region"];
 const TEF_METRICS: TefFrameworkMetric[] = [
   "hits",
   "strength",
   "municipalities",
 ];
-const TEF_LAYOUTS: TefFrameworkLayout[] = ["grid", "3d"];
+const TEF_LAYOUTS: TefFrameworkLayout[] = ["3d", "grid"];
 const TEF_HEIGHT_MODES: TefFrameworkHeightMode[] = ["share", "tonnes"];
-const GOALS_LAYOUTS: GoalsLayoutId[] = ["list", "atlas"];
-const GOALS_GROUP_BY: GoalsGroupById[] = [
-  "reduction",
-  "status",
-  "deadline",
-  "paris",
-  "scope",
-];
-const GOALS_ATLAS_SCOPES = ["selected", "all"] as const;
 const SHIFTS_LAYOUTS: ShiftsLayoutId[] = ["compare", "flows", "types"];
 const KPIS = Object.keys(MAP_KPI_META) as MapKpiId[];
 
@@ -71,50 +40,20 @@ function pick<T extends string>(
 export function useClimatePlansExploreParams() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const tab = pick(searchParams.get("tab"), TABS, "measures");
+  const tab = pick(searchParams.get("tab"), TABS, "explore");
   const view = pick(searchParams.get("view"), VIEWS, "map");
   const kpi = pick(searchParams.get("kpi"), KPIS, "uniqueCommitments");
   const geo = pick(searchParams.get("geo"), GEOS, "municipality");
-  const yearMode = pick(
-    searchParams.get("emissionsYear"),
-    YEAR_MODES,
-    "latest",
-  );
-  const alignLayout = pick(
-    searchParams.get("alignLayout"),
-    ALIGN_LAYOUTS,
-    "bars",
-  );
-  const alignValues = pick(
-    searchParams.get("alignValues"),
-    ALIGN_VALUES,
-    "share",
-  );
   const tefGroup = searchParams.get("tefGroup") || "all";
   const selectedName = searchParams.get("muni");
   const tefScope = pick(searchParams.get("tefScope"), TEF_SCOPES, "all");
   const tefMetric = pick(searchParams.get("tefMetric"), TEF_METRICS, "hits");
   const tefEmissions = searchParams.get("tefEmissions") === "1";
-  const tefLayout = pick(searchParams.get("tefLayout"), TEF_LAYOUTS, "grid");
+  const tefLayout = pick(searchParams.get("tefLayout"), TEF_LAYOUTS, "3d");
   const tefHeight = pick(
     searchParams.get("tefHeight"),
     TEF_HEIGHT_MODES,
     "share",
-  );
-  const goalsLayout = pick(
-    searchParams.get("goalsLayout"),
-    GOALS_LAYOUTS,
-    "list",
-  );
-  const goalsGroupBy = pick(
-    searchParams.get("goalsGroupBy"),
-    GOALS_GROUP_BY,
-    "reduction",
-  );
-  const goalsAtlasScope = pick(
-    searchParams.get("goalsAtlasScope"),
-    GOALS_ATLAS_SCOPES,
-    "all",
   );
   const shiftsLayout = pick(
     searchParams.get("shiftsLayout"),
@@ -146,9 +85,6 @@ export function useClimatePlansExploreParams() {
     view,
     kpi,
     geo,
-    yearMode,
-    alignLayout,
-    alignValues,
     tefGroup,
     selectedName,
     tefScope,
@@ -156,19 +92,12 @@ export function useClimatePlansExploreParams() {
     tefEmissions,
     tefLayout,
     tefHeight,
-    goalsLayout,
-    goalsGroupBy,
-    goalsAtlasScope,
     shiftsLayout,
     selectedTefId,
     setTab: (value: ClimatePlansTabId) => patch({ tab: value }),
     setView: (value: ExploreViewId) => patch({ view: value }),
     setKpi: (value: MapKpiId) => patch({ kpi: value }),
     setGeo: (value: MapGeoLevel) => patch({ geo: value }),
-    setYearMode: (value: EmissionsYearMode) => patch({ emissionsYear: value }),
-    setAlignLayout: (value: AlignmentLayoutId) => patch({ alignLayout: value }),
-    setAlignValues: (value: AlignmentValueMode) =>
-      patch({ alignValues: value }),
     setTefGroup: (value: string) => patch({ tefGroup: value }),
     setSelectedName: (value: string) => patch({ muni: value }),
     setTefScope: (value: TefFrameworkScope) => patch({ tefScope: value }),
@@ -178,31 +107,21 @@ export function useClimatePlansExploreParams() {
     setTefLayout: (value: TefFrameworkLayout) => patch({ tefLayout: value }),
     setTefHeight: (value: TefFrameworkHeightMode) =>
       patch({ tefHeight: value }),
-    setGoalsLayout: (value: GoalsLayoutId) => patch({ goalsLayout: value }),
-    setGoalsGroupBy: (value: GoalsGroupById) => patch({ goalsGroupBy: value }),
-    setGoalsAtlasScope: (value: "selected" | "all") =>
-      patch({ goalsAtlasScope: value }),
     setShiftsLayout: (value: ShiftsLayoutId) => patch({ shiftsLayout: value }),
     setSelectedTefId: (value: string) => patch({ tefId: value }),
   };
 }
 
 function isDefault(key: string, value: string): boolean {
-  if (key === "tab" && value === "measures") return true;
+  if (key === "tab" && value === "explore") return true;
   if (key === "view" && value === "map") return true;
   if (key === "kpi" && value === "uniqueCommitments") return true;
   if (key === "geo" && value === "municipality") return true;
-  if (key === "emissionsYear" && value === "latest") return true;
-  if (key === "alignLayout" && value === "bars") return true;
-  if (key === "alignValues" && value === "share") return true;
   if (key === "tefGroup" && value === "all") return true;
   if (key === "tefScope" && value === "all") return true;
   if (key === "tefMetric" && value === "hits") return true;
-  if (key === "tefLayout" && value === "grid") return true;
+  if (key === "tefLayout" && value === "3d") return true;
   if (key === "tefHeight" && value === "share") return true;
-  if (key === "goalsLayout" && value === "list") return true;
-  if (key === "goalsGroupBy" && value === "reduction") return true;
-  if (key === "goalsAtlasScope" && value === "all") return true;
   if (key === "shiftsLayout" && value === "compare") return true;
   return false;
 }

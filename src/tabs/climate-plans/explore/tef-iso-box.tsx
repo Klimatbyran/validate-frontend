@@ -1,4 +1,17 @@
+import type { TefIconKind } from "../lib/tef-icon-kind";
 import { tefCellFill } from "../lib/tef-framework";
+import { TefCubeIcon } from "./tef-cube-icons";
+
+/**
+ * Forward-pitched isometric depth → screen offset.
+ * Higher dy than classic iso so top faces tip toward the viewer.
+ */
+export function isoDepthOffset(d: number): { dx: number; dy: number } {
+  return { dx: d * 0.55, dy: d * 0.68 };
+}
+
+/** Front-face height scale under the same pitch (keeps pillar height ratios). */
+export const ISO_FRONT_H_SCALE = 0.9;
 
 /** Flat isometric box: front, right, top faces as SVG polygons. */
 export function IsoBox({
@@ -10,7 +23,7 @@ export function IsoBox({
   rgb,
   intensity,
   selected,
-  frontLabel,
+  frontIcon,
   frontValue,
   frontTitle,
   frontMeta,
@@ -23,14 +36,18 @@ export function IsoBox({
   rgb: readonly [number, number, number];
   intensity: number;
   selected: boolean;
-  frontLabel?: string;
+  /** Compact overview: glyph instead of TE index code. */
+  frontIcon?: TefIconKind;
   frontValue?: string;
   /** Multi-line TEF name for expanded cubes (HTML via foreignObject). */
   frontTitle?: string;
   frontMeta?: string;
 }) {
-  const dx = d * 0.72;
-  const dy = d * 0.42;
+  const { dx, dy } = isoDepthOffset(d);
+  // Mild forward pitch: front face foreshortens uniformly so pillar height ratios stay comparable.
+  const frontH = h * ISO_FRONT_H_SCALE;
+  // Lean the front face slightly toward the viewer (top edge closer than bottom).
+  const lean = d * 0.12;
 
   const front = tefCellFill(rgb, intensity);
   const side = tefCellFill(rgb, Math.max(0.15, intensity - 0.22));
@@ -38,24 +55,26 @@ export function IsoBox({
   const stroke = selected ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.35)";
   const strokeW = selected ? 1.25 : 0.75;
 
-  const f0 = `${x},${y + dy}`;
-  const f1 = `${x + w},${y + dy}`;
-  const f2 = `${x + w},${y + dy + h}`;
-  const f3 = `${x},${y + dy + h}`;
+  // Front: parallelogram — top edge pulled toward camera (down-screen less than bottom).
+  const f0 = `${x + lean},${y + dy}`;
+  const f1 = `${x + w - lean},${y + dy}`;
+  const f2 = `${x + w},${y + dy + frontH}`;
+  const f3 = `${x},${y + dy + frontH}`;
 
-  const r0 = `${x + w},${y + dy}`;
-  const r1 = `${x + w + dx},${y}`;
-  const r2 = `${x + w + dx},${y + h}`;
-  const r3 = `${x + w},${y + dy + h}`;
+  const r0 = `${x + w - lean},${y + dy}`;
+  const r1 = `${x + w - lean + dx},${y}`;
+  const r2 = `${x + w + dx},${y + frontH}`;
+  const r3 = `${x + w},${y + dy + frontH}`;
 
-  const t0 = `${x},${y + dy}`;
-  const t1 = `${x + dx},${y}`;
-  const t2 = `${x + w + dx},${y}`;
-  const t3 = `${x + w},${y + dy}`;
+  const t0 = `${x + lean},${y + dy}`;
+  const t1 = `${x + lean + dx},${y}`;
+  const t2 = `${x + w - lean + dx},${y}`;
+  const t3 = `${x + w - lean},${y + dy}`;
 
   const textX = x + w / 2;
-  const labelY = y + dy + h * 0.36;
-  const valueY = y + dy + h * 0.68;
+  const valueY = y + dy + frontH * 0.68;
+  const iconCy = frontValue ? y + dy + frontH * 0.34 : y + dy + frontH * 0.5;
+  const iconSize = Math.max(14, Math.min(20, w * 0.42));
   const pad = 6;
 
   return (
@@ -83,10 +102,10 @@ export function IsoBox({
       />
       {frontTitle ? (
         <foreignObject
-          x={x + pad}
+          x={x + pad + lean * 0.5}
           y={y + dy + pad}
-          width={Math.max(0, w - pad * 2)}
-          height={Math.max(0, h - pad * 2)}
+          width={Math.max(0, w - pad * 2 - lean)}
+          height={Math.max(0, frontH - pad * 2)}
         >
           <div
             style={{
@@ -128,25 +147,20 @@ export function IsoBox({
             ) : null}
           </div>
         </foreignObject>
-      ) : frontLabel || frontValue ? (
+      ) : frontIcon || frontValue ? (
         <g
           style={{
             fontFamily:
               "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
           }}
         >
-          {frontLabel ? (
-            <text
-              x={textX}
-              y={labelY}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="rgba(255,255,255,0.92)"
-              fontSize={Math.max(8, Math.min(10, w * 0.2))}
-              fontWeight={500}
-            >
-              {truncateFaceLabel(frontLabel, w)}
-            </text>
+          {frontIcon ? (
+            <TefCubeIcon
+              kind={frontIcon}
+              cx={textX}
+              cy={iconCy}
+              size={iconSize}
+            />
           ) : null}
           {frontValue ? (
             <text
@@ -165,10 +179,4 @@ export function IsoBox({
       ) : null}
     </g>
   );
-}
-
-function truncateFaceLabel(label: string, faceW: number): string {
-  const maxChars = faceW >= 42 ? 9 : 8;
-  if (label.length <= maxChars) return label;
-  return `${label.slice(0, maxChars - 1)}…`;
 }

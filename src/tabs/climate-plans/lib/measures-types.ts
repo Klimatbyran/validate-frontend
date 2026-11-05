@@ -14,6 +14,8 @@ export interface TransitionElementMatch {
   description: string;
   sector_path: string;
   match_confidence: MatchConfidence;
+  /** LLM judgment: measure text directly names this match. Undefined on older data. */
+  explicit?: boolean;
 }
 
 export interface TransitionElementSuggestedNew {
@@ -35,6 +37,10 @@ export interface ActivityShift {
   transition_element_suggested_new?: TransitionElementSuggestedNew;
   /** LLM-classified TEF top domain (pipeline only), e.g. "Waste" or "T-6". */
   transition_element_gate_domain?: string | null;
+  /** Present when matchTransitionElements attached a shadow TEF gap. */
+  shadow_element_id?: string | null;
+  /** Shadow taxonomy status when shadow_element_id is set. */
+  shadow_element_status?: string | null;
 }
 
 export interface Measure {

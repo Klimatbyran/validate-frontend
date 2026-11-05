@@ -3,21 +3,15 @@ import { ViewModePills } from "@/ui/view-mode-pills";
 import { useExploreDataset } from "../hooks/useExploreDataset";
 import type { ExploreViewId } from "../lib/explore-types";
 import { MapKpiView } from "./MapKpiView";
-import { AlignmentView } from "./AlignmentView";
-import { GoalTrackingView } from "./GoalTrackingView";
 import { ShiftsInterventionsView } from "./ShiftsInterventionsView";
-import { TefLandscapeView } from "./TefLandscapeView";
 import { TefFrameworkView } from "./TefFrameworkView";
 import { PlanAnatomyView } from "./PlanAnatomyView";
 import type { useClimatePlansExploreParams } from "../hooks/useClimatePlansExploreParams";
 
 const VIEW_OPTIONS: { value: ExploreViewId; label: string }[] = [
   { value: "map", label: "KPI map" },
-  { value: "alignment", label: "Emissions vs TEFs" },
-  { value: "goals", label: "Goal tracking" },
   { value: "shifts", label: "Shifts & interventions" },
   { value: "tef-framework", label: "TEF framework" },
-  { value: "tef", label: "TEF landscape" },
   { value: "anatomy", label: "Plan anatomy" },
 ];
 
@@ -31,7 +25,7 @@ export function ExploreDataView({
   if (isLoading && !data) {
     return (
       <div className="flex items-center justify-center py-24 text-gray-02">
-        Loading extracts, targets, and emissions…
+        Loading pipeline extracts and emissions…
       </div>
     );
   }
@@ -49,7 +43,7 @@ export function ExploreDataView({
   return (
     <div className="space-y-5">
       <p className="text-sm text-gray-02 max-w-3xl">
-        Internal reading views over whatever extracts we have so far. Grey map
+        Internal reading views over live climate-plans-pipeline runs. Grey map
         cells and empty tables are expected until more climate plans are run.
         Each view states the exact fields and formulas it uses so we can argue
         about the story, not the arithmetic.
@@ -71,32 +65,6 @@ export function ExploreDataView({
           onTefGroupChange={params.setTefGroup}
           selectedName={params.selectedName}
           onSelectName={params.setSelectedName}
-        />
-      ) : null}
-      {params.view === "alignment" ? (
-        <AlignmentView
-          dataset={data}
-          selectedName={params.selectedName}
-          onSelectName={params.setSelectedName}
-          yearMode={params.yearMode}
-          onYearModeChange={params.setYearMode}
-          layout={params.alignLayout}
-          onLayoutChange={params.setAlignLayout}
-          valueMode={params.alignValues}
-          onValueModeChange={params.setAlignValues}
-        />
-      ) : null}
-      {params.view === "goals" ? (
-        <GoalTrackingView
-          dataset={data}
-          selectedName={params.selectedName}
-          onSelectName={params.setSelectedName}
-          layout={params.goalsLayout}
-          onLayoutChange={params.setGoalsLayout}
-          groupBy={params.goalsGroupBy}
-          onGroupByChange={params.setGoalsGroupBy}
-          atlasScope={params.goalsAtlasScope}
-          onAtlasScopeChange={params.setGoalsAtlasScope}
         />
       ) : null}
       {params.view === "shifts" ? (
@@ -127,9 +95,6 @@ export function ExploreDataView({
           selectedTefId={params.selectedTefId}
           onSelectTefId={params.setSelectedTefId}
         />
-      ) : null}
-      {params.view === "tef" ? (
-        <TefLandscapeView records={data.municipalities} />
       ) : null}
       {params.view === "anatomy" ? (
         <PlanAnatomyView records={data.municipalities} />

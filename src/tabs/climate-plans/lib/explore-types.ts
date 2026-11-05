@@ -3,15 +3,11 @@ import type {
   Measure,
   MunicipalityMeasures,
 } from "./measures-types";
-import type { EmissionBucket } from "./tef-groups";
 
 export type ExploreDataSource =
-  | "static-measures"
   | "pipeline-measures"
   | "pipeline-commitments"
   | "pipeline-markdown"
-  | "static-emission-targets"
-  | "static-plan-scope"
   | "municipality-sources"
   | "unearth-sector-emissions";
 
@@ -24,6 +20,12 @@ export interface TefHit {
   measureText: string;
   /** Taxonomy match description when present. */
   description: string;
+  /**
+   * Whether the measure's own text directly names this TEF (explicit) vs only a
+   * reasonable inference (implied). Undefined on matches made before this field
+   * existed (older pipeline runs).
+   */
+  explicit?: boolean;
   shiftFrom: string;
   shiftTo: string;
   need: string;
@@ -32,18 +34,6 @@ export interface TefHit {
   interventionWhat: string;
   interventionHow: string;
   interventionScore: number;
-}
-
-export interface QuantifiedGoal {
-  description: string;
-  reductionPercent: number | null;
-  baselineYear: number | null;
-  targetYear: number | null;
-  scope: string;
-  sector: string;
-  commitmentStrength: string;
-  goalType: string;
-  sourceQuote: string;
 }
 
 export interface ExploreMunicipalityRecord {
@@ -56,19 +46,15 @@ export interface ExploreMunicipalityRecord {
   climateRelevantCommitmentCount: number | null;
   /** Unique similar-groups after climate + actionable filters. Null without pipeline commitments. */
   climateCommitmentGroupCount: number | null;
+  /** Commitments with adaptation === true. Null without pipeline commitments. */
+  adaptationCommitmentCount: number | null;
+  /** Commitments with empty originatesFrom (municipality's own). Null without pipeline. */
+  ownCommitmentCount: number | null;
+  /** Deduped companion DocumentReference groups. Null when plan extras not loaded. */
+  companionReferenceCount: number | null;
   markdownChars: number | null;
   tefHits: TefHit[];
-  goals: QuantifiedGoal[];
-  hasQuantifiedTargets: boolean | null;
-  parisMentioned: boolean | null;
-  onePointFiveMentioned: boolean | null;
-  carbonBudgetReferenced: boolean | null;
   documentTitle: string | null;
-  documentType: string | null;
-  adoptionDate: string | null;
-  planPeriodStart: string | null;
-  planPeriodEnd: string | null;
-  primaryFocus: string | null;
   adoptedYear: number | null;
   sourceUrl: string | null;
   county: string | null;
@@ -97,67 +83,45 @@ export interface TefGroupStrength {
   highShare: number;
 }
 
-export interface AlignmentRow {
-  bucket: EmissionBucket;
-  emissionShare: number;
-  tefShare: number;
-  /** Share gap: TEF share − emission share. */
-  gap: number;
-  emissionTonnes: number;
-  tefCount: number;
-}
-
-export type AlignmentLayoutId = "bars" | "pies" | "table" | "gap" | "stacked";
-
-/** How dual charts label magnitudes (shares stay the geometry for pies/bars). */
-export type AlignmentValueMode = "share" | "absolute";
-
 export interface PipelineCommitment {
   text: string;
   climateRelevant: boolean | null;
   actionable: boolean | null;
   similarGroupId: string | null;
+  adaptation: boolean | null;
+  originatesFrom: string[];
 }
 
 export type MapKpiId =
   | "uniqueCommitments"
   | "climateRelevantCommitments"
   | "climateCommitmentGroups"
-  | "goalCount"
-  | "quantifiedGoalCount"
   | "distinctTefs"
   | "distinctTefGroups"
   | "tefGroupStrength"
   | "avgInterventionScore"
   | "avgActivityShiftScore"
   | "planChars"
-  | "hasQuantifiedTargets"
-  | "parisMentioned"
-  | "climateRelevantShare";
+  | "climateRelevantShare"
+  | "measureCount"
+  | "interventionActiveShare"
+  | "interventionSpecificityShare"
+  | "highInterventionShare"
+  | "highActivityShiftShare"
+  | "adaptationShare"
+  | "ownCommitmentShare"
+  | "explicitTefShare"
+  | "tefMatchRate"
+  | "shadowHitCount"
+  | "companionReferenceCount";
 
-export type ExploreViewId =
-  | "map"
-  | "alignment"
-  | "goals"
-  | "shifts"
-  | "tef"
-  | "tef-framework"
-  | "anatomy";
-export type ClimatePlansTabId = "measures" | "taxonomy" | "explore";
+export type ExploreViewId = "map" | "shifts" | "tef-framework" | "anatomy";
+export type ClimatePlansTabId = "explore" | "measures" | "taxonomy";
 export type MapGeoLevel = "municipality" | "region";
-export type EmissionsYearMode = "latest" | "plan";
 export type TefFrameworkScope = "all" | "municipality" | "region";
 export type TefFrameworkMetric = "hits" | "strength" | "municipalities";
-/** Grid = catalogue heatmap; 3d = emission-scaled sector pillars. */
-export type TefFrameworkLayout = "grid" | "3d";
+/** 3d = emission-scaled sector pillars (default); grid = catalogue heatmap. */
+export type TefFrameworkLayout = "3d" | "grid";
 /** How 3d pillar height is scaled. */
 export type TefFrameworkHeightMode = "share" | "tonnes";
-export type GoalsLayoutId = "list" | "atlas";
-/** Atlas clustering axis for goal grouping. */
-export type GoalsGroupById =
-  | "reduction"
-  | "status"
-  | "deadline"
-  | "paris"
-  | "scope";
 export type ShiftsLayoutId = "compare" | "flows" | "types";

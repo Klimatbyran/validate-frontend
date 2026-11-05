@@ -1,6 +1,5 @@
-// Bridges climate-plans-pipeline's live output into the same
-// MunicipalityMeasures[] shape the static public/climate-plans/measures/*.json
-// files use, so ClimatePlansExplorer renders both without any UI changes.
+// Bridges climate-plans-pipeline's live output into MunicipalityMeasures[]
+// for ClimatePlansExplorer and the explore dataset.
 
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
 import type {
@@ -30,6 +29,8 @@ interface ApiTransitionElementMatch {
   sectorPath: string;
   score: number;
   matchConfidence: "high" | "mid" | "low";
+  /** Present on matches from tePicker's judge() call; absent on older runs. */
+  explicit?: boolean;
 }
 
 interface ApiTransitionElementCandidate {
@@ -56,6 +57,11 @@ interface ApiActivityShift {
     description: string;
   } | null;
   transitionElementGateDomain?: string | null;
+  shadowElement?: {
+    id: string;
+    status?: string | null;
+  } | null;
+  shadowElementId?: string | null;
 }
 
 interface ApiMeasureScore {
@@ -108,6 +114,7 @@ function toExplorerShift(shift: ApiActivityShift): ActivityShift {
       description: m.description,
       sector_path: m.sectorPath,
       match_confidence: m.matchConfidence,
+      ...(typeof m.explicit === "boolean" ? { explicit: m.explicit } : {}),
     })),
     transition_element_candidates: shift.transitionElementCandidates.map(
       (c) => ({
@@ -127,6 +134,8 @@ function toExplorerShift(shift: ApiActivityShift): ActivityShift {
         }
       : {}),
     transition_element_gate_domain: shift.transitionElementGateDomain ?? null,
+    shadow_element_id: shift.shadowElement?.id ?? shift.shadowElementId ?? null,
+    shadow_element_status: shift.shadowElement?.status ?? null,
   };
 }
 
@@ -147,10 +156,9 @@ function toExplorerMeasure(m: ApiExtractedMeasure): Measure {
   };
 }
 
-/** Fetches every plan that's been through scoreMeasures and returns them in
- * the same shape as the static measures JSON files. Returns [] (not a
- * thrown error) if the pipeline API is unreachable, so the static list
- * still renders on its own. */
+/** Fetches every plan that's been through scoreMeasures and returns them as
+ * MunicipalityMeasures[]. Returns [] (not a thrown error) if the pipeline
+ * API is unreachable. */
 export async function fetchPipelineMeasures(): Promise<MunicipalityMeasures[]> {
   const base = getClimatePlansPipelineApiUrl();
   try {
@@ -189,10 +197,7 @@ export async function fetchPipelineMeasures(): Promise<MunicipalityMeasures[]> {
       })
       .filter((m) => m.measures.length > 0);
   } catch (err) {
-    console.warn(
-      "[pipeline-measures] climate-plans-pipeline unreachable, showing static data only",
-      err,
-    );
+    console.warn("[pipeline-measures] climate-plans-pipeline unreachable", err);
     return [];
   }
 }

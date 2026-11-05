@@ -6,15 +6,11 @@ export function PlanAnatomyView({
 }: {
   records: ExploreMunicipalityRecord[];
 }) {
-  const withScope = records.filter(
-    (r) => r.documentTitle || r.primaryFocus || r.planPeriodStart,
-  );
-
   return (
     <div className="space-y-4">
       <MethodologyPanel
-        data="plan_scope_*.json (document type, period, mitigation vs adaptation) plus municipality-sources (URL, adopted year) and pipeline markdown length. Extracted / climate / groups are pipeline commitment counts (all unique texts, climateRelevant === true, then similar-groups after climate+actionable)."
-        calculation="No derived score — this is a reading table so we can see which extracts are strategies vs action plans, how long the source is, and whether Paris / quantified targets landed in emission_targets."
+        data="Live climate-plans-pipeline plan detail (commitments, markdown length) plus municipality-sources (plan name, URL, adopted year, county)."
+        calculation="No derived score — reading table for pipeline coverage: extracted / climate-relevant / similar-group counts and markdown length once a plan has been parsed."
       />
       {records.length === 0 ? (
         <p className="text-sm text-gray-02">Nothing loaded yet.</p>
@@ -25,10 +21,7 @@ export function PlanAnatomyView({
               <tr className="border-b border-gray-03/40 text-left text-gray-02">
                 <th className="px-3 py-2 font-medium">Municipality</th>
                 <th className="px-3 py-2 font-medium">Document</th>
-                <th className="px-3 py-2 font-medium">Period</th>
-                <th className="px-3 py-2 font-medium">Focus</th>
-                <th className="px-3 py-2 font-medium">Paris</th>
-                <th className="px-3 py-2 font-medium">Quantified</th>
+                <th className="px-3 py-2 font-medium">Adopted</th>
                 <th className="px-3 py-2 font-medium">Extracted</th>
                 <th className="px-3 py-2 font-medium">Climate</th>
                 <th className="px-3 py-2 font-medium">Groups</th>
@@ -44,21 +37,19 @@ export function PlanAnatomyView({
                   </td>
                   <td className="px-3 py-2 text-gray-01">
                     <div>{row.documentTitle ?? "—"}</div>
-                    <div className="text-xs text-gray-02">
-                      {row.documentType ?? ""}
-                    </div>
+                    {row.sourceUrl ? (
+                      <a
+                        href={row.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-blue-03 hover:underline"
+                      >
+                        Source PDF
+                      </a>
+                    ) : null}
                   </td>
                   <td className="px-3 py-2 text-gray-02 tabular-nums whitespace-nowrap">
-                    {row.planPeriodStart || row.planPeriodEnd
-                      ? `${row.planPeriodStart ?? "?"}–${row.planPeriodEnd ?? "?"}`
-                      : (row.adoptedYear ?? "—")}
-                  </td>
-                  <td className="px-3 py-2 text-gray-02">
-                    {row.primaryFocus ?? "—"}
-                  </td>
-                  <td className="px-3 py-2">{boolCell(row.parisMentioned)}</td>
-                  <td className="px-3 py-2">
-                    {boolCell(row.hasQuantifiedTargets)}
+                    {row.adoptedYear ?? "—"}
                   </td>
                   <td className="px-3 py-2 tabular-nums text-gray-01">
                     {row.commitmentCount}
@@ -83,21 +74,6 @@ export function PlanAnatomyView({
           </table>
         </div>
       )}
-      {withScope.length === 0 ? (
-        <p className="text-xs text-gray-02">
-          Plan-scope JSON is only present for the early Jönköping-län extracts.
-          Pipeline markdown length appears once a plan has been parsed.
-        </p>
-      ) : null}
     </div>
-  );
-}
-
-function boolCell(value: boolean | null) {
-  if (value == null) return <span className="text-gray-03">—</span>;
-  return (
-    <span className={value ? "text-green-03" : "text-pink-03"}>
-      {value ? "yes" : "no"}
-    </span>
   );
 }

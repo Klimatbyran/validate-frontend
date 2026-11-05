@@ -10,11 +10,12 @@ import {
   type TefFrameworkSectorColumn,
   type TefSectorId,
 } from "../lib/tef-framework";
+import { resolveTefIconKind } from "../lib/tef-icon-kind";
 import type {
   SectorEmissionShare,
   SectorGateMatchRate,
 } from "../lib/tef-sector-signals";
-import { IsoBox } from "./tef-iso-box";
+import { IsoBox, ISO_FRONT_H_SCALE, isoDepthOffset } from "./tef-iso-box";
 
 const MIN_VISIBLE_PILLAR_H = 8;
 const MAX_PILLAR_H = 240;
@@ -103,7 +104,12 @@ export function TefFramework3dView({
     return { heights, maxHeightPx };
   }, [columns, emissionShares, heightMode]);
 
-  const pillarSvgH = columnHeights.maxHeightPx + PILLAR_DEPTH + 4;
+  const pillarDepthDy = isoDepthOffset(PILLAR_DEPTH).dy;
+  const pillarSvgH =
+    columnHeights.maxHeightPx * ISO_FRONT_H_SCALE +
+    pillarDepthDy +
+    PILLAR_DEPTH * 0.12 +
+    4;
   const expandedColumn =
     selectedSectorId == null
       ? null
@@ -204,10 +210,10 @@ export function TefFramework3dView({
 
         <p className="text-xs text-gray-02 mt-4 text-center max-w-4xl mx-auto">
           {expandedColumn
-            ? "Expanded sector — cubes show TEF names. Click a cube for detail, or Back to all sectors."
+            ? "Expanded sector — cubes show TEF titles and catalogue codes. Click a cube for detail, or Back to all sectors."
             : `Pillars are bottom-aligned and scaled to the tallest mapped sector (${
                 heightMode === "share" ? "by emission share" : "by tonnes"
-              }). Click a sector to expand it with named TEF cubes.`}
+              }). Compact cubes use topic icons; click a sector to expand with TEF codes.`}
           {emissionShares.totalTonnes <= 0
             ? " No sector emissions matched this scope yet — pillars stay at minimum height."
             : ""}
@@ -243,7 +249,8 @@ function ExpandedSectorView({
   onBack: () => void;
 }) {
   const hitSum = column.cells.reduce((s, c) => s + c.hitCount, 0);
-  const svgW = PILLAR_W_EXPANDED + PILLAR_DEPTH;
+  const { dx: pillarDx, dy: pillarDy } = isoDepthOffset(PILLAR_DEPTH);
+  const svgW = PILLAR_W_EXPANDED + pillarDx;
 
   return (
     <div className="space-y-4">
@@ -271,7 +278,7 @@ function ExpandedSectorView({
           >
             <IsoBox
               x={0}
-              y={pillarSvgH - heightPx - PILLAR_DEPTH * 0.42}
+              y={pillarSvgH - heightPx * ISO_FRONT_H_SCALE - pillarDy}
               w={PILLAR_W_EXPANDED}
               h={heightPx}
               d={PILLAR_DEPTH}
@@ -334,7 +341,8 @@ function SectorColumn({
   onSelectSector: () => void;
   onSelectTefId: (id: string) => void;
 }) {
-  const svgW = PILLAR_W + PILLAR_DEPTH;
+  const { dx: pillarDx, dy: pillarDy } = isoDepthOffset(PILLAR_DEPTH);
+  const svgW = PILLAR_W + pillarDx;
 
   return (
     <div className="flex flex-col items-center min-w-0 rounded-md px-0.5 py-1.5 transition-colors hover:bg-gray-04/40">
@@ -353,7 +361,7 @@ function SectorColumn({
         >
           <IsoBox
             x={0}
-            y={pillarSvgH - heightPx - PILLAR_DEPTH * 0.42}
+            y={pillarSvgH - heightPx * ISO_FRONT_H_SCALE - pillarDy}
             w={PILLAR_W}
             h={heightPx}
             d={PILLAR_DEPTH}
@@ -477,10 +485,9 @@ function TefCubeGrid({
   const faceW = expanded ? TEF_CUBE_EXPANDED_W : TEF_CUBE;
   const faceH = expanded ? TEF_CUBE_EXPANDED_H : TEF_CUBE;
   const depth = expanded ? TEF_CUBE_EXPANDED_D : TEF_CUBE_DEPTH;
-  const dx = depth * 0.72;
-  const dy = depth * 0.42;
+  const { dx, dy } = isoDepthOffset(depth);
   const cubeSvgW = Math.ceil(faceW + dx);
-  const cubeSvgH = Math.ceil(faceH + dy + 2);
+  const cubeSvgH = Math.ceil(faceH * ISO_FRONT_H_SCALE + dy + 2);
 
   return (
     <div
@@ -497,10 +504,12 @@ function TefCubeGrid({
         const intensity =
           maxMetric <= 0 ? 0.45 : Math.max(0.2, value / maxMetric);
         const isSelected = selectedTefId === cell.stableId;
-        const code =
-          cell.index?.replace(/^T-\d/, "") ?? cell.stableId.slice(0, 6);
         const valueLabel =
           metric === "strength" ? `${Math.round(value * 100)}%` : String(value);
+        const iconKind = expanded
+          ? undefined
+          : resolveTefIconKind(cell.title, cell.sectorPath);
+        const faceCode = expanded ? formatTefFaceCode(cell) : null;
 
         return (
           <button
@@ -531,12 +540,10 @@ function TefCubeGrid({
                 rgb={rgb}
                 intensity={intensity}
                 selected={isSelected}
-                frontLabel={expanded ? undefined : code}
+                frontIcon={iconKind}
                 frontValue={expanded ? undefined : valueLabel}
                 frontTitle={expanded ? cell.title : undefined}
-                frontMeta={
-                  expanded ? `${cell.index ?? code} · ${valueLabel}` : undefined
-                }
+                frontMeta={faceCode ? `${faceCode} · ${valueLabel}` : undefined}
               />
             </svg>
           </button>
@@ -544,4 +551,10 @@ function TefCubeGrid({
       })}
     </div>
   );
+}
+
+/** Prefer catalogue index (e.g. T-1A1a-TE-6); fall back to a short stable id. */
+function formatTefFaceCode(cell: TefFrameworkCell): string {
+  if (cell.index) return cell.index;
+  return cell.stableId.slice(0, 10);
 }

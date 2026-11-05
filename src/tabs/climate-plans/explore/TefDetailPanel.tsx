@@ -5,14 +5,26 @@ import { CONFIDENCE_CLASSES } from "../lib/tef-groups";
 import type { TefFrameworkCell } from "../lib/tef-framework";
 import {
   hitMatchesEvidenceFilter,
+  hitMatchesImpliedFilter,
   summarizeTefHits,
   type TefEvidenceFilter,
+  type TefImpliedFilter,
 } from "../lib/tef-detail-summary";
 
 type Hit = TefFrameworkCell["hits"][number];
 
+const IMPLIED_FILTER_OPTIONS: {
+  value: TefImpliedFilter;
+  label: string;
+}[] = [
+  { value: "all", label: "All" },
+  { value: "implied", label: "Only implied" },
+  { value: "exclude-implied", label: "Exclude implied" },
+];
+
 export function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
   const [filter, setFilter] = useState<TefEvidenceFilter>(null);
+  const [impliedFilter, setImpliedFilter] = useState<TefImpliedFilter>("all");
   const [openMuni, setOpenMuni] = useState<string | null>(null);
   const [openHit, setOpenHit] = useState<string | null>(null);
 
@@ -21,9 +33,12 @@ export function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
     [cell.hits, cell.municipalityCount],
   );
 
+  const hasExplicitJudgment = summary.explicitCount + summary.impliedCount > 0;
+
   const byMuni = useMemo(() => {
     const map = new Map<string, { name: string; hits: Hit[] }>();
     for (const hit of cell.hits) {
+      if (!hitMatchesImpliedFilter(hit, impliedFilter)) continue;
       if (!hitMatchesEvidenceFilter(hit, filter)) continue;
       const existing = map.get(hit.municipalityId);
       if (existing) existing.hits.push(hit);
@@ -34,13 +49,19 @@ export function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
         });
     }
     return [...map.values()].sort((a, b) => b.hits.length - a.hits.length);
-  }, [cell.hits, filter]);
+  }, [cell.hits, filter, impliedFilter]);
 
   const description =
     cell.hits.find((h) => h.description.trim())?.description ?? "";
 
   const toggleFilter = (next: TefEvidenceFilter) => {
     setFilter((prev) => (prev === next ? null : next));
+    setOpenMuni(null);
+    setOpenHit(null);
+  };
+
+  const changeImpliedFilter = (next: TefImpliedFilter) => {
+    setImpliedFilter(next);
     setOpenMuni(null);
     setOpenHit(null);
   };
@@ -79,9 +100,46 @@ export function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
       </div>
 
       <div className="px-4 py-3 space-y-1.5">
-        <div className="flex items-center justify-between gap-2 mb-1">
-          <div className="text-xs font-semibold uppercase tracking-wide text-gray-02">
-            Evidence
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
+            <div className="text-xs font-semibold uppercase tracking-wide text-gray-02">
+              Evidence
+            </div>
+            {hasExplicitJudgment ? (
+              <div
+                className="flex rounded-md overflow-hidden border border-gray-03/40 text-xs"
+                role="group"
+                aria-label="Filter by explicit vs implied match"
+              >
+                {IMPLIED_FILTER_OPTIONS.map(({ value, label }) => {
+                  const count =
+                    value === "all"
+                      ? summary.hitCount
+                      : value === "implied"
+                        ? summary.impliedCount
+                        : summary.hitCount - summary.impliedCount;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => changeImpliedFilter(value)}
+                      className={cn(
+                        "px-2.5 py-1 transition-colors",
+                        impliedFilter === value
+                          ? "bg-gray-03/50 text-gray-01 font-medium"
+                          : "text-gray-02 hover:text-gray-01",
+                      )}
+                      aria-pressed={impliedFilter === value}
+                    >
+                      {label}
+                      <span className="ml-1 tabular-nums opacity-80">
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
           {filter ? (
             <button
@@ -93,7 +151,18 @@ export function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
             </button>
           ) : (
             <span className="text-xs text-gray-02">
-              Click a chip above to filter · expand a place for quotes
+              {hasExplicitJudgment
+                ? [
+                    `${summary.explicitCount} explicit`,
+                    `${summary.impliedCount} implied`,
+                    summary.unknownExplicitCount > 0
+                      ? `${summary.unknownExplicitCount} unlabeled`
+                      : null,
+                    "expand a place for quotes",
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                : "Click a chip above to filter · expand a place for quotes"}
             </span>
           )}
         </div>
@@ -370,7 +439,9 @@ function ConfidenceStrip({
               )}
             >
               {key}
-              <span className="tabular-nums font-normal opacity-80">{count}</span>
+              <span className="tabular-nums font-normal opacity-80">
+                {count}
+              </span>
             </button>
           );
         })}
@@ -386,7 +457,10 @@ function MuniMiniBars({ hits }: { hits: Hit[] }) {
     hits.reduce((s, h) => s + h.interventionScore, 0) /
     Math.max(hits.length, 1);
   return (
-    <div className="hidden sm:flex items-center gap-1 shrink-0" title="Avg shift / intervention">
+    <div
+      className="hidden sm:flex items-center gap-1 shrink-0"
+      title="Avg shift / intervention"
+    >
       <span className="w-8 h-1 rounded-full bg-gray-03/30 overflow-hidden">
         <span
           className="block h-full bg-blue-03"
@@ -400,6 +474,27 @@ function MuniMiniBars({ hits }: { hits: Hit[] }) {
         />
       </span>
     </div>
+  );
+}
+
+function ExplicitBadge({ explicit }: { explicit: boolean | undefined }) {
+  if (explicit === undefined) return null;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border uppercase tracking-wide",
+        explicit
+          ? "border-green-03/40 bg-green-03/10 text-green-03"
+          : "border-gray-03 bg-gray-03/50 text-gray-01",
+      )}
+      title={
+        explicit
+          ? "The measure's own text directly names this TEF"
+          : "Only a reasonable inference — not directly named by the measure's text"
+      }
+    >
+      {explicit ? "explicit" : "implied"}
+    </span>
   );
 }
 
@@ -426,71 +521,83 @@ function HitRow({
         className="w-full text-left px-3 py-2 hover:bg-gray-03/10 transition-colors space-y-1"
       >
         <div className="flex items-start gap-2">
-          <span
-            className={cn(
-              "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border capitalize shrink-0 mt-0.5",
-              CONFIDENCE_CLASSES[hit.confidence],
-            )}
-          >
-            {hit.confidence}
-          </span>
-          <p
-            className={cn(
-              "text-sm text-gray-01 leading-snug flex-1 min-w-0",
-              !expanded && "line-clamp-1",
-            )}
-          >
-            <span className="italic">“{hit.measureText}”</span>
-          </p>
+          <div className="flex flex-wrap items-center gap-1 shrink-0 mt-0.5 max-w-[7.5rem]">
+            <span
+              className={cn(
+                "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border capitalize",
+                CONFIDENCE_CLASSES[hit.confidence],
+              )}
+            >
+              {hit.confidence}
+            </span>
+            <ExplicitBadge explicit={hit.explicit} />
+          </div>
+          <div className="flex-1 min-w-0 space-y-1">
+            <p
+              className={cn(
+                "text-sm text-gray-01 leading-snug",
+                !expanded && "line-clamp-1",
+              )}
+            >
+              <span className="italic">“{hit.measureText}”</span>
+            </p>
+            {!expanded ? (
+              <div className="text-xs text-gray-02 truncate">
+                {[hit.shiftFrom, hit.shiftTo].filter(Boolean).join(" → ") ||
+                  "—"}
+                {hit.need ? ` · ${hit.need}` : ""}
+              </div>
+            ) : null}
+          </div>
           <span className="text-[11px] tabular-nums text-gray-02 shrink-0 mt-0.5">
             <span className="text-blue-03">{hit.shiftScore}</span>
             <span className="text-gray-03/70">/</span>
             <span className="text-green-03">{hit.interventionScore}</span>
           </span>
         </div>
-        {!expanded ? (
-          <div className="pl-10 text-xs text-gray-02 truncate">
-            {[hit.shiftFrom, hit.shiftTo].filter(Boolean).join(" → ") || "—"}
-            {hit.need ? ` · ${hit.need}` : ""}
-          </div>
-        ) : null}
       </button>
       {expanded ? (
-        <div className="px-3 pb-3 pl-[2.75rem] space-y-2">
-          <div className="grid grid-cols-3 gap-2 text-xs">
-            {[
-              { label: "From", value: hit.shiftFrom },
-              { label: "To", value: hit.shiftTo },
-              { label: "Need", value: hit.need },
-            ].map(({ label, value }) => (
-              <div
-                key={label}
-                className="rounded-md bg-gray-04/60 border border-gray-03/20 px-2 py-1.5"
-              >
-                <div className="text-[10px] uppercase tracking-wide text-gray-02 mb-0.5">
-                  {label}
-                </div>
-                <div className="text-gray-01 leading-snug">{value || "—"}</div>
-              </div>
-            ))}
-          </div>
-          {whoWhatHow.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {whoWhatHow.map(({ label, value }) => (
-                <span
+        <div className="px-3 pb-3 flex items-start gap-2">
+          <div className="w-[7.5rem] shrink-0" aria-hidden />
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              {[
+                { label: "From", value: hit.shiftFrom },
+                { label: "To", value: hit.shiftTo },
+                { label: "Need", value: hit.need },
+              ].map(({ label, value }) => (
+                <div
                   key={label}
-                  className="inline-flex items-baseline gap-1 rounded-md bg-green-03/10 border border-green-03/20 px-2 py-1 text-xs"
+                  className="rounded-md bg-gray-04/60 border border-gray-03/20 px-2 py-1.5"
                 >
-                  <span className="font-semibold text-green-03">{label}</span>
-                  <span className="text-gray-01">{value}</span>
-                </span>
+                  <div className="text-[10px] uppercase tracking-wide text-gray-02 mb-0.5">
+                    {label}
+                  </div>
+                  <div className="text-gray-01 leading-snug">
+                    {value || "—"}
+                  </div>
+                </div>
               ))}
             </div>
-          ) : (
-            <p className="text-xs text-gray-02 italic">
-              No who / what / how filled
-            </p>
-          )}
+            {whoWhatHow.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {whoWhatHow.map(({ label, value }) => (
+                  <span
+                    key={label}
+                    className="inline-flex items-baseline gap-1 rounded-md bg-green-03/10 border border-green-03/20 px-2 py-1 text-xs"
+                  >
+                    <span className="font-semibold text-green-03">{label}</span>
+                    <span className="text-gray-01">{value}</span>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-02 italic">
+                No who / what / how filled
+              </p>
+            )}
+          </div>
+          <div className="w-8 shrink-0" aria-hidden />
         </div>
       ) : null}
     </li>

@@ -6,14 +6,20 @@ import {
 } from "./municipality-names";
 import {
   collectTefHits,
+  countAdaptationCommitments,
   countClimateCommitmentGroups,
+  countOwnCommitments,
+  explicitTefShare,
+  highScoreShare,
+  interventionActiveShare,
   interventionSpecificityShare,
   mapKpiValue,
+  mergeRegionRecords,
+  shadowHitCount,
   tefGroupStrengths,
+  tefMatchRate,
   topTefsByHitCount,
 } from "./explore-aggregates";
-import { alignmentRows } from "./explore-alignment";
-import { trackGoal } from "./explore-goals";
 import {
   emissionBucketForTefGroup,
   tefGroupFromSectorPath,
@@ -24,6 +30,7 @@ import type { Measure as MeasureRow } from "./measures-types";
 function measureWithTef(
   groupPath: string,
   confidence: "high" | "mid" | "low",
+  explicit?: boolean,
 ): MeasureRow {
   return {
     measure_text: `Measure ${groupPath} ${confidence}`,
@@ -46,6 +53,7 @@ function measureWithTef(
             description: `TEF for ${groupPath}`,
             sector_path: groupPath,
             match_confidence: confidence,
+            ...(typeof explicit === "boolean" ? { explicit } : {}),
           },
         ],
         transition_element_candidates: [],
@@ -73,19 +81,12 @@ function record(
     commitmentSource: "pipeline-commitments",
     climateRelevantCommitmentCount: 3,
     climateCommitmentGroupCount: 2,
+    adaptationCommitmentCount: 1,
+    ownCommitmentCount: 3,
+    companionReferenceCount: 1,
     markdownChars: 12000,
     tefHits: [],
-    goals: [],
-    hasQuantifiedTargets: true,
-    parisMentioned: true,
-    onePointFiveMentioned: true,
-    carbonBudgetReferenced: true,
     documentTitle: "Strategi",
-    documentType: "climate_strategy",
-    adoptionDate: "2024-10-31",
-    planPeriodStart: "2024",
-    planPeriodEnd: "2045",
-    primaryFocus: "mitigation",
     adoptedYear: 2024,
     sourceUrl: "https://example.test",
     county: "Jönköpings län",
@@ -134,6 +135,18 @@ describe("TEF grouping and strength", () => {
       interventionHow: "procurement",
       interventionScore: 5,
     });
+    expect(hit?.explicit).toBeUndefined();
+  });
+
+  it("forwards explicit / implied judgment when present on the match", () => {
+    const [implied] = collectTefHits([
+      measureWithTef("Transport > Road", "mid", false),
+    ]);
+    const [explicit] = collectTefHits([
+      measureWithTef("Transport > Road", "high", true),
+    ]);
+    expect(implied?.explicit).toBe(false);
+    expect(explicit?.explicit).toBe(true);
   });
 });
 
@@ -177,30 +190,40 @@ describe("climate commitment groups", () => {
           climateRelevant: true,
           actionable: true,
           similarGroupId: "g1",
+          adaptation: false,
+          originatesFrom: [],
         },
         {
           text: "a-dup",
           climateRelevant: true,
           actionable: true,
           similarGroupId: "g1",
+          adaptation: false,
+          originatesFrom: [],
         },
         {
           text: "b",
           climateRelevant: true,
           actionable: true,
           similarGroupId: null,
+          adaptation: false,
+          originatesFrom: [],
         },
         {
           text: "not-climate",
           climateRelevant: false,
           actionable: true,
           similarGroupId: null,
+          adaptation: false,
+          originatesFrom: [],
         },
         {
           text: "not-actionable",
           climateRelevant: true,
           actionable: false,
           similarGroupId: null,
+          adaptation: false,
+          originatesFrom: [],
         },
       ]),
     ).toBe(2);
@@ -208,92 +231,144 @@ describe("climate commitment groups", () => {
 });
 
 describe("map KPIs", () => {
-  it("returns commitment count and boolean Paris flag", () => {
+  it("returns commitment counts from live pipeline fields", () => {
     const row = record({});
     expect(mapKpiValue(row, "uniqueCommitments", null).numeric).toBe(4);
     expect(mapKpiValue(row, "climateRelevantCommitments", null).numeric).toBe(
       3,
     );
     expect(mapKpiValue(row, "climateCommitmentGroups", null).numeric).toBe(2);
-    expect(mapKpiValue(row, "parisMentioned", null).booleanValue).toBe(true);
     expect(mapKpiValue(row, "climateRelevantShare", null).numeric).toBeCloseTo(
       0.75,
     );
   });
-});
 
-describe("emissions vs TEF alignment", () => {
-  it("flags transport-heavy emissions vs industry TEFs", () => {
-    const row = record({
-      tefHits: [
+  it("computes measure quality and TEF KPIs from scored measures", () => {
+    const filled: MeasureRow = {
+      ...measureWithTef("Transport > Road", "high", true),
+      activity_shift_score: 6,
+      intervention_score: 6,
+    };
+    const empty: MeasureRow = {
+      ...filled,
+      measure_text: "empty",
+      intervention_who: "none",
+      intervention_what: "none",
+      intervention_type: "none",
+      intervention_score: 2,
+      activity_shift_score: 2,
+      activity_shifts: [
         {
-          stableId: "wood-1",
-          shortLabel: "Wood",
-          sectorPath: "Industry > Wood",
-          group: "Industry",
-          confidence: "high",
-          measureText: "bioeconomy",
-          description: "",
-          shiftFrom: "fossil",
-          shiftTo: "bio",
-          need: "materials",
-          shiftScore: 4,
-          interventionWho: "municipality",
-          interventionWhat: "procurement",
-          interventionHow: "policy",
-          interventionScore: 5,
+          ...filled.activity_shifts[0]!,
+          transition_element_matches: [],
+          shadow_element_id: "shadow-1",
         },
       ],
-      adoptedYear: 2022,
-    });
-    const { year, rows } = alignmentRows(
-      row,
-      {
-        municipalityName: "Nässjö",
-        byYear: {
-          "2022": { Transporter: 80, Industri: 20 },
-          "2023": { Transporter: 70, Industri: 30 },
-        },
-      },
-      "latest",
-    );
-    expect(year).toBe("2023");
-    const transport = rows.find((r) => r.bucket === "transport");
-    const industry = rows.find((r) => r.bucket === "industry");
-    expect(transport?.emissionShare).toBeCloseTo(0.7);
-    expect(transport?.emissionTonnes).toBe(70);
-    expect(transport?.tefShare).toBe(0);
-    expect(transport?.tefCount).toBe(0);
-    expect(industry?.tefShare).toBe(1);
-    expect(industry?.tefCount).toBe(1);
-  });
-});
+    };
+    const measures = [filled, empty];
+    expect(interventionActiveShare(measures)).toBeCloseTo(0.5);
+    expect(highScoreShare(measures, "intervention_score")).toBeCloseTo(0.5);
+    expect(highScoreShare(measures, "activity_shift_score")).toBeCloseTo(0.5);
+    expect(tefMatchRate(measures)).toBeCloseTo(0.5);
+    expect(shadowHitCount(measures)).toBe(1);
+    expect(explicitTefShare(collectTefHits(measures))).toBe(1);
 
-describe("goal tracking", () => {
-  it("marks a linear path off-track when emissions barely moved", () => {
-    const result = trackGoal(
-      {
-        description: "50% by 2030",
-        reductionPercent: 50,
-        baselineYear: 2020,
-        targetYear: 2030,
-        scope: "geographic_area",
-        sector: "",
-        commitmentStrength: "adopted_goal",
-        goalType: "emission_reduction",
-        sourceQuote: "",
-      },
-      {
-        municipalityName: "Nässjö",
-        byYear: {
-          "2020": { Transporter: 100 },
-          "2025": { Transporter: 98 },
+    const rejectedShadow: MeasureRow = {
+      ...empty,
+      measure_text: "rejected-shadow",
+      activity_shifts: [
+        {
+          ...empty.activity_shifts[0]!,
+          shadow_element_id: "shadow-rejected",
+          shadow_element_status: "rejected",
         },
-      },
-      2025,
+      ],
+    };
+    expect(shadowHitCount([...measures, rejectedShadow])).toBe(1);
+
+    const row = record({ measures, tefHits: collectTefHits(measures) });
+    expect(mapKpiValue(row, "measureCount", null).numeric).toBe(2);
+    expect(
+      mapKpiValue(row, "interventionActiveShare", null).numeric,
+    ).toBeCloseTo(0.5);
+    expect(
+      mapKpiValue(row, "interventionSpecificityShare", null).numeric,
+    ).toBeCloseTo(0.5);
+    expect(mapKpiValue(row, "adaptationShare", null).numeric).toBeCloseTo(0.25);
+    expect(mapKpiValue(row, "ownCommitmentShare", null).numeric).toBeCloseTo(
+      0.75,
     );
-    expect(result.status).toBe("off-track");
-    expect(result.expectedRemainingShare).toBeCloseTo(0.75);
-    expect(result.actualRemainingShare).toBeCloseTo(0.98);
+    expect(mapKpiValue(row, "companionReferenceCount", null).numeric).toBe(1);
+    expect(mapKpiValue(row, "shadowHitCount", null).numeric).toBe(1);
+  });
+
+  it("counts distinct adaptation and own commitment texts", () => {
+    expect(
+      countAdaptationCommitments([
+        {
+          text: "a",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: null,
+          adaptation: true,
+          originatesFrom: [],
+        },
+        {
+          text: "a",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: null,
+          adaptation: true,
+          originatesFrom: [],
+        },
+        {
+          text: "b",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: null,
+          adaptation: false,
+          originatesFrom: ["region"],
+        },
+      ]),
+    ).toBe(1);
+    expect(
+      countOwnCommitments([
+        {
+          text: "a",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: null,
+          adaptation: false,
+          originatesFrom: [],
+        },
+        {
+          text: "a",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: null,
+          adaptation: false,
+          originatesFrom: [],
+        },
+        {
+          text: "b",
+          climateRelevant: true,
+          actionable: true,
+          similarGroupId: null,
+          adaptation: false,
+          originatesFrom: ["eu"],
+        },
+      ]),
+    ).toBe(1);
+  });
+
+  it("sums companion refs when merging region records", () => {
+    const merged = mergeRegionRecords(
+      [
+        record({ name: "A", companionReferenceCount: 1 }),
+        record({ name: "B", companionReferenceCount: 2 }),
+      ],
+      "Jönköping",
+    );
+    expect(merged.companionReferenceCount).toBe(3);
   });
 });

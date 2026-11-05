@@ -3,35 +3,26 @@ import {
   getUnearthApiBaseUrl,
 } from "@/config/api-env";
 import { fetchPipelineMeasures } from "./pipeline-measures";
-import { loadStaticMeasures } from "./static-measures";
 import type { Measure, MunicipalityMeasures } from "./measures-types";
 import type {
   ExploreDataSource,
   ExploreDataset,
   ExploreMunicipalityRecord,
   PipelineCommitment,
-  QuantifiedGoal,
   SectorYearEmissions,
 } from "./explore-types";
 import {
   collectTefHits,
+  countAdaptationCommitments,
   countClimateCommitmentGroups,
   countClimateRelevantCommitments,
-  parsePercent,
-  parseYear,
+  countOwnCommitments,
 } from "./explore-aggregates";
 import {
   foldPlaceName,
   lookupByFoldedName,
   namesMatch,
 } from "./municipality-names";
-
-interface StaticPlanIndexEntry {
-  id: string;
-  name: string;
-  folder: string;
-  files: { plan_scope?: string; emission_targets?: string };
-}
 
 interface MunicipalitySourceRow {
   municipality: string;
@@ -41,50 +32,10 @@ interface MunicipalitySourceRow {
   planName: string | null;
 }
 
-function firstNamedPayload(raw: unknown): Record<string, unknown> | null {
-  if (!raw || typeof raw !== "object") return null;
-  const obj = raw as Record<string, unknown>;
-  for (const [key, value] of Object.entries(obj)) {
-    if (key.startsWith("_")) continue;
-    if (value && typeof value === "object")
-      return value as Record<string, unknown>;
-  }
-  return null;
-}
-
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object"
     ? (value as Record<string, unknown>)
     : null;
-}
-
-function asString(value: unknown): string | null {
-  return typeof value === "string" && value.trim() ? value : null;
-}
-
-function asBoolean(value: unknown): boolean | null {
-  return typeof value === "boolean" ? value : null;
-}
-
-function parseGoals(payload: Record<string, unknown> | null): QuantifiedGoal[] {
-  const list = payload?.own_commitments;
-  if (!Array.isArray(list)) return [];
-  return list.map((item) => {
-    const row = asRecord(item) ?? {};
-    return {
-      description: asString(row.goal_description) ?? "",
-      reductionPercent: parsePercent(
-        row.reduction_percentage as string | number | null,
-      ),
-      baselineYear: parseYear(row.baseline_year as string | number | null),
-      targetYear: parseYear(row.target_year as string | number | null),
-      scope: asString(row.scope) ?? "",
-      sector: asString(row.sector) ?? "",
-      commitmentStrength: asString(row.commitment_strength) ?? "",
-      goalType: asString(row.goal_type) ?? "",
-      sourceQuote: asString(row.source_quote) ?? "",
-    };
-  });
 }
 
 function emptyRecord(id: string, name: string): ExploreMunicipalityRecord {
@@ -97,19 +48,12 @@ function emptyRecord(id: string, name: string): ExploreMunicipalityRecord {
     commitmentSource: "measures-as-proxy",
     climateRelevantCommitmentCount: null,
     climateCommitmentGroupCount: null,
+    adaptationCommitmentCount: null,
+    ownCommitmentCount: null,
+    companionReferenceCount: null,
     markdownChars: null,
     tefHits: [],
-    goals: [],
-    hasQuantifiedTargets: null,
-    parisMentioned: null,
-    onePointFiveMentioned: null,
-    carbonBudgetReferenced: null,
     documentTitle: null,
-    documentType: null,
-    adoptionDate: null,
-    planPeriodStart: null,
-    planPeriodEnd: null,
-    primaryFocus: null,
     adoptedYear: null,
     sourceUrl: null,
     county: null,
@@ -140,59 +84,34 @@ function addSource(
   if (!record.dataSources.includes(source)) record.dataSources.push(source);
 }
 
-async function loadJson(url: string): Promise<unknown | null> {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const text = await res.text();
-    if (!text.trim()) return null;
-    return JSON.parse(text) as unknown;
-  } catch {
-    return null;
-  }
-}
-
-async function loadStaticPlanFiles(): Promise<{
-  targets: { name: string; payload: Record<string, unknown> }[];
-  scopes: { name: string; payload: Record<string, unknown> }[];
-}> {
-  const index = (await loadJson("/climate-plans/index.json")) as {
-    municipalities?: StaticPlanIndexEntry[];
-  } | null;
-  const entries = index?.municipalities ?? [];
-  const targets: { name: string; payload: Record<string, unknown> }[] = [];
-  const scopes: { name: string; payload: Record<string, unknown> }[] = [];
-
-  for (const entry of entries) {
-    if (entry.files.emission_targets) {
-      const raw = await loadJson(
-        `/climate-plans/${entry.folder}/${entry.files.emission_targets}`,
-      );
-      const payload = firstNamedPayload(raw);
-      if (payload) targets.push({ name: entry.name, payload });
-    }
-    if (entry.files.plan_scope) {
-      const raw = await loadJson(
-        `/climate-plans/${entry.folder}/${entry.files.plan_scope}`,
-      );
-      const payload = firstNamedPayload(raw);
-      if (payload) scopes.push({ name: entry.name, payload });
-    }
-  }
-  return { targets, scopes };
-}
-
+/** Shape of GET /plans/:id used by loadPipelineExtras (detail, not list). */
 interface PipelinePlanListItem {
   id: string;
   extractedMunicipalityName: string | null;
   municipality: { id: string; name: string } | null;
   markdown?: string | null;
+  documentReferences?: Array<{
+    id: string;
+    groupId?: string | null;
+    relationship: string;
+  }>;
   commitments?: Array<{
     text: string;
     climateRelevant: boolean | null;
     actionable?: boolean | null;
     similarGroupId?: string | null;
+    adaptation?: boolean | null;
+    originatesFrom?: string[] | null;
   }>;
+}
+
+/** Deduped companion refs from plan detail. Null when the field was not loaded. */
+function companionRefCount(extra: PipelinePlanListItem): number | null {
+  if (!Array.isArray(extra.documentReferences)) return null;
+  const companions = extra.documentReferences.filter(
+    (r) => r.relationship === "companion",
+  );
+  return new Set(companions.map((r) => r.groupId ?? r.id)).size;
 }
 
 async function loadPipelineExtras(): Promise<PipelinePlanListItem[]> {
@@ -309,46 +228,44 @@ function applyMeasures(
 }
 
 export async function loadExploreDataset(): Promise<ExploreDataset> {
-  const [staticMeasures, pipelineMeasures, planFiles, pipelineExtras, sources] =
-    await Promise.all([
-      loadStaticMeasures(),
-      fetchPipelineMeasures(),
-      loadStaticPlanFiles(),
-      loadPipelineExtras(),
-      loadMunicipalitySources(),
-    ]);
+  const [pipelineMeasures, pipelineExtras, sources] = await Promise.all([
+    fetchPipelineMeasures(),
+    loadPipelineExtras(),
+    loadMunicipalitySources(),
+  ]);
 
   const byKey = new Map<string, ExploreMunicipalityRecord>();
-  const measuresOnly: MunicipalityMeasures[] = [
-    ...staticMeasures,
-    ...pipelineMeasures,
-  ];
-
-  for (const row of staticMeasures) {
-    const record = upsert(byKey, row.name, row.id);
-    record.id = row.id;
-    record.name = row.name;
-    applyMeasures(record, row.measures, "static-measures");
-  }
+  const measuresOnly: MunicipalityMeasures[] = [...pipelineMeasures];
 
   for (const row of pipelineMeasures) {
     const record = upsert(byKey, row.name, row.id);
-    if (record.measures.length === 0) {
-      applyMeasures(record, row.measures, "pipeline-measures");
-    } else {
-      addSource(record, "pipeline-measures");
-    }
+    applyMeasures(record, row.measures, "pipeline-measures");
   }
 
+  // pipelineExtras preserves GET /plans order (newest first). First write
+  // wins so an older sibling plan for the same municipality cannot overwrite
+  // the newest plan's companions / commitments / markdown.
   for (const extra of pipelineExtras) {
     const name = extra.municipality?.name ?? extra.extractedMunicipalityName;
     if (!name) continue;
     const record = upsert(byKey, name, extra.id);
-    if (typeof extra.markdown === "string" && extra.markdown.length > 0) {
+    if (
+      record.markdownChars == null &&
+      typeof extra.markdown === "string" &&
+      extra.markdown.length > 0
+    ) {
       record.markdownChars = extra.markdown.length;
       addSource(record, "pipeline-markdown");
     }
-    if (Array.isArray(extra.commitments) && extra.commitments.length > 0) {
+    if (record.companionReferenceCount == null) {
+      const companions = companionRefCount(extra);
+      if (companions != null) record.companionReferenceCount = companions;
+    }
+    if (
+      record.commitmentSource !== "pipeline-commitments" &&
+      Array.isArray(extra.commitments) &&
+      extra.commitments.length > 0
+    ) {
       const unique = new Set(extra.commitments.map((c) => c.text));
       const pipelineCommitments: PipelineCommitment[] = extra.commitments.map(
         (c) => ({
@@ -356,6 +273,10 @@ export async function loadExploreDataset(): Promise<ExploreDataset> {
           climateRelevant: c.climateRelevant,
           actionable: c.actionable ?? null,
           similarGroupId: c.similarGroupId ?? null,
+          adaptation: c.adaptation ?? null,
+          originatesFrom: Array.isArray(c.originatesFrom)
+            ? c.originatesFrom
+            : [],
         }),
       );
       record.commitmentCount = unique.size;
@@ -364,41 +285,11 @@ export async function loadExploreDataset(): Promise<ExploreDataset> {
         countClimateRelevantCommitments(pipelineCommitments);
       record.climateCommitmentGroupCount =
         countClimateCommitmentGroups(pipelineCommitments);
+      record.adaptationCommitmentCount =
+        countAdaptationCommitments(pipelineCommitments);
+      record.ownCommitmentCount = countOwnCommitments(pipelineCommitments);
       addSource(record, "pipeline-commitments");
     }
-  }
-
-  for (const { name, payload } of planFiles.targets) {
-    const record = upsert(byKey, name, foldPlaceName(name));
-    record.goals = parseGoals(payload);
-    const summary = asRecord(payload.summary);
-    const alignment = asRecord(payload.framework_alignment);
-    record.hasQuantifiedTargets = asBoolean(summary?.has_quantified_targets);
-    record.parisMentioned = asBoolean(alignment?.paris_agreement_mentioned);
-    record.onePointFiveMentioned = asBoolean(
-      alignment?.one_point_five_mentioned,
-    );
-    record.carbonBudgetReferenced = asBoolean(
-      alignment?.carbon_budget_referenced,
-    );
-    addSource(record, "static-emission-targets");
-  }
-
-  for (const { name, payload } of planFiles.scopes) {
-    const record = upsert(byKey, name, foldPlaceName(name));
-    const summary = asRecord(payload.summary);
-    const temporal = asRecord(payload.temporal_scope);
-    const domain = asRecord(payload.policy_domain);
-    record.documentTitle = asString(summary?.document_title);
-    record.documentType = asString(summary?.document_type);
-    record.adoptionDate = asString(summary?.adoption_date);
-    record.planPeriodStart = asString(temporal?.plan_period_start);
-    record.planPeriodEnd = asString(temporal?.plan_period_end);
-    record.primaryFocus = asString(domain?.primary_focus);
-    if (record.adoptedYear == null) {
-      record.adoptedYear = parseYear(record.adoptionDate);
-    }
-    addSource(record, "static-plan-scope");
   }
 
   for (const source of sources) {
@@ -423,10 +314,7 @@ export async function loadExploreDataset(): Promise<ExploreDataset> {
   const namesForEmissions = municipalities
     .filter(
       (m) =>
-        m.measures.length > 0 ||
-        m.goals.length > 0 ||
-        m.commitmentCount > 0 ||
-        m.tefHits.length > 0,
+        m.measures.length > 0 || m.commitmentCount > 0 || m.tefHits.length > 0,
     )
     .map((m) => m.name);
   const { rows: sectorEmissions, error: sectorEmissionsError } =

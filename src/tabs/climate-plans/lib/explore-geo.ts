@@ -115,8 +115,8 @@ export async function loadSwedenGeo(
 ): Promise<GeoCollection> {
   const file =
     kind === "municipality"
-      ? "/climate-plans/geo/swedish_municipalities.geojson"
-      : "/climate-plans/geo/swedish_regions.geojson";
+      ? "/geo/sweden/swedish_municipalities.geojson"
+      : "/geo/sweden/swedish_regions.geojson";
   const res = await fetch(file);
   if (!res.ok) throw new Error(`Failed to load ${file}`);
   const raw = (await res.json()) as FeatureCollection;
