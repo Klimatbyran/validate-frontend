@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
 import { authenticatedFetch } from "@/lib/api-helpers";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 
 // "merged" is set only via confirmShadowElementMerges below, never via
 // updateShadowElementStatus's PATCH -- it always comes with a mergedIntoId,
@@ -126,7 +127,7 @@ export function useShadowElements() {
   const fetchElements = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(
+      const res = await garboAuthFetch(
         `${getClimatePlansPipelineApiUrl()}/shadow-elements`,
       );
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import type { SwimlaneStatusType } from "@/lib/types";
 
 export type PipelineStepStatus = "running" | "completed" | "failed";
@@ -80,7 +81,9 @@ export function useClimatePipelinePlans() {
 
   const fetchPlans = useCallback(async () => {
     try {
-      const res = await fetch(`${getClimatePlansPipelineApiUrl()}/plans`);
+      const res = await garboAuthFetch(
+        `${getClimatePlansPipelineApiUrl()}/plans`,
+      );
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const data = (await res.json()) as ClimatePipelinePlan[];
       setPlans(data);
