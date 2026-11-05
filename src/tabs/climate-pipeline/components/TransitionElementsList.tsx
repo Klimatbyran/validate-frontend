@@ -479,6 +479,7 @@ function recoveredMatchToShow(
 
 function TeMatchAddSlots({
   shiftId,
+  measureText,
   matchedIds,
   allCandidates,
   suggestedNew,
@@ -488,6 +489,7 @@ function TeMatchAddSlots({
   pendingSlotIds,
 }: {
   shiftId: string;
+  measureText: string;
   matchedIds: Set<string>;
   allCandidates: Array<{ stableId: string; shortLabel: string; score: number }>;
   suggestedNew: { shortLabel: string; description: string } | null;
@@ -575,6 +577,7 @@ function TeMatchAddSlots({
                 entityId={entityId}
                 reviewedSnapshot={{
                   activityShiftId: shiftId,
+                  measureText,
                   currentMatchIds: [...matchedIds],
                   addableCandidates,
                   suggestedNew: canUseSuggestedNew ? suggestedNew : null,
@@ -636,6 +639,7 @@ function ListedTeMatch({
   match,
   shiftKey,
   shiftType,
+  measureText,
   matchSource,
   allCandidates,
   canAddMore,
@@ -645,6 +649,7 @@ function ListedTeMatch({
   match: TransitionElementMatch;
   shiftKey: string;
   shiftType: string;
+  measureText: string;
   matchSource: MatchSource | null;
   allCandidates: Array<{ stableId: string; shortLabel: string; score: number }>;
   canAddMore: boolean;
@@ -668,6 +673,7 @@ function ListedTeMatch({
           entityId={entityId}
           reviewedSnapshot={{
             activityShiftId: shiftKey,
+            measureText,
             match,
             candidates: allCandidates,
           }}
@@ -979,6 +985,7 @@ function ActivityShiftTeBlock({
       {showMatches && !hideAddSlots && (
         <TeMatchAddSlots
           shiftId={shiftKey}
+          measureText={shift.measureText}
           matchedIds={matchedIds}
           allCandidates={allCandidates}
           suggestedNew={suggestedNew}
@@ -1020,6 +1027,7 @@ function ListedMatches({
           match={match}
           shiftKey={shiftKey}
           shiftType={shift.type}
+          measureText={shift.measureText}
           matchSource={listedMatchSource(
             labelSources,
             reviewerPickId,
