@@ -23,6 +23,7 @@ import {
   legacyExportTag,
   matchMechanismLine,
   matchOutcomeLabel,
+  normalizeGroupKind,
   reviewerChosenStableId,
   shiftTypesAgree,
   tefCategoryOf,
@@ -102,9 +103,10 @@ function ExplicitBadge({ explicit }: { explicit: boolean | undefined }) {
 }
 
 function outcomeTone(kind: string | null | undefined): MetaChipTone {
-  if (kind === "specific" || kind === "multiple_specific") return "relevance";
-  if (kind === "ambiguous") return "score";
-  if (kind === "too_narrow" || kind === "none") return "type";
+  const normalized = kind ? normalizeGroupKind(kind) : kind;
+  if (normalized === "match_is_specific" || normalized === "multiple_specific_matches") return "relevance";
+  if (normalized === "match_is_ambiguous") return "score";
+  if (normalized === "match_is_too_narrow" || normalized === "no_match_found") return "type";
   return "neutral";
 }
 
@@ -363,7 +365,8 @@ function MatchOutcomeNotes({
   groupKind: string | null | undefined;
   groupLabel: string | null | undefined;
 }) {
-  if (groupKind === "too_narrow" && groupLabel) {
+  const normalized = groupKind ? normalizeGroupKind(groupKind) : groupKind;
+  if (normalized === "match_is_too_narrow" && groupLabel) {
     return (
       <p className="text-sm text-orange-03 bg-orange-03/10 border border-orange-03/20 rounded-md px-2.5 py-2">
         Match is narrower than the shift's own wording — a broader TE (&ldquo;
@@ -371,7 +374,7 @@ function MatchOutcomeNotes({
       </p>
     );
   }
-  if (groupKind === "ambiguous" && groupLabel) {
+  if (normalized === "match_is_ambiguous" && groupLabel) {
     return (
       <p className="text-sm text-blue-03 bg-blue-03/10 border border-blue-03/20 rounded-md px-2.5 py-2">
         Several candidates cluster under &ldquo;{groupLabel}&rdquo; — the
@@ -379,7 +382,7 @@ function MatchOutcomeNotes({
       </p>
     );
   }
-  if (groupKind === "multiple_specific") {
+  if (normalized === "multiple_specific_matches") {
     return (
       <p className="text-sm text-gray-02 bg-gray-03/20 border border-gray-03/30 rounded-md px-2.5 py-2">
         This shift names several distinct destinations — each match below is

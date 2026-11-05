@@ -155,15 +155,20 @@ export interface ActivityShift {
     description: string;
   } | null;
   // Outcome of tePicker's domain-specificity gate and structural grouping
-  // step — "specific" | "multiple_specific" | "too_narrow" | "ambiguous" |
-  // "none". transitionElementGroupLabel carries the broader-category label
-  // for "too_narrow"/"ambiguous" results (e.g. the shared sector ancestor,
-  // or the broader TE that should exist instead).
+  // step — "match_is_specific" | "multiple_specific_matches" |
+  // "match_is_too_narrow" | "match_is_ambiguous" | "no_match_found". A
+  // shift matched before these were renamed may still carry the old bare
+  // names ("specific"/"too_narrow"/etc) -- see tef-match-display.ts's
+  // normalizeGroupKind. transitionElementGroupLabel carries the
+  // broader-category label for "match_is_too_narrow"/"match_is_ambiguous"
+  // results (e.g. the shared sector ancestor, or the broader TE that
+  // should exist instead).
   transitionElementGateDomain?: string | null;
   transitionElementGroupKind?: string | null;
   transitionElementGroupLabel?: string | null;
   // Second-pass review, only present when the primary outcome was weak
-  // (none / too_narrow / ambiguous). See reviewWeakMatch.ts.
+  // (no_match_found / match_is_too_narrow / match_is_ambiguous). See
+  // reviewWeakMatch.ts.
   aiReviewCategory?: string | null;
   aiReviewExplanation?: string | null;
   aiRecoveredMatch?: RecoveredTransitionElement | null;
