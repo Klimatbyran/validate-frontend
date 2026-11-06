@@ -13,6 +13,10 @@ on:
     paths-ignore:
       - "k8s/**" # Avoid CI runs for updates inside k8s folder
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -33,7 +37,7 @@ jobs:
       # Step 3: Get the current version of the project (assumes `package.json` exists)
       - name: 📝 Get Current Version
         id: package-version
-        uses: martinbeentjes/npm-get-version-action@main
+        run: echo "current-version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
       # Step 4: Login to Docker Registry (GHCR authentication)
       - name: 🔐 Login to Docker Registry
