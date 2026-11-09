@@ -2,6 +2,7 @@ import {
   getClimatePlansPipelineApiUrl,
   getUnearthApiBaseUrl,
 } from "@/config/api-env";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import { fetchPipelineMeasures } from "./pipeline-measures";
 import type { Measure, MunicipalityMeasures } from "./measures-types";
 import type {
@@ -117,12 +118,13 @@ function companionRefCount(extra: PipelinePlanListItem): number | null {
 async function loadPipelineExtras(): Promise<PipelinePlanListItem[]> {
   const base = getClimatePlansPipelineApiUrl();
   try {
-    const res = await fetch(`${base}/plans`);
+    // Climate-plans GETs require staff JWT (B2); use Bearer like other staff APIs.
+    const res = await garboAuthFetch(`${base}/plans`);
     if (!res.ok) return [];
     const plans = (await res.json()) as PipelinePlanListItem[];
     const details = await Promise.all(
       plans.map(async (plan) => {
-        const detailRes = await fetch(`${base}/plans/${plan.id}`);
+        const detailRes = await garboAuthFetch(`${base}/plans/${plan.id}`);
         if (!detailRes.ok) return null;
         return (await detailRes.json()) as PipelinePlanListItem;
       }),

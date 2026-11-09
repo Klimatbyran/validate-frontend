@@ -5,8 +5,18 @@ import type { PDFPageProxy } from "pdfjs-dist";
 // served path, rather than pointing at a CDN (which the artifact/app CSP
 // story here avoids in general) or requiring a manual public/ copy step.
 import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { getGarboAuthHeaders } from "@/lib/garbo-auth-fetch";
 import { Modal } from "@/ui/modal";
 import { Loader2, Minus, Plus, X } from "lucide-react";
+
+/** pdf.js fetch for /plans/:id/pdf must send Bearer (B2); bare URL loads skip Authorization. */
+function pdfJsDocumentOptions(url: string) {
+  return {
+    url,
+    httpHeaders: getGarboAuthHeaders(),
+    withCredentials: false as const,
+  };
+}
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 
@@ -1660,7 +1670,7 @@ function PdfHighlightBody({
 
     (async () => {
       try {
-        loadingTask = pdfjsLib.getDocument({ url });
+        loadingTask = pdfjsLib.getDocument(pdfJsDocumentOptions(url));
         const doc = await Promise.race([
           loadingTask.promise,
           new Promise<never>((_, reject) =>
@@ -1747,7 +1757,7 @@ function PdfHighlightBody({
 
     (async () => {
       try {
-        loadingTask = pdfjsLib.getDocument({ url });
+        loadingTask = pdfjsLib.getDocument(pdfJsDocumentOptions(url));
         const doc = await Promise.race([
           loadingTask.promise,
           new Promise<never>((_, reject) =>
