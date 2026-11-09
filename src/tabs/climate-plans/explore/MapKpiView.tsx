@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { MethodologyPanel } from "./MethodologyPanel";
 import { MapKpiDetailPanel } from "./MapKpiDetailPanel";
 import { SwedenChoropleth } from "./SwedenChoropleth";
+import { TefImpliedFilterControl } from "./TefImpliedFilterControl";
 import {
   MAP_KPI_META,
   mapKpiValue,
@@ -12,10 +13,27 @@ import type {
   MapGeoLevel,
   MapKpiId,
 } from "../lib/explore-types";
+import {
+  countImpliedFilterBuckets,
+  filterTefHits,
+  hasExplicitJudgment,
+  type TefImpliedFilter,
+} from "../lib/tef-detail-summary";
 import { cn } from "@/lib/utils";
 import { foldRegionName, namesMatch } from "../lib/municipality-names";
 
 const KPI_IDS = Object.keys(MAP_KPI_META) as MapKpiId[];
+
+function withFilteredTefHits(
+  record: ExploreMunicipalityRecord,
+  impliedFilter: TefImpliedFilter,
+): ExploreMunicipalityRecord {
+  if (impliedFilter === "all") return record;
+  return {
+    ...record,
+    tefHits: filterTefHits(record.tefHits, impliedFilter),
+  };
+}
 
 export function MapKpiView({
   records,
@@ -29,6 +47,8 @@ export function MapKpiView({
   onSelectName,
   compareName,
   onCompareNameChange,
+  tefImplied,
+  onTefImpliedChange,
 }: {
   records: ExploreMunicipalityRecord[];
   geo: MapGeoLevel;
@@ -41,16 +61,30 @@ export function MapKpiView({
   onSelectName: (name: string) => void;
   compareName: string | null;
   onCompareNameChange: (name: string | null) => void;
+  tefImplied: TefImpliedFilter;
+  onTefImpliedChange: (value: TefImpliedFilter) => void;
 }) {
   const [pickingCompare, setPickingCompare] = useState(false);
+
+  const allTefHits = useMemo(
+    () => records.flatMap((record) => record.tefHits),
+    [records],
+  );
+  const showImpliedFilter = hasExplicitJudgment(allTefHits);
+  const impliedCounts = useMemo(
+    () => countImpliedFilterBuckets(allTefHits),
+    [allTefHits],
+  );
 
   const groups = useMemo(() => {
     const set = new Set<string>();
     for (const record of records) {
-      for (const hit of record.tefHits) set.add(hit.group);
+      for (const hit of filterTefHits(record.tefHits, tefImplied)) {
+        set.add(hit.group);
+      }
     }
     return [...set].sort((a, b) => a.localeCompare(b));
-  }, [records]);
+  }, [records, tefImplied]);
 
   const regionRecords = useMemo(() => {
     const byRegion = new Map<string, ExploreMunicipalityRecord[]>();
@@ -70,7 +104,10 @@ export function MapKpiView({
     );
   }, [records]);
 
-  const activeRecords = geo === "region" ? regionRecords : records;
+  const activeRecords = useMemo(() => {
+    const base = geo === "region" ? regionRecords : records;
+    return base.map((record) => withFilteredTefHits(record, tefImplied));
+  }, [geo, regionRecords, records, tefImplied]);
 
   const values = useMemo(() => {
     const map = new Map<string, number | boolean | null>();
@@ -88,10 +125,18 @@ export function MapKpiView({
     return map;
   }, [activeRecords, kpi, tefGroup]);
 
-  const selected =
-    activeRecords.find((r) => namesMatch(r.name, selectedName ?? "")) ??
-    records.find((r) => namesMatch(r.name, selectedName ?? "")) ??
-    null;
+  const selected = (() => {
+    const fromActive = activeRecords.find((r) =>
+      namesMatch(r.name, selectedName ?? ""),
+    );
+    if (fromActive) return fromActive;
+    const fromMunicipalities = records.find((r) =>
+      namesMatch(r.name, selectedName ?? ""),
+    );
+    return fromMunicipalities
+      ? withFilteredTefHits(fromMunicipalities, tefImplied)
+      : null;
+  })();
 
   const compare =
     compareName == null
@@ -175,6 +220,13 @@ export function MapKpiView({
               ))}
             </select>
           ) : null}
+          {showImpliedFilter ? (
+            <TefImpliedFilterControl
+              value={tefImplied}
+              onChange={onTefImpliedChange}
+              counts={impliedCounts}
+            />
+          ) : null}
         </div>
         <SwedenChoropleth
           geo={geo}
@@ -188,6 +240,9 @@ export function MapKpiView({
           Boundaries: simplified Valmyndigheten polygons via
           okfse/sweden-geojson. Grey means we have not extracted a plan for that{" "}
           {geo} yet.
+          {showImpliedFilter
+            ? " TEF match filter applies to TEF-derived map colours and detail TEF sections (not commitment / measure scores)."
+            : null}
           {pickingCompare
             ? " Compare pick is active — next map click sets the amber compare target."
             : null}

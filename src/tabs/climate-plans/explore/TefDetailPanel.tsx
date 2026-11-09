@@ -4,41 +4,57 @@ import { cn } from "@/lib/utils";
 import { CONFIDENCE_CLASSES } from "../lib/tef-groups";
 import type { TefFrameworkCell } from "../lib/tef-framework";
 import {
+  countImpliedFilterBuckets,
   hitMatchesEvidenceFilter,
   hitMatchesImpliedFilter,
   summarizeTefHits,
   type TefEvidenceFilter,
   type TefImpliedFilter,
 } from "../lib/tef-detail-summary";
+import { TefImpliedFilterControl } from "./TefImpliedFilterControl";
 
 type Hit = TefFrameworkCell["hits"][number];
 
-const IMPLIED_FILTER_OPTIONS: {
-  value: TefImpliedFilter;
-  label: string;
-}[] = [
-  { value: "all", label: "All" },
-  { value: "implied", label: "Only implied" },
-  { value: "exclude-implied", label: "Exclude implied" },
-];
-
-export function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
+export function TefDetailPanel({
+  cell,
+  impliedFilter: controlledImpliedFilter,
+  onImpliedFilterChange,
+}: {
+  cell: TefFrameworkCell;
+  /** When set with onImpliedFilterChange, syncs with the shared explore filter. */
+  impliedFilter?: TefImpliedFilter;
+  onImpliedFilterChange?: (value: TefImpliedFilter) => void;
+}) {
   const [filter, setFilter] = useState<TefEvidenceFilter>(null);
-  const [impliedFilter, setImpliedFilter] = useState<TefImpliedFilter>("all");
+  const [localImpliedFilter, setLocalImpliedFilter] =
+    useState<TefImpliedFilter>("all");
   const [openMuni, setOpenMuni] = useState<string | null>(null);
   const [openHit, setOpenHit] = useState<string | null>(null);
+
+  const impliedFilter = controlledImpliedFilter ?? localImpliedFilter;
+  /** Parent toolbar already shaped cell.hits; don't double-filter or duplicate the control. */
+  const impliedOwnedByParent = Boolean(onImpliedFilterChange);
 
   const summary = useMemo(
     () => summarizeTefHits(cell.hits, cell.municipalityCount),
     [cell.hits, cell.municipalityCount],
   );
 
-  const hasExplicitJudgment = summary.explicitCount + summary.impliedCount > 0;
+  const hasJudgment = summary.explicitCount + summary.impliedCount > 0;
+  const impliedCounts = useMemo(
+    () => countImpliedFilterBuckets(cell.hits),
+    [cell.hits],
+  );
 
   const byMuni = useMemo(() => {
     const map = new Map<string, { name: string; hits: Hit[] }>();
     for (const hit of cell.hits) {
-      if (!hitMatchesImpliedFilter(hit, impliedFilter)) continue;
+      if (
+        !impliedOwnedByParent &&
+        !hitMatchesImpliedFilter(hit, impliedFilter)
+      ) {
+        continue;
+      }
       if (!hitMatchesEvidenceFilter(hit, filter)) continue;
       const existing = map.get(hit.municipalityId);
       if (existing) existing.hits.push(hit);
@@ -49,7 +65,7 @@ export function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
         });
     }
     return [...map.values()].sort((a, b) => b.hits.length - a.hits.length);
-  }, [cell.hits, filter, impliedFilter]);
+  }, [cell.hits, filter, impliedFilter, impliedOwnedByParent]);
 
   const description =
     cell.hits.find((h) => h.description.trim())?.description ?? "";
@@ -61,7 +77,8 @@ export function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
   };
 
   const changeImpliedFilter = (next: TefImpliedFilter) => {
-    setImpliedFilter(next);
+    if (onImpliedFilterChange) onImpliedFilterChange(next);
+    else setLocalImpliedFilter(next);
     setOpenMuni(null);
     setOpenHit(null);
   };
@@ -105,40 +122,14 @@ export function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
             <div className="text-xs font-semibold uppercase tracking-wide text-gray-02">
               Evidence
             </div>
-            {hasExplicitJudgment ? (
-              <div
-                className="flex rounded-md overflow-hidden border border-gray-03/40 text-xs"
-                role="group"
-                aria-label="Filter by explicit vs implied match"
-              >
-                {IMPLIED_FILTER_OPTIONS.map(({ value, label }) => {
-                  const count =
-                    value === "all"
-                      ? summary.hitCount
-                      : value === "implied"
-                        ? summary.impliedCount
-                        : summary.hitCount - summary.impliedCount;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => changeImpliedFilter(value)}
-                      className={cn(
-                        "px-2.5 py-1 transition-colors",
-                        impliedFilter === value
-                          ? "bg-gray-03/50 text-gray-01 font-medium"
-                          : "text-gray-02 hover:text-gray-01",
-                      )}
-                      aria-pressed={impliedFilter === value}
-                    >
-                      {label}
-                      <span className="ml-1 tabular-nums opacity-80">
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+            {hasJudgment && !impliedOwnedByParent ? (
+              <TefImpliedFilterControl
+                value={impliedFilter}
+                onChange={changeImpliedFilter}
+                counts={impliedCounts}
+                size="sm"
+                labels="full"
+              />
             ) : null}
           </div>
           {filter ? (
@@ -151,14 +142,16 @@ export function TefDetailPanel({ cell }: { cell: TefFrameworkCell }) {
             </button>
           ) : (
             <span className="text-xs text-gray-02">
-              {hasExplicitJudgment
+              {hasJudgment
                 ? [
                     `${summary.explicitCount} explicit`,
                     `${summary.impliedCount} implied`,
                     summary.unknownExplicitCount > 0
                       ? `${summary.unknownExplicitCount} unlabeled`
                       : null,
-                    "expand a place for quotes",
+                    impliedOwnedByParent
+                      ? "toolbar filters TEF matches"
+                      : "expand a place for quotes",
                   ]
                     .filter(Boolean)
                     .join(" · ")

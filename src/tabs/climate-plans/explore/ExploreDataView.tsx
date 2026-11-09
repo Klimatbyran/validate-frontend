@@ -67,6 +67,8 @@ export function ExploreDataView({
           onSelectName={params.setSelectedName}
           compareName={params.compareName}
           onCompareNameChange={params.setCompareName}
+          tefImplied={params.tefImplied}
+          onTefImpliedChange={params.setTefImplied}
         />
       ) : null}
       {params.view === "shifts" ? (
@@ -96,6 +98,8 @@ export function ExploreDataView({
           onHeightModeChange={params.setTefHeight}
           selectedTefId={params.selectedTefId}
           onSelectTefId={params.setSelectedTefId}
+          tefImplied={params.tefImplied}
+          onTefImpliedChange={params.setTefImplied}
         />
       ) : null}
       {params.view === "anatomy" ? (

@@ -12,6 +12,7 @@ import type {
   TefFrameworkScope,
 } from "../lib/explore-types";
 import { MAP_KPI_META } from "../lib/explore-aggregates";
+import type { TefImpliedFilter } from "../lib/tef-detail-summary";
 
 const TABS: ClimatePlansTabId[] = ["explore", "measures", "taxonomy"];
 const VIEWS: ExploreViewId[] = ["map", "shifts", "tef-framework", "anatomy"];
@@ -25,6 +26,11 @@ const TEF_METRICS: TefFrameworkMetric[] = [
 const TEF_LAYOUTS: TefFrameworkLayout[] = ["3d", "grid"];
 const TEF_HEIGHT_MODES: TefFrameworkHeightMode[] = ["share", "tonnes"];
 const SHIFTS_LAYOUTS: ShiftsLayoutId[] = ["compare", "flows", "types"];
+const TEF_IMPLIED_FILTERS: TefImpliedFilter[] = [
+  "all",
+  "implied",
+  "exclude-implied",
+];
 const KPIS = Object.keys(MAP_KPI_META) as MapKpiId[];
 
 function pick<T extends string>(
@@ -62,6 +68,11 @@ export function useClimatePlansExploreParams() {
     "compare",
   );
   const selectedTefId = searchParams.get("tefId");
+  const tefImplied = pick(
+    searchParams.get("tefImplied"),
+    TEF_IMPLIED_FILTERS,
+    "all",
+  );
 
   const patch = useCallback(
     (updates: Record<string, string | null>) => {
@@ -96,6 +107,7 @@ export function useClimatePlansExploreParams() {
     tefHeight,
     shiftsLayout,
     selectedTefId,
+    tefImplied,
     setTab: (value: ClimatePlansTabId) => patch({ tab: value }),
     setView: (value: ExploreViewId) => patch({ view: value }),
     setKpi: (value: MapKpiId) => patch({ kpi: value }),
@@ -112,6 +124,7 @@ export function useClimatePlansExploreParams() {
       patch({ tefHeight: value }),
     setShiftsLayout: (value: ShiftsLayoutId) => patch({ shiftsLayout: value }),
     setSelectedTefId: (value: string) => patch({ tefId: value }),
+    setTefImplied: (value: TefImpliedFilter) => patch({ tefImplied: value }),
   };
 }
 
@@ -126,5 +139,6 @@ function isDefault(key: string, value: string): boolean {
   if (key === "tefLayout" && value === "3d") return true;
   if (key === "tefHeight" && value === "share") return true;
   if (key === "shiftsLayout" && value === "compare") return true;
+  if (key === "tefImplied" && value === "all") return true;
   return false;
 }
