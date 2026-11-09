@@ -2,12 +2,88 @@ import {
   averageScore,
   interventionSpecificityShare,
   mapKpiValue,
+  topTefsByHitCount,
   type MapKpiValue,
 } from "./explore-aggregates";
 import type {
   ExploreMunicipalityRecord,
   MapKpiId,
+  TefHit,
 } from "./explore-types";
+
+export interface TopTefCompareRow {
+  stableId: string;
+  shortLabel: string;
+  primaryHits: number | null;
+  compareHits: number | null;
+  /** Signed delta (compare − primary) when both sides have counts. */
+  delta: number | null;
+}
+
+/**
+ * Union of each place's top TEFs by hit count, with counts for both sides.
+ * Rows are ordered by max(primary, compare) hits, then label.
+ */
+export function buildTopTefCompareRows(
+  primaryHits: TefHit[],
+  compareHits: TefHit[] | null,
+  limit = 3,
+): TopTefCompareRow[] {
+  const primaryTop = topTefsByHitCount(primaryHits, limit);
+  if (!compareHits) {
+    return primaryTop.map((tef) => ({
+      stableId: tef.stableId,
+      shortLabel: tef.shortLabel,
+      primaryHits: tef.hitCount,
+      compareHits: null,
+      delta: null,
+    }));
+  }
+
+  const compareTop = topTefsByHitCount(compareHits, limit);
+  const primaryAll = countHitsByStableId(primaryHits);
+  const compareAll = countHitsByStableId(compareHits);
+
+  const ids = new Set([
+    ...primaryTop.map((t) => t.stableId),
+    ...compareTop.map((t) => t.stableId),
+  ]);
+
+  const labelFor = new Map<string, string>();
+  for (const tef of [...primaryTop, ...compareTop]) {
+    if (!labelFor.has(tef.stableId)) labelFor.set(tef.stableId, tef.shortLabel);
+  }
+
+  return [...ids]
+    .map((stableId) => {
+      const primaryCount = primaryAll.get(stableId) ?? null;
+      const compareCount = compareAll.get(stableId) ?? null;
+      return {
+        stableId,
+        shortLabel: labelFor.get(stableId) ?? stableId,
+        primaryHits: primaryCount,
+        compareHits: compareCount,
+        delta:
+          primaryCount == null || compareCount == null
+            ? null
+            : compareCount - primaryCount,
+      };
+    })
+    .sort(
+      (a, b) =>
+        Math.max(b.primaryHits ?? 0, b.compareHits ?? 0) -
+          Math.max(a.primaryHits ?? 0, a.compareHits ?? 0) ||
+        a.shortLabel.localeCompare(b.shortLabel),
+    );
+}
+
+function countHitsByStableId(hits: TefHit[]): Map<string, number> {
+  const byId = new Map<string, number>();
+  for (const hit of hits) {
+    byId.set(hit.stableId, (byId.get(hit.stableId) ?? 0) + 1);
+  }
+  return byId;
+}
 
 export interface MapKpiCompareRow {
   id: string;

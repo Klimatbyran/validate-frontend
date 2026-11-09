@@ -1,13 +1,40 @@
 import { describe, expect, it } from "vitest";
 import {
   buildMapKpiCompareRows,
+  buildTopTefCompareRows,
   compareDeltaTone,
   formatCompareDelta,
   formatMapKpiDisplay,
 } from "./map-kpi-compare";
 import { mapKpiValue } from "./explore-aggregates";
-import type { ExploreMunicipalityRecord } from "./explore-types";
+import type { ExploreMunicipalityRecord, TefHit } from "./explore-types";
 import type { Measure as MeasureRow } from "./measures-types";
+
+function tefHit(
+  stableId: string,
+  shortLabel: string,
+  extras: Partial<TefHit> = {},
+): TefHit {
+  return {
+    stableId,
+    shortLabel,
+    sectorPath: "Transport > Road",
+    group: "Transport",
+    confidence: "high",
+    measureText: shortLabel,
+    description: shortLabel,
+    explicit: true,
+    shiftFrom: "car",
+    shiftTo: "bus",
+    need: "mobility",
+    shiftScore: 5,
+    interventionWho: "municipality",
+    interventionWhat: "bus",
+    interventionHow: "procurement",
+    interventionScore: 6,
+    ...extras,
+  };
+}
 
 function measure(): MeasureRow {
   return {
@@ -145,5 +172,44 @@ describe("map KPI compare helpers", () => {
     expect(formatCompareDelta(0.12, "share")).toBe("+12 pp");
     expect(formatCompareDelta(-0.05, "share")).toBe("−5 pp");
     expect(formatCompareDelta(0, "count")).toBe("±0");
+  });
+
+  it("unions each place's top TEFs with per-side hit counts", () => {
+    const primaryHits = [
+      tefHit("a", "T-1 - Rail"),
+      tefHit("a", "T-1 - Rail"),
+      tefHit("a", "T-1 - Rail"),
+      tefHit("b", "T-2 - Steel"),
+      tefHit("c", "T-3 - Heat"),
+    ];
+    const compareHits = [
+      tefHit("b", "T-2 - Steel"),
+      tefHit("b", "T-2 - Steel"),
+      tefHit("b", "T-2 - Steel"),
+      tefHit("b", "T-2 - Steel"),
+      tefHit("d", "T-4 - Waste"),
+      tefHit("d", "T-4 - Waste"),
+      tefHit("e", "T-5 - Other"),
+    ];
+
+    // primary top-3: a,b,c · compare top-3: b,d,e · union sorted by max hits
+    const rows = buildTopTefCompareRows(primaryHits, compareHits, 3);
+    expect(rows.map((r) => r.stableId)).toEqual(["b", "a", "d", "c", "e"]);
+    expect(rows[0]).toMatchObject({
+      stableId: "b",
+      primaryHits: 1,
+      compareHits: 4,
+      delta: 3,
+    });
+    expect(rows.find((r) => r.stableId === "a")).toMatchObject({
+      primaryHits: 3,
+      compareHits: null,
+      delta: null,
+    });
+    expect(rows.find((r) => r.stableId === "d")).toMatchObject({
+      primaryHits: null,
+      compareHits: 2,
+      delta: null,
+    });
   });
 });

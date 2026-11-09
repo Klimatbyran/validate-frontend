@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import {
   buildMapKpiCompareRows,
+  buildTopTefCompareRows,
   compareDeltaTone,
   formatCompareDelta,
   formatMapKpiDisplay,
@@ -9,7 +10,6 @@ import {
   MAP_KPI_META,
   mapKpiValue,
   tefGroupStrengths,
-  topTefsByHitCount,
 } from "../lib/explore-aggregates";
 import { tefTitleFromShortLabel } from "../lib/tef-framework";
 import type {
@@ -52,7 +52,10 @@ export function MapKpiDetailPanel({
     kpi,
     tefGroupFilter,
   );
-  const selectedTopTefs = topTefsByHitCount(selected.tefHits);
+  const topTefRows = buildTopTefCompareRows(
+    selected.tefHits,
+    compare ? compare.tefHits : null,
+  );
   const placeLabel = geo === "region" ? "region" : "municipality";
 
   return (
@@ -158,27 +161,12 @@ export function MapKpiDetailPanel({
         </dl>
       )}
 
-      {selectedTopTefs.length > 0 ? (
-        <div className="space-y-1.5">
-          <div className="text-xs font-semibold text-gray-02 uppercase">
-            Top TEFs
-          </div>
-          <ul className="space-y-1">
-            {selectedTopTefs.map((tef) => (
-              <li
-                key={tef.stableId}
-                className="flex items-baseline justify-between gap-2 text-sm"
-              >
-                <span className="text-gray-01 truncate" title={tef.shortLabel}>
-                  {tefTitleFromShortLabel(tef.shortLabel)}
-                </span>
-                <span className="tabular-nums text-xs text-gray-02 shrink-0">
-                  {tef.hitCount}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {topTefRows.length > 0 ? (
+        <TopTefsSection
+          rows={topTefRows}
+          selectedName={selected.name}
+          compareName={compare?.name ?? null}
+        />
       ) : null}
 
       {tefGroupStrengths(selected.tefHits).length > 0 ? (
@@ -224,6 +212,103 @@ export function MapKpiDetailPanel({
           Source plan
         </a>
       ) : null}
+    </div>
+  );
+}
+
+function TopTefsSection({
+  rows,
+  selectedName,
+  compareName,
+}: {
+  rows: ReturnType<typeof buildTopTefCompareRows>;
+  selectedName: string;
+  compareName: string | null;
+}) {
+  if (!compareName) {
+    return (
+      <div className="space-y-1.5">
+        <div className="text-xs font-semibold text-gray-02 uppercase">
+          Top TEFs
+        </div>
+        <ul className="space-y-1">
+          {rows.map((tef) => (
+            <li
+              key={tef.stableId}
+              className="flex items-baseline justify-between gap-2 text-sm"
+            >
+              <span className="text-gray-01 truncate" title={tef.shortLabel}>
+                {tefTitleFromShortLabel(tef.shortLabel)}
+              </span>
+              <span className="tabular-nums text-xs text-gray-02 shrink-0">
+                {tef.primaryHits ?? 0}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className="text-xs font-semibold text-gray-02 uppercase">
+        Top TEFs
+      </div>
+      <div className="overflow-hidden rounded-md border border-gray-03/30">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-03/30 text-xs text-gray-02">
+              <th className="text-left font-medium px-2.5 py-2">TEF</th>
+              <th className="text-right font-medium px-2.5 py-2 truncate max-w-[5.5rem]">
+                {selectedName}
+              </th>
+              <th className="text-right font-medium px-2.5 py-2 truncate max-w-[5.5rem] text-amber-02">
+                {compareName}
+              </th>
+              <th className="text-right font-medium px-2.5 py-2 w-12">Δ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((tef) => {
+              const deltaLabel = formatCompareDelta(tef.delta, "count");
+              const tone = compareDeltaTone(tef.delta, true);
+              return (
+                <tr
+                  key={tef.stableId}
+                  className="border-b border-gray-03/15 last:border-0"
+                >
+                  <td
+                    className="px-2.5 py-2 text-gray-01 truncate max-w-[10rem]"
+                    title={tef.shortLabel}
+                  >
+                    {tefTitleFromShortLabel(tef.shortLabel)}
+                  </td>
+                  <td className="px-2.5 py-2 text-right tabular-nums text-gray-01 font-medium">
+                    {tef.primaryHits ?? "—"}
+                  </td>
+                  <td className="px-2.5 py-2 text-right tabular-nums text-gray-01 font-medium">
+                    {tef.compareHits ?? "—"}
+                  </td>
+                  <td
+                    className={cn(
+                      "px-2.5 py-2 text-right tabular-nums text-xs font-medium",
+                      tone === "better" && "text-green-03",
+                      tone === "worse" && "text-pink-03",
+                      tone === "neutral" && "text-gray-02",
+                    )}
+                  >
+                    {deltaLabel ?? "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <p className="px-2.5 py-1.5 text-[11px] text-gray-02 border-t border-gray-03/20">
+          Union of each place&apos;s top TEFs by hit count (up to 3 each).
+        </p>
+      </div>
     </div>
   );
 }

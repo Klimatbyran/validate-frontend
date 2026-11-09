@@ -96,6 +96,44 @@ describe("MapKpiDetailPanel compare", () => {
     commitmentCount: 7,
     climateRelevantCommitmentCount: 5,
     measures: [measure(3)],
+    tefHits: [
+      {
+        stableId: "t2",
+        shortLabel: "T-2 - Steel",
+        sectorPath: "Industry > Steel",
+        group: "Industry",
+        confidence: "high",
+        measureText: "Steel",
+        description: "Steel",
+        explicit: true,
+        shiftFrom: "coal",
+        shiftTo: "electric",
+        need: "materials",
+        shiftScore: 4,
+        interventionWho: "industry",
+        interventionWhat: "furnace",
+        interventionHow: "grant",
+        interventionScore: 5,
+      },
+      {
+        stableId: "t2",
+        shortLabel: "T-2 - Steel",
+        sectorPath: "Industry > Steel",
+        group: "Industry",
+        confidence: "high",
+        measureText: "Steel",
+        description: "Steel",
+        explicit: true,
+        shiftFrom: "coal",
+        shiftTo: "electric",
+        need: "materials",
+        shiftScore: 4,
+        interventionWho: "industry",
+        interventionWhat: "furnace",
+        interventionHow: "grant",
+        interventionScore: 5,
+      },
+    ],
   });
 
   it("shows compare controls and switches to a side-by-side table", async () => {
@@ -141,10 +179,15 @@ describe("MapKpiDetailPanel compare", () => {
       />,
     );
 
-    expect(screen.getByRole("columnheader", { name: "Δ" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Vetlanda" })).toBeInTheDocument();
+    expect(screen.getAllByRole("columnheader", { name: "Δ" }).length).toBe(2);
+    expect(
+      screen.getAllByRole("columnheader", { name: "Vetlanda" }).length,
+    ).toBe(2);
     expect(screen.getAllByText("+3").length).toBeGreaterThan(0);
     expect(screen.getByText(/vs/)).toBeInTheDocument();
+    expect(screen.getByText("Top TEFs")).toBeInTheDocument();
+    expect(screen.getByText("Bus")).toBeInTheDocument();
+    expect(screen.getByText("Steel")).toBeInTheDocument();
   });
 
   it("toggles pick-on-map mode", async () => {
