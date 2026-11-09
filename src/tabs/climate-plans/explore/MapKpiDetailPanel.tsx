@@ -46,12 +46,7 @@ export function MapKpiDetailPanel({
   const compareValue = compare
     ? mapKpiValue(compare, kpi, tefGroupFilter)
     : null;
-  const rows = buildMapKpiCompareRows(
-    selected,
-    compare,
-    kpi,
-    tefGroupFilter,
-  );
+  const rows = buildMapKpiCompareRows(selected, compare, kpi, tefGroupFilter);
   const topTefRows = buildTopTefCompareRows(
     selected.tefHits,
     compare ? compare.tefHits : null,
@@ -61,7 +56,9 @@ export function MapKpiDetailPanel({
   return (
     <div className="rounded-lg border border-gray-03/30 bg-gray-04/50 p-4 space-y-3">
       <div>
-        <div className="text-lg font-semibold text-gray-01">{selected.name}</div>
+        <div className="text-lg font-semibold text-gray-01">
+          {selected.name}
+        </div>
         <div className="text-sm text-gray-02">
           {selected.county ?? selected.regionName ?? "Region unknown"}
           {selected.documentTitle ? ` · ${selected.documentTitle}` : ""}
@@ -81,8 +78,7 @@ export function MapKpiDetailPanel({
         {compare ? (
           <span className="text-gray-02">
             {" "}
-            vs{" "}
-            <span className="text-amber-02 font-medium">{compare.name}</span>
+            vs <span className="text-amber-02 font-medium">{compare.name}</span>
             :{" "}
             <span className="font-semibold tabular-nums text-gray-01">
               {formatMapKpiDisplay(compareValue)}

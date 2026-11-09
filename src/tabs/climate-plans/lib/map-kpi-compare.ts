@@ -174,9 +174,7 @@ export function buildMapKpiCompareRows(
   tefGroupFilter: string | null,
 ): MapKpiCompareRow[] {
   const primaryKpi = mapKpiValue(primary, kpi, tefGroupFilter);
-  const compareKpi = compare
-    ? mapKpiValue(compare, kpi, tefGroupFilter)
-    : null;
+  const compareKpi = compare ? mapKpiValue(compare, kpi, tefGroupFilter) : null;
 
   const primaryDistinctTefs = new Set(primary.tefHits.map((h) => h.stableId))
     .size;
