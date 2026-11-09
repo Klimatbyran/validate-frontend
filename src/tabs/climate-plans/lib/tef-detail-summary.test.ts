@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  countImpliedFilterBuckets,
+  filterTefHits,
+  hasExplicitJudgment,
   hitMatchesEvidenceFilter,
   hitMatchesImpliedFilter,
   summarizeTefHits,
@@ -90,5 +93,23 @@ describe("hitMatchesImpliedFilter", () => {
     expect(hitMatchesImpliedFilter(explicit, "exclude-implied")).toBe(true);
     expect(hitMatchesImpliedFilter(implied, "exclude-implied")).toBe(false);
     expect(hitMatchesImpliedFilter(unknown, "exclude-implied")).toBe(true);
+  });
+
+  it("filters lists and counts buckets", () => {
+    const hits = [
+      hit({ explicit: true }),
+      hit({ explicit: false }),
+      hit({ explicit: false }),
+      hit({}),
+    ];
+    expect(hasExplicitJudgment(hits)).toBe(true);
+    expect(hasExplicitJudgment([hit({})])).toBe(false);
+    expect(filterTefHits(hits, "implied")).toHaveLength(2);
+    expect(filterTefHits(hits, "exclude-implied")).toHaveLength(2);
+    expect(countImpliedFilterBuckets(hits)).toEqual({
+      all: 4,
+      implied: 2,
+      "exclude-implied": 2,
+    });
   });
 });

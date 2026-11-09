@@ -4,6 +4,7 @@ import { ViewModePills } from "@/ui/view-mode-pills";
 import { MethodologyPanel } from "./MethodologyPanel";
 import { TefDetailPanel } from "./TefDetailPanel";
 import { TefFramework3dView } from "./TefFramework3dView";
+import { TefImpliedFilterControl } from "./TefImpliedFilterControl";
 import type {
   ExploreMunicipalityRecord,
   SectorYearEmissions,
@@ -29,6 +30,12 @@ import {
   type SectorEmissionShare,
   type SectorGateMatchRate,
 } from "../lib/tef-sector-signals";
+import {
+  countImpliedFilterBuckets,
+  filterTefHits,
+  hasExplicitJudgment,
+  type TefImpliedFilter,
+} from "../lib/tef-detail-summary";
 
 const COLUMN_COUNTS: Record<string, number> = {
   transport: 3,
@@ -57,6 +64,8 @@ export function TefFrameworkView({
   onHeightModeChange,
   selectedTefId,
   onSelectTefId,
+  tefImplied,
+  onTefImpliedChange,
 }: {
   records: ExploreMunicipalityRecord[];
   sectorEmissions: SectorYearEmissions[];
@@ -74,6 +83,8 @@ export function TefFrameworkView({
   onHeightModeChange: (mode: TefFrameworkHeightMode) => void;
   selectedTefId: string | null;
   onSelectTefId: (id: string) => void;
+  tefImplied: TefImpliedFilter;
+  onTefImpliedChange: (value: TefImpliedFilter) => void;
 }) {
   const [selectedSectorId, setSelectedSectorId] = useState<
     TefSectorId | "other" | null
@@ -87,11 +98,18 @@ export function TefFrameworkView({
       ? null
       : (places.find((p) => p === placeName) ?? places[0] ?? null);
 
+  const allHits = useMemo(() => collectHitsWithPlace(records), [records]);
+  const showImpliedFilter = hasExplicitJudgment(allHits);
+  const impliedCounts = useMemo(
+    () => countImpliedFilterBuckets(allHits),
+    [allHits],
+  );
+
   const cells = useMemo(() => {
-    const allHits = collectHitsWithPlace(records);
     const scoped = filterHitsByScope(allHits, scope, effectivePlace);
-    return buildTefFrameworkCells(scoped);
-  }, [records, scope, effectivePlace]);
+    const filtered = filterTefHits(scoped, tefImplied);
+    return buildTefFrameworkCells(filtered);
+  }, [allHits, scope, effectivePlace, tefImplied]);
 
   const columns = useMemo(() => groupCellsBySector(cells), [cells]);
 
@@ -123,7 +141,7 @@ export function TefFrameworkView({
       <MethodologyPanel
         data="transition_element_matches on scored measures (stable_id, short_label, sector_path, match_confidence, optional explicit). Gate domain from activity_shifts.transition_element_gate_domain (pipeline). Sector emissions from Unearth / SMHI territorial series. Sector columns follow the Transition Element Framework (T-1 Transport … T-6 Waste)."
         calculation="Each cell is one TEF (stable_id). Hits = match rows in the selected scope. Strength = Σ confidence weights (high=3, mid=2, low=1) / (3 × hits). Municipalities = distinct municipalities with at least one match. Colour intensity is that metric scaled to the max cell in the current scope. Match rate on a header = gated shifts with ≥1 confirmed match in the same top domain / shifts gated to that domain. Optional emission bars = sector tonnes / sum of mapped buckets (transport→transport, industry→industry, afolu→agriculture, buildings→heating, energy→energy, waste→waste) using each place’s latest year; machinery/product/other are excluded. 3D layout: SVG isometric pillars (height = emission share or relative tonnes); TEF cubes under each sector (click a sector to expand with named cubes). Cube size is fixed until we can attribute reduction effectiveness."
-        extra="Scope mirrors the KPI map: all extracts, one region, or one municipality. Empty cells with a low match rate mean the domain appears in plans but TEF matching struggled — not that the topic is absent. Click a catalogue cell or a 3D TEF cube for a gist then expand places for quotes. Detail evidence can filter All / Only implied / Exclude implied when tePicker recorded explicit vs implied judgments; older pipeline runs may lack that field."
+        extra="Scope mirrors the KPI map: all extracts, one region, or one municipality. Empty cells with a low match rate mean the domain appears in plans but TEF matching struggled — not that the topic is absent. Click a catalogue cell or a 3D TEF cube for a gist then expand places for quotes. When tePicker recorded explicit vs implied judgments, use All / Implied / Exclude implied to reshape the catalogue and detail evidence; older pipeline runs may lack that field (those unlabeled hits stay visible unless you choose Only implied)."
       />
 
       <div className="flex flex-wrap gap-2 items-center">
@@ -212,6 +230,14 @@ export function TefFrameworkView({
             Show emissions on headers
           </label>
         )}
+
+        {showImpliedFilter ? (
+          <TefImpliedFilterControl
+            value={tefImplied}
+            onChange={onTefImpliedChange}
+            counts={impliedCounts}
+          />
+        ) : null}
 
         <span className="text-sm text-gray-02">
           {cells.length} TEFs · {cells.reduce((s, c) => s + c.hitCount, 0)} hits
@@ -351,7 +377,12 @@ export function TefFrameworkView({
       )}
 
       {selected ? (
-        <TefDetailPanel key={selected.stableId} cell={selected} />
+        <TefDetailPanel
+          key={selected.stableId}
+          cell={selected}
+          impliedFilter={tefImplied}
+          onImpliedFilterChange={onTefImpliedChange}
+        />
       ) : cells.length > 0 ? (
         <p className="text-sm text-gray-02 rounded-lg border border-gray-03/30 bg-gray-04/40 p-4">
           Click a TEF cell to see which municipalities and measures matched it.

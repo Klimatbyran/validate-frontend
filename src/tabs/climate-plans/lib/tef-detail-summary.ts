@@ -121,3 +121,44 @@ export function hitMatchesImpliedFilter(
   // exclude-implied: keep explicit + unlabeled (not known to be implied)
   return hit.explicit !== false;
 }
+
+export const TEF_IMPLIED_FILTER_OPTIONS: {
+  value: TefImpliedFilter;
+  label: string;
+  shortLabel: string;
+}[] = [
+  { value: "all", label: "All matches", shortLabel: "All" },
+  { value: "implied", label: "Only implied", shortLabel: "Implied" },
+  {
+    value: "exclude-implied",
+    label: "Exclude implied",
+    shortLabel: "Exclude implied",
+  },
+];
+
+export function filterTefHits<T extends Pick<TefHit, "explicit">>(
+  hits: T[],
+  filter: TefImpliedFilter,
+): T[] {
+  if (filter === "all") return hits;
+  return hits.filter((hit) => hitMatchesImpliedFilter(hit, filter));
+}
+
+/** Counts used by the shared All / Implied / Exclude control. */
+export function countImpliedFilterBuckets(
+  hits: Pick<TefHit, "explicit">[],
+): Record<TefImpliedFilter, number> {
+  let implied = 0;
+  for (const hit of hits) {
+    if (hit.explicit === false) implied += 1;
+  }
+  return {
+    all: hits.length,
+    implied,
+    "exclude-implied": hits.length - implied,
+  };
+}
+
+export function hasExplicitJudgment(hits: Pick<TefHit, "explicit">[]): boolean {
+  return hits.some((hit) => typeof hit.explicit === "boolean");
+}
