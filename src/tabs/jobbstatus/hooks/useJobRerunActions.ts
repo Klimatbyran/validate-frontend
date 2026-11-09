@@ -6,6 +6,7 @@
 import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
 import { authenticatedFetch } from "@/lib/api-helpers";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import { getPipelineUrl } from "@/config/api-env";
 import { buildRerunRequestData } from "@/lib/job-rerun-utils";
 import { useI18n } from "@/contexts/I18nContext";
@@ -30,7 +31,7 @@ export function useJobRerunActions({
   const refreshJobData = useCallback(async () => {
     if (!job?.queueId || !job?.id) return;
     try {
-      const res = await fetch(
+      const res = await garboAuthFetch(
         getPipelineUrl(
           `/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`,
         ),

@@ -15,6 +15,7 @@ import { JobStatusSection } from "./JobStatusSection";
 import { JobRelationshipsSection } from "./JobRelationshipsSection";
 import { SchemaSection } from "./SchemaSection";
 import { authenticatedFetch } from "@/lib/api-helpers";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import { getPipelineUrl } from "@/config/api-env";
 import {
   buildRerunRequestData,
@@ -71,7 +72,7 @@ export function JobDetailsDialog({
     async function loadDetails() {
       if (!job?.queueId || !job?.id) return;
       try {
-        const res = await fetch(
+        const res = await garboAuthFetch(
           getPipelineUrl(
             `/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`,
           ),
@@ -294,7 +295,7 @@ export function JobDetailsDialog({
       // Refresh job data
       if (job.queueId && job.id) {
         try {
-          const res = await fetch(
+          const res = await garboAuthFetch(
             getPipelineUrl(
               `/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`,
             ),

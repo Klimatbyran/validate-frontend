@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getPipelineUrl } from "@/config/api-env";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import type { QueueJob, SwimlaneStatusType } from "@/lib/types";
 
 /** Garbo queue names for the two PDF-parsing steps — same ones jobbstatus
@@ -94,7 +95,7 @@ export function usePdfParsingJobs(threadId: string | null | undefined) {
     }
     setIsLoading(true);
     try {
-      const res = await fetch(
+      const res = await garboAuthFetch(
         getPipelineUrl(
           `/processes/${encodeURIComponent(threadId)}/pdf-parsing`,
         ),
@@ -123,7 +124,9 @@ export function usePdfParsingJobs(threadId: string | null | undefined) {
   const isSettled =
     jobsByQueue.size > 0 &&
     [...jobsByQueue.values()].every(
-      (job) => derivePdfJobStatus(job) === "completed" || derivePdfJobStatus(job) === "failed",
+      (job) =>
+        derivePdfJobStatus(job) === "completed" ||
+        derivePdfJobStatus(job) === "failed",
     );
 
   useEffect(() => {
