@@ -1,16 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { MethodologyPanel } from "./MethodologyPanel";
+import { MapKpiDetailPanel } from "./MapKpiDetailPanel";
 import { SwedenChoropleth } from "./SwedenChoropleth";
 import {
   MAP_KPI_META,
-  averageScore,
-  interventionSpecificityShare,
   mapKpiValue,
   mergeRegionRecords,
-  tefGroupStrengths,
-  topTefsByHitCount,
 } from "../lib/explore-aggregates";
-import { tefTitleFromShortLabel } from "../lib/tef-framework";
 import type {
   ExploreMunicipalityRecord,
   MapGeoLevel,
@@ -31,6 +27,8 @@ export function MapKpiView({
   onTefGroupChange,
   selectedName,
   onSelectName,
+  compareName,
+  onCompareNameChange,
 }: {
   records: ExploreMunicipalityRecord[];
   geo: MapGeoLevel;
@@ -41,7 +39,11 @@ export function MapKpiView({
   onTefGroupChange: (group: string) => void;
   selectedName: string | null;
   onSelectName: (name: string) => void;
+  compareName: string | null;
+  onCompareNameChange: (name: string | null) => void;
 }) {
+  const [pickingCompare, setPickingCompare] = useState(false);
+
   const groups = useMemo(() => {
     const set = new Set<string>();
     for (const record of records) {
@@ -91,11 +93,41 @@ export function MapKpiView({
     records.find((r) => namesMatch(r.name, selectedName ?? "")) ??
     null;
 
+  const compare =
+    compareName == null
+      ? null
+      : (activeRecords.find((r) => namesMatch(r.name, compareName)) ?? null);
+
+  const compareOptions = useMemo(() => {
+    if (!selected) return activeRecords;
+    return activeRecords
+      .filter((r) => !namesMatch(r.name, selected.name))
+      .sort((a, b) => a.name.localeCompare(b.name, "sv"));
+  }, [activeRecords, selected]);
+
   const meta = MAP_KPI_META[kpi];
-  const selectedValue = selected
-    ? mapKpiValue(selected, kpi, tefGroup === "all" ? null : tefGroup)
-    : null;
-  const selectedTopTefs = selected ? topTefsByHitCount(selected.tefHits) : [];
+
+  function handleMapSelect(name: string) {
+    if (pickingCompare) {
+      if (selected && namesMatch(name, selected.name)) {
+        setPickingCompare(false);
+        return;
+      }
+      onCompareNameChange(name);
+      setPickingCompare(false);
+      return;
+    }
+    if (compare && namesMatch(name, compare.name)) {
+      onCompareNameChange(null);
+    }
+    onSelectName(name);
+  }
+
+  function handleGeoChange(level: MapGeoLevel) {
+    setPickingCompare(false);
+    onCompareNameChange(null);
+    onGeoChange(level);
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)] gap-4 items-start">
@@ -117,7 +149,7 @@ export function MapKpiView({
               <button
                 key={level}
                 type="button"
-                onClick={() => onGeoChange(level)}
+                onClick={() => handleGeoChange(level)}
                 className={cn(
                   "px-3 py-2 capitalize",
                   geo === level
@@ -148,210 +180,42 @@ export function MapKpiView({
           geo={geo}
           values={values}
           selectedName={selectedName}
-          onSelect={onSelectName}
+          compareName={compare?.name ?? compareName}
+          onSelect={handleMapSelect}
           booleanScale={false}
         />
         <p className="text-xs text-gray-02">
           Boundaries: simplified Valmyndigheten polygons via
           okfse/sweden-geojson. Grey means we have not extracted a plan for that{" "}
           {geo} yet.
+          {pickingCompare
+            ? " Compare pick is active — next map click sets the amber compare target."
+            : null}
         </p>
       </div>
 
       <div className="space-y-3">
         <MethodologyPanel data={meta.data} calculation={meta.calculation} />
         {selected ? (
-          <div className="rounded-lg border border-gray-03/30 bg-gray-04/50 p-4 space-y-3">
-            <div>
-              <div className="text-lg font-semibold text-gray-01">
-                {selected.name}
-              </div>
-              <div className="text-sm text-gray-02">
-                {selected.county ?? selected.regionName ?? "Region unknown"}
-                {selected.documentTitle ? ` · ${selected.documentTitle}` : ""}
-              </div>
-            </div>
-            <div className="text-sm text-gray-01">
-              <span className="text-gray-02">{meta.label}: </span>
-              <span className="font-semibold tabular-nums">
-                {formatSelectedKpi(selectedValue)}
-              </span>
-              {selectedValue?.unit &&
-              selectedValue.kind !== "boolean" &&
-              selectedValue.unit !== "share" ? (
-                <span className="text-gray-02"> {selectedValue.unit}</span>
-              ) : null}
-            </div>
-            <dl className="grid grid-cols-2 gap-2 text-sm">
-              <Stat
-                label="Extracted commitments"
-                value={String(selected.commitmentCount)}
-              />
-              <Stat
-                label="Climate-relevant"
-                value={
-                  selected.climateRelevantCommitmentCount == null
-                    ? "—"
-                    : String(selected.climateRelevantCommitmentCount)
-                }
-              />
-              <Stat
-                label="Climate groups"
-                value={
-                  selected.climateCommitmentGroupCount == null
-                    ? "—"
-                    : String(selected.climateCommitmentGroupCount)
-                }
-              />
-              <Stat
-                label="Distinct TEFs"
-                value={String(
-                  new Set(selected.tefHits.map((h) => h.stableId)).size,
-                )}
-              />
-              <Stat
-                label="Plan length"
-                value={
-                  selected.markdownChars == null
-                    ? "—"
-                    : `${selected.markdownChars.toLocaleString()} chars (~${Math.max(1, Math.round(selected.markdownChars / 3000))} p.)`
-                }
-              />
-              <Stat
-                label="Avg shift score"
-                value={formatAvgScore(
-                  averageScore(selected.measures, "activity_shift_score"),
-                )}
-              />
-              <Stat
-                label="Avg intervention"
-                value={formatAvgScore(
-                  averageScore(selected.measures, "intervention_score"),
-                )}
-              />
-              <Stat
-                label="Who+what filled"
-                value={formatShare(
-                  interventionSpecificityShare(selected.measures),
-                )}
-              />
-            </dl>
-            {selectedTopTefs.length > 0 ? (
-              <div className="space-y-1.5">
-                <div className="text-xs font-semibold text-gray-02 uppercase">
-                  Top TEFs
-                </div>
-                <ul className="space-y-1">
-                  {selectedTopTefs.map((tef) => (
-                    <li
-                      key={tef.stableId}
-                      className="flex items-baseline justify-between gap-2 text-sm"
-                    >
-                      <span
-                        className="text-gray-01 truncate"
-                        title={tef.shortLabel}
-                      >
-                        {tefTitleFromShortLabel(tef.shortLabel)}
-                      </span>
-                      <span className="tabular-nums text-xs text-gray-02 shrink-0">
-                        {tef.hitCount}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-            {tefGroupStrengths(selected.tefHits).length > 0 ? (
-              <div className="space-y-1.5">
-                <div className="text-xs font-semibold text-gray-02 uppercase">
-                  TEF groups
-                </div>
-                {tefGroupStrengths(selected.tefHits).map((group) => (
-                  <div
-                    key={group.group}
-                    className="flex items-center gap-2 text-sm"
-                  >
-                    <div
-                      className="w-28 truncate text-gray-01"
-                      title={group.group}
-                    >
-                      {group.group}
-                    </div>
-                    <div className="flex-1 h-2 rounded-full bg-gray-03/30">
-                      <div
-                        className="h-2 rounded-full bg-blue-03/80"
-                        style={{
-                          width: `${Math.round(group.weightedStrength * 100)}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="tabular-nums text-xs text-gray-02 w-16 text-right">
-                      {group.hitCount} ·{" "}
-                      {(group.weightedStrength * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-02 italic">
-                No TEF matches in this extract.
-              </p>
-            )}
-            <div className="text-xs text-gray-02">
-              Sources: {selected.dataSources.join(", ") || "none"}
-            </div>
-            {selected.sourceUrl ? (
-              <a
-                href={selected.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm text-blue-03 hover:underline"
-              >
-                Source plan
-              </a>
-            ) : null}
-          </div>
+          <MapKpiDetailPanel
+            selected={selected}
+            compare={compare}
+            compareOptions={compareOptions}
+            geo={geo}
+            kpi={kpi}
+            tefGroup={tefGroup}
+            pickingCompare={pickingCompare}
+            onPickingCompareChange={setPickingCompare}
+            onCompareNameChange={onCompareNameChange}
+          />
         ) : (
           <p className="text-sm text-gray-02 rounded-lg border border-gray-03/30 bg-gray-04/40 p-4">
             Click a municipality or region. Places without an extract stay grey
-            — useful while only Jönköping-län plans are in the pipeline.
+            — useful while only Jönköping-län plans are in the pipeline. Once
+            selected, use Compare KPI details to line up another place.
           </p>
         )}
       </div>
     </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md bg-gray-05/50 border border-gray-03/20 px-2.5 py-2">
-      <div className="text-xs text-gray-02">{label}</div>
-      <div className="text-gray-01 font-medium tabular-nums">{value}</div>
-    </div>
-  );
-}
-
-function formatAvgScore(value: number | null): string {
-  if (value == null) return "—";
-  return `${value.toFixed(1)}/7`;
-}
-
-function formatShare(value: number | null): string {
-  if (value == null) return "—";
-  return `${Math.round(value * 100)}%`;
-}
-
-function formatSelectedKpi(
-  value: ReturnType<typeof mapKpiValue> | null,
-): string {
-  if (!value) return "—";
-  if (value.kind === "boolean") {
-    if (value.booleanValue == null) return "—";
-    return value.booleanValue ? "yes" : "no";
-  }
-  if (value.numeric == null) return "—";
-  if (value.unit === "share") return formatShare(value.numeric);
-  return value.numeric.toFixed(
-    value.numeric >= 10 || Number.isInteger(value.numeric) ? 0 : 2,
   );
 }

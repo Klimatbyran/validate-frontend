@@ -46,6 +46,7 @@ export function useClimatePlansExploreParams() {
   const geo = pick(searchParams.get("geo"), GEOS, "municipality");
   const tefGroup = searchParams.get("tefGroup") || "all";
   const selectedName = searchParams.get("muni");
+  const compareName = searchParams.get("compare");
   const tefScope = pick(searchParams.get("tefScope"), TEF_SCOPES, "all");
   const tefMetric = pick(searchParams.get("tefMetric"), TEF_METRICS, "hits");
   const tefEmissions = searchParams.get("tefEmissions") === "1";
@@ -87,6 +88,7 @@ export function useClimatePlansExploreParams() {
     geo,
     tefGroup,
     selectedName,
+    compareName,
     tefScope,
     tefMetric,
     tefEmissions,
@@ -100,6 +102,7 @@ export function useClimatePlansExploreParams() {
     setGeo: (value: MapGeoLevel) => patch({ geo: value }),
     setTefGroup: (value: string) => patch({ tefGroup: value }),
     setSelectedName: (value: string) => patch({ muni: value }),
+    setCompareName: (value: string | null) => patch({ compare: value }),
     setTefScope: (value: TefFrameworkScope) => patch({ tefScope: value }),
     setTefMetric: (value: TefFrameworkMetric) => patch({ tefMetric: value }),
     setTefEmissions: (value: boolean) =>

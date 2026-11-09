@@ -65,6 +65,8 @@ export function ExploreDataView({
           onTefGroupChange={params.setTefGroup}
           selectedName={params.selectedName}
           onSelectName={params.setSelectedName}
+          compareName={params.compareName}
+          onCompareNameChange={params.setCompareName}
         />
       ) : null}
       {params.view === "shifts" ? (

@@ -25,12 +25,15 @@ export function SwedenChoropleth({
   geo,
   values,
   selectedName,
+  compareName = null,
   onSelect,
   booleanScale,
 }: {
   geo: "municipality" | "region";
   values: Map<string, number | boolean | null>;
   selectedName: string | null;
+  /** Optional second place highlighted for KPI comparison (amber outline). */
+  compareName?: string | null;
   onSelect: (name: string) => void;
   booleanScale: boolean;
 }) {
@@ -117,15 +120,24 @@ export function SwedenChoropleth({
               ? foldRegionName(feature.name) === foldRegionName(selectedName)
               : namesMatch(feature.name, selectedName)
             : false;
+          const compared = compareName
+            ? geo === "region"
+              ? foldRegionName(feature.name) === foldRegionName(compareName)
+              : namesMatch(feature.name, compareName)
+            : false;
           return (
             <path
               key={feature.id}
               d={feature.path}
               fill={fillFor(feature.name)}
               stroke={
-                selected ? "rgb(249, 250, 251)" : "rgba(17, 24, 39, 0.55)"
+                selected
+                  ? "rgb(249, 250, 251)"
+                  : compared
+                    ? "rgb(252, 211, 77)"
+                    : "rgba(17, 24, 39, 0.55)"
               }
-              strokeWidth={selected ? 1.8 : 0.4}
+              strokeWidth={selected || compared ? 1.8 : 0.4}
               className="cursor-pointer hover:opacity-90"
               onClick={() => onSelect(feature.name)}
               onMouseEnter={() => setHover(feature.name)}
