@@ -2,17 +2,17 @@
 
 ## Overview
 
-The validate tool implements GitHub OAuth authentication with **write-only protection**. This means:
+The validate tool implements GitHub OAuth authentication. The UI still prompts login mainly on **writes**, but several backends now require a staff JWT on **reads** as well (notably pipeline-api after UN-24, and climate-plans-pipeline plan GETs after UN-25/UN-26).
 
-- ✅ **Read operations (GET)** - No authentication required, anyone can view data
-- 🔒 **Write operations (POST, PUT, PATCH, DELETE)** - Authentication required
+- 🔒 **Write operations (POST, PUT, PATCH, DELETE)** — require a staff JWT; missing token opens the login modal
+- 🔒 **Protected GET backends** — send Bearer when a token is present (`garboAuthFetch` / `authenticatedFetch` / axios). Without a token those GETs fail closed (401)
+- ✅ **Always-public** — OAuth bootstrap and health/docs endpoints stay reachable without login
 
-This is an **internal tool** and authentication was added to:
+This is an **internal tool** and authentication exists to:
 
-1. **Prevent Unintended Usage** - Control who can trigger pipeline processing jobs
-2. **Enable Audit Trail** - Track which users perform which actions
-3. **Protect Resources** - Prevent unauthorized consumption of pipeline resources
-4. **Maintain Usability** - Allow viewing data without login barriers
+1. **Prevent Unintended Usage** — Control who can trigger pipeline processing jobs
+2. **Enable Audit Trail** — Track which users perform which actions
+3. **Protect Resources** — Prevent unauthorized consumption of pipeline resources and anonymous dumps of queue/plan data
 
 ## Architecture
 
@@ -23,8 +23,8 @@ Authentication uses a **separate API backend** from the main pipeline API:
 **Pipeline API** (`/api`):
 
 - Handles all application data (queues, jobs, processes)
-- **Only validates JWT tokens on write operations** (POST, PUT, PATCH, DELETE)
-- Read operations (GET) are unprotected - frontend handles auth for UX
+- Validates JWT on **all methods** for protected prefixes (`/api/queues`, `/api/processes`, `/api/pipeline`, `/api/runs`, `/api/cache-pdf`) when not in development
+- Frontend must send `Authorization: Bearer <token>` on those GETs (`garboAuthFetch` / axios)
 - Environments:
   - Dev: `https://stage-pipeline-api.klimatkollen.se` (via vite proxy)
   - Staging: `https://stage-pipeline-api.klimatkollen.se`
@@ -195,7 +195,7 @@ Separate axios instance for authentication endpoints.
 
 ### 7. Pipeline API Middleware (`src/lib/api.ts`)
 
-Auth middleware for pipeline API requests with write-only protection.
+Auth middleware for pipeline API requests (JWT attached when present; login modal on unauthenticated writes).
 
 **Request Interceptor:**
 
@@ -221,9 +221,9 @@ Helper functions for direct `fetch()` calls that need authentication.
 
 - `isWriteOperation(method: string | undefined): boolean` - Checks if method is a write operation
 - `authenticatedFetch(url: string, options?: RequestInit): Promise<Response>` - Wrapper for `fetch()` that:
-  - Checks if operation is a write method
-  - If write and no token: dispatches `show-login-modal` event and returns promise that resolves/rejects based on retry
-  - Otherwise: Adds Authorization header and proceeds with fetch
+  - If write and no token: dispatches `show-login-modal` and returns a promise that resolves/rejects after login/retry
+  - If a token exists: always adds `Authorization: Bearer …` (GET and writes) so JWT-gated backends accept the call
+  - GET without a token is not blocked client-side (backend may still return 401)
 
 ### 9. Header Component (`src/components/ui/header.tsx`)
 
@@ -279,17 +279,17 @@ Token expiration is checked:
 
 **Backend Validation:**
 
-- Backend only validates tokens on write operations (POST, PUT, PATCH, DELETE)
-- GET requests don't validate tokens, so periodic validation via GET is not possible
-- Token validation happens when:
-  - User attempts write operation → backend validates → 401 if invalid
+- pipeline-api validates JWT on protected routes for **all methods** (including GET)
+- Token validation also happens when:
+  - User attempts a write → backend validates → 401 if invalid
+  - A gated GET returns 401 → axios / `garboAuthFetch` clear the token and dispatch `auth-required`
   - Client-side timer expires → logout triggered
   - Tab becomes visible → checks if token expired while away
 
-**Note:** Since backend doesn't validate GET requests, we rely on:
+**Note:** We rely on:
 
 1. Client-side timer (handles normal expiration)
-2. 401 responses from write operations (handles revocation and clock skew)
+2. 401 responses from writes and gated GETs (revocation / clock skew)
 3. Visibility change check (catches expiration when user returns to tab)
 
 ## Environment Configuration
@@ -429,15 +429,15 @@ See [Backend Authentication Requirements](./BACKEND_AUTH_REQUIREMENTS.md) for de
 
 ### Backend Testing (Critical)
 
-**Important:** Backend only validates tokens on write operations (POST, PUT, PATCH, DELETE). GET requests are not validated.
+**Important:** pipeline-api validates JWT on protected prefixes for all methods (including GET), except when `NODE_ENV=development`.
 
-**Test 1: GET request without token (should work)**
+**Test 1: GET request without token (should fail once JWT-on-GET is deployed)**
 
 ```bash
 curl https://pipeline-api.klimatkollen.se/api/queues/myqueue
 ```
 
-**Expected:** `200 OK` (read operations don't require auth)
+**Expected:** `401 Unauthorized`
 
 **Test 2: Write request without token**
 
@@ -532,7 +532,7 @@ If tests 2-4 return `200 OK`, the backend is **not validating tokens on write op
 
 ### Modified Files
 
-- `src/lib/api.ts` - Added write-only auth middleware (interceptors)
+- `src/lib/api.ts` - Added auth middleware (interceptors; Bearer on all methods when logged in)
 - `src/App.tsx` - Integrated AuthProvider and GlobalLoginModal (removed ProtectedRoute wrappers)
 - `src/components/ui/header.tsx` - Added login/logout UI
 - `src/components/tabs/upload/UploadTab.tsx` - Updated to use authenticatedFetch
@@ -555,7 +555,7 @@ If tests 2-4 return `200 OK`, the backend is **not validating tokens on write op
 
 ## Current Features
 
-- ✅ Write-only authentication (read operations don't require login)
+- ✅ Staff JWT on writes (login modal) and on JWT-gated GETs when logged in
 - ✅ User info display in header (greeting with user name)
 - ✅ Logout button in UI (upper right corner)
 - ✅ Login button when not authenticated
