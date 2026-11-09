@@ -116,7 +116,6 @@ export function ShiftsInterventionsView({
       {layout === "compare" ? (
         <CompareLayout
           summaries={summaries}
-          points={points}
           matchedMunicipality={matchedMunicipality}
           selectedName={selectedName}
           onSelectName={onSelectName}
@@ -160,21 +159,15 @@ function StatCard({
 
 function CompareLayout({
   summaries,
-  points,
   matchedMunicipality,
   selectedName,
   onSelectName,
 }: {
   summaries: ReturnType<typeof summarizeMunicipalities>;
-  points: MeasureShiftInterventionPoint[];
   matchedMunicipality: string | null;
   selectedName: string | null;
   onSelectName: (name: string) => void;
 }) {
-  const selectedPoints = matchedMunicipality
-    ? points.filter((p) => namesMatch(p.municipalityName, matchedMunicipality))
-    : points;
-
   const staleSelection = Boolean(selectedName && !matchedMunicipality);
 
   return (
@@ -258,20 +251,6 @@ function CompareLayout({
           </tbody>
         </table>
       </div>
-
-      <div className="rounded-lg border border-gray-03/30 bg-gray-05/30 p-4 space-y-3">
-        <div className="flex items-baseline justify-between gap-2 flex-wrap">
-          <h3 className="text-sm font-semibold text-gray-01">
-            Measure scatter (shift score × intervention score)
-          </h3>
-          <span className="text-xs text-gray-02">
-            {matchedMunicipality
-              ? matchedMunicipality
-              : `${selectedPoints.length} measures (bubble = count at score pair)`}
-          </span>
-        </div>
-        <ScoreScatter points={selectedPoints} />
-      </div>
     </div>
   );
 }
@@ -308,90 +287,6 @@ function DualScoreBar({
         <span className="text-[10px] tabular-nums text-gray-02 w-6 text-right">
           {intervention.toFixed(1)}
         </span>
-      </div>
-    </div>
-  );
-}
-
-function ScoreScatter({ points }: { points: MeasureShiftInterventionPoint[] }) {
-  const bubbles = useMemo(() => {
-    const byKey = new Map<
-      string,
-      {
-        activityShiftScore: number;
-        interventionScore: number;
-        count: number;
-        withTef: number;
-        typed: number;
-        sample: string;
-      }
-    >();
-    for (const point of points) {
-      const key = `${point.activityShiftScore}:${point.interventionScore}`;
-      const existing = byKey.get(key) ?? {
-        activityShiftScore: point.activityShiftScore,
-        interventionScore: point.interventionScore,
-        count: 0,
-        withTef: 0,
-        typed: 0,
-        sample: point.measureText,
-      };
-      existing.count += 1;
-      if (point.tefMatchCount > 0) existing.withTef += 1;
-      if (point.interventionType !== "none") existing.typed += 1;
-      byKey.set(key, existing);
-    }
-    return [...byKey.values()];
-  }, [points]);
-
-  if (points.length === 0) {
-    return (
-      <p className="text-sm text-gray-02">No measures in this selection.</p>
-    );
-  }
-
-  const maxCount = Math.max(...bubbles.map((b) => b.count), 1);
-
-  return (
-    <div className="relative h-56 rounded-md border border-gray-03/30 bg-gray-04/40">
-      <div className="absolute left-8 right-3 top-3 bottom-8 border-l border-b border-gray-03/40">
-        {bubbles.map((bubble) => {
-          const x = ((bubble.activityShiftScore - 1) / 6) * 100;
-          const y = ((bubble.interventionScore - 1) / 6) * 100;
-          const size = 8 + (bubble.count / maxCount) * 16;
-          return (
-            <div
-              key={`${bubble.activityShiftScore}:${bubble.interventionScore}`}
-              className={cn(
-                "absolute rounded-full -translate-x-1/2 translate-y-1/2 border border-black/20",
-                bubble.withTef > 0 ? "bg-blue-03/80" : "bg-gray-02/70",
-                bubble.typed > 0 && "ring-1 ring-orange-03/60",
-              )}
-              style={{
-                left: `${x}%`,
-                bottom: `${y}%`,
-                width: size,
-                height: size,
-              }}
-              title={`shift ${bubble.activityShiftScore} × intervention ${bubble.interventionScore}: ${bubble.count} measures\n${bubble.sample.slice(0, 120)}`}
-            />
-          );
-        })}
-      </div>
-      <span className="absolute left-1/2 -translate-x-1/2 bottom-1 text-[10px] text-gray-02">
-        Activity shift score →
-      </span>
-      <span className="absolute left-1 top-1/2 -translate-y-1/2 -rotate-90 origin-left text-[10px] text-gray-02 whitespace-nowrap">
-        Intervention score →
-      </span>
-      <div className="absolute right-3 top-3 text-[10px] text-gray-02 space-y-1">
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-blue-03" /> TEF match
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-gray-02/70 ring-1 ring-orange-03/60" />{" "}
-          typed intervention
-        </div>
       </div>
     </div>
   );
