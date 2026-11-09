@@ -16,6 +16,14 @@ export function getGarboAuthHeaders(): Record<string, string> {
   return { Authorization: `Bearer ${token}` };
 }
 
+const AUTH_REQUIRED_COALESCE_MS = 250;
+let lastAuthRequiredDispatchAt = 0;
+
+/** @internal Resets module state between Vitest cases. */
+export function resetGarboAuthFetchStateForTests(): void {
+  lastAuthRequiredDispatchAt = 0;
+}
+
 function handleAuthResponse(res: Response): void {
   const newToken = res.headers.get("x-auth-token");
   if (newToken && typeof localStorage !== "undefined") {
@@ -24,6 +32,18 @@ function handleAuthResponse(res: Response): void {
       new CustomEvent("token-updated", { detail: newToken }),
     );
   }
+}
+
+/** Match axios api interceptor: clear stale JWT and signal re-login. */
+function handleUnauthorizedResponse(): void {
+  if (typeof window === "undefined") return;
+  if (typeof localStorage !== "undefined") {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+  }
+  const now = Date.now();
+  if (now - lastAuthRequiredDispatchAt < AUTH_REQUIRED_COALESCE_MS) return;
+  lastAuthRequiredDispatchAt = now;
+  window.dispatchEvent(new CustomEvent("auth-required"));
 }
 
 /** Thrown by API functions when the server signals the user is not authenticated. */
@@ -53,6 +73,7 @@ export interface GarboAuthFetchOptions extends RequestInit {
  * don't require Access-Control-Allow-Credentials: true from the server. Auth is via
  * the Authorization header only; cookies are not used for these API calls.
  * On response, if x-auth-token header is present, updates storage and dispatches token-updated.
+ * On 401, clears the token and dispatches auth-required (same as axios GETs).
  */
 export async function garboAuthFetch(
   url: string,
@@ -62,6 +83,10 @@ export async function garboAuthFetch(
   const headers = new Headers(init.headers);
   Object.entries(getGarboAuthHeaders()).forEach(([k, v]) => headers.set(k, v));
   const res = await fetch(url, { ...init, headers, credentials: "omit" });
-  if (!skipAuthRefresh) handleAuthResponse(res);
+  if (res.status === 401) {
+    handleUnauthorizedResponse();
+  } else if (!skipAuthRefresh) {
+    handleAuthResponse(res);
+  }
   return res;
 }

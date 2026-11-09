@@ -47,13 +47,13 @@ This document outlines manual and automated tests for the authentication system,
 - [ ] Try retry job operation
 - [ ] Verify it works without login prompt
 
-#### Test 5: Read Operations Work Without Auth
+#### Test 5: Pipeline GETs Send JWT When Logged In
 
-- [ ] Logout (clear token from localStorage)
-- [ ] Refresh page
-- [ ] Verify all GET requests work (queues, jobs, stats)
-- [ ] Verify no login modal appears
-- [ ] Verify data loads correctly
+- [ ] Log in
+- [ ] Open Jobbstatus and a job dialog; check Network for `GET …/queues/…` / `…/processes/…`
+- [ ] Verify requests include `Authorization: Bearer <token>`
+- [ ] Open Climate Pipeline with a PDF-parsing thread; verify PDF-parsing poll includes Bearer
+- [ ] Logout (clear token); those GETs should 401 / empty once pipeline-api JWT-on-GET is deployed (no write login modal)
 
 ### ✅ Edge Cases
 
@@ -184,16 +184,16 @@ This document outlines manual and automated tests for the authentication system,
    - Handles multiple simultaneous events
 
 3. **authenticatedFetch Helper**
-   - Returns promise for write operations without token
-   - Adds auth header for write operations with token
-   - Allows read operations without token
-   - Handles retry after login
+   - Returns promise for write operations without token (login modal)
+   - Adds auth header whenever a token exists (GET and writes)
+   - GET without a token is not blocked client-side
+   - Handles retry after login for writes
 
-4. **API Interceptor**
+4. **API Interceptor / garboAuthFetch**
    - Checks auth for write operations
    - Shows login modal for unauthenticated writes
    - Adds auth header when token exists
-   - Handles 401 responses correctly
+   - On 401: clears token; writes may open login modal; GETs dispatch `auth-required`
 
 5. **AuthContext**
    - Loads token from localStorage on mount
@@ -213,13 +213,13 @@ This document outlines manual and automated tests for the authentication system,
    - Request should include: `Authorization: Bearer <token>`
    - Request should proceed normally
 
-3. **Read Operations:**
-   - Requests should proceed regardless of auth
-   - May or may not include auth header (depends on implementation)
+3. **Read Operations (pipeline / JWT-gated):**
+   - When logged in: must include `Authorization: Bearer <token>`
+   - When logged out: may 401 from the backend (no write login modal)
 
 4. **401 Responses:**
    - For write operations: Should trigger login modal
-   - For read operations: Should fail silently (no modal)
+   - For read operations: Should clear token / `auth-required` (no write modal)
 
 ## Common Issues to Watch For
 

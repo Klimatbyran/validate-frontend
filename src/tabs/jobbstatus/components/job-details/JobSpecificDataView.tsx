@@ -25,6 +25,7 @@ import {
 } from "../../lib/job-specific-data-parsing";
 import { useJobRerunActions } from "../../hooks/useJobRerunActions";
 import { getPipelineUrl } from "@/config/api-env";
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import { useI18n } from "@/contexts/I18nContext";
 import type { DetailedJobResponse } from "@/lib/types";
 
@@ -98,7 +99,7 @@ export function JobSpecificDataView({
       if (!job?.queueId || !job?.id) return;
       try {
         setIsLoading(true);
-        const res = await fetch(
+        const res = await garboAuthFetch(
           getPipelineUrl(
             `/queues/${encodeURIComponent(job.queueId)}/${encodeURIComponent(job.id)}`,
           ),
