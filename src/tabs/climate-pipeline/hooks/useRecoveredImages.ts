@@ -16,9 +16,7 @@ export function useRecoveredImages(planId: string | null) {
       return;
     }
     let cancelled = false;
-    garboAuthFetch(
-      `${getClimatePlansPipelineApiUrl()}/plans/${planId}/images`,
-    )
+    garboAuthFetch(`${getClimatePlansPipelineApiUrl()}/plans/${planId}/images`)
       .then((res) => {
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
         return res.json() as Promise<RecoveredImage[]>;
