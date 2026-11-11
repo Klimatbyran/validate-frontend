@@ -14,6 +14,7 @@ import type {
 } from "../lib/explore-types";
 import { namesMatch } from "../lib/municipality-names";
 import { WEBSITE_KPI_PLAN } from "../lib/website-kpis";
+import { WEBSITE_RULE_FLAGS } from "../lib/website-rule-flags";
 import {
   buildPlaceKpiBundle,
   buildRegionKpiBundles,
@@ -127,6 +128,25 @@ export function WebsiteVisualsView({
           plan numbers always come from pipeline extracts in this Explore load —
           empty load means empty story, not sample data.
         </p>
+      </Callout>
+
+      <Callout variant="warning" title="Fixed rules to revisit">
+        <p className="text-sm text-orange-02/90 mt-1">
+          Numbers are live. These pieces are shared rules or hand-authored copy
+          — look for the amber “Fixed rule · revisit” flags on themes,
+          ask-lines, and similar. Tune after fuller pipeline runs.
+        </p>
+        <ul className="mt-3 space-y-2 text-sm text-gray-02">
+          {WEBSITE_RULE_FLAGS.map((flag) => (
+            <li key={flag.id} className="leading-snug">
+              <span className="text-orange-02 font-medium">{flag.label}</span>
+              <span className="text-gray-02"> — {flag.note}</span>
+              <div className="text-[10px] font-mono text-gray-02/70 mt-0.5">
+                {flag.source}
+              </div>
+            </li>
+          ))}
+        </ul>
       </Callout>
 
       <div className="flex flex-wrap gap-3 items-center">
@@ -255,6 +275,11 @@ export function WebsiteVisualsView({
             <li>
               <span className="text-gray-01">Language:</span> drop “Focus match”
               / match|partial|miss. Prefer questions people can ask politicians.
+            </li>
+            <li>
+              <span className="text-gray-01">Fixed rules:</span> amber flags
+              mark theme families, ask-line templates, sector buckets, English
+              mock copy, and similar — revisit after fuller pipeline runs.
             </li>
           </ul>
         </section>

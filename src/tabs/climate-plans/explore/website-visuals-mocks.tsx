@@ -16,6 +16,7 @@ import {
   startersForBundle,
 } from "../lib/website-visuals-rollup";
 import type { SectorYearEmissions } from "../lib/explore-types";
+import { RuleFlagChip, RuleFlagNote } from "./RuleFlagNote";
 
 /** Klimatkollen-like dark surface wrappers for Validate mocks. */
 export function SiteMockShell({
@@ -356,11 +357,14 @@ export function MunicipalityDetailMock({ bundle }: { bundle: PlaceKpiBundle }) {
           </div>
         </div>
 
-        <div className="rounded-[24px] bg-gray-05/50 border border-gray-03/40 px-5 py-4">
+        <div className="rounded-[24px] bg-gray-05/50 border border-gray-03/40 px-5 py-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <RuleFlagChip id="focus-match-copy" tone="light" />
+          </div>
           <div className="text-sm text-gray-02">{focus.question}</div>
           <div
             className={cn(
-              "mt-2 text-2xl md:text-3xl font-medium",
+              "mt-1 text-2xl md:text-3xl font-medium",
               focusMatchValueClass(focus.verdict),
             )}
           >
@@ -369,6 +373,9 @@ export function MunicipalityDetailMock({ bundle }: { bundle: PlaceKpiBundle }) {
         </div>
 
         <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2 px-1">
+            <RuleFlagChip id="tef-focus-families" tone="light" />
+          </div>
           <MockLinkCard
             title="What the plan focuses on"
             description={
@@ -395,6 +402,7 @@ export function MunicipalityDetailMock({ bundle }: { bundle: PlaceKpiBundle }) {
               ))}
             </div>
           ) : null}
+          <RuleFlagNote id="tef-focus-families" tone="light" />
         </div>
 
         <MockDetailSection
@@ -468,13 +476,15 @@ export function MunicipalityDetailMock({ bundle }: { bundle: PlaceKpiBundle }) {
 
         {starters.length > 0 ? (
           <div className="rounded-[24px] border border-orange-03/40 bg-orange-03/10 px-5 py-4 space-y-3">
-            <div>
+            <div className="flex flex-wrap items-center gap-2">
               <div className="text-sm text-gray-01">Conversation starters</div>
-              <p className="text-xs text-gray-02 mt-1">
-                Factual prompts for chats with neighbours or local politicians —
-                not a grade of the municipality.
-              </p>
+              <RuleFlagChip id="conversation-templates" tone="light" />
             </div>
+            <p className="text-xs text-gray-02">
+              Factual prompts for chats with neighbours or local politicians —
+              not a grade of the municipality. Template wording is fixed; counts
+              and place names are live.
+            </p>
             <ul className="space-y-2.5">
               {starters.map((line) => (
                 <li
@@ -485,6 +495,7 @@ export function MunicipalityDetailMock({ bundle }: { bundle: PlaceKpiBundle }) {
                 </li>
               ))}
             </ul>
+            <RuleFlagNote id="conversation-templates" tone="light" />
           </div>
         ) : null}
       </section>

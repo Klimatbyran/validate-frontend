@@ -15,6 +15,7 @@ import {
   type StorySectorId,
 } from "../../lib/website-story-metrics";
 import { Callout } from "@/ui/callout";
+import { RuleFlagChip, RuleFlagNote } from "../RuleFlagNote";
 
 const BEATS = [
   { id: "intro", label: "Intro" },
@@ -85,6 +86,11 @@ export function ClimatePlansStoryView({
           </div>
           <div className="text-sm text-white/70">
             National framing → drill into one municipality · live extracts only
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <RuleFlagChip id="english-mock-copy" />
+            <RuleFlagChip id="story-beat-structure" />
+            <RuleFlagChip id="six-sector-buckets" />
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -380,11 +386,14 @@ function SectorTableBeat({
       title="Where plans put actions on the table"
       body="Six main emission sectors, plus Other & cross-cutting (procurement, planning, and more). Filled cells mean we found concrete measures in the plan text we read — not how much they will cut."
     >
-      <p className="mb-4 text-center text-xs text-white/45">
-        {national
-          ? "National view: % of municipalities with actions in each sector"
-          : "Municipality view: whether this plan has actions in each sector"}
-      </p>
+      <div className="mb-4 max-w-3xl mx-auto space-y-2">
+        <RuleFlagNote id="six-sector-buckets" />
+        <p className="text-center text-xs text-white/45">
+          {national
+            ? "National view: % of municipalities with actions in each sector"
+            : "Municipality view: whether this plan has actions in each sector"}
+        </p>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {cells.map((cell, i) => {
           const fill = national
@@ -519,6 +528,9 @@ function BiggestSourceBeat({
           : `In this load, ${metrics.focusMatchCounts.miss} municipalities leave the biggest source without clear actions (${Math.round(nationalMissShare * 100)}%).`
       }
     >
+      <div className="mb-5 max-w-3xl mx-auto">
+        <RuleFlagNote id="focus-match-copy" />
+      </div>
       <div className="relative mx-auto h-[22rem] max-w-3xl rounded-[32px] border border-white/10 bg-white/[0.03]">
         <svg viewBox="0 0 640 360" className="w-full h-full">
           <circle
@@ -728,6 +740,9 @@ function ThemesBeat({
         "Across Sweden, plans cluster around familiar solutions. Patterns show shared momentum — and harder areas fewer municipalities take on."
       }
     >
+      <div className="mb-5 max-w-3xl mx-auto">
+        <RuleFlagNote id="tef-focus-families" />
+      </div>
       <div className="space-y-3 max-w-3xl mx-auto">
         {themes.length === 0 ? (
           <p className="text-center text-sm text-white/50">
@@ -818,10 +833,13 @@ function ConcretenessBeat({
           : "We also look at how concrete the wording is: whether measures name who acts, what they do, when, and how — and how often matches are only implied from broad text."
       }
     >
-      <p className="mb-5 text-center text-xs text-white/50 max-w-2xl mx-auto">
-        Based on the plan wording we read. Other documents, budgets or decisions
-        may add detail. Automated reading may be wrong.
-      </p>
+      <div className="mb-5 max-w-3xl mx-auto space-y-2">
+        <RuleFlagNote id="concreteness-prompt-thresholds" />
+        <p className="text-center text-xs text-white/50 max-w-2xl mx-auto">
+          Based on the plan wording we read. Other documents, budgets or
+          decisions may add detail. Automated reading may be wrong.
+        </p>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl mx-auto">
         {slots.map((slot, i) => (
@@ -1128,13 +1146,16 @@ function TakeawaysBeat({
         ))}
       </div>
 
-      <div className="mt-10 max-w-3xl mx-auto rounded-3xl border border-orange-03/35 bg-orange-03/10 px-5 py-5">
-        <div className="text-sm text-white">Questions to ask locally</div>
-        <p className="text-xs text-white/50 mt-1">
-          Exploratory prompts from the same signals — keep, rewrite, or cut
-          later.
+      <div className="mt-10 max-w-3xl mx-auto rounded-3xl border border-orange-03/35 bg-orange-03/10 px-5 py-5 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="text-sm text-white">Questions to ask locally</div>
+          <RuleFlagChip id="conversation-templates" />
+        </div>
+        <p className="text-xs text-white/50">
+          Exploratory prompts from live signals — template English is fixed;
+          keep, rewrite, or cut later.
         </p>
-        <ul className="mt-4 space-y-3">
+        <ul className="space-y-3">
           {prompts.map((line) => (
             <li
               key={line}
@@ -1144,6 +1165,7 @@ function TakeawaysBeat({
             </li>
           ))}
         </ul>
+        <RuleFlagNote id="conversation-templates" />
       </div>
     </StoryChapter>
   );
