@@ -30,8 +30,8 @@ export const TEF_SECTORS = [
   {
     id: "afolu",
     code: "T-3",
-    label: "AFOLU",
-    aliases: ["afolu", "agriculture"],
+    label: "Agriculture & land use",
+    aliases: ["afolu", "agriculture", "agriculture & land use"],
     rgb: [249, 115, 22] as const,
   },
   {

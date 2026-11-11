@@ -135,8 +135,8 @@ const PUBLIC_FOCUS_FAMILIES: {
   },
   {
     id: "afolu-food-land",
-    labelEn: "food, agriculture and land use",
-    labelSv: "mat, jordbruk och markanvändning",
+    labelEn: "agriculture and land use",
+    labelSv: "jordbruk och markanvändning",
     match: (_t, _p, sectorId) => sectorId === "afolu",
   },
   {

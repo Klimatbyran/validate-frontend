@@ -90,7 +90,7 @@ describe("website KPI prototypes", () => {
     expect(measureCountsBySector(measures).afolu).toBe(0);
   });
 
-  it("reports emission focus gap for missing AFOLU measures", () => {
+  it("reports emission focus gap for missing agriculture & land use measures", () => {
     const emissions: SectorYearEmissions[] = [
       {
         municipalityName: "Bjurholm",
