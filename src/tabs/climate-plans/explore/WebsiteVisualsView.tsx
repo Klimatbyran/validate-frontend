@@ -25,10 +25,10 @@ type WebsiteSurface =
   | "region-overview";
 
 const SURFACE_OPTIONS: { value: WebsiteSurface; label: string }[] = [
-  { value: "muni-detail", label: "Kommun detalj" },
-  { value: "region-detail", label: "Region detalj" },
-  { value: "muni-overview", label: "Kommun översikt" },
-  { value: "region-overview", label: "Region översikt" },
+  { value: "muni-detail", label: "Municipality detail" },
+  { value: "region-detail", label: "Region detail" },
+  { value: "muni-overview", label: "Municipality overview" },
+  { value: "region-overview", label: "Region overview" },
 ];
 
 export function WebsiteVisualsView({
@@ -113,8 +113,8 @@ export function WebsiteVisualsView({
     <div className="space-y-5">
       <MethodologyPanel
         data="Website-layout mocks for klimatkollen.se using live explore extracts. Mirrors TerritoryOverviewLayout (chips → map + answer → topp/botten → table) and DetailHeader / LinkCard / DetailSection patterns from the public frontend."
-        calculation="Utsläpp utan åtgärder = share of six mapped SMHI sectors with no addressing measures. Tyngdpunkt = rule-based TEF-family sentence. Sedan plan = territorial CAGR only with ≥3 post-adoption years (grey null otherwise). Region gap = emissions-weighted municipal average."
-        extra="Proposed placements: overview map chip for emission gap (not tyngdpunkt). Detail: gap + since-plan in header stats; tyngdpunkt as LinkCard-style text under Klimatplan. Region detail has no climate LinkCards today — add gap/coverage in header and a merged focus sentence."
+        calculation="Emissions without measures = share of six mapped SMHI sectors with no addressing measures. Main focus = rule-based TEF-family sentence. Since plan = territorial CAGR only with ≥3 post-adoption years (grey null otherwise). Region gap = emissions-weighted municipal average."
+        extra="Proposed placements: overview map chip for emission gap (not main-focus sentence). Detail: gap + since-plan in header stats; main focus as LinkCard-style text under Climate plan. Region detail has no climate LinkCards today — add gap/coverage in header and a merged focus sentence."
       />
 
       <Callout variant="info" title="Website mock surfaces">
@@ -167,8 +167,8 @@ export function WebsiteVisualsView({
           </select>
         ) : null}
         <span className="text-xs text-gray-02">
-          {coverage.withGap}/{coverage.total} kommuner med gap ·{" "}
-          {coverage.regions} regioner i load
+          {coverage.withGap}/{coverage.total} municipalities with gap ·{" "}
+          {coverage.regions} regions in load
         </span>
       </div>
 
@@ -217,22 +217,22 @@ export function WebsiteVisualsView({
           </h3>
           <ul className="text-sm text-gray-02 list-disc pl-5 space-y-1.5">
             <li>
-              <span className="text-gray-01">Översikt (karta):</span> add chip
-              “Utsläpp utan åtgärder” next to Utsläppen / Paris /
-              Klimatplanerna. Keep tyngdpunkt off the map.
+              <span className="text-gray-01">Overview (map):</span> add chip
+              “Emissions without measures” next to Emissions / Paris Agreement /
+              Climate plans. Keep main-focus sentence off the map.
             </li>
             <li>
-              <span className="text-gray-01">Kommun detalj:</span> gap +
-              since-plan as DetailHeader stats; Klimatplan LinkCard stays; add
-              Tyngdpunkt as adjacent text card.
+              <span className="text-gray-01">Municipality detail:</span> gap +
+              since-plan as DetailHeader stats; Climate plan LinkCard stays; add
+              Main focus as adjacent text card.
             </li>
             <li>
-              <span className="text-gray-01">Region detalj:</span> gap +
-              coverage in header; merged tyngdpunkt paragraph; municipality list
+              <span className="text-gray-01">Region detail:</span> gap +
+              coverage in header; merged main-focus paragraph; municipality list
               can show gap %.
             </li>
             <li>
-              <span className="text-gray-01">Sedan 2015</span> stays the stable
+              <span className="text-gray-01">Since 2015</span> stays the stable
               emissions overview KPI; since-plan stays detail-only with grey
               nulls.
             </li>

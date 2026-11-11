@@ -71,7 +71,7 @@ export function MockChipRow({
             {chip.label}
             {chip.proposed ? (
               <span className="ml-1.5 text-[10px] uppercase text-orange-02">
-                ny
+                new
               </span>
             ) : null}
           </button>
@@ -101,7 +101,7 @@ export function MockAnswerCard({
   return (
     <section className="rounded-[30px] bg-gray-05/80 border border-gray-03/40 px-6 py-7 md:px-8 h-full flex flex-col">
       <div className="text-xs uppercase tracking-wide text-gray-02">
-        Det korta svaret
+        The short answer
       </div>
       <p className="mt-2 text-sm text-gray-02">{averageLabel}</p>
       <div
@@ -117,7 +117,7 @@ export function MockAnswerCard({
       </div>
       <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
         <div>
-          <div className="text-xs text-gray-02 mb-2">Toppen</div>
+          <div className="text-xs text-gray-02 mb-2">Top</div>
           <ul className="space-y-1.5">
             {top.map((row) => (
               <li
@@ -133,7 +133,7 @@ export function MockAnswerCard({
           </ul>
         </div>
         <div>
-          <div className="text-xs text-gray-02 mb-2">Botten</div>
+          <div className="text-xs text-gray-02 mb-2">Bottom</div>
           <ul className="space-y-1.5">
             {bottom.map((row) => (
               <li
@@ -266,7 +266,7 @@ export function MunicipalityDetailMock({ bundle }: { bundle: PlaceKpiBundle }) {
   const planYear = bundle.record.adoptedYear;
   return (
     <SiteMockShell
-      eyebrow="Kommun · detaljsida"
+      eyebrow="Municipality · detail page"
       title="DetailHeader + LinkCards + DetailSection"
     >
       <MockDetailHeader
@@ -274,13 +274,13 @@ export function MunicipalityDetailMock({ bundle }: { bundle: PlaceKpiBundle }) {
         subtitle={bundle.record.county ?? bundle.record.regionName ?? undefined}
         stats={[
           {
-            label: "Utsläpp utan åtgärder",
+            label: "Emissions without measures",
             value: gapValue,
             className: gapValueClass(bundle.gap.gapShare),
-            caption: bundle.gap.summarySv,
+            caption: bundle.gap.summaryEn,
           },
           {
-            label: "Utsläppsförändring sedan plan",
+            label: "Emissions change since plan",
             value: since.value,
             className: since.className,
             caption: since.caption,
@@ -300,36 +300,36 @@ export function MunicipalityDetailMock({ bundle }: { bundle: PlaceKpiBundle }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <MockLinkCard
-          title="Klimatplan"
+          title="Climate plan"
           description={
-            planYear ? `Antagen ${planYear}` : "Saknar klimatplan / år"
+            planYear ? `Adopted ${planYear}` : "No climate plan / year"
           }
           descriptionClassName={planYear ? "text-blue-03" : "text-pink-03"}
           footer={bundle.record.documentTitle ?? undefined}
         />
         <MockLinkCard
-          title="Tyngdpunkt"
+          title="Main focus"
           description={
-            bundle.focus.sentenceSv ??
-            "För lite underlag för en tyngdpunktsmening."
+            bundle.focus.sentenceEn ??
+            "Not enough evidence for a focus sentence yet."
           }
           descriptionClassName={
-            bundle.focus.sentenceSv ? "text-gray-01" : "text-gray-02"
+            bundle.focus.sentenceEn ? "text-gray-01" : "text-gray-02"
           }
-          footer="Regelbaserad mening från TEF-familjer — inte LLM-prosa."
+          footer="Rule-based sentence from TEF families — not LLM prose."
         />
       </div>
 
       <MockDetailSection
-        title="Plan vs utsläpp"
+        title="Plan vs emissions"
         items={[
           {
-            title: "Utsläpp utan åtgärder",
+            title: "Emissions without measures",
             value: gapValue,
             className: gapValueClass(bundle.gap.gapShare),
           },
           {
-            title: "Saknade sektorer",
+            title: "Missing sectors",
             value:
               bundle.gap.missingSectors.length === 0
                 ? "0"
@@ -340,7 +340,7 @@ export function MunicipalityDetailMock({ bundle }: { bundle: PlaceKpiBundle }) {
                 : "text-pink-03",
           },
           {
-            title: "Åtgärder i extract",
+            title: "Measures in extract",
             value: String(bundle.record.measures.length),
             className: "text-orange-02",
           },
@@ -349,7 +349,7 @@ export function MunicipalityDetailMock({ bundle }: { bundle: PlaceKpiBundle }) {
 
       <div className="rounded-[30px] border border-gray-03/40 bg-gray-05/40 px-5 py-4">
         <div className="text-xs uppercase tracking-wide text-gray-02 mb-3">
-          Sektorer (senaste år)
+          Sectors (latest year)
         </div>
         <div className="space-y-2">
           {bundle.gap.rows.map((row) => (
@@ -373,7 +373,7 @@ export function MunicipalityDetailMock({ bundle }: { bundle: PlaceKpiBundle }) {
                   row.addressed ? "text-blue-03" : "text-pink-03",
                 )}
               >
-                {row.addressed ? "ja" : "nej"}
+                {row.addressed ? "yes" : "no"}
               </div>
             </div>
           ))}
@@ -394,28 +394,29 @@ export function RegionDetailMock({
   const gapValue = formatGapPercent(bundle.gap.gapShare);
   return (
     <SiteMockShell
-      eyebrow="Region · detaljsida"
-      title="DetailHeader + region roll-up (inga LinkCards idag på sajten)"
+      eyebrow="Region · detail page"
+      title="DetailHeader + region roll-up (no LinkCards on the site today)"
     >
       <MockDetailHeader
         name={bundle.record.name}
-        subtitle={`${bundle.assessedCount} av ${bundle.municipalityCount} kommuner med bedömbar gap`}
+        subtitle={`${bundle.assessedCount} of ${bundle.municipalityCount} municipalities with an assessable gap`}
         stats={[
           {
-            label: "Utsläpp utan åtgärder",
+            label: "Emissions without measures",
             value: gapValue,
             className: gapValueClass(bundle.gap.gapShare),
-            caption: "Emissionsvägd snittgap över bedömda kommuner i regionen.",
+            caption:
+              "Emissions-weighted average gap across assessed municipalities in the region.",
           },
           {
-            label: "Utsläppsförändring sedan plan",
+            label: "Emissions change since plan",
             value: since.value,
             className: since.className,
             caption:
-              "Regioner saknar egen plan i pipelinen — ofta “—” tills kommunår finns.",
+              "Regions have no own plan in the pipeline — often “—” until municipal years exist.",
           },
           {
-            label: "Kommuner analyserade",
+            label: "Municipalities analysed",
             value: `${bundle.assessedCount}/${bundle.municipalityCount}`,
             className: "text-orange-02",
           },
@@ -423,19 +424,19 @@ export function RegionDetailMock({
       />
 
       <MockLinkCard
-        title="Tyngdpunkt (sammanslagen)"
+        title="Main focus (merged)"
         description={
-          bundle.focus.sentenceSv ??
-          "För lite underlag i regionens extracts ännu."
+          bundle.focus.sentenceEn ??
+          "Not enough evidence in the region extracts yet."
         }
         descriptionClassName={
-          bundle.focus.sentenceSv ? "text-gray-01" : "text-gray-02"
+          bundle.focus.sentenceEn ? "text-gray-01" : "text-gray-02"
         }
-        footer="Bygger på sammanslagna åtgärder — inte en regional klimatplan."
+        footer="Built from merged measures — not a regional climate plan."
       />
 
       <section>
-        <h3 className="text-xl font-light text-gray-01 mb-4">Kommuner</h3>
+        <h3 className="text-xl font-light text-gray-01 mb-4">Municipalities</h3>
         <ul className="divide-y divide-gray-03/40 rounded-[30px] border border-gray-03/40 overflow-hidden">
           {bundle.municipalities
             .slice()
@@ -453,7 +454,7 @@ export function RegionDetailMock({
                     {formatGapPercent(localGap)}
                     <span className="text-gray-02">
                       {" "}
-                      · {muni.measures.length} åtgärder
+                      · {muni.measures.length} measures
                       {muni.adoptedYear ? ` · ${muni.adoptedYear}` : ""}
                     </span>
                   </span>
@@ -486,21 +487,21 @@ export function OverviewMock({
   const chips =
     entityType === "municipalities"
       ? [
-          { id: "historical", label: "Utsläppen" },
-          { id: "paris", label: "Parisavtalet" },
-          { id: "climatePlan", label: "Klimatplanerna" },
+          { id: "historical", label: "Emissions" },
+          { id: "paris", label: "Paris Agreement" },
+          { id: "climatePlan", label: "Climate plans" },
           {
             id: "emissionFocusGap",
-            label: "Utsläpp utan åtgärder",
+            label: "Emissions without measures",
             proposed: true,
           },
         ]
       : [
-          { id: "historical", label: "Utsläppen" },
-          { id: "paris", label: "Parisavtalet" },
+          { id: "historical", label: "Emissions" },
+          { id: "paris", label: "Paris Agreement" },
           {
             id: "emissionFocusGap",
-            label: "Utsläpp utan åtgärder",
+            label: "Emissions without measures",
             proposed: true,
           },
         ];
@@ -519,19 +520,19 @@ export function OverviewMock({
     <SiteMockShell
       eyebrow={
         entityType === "municipalities"
-          ? "Kommuner · översikt"
-          : "Regioner · översikt"
+          ? "Municipalities · overview"
+          : "Regions · overview"
       }
-      title="TerritoryOverviewLayout: chips → map + answer → topp/botten"
+      title="TerritoryOverviewLayout: chips → map + answer → top/bottom"
     >
       <MockChipRow chips={chips} active={activeChip} onChange={onChipChange} />
 
       {!showingGap ? (
         <p className="text-sm text-gray-02 rounded-2xl border border-dashed border-gray-03/50 px-4 py-3">
-          Befintliga chips ({chips.find((c) => c.id === activeChip)?.label})
-          finns redan på klimatkollen.se. Välj{" "}
-          <span className="text-orange-02">Utsläpp utan åtgärder</span> för att
-          se hur det nya KPI:t skulle sitta i samma layout.
+          Existing chips ({chips.find((c) => c.id === activeChip)?.label})
+          already ship on klimatkollen.se. Select{" "}
+          <span className="text-orange-02">Emissions without measures</span> to
+          see how the new KPI would sit in the same layout.
         </p>
       ) : null}
 
@@ -548,12 +549,12 @@ export function OverviewMock({
         <MockAnswerCard
           averageLabel={
             showingGap
-              ? "Genomsnittlig andel utsläpp utan åtgärder i planen"
-              : "Välj det nya KPI-chipet för mockad short answer"
+              ? "Average share of emissions without measures in the plan"
+              : "Select the new KPI chip for the mocked short answer"
           }
           averageValue={showingGap ? formatGapPercent(avgGap) : "—"}
           averageClassName={showingGap ? gapValueClass(avgGap) : "text-gray-02"}
-          direction="Lägre är bättre"
+          direction="Lower is better"
           top={best.map((b) => ({
             name: b.record.name,
             value: formatGapPercent(b.gap.gapShare),
@@ -564,7 +565,7 @@ export function OverviewMock({
           }))}
           note={
             showingGap
-              ? `${assessed.length} av ${bundles.length} ${entityType === "municipalities" ? "kommuner" : "regioner"} har bedömbar data i denna explore-load. Grått på kartan = saknar extract.`
+              ? `${assessed.length} of ${bundles.length} ${entityType === "municipalities" ? "municipalities" : "regions"} have assessable data in this explore load. Grey on the map = no extract.`
               : undefined
           }
         />
@@ -573,7 +574,7 @@ export function OverviewMock({
       {showingGap ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InsightList
-            title="Toppen"
+            title="Top"
             rows={best.map((b) => ({
               name: b.record.name,
               value: formatGapPercent(b.gap.gapShare),
@@ -581,7 +582,7 @@ export function OverviewMock({
             tone="good"
           />
           <InsightList
-            title="Botten"
+            title="Bottom"
             rows={worst.map((b) => ({
               name: b.record.name,
               value: formatGapPercent(b.gap.gapShare),
@@ -596,9 +597,9 @@ export function OverviewMock({
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-02 border-b border-gray-03/40">
-                <th className="px-4 py-3 font-medium">Namn</th>
+                <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium text-right">
-                  Utsläpp utan åtgärder
+                  Emissions without measures
                 </th>
                 <th className="px-4 py-3 font-medium text-right">
                   Focus match

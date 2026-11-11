@@ -116,15 +116,15 @@ export function formatSincePlan(sincePlan: SincePlanTrendResult): {
       value,
       className:
         sincePlan.annualChangePercent > 0 ? "text-pink-03" : "text-orange-02",
-      caption: `Sedan planen (${sincePlan.fromYear}–${sincePlan.toYear}). Ingen kausal tolkning.`,
+      caption: `Since the plan (${sincePlan.fromYear}–${sincePlan.toYear}). No causal claim.`,
     };
   }
   const captions: Record<SincePlanTrendResult["status"], string> = {
     ok: "",
     "too-new":
-      "För få år efter antagande — visas som saknad data, inte misslyckande.",
-    "no-plan-year": "Saknar antagandeår.",
-    "no-emissions": "Saknar utsläppserie.",
+      "Too few years after adoption — shown as missing data, not failure.",
+    "no-plan-year": "Missing adoption year.",
+    "no-emissions": "Missing emissions series.",
   };
   return {
     value: "—",
