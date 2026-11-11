@@ -680,7 +680,7 @@ function GapBeat({
           }}
         />
         <motion.div
-          className="absolute inset-y-0 right-0 flex items-center justify-center"
+          className="absolute inset-y-0 right-0"
           initial={{ width: "0%" }}
           whileInView={{ width: `${pct ?? 0}%` }}
           viewport={{ once: true }}
@@ -689,21 +689,21 @@ function GapBeat({
             background:
               "repeating-linear-gradient(-45deg, rgba(255,255,255,0.16), rgba(255,255,255,0.16) 8px, rgba(255,255,255,0.05) 8px, rgba(255,255,255,0.05) 16px)",
           }}
-        >
-          <div className="text-center px-3">
-            <div className="text-4xl font-medium text-white tabular-nums">
+        />
+        {/* Readout stays outside the fill width so 0% / 100% never clips. */}
+        <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex items-center justify-end pointer-events-none">
+          <div className="rounded-2xl border border-white/15 bg-black/55 backdrop-blur-sm px-4 py-3 text-center shadow-lg">
+            <div className="text-4xl font-medium text-white tabular-nums leading-none">
               {pct == null ? "—" : `${pct}%`}
             </div>
-            <div className="text-xs uppercase tracking-wide text-white/70">
+            <div className="mt-1.5 text-[11px] uppercase tracking-wide text-white/70 whitespace-nowrap">
               No actions found
             </div>
           </div>
-        </motion.div>
-        <div className="absolute bottom-3 left-4 text-xs text-white/60">
-          Sectors with actions
         </div>
-        <div className="absolute bottom-3 right-4 text-xs text-white/60">
-          Sectors with no actions found
+        <div className="absolute bottom-3 left-4 right-4 flex justify-between gap-3 text-xs text-white/60">
+          <span>Sectors with actions</span>
+          <span className="text-right">Sectors with no actions found</span>
         </div>
       </div>
     </StoryChapter>
