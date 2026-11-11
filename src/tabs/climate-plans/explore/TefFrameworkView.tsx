@@ -36,6 +36,12 @@ import {
   hasExplicitJudgment,
   type TefImpliedFilter,
 } from "../lib/tef-detail-summary";
+import {
+  TEF_SOURCE_FILTER_OPTIONS,
+  TEF_SOURCE_LABEL,
+  filterHitsBySource,
+  type TefSourceFilter,
+} from "../lib/tef-hit-source";
 
 const COLUMN_COUNTS: Record<string, number> = {
   transport: 3,
@@ -66,6 +72,8 @@ export function TefFrameworkView({
   onSelectTefId,
   tefImplied,
   onTefImpliedChange,
+  tefSource,
+  onTefSourceChange,
 }: {
   records: ExploreMunicipalityRecord[];
   sectorEmissions: SectorYearEmissions[];
@@ -85,6 +93,8 @@ export function TefFrameworkView({
   onSelectTefId: (id: string) => void;
   tefImplied: TefImpliedFilter;
   onTefImpliedChange: (value: TefImpliedFilter) => void;
+  tefSource: TefSourceFilter;
+  onTefSourceChange: (value: TefSourceFilter) => void;
 }) {
   const [selectedSectorId, setSelectedSectorId] = useState<
     TefSectorId | "other" | null
@@ -105,11 +115,20 @@ export function TefFrameworkView({
     [allHits],
   );
 
+  const sourceCounts = useMemo(() => {
+    const counts = { official: 0, proposed: 0, "runtime-shadow": 0 };
+    for (const hit of allHits) {
+      counts[hit.source ?? "official"] += 1;
+    }
+    return counts;
+  }, [allHits]);
+
   const cells = useMemo(() => {
     const scoped = filterHitsByScope(allHits, scope, effectivePlace);
-    const filtered = filterTefHits(scoped, tefImplied);
+    const bySource = filterHitsBySource(scoped, tefSource);
+    const filtered = filterTefHits(bySource, tefImplied);
     return buildTefFrameworkCells(filtered);
-  }, [allHits, scope, effectivePlace, tefImplied]);
+  }, [allHits, scope, effectivePlace, tefImplied, tefSource]);
 
   const columns = useMemo(() => groupCellsBySector(cells), [cells]);
 
@@ -139,9 +158,9 @@ export function TefFrameworkView({
   return (
     <div className="space-y-4">
       <MethodologyPanel
-        data="transition_element_matches on scored measures (stable_id, short_label, sector_path, match_confidence, optional explicit). Gate domain from activity_shifts.transition_element_gate_domain (pipeline). Sector emissions from Unearth / SMHI territorial series. Sector columns follow the Transition Element Framework (T-1 Transport … T-6 Waste)."
-        calculation="Each cell is one TEF (stable_id). Hits = match rows in the selected scope. Strength = Σ confidence weights (high=3, mid=2, low=1) / (3 × hits). Municipalities = distinct municipalities with at least one match. Colour intensity is that metric scaled to the max cell in the current scope. Match rate on a header = gated shifts with ≥1 confirmed match in the same top domain / shifts gated to that domain. Optional emission bars = sector tonnes / sum of mapped buckets (transport→transport, industry→industry, afolu→agriculture, buildings→heating, energy→energy, waste→waste) using each place’s latest year; machinery/product/other are excluded. 3D layout: SVG isometric pillars (height = emission share or relative tonnes); TEF cubes under each sector (click a sector to expand with named cubes). Cube size is fixed until we can attribute reduction effectiveness."
-        extra="Scope mirrors the KPI map: all extracts, one region, or one municipality. Empty cells with a low match rate mean the domain appears in plans but TEF matching struggled — not that the topic is absent. Click a catalogue cell or a 3D TEF cube for a gist then expand places for quotes. When tePicker recorded explicit vs implied judgments, use All / Implied / Exclude implied to reshape the catalogue and detail evidence; older pipeline runs may lack that field (those unlabeled hits stay visible unless you choose Only implied)."
+        data="transition_element_matches on scored measures (stable_id, short_label, sector_path, match_confidence, optional explicit) including catalogue proposed STE-* shadows. Runtime ShadowTransitionElement rows attached after weak-match review (shadow_element_id + label/path). Gate domain from activity_shifts.transition_element_gate_domain. Sector emissions from Unearth / SMHI territorial series. Sector columns follow T-1 Transport … T-6 Waste; unclassified proposed/shadow cells land in Other."
+        calculation="Each cell is one TEF (stable_id) or runtime-shadow:<id>. Hits = match/shadow rows in the selected scope + source filter. Strength = Σ confidence weights (high=3, mid=2, low=1) / (3 × hits); runtime shadows default to mid. Municipalities = distinct municipalities with at least one hit. Colour intensity is that metric scaled to the max cell in the current scope. Match rate on a header = gated shifts with ≥1 confirmed match in the same top domain / shifts gated to that domain. Optional emission bars = sector tonnes / sum of mapped buckets using each place’s latest year; machinery/product/other are excluded. 3D layout: SVG isometric pillars (height = emission share or relative tonnes); TEF cubes under each sector."
+        extra="Source filter: Official (active catalogue) · Proposed STE (catalogue shadows already integrable by the matcher) · Shadow gaps (runtime DB taxonomy before promotion). Scope mirrors the KPI map. Prefer measure-level evidence over raw commitments. When tePicker recorded explicit vs implied judgments, use All / Implied / Exclude implied; older runs may lack that field."
       />
 
       <div className="flex flex-wrap gap-2 items-center">
@@ -231,6 +250,26 @@ export function TefFrameworkView({
           </label>
         )}
 
+        <select
+          value={tefSource}
+          onChange={(e) => onTefSourceChange(e.target.value as TefSourceFilter)}
+          className="text-sm bg-gray-04 border border-gray-03/50 text-gray-01 rounded px-3 py-2"
+          aria-label="TEF source filter"
+        >
+          {TEF_SOURCE_FILTER_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+              {option.value === "official"
+                ? ` (${sourceCounts.official})`
+                : option.value === "proposed"
+                  ? ` (${sourceCounts.proposed})`
+                  : option.value === "runtime-shadow"
+                    ? ` (${sourceCounts["runtime-shadow"]})`
+                    : ` (${allHits.length})`}
+            </option>
+          ))}
+        </select>
+
         {showImpliedFilter ? (
           <TefImpliedFilterControl
             value={tefImplied}
@@ -317,13 +356,17 @@ export function TefFrameworkView({
                               <button
                                 key={cell.stableId}
                                 type="button"
-                                title={`${cell.index ?? cell.stableId}: ${cell.title}`}
+                                title={`${cell.index ?? cell.stableId}: ${cell.title} (${TEF_SOURCE_LABEL[cell.source]})`}
                                 onClick={() => onSelectTefId(cell.stableId)}
                                 className={cn(
-                                  "w-14 h-14 rounded-md border text-left p-1 flex flex-col justify-between transition-transform hover:scale-[1.03]",
+                                  "w-14 h-14 rounded-md border text-left p-1 flex flex-col justify-between transition-transform hover:scale-[1.03] relative",
                                   isSelected
                                     ? "border-gray-01 ring-2 ring-gray-01/40"
-                                    : "border-black/20",
+                                    : cell.source === "proposed"
+                                      ? "border-dashed border-orange-03/70"
+                                      : cell.source === "runtime-shadow"
+                                        ? "border-dashed border-pink-03/70"
+                                        : "border-black/20",
                                 )}
                                 style={{
                                   backgroundColor: tefCellFill(
@@ -334,7 +377,9 @@ export function TefFrameworkView({
                               >
                                 <span className="text-[9px] leading-tight font-mono text-white/90 line-clamp-2">
                                   {cell.index?.replace(/^T-\d/, "") ??
-                                    cell.stableId.slice(0, 8)}
+                                    (cell.source === "runtime-shadow"
+                                      ? "SH"
+                                      : cell.stableId.slice(0, 8))}
                                 </span>
                                 <span className="text-[10px] font-semibold tabular-nums text-white">
                                   {metric === "strength"

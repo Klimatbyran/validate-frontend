@@ -300,6 +300,30 @@ describe("map KPIs", () => {
     );
     expect(mapKpiValue(row, "companionReferenceCount", null).numeric).toBe(1);
     expect(mapKpiValue(row, "shadowHitCount", null).numeric).toBe(1);
+
+    const hits = collectTefHits(measures);
+    expect(hits.some((h) => h.source === "runtime-shadow")).toBe(true);
+    expect(
+      collectTefHits([
+        {
+          ...filled,
+          activity_shifts: [
+            {
+              ...filled.activity_shifts[0]!,
+              transition_element_matches: [
+                {
+                  stable_id: "shadow_ste002_biogas",
+                  short_label: "STE-002 - Biogas production",
+                  description: "Producing biogas.",
+                  sector_path: "Energy > Energy Supply > Biogas",
+                  match_confidence: "mid",
+                },
+              ],
+            },
+          ],
+        },
+      ])[0]?.source,
+    ).toBe("proposed");
   });
 
   it("counts distinct adaptation and own commitment texts", () => {

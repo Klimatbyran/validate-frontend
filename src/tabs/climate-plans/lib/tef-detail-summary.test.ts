@@ -18,6 +18,7 @@ function hit(partial: Partial<TefHit>): TefHit {
     confidence: "high",
     measureText: "measure",
     description: "",
+    source: "official",
     shiftFrom: "car",
     shiftTo: "train",
     need: "mobility",

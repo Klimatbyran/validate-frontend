@@ -6,6 +6,7 @@ import type {
 } from "./explore-types";
 import { CONFIDENCE_WEIGHT } from "./tef-groups";
 import { foldRegionName, namesMatch } from "./municipality-names";
+import { dominantHitSource, type TefHitSource } from "./tef-hit-source";
 
 export type { TefFrameworkMetric, TefFrameworkScope };
 
@@ -29,8 +30,8 @@ export const TEF_SECTORS = [
   {
     id: "afolu",
     code: "T-3",
-    label: "AFOLU",
-    aliases: ["afolu", "agriculture"],
+    label: "Agriculture & land use",
+    aliases: ["afolu", "agriculture", "agriculture & land use"],
     rgb: [249, 115, 22] as const,
   },
   {
@@ -77,6 +78,8 @@ export interface TefFrameworkCell {
   municipalityCount: number;
   weightedStrength: number;
   hits: TefHitWithPlace[];
+  /** Dominant hit source for badge / filter affordances. */
+  source: TefHitSource;
 }
 
 export interface TefFrameworkSectorColumn {
@@ -92,7 +95,10 @@ const TE_INDEX_RE = /\b(T-\d[A-Za-z0-9]*-TE-\d+)\b/i;
 
 export function parseTefIndex(shortLabel: string): string | null {
   const match = shortLabel.match(TE_INDEX_RE);
-  return match ? match[1] : null;
+  if (match) return match[1];
+  // Catalogue shadow proposals use STE-NNN instead of T-…-TE-N.
+  const ste = shortLabel.match(/\b(STE-\d+)\b/i);
+  return ste ? ste[1].toUpperCase() : null;
 }
 
 /** Prefer the human title after "T-… - ", else the whole short_label. */
@@ -208,6 +214,7 @@ export function buildTefFrameworkCells(
         municipalityCount: new Set(groupHits.map((h) => h.municipalityId)).size,
         weightedStrength: maxWeight === 0 ? 0 : weightSum / maxWeight,
         hits: groupHits,
+        source: dominantHitSource(groupHits),
       };
     })
     .sort((a, b) => {

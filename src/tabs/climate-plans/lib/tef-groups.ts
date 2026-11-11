@@ -114,7 +114,7 @@ export const EMISSION_BUCKET_LABEL: Record<EmissionBucket, string> = {
   industry: "Industry",
   energy: "Electricity & district heat",
   heating: "Buildings / own heating",
-  agriculture: "Agriculture, forest & land",
+  agriculture: "Agriculture & land use",
   machinery: "Working machinery",
   waste: "Waste & sewage",
   product: "Product use",

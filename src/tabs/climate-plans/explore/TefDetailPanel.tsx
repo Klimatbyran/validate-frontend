@@ -12,6 +12,7 @@ import {
   type TefImpliedFilter,
 } from "../lib/tef-detail-summary";
 import { TefImpliedFilterControl } from "./TefImpliedFilterControl";
+import { TEF_SOURCE_LABEL } from "../lib/tef-hit-source";
 
 type Hit = TefFrameworkCell["hits"][number];
 
@@ -91,6 +92,18 @@ export function TefDetailPanel({
             {cell.index ?? cell.stableId}
           </span>
           <span className="text-xs text-gray-02">· {cell.sectorLabel}</span>
+          <span
+            className={cn(
+              "text-[10px] uppercase tracking-wide rounded-full border px-2 py-0.5",
+              cell.source === "proposed"
+                ? "border-orange-03/40 text-orange-03 bg-orange-03/10"
+                : cell.source === "runtime-shadow"
+                  ? "border-pink-03/40 text-pink-03 bg-pink-03/10"
+                  : "border-gray-03/40 text-gray-02 bg-gray-03/10",
+            )}
+          >
+            {TEF_SOURCE_LABEL[cell.source]}
+          </span>
           <span className="text-xs tabular-nums text-gray-02 ml-auto">
             {cell.hitCount} hits · {cell.municipalityCount} places ·{" "}
             {Math.round(cell.weightedStrength * 100)}% strength

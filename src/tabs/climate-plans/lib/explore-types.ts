@@ -3,6 +3,7 @@ import type {
   Measure,
   MunicipalityMeasures,
 } from "./measures-types";
+import type { TefHitSource } from "./tef-hit-source";
 
 export type ExploreDataSource =
   | "pipeline-measures"
@@ -26,6 +27,11 @@ export interface TefHit {
    * existed (older pipeline runs).
    */
   explicit?: boolean;
+  /**
+   * official = active catalogue; proposed = STE catalogue shadows; runtime-shadow
+   * = DB ShadowTransitionElement attached after weak-match review.
+   */
+  source: TefHitSource;
   shiftFrom: string;
   shiftTo: string;
   need: string;
@@ -106,16 +112,24 @@ export type MapKpiId =
   | "measureCount"
   | "interventionActiveShare"
   | "interventionSpecificityShare"
+  | "interventionCompletenessShare"
   | "highInterventionShare"
   | "highActivityShiftShare"
   | "adaptationShare"
   | "ownCommitmentShare"
   | "explicitTefShare"
+  | "broadWordingShare"
   | "tefMatchRate"
   | "shadowHitCount"
-  | "companionReferenceCount";
+  | "companionReferenceCount"
+  | "emissionFocusGap";
 
-export type ExploreViewId = "map" | "shifts" | "tef-framework" | "anatomy";
+export type ExploreViewId =
+  | "map"
+  | "shifts"
+  | "tef-framework"
+  | "anatomy"
+  | "website";
 export type ClimatePlansTabId = "explore" | "measures" | "taxonomy";
 export type MapGeoLevel = "municipality" | "region";
 export type TefFrameworkScope = "all" | "municipality" | "region";

@@ -12,6 +12,7 @@ import type {
   ExploreMunicipalityRecord,
   MapGeoLevel,
   MapKpiId,
+  SectorYearEmissions,
 } from "../lib/explore-types";
 import {
   countImpliedFilterBuckets,
@@ -49,6 +50,7 @@ export function MapKpiView({
   onCompareNameChange,
   tefImplied,
   onTefImpliedChange,
+  sectorEmissions,
 }: {
   records: ExploreMunicipalityRecord[];
   geo: MapGeoLevel;
@@ -63,6 +65,7 @@ export function MapKpiView({
   onCompareNameChange: (name: string | null) => void;
   tefImplied: TefImpliedFilter;
   onTefImpliedChange: (value: TefImpliedFilter) => void;
+  sectorEmissions: SectorYearEmissions[];
 }) {
   const [pickingCompare, setPickingCompare] = useState(false);
 
@@ -116,6 +119,7 @@ export function MapKpiView({
         record,
         kpi,
         tefGroup === "all" ? null : tefGroup,
+        sectorEmissions,
       );
       map.set(
         record.name,
@@ -123,7 +127,7 @@ export function MapKpiView({
       );
     }
     return map;
-  }, [activeRecords, kpi, tefGroup]);
+  }, [activeRecords, kpi, tefGroup, sectorEmissions]);
 
   const selected = (() => {
     const fromActive = activeRecords.find((r) =>
@@ -250,7 +254,11 @@ export function MapKpiView({
       </div>
 
       <div className="space-y-3">
-        <MethodologyPanel data={meta.data} calculation={meta.calculation} />
+        <MethodologyPanel
+          data={meta.data}
+          calculation={meta.calculation}
+          extra="The detail panel deep-dive follows the selected KPI family (commitments, measures/scores, TEF, plan anatomy, or emissions vs measures). Top TEFs and TEF groups only appear for TEF KPIs; the emissions KPI adds a per-sector worksheet."
+        />
         {selected ? (
           <MapKpiDetailPanel
             selected={selected}
@@ -262,6 +270,7 @@ export function MapKpiView({
             pickingCompare={pickingCompare}
             onPickingCompareChange={setPickingCompare}
             onCompareNameChange={onCompareNameChange}
+            sectorEmissions={sectorEmissions}
           />
         ) : (
           <p className="text-sm text-gray-02 rounded-lg border border-gray-03/30 bg-gray-04/40 p-4">
