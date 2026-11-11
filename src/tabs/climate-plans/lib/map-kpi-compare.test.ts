@@ -5,6 +5,7 @@ import {
   compareDeltaTone,
   formatCompareDelta,
   formatMapKpiDisplay,
+  mapKpiFamily,
 } from "./map-kpi-compare";
 import { mapKpiValue } from "./explore-aggregates";
 import type { ExploreMunicipalityRecord, TefHit } from "./explore-types";
@@ -112,7 +113,15 @@ describe("map KPI compare helpers", () => {
     ).toBe("75%");
   });
 
-  it("builds side-by-side rows with signed deltas", () => {
+  it("maps KPIs into deep-dive families", () => {
+    expect(mapKpiFamily("uniqueCommitments")).toBe("commitments");
+    expect(mapKpiFamily("avgInterventionScore")).toBe("measures");
+    expect(mapKpiFamily("distinctTefs")).toBe("tef");
+    expect(mapKpiFamily("planChars")).toBe("plan");
+    expect(mapKpiFamily("emissionFocusGap")).toBe("emissions");
+  });
+
+  it("builds commitment-family rows with signed deltas", () => {
     const primary = record({
       name: "Nässjö",
       commitmentCount: 4,
@@ -142,6 +151,10 @@ describe("map KPI compare helpers", () => {
       "uniqueCommitments",
       null,
     );
+    expect(rows.map((r) => r.id)).toContain("climateGroups");
+    expect(rows.map((r) => r.id)).not.toContain("avgShift");
+    expect(rows.map((r) => r.id)).not.toContain("planLength");
+
     const commitments = rows.find((r) => r.id === "commitmentCount");
     expect(commitments?.primary).toBe("4");
     expect(commitments?.compare).toBe("7");
@@ -152,7 +165,34 @@ describe("map KPI compare helpers", () => {
     const climate = rows.find((r) => r.id === "climateRelevant");
     expect(climate?.delta).toBe(-1);
     expect(compareDeltaTone(-1, true)).toBe("worse");
+  });
 
+  it("builds measure-family rows instead of commitment stats", () => {
+    const rows = buildMapKpiCompareRows(
+      record({}),
+      null,
+      "avgInterventionScore",
+      null,
+    );
+    expect(rows.map((r) => r.id)).toEqual(
+      expect.arrayContaining([
+        "selectedKpi",
+        "measureCount",
+        "avgIntervention",
+        "whoWhat",
+      ]),
+    );
+    expect(rows.map((r) => r.id)).not.toContain("commitmentCount");
+  });
+
+  it("builds plan-family rows with neutral plan length", () => {
+    const primary = record({ markdownChars: 9000 });
+    const compare = record({
+      id: "b",
+      name: "Vetlanda",
+      markdownChars: 12000,
+    });
+    const rows = buildMapKpiCompareRows(primary, compare, "planChars", null);
     const planLength = rows.find((r) => r.id === "planLength");
     expect(planLength?.higherIsBetter).toBeNull();
     expect(compareDeltaTone(planLength?.delta ?? null, null)).toBe("neutral");

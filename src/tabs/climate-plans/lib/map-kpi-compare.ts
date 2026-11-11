@@ -1,7 +1,12 @@
 import {
   averageScore,
+  explicitTefShare,
+  highScoreShare,
+  interventionActiveShare,
   interventionSpecificityShare,
   mapKpiValue,
+  shadowHitCount,
+  tefMatchRate,
   topTefsByHitCount,
   type MapKpiValue,
 } from "./explore-aggregates";
@@ -11,6 +16,51 @@ import type {
   SectorYearEmissions,
   TefHit,
 } from "./explore-types";
+import { computeEmissionFocusGap } from "./website-kpis";
+
+export type MapKpiFamily =
+  | "commitments"
+  | "measures"
+  | "tef"
+  | "plan"
+  | "emissions";
+
+export const MAP_KPI_FAMILY: Record<MapKpiId, MapKpiFamily> = {
+  uniqueCommitments: "commitments",
+  climateRelevantCommitments: "commitments",
+  climateCommitmentGroups: "commitments",
+  climateRelevantShare: "commitments",
+  adaptationShare: "commitments",
+  ownCommitmentShare: "commitments",
+  companionReferenceCount: "commitments",
+  measureCount: "measures",
+  avgInterventionScore: "measures",
+  avgActivityShiftScore: "measures",
+  interventionActiveShare: "measures",
+  interventionSpecificityShare: "measures",
+  highInterventionShare: "measures",
+  highActivityShiftShare: "measures",
+  distinctTefs: "tef",
+  distinctTefGroups: "tef",
+  tefGroupStrength: "tef",
+  explicitTefShare: "tef",
+  tefMatchRate: "tef",
+  shadowHitCount: "tef",
+  planChars: "plan",
+  emissionFocusGap: "emissions",
+};
+
+export const MAP_KPI_FAMILY_LABEL: Record<MapKpiFamily, string> = {
+  commitments: "Commitment deep-dive",
+  measures: "Measure & score deep-dive",
+  tef: "TEF deep-dive",
+  plan: "Plan anatomy deep-dive",
+  emissions: "Emissions vs measures deep-dive",
+};
+
+export function mapKpiFamily(kpi: MapKpiId): MapKpiFamily {
+  return MAP_KPI_FAMILY[kpi];
+}
 
 export interface TopTefCompareRow {
   stableId: string;
@@ -106,6 +156,17 @@ export interface MapKpiCompareRow {
   unit: "count" | "score" | "share" | "chars" | "text";
 }
 
+export interface EmissionFocusSectorRow {
+  sectorId: string;
+  label: string;
+  primaryShare: string;
+  primaryMeasures: string;
+  primaryAddressed: boolean;
+  compareShare: string | null;
+  compareMeasures: string | null;
+  compareAddressed: boolean | null;
+}
+
 function formatCount(value: number | null | undefined): string {
   if (value == null) return "—";
   return String(value);
@@ -124,6 +185,14 @@ function formatShare(value: number | null): string {
 function formatPlanLength(chars: number | null): string {
   if (chars == null) return "—";
   return `${chars.toLocaleString()} chars (~${Math.max(1, Math.round(chars / 3000))} p.)`;
+}
+
+function shareOf(
+  numerator: number | null | undefined,
+  denominator: number,
+): number | null {
+  if (numerator == null || denominator <= 0) return null;
+  return numerator / denominator;
 }
 
 export function formatMapKpiDisplay(value: MapKpiValue | null): string {
@@ -167,66 +236,69 @@ function row(
   };
 }
 
-/** Detail rows shown in the map KPI panel, optionally vs a compare place. */
-export function buildMapKpiCompareRows(
+function selectedKpiRow(
   primary: ExploreMunicipalityRecord,
   compare: ExploreMunicipalityRecord | null,
   kpi: MapKpiId,
   tefGroupFilter: string | null,
-  sectorEmissions: SectorYearEmissions[] = [],
-): MapKpiCompareRow[] {
+  sectorEmissions: SectorYearEmissions[],
+): MapKpiCompareRow {
   const primaryKpi = mapKpiValue(primary, kpi, tefGroupFilter, sectorEmissions);
   const compareKpi = compare
     ? mapKpiValue(compare, kpi, tefGroupFilter, sectorEmissions)
     : null;
+  return row({
+    id: "selectedKpi",
+    label: "Selected KPI",
+    primary: formatMapKpiDisplay(primaryKpi),
+    compareValue: compare ? formatMapKpiDisplay(compareKpi) : null,
+    delta: deltaOf(primaryKpi.numeric, compareKpi?.numeric ?? null),
+    higherIsBetter: kpi === "emissionFocusGap" ? false : true,
+    unit:
+      primaryKpi.unit === "share"
+        ? "share"
+        : primaryKpi.unit === "chars"
+          ? "chars"
+          : primaryKpi.unit.includes("–") || primaryKpi.unit.includes("-")
+            ? "score"
+            : "count",
+  });
+}
 
-  const primaryDistinctTefs = new Set(primary.tefHits.map((h) => h.stableId))
-    .size;
-  const compareDistinctTefs = compare
-    ? new Set(compare.tefHits.map((h) => h.stableId)).size
-    : null;
-
-  const primaryShift = averageScore(primary.measures, "activity_shift_score");
-  const compareShift = compare
-    ? averageScore(compare.measures, "activity_shift_score")
-    : null;
-  const primaryIntervention = averageScore(
-    primary.measures,
-    "intervention_score",
+function commitmentRows(
+  primary: ExploreMunicipalityRecord,
+  compare: ExploreMunicipalityRecord | null,
+): MapKpiCompareRow[] {
+  const primaryClimateShare = shareOf(
+    primary.climateRelevantCommitmentCount,
+    primary.commitmentCount,
   );
-  const compareIntervention = compare
-    ? averageScore(compare.measures, "intervention_score")
+  const compareClimateShare = compare
+    ? shareOf(compare.climateRelevantCommitmentCount, compare.commitmentCount)
     : null;
-  const primarySpecificity = interventionSpecificityShare(primary.measures);
-  const compareSpecificity = compare
-    ? interventionSpecificityShare(compare.measures)
+  const primaryAdaptationShare = shareOf(
+    primary.adaptationCommitmentCount,
+    primary.commitmentCount,
+  );
+  const compareAdaptationShare = compare
+    ? shareOf(compare.adaptationCommitmentCount, compare.commitmentCount)
+    : null;
+  const primaryOwnShare = shareOf(
+    primary.ownCommitmentCount,
+    primary.commitmentCount,
+  );
+  const compareOwnShare = compare
+    ? shareOf(compare.ownCommitmentCount, compare.commitmentCount)
     : null;
 
   return [
-    row({
-      id: "selectedKpi",
-      label: "Selected KPI",
-      primary: formatMapKpiDisplay(primaryKpi),
-      compareValue: compare ? formatMapKpiDisplay(compareKpi) : null,
-      delta: deltaOf(primaryKpi.numeric, compareKpi?.numeric ?? null),
-      // Gap share is an absence metric — lower is better.
-      higherIsBetter: kpi === "emissionFocusGap" ? false : true,
-      unit:
-        primaryKpi.unit === "share"
-          ? "share"
-          : primaryKpi.unit === "chars"
-            ? "chars"
-            : primaryKpi.unit.includes("–") || primaryKpi.unit.includes("-")
-              ? "score"
-              : "count",
-    }),
     row({
       id: "commitmentCount",
       label: "Extracted commitments",
       primary: formatCount(primary.commitmentCount),
       compareValue: compare ? formatCount(compare.commitmentCount) : null,
       delta: deltaOf(primary.commitmentCount, compare?.commitmentCount),
-      higherIsBetter: true,
+      higherIsBetter: null,
       unit: "count",
     }),
     row({
@@ -258,23 +330,96 @@ export function buildMapKpiCompareRows(
       unit: "count",
     }),
     row({
-      id: "distinctTefs",
-      label: "Distinct TEFs",
-      primary: formatCount(primaryDistinctTefs),
-      compareValue:
-        compareDistinctTefs == null ? null : formatCount(compareDistinctTefs),
-      delta: deltaOf(primaryDistinctTefs, compareDistinctTefs),
+      id: "climateRelevantShare",
+      label: "Climate-relevant share",
+      primary: formatShare(primaryClimateShare),
+      compareValue: compare ? formatShare(compareClimateShare) : null,
+      delta: deltaOf(primaryClimateShare, compareClimateShare),
       higherIsBetter: true,
-      unit: "count",
+      unit: "share",
     }),
     row({
-      id: "planLength",
-      label: "Plan length",
-      primary: formatPlanLength(primary.markdownChars),
-      compareValue: compare ? formatPlanLength(compare.markdownChars) : null,
-      delta: deltaOf(primary.markdownChars, compare?.markdownChars),
+      id: "adaptationShare",
+      label: "Adaptation share",
+      primary: formatShare(primaryAdaptationShare),
+      compareValue: compare ? formatShare(compareAdaptationShare) : null,
+      delta: deltaOf(primaryAdaptationShare, compareAdaptationShare),
       higherIsBetter: null,
-      unit: "chars",
+      unit: "share",
+    }),
+    row({
+      id: "ownShare",
+      label: "Own commitment share",
+      primary: formatShare(primaryOwnShare),
+      compareValue: compare ? formatShare(compareOwnShare) : null,
+      delta: deltaOf(primaryOwnShare, compareOwnShare),
+      higherIsBetter: null,
+      unit: "share",
+    }),
+    row({
+      id: "companions",
+      label: "Companion refs",
+      primary: formatCount(primary.companionReferenceCount),
+      compareValue: compare
+        ? formatCount(compare.companionReferenceCount)
+        : null,
+      delta: deltaOf(
+        primary.companionReferenceCount,
+        compare?.companionReferenceCount,
+      ),
+      higherIsBetter: null,
+      unit: "count",
+    }),
+  ];
+}
+
+function measureRows(
+  primary: ExploreMunicipalityRecord,
+  compare: ExploreMunicipalityRecord | null,
+): MapKpiCompareRow[] {
+  const primaryShift = averageScore(primary.measures, "activity_shift_score");
+  const compareShift = compare
+    ? averageScore(compare.measures, "activity_shift_score")
+    : null;
+  const primaryIntervention = averageScore(
+    primary.measures,
+    "intervention_score",
+  );
+  const compareIntervention = compare
+    ? averageScore(compare.measures, "intervention_score")
+    : null;
+  const primaryActive = interventionActiveShare(primary.measures);
+  const compareActive = compare
+    ? interventionActiveShare(compare.measures)
+    : null;
+  const primarySpecificity = interventionSpecificityShare(primary.measures);
+  const compareSpecificity = compare
+    ? interventionSpecificityShare(compare.measures)
+    : null;
+  const primaryHighIntervention = highScoreShare(
+    primary.measures,
+    "intervention_score",
+  );
+  const compareHighIntervention = compare
+    ? highScoreShare(compare.measures, "intervention_score")
+    : null;
+  const primaryHighShift = highScoreShare(
+    primary.measures,
+    "activity_shift_score",
+  );
+  const compareHighShift = compare
+    ? highScoreShare(compare.measures, "activity_shift_score")
+    : null;
+
+  return [
+    row({
+      id: "measureCount",
+      label: "Scored measures",
+      primary: formatCount(primary.measures.length),
+      compareValue: compare ? formatCount(compare.measures.length) : null,
+      delta: deltaOf(primary.measures.length, compare?.measures.length),
+      higherIsBetter: null,
+      unit: "count",
     }),
     row({
       id: "avgShift",
@@ -295,6 +440,15 @@ export function buildMapKpiCompareRows(
       unit: "score",
     }),
     row({
+      id: "interventionActive",
+      label: "Intervention active",
+      primary: formatShare(primaryActive),
+      compareValue: compare ? formatShare(compareActive) : null,
+      delta: deltaOf(primaryActive, compareActive),
+      higherIsBetter: true,
+      unit: "share",
+    }),
+    row({
       id: "whoWhat",
       label: "Who+what filled",
       primary: formatShare(primarySpecificity),
@@ -303,7 +457,343 @@ export function buildMapKpiCompareRows(
       higherIsBetter: true,
       unit: "share",
     }),
+    row({
+      id: "highIntervention",
+      label: "High intervention (≥5)",
+      primary: formatShare(primaryHighIntervention),
+      compareValue: compare ? formatShare(compareHighIntervention) : null,
+      delta: deltaOf(primaryHighIntervention, compareHighIntervention),
+      higherIsBetter: true,
+      unit: "share",
+    }),
+    row({
+      id: "highShift",
+      label: "High activity-shift (≥5)",
+      primary: formatShare(primaryHighShift),
+      compareValue: compare ? formatShare(compareHighShift) : null,
+      delta: deltaOf(primaryHighShift, compareHighShift),
+      higherIsBetter: true,
+      unit: "share",
+    }),
   ];
+}
+
+function tefRows(
+  primary: ExploreMunicipalityRecord,
+  compare: ExploreMunicipalityRecord | null,
+  tefGroupFilter: string | null,
+): MapKpiCompareRow[] {
+  const primaryHits =
+    tefGroupFilter && tefGroupFilter !== "all"
+      ? primary.tefHits.filter((h) => h.group === tefGroupFilter)
+      : primary.tefHits;
+  const compareHits =
+    compare == null
+      ? null
+      : tefGroupFilter && tefGroupFilter !== "all"
+        ? compare.tefHits.filter((h) => h.group === tefGroupFilter)
+        : compare.tefHits;
+
+  const primaryDistinct = new Set(primaryHits.map((h) => h.stableId)).size;
+  const compareDistinct =
+    compareHits == null
+      ? null
+      : new Set(compareHits.map((h) => h.stableId)).size;
+  const primaryGroups = new Set(primaryHits.map((h) => h.group)).size;
+  const compareGroups =
+    compareHits == null ? null : new Set(compareHits.map((h) => h.group)).size;
+  const primaryExplicit = explicitTefShare(primaryHits);
+  const compareExplicit =
+    compareHits == null ? null : explicitTefShare(compareHits);
+  const primaryMatchRate = tefMatchRate(primary.measures);
+  const compareMatchRate = compare ? tefMatchRate(compare.measures) : null;
+  const primaryShadows = shadowHitCount(primary.measures);
+  const compareShadows = compare ? shadowHitCount(compare.measures) : null;
+  const primaryOfficial = primaryHits.filter(
+    (h) => (h.source ?? "official") === "official",
+  ).length;
+  const compareOfficial =
+    compareHits == null
+      ? null
+      : compareHits.filter((h) => (h.source ?? "official") === "official")
+          .length;
+  const primaryProposed = primaryHits.filter(
+    (h) => h.source === "proposed",
+  ).length;
+  const compareProposed =
+    compareHits == null
+      ? null
+      : compareHits.filter((h) => h.source === "proposed").length;
+
+  return [
+    row({
+      id: "distinctTefs",
+      label: "Distinct TEFs",
+      primary: formatCount(primaryDistinct),
+      compareValue:
+        compareDistinct == null ? null : formatCount(compareDistinct),
+      delta: deltaOf(primaryDistinct, compareDistinct),
+      higherIsBetter: null,
+      unit: "count",
+    }),
+    row({
+      id: "tefGroups",
+      label: "TEF groups covered",
+      primary: formatCount(primaryGroups),
+      compareValue: compareGroups == null ? null : formatCount(compareGroups),
+      delta: deltaOf(primaryGroups, compareGroups),
+      higherIsBetter: null,
+      unit: "count",
+    }),
+    row({
+      id: "tefMatchRate",
+      label: "TEF match rate",
+      primary: formatShare(primaryMatchRate),
+      compareValue: compare ? formatShare(compareMatchRate) : null,
+      delta: deltaOf(primaryMatchRate, compareMatchRate),
+      higherIsBetter: true,
+      unit: "share",
+    }),
+    row({
+      id: "explicitShare",
+      label: "Explicit TEF share",
+      primary: formatShare(primaryExplicit),
+      compareValue: compare ? formatShare(compareExplicit) : null,
+      delta: deltaOf(primaryExplicit, compareExplicit),
+      higherIsBetter: true,
+      unit: "share",
+    }),
+    row({
+      id: "officialHits",
+      label: "Official TEF hits",
+      primary: formatCount(primaryOfficial),
+      compareValue:
+        compareOfficial == null ? null : formatCount(compareOfficial),
+      delta: deltaOf(primaryOfficial, compareOfficial),
+      higherIsBetter: null,
+      unit: "count",
+    }),
+    row({
+      id: "proposedHits",
+      label: "Proposed STE hits",
+      primary: formatCount(primaryProposed),
+      compareValue:
+        compareProposed == null ? null : formatCount(compareProposed),
+      delta: deltaOf(primaryProposed, compareProposed),
+      higherIsBetter: null,
+      unit: "count",
+    }),
+    row({
+      id: "shadowHits",
+      label: "Shadow gap hits",
+      primary: formatCount(primaryShadows),
+      compareValue: compare ? formatCount(compareShadows) : null,
+      delta: deltaOf(primaryShadows, compareShadows),
+      higherIsBetter: null,
+      unit: "count",
+    }),
+  ];
+}
+
+function planRows(
+  primary: ExploreMunicipalityRecord,
+  compare: ExploreMunicipalityRecord | null,
+): MapKpiCompareRow[] {
+  return [
+    row({
+      id: "planLength",
+      label: "Plan length",
+      primary: formatPlanLength(primary.markdownChars),
+      compareValue: compare ? formatPlanLength(compare.markdownChars) : null,
+      delta: deltaOf(primary.markdownChars, compare?.markdownChars),
+      higherIsBetter: null,
+      unit: "chars",
+    }),
+    row({
+      id: "adoptedYear",
+      label: "Adopted year",
+      primary: formatCount(primary.adoptedYear),
+      compareValue: compare ? formatCount(compare.adoptedYear) : null,
+      delta: deltaOf(primary.adoptedYear, compare?.adoptedYear),
+      higherIsBetter: null,
+      unit: "count",
+    }),
+    row({
+      id: "companions",
+      label: "Companion refs",
+      primary: formatCount(primary.companionReferenceCount),
+      compareValue: compare
+        ? formatCount(compare.companionReferenceCount)
+        : null,
+      delta: deltaOf(
+        primary.companionReferenceCount,
+        compare?.companionReferenceCount,
+      ),
+      higherIsBetter: null,
+      unit: "count",
+    }),
+    row({
+      id: "measureCount",
+      label: "Scored measures",
+      primary: formatCount(primary.measures.length),
+      compareValue: compare ? formatCount(compare.measures.length) : null,
+      delta: deltaOf(primary.measures.length, compare?.measures.length),
+      higherIsBetter: null,
+      unit: "count",
+    }),
+    row({
+      id: "climateGroups",
+      label: "Climate groups",
+      primary: formatCount(primary.climateCommitmentGroupCount),
+      compareValue: compare
+        ? formatCount(compare.climateCommitmentGroupCount)
+        : null,
+      delta: deltaOf(
+        primary.climateCommitmentGroupCount,
+        compare?.climateCommitmentGroupCount,
+      ),
+      higherIsBetter: null,
+      unit: "count",
+    }),
+  ];
+}
+
+function emissionRows(
+  primary: ExploreMunicipalityRecord,
+  compare: ExploreMunicipalityRecord | null,
+  sectorEmissions: SectorYearEmissions[],
+): MapKpiCompareRow[] {
+  const primaryGap = computeEmissionFocusGap(primary, sectorEmissions);
+  const compareGap = compare
+    ? computeEmissionFocusGap(compare, sectorEmissions)
+    : null;
+
+  return [
+    row({
+      id: "emissionGap",
+      label: "Emissions without measures",
+      primary: formatShare(primaryGap.gapShare),
+      compareValue: compare ? formatShare(compareGap?.gapShare ?? null) : null,
+      delta: deltaOf(primaryGap.gapShare, compareGap?.gapShare ?? null),
+      higherIsBetter: false,
+      unit: "share",
+    }),
+    row({
+      id: "focusMatch",
+      label: "Focus match",
+      primary: primaryGap.focusMatch,
+      compareValue: compare ? (compareGap?.focusMatch ?? null) : null,
+      delta: null,
+      higherIsBetter: null,
+      unit: "text",
+    }),
+    row({
+      id: "missingSectors",
+      label: "Missing sectors",
+      primary:
+        primaryGap.missingSectors.length === 0
+          ? "none"
+          : String(primaryGap.missingSectors.length),
+      compareValue: compare
+        ? compareGap && compareGap.missingSectors.length === 0
+          ? "none"
+          : formatCount(compareGap?.missingSectors.length ?? null)
+        : null,
+      delta: deltaOf(
+        primaryGap.missingSectors.length,
+        compareGap?.missingSectors.length ?? null,
+      ),
+      higherIsBetter: false,
+      unit: "count",
+    }),
+    row({
+      id: "measureCount",
+      label: "Scored measures",
+      primary: formatCount(primary.measures.length),
+      compareValue: compare ? formatCount(compare.measures.length) : null,
+      delta: deltaOf(primary.measures.length, compare?.measures.length),
+      higherIsBetter: null,
+      unit: "count",
+    }),
+    row({
+      id: "mappedTonnes",
+      label: "Mapped tonnes (six sectors)",
+      primary:
+        primaryGap.totalMappedTonnes <= 0
+          ? "—"
+          : Math.round(primaryGap.totalMappedTonnes).toLocaleString(),
+      compareValue: compare
+        ? !compareGap || compareGap.totalMappedTonnes <= 0
+          ? "—"
+          : Math.round(compareGap.totalMappedTonnes).toLocaleString()
+        : null,
+      delta: deltaOf(
+        primaryGap.totalMappedTonnes > 0 ? primaryGap.totalMappedTonnes : null,
+        compareGap && compareGap.totalMappedTonnes > 0
+          ? compareGap.totalMappedTonnes
+          : null,
+      ),
+      higherIsBetter: null,
+      unit: "count",
+    }),
+  ];
+}
+
+/** Detail rows for the selected map KPI family, optionally vs a compare place. */
+export function buildMapKpiCompareRows(
+  primary: ExploreMunicipalityRecord,
+  compare: ExploreMunicipalityRecord | null,
+  kpi: MapKpiId,
+  tefGroupFilter: string | null,
+  sectorEmissions: SectorYearEmissions[] = [],
+): MapKpiCompareRow[] {
+  const selected = selectedKpiRow(
+    primary,
+    compare,
+    kpi,
+    tefGroupFilter,
+    sectorEmissions,
+  );
+  const family = mapKpiFamily(kpi);
+  const deepDive =
+    family === "commitments"
+      ? commitmentRows(primary, compare)
+      : family === "measures"
+        ? measureRows(primary, compare)
+        : family === "tef"
+          ? tefRows(primary, compare, tefGroupFilter)
+          : family === "plan"
+            ? planRows(primary, compare)
+            : emissionRows(primary, compare, sectorEmissions);
+
+  // Avoid duplicating the headline when the family already leads with the same metric.
+  const filtered = deepDive.filter((r) => r.id !== "selectedKpi");
+  return [selected, ...filtered];
+}
+
+/** Per-sector worksheet for the emissions-focus map KPI. */
+export function buildEmissionFocusSectorRows(
+  primary: ExploreMunicipalityRecord,
+  compare: ExploreMunicipalityRecord | null,
+  sectorEmissions: SectorYearEmissions[],
+): EmissionFocusSectorRow[] {
+  const primaryGap = computeEmissionFocusGap(primary, sectorEmissions);
+  const compareGap = compare
+    ? computeEmissionFocusGap(compare, sectorEmissions)
+    : null;
+  return primaryGap.rows.map((row) => {
+    const other = compareGap?.rows.find((r) => r.sectorId === row.sectorId);
+    return {
+      sectorId: row.sectorId,
+      label: row.label,
+      primaryShare: formatShare(row.emissionShare),
+      primaryMeasures: formatCount(row.measureCount),
+      primaryAddressed: row.addressed,
+      compareShare: other ? formatShare(other.emissionShare) : null,
+      compareMeasures: other ? formatCount(other.measureCount) : null,
+      compareAddressed: other ? other.addressed : null,
+    };
+  });
 }
 
 /** Format a signed delta for display next to the compare value. */
@@ -320,6 +810,7 @@ export function formatCompareDelta(
     if (abs >= 1000) return `${sign}${Math.round(abs / 1000)}k`;
     return `${sign}${Math.round(abs)}`;
   }
+  if (unit === "text") return null;
   return `${sign}${Number.isInteger(abs) ? String(abs) : abs.toFixed(2)}`;
 }
 

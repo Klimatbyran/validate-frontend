@@ -1,10 +1,13 @@
 import { cn } from "@/lib/utils";
 import {
+  MAP_KPI_FAMILY_LABEL,
+  buildEmissionFocusSectorRows,
   buildMapKpiCompareRows,
   buildTopTefCompareRows,
   compareDeltaTone,
   formatCompareDelta,
   formatMapKpiDisplay,
+  mapKpiFamily,
 } from "../lib/map-kpi-compare";
 import {
   MAP_KPI_META,
@@ -44,6 +47,7 @@ export function MapKpiDetailPanel({
   sectorEmissions?: SectorYearEmissions[];
 }) {
   const meta = MAP_KPI_META[kpi];
+  const family = mapKpiFamily(kpi);
   const tefGroupFilter = tefGroup === "all" ? null : tefGroup;
   const selectedValue = mapKpiValue(
     selected,
@@ -61,10 +65,25 @@ export function MapKpiDetailPanel({
     tefGroupFilter,
     sectorEmissions,
   );
-  const topTefRows = buildTopTefCompareRows(
-    selected.tefHits,
-    compare ? compare.tefHits : null,
-  );
+  const filteredHits =
+    tefGroupFilter == null
+      ? selected.tefHits
+      : selected.tefHits.filter((h) => h.group === tefGroupFilter);
+  const compareFilteredHits =
+    compare == null
+      ? null
+      : tefGroupFilter == null
+        ? compare.tefHits
+        : compare.tefHits.filter((h) => h.group === tefGroupFilter);
+  const topTefRows =
+    family === "tef"
+      ? buildTopTefCompareRows(filteredHits, compareFilteredHits)
+      : [];
+  const tefGroups = family === "tef" ? tefGroupStrengths(filteredHits) : [];
+  const emissionSectorRows =
+    family === "emissions"
+      ? buildEmissionFocusSectorRows(selected, compare, sectorEmissions)
+      : [];
   const placeLabel = geo === "region" ? "region" : "municipality";
 
   return (
@@ -99,6 +118,11 @@ export function MapKpiDetailPanel({
             </span>
           </span>
         ) : null}
+      </div>
+
+      <div className="text-xs text-gray-02">
+        {MAP_KPI_FAMILY_LABEL[family]} — breakdown follows the selected map KPI,
+        not a fixed place summary.
       </div>
 
       <CompareControls
@@ -157,8 +181,8 @@ export function MapKpiDetailPanel({
             </tbody>
           </table>
           <p className="px-2.5 py-2 text-[11px] text-gray-02 border-t border-gray-03/20">
-            Δ is compare − selected. Green/pink hints assume higher is usually
-            better for that metric (plan length is neutral).
+            Δ is compare − selected. Green/pink only when the metric has a clear
+            better direction (gap metrics treat lower as better).
           </p>
         </div>
       ) : (
@@ -171,7 +195,15 @@ export function MapKpiDetailPanel({
         </dl>
       )}
 
-      {topTefRows.length > 0 ? (
+      {family === "emissions" && emissionSectorRows.length > 0 ? (
+        <EmissionSectorSection
+          rows={emissionSectorRows}
+          selectedName={selected.name}
+          compareName={compare?.name ?? null}
+        />
+      ) : null}
+
+      {family === "tef" && topTefRows.length > 0 ? (
         <TopTefsSection
           rows={topTefRows}
           selectedName={selected.name}
@@ -179,12 +211,12 @@ export function MapKpiDetailPanel({
         />
       ) : null}
 
-      {tefGroupStrengths(selected.tefHits).length > 0 ? (
+      {family === "tef" && tefGroups.length > 0 ? (
         <div className="space-y-1.5">
           <div className="text-xs font-semibold text-gray-02 uppercase">
             TEF groups
           </div>
-          {tefGroupStrengths(selected.tefHits).map((group) => (
+          {tefGroups.map((group) => (
             <div key={group.group} className="flex items-center gap-2 text-sm">
               <div className="w-28 truncate text-gray-01" title={group.group}>
                 {group.group}
@@ -203,11 +235,14 @@ export function MapKpiDetailPanel({
             </div>
           ))}
         </div>
-      ) : (
+      ) : null}
+
+      {family === "tef" && topTefRows.length === 0 && tefGroups.length === 0 ? (
         <p className="text-sm text-gray-02 italic">
-          No TEF matches in this extract.
+          No TEF matches in this extract
+          {tefGroupFilter ? ` for ${tefGroupFilter}` : ""}.
         </p>
-      )}
+      ) : null}
 
       <div className="text-xs text-gray-02">
         Sources: {selected.dataSources.join(", ") || "none"}
@@ -222,6 +257,90 @@ export function MapKpiDetailPanel({
           Source plan
         </a>
       ) : null}
+    </div>
+  );
+}
+
+function EmissionSectorSection({
+  rows,
+  selectedName,
+  compareName,
+}: {
+  rows: ReturnType<typeof buildEmissionFocusSectorRows>;
+  selectedName: string;
+  compareName: string | null;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="text-xs font-semibold text-gray-02 uppercase">
+        Sector worksheet
+      </div>
+      <div className="overflow-hidden rounded-md border border-gray-03/30">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-03/30 text-xs text-gray-02">
+              <th className="text-left font-medium px-2.5 py-2">Sector</th>
+              <th className="text-right font-medium px-2.5 py-2">
+                {selectedName} emissions
+              </th>
+              <th className="text-right font-medium px-2.5 py-2">Measures</th>
+              {compareName ? (
+                <>
+                  <th className="text-right font-medium px-2.5 py-2 text-amber-02">
+                    {compareName} emissions
+                  </th>
+                  <th className="text-right font-medium px-2.5 py-2 text-amber-02">
+                    Measures
+                  </th>
+                </>
+              ) : (
+                <th className="text-right font-medium px-2.5 py-2">
+                  Addressed
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr
+                key={row.sectorId}
+                className="border-b border-gray-03/15 last:border-0"
+              >
+                <td className="px-2.5 py-2 text-gray-01">{row.label}</td>
+                <td className="px-2.5 py-2 text-right tabular-nums text-gray-01">
+                  {row.primaryShare}
+                </td>
+                <td className="px-2.5 py-2 text-right tabular-nums text-gray-01">
+                  {row.primaryMeasures}
+                </td>
+                {compareName ? (
+                  <>
+                    <td className="px-2.5 py-2 text-right tabular-nums text-gray-01">
+                      {row.compareShare ?? "—"}
+                    </td>
+                    <td className="px-2.5 py-2 text-right tabular-nums text-gray-01">
+                      {row.compareMeasures ?? "—"}
+                    </td>
+                  </>
+                ) : (
+                  <td
+                    className={cn(
+                      "px-2.5 py-2 text-right text-xs font-medium",
+                      row.primaryAddressed ? "text-green-03" : "text-pink-03",
+                    )}
+                  >
+                    {row.primaryAddressed ? "yes" : "no"}
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="px-2.5 py-1.5 text-[11px] text-gray-02 border-t border-gray-03/20">
+          Six TEF-mapped SMHI buckets only. Machinery / product / other are
+          excluded from the gap share.
+        </p>
+      </div>
     </div>
   );
 }
@@ -401,12 +520,12 @@ function CompareControls({
         </p>
       ) : compare ? (
         <p className="text-xs text-gray-02">
-          Side-by-side metrics for the selected map KPI and the detail stats.
-          Compare outline on the map is amber.
+          Side-by-side deep-dive for the selected map KPI family. Compare
+          outline on the map is amber.
         </p>
       ) : (
         <p className="text-xs text-gray-02">
-          Pick another {placeLabel} to line up the same KPI detail fields.
+          Pick another {placeLabel} to line up the same KPI deep-dive fields.
         </p>
       )}
     </div>

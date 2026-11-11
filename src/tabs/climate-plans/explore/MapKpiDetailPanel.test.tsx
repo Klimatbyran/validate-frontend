@@ -160,6 +160,8 @@ describe("MapKpiDetailPanel compare", () => {
 
     expect(screen.getByText("Compare KPI details")).toBeInTheDocument();
     expect(screen.getByText("Extracted commitments")).toBeInTheDocument();
+    expect(screen.getByText(/Commitment deep-dive/)).toBeInTheDocument();
+    expect(screen.queryByText("Top TEFs")).toBeNull();
     expect(screen.queryByRole("columnheader", { name: "Δ" })).toBeNull();
 
     await user.selectOptions(
@@ -182,15 +184,35 @@ describe("MapKpiDetailPanel compare", () => {
       />,
     );
 
-    expect(screen.getAllByRole("columnheader", { name: "Δ" }).length).toBe(2);
+    expect(screen.getAllByRole("columnheader", { name: "Δ" }).length).toBe(1);
     expect(
       screen.getAllByRole("columnheader", { name: "Vetlanda" }).length,
-    ).toBe(2);
+    ).toBe(1);
     expect(screen.getAllByText("+3").length).toBeGreaterThan(0);
     expect(screen.getByText(/vs/)).toBeInTheDocument();
+    expect(screen.queryByText("Top TEFs")).toBeNull();
+  });
+
+  it("shows TEF deep-dive sections only for TEF KPIs", () => {
+    render(
+      <MapKpiDetailPanel
+        selected={primary}
+        compare={secondary}
+        compareOptions={[secondary]}
+        geo="municipality"
+        kpi="distinctTefs"
+        tefGroup="all"
+        pickingCompare={false}
+        onPickingCompareChange={vi.fn()}
+        onCompareNameChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/TEF deep-dive/)).toBeInTheDocument();
     expect(screen.getByText("Top TEFs")).toBeInTheDocument();
     expect(screen.getByText("Bus")).toBeInTheDocument();
     expect(screen.getByText("Steel")).toBeInTheDocument();
+    expect(screen.queryByText("Extracted commitments")).toBeNull();
   });
 
   it("toggles pick-on-map mode", async () => {

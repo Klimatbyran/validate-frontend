@@ -254,7 +254,11 @@ export function MapKpiView({
       </div>
 
       <div className="space-y-3">
-        <MethodologyPanel data={meta.data} calculation={meta.calculation} />
+        <MethodologyPanel
+          data={meta.data}
+          calculation={meta.calculation}
+          extra="The detail panel deep-dive follows the selected KPI family (commitments, measures/scores, TEF, plan anatomy, or emissions vs measures). Top TEFs and TEF groups only appear for TEF KPIs; the emissions KPI adds a per-sector worksheet."
+        />
         {selected ? (
           <MapKpiDetailPanel
             selected={selected}
