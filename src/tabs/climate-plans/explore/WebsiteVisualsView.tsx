@@ -7,6 +7,7 @@ import {
   OverviewMock,
   RegionDetailMock,
 } from "./website-visuals-mocks";
+import { ClimatePlansStoryView } from "./story/ClimatePlansStoryView";
 import type {
   ExploreMunicipalityRecord,
   SectorYearEmissions,
@@ -14,21 +15,19 @@ import type {
 import { namesMatch } from "../lib/municipality-names";
 import { WEBSITE_KPI_PLAN } from "../lib/website-kpis";
 import {
-  WEBSITE_VISUALS_DEMO_EMISSIONS,
-  WEBSITE_VISUALS_DEMO_RECORDS,
-} from "../lib/website-visuals-demo";
-import {
   buildPlaceKpiBundle,
   buildRegionKpiBundles,
 } from "../lib/website-visuals-rollup";
 
 type WebsiteSurface =
+  | "story"
   | "muni-detail"
   | "region-detail"
   | "muni-overview"
   | "region-overview";
 
 const SURFACE_OPTIONS: { value: WebsiteSurface; label: string }[] = [
+  { value: "story", label: "Climate plans story" },
   { value: "muni-detail", label: "Municipality detail" },
   { value: "region-detail", label: "Region detail" },
   { value: "muni-overview", label: "Municipality overview" },
@@ -46,32 +45,23 @@ export function WebsiteVisualsView({
   selectedName: string | null;
   onSelectName: (name: string) => void;
 }) {
-  const [surface, setSurface] = useState<WebsiteSurface>("muni-detail");
+  const [surface, setSurface] = useState<WebsiteSurface>("story");
   const [overviewChip, setOverviewChip] = useState("emissionFocusGap");
   const [localName, setLocalName] = useState<string | null>(null);
 
-  const usingDemo = records.length === 0;
-  const effectiveRecords = usingDemo ? WEBSITE_VISUALS_DEMO_RECORDS : records;
-  const effectiveEmissions = usingDemo
-    ? WEBSITE_VISUALS_DEMO_EMISSIONS
-    : sectorEmissions;
-
   const places = useMemo(
     () =>
-      [...effectiveRecords]
-        .map((r) => r.name)
-        .sort((a, b) => a.localeCompare(b, "sv")),
-    [effectiveRecords],
+      [...records].map((r) => r.name).sort((a, b) => a.localeCompare(b, "sv")),
+    [records],
   );
 
   const muniBundles = useMemo(
-    () =>
-      effectiveRecords.map((r) => buildPlaceKpiBundle(r, effectiveEmissions)),
-    [effectiveRecords, effectiveEmissions],
+    () => records.map((r) => buildPlaceKpiBundle(r, sectorEmissions)),
+    [records, sectorEmissions],
   );
   const regionBundles = useMemo(
-    () => buildRegionKpiBundles(effectiveRecords, effectiveEmissions),
-    [effectiveRecords, effectiveEmissions],
+    () => buildRegionKpiBundles(records, sectorEmissions),
+    [records, sectorEmissions],
   );
 
   const effectiveMuniName =
@@ -125,20 +115,17 @@ export function WebsiteVisualsView({
   return (
     <div className="space-y-5">
       <MethodologyPanel
-        data="Website-layout mocks for klimatkollen.se using live explore extracts. Audience: climate-interested citizens who want emissions, actions and trends for conversations or outreach — not TEF jargon. Mirrors TerritoryOverviewLayout and DetailHeader / LinkCard / DetailSection patterns."
-        calculation="Emissions with no measures in the plan = share of six mapped SMHI sectors with zero addressing measures. Biggest source covered? = plain yes/partly/not-really vs largest sector. What the plan focuses on = rule-based sentence. Since plan = territorial change with ≥3 post-adoption years. Conversation starters = templated prompts from those signals."
-        extra="Placement: keep Paris / since-2015 / total emissions in the detail header. Put plan insights in a separate Climate plan section after the existing plan + procurement cards. Overview: one map chip for the gap KPI; keep focus answers off the map colouring."
+        data="Website-layout mocks + a Climate plans story tab for klimatkollen.se, using live explore extracts only (no climate-plan fixtures). Audience: climate-interested citizens who want emissions, actions and trends for conversations or outreach — not TEF jargon."
+        calculation="Story + detail KPIs: emissions with no measures in the plan; biggest-source yes/partly/not-really; sector table (six sectors + Other & cross-cutting) with example actions from TEF hits; focus themes; since-plan territorial change; national rollups then municipality drill-down."
+        extra="Story tab mirrors /nation scrollytelling energy with plan-specific metaphors (sector periodic table, biggest-source orbit, leak/gap fill). Detail mocks keep Paris/emissions in the header and put plan insights in a separate Climate plan section."
       />
 
       <Callout variant="info" title="Website mock surfaces">
         <p className="text-sm text-gray-02 mt-1">
-          These panels are styled like klimatkollen.se (dark cards, DM Sans,
-          blue/pink KPI colours) so we can review public placement before wiring{" "}
-          <code className="font-mono text-xs">frontend</code>. Data is from
-          Validate extracts when available
-          {usingDemo
-            ? " — currently using a tiny demo sample so the layout is reviewable offline."
-            : " — coverage is incomplete on purpose."}
+          Styled like klimatkollen.se so we can review public placement before
+          wiring <code className="font-mono text-xs">frontend</code>. Climate
+          plan numbers always come from pipeline extracts in this Explore load —
+          empty load means empty story, not sample data.
         </p>
       </Callout>
 
@@ -188,13 +175,24 @@ export function WebsiteVisualsView({
         </span>
       </div>
 
+      {surface === "story" ? (
+        <ClimatePlansStoryView
+          records={records}
+          sectorEmissions={sectorEmissions}
+          selectedName={effectiveMuniName}
+          onSelectName={(name) => {
+            setLocalName(name);
+            onSelectName(name);
+          }}
+        />
+      ) : null}
       {surface === "muni-detail" && selectedMuniBundle ? (
         <MunicipalityDetailMock bundle={selectedMuniBundle} />
       ) : null}
       {surface === "region-detail" && selectedRegionBundle ? (
         <RegionDetailMock
           bundle={selectedRegionBundle}
-          sectorEmissions={effectiveEmissions}
+          sectorEmissions={sectorEmissions}
         />
       ) : null}
       {surface === "muni-overview" ? (
@@ -232,6 +230,12 @@ export function WebsiteVisualsView({
             Placement proposal
           </h3>
           <ul className="text-sm text-gray-02 list-disc pl-5 space-y-1.5">
+            <li>
+              <span className="text-gray-01">Climate plans story:</span>{" "}
+              national→municipality scrollytelling (sector table + Other,
+              biggest-source orbit, uncovered leak, themes, since-plan,
+              takeaways). Live extracts only.
+            </li>
             <li>
               <span className="text-gray-01">Overview (map):</span> chip “No
               measures in the plan” next to Emissions / Paris / Climate plans.
