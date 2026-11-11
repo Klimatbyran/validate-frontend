@@ -31,6 +31,42 @@ import type { Measure } from "./measures-types";
 
 export type FocusMatchVerdict = "match" | "partial" | "miss" | "not-assessable";
 
+/** Plain-language copy for public / website mocks (not TEF jargon). */
+export function focusMatchPlainEn(
+  verdict: FocusMatchVerdict,
+  largestSectorLabel?: string | null,
+): { question: string; answer: string; shortLabel: string } {
+  const sector =
+    largestSectorLabel?.trim() || "the biggest source of emissions";
+  const question = "Does the plan tackle where emissions are highest?";
+  switch (verdict) {
+    case "match":
+      return {
+        question,
+        answer: `Yes — it puts clear focus on ${sector}, the biggest source of emissions here.`,
+        shortLabel: "Yes",
+      };
+    case "partial":
+      return {
+        question,
+        answer: `Partly — it includes actions for ${sector}, but focuses more on other areas.`,
+        shortLabel: "Partly",
+      };
+    case "miss":
+      return {
+        question,
+        answer: `Not really — ${sector} is the biggest source here, but the plan has no clear actions for it.`,
+        shortLabel: "Not really",
+      };
+    case "not-assessable":
+      return {
+        question,
+        answer: "Not enough data yet to compare the plan with local emissions.",
+        shortLabel: "Not enough data",
+      };
+  }
+}
+
 export interface SectorFocusRow {
   sectorId: TefSectorId;
   label: string;
@@ -316,16 +352,16 @@ export function computeEmissionFocusGap(
   const missingLabels = missing.map((m) => m.label);
   const summaryEn =
     gapShare == null
-      ? "Not assessable yet (missing emissions or measures)."
+      ? "Not enough data yet to compare the plan with emissions."
       : missingLabels.length === 0
-        ? "Every mapped emission sector has at least one measure."
-        : `Plan lacks measures for ${missingLabels.join(", ")}, covering ${Math.round(gapShare * 100)}% of mapped emissions.`;
+        ? "The plan has measures in every major emissions sector we can map."
+        : `${Math.round(gapShare * 100)}% of emissions sit in sectors with no measures in the plan (${missingLabels.join(", ")}).`;
   const summarySv =
     gapShare == null
-      ? "Kan inte bedömas ännu (saknar utsläpp eller åtgärder)."
+      ? "För lite data ännu för att jämföra planen med utsläppen."
       : missingLabels.length === 0
-        ? "Alla kartlagda utsläppssektorer har minst en åtgärd."
-        : `Planen saknar åtgärder för ${missingLabels.join(", ")}, som står för ${Math.round(gapShare * 100)} % av kartlagda utsläpp.`;
+        ? "Planen har åtgärder i alla större utsläppssektorer vi kan kartlägga."
+        : `${Math.round(gapShare * 100)} % av utsläppen ligger i sektorer utan åtgärder i planen (${missingLabels.join(", ")}).`;
 
   return {
     gapShare,
@@ -514,25 +550,115 @@ export function computeSincePlanTrend(
   };
 }
 
+/**
+ * Short, copyable talking points for light-green citizens.
+ * Factual and non-accusatory — for conversations / local outreach.
+ */
+export function conversationStartersEn(input: {
+  placeName: string;
+  gap: EmissionFocusGapResult;
+  sincePlan: SincePlanTrendResult;
+  focusSentenceEn?: string | null;
+  adoptedYear?: number | null;
+}): string[] {
+  const starters: string[] = [];
+  const place = input.placeName;
+  const largest =
+    input.gap.rows.find((r) => r.sectorId === input.gap.largestSectorId)
+      ?.label ?? "the biggest source of emissions";
+  const missingLabels = input.gap.rows
+    .filter((r) => input.gap.missingSectors.includes(r.sectorId))
+    .map((r) => r.label);
+
+  if (input.gap.focusMatch === "miss") {
+    starters.push(
+      `You could ask: ${largest} is ${place}’s biggest source of emissions — what concrete steps is the municipality taking on it?`,
+    );
+  } else if (input.gap.focusMatch === "partial") {
+    starters.push(
+      `You could ask: ${largest} is our biggest source of emissions — how much of the climate plan is aimed there versus elsewhere?`,
+    );
+  }
+
+  if (
+    input.gap.gapShare != null &&
+    input.gap.gapShare >= 0.2 &&
+    missingLabels.length > 0
+  ) {
+    const share = Math.round(input.gap.gapShare * 100);
+    const listed =
+      missingLabels.length <= 2
+        ? missingLabels.join(" and ")
+        : `${missingLabels.slice(0, 2).join(", ")} and more`;
+    starters.push(
+      `You could ask: about ${share}% of our emissions sit in areas with no measures in the plan (${listed}) — is that covered in another policy, or should it be added next update?`,
+    );
+  }
+
+  if (
+    input.sincePlan.status === "ok" &&
+    input.sincePlan.annualChangePercent != null &&
+    input.sincePlan.annualChangePercent > 0
+  ) {
+    const yearBit = input.adoptedYear
+      ? ` since our climate plan was adopted in ${input.adoptedYear}`
+      : " after the plan was adopted";
+    starters.push(
+      `You could ask: local emissions have risen by about ${input.sincePlan.annualChangePercent.toFixed(1)}% per year${yearBit} — which planned actions are underway now, and where is more support needed?`,
+    );
+  } else if (
+    input.sincePlan.status === "ok" &&
+    input.sincePlan.annualChangePercent != null &&
+    input.sincePlan.annualChangePercent < -1
+  ) {
+    starters.push(
+      `Useful context: emissions fell about ${Math.abs(input.sincePlan.annualChangePercent).toFixed(1)}% per year after the plan was adopted — ask what is working and what still needs funding.`,
+    );
+  }
+
+  if (input.focusSentenceEn) {
+    starters.push(
+      `You could ask: the plan seems to focus on “${input.focusSentenceEn.replace(/\.$/, "")}” — how does that match local priorities?`,
+    );
+  }
+
+  if (input.adoptedYear && input.adoptedYear <= new Date().getFullYear() - 5) {
+    starters.push(
+      `You could ask: the climate plan is from ${input.adoptedYear} — when will it be updated, and what has changed since then?`,
+    );
+  }
+
+  return starters.slice(0, 3);
+}
+
 export const WEBSITE_KPI_PLAN = {
   mvpPublic: [
     {
       id: "emissionFocusGap",
-      name: "Emissions without measures",
+      name: "Emissions with no measures in the plan",
       nameSv: "Utsläpp utan åtgärder i planen",
       overviewMap: true,
       status: "prototype",
       rationale:
-        "Absence framing is more stable than yes/no alignment across thresholds. Lower is better.",
+        "Absence framing is more stable than yes/no alignment. Lower is better. Fuels “what’s missing?” conversations.",
     },
     {
-      id: "mainFocus",
-      name: "Main plan focus",
-      nameSv: "Tyngdpunkt",
+      id: "planCoversBiggestSource",
+      name: "Does the plan cover the biggest source?",
+      nameSv: "Tar planen tag i den största källan?",
       overviewMap: false,
       status: "prototype",
       rationale:
-        "Rule-based sentence from TEF families (deduped measures). Detail page only.",
+        "Plain yes/partly/not-really instead of Focus match. Detail-section headline, not a map score.",
+    },
+    {
+      id: "mainFocus",
+      name: "What the plan focuses on",
+      nameSv: "Vad planen fokuserar på",
+      overviewMap: false,
+      status: "prototype",
+      rationale:
+        "Rule-based sentence from TEF families (deduped measures). Detail page only — talking-point fuel.",
     },
     {
       id: "historicalEmissionChange",
@@ -549,7 +675,7 @@ export const WEBSITE_KPI_PLAN = {
     "Average intervention or activity-shift scores as 'ambition'",
     "Raw commitment counts (pre-dedupe)",
     "Causal 'since the plan' success/fail colouring",
-    "Binary focus-match without a publish gate",
+    "Binary focus-match jargon without plain-language answers",
   ],
   blockers: [
     "Canonical plan + companion åtgärdsplan merge per municipality",

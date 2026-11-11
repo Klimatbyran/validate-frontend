@@ -680,7 +680,7 @@ export const MAP_KPI_META: Record<
       "Distinct companion groups — signals the plan may be incomplete without its åtgärdsplan/bilaga.",
   },
   emissionFocusGap: {
-    label: "Emissions without measures",
+    label: "Emissions with no measures in the plan",
     data: "Unearth/SMHI sector tonnes (six TEF-mapped buckets) vs scored measures with gate domain or TEF matches in that sector. Prefer climateCommitmentGroups / measures — not raw commitment counts.",
     calculation:
       "Share of mapped emissions in sectors with zero addressing measures. Machinery/product/other excluded. Lower is better. Prototype for website overview maps — see Website visuals view.",

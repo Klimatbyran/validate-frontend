@@ -3,6 +3,8 @@ import {
   computeEmissionFocusGap,
   computeMainFocus,
   computeSincePlanTrend,
+  conversationStartersEn,
+  focusMatchPlainEn,
   measureCountsBySector,
 } from "./website-kpis";
 import type {
@@ -153,6 +155,68 @@ describe("website KPI prototypes", () => {
     const result = computeMainFocus(record({ tefHits: hits }));
     expect(result.sentenceEn).toMatch(/electrified vehicles/i);
     expect(result.sentenceSv).toBeTruthy();
+  });
+
+  it("uses plain yes/partly/not-really instead of focus-match jargon", () => {
+    const plain = focusMatchPlainEn("miss", "Agriculture & land use");
+    expect(plain.question).toMatch(/highest/i);
+    expect(plain.shortLabel).toBe("Not really");
+    expect(plain.answer).toMatch(/Agriculture & land use/i);
+  });
+
+  it("builds conversation starters from gap and miss signals", () => {
+    const gap = computeEmissionFocusGap(
+      record({
+        measures: [
+          measure({
+            measure_text: "only transport",
+            activity_shifts: [
+              {
+                activity: "mobility",
+                shift_from: "car",
+                shift_to: "bus",
+                need: "mobility",
+                type: "Type Shift",
+                type_reasoning: "",
+                score: 5,
+                reasoning: "",
+                transition_element_matches: [],
+                transition_element_candidates: [],
+                transition_element_gate_domain: "Transport",
+              },
+            ],
+          }),
+        ],
+      }),
+      [
+        {
+          municipalityName: "Bjurholm",
+          byYear: {
+            "2023": {
+              Transporter: 40,
+              Jordbruk: 60,
+            },
+          },
+        },
+      ],
+    );
+    const starters = conversationStartersEn({
+      placeName: "Bjurholm",
+      gap,
+      sincePlan: {
+        annualChangePercent: null,
+        fromYear: null,
+        toYear: null,
+        observationCount: 0,
+        status: "no-plan-year",
+        noteEn: "",
+      },
+      adoptedYear: 2018,
+    });
+    expect(starters.length).toBeGreaterThan(0);
+    expect(
+      starters.some((s) => /Agriculture & land use|biggest source/i.test(s)),
+    ).toBe(true);
   });
 
   it("marks since-plan trends as too-new with few years", () => {

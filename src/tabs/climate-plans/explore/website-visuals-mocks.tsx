@@ -7,10 +7,13 @@ import type {
 } from "../lib/website-visuals-rollup";
 import {
   buildPlaceKpiBundle,
+  focusMatchValueClass,
   formatGapPercent,
   formatSincePlan,
   gapValueClass,
+  plainFocusMatch,
   rankByGap,
+  startersForBundle,
 } from "../lib/website-visuals-rollup";
 import type { SectorYearEmissions } from "../lib/explore-types";
 
@@ -264,39 +267,48 @@ export function MunicipalityDetailMock({ bundle }: { bundle: PlaceKpiBundle }) {
   const since = formatSincePlan(bundle.sincePlan);
   const gapValue = formatGapPercent(bundle.gap.gapShare);
   const planYear = bundle.record.adoptedYear;
+  const focus = plainFocusMatch(bundle.gap);
+  const starters = startersForBundle(bundle);
   return (
     <SiteMockShell
       eyebrow="Municipality · detail page"
-      title="DetailHeader + LinkCards + DetailSection"
+      title="Keep the header for emissions KPIs; add a Climate plan section below"
     >
+      <p className="text-sm text-gray-02 -mt-2">
+        Page flow today: header stats → emissions charts → climate-plan +
+        procurement cards → transport KPIs. Proposed climate-plan insights sit
+        in their own section after the existing cards — not jammed into the
+        Paris / emissions header.
+      </p>
+
       <MockDetailHeader
         name={bundle.record.name}
         subtitle={bundle.record.county ?? bundle.record.regionName ?? undefined}
         stats={[
           {
-            label: "Emissions without measures",
-            value: gapValue,
-            className: gapValueClass(bundle.gap.gapShare),
-            caption: bundle.gap.summaryEn,
+            label: "Meets Paris pathway",
+            value: "…",
+            className: "text-green-03",
+            caption: "Existing header KPI (unchanged).",
           },
           {
-            label: "Emissions change since plan",
-            value: since.value,
-            className: since.className,
-            caption: since.caption,
+            label: "Emissions change since 2015",
+            value: "…",
+            className: "text-orange-02",
+            caption: "Existing header KPI (unchanged).",
           },
           {
-            label: "Focus match",
-            value: bundle.gap.focusMatch,
-            className:
-              bundle.gap.focusMatch === "match"
-                ? "text-blue-03"
-                : bundle.gap.focusMatch === "miss"
-                  ? "text-pink-03"
-                  : "text-orange-02",
+            label: "Total emissions",
+            value: "…",
+            className: "text-orange-02",
+            caption: "Existing header KPI (unchanged).",
           },
         ]}
       />
+
+      <div className="rounded-[30px] border border-dashed border-gray-03/50 px-5 py-6 text-sm text-gray-02">
+        Emissions charts stay here (historic trend + sectors) — same as today.
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <MockLinkCard
@@ -308,77 +320,174 @@ export function MunicipalityDetailMock({ bundle }: { bundle: PlaceKpiBundle }) {
           footer={bundle.record.documentTitle ?? undefined}
         />
         <MockLinkCard
-          title="Main focus"
-          description={
-            bundle.focus.sentenceEn ??
-            "Not enough evidence for a focus sentence yet."
-          }
-          descriptionClassName={
-            bundle.focus.sentenceEn ? "text-gray-01" : "text-gray-02"
-          }
-          footer="Rule-based sentence from TEF families — not LLM prose."
+          title="Procurement"
+          description="Existing card (unchanged)"
+          descriptionClassName="text-gray-02"
         />
       </div>
 
-      <MockDetailSection
-        title="Plan vs emissions"
-        items={[
-          {
-            title: "Emissions without measures",
-            value: gapValue,
-            className: gapValueClass(bundle.gap.gapShare),
-          },
-          {
-            title: "Missing sectors",
-            value:
-              bundle.gap.missingSectors.length === 0
-                ? "0"
-                : String(bundle.gap.missingSectors.length),
-            className:
-              bundle.gap.missingSectors.length === 0
-                ? "text-blue-03"
-                : "text-pink-03",
-          },
-          {
-            title: "Measures in extract",
-            value: String(bundle.record.measures.length),
-            className: "text-orange-02",
-          },
-        ]}
-      />
-
-      <div className="rounded-[30px] border border-gray-03/40 bg-gray-05/40 px-5 py-4">
-        <div className="text-xs uppercase tracking-wide text-gray-02 mb-3">
-          Sectors (latest year)
+      <section className="space-y-5 rounded-[30px] border border-blue-03/30 bg-blue-03/5 px-5 py-6 md:px-7 md:py-7">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="text-[11px] uppercase tracking-wide text-blue-03">
+              Proposed section
+            </div>
+            <h3 className="mt-1 text-2xl md:text-3xl font-light text-gray-01">
+              Climate plan
+            </h3>
+            <p className="mt-2 text-sm text-gray-02 max-w-2xl">
+              What the municipality plans to do, how it lines up with local
+              emissions, and questions you can bring to neighbours or local
+              politicians.
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-xs uppercase tracking-wide text-gray-02">
+              Adopted
+            </div>
+            <div
+              className={cn(
+                "text-2xl font-medium",
+                planYear ? "text-blue-03" : "text-pink-03",
+              )}
+            >
+              {planYear ?? "No year"}
+            </div>
+          </div>
         </div>
-        <div className="space-y-2">
-          {bundle.gap.rows.map((row) => (
-            <div key={row.sectorId} className="flex items-center gap-3 text-sm">
-              <div className="w-24 text-gray-01">{row.label}</div>
-              <div className="flex-1 h-2 rounded-full bg-gray-03/80 overflow-hidden">
+
+        <div className="rounded-[24px] bg-gray-05/50 border border-gray-03/40 px-5 py-4">
+          <div className="text-sm text-gray-02">{focus.question}</div>
+          <div
+            className={cn(
+              "mt-2 text-2xl md:text-3xl font-medium",
+              focusMatchValueClass(focus.verdict),
+            )}
+          >
+            {focus.answer}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <MockLinkCard
+            title="What the plan focuses on"
+            description={
+              bundle.focus.sentenceEn ??
+              "Not enough measures analysed yet to summarise the focus."
+            }
+            descriptionClassName={
+              bundle.focus.sentenceEn ? "text-gray-01" : "text-gray-02"
+            }
+            footer="One or two plain themes from the plan’s measures — not a quality score."
+          />
+          {bundle.focus.themes.length > 0 ? (
+            <div className="flex flex-wrap gap-2 px-1">
+              {bundle.focus.themes.slice(0, 4).map((theme) => (
+                <span
+                  key={theme.id}
+                  className="text-xs px-3 py-1.5 rounded-full border border-gray-03/50 text-gray-01 bg-gray-05/40"
+                >
+                  {theme.label}
+                  <span className="text-gray-02 ml-1.5 tabular-nums">
+                    {theme.measureCount}
+                  </span>
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <MockDetailSection
+          title="Plan and emissions at a glance"
+          items={[
+            {
+              title: "Emissions with no measures in the plan",
+              value: gapValue,
+              className: gapValueClass(bundle.gap.gapShare),
+            },
+            {
+              title: "What happened after the plan was adopted",
+              value: since.value,
+              className: since.className,
+            },
+            {
+              title: "Measures analysed",
+              value: String(bundle.record.measures.length),
+              className: "text-orange-02",
+            },
+          ]}
+        />
+        <p className="text-sm text-gray-02 -mt-2">{bundle.gap.summaryEn}</p>
+        {since.caption ? (
+          <p className="text-xs text-gray-02 -mt-3">{since.caption}</p>
+        ) : null}
+
+        <div className="rounded-[24px] border border-gray-03/40 bg-gray-05/40 px-5 py-4">
+          <div className="text-sm text-gray-01 mb-1">
+            Where emissions are — and whether the plan has measures
+          </div>
+          <div className="text-xs text-gray-02 mb-3">
+            Bar = share of local emissions. Label = whether the plan includes
+            measures for that sector.
+          </div>
+          <div className="space-y-2">
+            {bundle.gap.rows.map((row) => (
+              <div
+                key={row.sectorId}
+                className="flex items-center gap-3 text-sm"
+              >
+                <div className="w-36 text-gray-01 truncate" title={row.label}>
+                  {row.label}
+                </div>
+                <div className="flex-1 h-2 rounded-full bg-gray-03/80 overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full rounded-full",
+                      row.addressed ? "bg-blue-03/80" : "bg-pink-03/70",
+                    )}
+                    style={{
+                      width: `${Math.round(row.emissionShare * 100)}%`,
+                    }}
+                  />
+                </div>
+                <div className="w-12 text-right tabular-nums text-gray-02">
+                  {Math.round(row.emissionShare * 100)}%
+                </div>
                 <div
                   className={cn(
-                    "h-full rounded-full",
-                    row.addressed ? "bg-blue-03/80" : "bg-pink-03/70",
+                    "w-28 text-right text-xs",
+                    row.addressed ? "text-blue-03" : "text-pink-03",
                   )}
-                  style={{ width: `${Math.round(row.emissionShare * 100)}%` }}
-                />
+                >
+                  {row.addressed ? "Has measures" : "No measures"}
+                </div>
               </div>
-              <div className="w-12 text-right tabular-nums text-gray-02">
-                {Math.round(row.emissionShare * 100)}%
-              </div>
-              <div
-                className={cn(
-                  "w-10 text-right text-xs",
-                  row.addressed ? "text-blue-03" : "text-pink-03",
-                )}
-              >
-                {row.addressed ? "yes" : "no"}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+
+        {starters.length > 0 ? (
+          <div className="rounded-[24px] border border-orange-03/40 bg-orange-03/10 px-5 py-4 space-y-3">
+            <div>
+              <div className="text-sm text-gray-01">Conversation starters</div>
+              <p className="text-xs text-gray-02 mt-1">
+                Factual prompts for chats with neighbours or local politicians —
+                not a grade of the municipality.
+              </p>
+            </div>
+            <ul className="space-y-2.5">
+              {starters.map((line) => (
+                <li
+                  key={line}
+                  className="text-sm text-gray-01 leading-relaxed pl-3 border-l-2 border-orange-02/60"
+                >
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </section>
     </SiteMockShell>
   );
 }
@@ -390,78 +499,129 @@ export function RegionDetailMock({
   bundle: RegionKpiBundle;
   sectorEmissions: SectorYearEmissions[];
 }) {
-  const since = formatSincePlan(bundle.sincePlan);
   const gapValue = formatGapPercent(bundle.gap.gapShare);
+  const focus = plainFocusMatch(bundle.gap);
   return (
     <SiteMockShell
       eyebrow="Region · detail page"
-      title="DetailHeader + region roll-up (no LinkCards on the site today)"
+      title="Header stays emissions-first; Climate plan roll-up is its own section"
     >
+      <p className="text-sm text-gray-02 -mt-2">
+        Regions do not publish one shared climate plan. This section summarises
+        what municipal plans in the region cover — useful for regional debate
+        and comparing neighbours.
+      </p>
+
       <MockDetailHeader
         name={bundle.record.name}
-        subtitle={`${bundle.assessedCount} of ${bundle.municipalityCount} municipalities with an assessable gap`}
+        subtitle={`${bundle.assessedCount} of ${bundle.municipalityCount} municipalities with assessable plan data`}
         stats={[
           {
-            label: "Emissions without measures",
-            value: gapValue,
-            className: gapValueClass(bundle.gap.gapShare),
-            caption:
-              "Emissions-weighted average gap across assessed municipalities in the region.",
+            label: "Meets Paris pathway",
+            value: "…",
+            className: "text-green-03",
+            caption: "Existing header KPI (unchanged).",
           },
           {
-            label: "Emissions change since plan",
-            value: since.value,
-            className: since.className,
-            caption:
-              "Regions have no own plan in the pipeline — often “—” until municipal years exist.",
-          },
-          {
-            label: "Municipalities analysed",
-            value: `${bundle.assessedCount}/${bundle.municipalityCount}`,
+            label: "Emissions change since 2015",
+            value: "…",
             className: "text-orange-02",
+            caption: "Existing header KPI (unchanged).",
+          },
+          {
+            label: "Total emissions",
+            value: "…",
+            className: "text-orange-02",
+            caption: "Existing header KPI (unchanged).",
           },
         ]}
       />
 
-      <MockLinkCard
-        title="Main focus (merged)"
-        description={
-          bundle.focus.sentenceEn ??
-          "Not enough evidence in the region extracts yet."
-        }
-        descriptionClassName={
-          bundle.focus.sentenceEn ? "text-gray-01" : "text-gray-02"
-        }
-        footer="Built from merged measures — not a regional climate plan."
-      />
+      <section className="space-y-5 rounded-[30px] border border-blue-03/30 bg-blue-03/5 px-5 py-6 md:px-7 md:py-7">
+        <div>
+          <div className="text-[11px] uppercase tracking-wide text-blue-03">
+            Proposed section
+          </div>
+          <h3 className="mt-1 text-2xl md:text-3xl font-light text-gray-01">
+            Climate plans in the region
+          </h3>
+          <p className="mt-2 text-sm text-gray-02 max-w-2xl">
+            How municipal climate plans line up with emissions across the region
+            — not a regional plan grade.
+          </p>
+        </div>
 
-      <section>
-        <h3 className="text-xl font-light text-gray-01 mb-4">Municipalities</h3>
-        <ul className="divide-y divide-gray-03/40 rounded-[30px] border border-gray-03/40 overflow-hidden">
-          {bundle.municipalities
-            .slice()
-            .sort((a, b) => a.name.localeCompare(b.name, "sv"))
-            .map((muni) => {
-              const localGap = buildPlaceKpiBundle(muni, sectorEmissions).gap
-                .gapShare;
-              return (
-                <li
-                  key={muni.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3 text-sm bg-gray-05/30"
-                >
-                  <span className="text-gray-01">{muni.name}</span>
-                  <span className={cn("tabular-nums", gapValueClass(localGap))}>
-                    {formatGapPercent(localGap)}
-                    <span className="text-gray-02">
-                      {" "}
-                      · {muni.measures.length} measures
-                      {muni.adoptedYear ? ` · ${muni.adoptedYear}` : ""}
+        <MockDetailSection
+          title="At a glance"
+          items={[
+            {
+              title: "Emissions with no measures in municipal plans",
+              value: gapValue,
+              className: gapValueClass(bundle.gap.gapShare),
+            },
+            {
+              title: "Municipalities with plan data",
+              value: `${bundle.assessedCount}/${bundle.municipalityCount}`,
+              className: "text-orange-02",
+            },
+            {
+              title: "Biggest source covered?",
+              value: focus.shortLabel,
+              className: focusMatchValueClass(focus.verdict),
+            },
+          ]}
+        />
+        <p className="text-sm text-gray-02 -mt-2">{bundle.gap.summaryEn}</p>
+
+        <MockLinkCard
+          title="What plans in the region focus on"
+          description={
+            bundle.focus.sentenceEn ??
+            "Not enough measures analysed yet across municipalities."
+          }
+          descriptionClassName={
+            bundle.focus.sentenceEn ? "text-gray-01" : "text-gray-02"
+          }
+          footer="Merged from municipal extracts — not one regional climate plan."
+        />
+
+        <section>
+          <h4 className="text-lg font-light text-gray-01 mb-3">
+            Municipalities — emissions with no measures in the plan
+          </h4>
+          <ul className="divide-y divide-gray-03/40 rounded-[24px] border border-gray-03/40 overflow-hidden">
+            {bundle.municipalities
+              .slice()
+              .sort((a, b) => a.name.localeCompare(b.name, "sv"))
+              .map((muni) => {
+                const local = buildPlaceKpiBundle(muni, sectorEmissions);
+                const localFocus = plainFocusMatch(local.gap);
+                return (
+                  <li
+                    key={muni.id}
+                    className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm bg-gray-05/30"
+                  >
+                    <span className="text-gray-01">{muni.name}</span>
+                    <span className="text-right">
+                      <span
+                        className={cn(
+                          "tabular-nums",
+                          gapValueClass(local.gap.gapShare),
+                        )}
+                      >
+                        {formatGapPercent(local.gap.gapShare)}
+                      </span>
+                      <span className="text-gray-02">
+                        {" "}
+                        · {localFocus.shortLabel}
+                        {muni.adoptedYear ? ` · ${muni.adoptedYear}` : ""}
+                      </span>
                     </span>
-                  </span>
-                </li>
-              );
-            })}
-        </ul>
+                  </li>
+                );
+              })}
+          </ul>
+        </section>
       </section>
     </SiteMockShell>
   );
@@ -492,7 +652,7 @@ export function OverviewMock({
           { id: "climatePlan", label: "Climate plans" },
           {
             id: "emissionFocusGap",
-            label: "Emissions without measures",
+            label: "No measures in the plan",
             proposed: true,
           },
         ]
@@ -501,7 +661,7 @@ export function OverviewMock({
           { id: "paris", label: "Paris Agreement" },
           {
             id: "emissionFocusGap",
-            label: "Emissions without measures",
+            label: "No measures in the plan",
             proposed: true,
           },
         ];
@@ -531,8 +691,8 @@ export function OverviewMock({
         <p className="text-sm text-gray-02 rounded-2xl border border-dashed border-gray-03/50 px-4 py-3">
           Existing chips ({chips.find((c) => c.id === activeChip)?.label})
           already ship on klimatkollen.se. Select{" "}
-          <span className="text-orange-02">Emissions without measures</span> to
-          see how the new KPI would sit in the same layout.
+          <span className="text-orange-02">No measures in the plan</span> to see
+          how the new climate-plan map KPI would sit in the same layout.
         </p>
       ) : null}
 
@@ -549,12 +709,12 @@ export function OverviewMock({
         <MockAnswerCard
           averageLabel={
             showingGap
-              ? "Average share of emissions without measures in the plan"
+              ? "Average share of emissions sitting in sectors with no measures in the plan"
               : "Select the new KPI chip for the mocked short answer"
           }
           averageValue={showingGap ? formatGapPercent(avgGap) : "—"}
           averageClassName={showingGap ? gapValueClass(avgGap) : "text-gray-02"}
-          direction="Lower is better"
+          direction="Lower is better — more of the emissions picture is covered"
           top={best.map((b) => ({
             name: b.record.name,
             value: formatGapPercent(b.gap.gapShare),
@@ -565,7 +725,7 @@ export function OverviewMock({
           }))}
           note={
             showingGap
-              ? `${assessed.length} of ${bundles.length} ${entityType === "municipalities" ? "municipalities" : "regions"} have assessable data in this explore load. Grey on the map = no extract.`
+              ? `${assessed.length} of ${bundles.length} ${entityType === "municipalities" ? "municipalities" : "regions"} have assessable data in this explore load. Grey on the map = no extract. Use this to spot places where plans leave large emission sources untouched.`
               : undefined
           }
         />
@@ -574,7 +734,7 @@ export function OverviewMock({
       {showingGap ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InsightList
-            title="Top"
+            title="More of emissions covered"
             rows={best.map((b) => ({
               name: b.record.name,
               value: formatGapPercent(b.gap.gapShare),
@@ -582,7 +742,7 @@ export function OverviewMock({
             tone="good"
           />
           <InsightList
-            title="Bottom"
+            title="Larger gaps in the plan"
             rows={worst.map((b) => ({
               name: b.record.name,
               value: formatGapPercent(b.gap.gapShare),
@@ -599,10 +759,10 @@ export function OverviewMock({
               <tr className="text-left text-xs text-gray-02 border-b border-gray-03/40">
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium text-right">
-                  Emissions without measures
+                  Emissions with no measures
                 </th>
                 <th className="px-4 py-3 font-medium text-right">
-                  Focus match
+                  Biggest source covered?
                 </th>
               </tr>
             </thead>
@@ -614,27 +774,35 @@ export function OverviewMock({
                     a.record.name.localeCompare(b.record.name, "sv"),
                 )
                 .slice(0, 8)
-                .map((b) => (
-                  <tr
-                    key={b.record.id}
-                    className="border-b border-gray-03/20 last:border-0"
-                  >
-                    <td className="px-4 py-2.5 text-gray-01">
-                      {b.record.name}
-                    </td>
-                    <td
-                      className={cn(
-                        "px-4 py-2.5 text-right tabular-nums",
-                        gapValueClass(b.gap.gapShare),
-                      )}
+                .map((b) => {
+                  const plain = plainFocusMatch(b.gap);
+                  return (
+                    <tr
+                      key={b.record.id}
+                      className="border-b border-gray-03/20 last:border-0"
                     >
-                      {formatGapPercent(b.gap.gapShare)}
-                    </td>
-                    <td className="px-4 py-2.5 text-right text-gray-02">
-                      {b.gap.focusMatch}
-                    </td>
-                  </tr>
-                ))}
+                      <td className="px-4 py-2.5 text-gray-01">
+                        {b.record.name}
+                      </td>
+                      <td
+                        className={cn(
+                          "px-4 py-2.5 text-right tabular-nums",
+                          gapValueClass(b.gap.gapShare),
+                        )}
+                      >
+                        {formatGapPercent(b.gap.gapShare)}
+                      </td>
+                      <td
+                        className={cn(
+                          "px-4 py-2.5 text-right",
+                          focusMatchValueClass(plain.verdict),
+                        )}
+                      >
+                        {plain.shortLabel}
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>

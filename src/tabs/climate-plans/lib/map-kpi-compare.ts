@@ -671,7 +671,7 @@ function emissionRows(
   return [
     row({
       id: "emissionGap",
-      label: "Emissions without measures",
+      label: "Emissions with no measures in the plan",
       primary: formatShare(primaryGap.gapShare),
       compareValue: compare ? formatShare(compareGap?.gapShare ?? null) : null,
       delta: deltaOf(primaryGap.gapShare, compareGap?.gapShare ?? null),
@@ -680,7 +680,7 @@ function emissionRows(
     }),
     row({
       id: "focusMatch",
-      label: "Focus match",
+      label: "Biggest source covered?",
       primary: primaryGap.focusMatch,
       compareValue: compare ? (compareGap?.focusMatch ?? null) : null,
       delta: null,
@@ -689,7 +689,7 @@ function emissionRows(
     }),
     row({
       id: "missingSectors",
-      label: "Missing sectors",
+      label: "Sectors with no measures",
       primary:
         primaryGap.missingSectors.length === 0
           ? "none"

@@ -14,6 +14,10 @@ import type {
 import { namesMatch } from "../lib/municipality-names";
 import { WEBSITE_KPI_PLAN } from "../lib/website-kpis";
 import {
+  WEBSITE_VISUALS_DEMO_EMISSIONS,
+  WEBSITE_VISUALS_DEMO_RECORDS,
+} from "../lib/website-visuals-demo";
+import {
   buildPlaceKpiBundle,
   buildRegionKpiBundles,
 } from "../lib/website-visuals-rollup";
@@ -46,19 +50,28 @@ export function WebsiteVisualsView({
   const [overviewChip, setOverviewChip] = useState("emissionFocusGap");
   const [localName, setLocalName] = useState<string | null>(null);
 
+  const usingDemo = records.length === 0;
+  const effectiveRecords = usingDemo ? WEBSITE_VISUALS_DEMO_RECORDS : records;
+  const effectiveEmissions = usingDemo
+    ? WEBSITE_VISUALS_DEMO_EMISSIONS
+    : sectorEmissions;
+
   const places = useMemo(
     () =>
-      [...records].map((r) => r.name).sort((a, b) => a.localeCompare(b, "sv")),
-    [records],
+      [...effectiveRecords]
+        .map((r) => r.name)
+        .sort((a, b) => a.localeCompare(b, "sv")),
+    [effectiveRecords],
   );
 
   const muniBundles = useMemo(
-    () => records.map((r) => buildPlaceKpiBundle(r, sectorEmissions)),
-    [records, sectorEmissions],
+    () =>
+      effectiveRecords.map((r) => buildPlaceKpiBundle(r, effectiveEmissions)),
+    [effectiveRecords, effectiveEmissions],
   );
   const regionBundles = useMemo(
-    () => buildRegionKpiBundles(records, sectorEmissions),
-    [records, sectorEmissions],
+    () => buildRegionKpiBundles(effectiveRecords, effectiveEmissions),
+    [effectiveRecords, effectiveEmissions],
   );
 
   const effectiveMuniName =
@@ -112,17 +125,20 @@ export function WebsiteVisualsView({
   return (
     <div className="space-y-5">
       <MethodologyPanel
-        data="Website-layout mocks for klimatkollen.se using live explore extracts. Mirrors TerritoryOverviewLayout (chips → map + answer → topp/botten → table) and DetailHeader / LinkCard / DetailSection patterns from the public frontend."
-        calculation="Emissions without measures = share of six mapped SMHI sectors with no addressing measures. Main focus = rule-based TEF-family sentence. Since plan = territorial CAGR only with ≥3 post-adoption years (grey null otherwise). Region gap = emissions-weighted municipal average."
-        extra="Proposed placements: overview map chip for emission gap (not main-focus sentence). Detail: gap + since-plan in header stats; main focus as LinkCard-style text under Climate plan. Region detail has no climate LinkCards today — add gap/coverage in header and a merged focus sentence."
+        data="Website-layout mocks for klimatkollen.se using live explore extracts. Audience: climate-interested citizens who want emissions, actions and trends for conversations or outreach — not TEF jargon. Mirrors TerritoryOverviewLayout and DetailHeader / LinkCard / DetailSection patterns."
+        calculation="Emissions with no measures in the plan = share of six mapped SMHI sectors with zero addressing measures. Biggest source covered? = plain yes/partly/not-really vs largest sector. What the plan focuses on = rule-based sentence. Since plan = territorial change with ≥3 post-adoption years. Conversation starters = templated prompts from those signals."
+        extra="Placement: keep Paris / since-2015 / total emissions in the detail header. Put plan insights in a separate Climate plan section after the existing plan + procurement cards. Overview: one map chip for the gap KPI; keep focus answers off the map colouring."
       />
 
       <Callout variant="info" title="Website mock surfaces">
         <p className="text-sm text-gray-02 mt-1">
           These panels are styled like klimatkollen.se (dark cards, DM Sans,
           blue/pink KPI colours) so we can review public placement before wiring{" "}
-          <code className="font-mono text-xs">frontend</code>. Data is still
-          from Validate extracts — coverage is incomplete on purpose.
+          <code className="font-mono text-xs">frontend</code>. Data is from
+          Validate extracts when available
+          {usingDemo
+            ? " — currently using a tiny demo sample so the layout is reviewable offline."
+            : " — coverage is incomplete on purpose."}
         </p>
       </Callout>
 
@@ -178,7 +194,7 @@ export function WebsiteVisualsView({
       {surface === "region-detail" && selectedRegionBundle ? (
         <RegionDetailMock
           bundle={selectedRegionBundle}
-          sectorEmissions={sectorEmissions}
+          sectorEmissions={effectiveEmissions}
         />
       ) : null}
       {surface === "muni-overview" ? (
@@ -217,24 +233,24 @@ export function WebsiteVisualsView({
           </h3>
           <ul className="text-sm text-gray-02 list-disc pl-5 space-y-1.5">
             <li>
-              <span className="text-gray-01">Overview (map):</span> add chip
-              “Emissions without measures” next to Emissions / Paris Agreement /
-              Climate plans. Keep main-focus sentence off the map.
+              <span className="text-gray-01">Overview (map):</span> chip “No
+              measures in the plan” next to Emissions / Paris / Climate plans.
+              Table column “Biggest source covered?” stays text, not map colour.
             </li>
             <li>
-              <span className="text-gray-01">Municipality detail:</span> gap +
-              since-plan as DetailHeader stats; Climate plan LinkCard stays; add
-              Main focus as adjacent text card.
+              <span className="text-gray-01">Municipality detail:</span> leave
+              the header for Paris / emissions. Add a dedicated Climate plan
+              section: biggest-source question, what the plan focuses on, gap %,
+              since-plan trend, sector checklist, conversation starters.
             </li>
             <li>
-              <span className="text-gray-01">Region detail:</span> gap +
-              coverage in header; merged main-focus paragraph; municipality list
-              can show gap %.
+              <span className="text-gray-01">Region detail:</span> same idea —
+              Climate plans in the region section with roll-up gap + neighbour
+              list (gap % and yes/partly/not-really).
             </li>
             <li>
-              <span className="text-gray-01">Since 2015</span> stays the stable
-              emissions overview KPI; since-plan stays detail-only with grey
-              nulls.
+              <span className="text-gray-01">Language:</span> drop “Focus match”
+              / match|partial|miss. Prefer questions people can ask politicians.
             </li>
           </ul>
         </section>

@@ -8,10 +8,14 @@ import {
   computeEmissionFocusGap,
   computeMainFocus,
   computeSincePlanTrend,
+  conversationStartersEn,
+  focusMatchPlainEn,
   type EmissionFocusGapResult,
+  type FocusMatchVerdict,
   type MainFocusResult,
   type SincePlanTrendResult,
 } from "./website-kpis";
+import { TEF_SECTORS } from "./tef-framework";
 
 export interface PlaceKpiBundle {
   record: ExploreMunicipalityRecord;
@@ -98,6 +102,47 @@ export function formatGapPercent(gapShare: number | null): string {
   return `${Math.round(gapShare * 100)}%`;
 }
 
+export function largestSectorLabel(gap: EmissionFocusGapResult): string | null {
+  if (!gap.largestSectorId) return null;
+  return (
+    TEF_SECTORS.find((s) => s.id === gap.largestSectorId)?.label ??
+    gap.largestSectorId
+  );
+}
+
+export function plainFocusMatch(gap: EmissionFocusGapResult): {
+  question: string;
+  answer: string;
+  shortLabel: string;
+  verdict: FocusMatchVerdict;
+} {
+  const plain = focusMatchPlainEn(gap.focusMatch, largestSectorLabel(gap));
+  return { ...plain, verdict: gap.focusMatch };
+}
+
+export function focusMatchValueClass(verdict: FocusMatchVerdict): string {
+  switch (verdict) {
+    case "match":
+      return "text-blue-03";
+    case "partial":
+      return "text-orange-02";
+    case "miss":
+      return "text-pink-03";
+    case "not-assessable":
+      return "text-gray-02";
+  }
+}
+
+export function startersForBundle(bundle: PlaceKpiBundle): string[] {
+  return conversationStartersEn({
+    placeName: bundle.record.name,
+    gap: bundle.gap,
+    sincePlan: bundle.sincePlan,
+    focusSentenceEn: bundle.focus.sentenceEn,
+    adoptedYear: bundle.record.adoptedYear,
+  });
+}
+
 export function gapValueClass(gapShare: number | null): string {
   if (gapShare == null) return "text-gray-02";
   if (gapShare <= 0.15) return "text-blue-03";
@@ -116,15 +161,15 @@ export function formatSincePlan(sincePlan: SincePlanTrendResult): {
       value,
       className:
         sincePlan.annualChangePercent > 0 ? "text-pink-03" : "text-orange-02",
-      caption: `Since the plan (${sincePlan.fromYear}–${sincePlan.toYear}). No causal claim.`,
+      caption: `Emissions change after the plan (${sincePlan.fromYear}–${sincePlan.toYear}). Correlation only — not proof the plan caused it.`,
     };
   }
   const captions: Record<SincePlanTrendResult["status"], string> = {
     ok: "",
     "too-new":
-      "Too few years after adoption — shown as missing data, not failure.",
-    "no-plan-year": "Missing adoption year.",
-    "no-emissions": "Missing emissions series.",
+      "Not enough years after the plan yet — we hide a trend instead of guessing.",
+    "no-plan-year": "No adoption year in the data yet.",
+    "no-emissions": "No emissions series for this place yet.",
   };
   return {
     value: "—",
