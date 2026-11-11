@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Code, Copy, FileText, Loader2, Tags } from "lucide-react";
+import { Code, Copy, FileText, History, Loader2, Tags } from "lucide-react";
 import { toast } from "sonner";
 import { Modal } from "@/ui/modal";
 import { CollapsibleSection } from "@/ui/collapsible-section";
@@ -7,6 +7,7 @@ import { MarkdownVectorPagesDisplay } from "@/ui/markdown-display";
 import { PdfHighlightViewer, PdfHighlightPanel } from "./PdfHighlightViewer";
 import { ResizableSplitView } from "./ResizableSplitView";
 import { RecoveredImagesGallery } from "./RecoveredImagesGallery";
+import { TefMatchLegacyView } from "./TefMatchLegacyView";
 import { Button } from "@/ui/button";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
@@ -601,13 +602,23 @@ export function StepResultDialog({
           );
         return renderFilteredOrEmpty(
           measures.length === 0,
-          <TransitionElementsView
-            measures={measures}
-            reviewCtx={reviewCtx}
-            visibleMatchIdsByShiftKey={
-              qaFilter === "all" ? undefined : visibleMatchIdsByShiftKey
-            }
-          />,
+          <>
+            <TransitionElementsView
+              measures={measures}
+              reviewCtx={reviewCtx}
+              visibleMatchIdsByShiftKey={
+                qaFilter === "all" ? undefined : visibleMatchIdsByShiftKey
+              }
+            />
+            <CollapsibleSection
+              title="Legacy matches (frozen snapshot)"
+              icon={<History />}
+              accentIconBg="bg-purple-03/20"
+              accentTextColor="text-purple-03"
+            >
+              <TefMatchLegacyView planId={plan.id} />
+            </CollapsibleSection>
+          </>,
         );
       }
       default:

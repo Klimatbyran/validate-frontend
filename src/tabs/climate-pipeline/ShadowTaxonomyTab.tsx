@@ -26,6 +26,7 @@ import {
   DialogFooter,
 } from "@/ui/dialog";
 import { cn } from "@/lib/utils";
+import { ShadowTaxonomyLegacyView } from "./components/ShadowTaxonomyLegacyView";
 import {
   useShadowElements,
   updateShadowElementStatus,
@@ -955,6 +956,7 @@ function RealOverlapReviewDialog({
 export function ShadowTaxonomyTab() {
   const { t } = useI18n();
   const { elements, isLoading, error, refresh } = useShadowElements();
+  const [showLegacySnapshot, setShowLegacySnapshot] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ShadowElementStatus | "">(
     "",
   );
@@ -1148,6 +1150,18 @@ export function ShadowTaxonomyTab() {
           <Button
             type="button"
             variant="outline"
+            onClick={() => setShowLegacySnapshot((v) => !v)}
+          >
+            {showLegacySnapshot ? (
+              <ChevronUp className="w-4 h-4 mr-1.5" />
+            ) : (
+              <ChevronDown className="w-4 h-4 mr-1.5" />
+            )}
+            Legacy snapshot
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => void handleOpenMergeReview()}
             disabled={elements.length === 0}
           >
@@ -1175,6 +1189,12 @@ export function ShadowTaxonomyTab() {
           </Button>
         </div>
       </div>
+
+      {showLegacySnapshot ? (
+        <div className="rounded-md border border-gray-04 bg-gray-05/20 p-4">
+          <ShadowTaxonomyLegacyView />
+        </div>
+      ) : null}
 
       <MergeReviewDialog
         open={isMergeReviewOpen}
