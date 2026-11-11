@@ -34,9 +34,7 @@ export function WebsiteVisualsView({
 }) {
   const places = useMemo(
     () =>
-      [...records]
-        .map((r) => r.name)
-        .sort((a, b) => a.localeCompare(b, "sv")),
+      [...records].map((r) => r.name).sort((a, b) => a.localeCompare(b, "sv")),
     [records],
   );
   const [localName, setLocalName] = useState<string | null>(null);
@@ -58,8 +56,7 @@ export function WebsiteVisualsView({
     [selected],
   );
   const sincePlan = useMemo(
-    () =>
-      selected ? computeSincePlanTrend(selected, sectorEmissions) : null,
+    () => (selected ? computeSincePlanTrend(selected, sectorEmissions) : null),
     [selected, sectorEmissions],
   );
 
@@ -127,7 +124,9 @@ export function WebsiteVisualsView({
                 </div>
                 <div className="text-sm text-gray-02">
                   {selected.documentTitle ?? "Untitled plan"}
-                  {selected.adoptedYear ? ` · antagen ${selected.adoptedYear}` : ""}
+                  {selected.adoptedYear
+                    ? ` · antagen ${selected.adoptedYear}`
+                    : ""}
                 </div>
               </div>
 
@@ -207,7 +206,9 @@ export function WebsiteVisualsView({
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-02">Load pipeline extracts to preview.</p>
+            <p className="text-sm text-gray-02">
+              Load pipeline extracts to preview.
+            </p>
           )}
         </section>
 
@@ -239,8 +240,8 @@ export function WebsiteVisualsView({
                   <span className="text-gray-02 font-normal">({kpi.name})</span>
                 </div>
                 <p className="text-xs text-gray-02">
-                  {kpi.rationale} · map: {kpi.overviewMap ? "yes" : "detail only"}{" "}
-                  · {kpi.status}
+                  {kpi.rationale} · map:{" "}
+                  {kpi.overviewMap ? "yes" : "detail only"} · {kpi.status}
                 </p>
               </div>
             ))}
@@ -268,18 +269,18 @@ export function WebsiteVisualsView({
                 commitments — duplicates inflate story.
               </li>
               <li>
-                Map KPI “Extracted commitments” remains useful for extraction QA;
-                prefer “Climate commitment groups” / “Scored measures” when
+                Map KPI “Extracted commitments” remains useful for extraction
+                QA; prefer “Climate commitment groups” / “Scored measures” when
                 talking about plan substance.
               </li>
               <li>
-                Proposed STE catalogue shadows and runtime shadow gaps now appear
-                in the TEF framework (filter by source). Public focus sentences
-                ignore runtime shadows until promoted.
+                Proposed STE catalogue shadows and runtime shadow gaps now
+                appear in the TEF framework (filter by source). Public focus
+                sentences ignore runtime shadows until promoted.
               </li>
               <li>
-                Sector alignment uses gate domain when present, else TEF sector —
-                older runs without gates understate coverage until rerun.
+                Sector alignment uses gate domain when present, else TEF sector
+                — older runs without gates understate coverage until rerun.
               </li>
             </ul>
           </div>

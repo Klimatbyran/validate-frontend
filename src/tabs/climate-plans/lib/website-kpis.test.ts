@@ -5,10 +5,15 @@ import {
   computeSincePlanTrend,
   measureCountsBySector,
 } from "./website-kpis";
-import type { ExploreMunicipalityRecord, SectorYearEmissions } from "./explore-types";
+import type {
+  ExploreMunicipalityRecord,
+  SectorYearEmissions,
+} from "./explore-types";
 import type { Measure } from "./measures-types";
 
-function measure(partial: Partial<Measure> & Pick<Measure, "measure_text">): Measure {
+function measure(
+  partial: Partial<Measure> & Pick<Measure, "measure_text">,
+): Measure {
   return {
     activity: "transport",
     activity_shift_score: 4,

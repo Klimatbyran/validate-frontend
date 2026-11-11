@@ -56,7 +56,12 @@ export interface EmissionFocusGapResult {
 export interface MainFocusResult {
   sentenceSv: string | null;
   sentenceEn: string | null;
-  themes: Array<{ id: string; label: string; measureCount: number; share: number }>;
+  themes: Array<{
+    id: string;
+    label: string;
+    measureCount: number;
+    share: number;
+  }>;
   eligibleMeasureCount: number;
 }
 
@@ -73,7 +78,11 @@ const PUBLIC_FOCUS_FAMILIES: {
   id: string;
   labelEn: string;
   labelSv: string;
-  match: (title: string, sectorPath: string, sectorId: TefSectorId | "other") => boolean;
+  match: (
+    title: string,
+    sectorPath: string,
+    sectorId: TefSectorId | "other",
+  ) => boolean;
 }[] = [
   {
     id: "electrified-vehicles",
@@ -96,7 +105,8 @@ const PUBLIC_FOCUS_FAMILIES: {
     id: "renewable-fuels",
     labelEn: "renewable fuels",
     labelSv: "förnybara drivmedel",
-    match: (title) => /biofuel|biogas|hydrogen|renewable fuel|HVO|biodiesel/i.test(title),
+    match: (title) =>
+      /biofuel|biogas|hydrogen|renewable fuel|HVO|biodiesel/i.test(title),
   },
   {
     id: "fossil-free-heating",
@@ -112,7 +122,8 @@ const PUBLIC_FOCUS_FAMILIES: {
     labelEn: "local renewable electricity",
     labelSv: "lokal förnybar el",
     match: (title, path, sectorId) =>
-      (sectorId === "energy" && /solar|wind|renewable|electricity/i.test(title)) ||
+      (sectorId === "energy" &&
+        /solar|wind|renewable|electricity/i.test(title)) ||
       /solar|wind|photovolta/i.test(title) ||
       /solar|wind/i.test(path),
   },
@@ -162,7 +173,9 @@ export function measureCountsBySector(
   for (const measure of measures) {
     const sectors = new Set<TefSectorId>();
     for (const shift of measure.activity_shifts ?? []) {
-      const gated = tefSectorFromGateDomain(shift.transition_element_gate_domain);
+      const gated = tefSectorFromGateDomain(
+        shift.transition_element_gate_domain,
+      );
       if (gated) sectors.add(gated);
       for (const match of shift.transition_element_matches ?? []) {
         const fromIndex = sectorIdFromIndex(parseTefIndex(match.short_label));
@@ -193,16 +206,17 @@ export function emissionSharesForRecord(
   if (!emissions) {
     return {
       bySector: Object.fromEntries(
-        TEF_SECTORS.map((s) => [
-          s.id,
-          { tonnes: 0, share: 0 },
-        ]),
+        TEF_SECTORS.map((s) => [s.id, { tonnes: 0, share: 0 }]),
       ) as Record<TefSectorId, { tonnes: number; share: number }>,
       totalTonnes: 0,
       year: null,
     };
   }
-  const year = pickEmissionsYear(emissions.byYear, "latest", record.adoptedYear);
+  const year = pickEmissionsYear(
+    emissions.byYear,
+    "latest",
+    record.adoptedYear,
+  );
   if (!year) {
     return {
       bySector: Object.fromEntries(
@@ -223,7 +237,10 @@ export function emissionSharesForRecord(
       tonnes[sector.id] += bucketTonnes[bucket] ?? 0;
     }
   }
-  const totalTonnes = TEF_SECTORS.reduce((s, sector) => s + tonnes[sector.id], 0);
+  const totalTonnes = TEF_SECTORS.reduce(
+    (s, sector) => s + tonnes[sector.id],
+    0,
+  );
   const bySector = Object.fromEntries(
     TEF_SECTORS.map((sector) => [
       sector.id,
@@ -262,18 +279,16 @@ export function computeEmissionFocusGap(
 
   const missing = rows.filter((r) => !r.addressed && r.emissionTonnes > 0);
   const gapShare =
-    totalTonnes <= 0
-      ? null
-      : missing.reduce((s, r) => s + r.emissionShare, 0);
+    totalTonnes <= 0 ? null : missing.reduce((s, r) => s + r.emissionShare, 0);
 
   const largest =
     totalTonnes <= 0
       ? null
-      : [...rows].sort(
+      : ([...rows].sort(
           (a, b) =>
             b.emissionTonnes - a.emissionTonnes ||
             a.sectorId.localeCompare(b.sectorId),
-        )[0] ?? null;
+        )[0] ?? null);
 
   let focusMatch: FocusMatchVerdict = "not-assessable";
   if (largest && totalTonnes > 0 && record.measures.length > 0) {
@@ -328,7 +343,9 @@ export function computeEmissionFocusGap(
  * Rule-based "tyngdpunkt" sentence from TEF hits (deduped by measure text).
  * Abstains when too little evidence.
  */
-export function computeMainFocus(record: ExploreMunicipalityRecord): MainFocusResult {
+export function computeMainFocus(
+  record: ExploreMunicipalityRecord,
+): MainFocusResult {
   const officialHits = record.tefHits.filter(
     (hit) => (hit.source ?? "official") !== "runtime-shadow",
   );
@@ -377,9 +394,7 @@ export function computeMainFocus(record: ExploreMunicipalityRecord): MainFocusRe
     };
   }
 
-  const top = themes.filter(
-    (t) => t.measureCount >= 3 && t.share >= 0.15,
-  );
+  const top = themes.filter((t) => t.measureCount >= 3 && t.share >= 0.15);
   if (top.length === 0) {
     return {
       sentenceSv: "Åtgärderna är spridda över flera områden.",

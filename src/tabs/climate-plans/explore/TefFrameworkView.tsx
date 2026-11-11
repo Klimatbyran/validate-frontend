@@ -252,9 +252,7 @@ export function TefFrameworkView({
 
         <select
           value={tefSource}
-          onChange={(e) =>
-            onTefSourceChange(e.target.value as TefSourceFilter)
-          }
+          onChange={(e) => onTefSourceChange(e.target.value as TefSourceFilter)}
           className="text-sm bg-gray-04 border border-gray-03/50 text-gray-01 rounded px-3 py-2"
           aria-label="TEF source filter"
         >

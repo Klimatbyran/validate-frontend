@@ -86,11 +86,7 @@ export function useClimatePlansExploreParams() {
     TEF_IMPLIED_FILTERS,
     "all",
   );
-  const tefSource = pick(
-    searchParams.get("tefSource"),
-    TEF_SOURCES,
-    "all",
-  );
+  const tefSource = pick(searchParams.get("tefSource"), TEF_SOURCES, "all");
 
   const patch = useCallback(
     (updates: Record<string, string | null>) => {
