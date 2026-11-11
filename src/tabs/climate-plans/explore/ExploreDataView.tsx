@@ -6,6 +6,7 @@ import { MapKpiView } from "./MapKpiView";
 import { ShiftsInterventionsView } from "./ShiftsInterventionsView";
 import { TefFrameworkView } from "./TefFrameworkView";
 import { PlanAnatomyView } from "./PlanAnatomyView";
+import { WebsiteVisualsView } from "./WebsiteVisualsView";
 import type { useClimatePlansExploreParams } from "../hooks/useClimatePlansExploreParams";
 
 const VIEW_OPTIONS: { value: ExploreViewId; label: string }[] = [
@@ -13,6 +14,7 @@ const VIEW_OPTIONS: { value: ExploreViewId; label: string }[] = [
   { value: "shifts", label: "Shifts & interventions" },
   { value: "tef-framework", label: "TEF framework" },
   { value: "anatomy", label: "Plan anatomy" },
+  { value: "website", label: "Website visuals" },
 ];
 
 export function ExploreDataView({
@@ -69,6 +71,7 @@ export function ExploreDataView({
           onCompareNameChange={params.setCompareName}
           tefImplied={params.tefImplied}
           onTefImpliedChange={params.setTefImplied}
+          sectorEmissions={data.sectorEmissions}
         />
       ) : null}
       {params.view === "shifts" ? (
@@ -100,10 +103,20 @@ export function ExploreDataView({
           onSelectTefId={params.setSelectedTefId}
           tefImplied={params.tefImplied}
           onTefImpliedChange={params.setTefImplied}
+          tefSource={params.tefSource}
+          onTefSourceChange={params.setTefSource}
         />
       ) : null}
       {params.view === "anatomy" ? (
         <PlanAnatomyView records={data.municipalities} />
+      ) : null}
+      {params.view === "website" ? (
+        <WebsiteVisualsView
+          records={data.municipalities}
+          sectorEmissions={data.sectorEmissions}
+          selectedName={params.selectedName}
+          onSelectName={params.setSelectedName}
+        />
       ) : null}
     </div>
   );

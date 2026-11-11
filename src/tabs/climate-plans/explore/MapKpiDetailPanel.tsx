@@ -16,6 +16,7 @@ import type {
   ExploreMunicipalityRecord,
   MapGeoLevel,
   MapKpiId,
+  SectorYearEmissions,
 } from "../lib/explore-types";
 import { namesMatch } from "../lib/municipality-names";
 
@@ -29,6 +30,7 @@ export function MapKpiDetailPanel({
   pickingCompare,
   onPickingCompareChange,
   onCompareNameChange,
+  sectorEmissions = [],
 }: {
   selected: ExploreMunicipalityRecord;
   compare: ExploreMunicipalityRecord | null;
@@ -39,14 +41,26 @@ export function MapKpiDetailPanel({
   pickingCompare: boolean;
   onPickingCompareChange: (picking: boolean) => void;
   onCompareNameChange: (name: string | null) => void;
+  sectorEmissions?: SectorYearEmissions[];
 }) {
   const meta = MAP_KPI_META[kpi];
   const tefGroupFilter = tefGroup === "all" ? null : tefGroup;
-  const selectedValue = mapKpiValue(selected, kpi, tefGroupFilter);
+  const selectedValue = mapKpiValue(
+    selected,
+    kpi,
+    tefGroupFilter,
+    sectorEmissions,
+  );
   const compareValue = compare
-    ? mapKpiValue(compare, kpi, tefGroupFilter)
+    ? mapKpiValue(compare, kpi, tefGroupFilter, sectorEmissions)
     : null;
-  const rows = buildMapKpiCompareRows(selected, compare, kpi, tefGroupFilter);
+  const rows = buildMapKpiCompareRows(
+    selected,
+    compare,
+    kpi,
+    tefGroupFilter,
+    sectorEmissions,
+  );
   const topTefRows = buildTopTefCompareRows(
     selected.tefHits,
     compare ? compare.tefHits : null,

@@ -61,6 +61,9 @@ interface ApiActivityShift {
   shadowElement?: {
     id: string;
     status?: string | null;
+    shortLabel?: string | null;
+    description?: string | null;
+    sectorPath?: string | null;
   } | null;
   shadowElementId?: string | null;
 }
@@ -137,6 +140,9 @@ function toExplorerShift(shift: ApiActivityShift): ActivityShift {
     transition_element_gate_domain: shift.transitionElementGateDomain ?? null,
     shadow_element_id: shift.shadowElement?.id ?? shift.shadowElementId ?? null,
     shadow_element_status: shift.shadowElement?.status ?? null,
+    shadow_element_short_label: shift.shadowElement?.shortLabel ?? null,
+    shadow_element_description: shift.shadowElement?.description ?? null,
+    shadow_element_sector_path: shift.shadowElement?.sectorPath ?? null,
   };
 }
 

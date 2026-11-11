@@ -13,9 +13,22 @@ import type {
 } from "../lib/explore-types";
 import { MAP_KPI_META } from "../lib/explore-aggregates";
 import type { TefImpliedFilter } from "../lib/tef-detail-summary";
+import type { TefSourceFilter } from "../lib/tef-hit-source";
 
 const TABS: ClimatePlansTabId[] = ["explore", "measures", "taxonomy"];
-const VIEWS: ExploreViewId[] = ["map", "shifts", "tef-framework", "anatomy"];
+const VIEWS: ExploreViewId[] = [
+  "map",
+  "shifts",
+  "tef-framework",
+  "anatomy",
+  "website",
+];
+const TEF_SOURCES: TefSourceFilter[] = [
+  "all",
+  "official",
+  "proposed",
+  "runtime-shadow",
+];
 const GEOS: MapGeoLevel[] = ["municipality", "region"];
 const TEF_SCOPES: TefFrameworkScope[] = ["all", "municipality", "region"];
 const TEF_METRICS: TefFrameworkMetric[] = [
@@ -73,6 +86,11 @@ export function useClimatePlansExploreParams() {
     TEF_IMPLIED_FILTERS,
     "all",
   );
+  const tefSource = pick(
+    searchParams.get("tefSource"),
+    TEF_SOURCES,
+    "all",
+  );
 
   const patch = useCallback(
     (updates: Record<string, string | null>) => {
@@ -108,6 +126,7 @@ export function useClimatePlansExploreParams() {
     shiftsLayout,
     selectedTefId,
     tefImplied,
+    tefSource,
     setTab: (value: ClimatePlansTabId) => patch({ tab: value }),
     setView: (value: ExploreViewId) => patch({ view: value }),
     setKpi: (value: MapKpiId) => patch({ kpi: value }),
@@ -125,6 +144,7 @@ export function useClimatePlansExploreParams() {
     setShiftsLayout: (value: ShiftsLayoutId) => patch({ shiftsLayout: value }),
     setSelectedTefId: (value: string) => patch({ tefId: value }),
     setTefImplied: (value: TefImpliedFilter) => patch({ tefImplied: value }),
+    setTefSource: (value: TefSourceFilter) => patch({ tefSource: value }),
   };
 }
 
@@ -140,5 +160,6 @@ function isDefault(key: string, value: string): boolean {
   if (key === "tefHeight" && value === "share") return true;
   if (key === "shiftsLayout" && value === "compare") return true;
   if (key === "tefImplied" && value === "all") return true;
+  if (key === "tefSource" && value === "all") return true;
   return false;
 }

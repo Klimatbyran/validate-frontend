@@ -23,6 +23,7 @@ function tefHit(
     confidence: "high",
     measureText: shortLabel,
     description: shortLabel,
+    source: "official",
     explicit: true,
     shiftFrom: "car",
     shiftTo: "bus",

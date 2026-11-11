@@ -8,6 +8,7 @@ import {
 import type {
   ExploreMunicipalityRecord,
   MapKpiId,
+  SectorYearEmissions,
   TefHit,
 } from "./explore-types";
 
@@ -172,9 +173,12 @@ export function buildMapKpiCompareRows(
   compare: ExploreMunicipalityRecord | null,
   kpi: MapKpiId,
   tefGroupFilter: string | null,
+  sectorEmissions: SectorYearEmissions[] = [],
 ): MapKpiCompareRow[] {
-  const primaryKpi = mapKpiValue(primary, kpi, tefGroupFilter);
-  const compareKpi = compare ? mapKpiValue(compare, kpi, tefGroupFilter) : null;
+  const primaryKpi = mapKpiValue(primary, kpi, tefGroupFilter, sectorEmissions);
+  const compareKpi = compare
+    ? mapKpiValue(compare, kpi, tefGroupFilter, sectorEmissions)
+    : null;
 
   const primaryDistinctTefs = new Set(primary.tefHits.map((h) => h.stableId))
     .size;
@@ -205,7 +209,8 @@ export function buildMapKpiCompareRows(
       primary: formatMapKpiDisplay(primaryKpi),
       compareValue: compare ? formatMapKpiDisplay(compareKpi) : null,
       delta: deltaOf(primaryKpi.numeric, compareKpi?.numeric ?? null),
-      higherIsBetter: true,
+      // Gap share is an absence metric — lower is better.
+      higherIsBetter: kpi === "emissionFocusGap" ? false : true,
       unit:
         primaryKpi.unit === "share"
           ? "share"

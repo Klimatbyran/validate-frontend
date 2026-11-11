@@ -3,6 +3,7 @@ import type {
   ExploreMunicipalityRecord,
   MapKpiId,
   PipelineCommitment,
+  SectorYearEmissions,
   TefGroupStrength,
   TefHit,
 } from "./explore-types";
@@ -12,6 +13,11 @@ import {
   tefGroupFromSectorPath,
 } from "./tef-groups";
 import { foldPlaceName } from "./municipality-names";
+import {
+  classifyCatalogueTefHit,
+  runtimeShadowStableId,
+} from "./tef-hit-source";
+import { computeEmissionFocusGap } from "./website-kpis";
 
 export function collectTefHits(measures: Measure[]): TefHit[] {
   const hits: TefHit[] = [];
@@ -30,6 +36,11 @@ export function collectTefHits(measures: Measure[]): TefHit[] {
           confidence: inferMatchConfidence(match.match_confidence, score),
           measureText: measure.measure_text,
           description: match.description ?? "",
+          source: classifyCatalogueTefHit({
+            stableId: match.stable_id,
+            shortLabel: match.short_label,
+            sectorPath: match.sector_path,
+          }),
           ...(typeof match.explicit === "boolean"
             ? { explicit: match.explicit }
             : {}),
@@ -43,6 +54,35 @@ export function collectTefHits(measures: Measure[]): TefHit[] {
           interventionScore: measure.intervention_score,
         });
       }
+
+      // Runtime shadow taxonomy gaps (second-pass review) — not in catalogue matches.
+      if (!shift.shadow_element_id) continue;
+      const status = shift.shadow_element_status;
+      if (status === "rejected" || status === "merged") continue;
+      const sectorPath =
+        shift.shadow_element_sector_path?.trim() ||
+        "Shadow Proposals > Unclassified";
+      const shortLabel =
+        shift.shadow_element_short_label?.trim() ||
+        `Shadow gap (${shift.shadow_element_id.slice(0, 8)})`;
+      hits.push({
+        stableId: runtimeShadowStableId(shift.shadow_element_id),
+        shortLabel,
+        sectorPath,
+        group: tefGroupFromSectorPath(sectorPath),
+        confidence: "mid",
+        measureText: measure.measure_text,
+        description: shift.shadow_element_description ?? "",
+        source: "runtime-shadow",
+        shiftFrom: shift.shift_from,
+        shiftTo: shift.shift_to,
+        need: shift.need,
+        shiftScore: shift.score,
+        interventionWho: measure.intervention_who,
+        interventionWhat: measure.intervention_what,
+        interventionHow: measure.intervention_how,
+        interventionScore: measure.intervention_score,
+      });
     }
   }
   return hits;
@@ -253,6 +293,7 @@ export function mapKpiValue(
   record: ExploreMunicipalityRecord,
   kpi: MapKpiId,
   tefGroupFilter: string | null,
+  sectorEmissions: SectorYearEmissions[] = [],
 ): MapKpiValue {
   const hits =
     tefGroupFilter && tefGroupFilter !== "all"
@@ -453,6 +494,15 @@ export function mapKpiValue(
         kind: "numeric",
         unit: "refs",
       };
+    case "emissionFocusGap": {
+      const gap = computeEmissionFocusGap(record, sectorEmissions).gapShare;
+      return {
+        numeric: gap,
+        booleanValue: null,
+        kind: "numeric",
+        unit: "share",
+      };
+    }
   }
 }
 
@@ -628,5 +678,11 @@ export const MAP_KPI_META: Record<
     data: "DocumentReference rows with relationship === companion (deduped by groupId).",
     calculation:
       "Distinct companion groups — signals the plan may be incomplete without its åtgärdsplan/bilaga.",
+  },
+  emissionFocusGap: {
+    label: "Emissions without measures",
+    data: "Unearth/SMHI sector tonnes (six TEF-mapped buckets) vs scored measures with gate domain or TEF matches in that sector. Prefer climateCommitmentGroups / measures — not raw commitment counts.",
+    calculation:
+      "Share of mapped emissions in sectors with zero addressing measures. Machinery/product/other excluded. Lower is better. Prototype for website overview maps — see Website visuals view.",
   },
 };

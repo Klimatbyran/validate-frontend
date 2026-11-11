@@ -41,6 +41,12 @@ export interface ActivityShift {
   shadow_element_id?: string | null;
   /** Shadow taxonomy status when shadow_element_id is set. */
   shadow_element_status?: string | null;
+  /** Label from ShadowTransitionElement when attached. */
+  shadow_element_short_label?: string | null;
+  /** Description from ShadowTransitionElement when attached. */
+  shadow_element_description?: string | null;
+  /** Sector path from ShadowTransitionElement when attached. */
+  shadow_element_sector_path?: string | null;
 }
 
 export interface Measure {

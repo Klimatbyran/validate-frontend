@@ -23,6 +23,7 @@ function hit(
     confidence: "high",
     measureText: "example measure",
     description: "Shift passenger trips from car to rail.",
+    source: "official",
     shiftFrom: "car",
     shiftTo: "train",
     need: "mobility",
@@ -47,6 +48,7 @@ describe("TEF index parsing", () => {
     ).toBe("Shift from car to railway");
     expect(sectorIdFromIndex("T-4B1b-TE-1")).toBe("buildings");
     expect(sectorIdFromIndex("T-6A1-TE-2")).toBe("waste");
+    expect(parseTefIndex("STE-002 - Biogas production")).toBe("STE-002");
   });
 });
 
