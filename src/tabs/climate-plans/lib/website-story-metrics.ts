@@ -21,6 +21,11 @@ import {
   type SincePlanTrendResult,
 } from "./website-kpis";
 import {
+  computePlanConcreteness,
+  concretenessAskPromptEn,
+  type PlanConcretenessResult,
+} from "./plan-concreteness";
+import {
   TEF_SECTORS,
   parseTefIndex,
   sectorIdFromGroup,
@@ -79,6 +84,7 @@ export interface StoryPlaceMetrics {
   focus: MainFocusResult;
   sincePlan: SincePlanTrendResult;
   plainFocus: ReturnType<typeof focusMatchPlainEn>;
+  concreteness: PlanConcretenessResult;
   sectors: StorySectorCell[];
   otherMeasureCount: number;
   starters: string[];
@@ -91,6 +97,12 @@ export interface StoryNationalMetrics {
   withPlanYearCount: number;
   withGapCount: number;
   averageGapShare: number | null;
+  averageBroadWordingShare: number | null;
+  averageFullSpecShare: number | null;
+  averageWhoRate: number | null;
+  averageWhatRate: number | null;
+  averageWhenRate: number | null;
+  averageHowRate: number | null;
   focusMatchCounts: Record<FocusMatchVerdict, number>;
   sectorCells: StorySectorCell[];
   topThemes: Array<{ id: string; label: string; measureCount: number }>;
@@ -181,7 +193,6 @@ function examplesForSector(
 function buildSectorCellsForPlace(
   record: ExploreMunicipalityRecord,
   gap: EmissionFocusGapResult,
-  allRecords: ExploreMunicipalityRecord[],
 ): StorySectorCell[] {
   const otherCount = countOtherMeasures(record);
   return STORY_SECTORS.map((sector) => {
@@ -327,13 +338,24 @@ function insightCardsForPlace(place: StoryPlaceMetrics): Array<{
       body: `${place.otherMeasureCount} measure${place.otherMeasureCount === 1 ? "" : "s"} sit outside the six emission sectors (for example procurement or planning).`,
     });
   }
+  cards.push({
+    id: "concreteness",
+    title: "How concrete is the plan wording?",
+    body: place.concreteness.publicHeadlineEn,
+  });
+  if (place.concreteness.broadWordingShare != null) {
+    cards.push({
+      id: "broad",
+      title: "Broad vs direct wording",
+      body: `${place.concreteness.broadMeasureCount} of ${place.concreteness.judgedMeasureCount} judged measures are written broadly (could fit several kinds of action). Broad wording is not automatically a problem.`,
+    });
+  }
   return cards;
 }
 
 export function buildStoryPlaceMetrics(
   record: ExploreMunicipalityRecord,
   sectorEmissions: SectorYearEmissions[],
-  allRecords: ExploreMunicipalityRecord[] = [record],
 ): StoryPlaceMetrics {
   const gap = computeEmissionFocusGap(record, sectorEmissions);
   const focus = computeMainFocus(record);
@@ -341,6 +363,7 @@ export function buildStoryPlaceMetrics(
   const largestLabel =
     gap.rows.find((r) => r.sectorId === gap.largestSectorId)?.label ?? null;
   const plainFocus = focusMatchPlainEn(gap.focusMatch, largestLabel);
+  const concreteness = computePlanConcreteness(record);
   const otherMeasureCount = countOtherMeasures(record);
   const place: StoryPlaceMetrics = {
     record,
@@ -348,6 +371,7 @@ export function buildStoryPlaceMetrics(
     focus,
     sincePlan,
     plainFocus,
+    concreteness,
     sectors: [],
     otherMeasureCount,
     starters: conversationStartersEn({
@@ -359,10 +383,12 @@ export function buildStoryPlaceMetrics(
     }),
     insightCards: [],
   };
-  place.sectors = buildSectorCellsForPlace(record, gap, allRecords);
+  place.sectors = buildSectorCellsForPlace(record, gap);
   place.insightCards = insightCardsForPlace(place);
-  // Prefer up to 5 explore prompts when exploring product direction.
+  // Prefer up to 6 explore prompts when exploring product direction.
   const extra: string[] = [];
+  const concretenessPrompt = concretenessAskPromptEn(concreteness, record.name);
+  if (concretenessPrompt) extra.push(concretenessPrompt);
   if (place.sectors.filter((s) => s.id !== "other" && s.addressed).length > 0) {
     const covered = place.sectors
       .filter((s) => s.id !== "other" && s.addressed)
@@ -376,7 +402,7 @@ export function buildStoryPlaceMetrics(
       `You could ask: many measures point to “${place.focus.themes[0].label}” — how will residents notice this in daily life?`,
     );
   }
-  place.starters = [...place.starters, ...extra].slice(0, 5);
+  place.starters = [...place.starters, ...extra].slice(0, 6);
   return place;
 }
 
@@ -396,7 +422,7 @@ export function buildClimatePlansStoryMetrics(
   if (records.length === 0) return null;
 
   const places = records
-    .map((r) => buildStoryPlaceMetrics(r, sectorEmissions, records))
+    .map((r) => buildStoryPlaceMetrics(r, sectorEmissions))
     .sort((a, b) => a.record.name.localeCompare(b.record.name, "sv"));
 
   const withMeasures = places.filter((p) => p.record.measures.length > 0);
@@ -406,6 +432,33 @@ export function buildClimatePlansStoryMetrics(
     withGap.length === 0
       ? null
       : withGap.reduce((s, p) => s + (p.gap.gapShare ?? 0), 0) / withGap.length;
+  const withBroad = places.filter(
+    (p) => p.concreteness.broadWordingShare != null,
+  );
+  const averageBroadWordingShare =
+    withBroad.length === 0
+      ? null
+      : withBroad.reduce(
+          (s, p) => s + (p.concreteness.broadWordingShare ?? 0),
+          0,
+        ) / withBroad.length;
+  const withFull = places.filter((p) => p.concreteness.fullSpecShare != null);
+  const averageFullSpecShare =
+    withFull.length === 0
+      ? null
+      : withFull.reduce((s, p) => s + (p.concreteness.fullSpecShare ?? 0), 0) /
+        withFull.length;
+  const avgRate = (
+    pick: (p: StoryPlaceMetrics) => number | null,
+  ): number | null => {
+    const vals = places.map(pick).filter((v): v is number => v != null);
+    if (vals.length === 0) return null;
+    return vals.reduce((s, v) => s + v, 0) / vals.length;
+  };
+  const averageWhoRate = avgRate((p) => p.concreteness.whoRate);
+  const averageWhatRate = avgRate((p) => p.concreteness.whatRate);
+  const averageWhenRate = avgRate((p) => p.concreteness.whenRate);
+  const averageHowRate = avgRate((p) => p.concreteness.howRate);
 
   const focusMatchCounts: Record<FocusMatchVerdict, number> = {
     match: 0,
@@ -477,6 +530,20 @@ export function buildClimatePlansStoryMetrics(
       body: `“${topThemes[0].label}” shows up most often across analysed measures.`,
     });
   }
+  if (averageFullSpecShare != null) {
+    nationalInsights.push({
+      id: "concreteness",
+      title: "Who / what / when / how in the text",
+      body: `On average, about ${Math.round(averageFullSpecShare * 100)}% of analysed measures name who, what, when and how. Based on plan wording only.`,
+    });
+  }
+  if (averageBroadWordingShare != null) {
+    nationalInsights.push({
+      id: "broad",
+      title: "Broad wording across plans",
+      body: `On average, about ${Math.round(averageBroadWordingShare * 100)}% of judged measures are written broadly (could fit several kinds of action). Broad is not automatically wrong.`,
+    });
+  }
 
   const nationalStarters = [
     averageGapShare != null
@@ -487,6 +554,9 @@ export function buildClimatePlansStoryMetrics(
       : null,
     weakestSector
       ? `You could ask: ${weakestSector.label} is rarely covered in these plans — what is our municipality doing there?`
+      : null,
+    averageFullSpecShare != null
+      ? `You could ask: only about ${Math.round(averageFullSpecShare * 100)}% of analysed measures name who, what, when and how — can our municipality clarify the rest?`
       : null,
     topThemes[0]
       ? `You could ask: many Swedish plans lean on “${topThemes[0].label}” — is that the right priority for us locally?`
@@ -500,6 +570,12 @@ export function buildClimatePlansStoryMetrics(
     withPlanYearCount: withPlanYear.length,
     withGapCount: withGap.length,
     averageGapShare,
+    averageBroadWordingShare,
+    averageFullSpecShare,
+    averageWhoRate,
+    averageWhatRate,
+    averageWhenRate,
+    averageHowRate,
     focusMatchCounts,
     sectorCells,
     topThemes,

@@ -17,6 +17,10 @@ import type {
   TefHit,
 } from "./explore-types";
 import { computeEmissionFocusGap } from "./website-kpis";
+import {
+  broadWordingShare,
+  interventionCompletenessShare,
+} from "./plan-concreteness";
 
 export type MapKpiFamily =
   | "commitments"
@@ -38,12 +42,14 @@ export const MAP_KPI_FAMILY: Record<MapKpiId, MapKpiFamily> = {
   avgActivityShiftScore: "measures",
   interventionActiveShare: "measures",
   interventionSpecificityShare: "measures",
+  interventionCompletenessShare: "measures",
   highInterventionShare: "measures",
   highActivityShiftShare: "measures",
   distinctTefs: "tef",
   distinctTefGroups: "tef",
   tefGroupStrength: "tef",
   explicitTefShare: "tef",
+  broadWordingShare: "tef",
   tefMatchRate: "tef",
   shadowHitCount: "tef",
   planChars: "plan",
@@ -253,7 +259,8 @@ function selectedKpiRow(
     primary: formatMapKpiDisplay(primaryKpi),
     compareValue: compare ? formatMapKpiDisplay(compareKpi) : null,
     delta: deltaOf(primaryKpi.numeric, compareKpi?.numeric ?? null),
-    higherIsBetter: kpi === "emissionFocusGap" ? false : true,
+    higherIsBetter:
+      kpi === "emissionFocusGap" || kpi === "broadWordingShare" ? false : true,
     unit:
       primaryKpi.unit === "share"
         ? "share"
@@ -396,6 +403,10 @@ function measureRows(
   const compareSpecificity = compare
     ? interventionSpecificityShare(compare.measures)
     : null;
+  const primaryCompleteness = interventionCompletenessShare(primary);
+  const compareCompleteness = compare
+    ? interventionCompletenessShare(compare)
+    : null;
   const primaryHighIntervention = highScoreShare(
     primary.measures,
     "intervention_score",
@@ -458,6 +469,15 @@ function measureRows(
       unit: "share",
     }),
     row({
+      id: "whoWhatWhenHow",
+      label: "Who/what/when/how filled",
+      primary: formatShare(primaryCompleteness),
+      compareValue: compare ? formatShare(compareCompleteness) : null,
+      delta: deltaOf(primaryCompleteness, compareCompleteness),
+      higherIsBetter: true,
+      unit: "share",
+    }),
+    row({
       id: "highIntervention",
       label: "High intervention (≥5)",
       primary: formatShare(primaryHighIntervention),
@@ -505,6 +525,8 @@ function tefRows(
   const primaryExplicit = explicitTefShare(primaryHits);
   const compareExplicit =
     compareHits == null ? null : explicitTefShare(compareHits);
+  const primaryBroad = broadWordingShare(primary);
+  const compareBroad = compare ? broadWordingShare(compare) : null;
   const primaryMatchRate = tefMatchRate(primary.measures);
   const compareMatchRate = compare ? tefMatchRate(compare.measures) : null;
   const primaryShadows = shadowHitCount(primary.measures);
@@ -561,6 +583,15 @@ function tefRows(
       compareValue: compare ? formatShare(compareExplicit) : null,
       delta: deltaOf(primaryExplicit, compareExplicit),
       higherIsBetter: true,
+      unit: "share",
+    }),
+    row({
+      id: "broadWording",
+      label: "Broad wording share",
+      primary: formatShare(primaryBroad),
+      compareValue: compare ? formatShare(compareBroad) : null,
+      delta: deltaOf(primaryBroad, compareBroad),
+      higherIsBetter: false,
       unit: "share",
     }),
     row({

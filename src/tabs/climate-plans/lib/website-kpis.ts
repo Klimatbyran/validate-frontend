@@ -661,6 +661,15 @@ export const WEBSITE_KPI_PLAN = {
         "Rule-based sentence from TEF families (deduped measures). Detail page only — talking-point fuel.",
     },
     {
+      id: "planConcreteness",
+      name: "How concrete is the plan wording",
+      nameSv: "Hur konkret är planens formuleringar",
+      overviewMap: true,
+      status: "prototype",
+      rationale:
+        "Two related map KPIs: broad wording share (implied-only measures) and who/what/when/how completeness. Describe plan text, not ambition. Broad ≠ bad.",
+    },
+    {
       id: "historicalEmissionChange",
       name: "Emissions change since 2015",
       nameSv: "Utsläppsförändring sedan 2015",

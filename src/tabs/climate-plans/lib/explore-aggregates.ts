@@ -18,6 +18,10 @@ import {
   runtimeShadowStableId,
 } from "./tef-hit-source";
 import { computeEmissionFocusGap } from "./website-kpis";
+import {
+  broadWordingShare,
+  interventionCompletenessShare,
+} from "./plan-concreteness";
 
 export function collectTefHits(measures: Measure[]): TefHit[] {
   const hits: TefHit[] = [];
@@ -417,6 +421,13 @@ export function mapKpiValue(
         kind: "numeric",
         unit: "share",
       };
+    case "interventionCompletenessShare":
+      return {
+        numeric: interventionCompletenessShare(record),
+        booleanValue: null,
+        kind: "numeric",
+        unit: "share",
+      };
     case "highInterventionShare":
       return {
         numeric: highScoreShare(record.measures, "intervention_score"),
@@ -469,6 +480,13 @@ export function mapKpiValue(
     case "explicitTefShare":
       return {
         numeric: explicitTefShare(hits),
+        booleanValue: null,
+        kind: "numeric",
+        unit: "share",
+      };
+    case "broadWordingShare":
+      return {
+        numeric: broadWordingShare(record),
         booleanValue: null,
         kind: "numeric",
         unit: "share",
@@ -634,6 +652,12 @@ export const MAP_KPI_META: Record<
     data: "measures[].intervention_who and intervention_what.",
     calculation: "Share where both who and what are filled (not none).",
   },
+  interventionCompletenessShare: {
+    label: "Who/what/when/how filled",
+    data: "measures[].intervention_who, _what, _when, _how from scoreMeasures.",
+    calculation:
+      "Share of measures where all four slots are filled (not none). Describes plan text completeness — not whether the action will happen.",
+  },
   highInterventionShare: {
     label: "High intervention share",
     data: "measures[].intervention_score (1–7).",
@@ -661,6 +685,12 @@ export const MAP_KPI_META: Record<
     data: "transition_element_matches[].explicit from tePicker judge().",
     calculation:
       "Among hits that carry the field: share where explicit === true. Null when no judged hits.",
+  },
+  broadWordingShare: {
+    label: "Broad wording share",
+    data: "Measure-level roll-up of TEF match explicit flags (tePicker judge).",
+    calculation:
+      "Among measures with ≥1 judged TEF hit: share whose hits are all implied (explicit === false). A measure counts as explicit if any hit is explicit. Higher ≈ broader wording that could fit several actions — not a quality score. Null when no judged measures.",
   },
   tefMatchRate: {
     label: "TEF match rate",

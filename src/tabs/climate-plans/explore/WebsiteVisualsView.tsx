@@ -116,8 +116,8 @@ export function WebsiteVisualsView({
     <div className="space-y-5">
       <MethodologyPanel
         data="Website-layout mocks + a Climate plans story tab for klimatkollen.se, using live explore extracts only (no climate-plan fixtures). Audience: climate-interested citizens who want emissions, actions and trends for conversations or outreach — not TEF jargon."
-        calculation="Story + detail KPIs: emissions with no measures in the plan; biggest-source yes/partly/not-really; sector table (six sectors + Other & cross-cutting) with example actions from TEF hits; focus themes; since-plan territorial change; national rollups then municipality drill-down."
-        extra="Story tab mirrors /nation scrollytelling energy with plan-specific metaphors (sector periodic table, biggest-source orbit, leak/gap fill). Detail mocks keep Paris/emissions in the header and put plan insights in a separate Climate plan section."
+        calculation="Story + detail KPIs: emissions with no measures; biggest-source yes/partly/not-really; sector table (six + Other); focus themes; plan-text concreteness (broad/implied wording + who/what/when/how); since-plan territorial change; national→municipality drill-down."
+        extra="Story tab mirrors /nation energy with plan metaphors. Validate map also gains Broad wording share and Who/what/when/how filled KPIs. Concreteness describes plan text only — not municipal quality."
       />
 
       <Callout variant="info" title="Website mock surfaces">

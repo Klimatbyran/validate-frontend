@@ -22,6 +22,7 @@ const BEATS = [
   { id: "biggest", label: "Biggest source" },
   { id: "gap", label: "Uncovered" },
   { id: "themes", label: "Themes" },
+  { id: "concrete", label: "How concrete" },
   { id: "since", label: "Since plan" },
   { id: "drill", label: "Municipality" },
   { id: "takeaways", label: "Takeaways" },
@@ -158,6 +159,7 @@ export function ClimatePlansStoryView({
         />
         <GapBeat metrics={metrics} place={viewPlace} />
         <ThemesBeat metrics={metrics} place={viewPlace} />
+        <ConcretenessBeat metrics={metrics} place={viewPlace} />
         <SincePlanBeat metrics={metrics} place={viewPlace} />
         <DrillBeat
           metrics={metrics}
@@ -765,6 +767,134 @@ function ThemesBeat({
             </motion.div>
           ))
         )}
+      </div>
+    </StoryChapter>
+  );
+}
+
+function ConcretenessBeat({
+  metrics,
+  place,
+}: {
+  metrics: StoryNationalMetrics;
+  place: StoryPlaceMetrics | null;
+}) {
+  const c = place?.concreteness;
+  const slots = [
+    {
+      id: "who",
+      label: "Who",
+      rate: place ? c!.whoRate : metrics.averageWhoRate,
+      count: place ? c!.whoCount : null,
+    },
+    {
+      id: "what",
+      label: "What",
+      rate: place ? c!.whatRate : metrics.averageWhatRate,
+      count: place ? c!.whatCount : null,
+    },
+    {
+      id: "when",
+      label: "When",
+      rate: place ? c!.whenRate : metrics.averageWhenRate,
+      count: place ? c!.whenCount : null,
+    },
+    {
+      id: "how",
+      label: "How",
+      rate: place ? c!.howRate : metrics.averageHowRate,
+      count: place ? c!.howCount : null,
+    },
+  ];
+
+  return (
+    <StoryChapter
+      id="concrete"
+      eyebrow="Wording in the plan"
+      title="Does the plan say who, what, when and how?"
+      body={
+        place
+          ? `${place.concreteness.publicHeadlineEn} Some measures are written broadly and could fit several kinds of action — that is not automatically a problem.`
+          : "We also look at how concrete the wording is: whether measures name who acts, what they do, when, and how — and how often matches are only implied from broad text."
+      }
+    >
+      <p className="mb-5 text-center text-xs text-white/50 max-w-2xl mx-auto">
+        Based on the plan wording we read. Other documents, budgets or decisions
+        may add detail. Automated reading may be wrong.
+      </p>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl mx-auto">
+        {slots.map((slot, i) => (
+          <motion.div
+            key={slot.id}
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.05 }}
+            className="rounded-3xl border border-white/10 bg-white/[0.04] px-4 py-4 text-center"
+          >
+            <div className="text-xs uppercase tracking-wide text-white/50">
+              {slot.label}
+              {place ? "" : " · avg"}
+            </div>
+            <div className="mt-2 text-3xl tabular-nums text-white">
+              {slot.rate == null ? "—" : `${Math.round(slot.rate * 100)}%`}
+            </div>
+            <div className="mt-1 text-xs text-white/45">
+              {slot.count == null
+                ? "of measures in load"
+                : `${slot.count} of ${c?.measureCount ?? 0}`}
+            </div>
+            <div className="mt-3 h-2 rounded-full bg-white/10 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-sky-400/80"
+                initial={{ width: 0 }}
+                whileInView={{
+                  width: `${Math.round((slot.rate ?? 0) * 100)}%`,
+                }}
+                viewport={{ once: true }}
+              />
+            </div>
+          </motion.div>
+        ))}
+      </div>
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl mx-auto">
+        <div className="rounded-3xl border border-white/10 px-4 py-4">
+          <div className="text-xs uppercase tracking-wide text-white/50">
+            {place ? "Direct wording" : "Avg all four named"}
+          </div>
+          <div className="mt-1 text-2xl tabular-nums text-white">
+            {place
+              ? c?.explicitWordingShare == null
+                ? "—"
+                : `${Math.round(c.explicitWordingShare * 100)}%`
+              : metrics.averageFullSpecShare == null
+                ? "—"
+                : `${Math.round(metrics.averageFullSpecShare * 100)}%`}
+          </div>
+          <div className="text-xs text-white/45 mt-1">
+            {place && c
+              ? `${c.explicitMeasureCount} of ${c.judgedMeasureCount} judged measures`
+              : "Share of measures with who+what+when+how filled"}
+          </div>
+        </div>
+        <div className="rounded-3xl border border-white/10 px-4 py-4">
+          <div className="text-xs uppercase tracking-wide text-white/50">
+            Broad wording
+          </div>
+          <div className="mt-1 text-2xl tabular-nums text-white">
+            {place
+              ? c?.broadWordingShare == null
+                ? "—"
+                : `${Math.round(c.broadWordingShare * 100)}%`
+              : metrics.averageBroadWordingShare == null
+                ? "—"
+                : `${Math.round(metrics.averageBroadWordingShare * 100)}%`}
+          </div>
+          <div className="text-xs text-white/45 mt-1">
+            Could fit several kinds of action — not a quality grade
+          </div>
+        </div>
       </div>
     </StoryChapter>
   );
