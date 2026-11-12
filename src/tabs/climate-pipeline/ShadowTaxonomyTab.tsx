@@ -12,6 +12,7 @@ import {
   Undo2,
   Link2Off,
   MessageSquare,
+  Camera,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
@@ -26,6 +27,12 @@ import {
   DialogFooter,
 } from "@/ui/dialog";
 import { cn } from "@/lib/utils";
+import { ShadowTaxonomyLegacyView } from "./components/ShadowTaxonomyLegacyView";
+import {
+  useTefFreezeStatus,
+  createTefFreeze,
+  deleteTefFreeze,
+} from "./hooks/useShadowElementSnapshots";
 import {
   useShadowElements,
   updateShadowElementStatus,
@@ -955,6 +962,18 @@ function RealOverlapReviewDialog({
 export function ShadowTaxonomyTab() {
   const { t } = useI18n();
   const { elements, isLoading, error, refresh } = useShadowElements();
+  const [showLegacySnapshot, setShowLegacySnapshot] = useState(false);
+  const {
+    status: freezeStatus,
+    isLoading: isFreezeStatusLoading,
+    refresh: refreshFreezeStatus,
+  } = useTefFreezeStatus();
+  const [isTakingSnapshot, setIsTakingSnapshot] = useState(false);
+  const [isDeleteSnapshotOpen, setIsDeleteSnapshotOpen] = useState(false);
+  const [isDeletingSnapshot, setIsDeletingSnapshot] = useState(false);
+  // Bumped after a take/delete so an already-open legacy panel (which
+  // fetches once on mount) refetches instead of showing stale data.
+  const [snapshotRefreshToken, setSnapshotRefreshToken] = useState(0);
   const [statusFilter, setStatusFilter] = useState<ShadowElementStatus | "">(
     "",
   );
@@ -1004,6 +1023,49 @@ export function ShadowTaxonomyTab() {
   const handleRefresh = () => {
     setOverrides(new Map());
     void refresh();
+  };
+
+  const handleTakeSnapshot = async () => {
+    // window.prompt returns null on Cancel, same as typing nothing and
+    // hitting OK would -- check for null specifically before taking the
+    // snapshot, or canceling the dialog would still freeze with no label.
+    const label = window.prompt(
+      'Optional label for this snapshot (e.g. "before 2026-11 shadow TEF handoff rerun")',
+    );
+    if (label === null) return;
+
+    setIsTakingSnapshot(true);
+    try {
+      const result = await createTefFreeze(label.trim() || undefined);
+      await refreshFreezeStatus();
+      setSnapshotRefreshToken((n) => n + 1);
+      toast.success(
+        `Snapshot taken: ${result.activityShiftCount} matches, ${result.shadowElementCount} shadow elements frozen.`,
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to take snapshot",
+      );
+    } finally {
+      setIsTakingSnapshot(false);
+    }
+  };
+
+  const handleDeleteSnapshot = async () => {
+    setIsDeletingSnapshot(true);
+    try {
+      await deleteTefFreeze();
+      await refreshFreezeStatus();
+      setSnapshotRefreshToken((n) => n + 1);
+      toast.success("Snapshot deleted.");
+      setIsDeleteSnapshotOpen(false);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete snapshot",
+      );
+    } finally {
+      setIsDeletingSnapshot(false);
+    }
   };
 
   const handleRemoveAll = async () => {
@@ -1148,6 +1210,51 @@ export function ShadowTaxonomyTab() {
           <Button
             type="button"
             variant="outline"
+            onClick={() => setShowLegacySnapshot((v) => !v)}
+          >
+            {showLegacySnapshot ? (
+              <ChevronUp className="w-4 h-4 mr-1.5" />
+            ) : (
+              <ChevronDown className="w-4 h-4 mr-1.5" />
+            )}
+            Legacy snapshot
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void handleTakeSnapshot()}
+            disabled={
+              isFreezeStatusLoading ||
+              Boolean(freezeStatus?.exists) ||
+              isTakingSnapshot
+            }
+            title={
+              freezeStatus?.exists
+                ? `A snapshot already exists (${freezeStatus.activityShiftCount} matches, ${freezeStatus.shadowElementCount} shadow elements, taken ${freezeStatus.snapshotTakenAt ? new Date(freezeStatus.snapshotTakenAt).toLocaleString() : ""}). Delete it first to take a new one.`
+                : undefined
+            }
+          >
+            {isTakingSnapshot ? (
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+            ) : (
+              <Camera className="w-4 h-4 mr-1.5" />
+            )}
+            Take snapshot
+          </Button>
+          {freezeStatus?.exists ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteSnapshotOpen(true)}
+              className="border-pink-03/40 text-pink-03 hover:bg-pink-03/10 hover:border-pink-03"
+            >
+              <Trash2 className="w-4 h-4 mr-1.5" />
+              Delete snapshot
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => void handleOpenMergeReview()}
             disabled={elements.length === 0}
           >
@@ -1175,6 +1282,12 @@ export function ShadowTaxonomyTab() {
           </Button>
         </div>
       </div>
+
+      {showLegacySnapshot ? (
+        <div className="rounded-md border border-gray-04 bg-gray-05/20 p-4">
+          <ShadowTaxonomyLegacyView refreshToken={snapshotRefreshToken} />
+        </div>
+      ) : null}
 
       <MergeReviewDialog
         open={isMergeReviewOpen}
@@ -1206,6 +1319,18 @@ export function ShadowTaxonomyTab() {
         confirmVariant="danger"
         onConfirm={handleRemoveAll}
         isLoading={isRemovingAll}
+      />
+
+      <ConfirmDialog
+        open={isDeleteSnapshotOpen}
+        onOpenChange={setIsDeleteSnapshotOpen}
+        title="Delete snapshot?"
+        description="Removes the frozen TEF match + shadow taxonomy snapshot entirely. You can take a new one right after, but the one you're deleting now is gone for good."
+        cancelLabel="Cancel"
+        confirmLabel="Delete snapshot"
+        confirmVariant="danger"
+        onConfirm={handleDeleteSnapshot}
+        isLoading={isDeletingSnapshot}
       />
 
       <div className="flex flex-wrap items-center gap-3">

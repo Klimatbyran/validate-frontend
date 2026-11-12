@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Code, Copy, FileText, Loader2, Tags } from "lucide-react";
+import { Code, Copy, FileText, History, Loader2, Tags } from "lucide-react";
 import { toast } from "sonner";
 import { Modal } from "@/ui/modal";
 import { CollapsibleSection } from "@/ui/collapsible-section";
@@ -7,6 +7,7 @@ import { MarkdownVectorPagesDisplay } from "@/ui/markdown-display";
 import { PdfHighlightViewer, PdfHighlightPanel } from "./PdfHighlightViewer";
 import { ResizableSplitView } from "./ResizableSplitView";
 import { RecoveredImagesGallery } from "./RecoveredImagesGallery";
+import { TefMatchLegacyView } from "./TefMatchLegacyView";
 import { Button } from "@/ui/button";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
@@ -599,15 +600,32 @@ export function StepResultDialog({
             reviewsByEntity,
             qaFilter,
           );
-        return renderFilteredOrEmpty(
-          measures.length === 0,
-          <TransitionElementsView
-            measures={measures}
-            reviewCtx={reviewCtx}
-            visibleMatchIdsByShiftKey={
-              qaFilter === "all" ? undefined : visibleMatchIdsByShiftKey
-            }
-          />,
+        // The legacy section is a frozen snapshot, independent of the live
+        // QA filter -- it has to sit outside renderFilteredOrEmpty, not
+        // inside the node that filter can replace wholesale with "No items
+        // match this filter," or a filter matching zero live items would
+        // hide a frozen comparison that still exists.
+        return (
+          <>
+            {renderFilteredOrEmpty(
+              measures.length === 0,
+              <TransitionElementsView
+                measures={measures}
+                reviewCtx={reviewCtx}
+                visibleMatchIdsByShiftKey={
+                  qaFilter === "all" ? undefined : visibleMatchIdsByShiftKey
+                }
+              />,
+            )}
+            <CollapsibleSection
+              title="Legacy matches (frozen snapshot)"
+              icon={<History />}
+              accentIconBg="bg-purple-03/20"
+              accentTextColor="text-purple-03"
+            >
+              <TefMatchLegacyView planId={plan.id} />
+            </CollapsibleSection>
+          </>
         );
       }
       default:
