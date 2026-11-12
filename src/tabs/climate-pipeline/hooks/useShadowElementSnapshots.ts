@@ -35,6 +35,11 @@ export interface ShadowElementSnapshot {
   comment: string | null;
   sourceShiftId: string | null;
   originClimatePlanId: string | null;
+  // Resolved server-side from originClimatePlanId at read time -- that
+  // field is a plain string copy, not a live relation (see the backend's
+  // own comment on why), so this can't be included via a join the client
+  // could do itself; null once the id doesn't match any plan.
+  originMunicipalityName: string | null;
   mergedIntoId: string | null;
 }
 
