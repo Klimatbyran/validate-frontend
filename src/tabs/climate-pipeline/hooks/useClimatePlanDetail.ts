@@ -58,6 +58,19 @@ export interface Commitment {
   actionableReason: string | null;
   similarGroupId: string | null;
   theme: string | null;
+  // Set by classifyCommitmentHistoric — true only when the commitment
+  // reports an already-closed, already-evaluated outcome (e.g. a "Mål att
+  // nå år 2020" goal cell paired with a sibling "Utfall år 2020" cell
+  // showing the result already happened) rather than a live target.
+  // Marked, not filtered -- still shown everywhere else, just flagged.
+  historic: boolean | null;
+  historicReason: string | null;
+  // The explicit calendar year the goal names (whether or not it has
+  // passed), and the literal phrase stating it (e.g. "Mål att nå år
+  // 2020") -- only ever set alongside historic=true, never guessed when
+  // no year is actually stated.
+  targetYear: number | null;
+  targetYearSource: string | null;
 }
 
 export interface TransitionElementMatch {

@@ -39,6 +39,11 @@ const COMMITMENT_STEPS = [
   "groupDocumentReferences",
   "filterCommitmentsClimate",
   "filterCommitmentsActionable",
+  // Parallel branch off filterCommitmentsClimate, alongside
+  // filterCommitmentsActionable -- marks (never filters) a commitment
+  // reporting an already-closed outcome. Not part of the
+  // groupCommitmentsSimilar/Themes chain -- see startWorkers.ts.
+  "classifyCommitmentHistoric",
   "groupCommitmentsSimilar",
   "groupCommitmentsThemes",
 ] as const;

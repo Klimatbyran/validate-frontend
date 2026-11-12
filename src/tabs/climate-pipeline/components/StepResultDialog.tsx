@@ -572,6 +572,20 @@ export function StepResultDialog({
           detail.commitments.filter((c) => c.climateRelevant),
           "actionable",
         );
+      // Parallel branch off filterCommitmentsClimate, alongside
+      // filterCommitmentsActionable -- same climate-relevant subset basis
+      // (see classifyCommitmentHistoric.ts). Reuses the read-only
+      // "extract" list view rather than a dedicated reviewable column:
+      // there's no backend endpoint yet for a human to correct historic/
+      // targetYear, so a judgment-band/suggest-edit column would imply
+      // editability this step doesn't actually support. The inline
+      // "Historic" flag (see CommitmentsList) already surfaces the
+      // marking regardless of which step page is open.
+      case "classifyCommitmentHistoric":
+        return renderCommitmentsList(
+          detail.commitments.filter((c) => c.climateRelevant),
+          "extract",
+        );
       case "groupCommitmentsSimilar":
         return renderCommitmentsList(
           detail.commitments.filter((c) => c.climateRelevant && c.actionable),
