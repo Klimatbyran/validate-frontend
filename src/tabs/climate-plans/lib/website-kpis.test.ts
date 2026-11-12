@@ -228,13 +228,13 @@ describe("website KPI prototypes", () => {
   });
 
   it("marks partial when biggest source has actions but under 25% share", () => {
-    const emissions = [
+    const agHeavy = [
       {
         municipalityName: "Bjurholm",
         byYear: {
           "2024": {
-            Transporter: 80,
-            Jordbruk: 20,
+            Jordbruk: 80,
+            Transporter: 20,
           },
         },
       },
@@ -333,19 +333,6 @@ describe("website KPI prototypes", () => {
         }),
       ],
     });
-    // Wait — transport is biggest emissions and has 4/5 actions → match.
-    // Need agriculture as biggest with only 1 of many actions.
-    const agHeavy = [
-      {
-        municipalityName: "Bjurholm",
-        byYear: {
-          "2024": {
-            Jordbruk: 80,
-            Transporter: 20,
-          },
-        },
-      },
-    ];
     const gap = computeEmissionFocusGap(row, agHeavy);
     expect(gap.largestSectorId).toBe("afolu");
     expect(gap.focusMatch).toBe("partial");

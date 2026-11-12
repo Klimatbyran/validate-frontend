@@ -38,7 +38,20 @@ describe("Website visuals v2 detail mock", () => {
       screen.getByText(/How we estimate plan action detail/i),
     ).toBeInTheDocument();
 
+    expect(
+      screen.getByText(/How this yes \/ partly \/ not really is decided/i),
+    ).toBeInTheDocument();
+
     await user.click(screen.getByRole("button", { name: /Show details/i }));
+    expect(
+      screen.getByRole("button", { name: /Layout: by sector/i }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: /Layout: by sector/i }),
+    );
+    expect(
+      screen.getByRole("button", { name: /Layout: by activity flow/i }),
+    ).toBeInTheDocument();
     await user.click(
       screen.getByRole("button", { name: "Themes named directly" }),
     );

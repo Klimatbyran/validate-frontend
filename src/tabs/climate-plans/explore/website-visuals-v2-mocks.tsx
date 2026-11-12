@@ -21,6 +21,7 @@ import {
   focusMatchChipLabel,
   focusMatchMapValue,
   groupExactTefsBySector,
+  groupMeasuresByActivityFlow,
   groupMeasuresBySector,
   type WebsiteV2PlaceBundle,
 } from "../lib/website-v2-kpis";
@@ -33,7 +34,14 @@ import {
 
 type OverviewKpi = "concreteness" | "emissionsMatch" | "uniqueMeasures";
 type ExpandMode = "measures" | "exact-tefs";
-type BrowseLayout = "sectors" | "list";
+type BrowseLayout = "sectors" | "flows" | "list";
+
+const BROWSE_LAYOUT_CYCLE: BrowseLayout[] = ["sectors", "flows", "list"];
+const BROWSE_LAYOUT_LABEL: Record<BrowseLayout, string> = {
+  sectors: "by sector",
+  flows: "by activity flow",
+  list: "flat list",
+};
 
 function Meter({
   score,
@@ -272,10 +280,19 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
     () => groupMeasuresBySector(measureRows),
     [measureRows],
   );
+  const flowGroups = useMemo(
+    () => groupMeasuresByActivityFlow(measureRows),
+    [measureRows],
+  );
   const tefGroups = useMemo(
     () => groupExactTefsBySector(bundle.exactTefHits),
     [bundle.exactTefHits],
   );
+
+  const cycleLayout = () => {
+    const i = BROWSE_LAYOUT_CYCLE.indexOf(layout);
+    setLayout(BROWSE_LAYOUT_CYCLE[(i + 1) % BROWSE_LAYOUT_CYCLE.length]!);
+  };
 
   return (
     <section className="rounded-[24px] border border-gray-03/40 bg-gray-05/30 overflow-hidden">
@@ -326,33 +343,15 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
             ))}
             <button
               type="button"
-              onClick={() =>
-                setLayout((l) => (l === "sectors" ? "list" : "sectors"))
-              }
+              onClick={cycleLayout}
               className="ml-auto px-3 py-1.5 rounded-full text-xs border border-gray-03/50 text-gray-02"
             >
-              Layout: {layout === "sectors" ? "by sector" : "flat list"}
+              Layout: {BROWSE_LAYOUT_LABEL[layout]}
             </button>
           </div>
 
           {mode === "measures" ? (
-            layout === "sectors" ? (
-              <div className="space-y-5">
-                {measureGroups.map((group) => (
-                  <SectorBlock
-                    key={group.sectorId}
-                    title={group.label}
-                    count={group.rows.length}
-                  >
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {group.rows.map((row) => (
-                        <MeasureTile key={row.measure.measure_text} row={row} />
-                      ))}
-                    </div>
-                  </SectorBlock>
-                ))}
-              </div>
-            ) : (
+            layout === "list" ? (
               <ul className="space-y-2">
                 {measureRows.map((row) => (
                   <li key={row.measure.measure_text}>
@@ -360,11 +359,49 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
                   </li>
                 ))}
               </ul>
+            ) : (
+              <div className="space-y-5">
+                {(layout === "flows" ? flowGroups : measureGroups).map(
+                  (group) => (
+                    <SectorBlock
+                      key={"sectorId" in group ? group.sectorId : group.flowId}
+                      title={group.label}
+                      count={group.rows.length}
+                    >
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {group.rows.map((row) => (
+                          <MeasureTile
+                            key={row.measure.measure_text}
+                            row={row}
+                          />
+                        ))}
+                      </div>
+                    </SectorBlock>
+                  ),
+                )}
+              </div>
             )
           ) : null}
 
           {mode === "exact-tefs" ? (
-            layout === "sectors" ? (
+            layout === "list" ? (
+              <div className="flex flex-wrap gap-2">
+                {bundle.exactTefHits.length === 0 ? (
+                  <p className="text-sm text-gray-02">
+                    No clearly named themes matched in this plan extract yet.
+                  </p>
+                ) : (
+                  bundle.exactTefHits.map((hit) => (
+                    <TefChip
+                      key={`${hit.stableId}-${hit.measureText}`}
+                      label={hit.shortLabel}
+                      source={hit.source}
+                      measureText={hit.measureText}
+                    />
+                  ))
+                )}
+              </div>
+            ) : (
               <div className="space-y-5">
                 {tefGroups.length === 0 ? (
                   <p className="text-sm text-gray-02">
@@ -390,17 +427,6 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
                     </SectorBlock>
                   ))
                 )}
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {bundle.exactTefHits.map((hit) => (
-                  <TefChip
-                    key={`${hit.stableId}-${hit.measureText}`}
-                    label={hit.shortLabel}
-                    source={hit.source}
-                    measureText={hit.measureText}
-                  />
-                ))}
               </div>
             )
           ) : null}
@@ -468,6 +494,14 @@ function MeasureTile({
           );
         })}
       </div>
+      {row.activityFlows.length > 0 ? (
+        <p className="text-[11px] text-gray-02">
+          Activity flow: {row.activityFlows.slice(0, 2).join(" · ")}
+          {row.activityFlows.length > 2
+            ? ` +${row.activityFlows.length - 2}`
+            : ""}
+        </p>
+      ) : null}
       {row.exactTefLabels.length > 0 ? (
         <p className="text-[11px] text-gray-02 truncate">
           Matched theme: {row.exactTefLabels.slice(0, 2).join(" · ")}
@@ -772,21 +806,48 @@ export function MunicipalityDetailV2({
                 </div>
                 <div
                   className={cn(
-                    "w-24 text-right text-xs",
+                    "w-28 text-right text-xs",
                     row.addressed ? "text-blue-03" : "text-pink-03",
                   )}
+                  title={
+                    row.addressed
+                      ? `${row.measureCount} action${row.measureCount === 1 ? "" : "s"} mapped to this sector`
+                      : undefined
+                  }
                 >
-                  {row.addressed ? "Actions found" : "None found"}
+                  {row.addressed
+                    ? `Actions found (${row.measureCount})`
+                    : "None found"}
                 </div>
               </div>
             ))}
           </div>
-          <p className="text-xs text-gray-02 leading-relaxed">
-            Having actions in a sector does not mean the sector is dealt with —
-            only that we found at least one mapped action in the plan text.
-            Emissions year and six-sector mapping come from Unearth territorial
-            data; sector-agnostic actions may not appear here.
-          </p>
+          <details className="rounded-xl border border-gray-03/40 bg-gray-04/40 px-3.5 py-3">
+            <summary className="text-sm text-gray-01 cursor-pointer select-none">
+              How this yes / partly / not really is decided
+            </summary>
+            <div className="mt-2 space-y-2 text-xs text-gray-02 leading-relaxed">
+              <p>
+                This is <span className="text-gray-01">not</span> the same as
+                “themes named directly.” A sector counts as having actions when
+                at least one extracted measure is tagged to it via the
+                classifier’s sector/gate domain{" "}
+                <span className="text-gray-01">or</span> any catalogue theme
+                match — including <span className="text-gray-01">indirect</span>{" "}
+                (implied) matches. So one implied theme match can still mark a
+                sector as “Actions found.”
+              </p>
+              <p>{WEBSITE_V2_KPI_READING_GUIDE.biggestSourceMethod.body}</p>
+              <p>
+                The gap % is the share of{" "}
+                <span className="text-gray-01">mapped six-sector</span>{" "}
+                territorial emissions in sectors with zero mapped actions. A 0%
+                gap only means every emitting mapped sector has ≥1 tagged action
+                — not that the plan is adequate or that themes were named
+                explicitly.
+              </p>
+            </div>
+          </details>
         </div>
       </section>
 
