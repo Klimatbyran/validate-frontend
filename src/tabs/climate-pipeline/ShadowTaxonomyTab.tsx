@@ -971,10 +971,12 @@ export function ShadowTaxonomyTab() {
   // legacy split); below that, a tab picks one at a time instead.
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
   const [shadowPane, setShadowPane] = useState<"current" | "legacy">("current");
-  // "list" (default) is today's plain current/legacy split; "diff"
-  // classifies each live element as new/changed/same against the frozen
-  // snapshot instead -- only meaningful once a snapshot actually exists.
-  const [viewMode, setViewMode] = useState<"list" | "diff">("list");
+  // "off" (default) shows just the current elements, full width, with no
+  // snapshot comparison mounted at all -- "list" is the current/legacy
+  // split above; "diff" classifies each live element as new/changed/same
+  // against the frozen snapshot instead (only meaningful once one
+  // exists).
+  const [viewMode, setViewMode] = useState<"off" | "list" | "diff">("off");
   const {
     status: freezeStatus,
     isLoading: isFreezeStatusLoading,
@@ -986,10 +988,11 @@ export function ShadowTaxonomyTab() {
 
   // A snapshot deleted while diff mode is open would otherwise leave the
   // view stuck showing stale diff output against a comparison that no
-  // longer exists.
+  // longer exists. Only steps out of "diff" specifically -- never
+  // overrides an explicit "off".
   useEffect(() => {
-    if (!freezeStatus?.exists) setViewMode("list");
-  }, [freezeStatus?.exists]);
+    if (viewMode === "diff" && !freezeStatus?.exists) setViewMode("list");
+  }, [freezeStatus?.exists, viewMode]);
 
   // Bumped after a take/delete so an already-open legacy panel (which
   // fetches once on mount) refetches instead of showing stale data.
@@ -1230,9 +1233,22 @@ export function ShadowTaxonomyTab() {
           <div className="flex rounded-md border border-gray-03 overflow-hidden">
             <button
               type="button"
-              onClick={() => setViewMode("list")}
+              onClick={() => setViewMode("off")}
+              title="Hide the snapshot comparison entirely"
               className={cn(
                 "px-3 py-1.5 text-sm",
+                viewMode === "off"
+                  ? "bg-gray-03/40 text-gray-01 font-medium"
+                  : "text-gray-02 hover:text-gray-01",
+              )}
+            >
+              Off
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "px-3 py-1.5 text-sm border-l border-gray-03",
                 viewMode === "list"
                   ? "bg-blue-03/15 text-blue-03 font-medium"
                   : "text-gray-02 hover:text-gray-01",
@@ -1460,6 +1476,9 @@ export function ShadowTaxonomyTab() {
               )}
             </>
           );
+
+          if (viewMode === "off") return currentPane;
+
           const legacyPane = (
             <ShadowTaxonomyLegacyView refreshToken={snapshotRefreshToken} />
           );

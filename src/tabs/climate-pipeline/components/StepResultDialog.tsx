@@ -137,10 +137,14 @@ export function StepResultDialog({
   const [tefMatchPane, setTefMatchPane] = useState<"current" | "legacy">(
     "current",
   );
-  // "list" (default) is the plain current/legacy split above; "diff"
-  // classifies each match as new/same/removed against the frozen
-  // snapshot instead -- only meaningful once a snapshot exists.
-  const [tefCompareMode, setTefCompareMode] = useState<"list" | "diff">("list");
+  // "off" (default) shows just the current matches, full width, with no
+  // snapshot comparison mounted at all -- "list" is the current/legacy
+  // split above; "diff" classifies each match as new/same/removed
+  // against the frozen snapshot instead (only meaningful once one
+  // exists).
+  const [tefCompareMode, setTefCompareMode] = useState<"off" | "list" | "diff">(
+    "off",
+  );
   const { status: tefFreezeStatus } = useTefFreezeStatus();
 
   const reviewsByEntity = useMemo(() => {
@@ -166,15 +170,18 @@ export function StepResultDialog({
     setQaFilter("all");
     setReviewIndex(0);
     setTefMatchPane("current");
-    setTefCompareMode("list");
+    setTefCompareMode("off");
   }, [plan?.id, step, open]);
 
   // A snapshot deleted while diff mode is open would otherwise leave the
   // view stuck showing stale diff output against a comparison that no
-  // longer exists.
+  // longer exists. Only steps out of "diff" specifically -- never
+  // overrides an explicit "off".
   useEffect(() => {
-    if (!tefFreezeStatus?.exists) setTefCompareMode("list");
-  }, [tefFreezeStatus?.exists]);
+    if (tefCompareMode === "diff" && !tefFreezeStatus?.exists) {
+      setTefCompareMode("list");
+    }
+  }, [tefFreezeStatus?.exists, tefCompareMode]);
 
   // Changing filter or entering review mode restarts at the first item.
   useEffect(() => {
@@ -698,9 +705,22 @@ export function StepResultDialog({
               <div className="flex rounded-md border border-gray-03 overflow-hidden w-fit">
                 <button
                   type="button"
-                  onClick={() => setTefCompareMode("list")}
+                  onClick={() => setTefCompareMode("off")}
+                  title="Hide the snapshot comparison entirely"
                   className={cn(
                     "px-3 py-1.5 text-sm",
+                    tefCompareMode === "off"
+                      ? "bg-gray-03/40 text-gray-01 font-medium"
+                      : "text-gray-02 hover:text-gray-01",
+                  )}
+                >
+                  Off
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTefCompareMode("list")}
+                  className={cn(
+                    "px-3 py-1.5 text-sm border-l border-gray-03",
                     tefCompareMode === "list"
                       ? "bg-blue-03/15 text-blue-03 font-medium"
                       : "text-gray-02 hover:text-gray-01",
@@ -732,6 +752,8 @@ export function StepResultDialog({
                   planId={plan.id}
                   measures={detail.extractedMeasures}
                 />
+              ) : tefCompareMode === "off" ? (
+                currentPane
               ) : (
                 listView
               )}
