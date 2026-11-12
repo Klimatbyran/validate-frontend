@@ -1,0 +1,842 @@
+{
+  "cmvjnu0ik00o90hmxvnoiojzu": {
+    "originalLabel": "Land-efficient urban development",
+    "outcomes": [
+      {
+        "component": "Compact and land-efficient urban development",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope. This definition also covers related suggestions listed in its source_suggestion_ids."
+      }
+    ]
+  },
+  "cmvjntky800o80hmxr7uvbu8m": {
+    "originalLabel": "Operate gas-powered heavy vehicles",
+    "outcomes": [
+      {
+        "component": "Operate gas-powered heavy vehicles",
+        "outcome": "USE-EXISTING",
+        "comment": "Gas-refuelling infrastructure supports the existing gas-truck pathway. The source does not specify the displaced fleet or whether the gas is renewable."
+      }
+    ]
+  },
+  "cmvjntf2p00o70hmx05g9vxoq": {
+    "originalLabel": "Increased use of gas-powered passenger cars",
+    "outcomes": [
+      {
+        "component": "Increased use of gas-powered passenger cars",
+        "outcome": "USE-EXISTING",
+        "comment": "Gas-refuelling infrastructure supports the existing gas-car pathway. The source does not specify the displaced fleet or whether the gas is renewable."
+      }
+    ]
+  },
+  "cmvjns4u700o60hmxtcdf7pou": {
+    "originalLabel": "Divert reusable products from disposal to reuse",
+    "outcomes": [
+      {
+        "component": "Reuse of existing products",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope. This definition also covers related suggestions listed in its source_suggestion_ids."
+      }
+    ]
+  },
+  "cmvjnrk5j00o50hmx1x7uj8bw": {
+    "originalLabel": "Reuse of household materials and products",
+    "outcomes": [
+      {
+        "component": "Reuse of existing products",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope. This definition also covers related suggestions listed in its source_suggestion_ids."
+      }
+    ]
+  },
+  "cmvjnra4t00o40hmxx2imfobm": {
+    "originalLabel": "Increase recycling of waste materials",
+    "outcomes": [
+      {
+        "component": "Increase recycling of waste materials",
+        "outcome": "USE-EXISTING",
+        "comment": "Existing recycling coverage applies; collection enables it. Reuse is covered separately by the proposed definitions."
+      }
+    ]
+  },
+  "cmvjnqwxv00o30hmxuekv2zj0": {
+    "originalLabel": "Shift from meeting travel to online meetings",
+    "outcomes": [
+      {
+        "component": "Online meetings and services, including education",
+        "outcome": "BROADEN",
+        "comment": "Use the proposed broader definition; the existing identities remain distinct."
+      }
+    ]
+  },
+  "cmvjnquky00o20hmx1ot2tlvc": {
+    "originalLabel": "Shift from education travel to online education",
+    "outcomes": [
+      {
+        "component": "Online meetings and services, including education",
+        "outcome": "BROADEN",
+        "comment": "Use the proposed broader definition; the existing identities remain distinct."
+      }
+    ]
+  },
+  "cmvjnpu6100o10hmxcupp0yts": {
+    "originalLabel": "Shift to seasonal food consumption",
+    "outcomes": [
+      {
+        "component": "Provision of seasonal food",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjnlu8h00o00hmxhbyuvvyg": {
+    "originalLabel": "Reduce consumption of goods",
+    "outcomes": [
+      {
+        "component": "Reduce consumption of goods",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The consumption objective spans several changes; it does not specify an additional TE. Repair, reuse and sharing are relevant examples, not asserted matches."
+      }
+    ]
+  },
+  "cmvjnkog900nz0hmxlasg6h0e": {
+    "originalLabel": "Reduce resource use per unit of output",
+    "outcomes": [
+      {
+        "component": "Reduce resource use per unit of output",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "Regulatory supervision is the intervention here; the source does not specify a distinct physical activity change."
+      }
+    ]
+  },
+  "cmvjnknoe00ny0hmxrtvwpf9y": {
+    "originalLabel": "Establish renewable energy supply",
+    "outcomes": [
+      {
+        "component": "Establish renewable energy supply",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The objective spans production and supply activities. The references are examples, not a complete or unique match; no generic energy TE is proposed."
+      }
+    ]
+  },
+  "cmvjninoi00nx0hmxilxzg055": {
+    "originalLabel": "Local biogas production",
+    "outcomes": [
+      {
+        "component": "Biogas production",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjnig9400nw0hmxxl9s2u8p": {
+    "originalLabel": "Expansion of wind electricity generation",
+    "outcomes": [
+      {
+        "component": "Expansion of wind electricity generation",
+        "outcome": "USE-EXISTING",
+        "comment": "The designated-area and large-turbine context fits existing onshore wind production. No displaced fossil generation needs to be assumed."
+      }
+    ]
+  },
+  "cmvjnhfji00nv0hmx37284ie3": {
+    "originalLabel": "Reduce use of energy-consuming building services",
+    "outcomes": [
+      {
+        "component": "Reduced demand for energy-consuming building services",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope. This definition also covers related suggestions listed in its source_suggestion_ids."
+      }
+    ]
+  },
+  "cmvjnf34u00nu0hmx4v4skqid": {
+    "originalLabel": "Shift to local district heating for building space heating",
+    "outcomes": [
+      {
+        "component": "Shift to local district heating for building space heating",
+        "outcome": "USE-EXISTING",
+        "comment": "Existing district-heating definitions include local networks. The applicable pathway depends on the original heating system."
+      }
+    ]
+  },
+  "cmvjne1h700nt0hmxr7szs0on": {
+    "originalLabel": "Reduce fossil raw material extraction",
+    "outcomes": [
+      {
+        "component": "Reduce fossil raw material extraction",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The wording does not distinguish changing extraction activity from reducing demand through reuse, recycling or substitution. No separate extraction TE is proposed."
+      }
+    ]
+  },
+  "cmvjndasl00ns0hmx4guqgkcv": {
+    "originalLabel": "Shift from virgin to recirculated materials",
+    "outcomes": [
+      {
+        "component": "Shift from virgin to recirculated materials",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "Use the distinct product-reuse, construction-component-reuse and recycled-input proposals where applicable. No additional generic recirculation TE is proposed."
+      }
+    ]
+  },
+  "cmvjnd7m100nr0hmxqt4eocc6": {
+    "originalLabel": "Reduce hazardous waste in household waste",
+    "outcomes": [
+      {
+        "component": "Reduce hazardous waste in household waste",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "Preventing hazardous waste and separately collecting or treating it are different changes. The formulation does not establish which to define."
+      }
+    ]
+  },
+  "cmvjnbq9k00nq0hmxxsdj678g": {
+    "originalLabel": "Contiguous urban development",
+    "outcomes": [
+      {
+        "component": "Compact and land-efficient urban development",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope. This definition also covers related suggestions listed in its source_suggestion_ids."
+      }
+    ]
+  },
+  "cmvjnbj2z00np0hmxsgfsyohu": {
+    "originalLabel": "Add solar energy production",
+    "outcomes": [
+      {
+        "component": "Add solar energy production",
+        "outcome": "USE-EXISTING",
+        "comment": "Existing rooftop-PV and solar-park production definitions cover installation and expansion. The broad wording does not select one setting; solar-ready design is enabling context."
+      }
+    ]
+  },
+  "cmvjnb8o200no0hmxvi99g733": {
+    "originalLabel": "Urban infill development",
+    "outcomes": [
+      {
+        "component": "Compact and land-efficient urban development",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope. This definition also covers related suggestions listed in its source_suggestion_ids."
+      }
+    ]
+  },
+  "cmvjna5fq00nn0hmxylvmkha9": {
+    "originalLabel": "Use of biogas as fuel",
+    "outcomes": [
+      {
+        "component": "Use of biogas as fuel",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The service and end use of biogas are unspecified. No generic fuel-use TE is proposed; biogas production is a separate proposal."
+      }
+    ]
+  },
+  "cmvjna3h200nm0hmxrhookcpb": {
+    "originalLabel": "Shift to exclusively renewable electricity use",
+    "outcomes": [
+      {
+        "component": "Renewable sourcing of purchased electricity",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjn9vmt00nl0hmxxgsgcrgf": {
+    "originalLabel": "Food waste recovery for biogas production",
+    "outcomes": [
+      {
+        "component": "Food-waste treatment through anaerobic digestion for biogas",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjn94fw00nk0hmxamb3gb51": {
+    "originalLabel": "Low-temperature district heating",
+    "outcomes": [
+      {
+        "component": "Low-temperature district-heat distribution",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjn93ep00nj0hmx6jjx4fjx": {
+    "originalLabel": "Expansion of solar electricity generation",
+    "outcomes": [
+      {
+        "component": "Expansion of solar electricity generation",
+        "outcome": "USE-EXISTING",
+        "comment": "Existing rooftop-PV and solar-park production definitions cover installation and expansion. The broad wording does not select one setting."
+      }
+    ]
+  },
+  "cmvjn8mfi00ni0hmx8celvfs1": {
+    "originalLabel": "Replacing fossil fuels with renewable hydrogen for building energy supply",
+    "outcomes": [
+      {
+        "component": "Replacing fossil fuels with renewable hydrogen for building energy supply",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The formulation does not distinguish heat, electricity or combined building-energy supply. No separate building-hydrogen TE is proposed."
+      }
+    ]
+  },
+  "cmvjn8i7x00nh0hmx2ttb4ftt": {
+    "originalLabel": "Shift to renewable hydrogen in electricity generation",
+    "outcomes": [
+      {
+        "component": "Electricity production from renewable hydrogen",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjn8gm800ng0hmx3nhnmavp": {
+    "originalLabel": "Small-scale wind electricity generation",
+    "outcomes": [
+      {
+        "component": "Small-scale wind electricity production",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjn7qux00nf0hmx3as9j46k": {
+    "originalLabel": "Shift commuting from car to train",
+    "outcomes": [
+      {
+        "component": "Public-transport modal shifts including integrated journeys",
+        "outcome": "BROADEN",
+        "comment": "Use the proposed broader definition; the existing identities remain distinct."
+      }
+    ]
+  },
+  "cmvjn7ip800ne0hmxc0runb3p": {
+    "originalLabel": "Land-efficient wind electricity production",
+    "outcomes": [
+      {
+        "component": "Land-efficient wind electricity production",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjn6wgt00nd0hmxc9qin24f": {
+    "originalLabel": "Increased renewable energy production",
+    "outcomes": [
+      {
+        "component": "Increased renewable energy production",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The broad objective spans different production and supply activities. References are illustrative; no generic renewable-energy TE is proposed."
+      }
+    ]
+  },
+  "cmvjn6iwf00nc0hmxuu8y8pe5": {
+    "originalLabel": "Shift to more sustainable passenger travel",
+    "outcomes": [
+      {
+        "component": "Shift to more sustainable passenger travel",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "Communication and mobility management can support several travel changes. No single additional transition is established; integrated public transport is one relevant proposal."
+      }
+    ]
+  },
+  "cmvjn6eia00nb0hmxqs4nk3hy": {
+    "originalLabel": "Add solar photovoltaic electricity generation",
+    "outcomes": [
+      {
+        "component": "Add solar photovoltaic electricity generation",
+        "outcome": "USE-EXISTING",
+        "comment": "Use existing rooftop-PV production coverage for the building-PV interpretation. Municipal ownership does not change that coverage."
+      }
+    ]
+  },
+  "cmvjn4l2a00na0hmx2g17nmnx": {
+    "originalLabel": "Energy recovery from sewage sludge",
+    "outcomes": [
+      {
+        "component": "Energy recovery in sewage-sludge treatment",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjn4kqk00n90hmxx0u4vz7p": {
+    "originalLabel": "Construction to at least Miljöbyggnad Silver principles",
+    "outcomes": [
+      {
+        "component": "Construction to at least Miljöbyggnad Silver principles",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "Miljöbyggnad Silver remains a procurement or programme criterion. Its name alone does not specify the activity change or establish timber-construction coverage."
+      }
+    ]
+  },
+  "cmvjn4beq00n80hmx6eq6dv5b": {
+    "originalLabel": "Closed-loop material recirculation",
+    "outcomes": [
+      {
+        "component": "Closed-loop material recirculation",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The circular ambition spans distinct reuse, recycling and recycled-input changes. No additional generic closed-loop TE is proposed."
+      }
+    ]
+  },
+  "cmvjn3r8z00n70hmx6879fotb": {
+    "originalLabel": "Produce food locally",
+    "outcomes": [
+      {
+        "component": "Provision of locally produced food",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope. This definition also covers related suggestions listed in its source_suggestion_ids."
+      }
+    ]
+  },
+  "cmvjn2hrt00n60hmxy2njcgys": {
+    "originalLabel": "Shift from disposable to reusable catering serviceware",
+    "outcomes": [
+      {
+        "component": "Reusable catering serviceware systems",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjn219300n50hmxuvv0qrtt": {
+    "originalLabel": "Shift to Fairtrade-certified food products",
+    "outcomes": [
+      {
+        "component": "Shift to Fairtrade-certified food products",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The Fairtrade criterion does not specify the physical activity change here. Retain it as procurement context."
+      }
+    ]
+  },
+  "cmvjn1i2w00n40hmxmsx51ab8": {
+    "originalLabel": "Shift from imported to Swedish-produced food",
+    "outcomes": [
+      {
+        "component": "Provision of Swedish-produced rather than imported food",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjn19hv00n30hmx62jtlpx6": {
+    "originalLabel": "Nutrient recovery from sewage sludge",
+    "outcomes": [
+      {
+        "component": "Nutrient recovery in sewage-sludge treatment",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjn18vm00n20hmxcf8n4q8j": {
+    "originalLabel": "Shift from drinking water to river water for irrigation",
+    "outcomes": [
+      {
+        "component": "River water instead of drinking water for irrigation",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjn10l500n10hmxqtlhsbll": {
+    "originalLabel": "Water-efficient outlets",
+    "outcomes": [
+      {
+        "component": "Water-efficient outlets",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjn0eu500n00hmxrvjrzhny": {
+    "originalLabel": "Reduced avoidable food waste",
+    "outcomes": [
+      {
+        "component": "Reduced avoidable food waste",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjmzskx00mz0hmx48ev5mj2": {
+    "originalLabel": "Shift to locally produced food",
+    "outcomes": [
+      {
+        "component": "Provision of locally produced food",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope. This definition also covers related suggestions listed in its source_suggestion_ids."
+      }
+    ]
+  },
+  "cmvjmzhst00df0hmx6iu275xx": {
+    "originalLabel": "Repair and continued product use",
+    "outcomes": [
+      {
+        "component": "Repair and continued product use",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjmz8dc00de0hmx34mewrz2": {
+    "originalLabel": "Shift to certified organic food",
+    "outcomes": [
+      {
+        "component": "Provision of organically produced food",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjmyxc900dd0hmxv9nkvaec": {
+    "originalLabel": "Reduce single-use materials in catering",
+    "outcomes": [
+      {
+        "component": "Reduced single-use materials in catering",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjmy7k600dc0hmx7r1j8jxd": {
+    "originalLabel": "Reduce use of hazardous chemicals and materials",
+    "outcomes": [
+      {
+        "component": "Reduce use of hazardous chemicals and materials",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "Using less material and substituting a safer material are distinct possibilities. The objective does not specify one common activity change."
+      }
+    ]
+  },
+  "cmvjmulfx00d90hmxnutiowg7": {
+    "originalLabel": "Shift from fossil fuels to renewable energy",
+    "outcomes": [
+      {
+        "component": "Shift from fossil fuels to renewable energy",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The wording does not distinguish procurement, production or end use. No generic energy-substitution TE is proposed; an inferred fossil baseline is not a source fact."
+      }
+    ]
+  },
+  "cmvjmu09o00d80hmx2hsqbtco": {
+    "originalLabel": "Phase-out of direct electric resistance space heating in buildings",
+    "outcomes": [
+      {
+        "component": "Phase-out of direct electric resistance space heating in buildings",
+        "outcome": "USE-EXISTING",
+        "comment": "Use the relevant existing heat-pump or district-heating pathway. The source does not select a destination for the phase-out."
+      }
+    ]
+  },
+  "cmvjmsc0l009f0hmxacjju621": {
+    "originalLabel": "Shift from heating oil to renewable energy for industrial processes",
+    "outcomes": [
+      {
+        "component": "Shift from heating oil to renewable energy for industrial processes",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "Existing building-heating and process-energy pathways are possible references, not blanket coverage. The source does not establish one service or renewable destination."
+      }
+    ]
+  },
+  "cmvjmqohi009d0hmxye3jv5ro": {
+    "originalLabel": "Energy-efficient combined heat and power production",
+    "outcomes": [
+      {
+        "component": "Improved energy efficiency of combined heat and power production",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjmqo24009c0hmxy9rtf5aw": {
+    "originalLabel": "Shift from non-renewable energy use to solar energy use",
+    "outcomes": [
+      {
+        "component": "Shift from non-renewable energy use to solar energy use",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The wording does not distinguish procurement, production or end use. No generic solar-use TE is proposed; an inferred fossil baseline is not a source fact."
+      }
+    ]
+  },
+  "cmvjmqn69009b0hmxdhoittku": {
+    "originalLabel": "Improve energy-use efficiency",
+    "outcomes": [
+      {
+        "component": "Reduced demand for energy-consuming building services",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope. This definition also covers related suggestions listed in its source_suggestion_ids."
+      },
+      {
+        "component": "Industrial energy-efficiency programmes",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      },
+      {
+        "component": "Coordinated efficiency improvements in existing municipal buildings",
+        "outcome": "BROADEN",
+        "comment": "Use the proposed broader definition; the existing identities remain distinct."
+      },
+      {
+        "component": "Agricultural and forestry equipment efficiency",
+        "outcome": "USE-EXISTING",
+        "comment": "Existing equipment-efficiency definitions provide coverage for the represented agricultural and forestry equipment. Advice supports those activities; fuel substitution is separate."
+      },
+      {
+        "component": "A wider agricultural or forestry efficiency programme",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The general advice does not establish an additional agricultural or forestry programme scope beyond existing equipment coverage."
+      }
+    ]
+  },
+  "cmvjmq8ir009a0hmxkcuz4z7o": {
+    "originalLabel": "Shift from non-renewable electricity use to wind electricity use",
+    "outcomes": [
+      {
+        "component": "Shift from non-renewable electricity use to wind electricity use",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The wording does not distinguish procurement, production or end use. No generic wind-use TE is proposed; an inferred fossil baseline is not a source fact."
+      }
+    ]
+  },
+  "cmvjmoisi00980hmx975ezsed": {
+    "originalLabel": "Shift to fossil-free electricity production",
+    "outcomes": [
+      {
+        "component": "Shift to fossil-free electricity production",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The broad objective spans different production and supply activities. References are illustrative; fossil-free and renewable are not equivalent."
+      }
+    ]
+  },
+  "cmvjmnc0m00970hmx9aaqzxw0": {
+    "originalLabel": "Shift from fossil-fuel to fossil-free work machinery operation",
+    "outcomes": [
+      {
+        "component": "Shift from fossil-fuel to fossil-free work machinery operation",
+        "outcome": "USE-EXISTING",
+        "comment": "Existing fuel-substitution and electrification pathways cover the alternatives. The procurement objective does not select a technology."
+      }
+    ]
+  },
+  "cmvjmn20b00960hmxgiby82bm": {
+    "originalLabel": "Shift from fossil-fuel to fossil-free vehicle operation",
+    "outcomes": [
+      {
+        "component": "Fossil-free vehicle propulsion pathways",
+        "outcome": "USE-EXISTING",
+        "comment": "The propulsion component can use existing vehicle and fuel pathways; technology remains unspecified. The vehicle-sharing component has a separate proposal."
+      },
+      {
+        "component": "Shared use of vehicles",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjmlqxt00950hmx6ahdnx5i": {
+    "originalLabel": "Shift from non-recyclable to recyclable materials",
+    "outcomes": [
+      {
+        "component": "Selection of recyclable material alternatives",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjml5jg00940hmxdzr2jn0y": {
+    "originalLabel": "Carbon capture and utilisation in combined heat and power production",
+    "outcomes": [
+      {
+        "component": "Carbon capture at CHP plants for utilisation in electrofuels",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjmk8z100930hmxiof8n3rj": {
+    "originalLabel": "Material-efficient building construction",
+    "outcomes": [
+      {
+        "component": "Material-efficient building construction",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjmk5h000920hmxjagknibg": {
+    "originalLabel": "Shift from non-renewable to renewable materials",
+    "outcomes": [
+      {
+        "component": "Construction systems using renewable materials",
+        "outcome": "BROADEN",
+        "comment": "Use the proposed broader definition; the existing identities remain distinct."
+      }
+    ]
+  },
+  "cmvjmjzri00910hmxypy4jre1": {
+    "originalLabel": "Shift to renewable construction materials",
+    "outcomes": [
+      {
+        "component": "Construction systems using renewable materials",
+        "outcome": "BROADEN",
+        "comment": "Use the proposed broader definition; the existing identities remain distinct."
+      }
+    ]
+  },
+  "cmvjmjp9100900hmxnv64mkbj": {
+    "originalLabel": "Energy-efficient building ventilation",
+    "outcomes": [
+      {
+        "component": "Energy-efficient building ventilation",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjmj1dr008z0hmxdgmdl3pv": {
+    "originalLabel": "Shift to multimodal journeys",
+    "outcomes": [
+      {
+        "component": "Public-transport modal shifts including integrated journeys",
+        "outcome": "BROADEN",
+        "comment": "Use the proposed broader definition; the existing identities remain distinct."
+      }
+    ]
+  },
+  "cmvjmisg5008y0hmxxqy6qzhv": {
+    "originalLabel": "Shift to electric heavy vehicles",
+    "outcomes": [
+      {
+        "component": "Electrification of heavy road freight vehicles",
+        "outcome": "BROADEN",
+        "comment": "Use the proposed broader definition; the existing identities remain distinct."
+      }
+    ]
+  },
+  "cmvjmii6j008x0hmxvpk89q7y": {
+    "originalLabel": "Road freight to rail freight",
+    "outcomes": [
+      {
+        "component": "Road freight to rail freight",
+        "outcome": "BROADEN",
+        "comment": "Use the proposed broader definition; the existing identities remain distinct."
+      }
+    ]
+  },
+  "cmvjmgp1s008w0hmxc7t22hd1": {
+    "originalLabel": "Shift to recovered waste heat for heat provision",
+    "outcomes": [
+      {
+        "component": "Waste heat supplied through district heating",
+        "outcome": "USE-EXISTING",
+        "comment": "Existing definitions cover waste-heat production and substitution through district heating. Keep production distinct from a specified substitution."
+      },
+      {
+        "component": "Local heat recovery reducing purchased heat",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "Local recovery that reduces purchased heat differs from network supply, but the attachment does not establish a separate defined change here."
+      }
+    ]
+  },
+  "cmvjmfgfl008v0hmxzd6epg17": {
+    "originalLabel": "Carbon capture in industrial production",
+    "outcomes": [
+      {
+        "component": "Carbon capture in industrial production",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjmfajo008u0hmxjhq4sz4j": {
+    "originalLabel": "Shift to solar electricity production",
+    "outcomes": [
+      {
+        "component": "Shift to solar electricity production",
+        "outcome": "USE-EXISTING",
+        "comment": "Existing rooftop-PV and solar-park production definitions cover installation and expansion. The source does not uniquely select the setting or establish fossil displacement."
+      }
+    ]
+  },
+  "cmvjmf6x5008t0hmx2kagupzx": {
+    "originalLabel": "Shift from fossil electricity generation to wind power",
+    "outcomes": [
+      {
+        "component": "Shift from fossil electricity generation to wind power",
+        "outcome": "USE-EXISTING",
+        "comment": "Existing onshore and offshore wind-production definitions provide the relevant alternatives. No unique setting or fossil displacement is inferred; small-scale wind remains separate."
+      }
+    ]
+  },
+  "cmvjmdak5008s0hmxvsl180v9": {
+    "originalLabel": "Shift from virgin to recycled materials in production",
+    "outcomes": [
+      {
+        "component": "Recycled rather than virgin material inputs in production",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjmcsnd008r0hmx439ioqet": {
+    "originalLabel": "Shift from virgin to reused materials",
+    "outcomes": [
+      {
+        "component": "Reuse of construction products and components",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjmbu2c006g0hmxsd0f8l7p": {
+    "originalLabel": "Shift from single-use to repeated use of products",
+    "outcomes": [
+      {
+        "component": "Shift from single-use to repeated use of products",
+        "outcome": "DO-NOT-ADOPT",
+        "comment": "The broad circular vision does not independently establish the extracted single-use-to-repeated-use change. Reuse and sharing are relevant proposals, not additional proven implementations."
+      }
+    ]
+  },
+  "cmvjmbrx4006f0hmx8d2wzohv": {
+    "originalLabel": "Reuse existing products",
+    "outcomes": [
+      {
+        "component": "Reuse of existing products",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope. This definition also covers related suggestions listed in its source_suggestion_ids."
+      }
+    ]
+  },
+  "cmvjmbh8q006e0hmxx2mjdo8i": {
+    "originalLabel": "Shift from car travel to cycling",
+    "outcomes": [
+      {
+        "component": "Shift from car travel to cycling",
+        "outcome": "USE-EXISTING",
+        "comment": "Use existing car-to-walking/cycling coverage. Car displacement is the TE comparator, not a measured consequence of the route intervention."
+      }
+    ]
+  },
+  "cmvjmbh2a006d0hmxmj81wxk4": {
+    "originalLabel": "Extend the service life of existing buildings",
+    "outcomes": [
+      {
+        "component": "Extended service life of existing buildings",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  },
+  "cmvjma8t3002v0hmxtwhc53ug": {
+    "originalLabel": "Shared use of products",
+    "outcomes": [
+      {
+        "component": "Shared use of products",
+        "outcome": "ADD",
+        "comment": "Use the proposed definition and its stated scope."
+      }
+    ]
+  }
+}

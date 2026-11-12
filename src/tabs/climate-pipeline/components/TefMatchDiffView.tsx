@@ -19,6 +19,27 @@ const MATCH_LABEL: Record<MatchDiffEntry["status"], string> = {
   old: "Removed",
 };
 
+// "Shadow" marks a match that isn't an official TEF taxonomy entry -- the
+// shift was instead attached to a shadow-taxonomy element created on the
+// fly because no real TE fit. Without this, a "new" shadow attachment reads
+// identically to a newly-added official TE match, which is the opposite of
+// what a reviewer needs to know: one means "the real taxonomy grew," the
+// other means "still needs a human to promote or reject it."
+function OriginTag({
+  origin,
+  shadowStatus,
+}: {
+  origin: MatchDiffEntry["origin"];
+  shadowStatus?: string | null;
+}) {
+  if (origin !== "shadow") return null;
+  return (
+    <span className="rounded-sm bg-purple-03/20 px-1 text-[9px] font-semibold uppercase tracking-wide text-purple-03">
+      Shadow{shadowStatus ? ` · ${shadowStatus}` : ""}
+    </span>
+  );
+}
+
 function MatchPill({ match }: { match: MatchDiffEntry }) {
   return (
     <span
@@ -30,6 +51,7 @@ function MatchPill({ match }: { match: MatchDiffEntry }) {
       <span className="font-semibold uppercase tracking-wide text-[10px]">
         {MATCH_LABEL[match.status]}
       </span>
+      <OriginTag origin={match.origin} shadowStatus={match.shadowStatus} />
       {match.shortLabel}
     </span>
   );
@@ -149,9 +171,16 @@ export function TefMatchDiffView({
               <p className="text-sm text-gray-01">
                 {r.shiftFrom} → {r.shiftTo}
               </p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {r.matches.map((m) => (
-                  <span key={m.stableId} className="text-xs text-gray-02">
+                  <span
+                    key={m.stableId}
+                    className="inline-flex items-center gap-1.5 text-xs text-gray-02"
+                  >
+                    <OriginTag
+                      origin={m.origin}
+                      shadowStatus={m.shadowStatus}
+                    />
                     {m.shortLabel}
                   </span>
                 ))}

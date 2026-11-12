@@ -1,4 +1,8 @@
-import type { ShadowElement } from "../hooks/useShadowElements";
+import type {
+  ShadowElement,
+  ShadowElementStatus,
+  ShadowElementQuality,
+} from "../hooks/useShadowElements";
 import type { ShadowElementSnapshot } from "../hooks/useShadowElementSnapshots";
 
 export interface ShadowElementChange {
@@ -18,7 +22,9 @@ export interface RemovedShadowElement {
   shortLabel: string;
   description: string;
   activityShiftCategory: string;
-  status: string;
+  status: ShadowElementStatus;
+  qualityGrade: ShadowElementQuality;
+  comment: string | null;
   originMunicipalityName: string | null;
 }
 
@@ -87,6 +93,8 @@ export function computeShadowElementDiff(
       description: s.description,
       activityShiftCategory: s.activityShiftCategory,
       status: s.status,
+      qualityGrade: s.qualityGrade,
+      comment: s.comment,
       originMunicipalityName: s.originMunicipalityName,
     }));
 

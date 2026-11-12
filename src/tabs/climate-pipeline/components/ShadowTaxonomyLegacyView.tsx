@@ -1,6 +1,8 @@
 import { Loader2 } from "lucide-react";
 import { useShadowElementSnapshots } from "../hooks/useShadowElementSnapshots";
 import { MunicipalityPill } from "./MunicipalityPill";
+import { HandoffReviewNote } from "./HandoffReviewNote";
+import { getHandoffReview } from "../lib/shadowTefHandoffReview";
 import type {
   ShadowElementStatus,
   ShadowElementQuality,
@@ -115,6 +117,9 @@ export function ShadowTaxonomyLegacyView({
                       “{row.comment}”
                     </p>
                   ) : null}
+                  <HandoffReviewNote
+                    review={getHandoffReview(row.originalId)}
+                  />
                 </div>
               ))}
             </div>
