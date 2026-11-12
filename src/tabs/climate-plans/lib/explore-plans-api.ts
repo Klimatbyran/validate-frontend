@@ -29,10 +29,11 @@ export interface ExploreApiPlanRow {
   companionReferenceCount: number;
   commitmentCount: number;
   commitmentSource: "pipeline-commitments" | "measures-as-proxy";
-  climateRelevantCommitmentCount: number;
-  climateCommitmentGroupCount: number;
-  adaptationCommitmentCount: number;
-  ownCommitmentCount: number;
+  /** Null when commitmentSource is measures-as-proxy (no commitment rows). */
+  climateRelevantCommitmentCount: number | null;
+  climateCommitmentGroupCount: number | null;
+  adaptationCommitmentCount: number | null;
+  ownCommitmentCount: number | null;
   commitments: Array<{
     text: string;
     climateRelevant: boolean | null;
@@ -109,17 +110,32 @@ export function exploreApiPlanToRecord(
     dataSources.push("pipeline-commitments");
   }
 
+  const proxyOnly = plan.commitmentSource !== "pipeline-commitments";
+  const commitmentCount =
+    plan.commitmentCount > 0
+      ? plan.commitmentCount
+      : proxyOnly
+        ? new Set(measures.map((m) => m.measure_text)).size
+        : 0;
+
   return {
     id: plan.id,
     name: plan.name,
     regionName: plan.regionName,
     measures,
-    commitmentCount: plan.commitmentCount,
+    commitmentCount,
     commitmentSource: plan.commitmentSource,
-    climateRelevantCommitmentCount: plan.climateRelevantCommitmentCount,
-    climateCommitmentGroupCount: plan.climateCommitmentGroupCount,
-    adaptationCommitmentCount: plan.adaptationCommitmentCount,
-    ownCommitmentCount: plan.ownCommitmentCount,
+    // Zeros from measures-as-proxy would skew KPIs; legacy uses null = no data.
+    climateRelevantCommitmentCount: proxyOnly
+      ? null
+      : plan.climateRelevantCommitmentCount,
+    climateCommitmentGroupCount: proxyOnly
+      ? null
+      : plan.climateCommitmentGroupCount,
+    adaptationCommitmentCount: proxyOnly
+      ? null
+      : plan.adaptationCommitmentCount,
+    ownCommitmentCount: proxyOnly ? null : plan.ownCommitmentCount,
     companionReferenceCount: plan.companionReferenceCount,
     markdownChars: plan.markdownChars,
     tefHits: collectTefHits(measures),

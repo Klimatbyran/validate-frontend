@@ -86,4 +86,24 @@ describe("exploreApiPlanToRecord", () => {
     expect(record.climateCommitmentGroupCount).toBe(1);
     expect(record.dataSources).toContain("pipeline-measures");
   });
+
+  it("nulls climate commitment KPIs for measures-as-proxy and proxies count", () => {
+    const record = exploreApiPlanToRecord(
+      samplePlan({
+        commitmentSource: "measures-as-proxy",
+        commitmentCount: 0,
+        climateRelevantCommitmentCount: 0,
+        climateCommitmentGroupCount: 0,
+        adaptationCommitmentCount: 0,
+        ownCommitmentCount: 0,
+        commitments: [],
+      }),
+    );
+    expect(record.commitmentCount).toBe(1);
+    expect(record.commitmentSource).toBe("measures-as-proxy");
+    expect(record.climateRelevantCommitmentCount).toBeNull();
+    expect(record.climateCommitmentGroupCount).toBeNull();
+    expect(record.adaptationCommitmentCount).toBeNull();
+    expect(record.ownCommitmentCount).toBeNull();
+  });
 });
