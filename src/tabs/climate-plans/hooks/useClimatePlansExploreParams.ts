@@ -22,6 +22,7 @@ const VIEWS: ExploreViewId[] = [
   "tef-framework",
   "anatomy",
   "website",
+  "website-v2",
 ];
 const TEF_SOURCES: TefSourceFilter[] = [
   "all",

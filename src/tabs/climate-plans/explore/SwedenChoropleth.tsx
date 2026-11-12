@@ -28,6 +28,8 @@ export function SwedenChoropleth({
   compareName = null,
   onSelect,
   booleanScale,
+  /** Discrete palette for Website v2 emissions-match map (1 / 0.5 / 0). */
+  focusMatchScale = false,
 }: {
   geo: "municipality" | "region";
   values: Map<string, number | boolean | null>;
@@ -36,6 +38,7 @@ export function SwedenChoropleth({
   compareName?: string | null;
   onSelect: (name: string) => void;
   booleanScale: boolean;
+  focusMatchScale?: boolean;
 }) {
   const [features, setFeatures] = useState<GeoFeature[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +88,11 @@ export function SwedenChoropleth({
   function fillFor(name: string): string {
     const value = lookup(name);
     if (value == null || value === undefined) return "rgba(75, 85, 99, 0.35)";
+    if (focusMatchScale && typeof value === "number") {
+      if (value >= 0.75) return "rgb(59, 130, 246)"; // match
+      if (value >= 0.25) return "rgb(251, 146, 60)"; // partial
+      return "rgb(244, 114, 182)"; // miss
+    }
     if (booleanScale) {
       return value === true || value === 1
         ? "rgb(16, 185, 129)"
@@ -155,18 +163,34 @@ export function SwedenChoropleth({
             {" · "}
             {hoverValue == null || hoverValue === undefined
               ? "no extract yet"
-              : typeof hoverValue === "boolean"
-                ? hoverValue
-                  ? "yes"
-                  : "no"
-                : Number.isInteger(hoverValue)
-                  ? String(hoverValue)
-                  : hoverValue.toFixed(2)}
+              : focusMatchScale && typeof hoverValue === "number"
+                ? hoverValue >= 0.75
+                  ? "match"
+                  : hoverValue >= 0.25
+                    ? "partial"
+                    : "no match"
+                : typeof hoverValue === "boolean"
+                  ? hoverValue
+                    ? "yes"
+                    : "no"
+                  : Number.isInteger(hoverValue)
+                    ? String(hoverValue)
+                    : hoverValue.toFixed(2)}
           </span>
         </div>
       ) : null}
       <div className="flex items-center gap-2 mt-3 text-xs text-gray-02">
-        {booleanScale ? (
+        {focusMatchScale ? (
+          <>
+            <span className="inline-block w-3 h-3 rounded-sm bg-blue-03" /> match
+            <span className="inline-block w-3 h-3 rounded-sm bg-orange-02" />{" "}
+            partial
+            <span className="inline-block w-3 h-3 rounded-sm bg-pink-03" /> no
+            match
+            <span className="inline-block w-3 h-3 rounded-sm bg-gray-03/50" />{" "}
+            no data
+          </>
+        ) : booleanScale ? (
           <>
             <span className="inline-block w-3 h-3 rounded-sm bg-green-03" /> yes
             <span className="inline-block w-3 h-3 rounded-sm bg-pink-03" /> no
