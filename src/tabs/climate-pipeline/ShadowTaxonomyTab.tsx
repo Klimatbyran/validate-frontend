@@ -30,6 +30,7 @@ import {
 } from "@/ui/dialog";
 import { cn } from "@/lib/utils";
 import { ShadowTaxonomyLegacyView } from "./components/ShadowTaxonomyLegacyView";
+import { ShadowTaxonomyDiffView } from "./components/ShadowTaxonomyDiffView";
 import {
   useTefFreezeStatus,
   createTefFreeze,
@@ -970,6 +971,10 @@ export function ShadowTaxonomyTab() {
   // legacy split); below that, a tab picks one at a time instead.
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
   const [shadowPane, setShadowPane] = useState<"current" | "legacy">("current");
+  // "list" (default) is today's plain current/legacy split; "diff"
+  // classifies each live element as new/changed/same against the frozen
+  // snapshot instead -- only meaningful once a snapshot actually exists.
+  const [viewMode, setViewMode] = useState<"list" | "diff">("list");
   const {
     status: freezeStatus,
     isLoading: isFreezeStatusLoading,
@@ -978,6 +983,14 @@ export function ShadowTaxonomyTab() {
   const [isTakingSnapshot, setIsTakingSnapshot] = useState(false);
   const [isDeleteSnapshotOpen, setIsDeleteSnapshotOpen] = useState(false);
   const [isDeletingSnapshot, setIsDeletingSnapshot] = useState(false);
+
+  // A snapshot deleted while diff mode is open would otherwise leave the
+  // view stuck showing stale diff output against a comparison that no
+  // longer exists.
+  useEffect(() => {
+    if (!freezeStatus?.exists) setViewMode("list");
+  }, [freezeStatus?.exists]);
+
   // Bumped after a take/delete so an already-open legacy panel (which
   // fetches once on mount) refetches instead of showing stale data.
   const [snapshotRefreshToken, setSnapshotRefreshToken] = useState(0);
@@ -1214,6 +1227,38 @@ export function ShadowTaxonomyTab() {
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
+          <div className="flex rounded-md border border-gray-03 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "px-3 py-1.5 text-sm",
+                viewMode === "list"
+                  ? "bg-blue-03/15 text-blue-03 font-medium"
+                  : "text-gray-02 hover:text-gray-01",
+              )}
+            >
+              List
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("diff")}
+              disabled={!freezeStatus?.exists}
+              title={
+                freezeStatus?.exists
+                  ? undefined
+                  : "No snapshot exists yet -- take one to compare against"
+              }
+              className={cn(
+                "px-3 py-1.5 text-sm border-l border-gray-03 disabled:opacity-40 disabled:cursor-not-allowed",
+                viewMode === "diff"
+                  ? "bg-purple-03/15 text-purple-03 font-medium"
+                  : "text-gray-02 hover:text-gray-01",
+              )}
+            >
+              Diff vs snapshot
+            </button>
+          </div>
           <Button
             type="button"
             variant="outline"
@@ -1322,152 +1367,161 @@ export function ShadowTaxonomyTab() {
         isLoading={isDeletingSnapshot}
       />
 
-      {(() => {
-        const currentPane = (
-          <>
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="text-xs text-gray-02 flex items-center gap-2">
-                {t("shadowTaxonomy.filterStatus")}
-                <select
-                  className="h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
-                  value={statusFilter}
-                  onChange={(e) =>
-                    setStatusFilter(e.target.value as ShadowElementStatus | "")
-                  }
-                >
-                  <option value="">{t("shadowTaxonomy.statusAll")}</option>
-                  <option value="preliminary">
-                    {t("shadowTaxonomy.statusPreliminary")}
-                  </option>
-                  <option value="promoted">
-                    {t("shadowTaxonomy.statusPromoted")}
-                  </option>
-                  <option value="rejected">
-                    {t("shadowTaxonomy.statusRejected")}
-                  </option>
-                  <option value="merged">
-                    {t("shadowTaxonomy.statusMerged")}
-                  </option>
-                </select>
-              </label>
-              <label className="text-xs text-gray-02 flex items-center gap-2">
-                {t("shadowTaxonomy.filterQuality")}
-                <select
-                  className="h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
-                  value={qualityFilter}
-                  onChange={(e) =>
-                    setQualityFilter(
-                      e.target.value as ShadowElementQuality | "",
-                    )
-                  }
-                >
-                  <option value="">{t("shadowTaxonomy.statusAll")}</option>
-                  <option value="specific">
-                    {t("shadowTaxonomy.qualitySpecific")}
-                  </option>
-                  <option value="narrowable">
-                    {t("shadowTaxonomy.qualityNarrowable")}
-                  </option>
-                  <option value="vague">
-                    {t("shadowTaxonomy.qualityVague")}
-                  </option>
-                </select>
-              </label>
-              <span className="text-xs text-gray-02">
-                {t("shadowTaxonomy.count", { count: rows.length })}
-              </span>
-            </div>
-
-            {isLoading && (
-              <div className="flex justify-center p-8">
-                <Loader2 className="w-6 h-6 text-blue-03 animate-spin" />
+      {viewMode === "diff" ? (
+        <ShadowTaxonomyDiffView
+          elements={elements}
+          refreshToken={snapshotRefreshToken}
+        />
+      ) : (
+        (() => {
+          const currentPane = (
+            <>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="text-xs text-gray-02 flex items-center gap-2">
+                  {t("shadowTaxonomy.filterStatus")}
+                  <select
+                    className="h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
+                    value={statusFilter}
+                    onChange={(e) =>
+                      setStatusFilter(
+                        e.target.value as ShadowElementStatus | "",
+                      )
+                    }
+                  >
+                    <option value="">{t("shadowTaxonomy.statusAll")}</option>
+                    <option value="preliminary">
+                      {t("shadowTaxonomy.statusPreliminary")}
+                    </option>
+                    <option value="promoted">
+                      {t("shadowTaxonomy.statusPromoted")}
+                    </option>
+                    <option value="rejected">
+                      {t("shadowTaxonomy.statusRejected")}
+                    </option>
+                    <option value="merged">
+                      {t("shadowTaxonomy.statusMerged")}
+                    </option>
+                  </select>
+                </label>
+                <label className="text-xs text-gray-02 flex items-center gap-2">
+                  {t("shadowTaxonomy.filterQuality")}
+                  <select
+                    className="h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
+                    value={qualityFilter}
+                    onChange={(e) =>
+                      setQualityFilter(
+                        e.target.value as ShadowElementQuality | "",
+                      )
+                    }
+                  >
+                    <option value="">{t("shadowTaxonomy.statusAll")}</option>
+                    <option value="specific">
+                      {t("shadowTaxonomy.qualitySpecific")}
+                    </option>
+                    <option value="narrowable">
+                      {t("shadowTaxonomy.qualityNarrowable")}
+                    </option>
+                    <option value="vague">
+                      {t("shadowTaxonomy.qualityVague")}
+                    </option>
+                  </select>
+                </label>
+                <span className="text-xs text-gray-02">
+                  {t("shadowTaxonomy.count", { count: rows.length })}
+                </span>
               </div>
-            )}
-            {error && (
-              <p className="text-sm text-pink-03">
-                {t("shadowTaxonomy.error", { error })}
-              </p>
-            )}
-            {!isLoading && !error && rows.length === 0 && (
-              <p className="text-sm text-gray-02">
-                {t("shadowTaxonomy.empty")}
-              </p>
-            )}
-            {!isLoading && rows.length > 0 && (
-              <div className="space-y-3">
-                {rows.map((el) => (
-                  <ShadowElementCard
-                    key={el.id}
-                    element={el}
-                    onChanged={handleChanged}
-                    onUnlink={(id, label) => void handleUnlink(id, label)}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        );
-        const legacyPane = (
-          <ShadowTaxonomyLegacyView refreshToken={snapshotRefreshToken} />
-        );
 
-        // Current elements and the frozen snapshot can each run to
-        // hundreds of rows -- side by side only once there's room for two
-        // columns; below that, a tab picks one at a time instead of a
-        // long, unusable scroll of current-then-legacy.
-        if (isLargeScreen) {
+              {isLoading && (
+                <div className="flex justify-center p-8">
+                  <Loader2 className="w-6 h-6 text-blue-03 animate-spin" />
+                </div>
+              )}
+              {error && (
+                <p className="text-sm text-pink-03">
+                  {t("shadowTaxonomy.error", { error })}
+                </p>
+              )}
+              {!isLoading && !error && rows.length === 0 && (
+                <p className="text-sm text-gray-02">
+                  {t("shadowTaxonomy.empty")}
+                </p>
+              )}
+              {!isLoading && rows.length > 0 && (
+                <div className="space-y-3">
+                  {rows.map((el) => (
+                    <ShadowElementCard
+                      key={el.id}
+                      element={el}
+                      onChanged={handleChanged}
+                      onUnlink={(id, label) => void handleUnlink(id, label)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          );
+          const legacyPane = (
+            <ShadowTaxonomyLegacyView refreshToken={snapshotRefreshToken} />
+          );
+
+          // Current elements and the frozen snapshot can each run to
+          // hundreds of rows -- side by side only once there's room for two
+          // columns; below that, a tab picks one at a time instead of a
+          // long, unusable scroll of current-then-legacy.
+          if (isLargeScreen) {
+            return (
+              <div className="grid grid-cols-2 gap-4 items-start min-w-0">
+                <div className="min-w-0 space-y-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-02">
+                    Current
+                  </h3>
+                  {currentPane}
+                </div>
+                <div className="min-w-0 space-y-3">
+                  <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-purple-03">
+                    <History className="w-3.5 h-3.5" />
+                    Legacy snapshot
+                  </h3>
+                  {legacyPane}
+                </div>
+              </div>
+            );
+          }
+
           return (
-            <div className="grid grid-cols-2 gap-4 items-start min-w-0">
-              <div className="min-w-0 space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-02">
+            <div className="space-y-3 min-w-0">
+              <div className="flex gap-2 border-b border-gray-03 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setShadowPane("current")}
+                  className={cn(
+                    "px-3 py-1.5 text-sm rounded-md",
+                    shadowPane === "current"
+                      ? "bg-blue-03/15 text-blue-03 font-medium"
+                      : "text-gray-02 hover:text-gray-01",
+                  )}
+                >
                   Current
-                </h3>
-                {currentPane}
-              </div>
-              <div className="min-w-0 space-y-3">
-                <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-purple-03">
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShadowPane("legacy")}
+                  className={cn(
+                    "px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5",
+                    shadowPane === "legacy"
+                      ? "bg-purple-03/15 text-purple-03 font-medium"
+                      : "text-gray-02 hover:text-gray-01",
+                  )}
+                >
                   <History className="w-3.5 h-3.5" />
                   Legacy snapshot
-                </h3>
-                {legacyPane}
+                </button>
               </div>
+              {shadowPane === "current" ? currentPane : legacyPane}
             </div>
           );
-        }
-
-        return (
-          <div className="space-y-3 min-w-0">
-            <div className="flex gap-2 border-b border-gray-03 pb-2">
-              <button
-                type="button"
-                onClick={() => setShadowPane("current")}
-                className={cn(
-                  "px-3 py-1.5 text-sm rounded-md",
-                  shadowPane === "current"
-                    ? "bg-blue-03/15 text-blue-03 font-medium"
-                    : "text-gray-02 hover:text-gray-01",
-                )}
-              >
-                Current
-              </button>
-              <button
-                type="button"
-                onClick={() => setShadowPane("legacy")}
-                className={cn(
-                  "px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5",
-                  shadowPane === "legacy"
-                    ? "bg-purple-03/15 text-purple-03 font-medium"
-                    : "text-gray-02 hover:text-gray-01",
-                )}
-              >
-                <History className="w-3.5 h-3.5" />
-                Legacy snapshot
-              </button>
-            </div>
-            {shadowPane === "current" ? currentPane : legacyPane}
-          </div>
-        );
-      })()}
+        })()
+      )}
     </div>
   );
 }
