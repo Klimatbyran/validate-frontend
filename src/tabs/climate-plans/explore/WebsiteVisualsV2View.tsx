@@ -93,16 +93,19 @@ export function WebsiteVisualsV2View({
     <div className="space-y-5">
       <MethodologyPanel
         data="Website visuals v2 — municipality overview + detail only. Live explore extracts (plan actions, clear vs broad framework matches, Unearth sector emissions). Old Website visuals tab kept for reference."
-        calculation={`Three public views (${ACTION_CONCRETENESS_METHOD_VERSION}): (1) plan action detail = weighted who/what/when/how × broad-wording 0.85 trim, municipal mean; (2) biggest-source fit = sector bars / yes-partly-not-really; (3) actions in the plan = unique extracted actions + expandable matched-theme list.`}
+        calculation={`Three public views (${ACTION_CONCRETENESS_METHOD_VERSION}): (1) plan action detail PRIMARY = weighted who/what/when/how only; framework directness = share of judged actions with explicit TEF text; combined EXPERIMENTAL = slots × implied-only 0.85; (2) biggest-source fit; (3) actions in the plan + matched themes.`}
         extra="Skipped on purpose: climate-plans story, region detail, region overview. Matched-theme panel = clearly stated matches only (standard + new framework items; broad matches and experimental gaps excluded)."
       />
 
-      <Callout variant="info" title="Website visuals v2 (plain-language draft)">
+      <Callout
+        variant="info"
+        title="Website visuals v2 (score separation draft)"
+      >
         <p className="text-sm text-gray-02 mt-1">
-          Staging surface for three public views: how specific the plan is,
-          whether it fits local emissions, and how many actions it names — with
-          an expandable look inside the plan. Leave the original Website visuals
-          tab open while we compare.
+          Primary plan-detail score is who/what/when/how only. Framework
+          directness sits beside it, and the old implied-only combined score is
+          kept as an experimental comparison so we can see ranking impact. Leave
+          the original Website visuals tab open while we compare.
         </p>
       </Callout>
 

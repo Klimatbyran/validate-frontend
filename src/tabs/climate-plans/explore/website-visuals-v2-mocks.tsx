@@ -12,6 +12,7 @@ import {
   concretenessBandLabel,
   evidenceVolumeLabel,
   formatConcretenessScore,
+  formatSharePercent,
   type ActionConcretenessResult,
 } from "../lib/action-concreteness-score";
 import {
@@ -133,8 +134,9 @@ function SlotBars({ result }: { result: ActionConcretenessResult }) {
       {result.broadnessPointsLost != null &&
       result.broadnessPointsLost > 0.05 ? (
         <p className="text-xs text-orange-02 pt-1">
-          −{result.broadnessPointsLost.toFixed(1)} pts on average from actions
-          written only in broad terms
+          Experimental combined score is −
+          {result.broadnessPointsLost.toFixed(1)} pts vs primary (implied-only
+          trim)
         </p>
       ) : null}
     </div>
@@ -464,6 +466,103 @@ function TefChip({
   );
 }
 
+function ScoreSeparationCompare({
+  result,
+}: {
+  result: ActionConcretenessResult;
+}) {
+  const rows = [
+    {
+      key: "spec",
+      label: "Specification (primary)",
+      value: formatConcretenessScore(result.score),
+      hint: "Who / what / when / how only",
+      primary: true,
+    },
+    {
+      key: "direct",
+      label: "Framework directness",
+      value: formatSharePercent(result.directWordingShare),
+      hint: "Share of labelled actions that name the matched theme in their own text",
+      primary: false,
+    },
+    {
+      key: "combined",
+      label: "Combined (experimental)",
+      value: formatConcretenessScore(result.combinedScore),
+      hint: "Slots × 0.85 when every judged match is implied-only",
+      primary: false,
+    },
+  ] as const;
+
+  return (
+    <section className="rounded-[24px] border border-gray-03/40 bg-gray-05/40 px-5 py-5 space-y-3">
+      <div>
+        <div className="text-[11px] uppercase tracking-wide text-gray-02">
+          Score separation · compare impact
+        </div>
+        <h3 className="text-lg text-gray-01 mt-1">
+          Primary specification vs framework directness vs old combined trim
+        </h3>
+        <p className="text-sm text-gray-02 mt-1 max-w-3xl">
+          Implied TEF matches often mean the plan text is broader than a
+          catalogue entry — or that the text names a category with many sibling
+          themes. That is related to, but not the same as, missing who / what /
+          when / how. We show all three so the trim&apos;s ranking impact is
+          visible.
+        </p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {rows.map((row) => (
+          <div
+            key={row.key}
+            className={cn(
+              "rounded-2xl border px-4 py-3",
+              row.primary
+                ? "border-blue-03/40 bg-blue-03/10"
+                : "border-gray-03/40 bg-gray-04/50",
+            )}
+          >
+            <div className="text-[11px] uppercase tracking-wide text-gray-02">
+              {row.label}
+            </div>
+            <div
+              className={cn(
+                "text-3xl font-medium tabular-nums mt-1",
+                row.primary ? "text-blue-03" : "text-gray-01",
+              )}
+            >
+              {row.value}
+              {row.key !== "direct" && result.score != null ? (
+                <span className="text-sm text-gray-02 font-normal">/100</span>
+              ) : null}
+            </div>
+            <p className="text-xs text-gray-02 mt-2 leading-snug">{row.hint}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2 text-xs">
+        <span className="px-2.5 py-1 rounded-full bg-gray-03/50 text-gray-01">
+          All slots filled: {formatSharePercent(result.fullSpecShare)}
+        </span>
+        <span className="px-2.5 py-1 rounded-full bg-gray-03/50 text-gray-01">
+          {result.explicitCount}/{result.judgedMeasureCount || "—"} direct theme
+          matches
+        </span>
+        <span className="px-2.5 py-1 rounded-full bg-gray-03/50 text-gray-01">
+          {result.impliedOnlyCount}/{result.judgedMeasureCount || "—"}{" "}
+          implied-only
+        </span>
+        {result.provisional ? (
+          <span className="px-2.5 py-1 rounded-full border border-orange-03/40 text-orange-02">
+            Directness / combined: early estimate
+          </span>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export function MunicipalityDetailV2({
   bundle,
 }: {
@@ -509,6 +608,8 @@ export function MunicipalityDetailV2({
         ]}
       />
 
+      <ScoreSeparationCompare result={c} />
+
       <section className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-[24px] border border-blue-03/30 bg-blue-03/5 px-5 py-5 space-y-4">
           <div>
@@ -520,14 +621,14 @@ export function MunicipalityDetailV2({
             </h3>
             <p className="text-sm text-gray-02 mt-1">{c.headlineEn}</p>
           </div>
-          <Meter score={c.score} provisional={c.provisional} />
+          <Meter score={c.score} />
           <p className="text-xs text-gray-02 leading-relaxed">{c.summaryEn}</p>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="px-2.5 py-1 rounded-full bg-gray-03/50 text-gray-01">
               {evidenceVolumeLabel(c.evidenceVolume)}
             </span>
             <span className="px-2.5 py-1 rounded-full bg-gray-03/50 text-gray-01">
-              {c.impliedOnlyCount}/{c.judgedMeasureCount || "—"} written broadly
+              All slots filled: {formatSharePercent(c.fullSpecShare)}
             </span>
             <span className="px-2.5 py-1 rounded-full bg-gray-03/50 text-gray-01">
               {concretenessBandLabel(c.band)}
@@ -659,10 +760,8 @@ export function MunicipalityOverviewV2({
     const map = new Map<string, number | boolean | null>();
     for (const b of bundles) {
       if (activeKpi === "concreteness") {
-        map.set(
-          b.record.name,
-          b.concreteness.provisional ? null : b.concreteness.score,
-        );
+        // Primary is slots-only — TEF label coverage no longer blanks the map.
+        map.set(b.record.name, b.concreteness.score);
       } else if (activeKpi === "emissionsMatch") {
         map.set(b.record.name, focusMatchMapValue(b.gap.focusMatch));
       } else {
@@ -755,7 +854,7 @@ export function MunicipalityOverviewV2({
           }
           direction={
             activeKpi === "concreteness"
-              ? "Higher = clearer, more specific plan wording"
+              ? "Higher = more who/what/when/how detail (primary; framework trim not applied)"
               : activeKpi === "emissionsMatch"
                 ? "Yes / partly / not really vs biggest emission source"
                 : "Higher = more climate actions found in the plan (not automatically better)"
@@ -771,7 +870,7 @@ export function MunicipalityOverviewV2({
               name: b.record.name,
               value: formatRow(b),
             }))}
-          note={`${assessed.length} of ${bundles.length} municipalities comparable in this load. Grey = no plan extract yet${activeKpi === "concreteness" ? " or limited labelling data" : ""}.`}
+          note={`${assessed.length} of ${bundles.length} municipalities comparable in this load. Grey = no plan extract yet. Table also shows framework directness and experimental combined.`}
         />
       </div>
 
@@ -780,9 +879,11 @@ export function MunicipalityOverviewV2({
           <thead className="bg-gray-05/80 text-left text-xs uppercase tracking-wide text-gray-02">
             <tr>
               <th className="px-4 py-3 font-medium">Municipality</th>
-              <th className="px-4 py-3 font-medium">Plan detail score</th>
+              <th className="px-4 py-3 font-medium">Specification</th>
+              <th className="px-4 py-3 font-medium">Framework direct</th>
+              <th className="px-4 py-3 font-medium">Combined*</th>
               <th className="px-4 py-3 font-medium">Biggest source</th>
-              <th className="px-4 py-3 font-medium">Actions in the plan</th>
+              <th className="px-4 py-3 font-medium">Actions</th>
               <th className="px-4 py-3 font-medium">Matched themes</th>
             </tr>
           </thead>
@@ -803,8 +904,19 @@ export function MunicipalityOverviewV2({
                     <td className="px-4 py-2.5 text-gray-01">
                       {b.record.name}
                     </td>
-                    <td className="px-4 py-2.5 tabular-nums">
+                    <td className="px-4 py-2.5 tabular-nums text-blue-03">
                       {formatConcretenessScore(b.concreteness.score)}
+                    </td>
+                    <td className="px-4 py-2.5 tabular-nums text-gray-01">
+                      {formatSharePercent(b.concreteness.directWordingShare)}
+                      {b.concreteness.provisional ? (
+                        <span className="ml-1 text-[10px] text-orange-02">
+                          *
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-2.5 tabular-nums text-gray-02">
+                      {formatConcretenessScore(b.concreteness.combinedScore)}
                       {b.concreteness.provisional ? (
                         <span className="ml-1 text-[10px] text-orange-02">
                           *
@@ -830,6 +942,11 @@ export function MunicipalityOverviewV2({
               })}
           </tbody>
         </table>
+        <p className="px-4 py-2 text-[11px] text-gray-02 border-t border-gray-03/30">
+          * Combined = experimental slots × 0.85 when every judged theme match
+          is implied-only. Asterisk = thin TEF label coverage for
+          directness/combined.
+        </p>
       </div>
 
       <MethodologyDeepDive />

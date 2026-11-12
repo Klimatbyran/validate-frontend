@@ -108,7 +108,7 @@ describe("action concreteness score", () => {
     expect(scored.wording).toBe("no-tef");
   });
 
-  it("applies 15% implied-only broadness deduction", () => {
+  it("keeps primary score at full slots; trims only experimental combined", () => {
     const m = measure({
       measure_text: "Promote sustainable travel",
       intervention_who: "municipality",
@@ -120,7 +120,10 @@ describe("action concreteness score", () => {
       hit({ measureText: "Promote sustainable travel", explicit: false }),
     ]);
     expect(scored.wording).toBe("implied-only");
-    expect(scored.score).toBeCloseTo(100 * IMPLIED_ONLY_BROADNESS_FACTOR);
+    expect(scored.score).toBe(100);
+    expect(scored.combinedScore).toBeCloseTo(
+      100 * IMPLIED_ONLY_BROADNESS_FACTOR,
+    );
   });
 
   it("treats any explicit hit as explicit (not implied-only)", () => {
@@ -141,9 +144,10 @@ describe("action concreteness score", () => {
     ]);
     expect(scored.wording).toBe("explicit");
     expect(scored.score).toBe(100);
+    expect(scored.combinedScore).toBe(100);
   });
 
-  it("averages unique measures and reports slot weights", () => {
+  it("averages unique measures and reports slot weights plus siblings", () => {
     const full = measure({
       measure_text: "Buy electric buses",
       intervention_who: "municipality",
@@ -158,11 +162,19 @@ describe("action concreteness score", () => {
     const result = computeActionConcreteness(
       record({
         measures: [full, whatOnly],
-        tefHits: [],
+        tefHits: [
+          hit({ measureText: "Buy electric buses", explicit: true }),
+          hit({ measureText: "Promote cycling", explicit: false }),
+        ],
       }),
     );
     // full = 100; what-only = 35
     expect(result.score).toBeCloseTo((100 + SLOT_WEIGHTS.what * 100) / 2);
+    expect(result.combinedScore).toBeCloseTo(
+      (100 + SLOT_WEIGHTS.what * 100 * IMPLIED_ONLY_BROADNESS_FACTOR) / 2,
+    );
+    expect(result.directWordingShare).toBeCloseTo(0.5);
+    expect(result.fullSpecShare).toBeCloseTo(0.5);
     expect(result.measureCount).toBe(2);
     expect(result.whatRate).toBe(1);
     expect(result.whoRate).toBe(0.5);

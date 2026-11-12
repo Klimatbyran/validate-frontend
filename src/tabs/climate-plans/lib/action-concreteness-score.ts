@@ -1,8 +1,10 @@
 /**
- * Action concreteness score (Website visuals v2).
+ * Action specification score (Website visuals v2).
  *
- * Combines intervention slot completeness (who / what / when / how) with an
- * implied-TEF broadness modulator into one 0–100 municipal average.
+ * Primary score = who / what / when / how completeness only.
+ * Framework directness (TEF explicit vs implied) is reported beside it.
+ * Combined (slots × implied-only 0.85 trim) is kept as an experimental
+ * comparison so we can see impact — not as the published primary.
  *
  * Measures what the plan *text* specifies — not ambition, impact, or quality.
  * Methodology version is frozen in ACTION_CONCRETENESS_METHOD_VERSION.
@@ -12,7 +14,7 @@ import type { ExploreMunicipalityRecord, TefHit } from "./explore-types";
 import type { Measure } from "./measures-types";
 
 /** Bump when weights, gates, or aggregation change. */
-export const ACTION_CONCRETENESS_METHOD_VERSION = "v2.0-binary-slots-2026-03";
+export const ACTION_CONCRETENESS_METHOD_VERSION = "v2.1-slots-primary-2026-03";
 
 /** Slot weights sum to 1. WHAT dominates; HOW next; WHO and WHEN equal. */
 export const SLOT_WEIGHTS = {
@@ -23,8 +25,8 @@ export const SLOT_WEIGHTS = {
 } as const;
 
 /**
- * Implied-only measures keep this fraction of their slot score (15% max
- * deduction). Explicit or unjudged / no-TEF leave the score untouched.
+ * Experimental combined score only: implied-only measures keep this fraction
+ * of their slot score (15% max deduction). Not applied to the primary score.
  */
 export const IMPLIED_ONLY_BROADNESS_FACTOR = 0.85;
 
@@ -45,28 +47,43 @@ export interface MeasureConcretenessBreakdown {
   slotScore: number;
   wording: MeasureWording;
   broadnessFactor: number;
+  /** Primary: slots only (0–100). */
   score: number;
+  /** Experimental: slots × implied-only trim (0–100). */
+  combinedScore: number;
 }
 
 export interface ActionConcretenessResult {
   methodVersion: string;
   measureCount: number;
-  /** Mean of measure scores; null when no measures. */
+  /**
+   * Primary municipal average: who/what/when/how only (0–100).
+   * Null when no measures.
+   */
   score: number | null;
+  /** Experimental average with implied-only 0.85 trim. */
+  combinedScore: number | null;
+  /**
+   * Share of judged TEF-matched actions whose measure text directly names
+   * the matched transition (explicit). Null when nothing was judged.
+   */
+  directWordingShare: number | null;
+  /** Share of actions with all four slots filled. */
+  fullSpecShare: number | null;
   band: ConcretenessBand;
   evidenceVolume: EvidenceVolume;
   whoRate: number | null;
   whatRate: number | null;
   whenRate: number | null;
   howRate: number | null;
-  /** Average points contributed by each slot before broadness (0–100 scale). */
+  /** Average points contributed by each slot (0–100 scale). */
   slotPoints: {
     who: number | null;
     what: number | null;
     when: number | null;
     how: number | null;
   };
-  /** Average points removed by implied-only deduction. */
+  /** Average points the experimental trim would remove vs primary. */
   broadnessPointsLost: number | null;
   judgedMeasureCount: number;
   impliedOnlyCount: number;
@@ -74,6 +91,10 @@ export interface ActionConcretenessResult {
   impliedOnlyShare: number | null;
   /** Share of TEF-matched measures that carry an explicit/implied label. */
   judgedCoverageShare: number | null;
+  /**
+   * True when TEF wording labels cover <80% of matched measures — flags the
+   * experimental combined / direct-wording views, not the primary slot score.
+   */
   provisional: boolean;
   measures: MeasureConcretenessBreakdown[];
   headlineEn: string;
@@ -96,6 +117,12 @@ function hitsForMeasure(measure: Measure, allHits: TefHit[]): TefHit[] {
  * Explicit if any judged catalogue hit is explicit; implied-only when every
  * judged hit is implied. Runtime-shadow hits are ignored for wording (they are
  * gap proposals, not plan wording). Missing labels → unjudged.
+ *
+ * Pipeline meaning of explicit: the measure's own text directly names this
+ * TEF's destination/mechanism (or a synonym / specific instance). Implied
+ * means the match is a reasonable inference, or the text names a broad
+ * category while this TEF is one of many equally plausible siblings — not
+ * necessarily that who/what/when/how are missing.
  */
 export function classifyMeasureWording(
   measure: Measure,
@@ -131,7 +158,8 @@ export function scoreMeasureConcreteness(
   const wording = classifyMeasureWording(measure, allHits);
   const broadnessFactor =
     wording === "implied-only" ? IMPLIED_ONLY_BROADNESS_FACTOR : 1;
-  const score = 100 * slotScore * broadnessFactor;
+  const score = 100 * slotScore;
+  const combinedScore = 100 * slotScore * broadnessFactor;
 
   return {
     measureText: measure.measure_text ?? "",
@@ -143,6 +171,7 @@ export function scoreMeasureConcreteness(
     wording,
     broadnessFactor,
     score,
+    combinedScore,
   };
 }
 
@@ -173,6 +202,9 @@ export function computeActionConcreteness(
       methodVersion: ACTION_CONCRETENESS_METHOD_VERSION,
       measureCount: 0,
       score: null,
+      combinedScore: null,
+      directWordingShare: null,
+      fullSpecShare: null,
       band: "unscored",
       evidenceVolume: "none",
       whoRate: null,
@@ -196,10 +228,16 @@ export function computeActionConcreteness(
 
   const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   const score = mean(breakdowns.map((b) => b.score));
+  const combinedScore = mean(breakdowns.map((b) => b.combinedScore));
   const whoRate = mean(breakdowns.map((b) => b.who));
   const whatRate = mean(breakdowns.map((b) => b.what));
   const whenRate = mean(breakdowns.map((b) => b.when));
   const howRate = mean(breakdowns.map((b) => b.how));
+  const fullSpecShare = mean(
+    breakdowns.map((b) =>
+      b.who === 1 && b.what === 1 && b.when === 1 && b.how === 1 ? 1 : 0,
+    ),
+  );
 
   const slotPoints = {
     who: 100 * SLOT_WEIGHTS.who * whoRate,
@@ -208,9 +246,7 @@ export function computeActionConcreteness(
     how: 100 * SLOT_WEIGHTS.how * howRate,
   };
 
-  // Points that would exist without the broadness factor, minus actual score.
-  const beforeBroadness = mean(breakdowns.map((b) => 100 * b.slotScore));
-  const broadnessPointsLost = Math.max(0, beforeBroadness - score);
+  const broadnessPointsLost = Math.max(0, score - combinedScore);
 
   const impliedOnlyCount = breakdowns.filter(
     (b) => b.wording === "implied-only",
@@ -226,26 +262,33 @@ export function computeActionConcreteness(
     withTef === 0 ? null : judgedMeasureCount / withTef;
   const impliedOnlyShare =
     judgedMeasureCount === 0 ? null : impliedOnlyCount / judgedMeasureCount;
+  const directWordingShare =
+    judgedMeasureCount === 0 ? null : explicitCount / judgedMeasureCount;
 
-  // Map comparison is provisional when TEF wording labels cover <80% of matched measures.
+  // Direct-wording / combined views are provisional when TEF labels are thin.
   const provisional =
     judgedCoverageShare != null && judgedCoverageShare < 0.8 && withTef >= 3;
 
   const rounded = Math.round(score);
   const headlineEn = `Plan action detail: ${rounded}/100 (average of ${n} action${n === 1 ? "" : "s"} in the plan).`;
   const summaryEn = [
-    `Each action can score up to 100: ${Math.round(SLOT_WEIGHTS.what * 100)} for what will be done, ${Math.round(SLOT_WEIGHTS.how * 100)} for how, ${Math.round(SLOT_WEIGHTS.who * 100)} for who is responsible, ${Math.round(SLOT_WEIGHTS.when * 100)} for when.`,
-    `Actions written only in broad terms keep ${Math.round(IMPLIED_ONLY_BROADNESS_FACTOR * 100)}% of that score (at most ${Math.round((1 - IMPLIED_ONLY_BROADNESS_FACTOR) * 100)} points trimmed).`,
+    `Primary score uses who/what/when/how only: ${Math.round(SLOT_WEIGHTS.what * 100)} for what, ${Math.round(SLOT_WEIGHTS.how * 100)} for how, ${Math.round(SLOT_WEIGHTS.who * 100)} for who, ${Math.round(SLOT_WEIGHTS.when * 100)} for when.`,
     judgedMeasureCount === 0
-      ? "No clear vs broad wording labels yet — this score is based only on who/what/when/how."
-      : `${impliedOnlyCount} of ${judgedMeasureCount} labelled actions are written only in broad terms.`,
-    "This describes how specific the plan text is — not how ambitious or effective it will be.",
+      ? "No clear vs inferred framework labels yet — framework directness is blank."
+      : `${explicitCount} of ${judgedMeasureCount} labelled actions name their matched theme directly (${Math.round((directWordingShare ?? 0) * 100)}% direct).`,
+    broadnessPointsLost > 0.05
+      ? `Experimental combined score (slots × ${Math.round(IMPLIED_ONLY_BROADNESS_FACTOR * 100)}% when only inferred matches) averages ${Math.round(combinedScore)}/100 — ${broadnessPointsLost.toFixed(1)} pts below primary.`
+      : "Experimental combined score matches the primary here (no implied-only trim applied).",
+    "This describes plan wording detail and theme-naming directness — not ambition or expected impact.",
   ].join(" ");
 
   return {
     methodVersion: ACTION_CONCRETENESS_METHOD_VERSION,
     measureCount: n,
     score,
+    combinedScore,
+    directWordingShare,
+    fullSpecShare,
     band: bandFor(score, n),
     evidenceVolume: evidenceFor(n),
     whoRate,
@@ -297,11 +340,16 @@ export function formatConcretenessScore(score: number | null): string {
   return String(Math.round(score));
 }
 
+export function formatSharePercent(share: number | null): string {
+  if (share == null) return "—";
+  return `${Math.round(share * 100)}%`;
+}
+
 /** Methodology copy for the Website visuals v2 panel. */
 export const ACTION_CONCRETENESS_METHODOLOGY = {
   title: "How we estimate plan action detail",
   shortEn:
-    "This score summarises how much practical detail shows up in the climate-plan actions we analysed. What will be done counts for 35%, how for 25%, and who is responsible and when for 20% each. Actions that only match a climate framework in broad terms keep 85% of that score. Repeated actions are already merged, so municipalities are compared on the average across unique actions. The number describes plan wording — not ambition or impact.",
+    "The primary score summarises how much practical detail shows up in analysed climate-plan actions (who / what / when / how). Framework directness — whether the action’s own text names the matched climate theme — is reported beside it, not folded into the primary number. An experimental combined score still applies an 85% trim when every judged theme match is only inferred, so we can see the impact of that old choice. The numbers describe plan wording — not ambition or impact.",
   weights: SLOT_WEIGHTS,
   impliedFactor: IMPLIED_ONLY_BROADNESS_FACTOR,
   version: ACTION_CONCRETENESS_METHOD_VERSION,
@@ -319,28 +367,29 @@ export const ACTION_CONCRETENESS_METHODOLOGY = {
       body: "If what is empty, the action scores 0 even if who, when, or how are filled. That stops pure targets or actor-and-deadline lines from looking specific without a real action.",
     },
     {
-      title: "4. Weighted detail score",
-      body: "Score = 0.35·what + 0.25·how + 0.20·who + 0.20·when. What weighs most because it is the intervention; how is next because it names the instrument; who and when are equal signals that someone can check the plan.",
+      title: "4. Primary score (specification)",
+      body: "Primary = 100 × (0.35·what + 0.25·how + 0.20·who + 0.20·when). Municipal score is the unweighted mean across unique actions. Framework match style does not change this number.",
     },
     {
-      title: "5. Broad-wording trim",
-      body: "If every judged framework match on the action is only broad/implied, multiply by 0.85. Any clearly stated match, no framework match, or missing labels leaves the factor at 1.0. Experimental gap matches are ignored here. Broad wording can trim at most 15 points and cannot invent points when who/what/when/how are empty.",
+      title: "5. Framework directness (sibling indicator)",
+      body: "Among actions with a judged catalogue match, report the share where the measure text directly names the matched transition (explicit=true). Implied means a reasonable inference or a broad category with many equally plausible siblings — not the same thing as missing who/what/when/how. Runtime-shadow gap matches are ignored here.",
     },
     {
-      title: "6. Municipal average",
-      body: "Unweighted mean of action scores (0–100). A longer plan does not inflate the score. Always show how many actions were scored and whether that evidence is few, some, or many.",
+      title: "6. Experimental combined score",
+      body: "For comparison only: if every judged match on an action is implied, multiply that action’s slot score by 0.85. Shown next to the primary so we can see how much the old trim would move rankings. Not the published primary.",
     },
   ],
   caveats: [
     "Extraction quality (OCR, lost table columns for responsibility or timing) can make specific actions look vague.",
     "Who/what/when/how are model paraphrases, not verbatim quotes — a filled who may be an assumed “municipality”.",
     "Companion action plans or budgets may hold responsibility and timing not present in the scored document.",
-    "A broad framework match can mean catalogue mismatch or nearby sibling themes, not only vague writing.",
+    "An implied framework match can mean catalogue sibling sprawl or ontology gaps, not only vague writing — that is why it is not in the primary score.",
     "Clear wording ≠ effective action; vague wording ≠ unambitious plan. Differences of a few points are not meaningful rankings.",
-    "Older extracts without clear-vs-broad labels are scored on slots only; maps mark the score as an early estimate when label coverage is thin.",
+    "Older extracts without clear-vs-inferred labels leave framework directness and the combined score under-covered; those views may be marked as early estimates.",
   ],
   rejectedAlternatives: [
     "Mean of the model’s intervention_score (1–7) — opaque and hard to reproduce.",
+    "Keeping the implied-TEF trim inside the primary score — conflates implementation detail with catalogue match style.",
     "A hard framework penalty on the municipal score — double-counts “what” and depends on how dense the sector catalogue is.",
     "Share of broad hits at the hit level — one broad action with many sibling matches would dominate; we stay action-level.",
     "Weighting actions by emissions — mixes relevance with wording detail; keep as a separate view later.",
