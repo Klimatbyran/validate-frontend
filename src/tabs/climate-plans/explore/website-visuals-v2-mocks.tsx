@@ -607,8 +607,8 @@ export function MunicipalityDetailV2({
             {bundle.uniqueMeasureCount}
           </div>
           <p className="text-sm text-gray-02 max-w-xl">
-            Distinct climate-related actions after similar ones are merged —
-            not every repeated line in the document
+            Distinct climate-related actions after similar ones are merged — not
+            every repeated line in the document
             {bundle.record.climateCommitmentGroupCount != null
               ? ` (climate commitment groups in plan: ${bundle.record.climateCommitmentGroupCount})`
               : ""}
