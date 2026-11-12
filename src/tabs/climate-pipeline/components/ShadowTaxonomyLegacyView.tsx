@@ -27,8 +27,11 @@ const QUALITY_STYLE: Record<ShadowElementQuality, string> = {
 // happens to the live element afterward (promote/reject/merge/delete).
 export function ShadowTaxonomyLegacyView({
   refreshToken,
+  municipalityFilter,
 }: {
   refreshToken?: number;
+  /** Empty string means "all municipalities". */
+  municipalityFilter?: string;
 } = {}) {
   const { snapshotsByRun, isLoading, error } =
     useShadowElementSnapshots(refreshToken);
@@ -56,9 +59,17 @@ export function ShadowTaxonomyLegacyView({
 
   return (
     <div className="space-y-6">
-      {[...snapshotsByRun.entries()].map(([runId, rows]) => {
-        const label = rows[0]?.snapshotLabel;
-        const takenAt = rows[0]?.snapshotTakenAt;
+      {[...snapshotsByRun.entries()].map(([runId, allRows]) => {
+        // Label/timestamp come from the full run, not the filtered subset
+        // -- a municipality filter narrowing to zero rows in a given run
+        // shouldn't make its own metadata disappear along with them.
+        const label = allRows[0]?.snapshotLabel;
+        const takenAt = allRows[0]?.snapshotTakenAt;
+        const rows = municipalityFilter
+          ? allRows.filter(
+              (row) => row.originMunicipalityName === municipalityFilter,
+            )
+          : allRows;
         return (
           <div key={runId} className="space-y-3">
             <div className="text-xs text-gray-02 border-b border-gray-04 pb-2">
@@ -67,6 +78,7 @@ export function ShadowTaxonomyLegacyView({
                 <span className={label ? " ml-2" : ""}>
                   Frozen {new Date(takenAt).toLocaleString()} — {rows.length}{" "}
                   element{rows.length === 1 ? "" : "s"}
+                  {municipalityFilter ? ` (of ${allRows.length})` : ""}
                 </span>
               ) : null}
             </div>

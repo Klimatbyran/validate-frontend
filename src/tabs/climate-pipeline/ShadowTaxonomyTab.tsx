@@ -488,6 +488,7 @@ function visibleShadowElements(
   overrides: Map<string, ShadowElement>,
   statusFilter: ShadowElementStatus | "",
   qualityFilter: ShadowElementQuality | "",
+  municipalityFilter: string,
 ): ShadowElement[] {
   return (
     elements
@@ -503,6 +504,11 @@ function visibleShadowElements(
       )
       .filter(
         (element) => !qualityFilter || element.qualityGrade === qualityFilter,
+      )
+      .filter(
+        (element) =>
+          !municipalityFilter ||
+          element.origin?.municipalityName === municipalityFilter,
       )
       .sort(byMostAttached)
   );
@@ -1005,6 +1011,11 @@ export function ShadowTaxonomyTab() {
   const [qualityFilter, setQualityFilter] = useState<ShadowElementQuality | "">(
     "",
   );
+  // Lets a reviewer narrow to one municipality after rerunning it, to check
+  // at a glance whether the same elements still originate from it -- shared
+  // across Current, the legacy snapshot, and the diff view so all three
+  // stay in sync with the same selection.
+  const [municipalityFilter, setMunicipalityFilter] = useState("");
   const [overrides, setOverrides] = useState<Map<string, ShadowElement>>(
     new Map(),
   );
@@ -1032,7 +1043,19 @@ export function ShadowTaxonomyTab() {
     overrides,
     statusFilter,
     qualityFilter,
+    municipalityFilter,
   );
+
+  // Built from every live element regardless of the other filters, so
+  // picking a municipality never depends on first clearing status/quality
+  // to "see" it in the option list.
+  const municipalityOptions = [
+    ...new Set(
+      elements
+        .map((element) => element.origin?.municipalityName)
+        .filter((name): name is string => Boolean(name)),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
 
   const handleChanged = (next: ShadowElement) => {
     setOverrides((prev) =>
@@ -1213,8 +1236,8 @@ export function ShadowTaxonomyTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex-1 min-w-[280px]">
           <h2 className="text-xl font-semibold text-gray-01">
             {t("shadowTaxonomy.title")}
           </h2>
@@ -1222,7 +1245,7 @@ export function ShadowTaxonomyTab() {
             {t("shadowTaxonomy.subtitle")}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="outline"
@@ -1389,6 +1412,7 @@ export function ShadowTaxonomyTab() {
         <ShadowTaxonomyDiffView
           elements={elements}
           refreshToken={snapshotRefreshToken}
+          municipalityFilter={municipalityFilter}
         />
       ) : (
         (() => {
@@ -1444,6 +1468,21 @@ export function ShadowTaxonomyTab() {
                     </option>
                   </select>
                 </label>
+                <label className="text-xs text-gray-02 flex items-center gap-2">
+                  Municipality
+                  <select
+                    className="h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
+                    value={municipalityFilter}
+                    onChange={(e) => setMunicipalityFilter(e.target.value)}
+                  >
+                    <option value="">{t("shadowTaxonomy.statusAll")}</option>
+                    {municipalityOptions.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <span className="text-xs text-gray-02">
                   {t("shadowTaxonomy.count", { count: rows.length })}
                 </span>
@@ -1482,7 +1521,10 @@ export function ShadowTaxonomyTab() {
           if (viewMode === "off") return currentPane;
 
           const legacyPane = (
-            <ShadowTaxonomyLegacyView refreshToken={snapshotRefreshToken} />
+            <ShadowTaxonomyLegacyView
+              refreshToken={snapshotRefreshToken}
+              municipalityFilter={municipalityFilter}
+            />
           );
 
           // Current elements and the frozen snapshot can each run to

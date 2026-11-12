@@ -54,9 +54,12 @@ function ChangeList({ changes }: { changes: ShadowElementChange[] }) {
 export function ShadowTaxonomyDiffView({
   elements,
   refreshToken,
+  municipalityFilter,
 }: {
   elements: ShadowElement[];
   refreshToken?: number;
+  /** Empty string means "all municipalities". */
+  municipalityFilter?: string;
 }) {
   const { snapshots, isLoading, error } =
     useShadowElementSnapshots(refreshToken);
@@ -80,7 +83,22 @@ export function ShadowTaxonomyDiffView({
     );
   }
 
-  const { entries, removed } = computeShadowElementDiff(elements, snapshots);
+  const fullDiff = computeShadowElementDiff(elements, snapshots);
+  // Filtered after computing the diff, not before -- each entry's
+  // new/same/changed status only ever depends on its own element vs. its
+  // own snapshot row, never on what else is in the list, so narrowing to
+  // one municipality afterward doesn't change anyone's classification.
+  const entries = municipalityFilter
+    ? fullDiff.entries.filter(
+        (e) =>
+          (e.element.origin?.municipalityName ?? null) === municipalityFilter,
+      )
+    : fullDiff.entries;
+  const removed = municipalityFilter
+    ? fullDiff.removed.filter(
+        (r) => r.originMunicipalityName === municipalityFilter,
+      )
+    : fullDiff.removed;
   const newCount = entries.filter((e) => e.status === "new").length;
   const changedCount = entries.filter((e) => e.status === "changed").length;
   const sameCount = entries.filter((e) => e.status === "same").length;
