@@ -9,6 +9,7 @@ import {
 } from "./website-visuals-mocks";
 import {
   ACTION_CONCRETENESS_METHODOLOGY,
+  WEBSITE_V2_KPI_READING_GUIDE,
   concretenessBandLabel,
   evidenceVolumeLabel,
   formatConcretenessScore,
@@ -176,10 +177,42 @@ export function MethodologyDeepDive({
           <p className="text-sm text-gray-02 leading-relaxed">
             {ACTION_CONCRETENESS_METHODOLOGY.shortEn}
           </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <div className="text-sm text-gray-01 font-medium mb-2">
+                What it measures
+              </div>
+              <ul className="list-disc pl-5 space-y-1.5 text-sm text-gray-02">
+                {ACTION_CONCRETENESS_METHODOLOGY.whatItMeasures.map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <div className="text-sm text-gray-01 font-medium mb-2">
+                What it does not measure
+              </div>
+              <ul className="list-disc pl-5 space-y-1.5 text-sm text-gray-02">
+                {ACTION_CONCRETENESS_METHODOLOGY.whatItDoesNotMeasure.map(
+                  (c) => (
+                    <li key={c}>{c}</li>
+                  ),
+                )}
+              </ul>
+            </div>
+          </div>
+          <div className="rounded-xl border border-orange-03/25 bg-orange-03/5 px-4 py-3">
+            <div className="text-sm text-gray-01 font-medium">
+              Reading with the other Website visuals KPIs
+            </div>
+            <p className="text-sm text-gray-02 mt-1 leading-relaxed">
+              {ACTION_CONCRETENESS_METHODOLOGY.readingWithOtherKpis}
+            </p>
+          </div>
           {result && result.measureCount > 0 ? (
             <div className="rounded-xl border border-blue-03/25 bg-blue-03/5 px-4 py-3 space-y-3">
               <div className="text-xs uppercase tracking-wide text-gray-02">
-                This municipality — score breakdown
+                This municipality — primary score breakdown
               </div>
               <SlotBars result={result} />
             </div>
@@ -466,6 +499,39 @@ function TefChip({
   );
 }
 
+function KpiReadingGuide() {
+  return (
+    <section className="rounded-[24px] border border-gray-03/40 bg-gray-05/30 px-5 py-4 space-y-3">
+      <div>
+        <div className="text-[11px] uppercase tracking-wide text-gray-02">
+          Reading guide
+        </div>
+        <h3 className="text-base text-gray-01 font-medium mt-0.5">
+          {WEBSITE_V2_KPI_READING_GUIDE.title}
+        </h3>
+        <p className="text-sm text-gray-02 mt-1 leading-relaxed">
+          {WEBSITE_V2_KPI_READING_GUIDE.shortEn}
+        </p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        {WEBSITE_V2_KPI_READING_GUIDE.points.map((point) => (
+          <div
+            key={point.label}
+            className="rounded-2xl border border-gray-03/40 bg-gray-04/40 px-3.5 py-3"
+          >
+            <div className="text-sm text-gray-01 font-medium">
+              {point.label}
+            </div>
+            <p className="text-xs text-gray-02 mt-1 leading-snug">
+              {point.body}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function ScoreSeparationCompare({
   result,
 }: {
@@ -603,11 +669,12 @@ export function MunicipalityDetailV2({
             label: "Actions in the plan",
             value: String(bundle.uniqueMeasureCount),
             className: "text-orange-02",
-            caption: "Climate actions in the plan (duplicates removed)",
+            caption: "Volume only — not a quality ranking",
           },
         ]}
       />
 
+      <KpiReadingGuide />
       <ScoreSeparationCompare result={c} />
 
       <section className="grid gap-5 lg:grid-cols-2">
@@ -713,8 +780,10 @@ export function MunicipalityDetailV2({
             {bundle.record.climateCommitmentGroupCount != null
               ? ` (climate commitment groups in plan: ${bundle.record.climateCommitmentGroupCount})`
               : ""}
-            . More actions does not automatically mean a better plan. Clearly
-            named themes matched below: {bundle.exactTefCount}.
+            . This is volume, not effectiveness: a few specific actions aimed at
+            the biggest emission source can matter more than a long list of
+            vague ones. Read it with plan action detail and biggest-source fit.
+            Clearly named themes matched below: {bundle.exactTefCount}.
           </p>
         </div>
       </section>
@@ -786,7 +855,7 @@ export function MunicipalityOverviewV2({
       ? "Average plan-detail score (0–100)"
       : activeKpi === "emissionsMatch"
         ? "% where the plan clearly tackles the biggest source"
-        : "Average actions per municipality with a plan extract";
+        : "Average action count (volume only — not quality)";
 
   const averageValue = (() => {
     if (assessed.length === 0) return "—";
@@ -837,6 +906,8 @@ export function MunicipalityOverviewV2({
         onChange={(id) => onKpiChange(id as OverviewKpi)}
       />
 
+      <KpiReadingGuide />
+
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,340px)] items-start">
         <SwedenChoropleth
           geo="municipality"
@@ -857,7 +928,7 @@ export function MunicipalityOverviewV2({
               ? "Higher = more who/what/when/how detail (primary; framework trim not applied)"
               : activeKpi === "emissionsMatch"
                 ? "Yes / partly / not really vs biggest emission source"
-                : "Higher = more climate actions found in the plan (not automatically better)"
+                : "Count only — higher volume is not a better plan by itself"
           }
           top={ranked.slice(0, 3).map((b) => ({
             name: b.record.name,

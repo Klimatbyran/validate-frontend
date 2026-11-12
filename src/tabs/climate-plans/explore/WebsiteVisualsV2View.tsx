@@ -104,8 +104,9 @@ export function WebsiteVisualsV2View({
         <p className="text-sm text-gray-02 mt-1">
           Primary plan-detail score is who/what/when/how only. Framework
           directness sits beside it, and the old implied-only combined score is
-          kept as an experimental comparison so we can see ranking impact. Leave
-          the original Website visuals tab open while we compare.
+          kept as an experimental comparison. Action count is volume, not
+          quality — read it with specification and biggest-source fit. Leave the
+          original Website visuals tab open while we compare.
         </p>
       </Callout>
 

@@ -349,42 +349,57 @@ export function formatSharePercent(share: number | null): string {
 export const ACTION_CONCRETENESS_METHODOLOGY = {
   title: "How we estimate plan action detail",
   shortEn:
-    "The primary score summarises how much practical detail shows up in analysed climate-plan actions (who / what / when / how). Framework directness — whether the action’s own text names the matched climate theme — is reported beside it, not folded into the primary number. An experimental combined score still applies an 85% trim when every judged theme match is only inferred, so we can see the impact of that old choice. The numbers describe plan wording — not ambition or impact.",
+    "We score how completely each analysed climate-plan action is described — who is responsible, what will be done, when, and how. That primary number is an average of unique actions. Separately, we report whether those actions’ own wording directly names the climate theme we matched them to. An experimental third number shows what happens if we still apply the old 15% trim for implied-only theme matches. None of these numbers measure ambition, climate impact, or likelihood of delivery.",
+  whatItMeasures: [
+    "How often the extracted action text includes identifiable who / what / when / how detail.",
+    "Whether matched climate-theme links are named in the action’s own words (framework directness), reported beside the primary score.",
+    "How many unique actions the extract contains, and whether evidence is based on few, some, or many actions.",
+  ],
+  whatItDoesNotMeasure: [
+    "Whether the plan is ambitious enough.",
+    "Whether actions will cut emissions enough, or at all.",
+    "Whether a generic “municipality” actor is as good as a named department — binary fill cannot tell that yet.",
+    "Whether more actions are better. A short list of specific actions aimed at the largest emission sources can outperform a long list of vague ones.",
+    "PDF extraction quality itself — though extraction failures can make a concrete plan look incomplete.",
+  ],
+  readingWithOtherKpis:
+    "Read the three Website visuals v2 views together. Plan action detail answers “how specified is the wording?” Biggest-source fit answers “does the plan engage the largest emission sector?” Actions in the plan is a volume count only — useful context, not a quality ranking. Prefer a municipality with fewer, well-specified actions that address the biggest source over one with many underspecified lines that miss it.",
   weights: SLOT_WEIGHTS,
   impliedFactor: IMPLIED_ONLY_BROADNESS_FACTOR,
   version: ACTION_CONCRETENESS_METHOD_VERSION,
   steps: [
     {
-      title: "1. Unique actions",
-      body: "Start from actions extracted from the plan. Similar climate commitments are already collapsed before scoring, so the count is unique interventions — not every repeated line in the document.",
+      title: "1. Start from unique actions",
+      body: "We use climate-related actions already extracted from the municipal plan. Similar commitments are collapsed upstream, so each scored row is meant to be a distinct intervention — not every repeated sentence in the PDF.",
     },
     {
-      title: "2. Who / what / when / how (yes or no for now)",
-      body: "Each action’s who, what, when, and how fields count as filled when they are non-empty and not the placeholder “none”. We keep this simple until finer quality (named unit vs “the municipality”, a year vs “during the plan period”) is reliable enough to audit.",
+      title: "2. Mark who / what / when / how as present or absent",
+      body: "For now each field is binary: filled if non-empty and not the placeholder “none”. We deliberately avoid graded judgements (named unit vs “the municipality”, a calendar year vs “during the plan period”) until those distinctions are reliable enough to audit. Important honesty limit: a filled who can be a model paraphrase such as “municipality” even when the plan never named an owner.",
     },
     {
-      title: "3. What comes first",
-      body: "If what is empty, the action scores 0 even if who, when, or how are filled. That stops pure targets or actor-and-deadline lines from looking specific without a real action.",
+      title: "3. Require an identifiable what",
+      body: "If what is empty, the action scores 0 even when who, when, or how are filled. That stops pure targets or “someone by 2030” lines from looking specified without an intervention.",
     },
     {
-      title: "4. Primary score (specification)",
-      body: "Primary = 100 × (0.35·what + 0.25·how + 0.20·who + 0.20·when). Municipal score is the unweighted mean across unique actions. Framework match style does not change this number.",
+      title: "4. Build the primary specification score",
+      body: "Per action: 100 × (0.35·what + 0.25·how + 0.20·who + 0.20·when). What weighs most because it is the intervention; how names the instrument; who and when are equal checkability signals. The municipal figure is the unweighted mean across unique actions, so a longer plan does not automatically score higher. We also show the share of actions with all four slots filled and an evidence label (few / some / many actions).",
     },
     {
-      title: "5. Framework directness (sibling indicator)",
-      body: "Among actions with a judged catalogue match, report the share where the measure text directly names the matched transition (explicit=true). Implied means a reasonable inference or a broad category with many equally plausible siblings — not the same thing as missing who/what/when/how. Runtime-shadow gap matches are ignored here.",
+      title: "5. Report framework directness beside the primary",
+      body: "When the matcher links an action to a climate-theme catalogue entry, the pipeline judges whether the action’s own text directly names that theme’s destination or mechanism (explicit) or only supports a reasonable inference / sits among many equally plausible siblings (implied). Among judged actions we report the share that are explicit. Implied is related to broader theme-naming, but it is not the same as missing who/what/when/how — so it is not folded into the primary score. Experimental gap (“runtime-shadow”) matches are ignored here.",
     },
     {
-      title: "6. Experimental combined score",
-      body: "For comparison only: if every judged match on an action is implied, multiply that action’s slot score by 0.85. Shown next to the primary so we can see how much the old trim would move rankings. Not the published primary.",
+      title: "6. Keep the old combined trim only as a comparison",
+      body: "Previously we multiplied implied-only actions by 0.85 inside the main score. That mixed two different questions. We still compute that combined number for side-by-side impact checks, but it is labelled experimental and is not the published primary.",
     },
   ],
   caveats: [
-    "Extraction quality (OCR, lost table columns for responsibility or timing) can make specific actions look vague.",
-    "Who/what/when/how are model paraphrases, not verbatim quotes — a filled who may be an assumed “municipality”.",
-    "Companion action plans or budgets may hold responsibility and timing not present in the scored document.",
-    "An implied framework match can mean catalogue sibling sprawl or ontology gaps, not only vague writing — that is why it is not in the primary score.",
+    "Extraction quality (OCR, lost table columns for responsibility or timing) can make specific actions look vague — the score can partly reflect document recovery, not only planning style.",
+    "Who/what/when/how are model paraphrases, not verbatim quotes. A filled who may be an assumed “municipality”; until we can flag inferred actors, treat filled slots as “present in the extract,” not proven plan wording.",
+    "Companion action plans or budgets may hold responsibility and timing that never appear in the scored document.",
+    "An implied theme match can mean catalogue sibling sprawl or ontology gaps, not only vague writing — another reason it stays outside the primary score.",
     "Clear wording ≠ effective action; vague wording ≠ unambitious plan. Differences of a few points are not meaningful rankings.",
+    "Action count is volume, not quality. Do not rank municipalities by how many actions they list.",
     "Older extracts without clear-vs-inferred labels leave framework directness and the combined score under-covered; those views may be marked as early estimates.",
   ],
   rejectedAlternatives: [
@@ -392,6 +407,28 @@ export const ACTION_CONCRETENESS_METHODOLOGY = {
     "Keeping the implied-TEF trim inside the primary score — conflates implementation detail with catalogue match style.",
     "A hard framework penalty on the municipal score — double-counts “what” and depends on how dense the sector catalogue is.",
     "Share of broad hits at the hit level — one broad action with many sibling matches would dominate; we stay action-level.",
-    "Weighting actions by emissions — mixes relevance with wording detail; keep as a separate view later.",
+    "Weighting the specification score by emissions — mixes relevance with wording detail; biggest-source fit stays a separate view.",
+    "Treating action count as a quality KPI — rewards long lists over targeted, specified actions.",
+  ],
+} as const;
+
+/** How to read the three Website visuals v2 public views together. */
+export const WEBSITE_V2_KPI_READING_GUIDE = {
+  title: "How to read these three views together",
+  shortEn:
+    "Specification, biggest-source fit, and action count answer different questions. None of them alone says a plan is “good.” A few concrete actions aimed at the largest emission source can be more useful than many vague actions that miss it.",
+  points: [
+    {
+      label: "Plan action detail",
+      body: "Average completeness of who / what / when / how in the extract. Higher means more specified wording on average — not more climate impact.",
+    },
+    {
+      label: "Biggest-source fit",
+      body: "Whether the plan has actions in the sector that dominates local emissions, and whether that sector is also where most of the plan’s actions sit. Yes / partly / not really — not a grade for the whole plan.",
+    },
+    {
+      label: "Actions in the plan",
+      body: "Count of unique climate-related actions after similar ones are merged. Volume only. More is not automatically better; use it with the other two views.",
+    },
   ],
 } as const;

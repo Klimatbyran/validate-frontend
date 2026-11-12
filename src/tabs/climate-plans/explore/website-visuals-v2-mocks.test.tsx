@@ -19,7 +19,10 @@ describe("Website visuals v2 detail mock", () => {
 
     expect(screen.getByText("Umeå")).toBeInTheDocument();
     expect(
-      screen.getByText(/Climate actions in the plan \(duplicates removed\)/i),
+      screen.getByText(/Volume only — not a quality ranking/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/How to read these three views together/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Specification \(primary\)/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Framework directness/i).length).toBeGreaterThan(
