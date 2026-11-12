@@ -1030,7 +1030,7 @@ export function ShadowTaxonomyTab() {
     // hitting OK would -- check for null specifically before taking the
     // snapshot, or canceling the dialog would still freeze with no label.
     const label = window.prompt(
-      "Optional label for this snapshot (e.g. \"before 2026-11 shadow TEF handoff rerun\")",
+      'Optional label for this snapshot (e.g. "before 2026-11 shadow TEF handoff rerun")',
     );
     if (label === null) return;
 

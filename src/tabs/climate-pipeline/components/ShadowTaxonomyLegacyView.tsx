@@ -64,8 +64,8 @@ export function ShadowTaxonomyLegacyView({
               {label ? <span className="font-medium">{label}</span> : null}
               {takenAt ? (
                 <span className={label ? " ml-2" : ""}>
-                  Frozen {new Date(takenAt).toLocaleString()} —{" "}
-                  {rows.length} element{rows.length === 1 ? "" : "s"}
+                  Frozen {new Date(takenAt).toLocaleString()} — {rows.length}{" "}
+                  element{rows.length === 1 ? "" : "s"}
                 </span>
               ) : null}
             </div>

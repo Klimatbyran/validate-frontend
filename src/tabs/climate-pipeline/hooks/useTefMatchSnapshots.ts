@@ -36,12 +36,19 @@ export interface TefMatchSnapshot {
 
 export function useTefMatchSnapshots(planId: string | null) {
   const [snapshots, setSnapshots] = useState<TefMatchSnapshot[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // Starts true whenever there's a planId to fetch for -- otherwise the
+  // first paint (before the effect below runs) shows isLoading=false with
+  // an empty list, which TefMatchLegacyView reads as "no snapshot exists"
+  // and flashes before the real result arrives (see
+  // useShadowElementSnapshots, which already starts true for the same
+  // reason).
+  const [isLoading, setIsLoading] = useState(!!planId);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSnapshots = useCallback(async () => {
     if (!planId) {
       setSnapshots([]);
+      setIsLoading(false);
       return;
     }
     setIsLoading(true);
@@ -54,7 +61,9 @@ export function useTefMatchSnapshots(planId: string | null) {
       setError(null);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load TEF match snapshots",
+        err instanceof Error
+          ? err.message
+          : "Failed to load TEF match snapshots",
       );
     } finally {
       setIsLoading(false);
@@ -75,5 +84,11 @@ export function useTefMatchSnapshots(planId: string | null) {
     byRun.set(s.snapshotRunId, list);
   }
 
-  return { snapshots, snapshotsByRun: byRun, isLoading, error, refresh: fetchSnapshots };
+  return {
+    snapshots,
+    snapshotsByRun: byRun,
+    isLoading,
+    error,
+    refresh: fetchSnapshots,
+  };
 }

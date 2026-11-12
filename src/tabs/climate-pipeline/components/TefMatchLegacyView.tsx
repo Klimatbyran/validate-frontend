@@ -48,7 +48,10 @@ export function TefMatchLegacyView({ planId }: { planId: string }) {
             </div>
             {rows.map((row) => {
               const matches = Array.isArray(row.transitionElementMatches)
-                ? (row.transitionElementMatches as { stableId: string; shortLabel: string }[])
+                ? (row.transitionElementMatches as {
+                    stableId: string;
+                    shortLabel: string;
+                  }[])
                 : [];
               const outcome = matchOutcomeLabel(
                 row.transitionElementGroupKind,

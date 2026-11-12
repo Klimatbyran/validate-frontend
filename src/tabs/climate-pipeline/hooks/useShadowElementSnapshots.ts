@@ -2,7 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
 import { authenticatedFetch } from "@/lib/api-helpers";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
-import type { ShadowElementStatus, ShadowElementQuality } from "./useShadowElements";
+import type {
+  ShadowElementStatus,
+  ShadowElementQuality,
+} from "./useShadowElements";
 
 export interface TefFreezeStatus {
   exists: boolean;
@@ -75,7 +78,13 @@ export function useShadowElementSnapshots(refreshToken?: number) {
     byRun.set(s.snapshotRunId, list);
   }
 
-  return { snapshots, snapshotsByRun: byRun, isLoading, error, refresh: fetchSnapshots };
+  return {
+    snapshots,
+    snapshotsByRun: byRun,
+    isLoading,
+    error,
+    refresh: fetchSnapshots,
+  };
 }
 
 export function useTefFreezeStatus() {
@@ -108,9 +117,11 @@ export function useTefFreezeStatus() {
   return { status, isLoading, error, refresh: fetchStatus };
 }
 
-export async function createTefFreeze(
-  label?: string,
-): Promise<{ snapshotRunId: string; activityShiftCount: number; shadowElementCount: number }> {
+export async function createTefFreeze(label?: string): Promise<{
+  snapshotRunId: string;
+  activityShiftCount: number;
+  shadowElementCount: number;
+}> {
   const res = await authenticatedFetch(
     `${getClimatePlansPipelineApiUrl()}/snapshots/tef-freeze`,
     {
