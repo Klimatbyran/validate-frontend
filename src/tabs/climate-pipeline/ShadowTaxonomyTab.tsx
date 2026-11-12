@@ -34,6 +34,7 @@ import { ShadowTaxonomyDiffView } from "./components/ShadowTaxonomyDiffView";
 import { MunicipalityPill } from "./components/MunicipalityPill";
 import {
   useTefFreezeStatus,
+  useShadowElementSnapshots,
   createTefFreeze,
   deleteTefFreeze,
 } from "./hooks/useShadowElementSnapshots";
@@ -1005,6 +1006,11 @@ export function ShadowTaxonomyTab() {
   // Bumped after a take/delete so an already-open legacy panel (which
   // fetches once on mount) refetches instead of showing stale data.
   const [snapshotRefreshToken, setSnapshotRefreshToken] = useState(0);
+  // Fetched here too (on top of the legacy/diff views' own fetches) purely
+  // to build the municipality option list below -- otherwise a reviewer
+  // with an empty or fully-filtered-out current list has no snapshot-only
+  // municipalities to pick from at all.
+  const { snapshots } = useShadowElementSnapshots(snapshotRefreshToken);
   const [statusFilter, setStatusFilter] = useState<ShadowElementStatus | "">(
     "",
   );
@@ -1046,15 +1052,19 @@ export function ShadowTaxonomyTab() {
     municipalityFilter,
   );
 
-  // Built from every live element regardless of the other filters, so
-  // picking a municipality never depends on first clearing status/quality
-  // to "see" it in the option list.
+  // Built from every live element AND every snapshot row, regardless of
+  // the other filters -- a live-only list would go empty (so nothing left
+  // to pick from) whenever Current is empty or filtered down to nothing,
+  // even though the legacy snapshot still has municipalities in it.
   const municipalityOptions = [
-    ...new Set(
-      elements
+    ...new Set([
+      ...elements
         .map((element) => element.origin?.municipalityName)
         .filter((name): name is string => Boolean(name)),
-    ),
+      ...snapshots
+        .map((s) => s.originMunicipalityName)
+        .filter((name): name is string => Boolean(name)),
+    ]),
   ].sort((a, b) => a.localeCompare(b));
 
   const handleChanged = (next: ShadowElement) => {
