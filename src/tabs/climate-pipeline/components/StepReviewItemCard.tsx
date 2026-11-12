@@ -380,6 +380,12 @@ function SingleCommitmentSlots({
           {commitment.fromRecoveredImage && (
             <SoftChip tone="info">From image</SoftChip>
           )}
+          {commitment.historic && (
+            <SoftChip tone="info">
+              Historic
+              {commitment.targetYear ? ` (${commitment.targetYear})` : ""}
+            </SoftChip>
+          )}
           {pdfMissingPhrases?.has(commitment.text) && (
             <SoftChip tone="warn">Not in PDF text</SoftChip>
           )}
