@@ -187,12 +187,12 @@ export function focusMatchMapValue(verdict: FocusMatchVerdict): number | null {
 export function focusMatchChipLabel(verdict: FocusMatchVerdict): string {
   switch (verdict) {
     case "match":
-      return "Match";
+      return "Yes";
     case "partial":
-      return "Partial";
+      return "Partly";
     case "miss":
-      return "No match";
+      return "Not really";
     case "not-assessable":
-      return "No data";
+      return "Not enough data";
   }
 }

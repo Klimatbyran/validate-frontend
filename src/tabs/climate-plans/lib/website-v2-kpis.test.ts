@@ -3,6 +3,7 @@ import {
   exactTefHits,
   uniqueMeasureCount,
   focusMatchMapValue,
+  focusMatchChipLabel,
 } from "./website-v2-kpis";
 import type { ExploreMunicipalityRecord, TefHit } from "./explore-types";
 import type { Measure } from "./measures-types";
@@ -108,5 +109,11 @@ describe("website v2 kpis", () => {
     expect(focusMatchMapValue("partial")).toBe(0.5);
     expect(focusMatchMapValue("miss")).toBe(0);
     expect(focusMatchMapValue("not-assessable")).toBeNull();
+  });
+
+  it("uses plain yes/partly labels for overview chips", () => {
+    expect(focusMatchChipLabel("match")).toBe("Yes");
+    expect(focusMatchChipLabel("partial")).toBe("Partly");
+    expect(focusMatchChipLabel("miss")).toBe("Not really");
   });
 });

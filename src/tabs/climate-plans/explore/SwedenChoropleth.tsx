@@ -165,10 +165,10 @@ export function SwedenChoropleth({
               ? "no extract yet"
               : focusMatchScale && typeof hoverValue === "number"
                 ? hoverValue >= 0.75
-                  ? "match"
+                  ? "yes"
                   : hoverValue >= 0.25
-                    ? "partial"
-                    : "no match"
+                    ? "partly"
+                    : "not really"
                 : typeof hoverValue === "boolean"
                   ? hoverValue
                     ? "yes"
@@ -182,14 +182,13 @@ export function SwedenChoropleth({
       <div className="flex items-center gap-2 mt-3 text-xs text-gray-02">
         {focusMatchScale ? (
           <>
-            <span className="inline-block w-3 h-3 rounded-sm bg-blue-03" />{" "}
-            match
+            <span className="inline-block w-3 h-3 rounded-sm bg-blue-03" /> yes
             <span className="inline-block w-3 h-3 rounded-sm bg-orange-02" />{" "}
-            partial
-            <span className="inline-block w-3 h-3 rounded-sm bg-pink-03" /> no
-            match
+            partly
+            <span className="inline-block w-3 h-3 rounded-sm bg-pink-03" /> not
+            really
             <span className="inline-block w-3 h-3 rounded-sm bg-gray-03/50" />{" "}
-            no data
+            not enough data
           </>
         ) : booleanScale ? (
           <>

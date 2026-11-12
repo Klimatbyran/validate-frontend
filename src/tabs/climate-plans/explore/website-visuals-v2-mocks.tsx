@@ -10,6 +10,7 @@ import {
 import {
   ACTION_CONCRETENESS_METHODOLOGY,
   concretenessBandLabel,
+  evidenceVolumeLabel,
   formatConcretenessScore,
   type ActionConcretenessResult,
 } from "../lib/action-concreteness-score";
@@ -27,7 +28,6 @@ import {
   gapValueClass,
   plainFocusMatch,
 } from "../lib/website-visuals-rollup";
-import { TEF_SOURCE_LABEL } from "../lib/tef-hit-source";
 
 type OverviewKpi = "concreteness" | "emissionsMatch" | "uniqueMeasures";
 type ExpandMode = "measures" | "exact-tefs";
@@ -63,7 +63,7 @@ function Meter({
         </div>
         {provisional ? (
           <span className="text-[10px] uppercase tracking-wide text-orange-02 border border-orange-03/40 rounded-full px-2 py-0.5">
-            Provisional
+            Early estimate
           </span>
         ) : null}
       </div>
@@ -83,8 +83,8 @@ function Meter({
         />
       </div>
       <div className="flex justify-between text-[10px] uppercase tracking-wide text-gray-02">
-        <span>Less specified</span>
-        <span>More specified</span>
+        <span>Vague wording</span>
+        <span>Clear wording</span>
       </div>
     </div>
   );
@@ -133,8 +133,8 @@ function SlotBars({ result }: { result: ActionConcretenessResult }) {
       {result.broadnessPointsLost != null &&
       result.broadnessPointsLost > 0.05 ? (
         <p className="text-xs text-orange-02 pt-1">
-          −{result.broadnessPointsLost.toFixed(1)} pts from implied-only TEF
-          wording (avg)
+          −{result.broadnessPointsLost.toFixed(1)} pts on average from actions
+          written only in broad terms
         </p>
       ) : null}
     </div>
@@ -156,11 +156,14 @@ export function MethodologyDeepDive({
       >
         <div>
           <div className="text-[11px] uppercase tracking-wide text-blue-03">
-            Methodology · {ACTION_CONCRETENESS_METHODOLOGY.version}
+            Method notes
           </div>
           <h3 className="text-base font-semibold text-gray-01 mt-0.5">
             {ACTION_CONCRETENESS_METHODOLOGY.title}
           </h3>
+          <p className="text-[11px] text-gray-02 mt-0.5">
+            Version {ACTION_CONCRETENESS_METHODOLOGY.version}
+          </p>
         </div>
         <span className="text-xs text-gray-02 shrink-0">
           {open ? "Hide" : "Show"}
@@ -238,18 +241,18 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
       >
         <div>
           <div className="text-[11px] uppercase tracking-wide text-orange-02">
-            Expandable
+            Details
           </div>
           <h3 className="text-lg text-gray-01 font-medium mt-0.5">
-            Browse measures & exact TEF matches
+            See what&apos;s in the plan
           </h3>
           <p className="text-sm text-gray-02 mt-1">
-            {bundle.uniqueMeasureCount} unique measures · {bundle.exactTefCount}{" "}
-            exact TEF hits (official + proposed; implied excluded)
+            {bundle.uniqueMeasureCount} actions in the plan ·{" "}
+            {bundle.exactTefCount} clearly named themes we could match
           </p>
         </div>
         <span className="text-sm text-blue-03 shrink-0">
-          {open ? "Collapse" : "Open catalogue"}
+          {open ? "Hide details" : "Show details"}
         </span>
       </button>
 
@@ -258,8 +261,8 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
           <div className="flex flex-wrap gap-2">
             {(
               [
-                ["measures", "Unique measures"],
-                ["exact-tefs", "Exact TEF matches"],
+                ["measures", "Actions in the plan"],
+                ["exact-tefs", "Matched themes"],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -320,7 +323,7 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
               <div className="space-y-5">
                 {tefGroups.length === 0 ? (
                   <p className="text-sm text-gray-02">
-                    No exact (explicit) TEF matches in this extract yet.
+                    No clearly named themes matched in this plan extract yet.
                   </p>
                 ) : (
                   tefGroups.map((group) => (
@@ -422,16 +425,13 @@ function MeasureTile({
       </div>
       {row.exactTefLabels.length > 0 ? (
         <p className="text-[11px] text-gray-02 truncate">
-          Exact TEF: {row.exactTefLabels.slice(0, 2).join(" · ")}
+          Matched theme: {row.exactTefLabels.slice(0, 2).join(" · ")}
           {row.exactTefLabels.length > 2
             ? ` +${row.exactTefLabels.length - 2}`
             : ""}
         </p>
       ) : row.impliedTefCount > 0 ? (
-        <p className="text-[11px] text-orange-02">
-          {row.impliedTefCount} implied TEF
-          {row.impliedTefCount === 1 ? "" : "s"} only
-        </p>
+        <p className="text-[11px] text-orange-02">Only vague theme matches</p>
       ) : null}
     </article>
   );
@@ -453,8 +453,12 @@ function TefChip({
     >
       <div className="text-sm text-gray-01 leading-snug">{label}</div>
       <div className="text-[10px] uppercase tracking-wide text-gray-02 mt-1">
-        {TEF_SOURCE_LABEL[source as keyof typeof TEF_SOURCE_LABEL] ?? source} ·
-        exact
+        {source === "proposed"
+          ? "New framework item"
+          : source === "official"
+            ? "Standard framework"
+            : source}{" "}
+        · clearly stated
       </div>
     </div>
   );
@@ -471,14 +475,14 @@ export function MunicipalityDetailV2({
   return (
     <SiteMockShell
       eyebrow="Website visuals v2 · municipality detail"
-      title="Three KPIs: concreteness, emissions match, unique measures"
+      title="How specific is the plan, does it fit local emissions, and how many actions does it name?"
     >
       <MockDetailHeader
         name={bundle.record.name}
         subtitle={bundle.record.county ?? bundle.record.regionName ?? undefined}
         stats={[
           {
-            label: "Action concreteness",
+            label: "Plan action detail",
             value: formatConcretenessScore(c.score),
             className:
               c.score == null
@@ -491,16 +495,16 @@ export function MunicipalityDetailV2({
             caption: concretenessBandLabel(c.band),
           },
           {
-            label: "Biggest-source match",
+            label: "Biggest source",
             value: focus.shortLabel,
             className: focusMatchValueClass(focus.verdict),
             caption: focus.question,
           },
           {
-            label: "Unique measures",
+            label: "Actions in the plan",
             value: String(bundle.uniqueMeasureCount),
             className: "text-orange-02",
-            caption: "Pipeline-deduped climate actions",
+            caption: "Climate actions in the plan (duplicates removed)",
           },
         ]}
       />
@@ -509,22 +513,24 @@ export function MunicipalityDetailV2({
         <div className="rounded-[24px] border border-blue-03/30 bg-blue-03/5 px-5 py-5 space-y-4">
           <div>
             <div className="text-[11px] uppercase tracking-wide text-blue-03">
-              KPI 1 · Vagueness / concreteness
+              How clear is the wording?
             </div>
-            <h3 className="text-xl text-gray-01 mt-1">Action concreteness</h3>
+            <h3 className="text-xl text-gray-01 mt-1">
+              How specific are the plan&apos;s actions?
+            </h3>
             <p className="text-sm text-gray-02 mt-1">{c.headlineEn}</p>
           </div>
           <Meter score={c.score} provisional={c.provisional} />
           <p className="text-xs text-gray-02 leading-relaxed">{c.summaryEn}</p>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="px-2.5 py-1 rounded-full bg-gray-03/50 text-gray-01">
-              Evidence: {c.evidenceVolume}
+              {evidenceVolumeLabel(c.evidenceVolume)}
             </span>
             <span className="px-2.5 py-1 rounded-full bg-gray-03/50 text-gray-01">
-              {c.impliedOnlyCount}/{c.judgedMeasureCount || "—"} implied-only
+              {c.impliedOnlyCount}/{c.judgedMeasureCount || "—"} written broadly
             </span>
             <span className="px-2.5 py-1 rounded-full bg-gray-03/50 text-gray-01">
-              Band: {concretenessBandLabel(c.band)}
+              {concretenessBandLabel(c.band)}
             </span>
           </div>
         </div>
@@ -532,7 +538,7 @@ export function MunicipalityDetailV2({
         <div className="rounded-[24px] border border-gray-03/40 bg-gray-05/40 px-5 py-5 space-y-4">
           <div>
             <div className="text-[11px] uppercase tracking-wide text-gray-02">
-              KPI 2 · Emissions match
+              Biggest-source fit
             </div>
             <h3 className="text-xl text-gray-01 mt-1">{focus.question}</h3>
             <p
@@ -545,7 +551,7 @@ export function MunicipalityDetailV2({
             </p>
           </div>
           <div className="text-sm text-gray-02">
-            Gap (emissions with no measures):{" "}
+            Share of emissions with no plan actions:{" "}
             <span
               className={cn(
                 "tabular-nums font-medium",
@@ -584,7 +590,7 @@ export function MunicipalityDetailV2({
                     row.addressed ? "text-blue-03" : "text-pink-03",
                   )}
                 >
-                  {row.addressed ? "Has measures" : "No measures"}
+                  {row.addressed ? "Has actions" : "No actions"}
                 </div>
               </div>
             ))}
@@ -594,19 +600,20 @@ export function MunicipalityDetailV2({
 
       <section className="rounded-[24px] border border-orange-03/30 bg-orange-03/5 px-5 py-5 space-y-3">
         <div className="text-[11px] uppercase tracking-wide text-orange-02">
-          KPI 3 · Unique measures
+          Actions in the plan
         </div>
         <div className="flex flex-wrap items-end gap-4">
           <div className="text-5xl font-medium tabular-nums text-orange-02 leading-none">
             {bundle.uniqueMeasureCount}
           </div>
           <p className="text-sm text-gray-02 max-w-xl">
-            Distinct climate-related measures after pipeline similar-group
-            dedupe — not the raw commitment count
+            Distinct climate-related actions after similar ones are merged —
+            not every repeated line in the document
             {bundle.record.climateCommitmentGroupCount != null
               ? ` (climate commitment groups in plan: ${bundle.record.climateCommitmentGroupCount})`
               : ""}
-            . Exact TEF hits shown below: {bundle.exactTefCount}.
+            . More actions does not automatically mean a better plan. Clearly
+            named themes matched below: {bundle.exactTefCount}.
           </p>
         </div>
       </section>
@@ -633,17 +640,17 @@ export function MunicipalityOverviewV2({
   const chips = [
     {
       id: "concreteness" as const,
-      label: "Action concreteness",
+      label: "Plan action detail",
       proposed: true,
     },
     {
       id: "emissionsMatch" as const,
-      label: "Emissions match",
+      label: "Biggest-source fit",
       proposed: true,
     },
     {
       id: "uniqueMeasures" as const,
-      label: "Unique measures",
+      label: "Actions in the plan",
       proposed: true,
     },
   ];
@@ -677,10 +684,10 @@ export function MunicipalityOverviewV2({
 
   const averageLabel =
     activeKpi === "concreteness"
-      ? "Average action concreteness (0–100)"
+      ? "Average plan-detail score (0–100)"
       : activeKpi === "emissionsMatch"
-        ? "Share of municipalities with a full biggest-source match"
-        : "Average unique measures per municipality with an extract";
+        ? "% where the plan clearly tackles the biggest source"
+        : "Average actions per municipality with a plan extract";
 
   const averageValue = (() => {
     if (assessed.length === 0) return "—";
@@ -723,7 +730,7 @@ export function MunicipalityOverviewV2({
   return (
     <SiteMockShell
       eyebrow="Website visuals v2 · municipality overview"
-      title="Map chips for the three public KPIs — regions & story deferred"
+      title="Compare municipalities on plan detail, biggest-source fit, and actions"
     >
       <MockChipRow
         chips={chips}
@@ -748,10 +755,10 @@ export function MunicipalityOverviewV2({
           }
           direction={
             activeKpi === "concreteness"
-              ? "Higher = more specified plan wording"
+              ? "Higher = clearer, more specific plan wording"
               : activeKpi === "emissionsMatch"
-                ? "Match / partial / no match vs biggest emission source"
-                : "Higher = more unique climate measures extracted"
+                ? "Yes / partly / not really vs biggest emission source"
+                : "Higher = more climate actions found in the plan (not automatically better)"
           }
           top={ranked.slice(0, 3).map((b) => ({
             name: b.record.name,
@@ -764,7 +771,7 @@ export function MunicipalityOverviewV2({
               name: b.record.name,
               value: formatRow(b),
             }))}
-          note={`${assessed.length} of ${bundles.length} municipalities assessable in this load. Grey = no extract${activeKpi === "concreteness" ? " or provisional label coverage" : ""}.`}
+          note={`${assessed.length} of ${bundles.length} municipalities comparable in this load. Grey = no plan extract yet${activeKpi === "concreteness" ? " or limited labelling data" : ""}.`}
         />
       </div>
 
@@ -773,10 +780,10 @@ export function MunicipalityOverviewV2({
           <thead className="bg-gray-05/80 text-left text-xs uppercase tracking-wide text-gray-02">
             <tr>
               <th className="px-4 py-3 font-medium">Municipality</th>
-              <th className="px-4 py-3 font-medium">Concreteness</th>
-              <th className="px-4 py-3 font-medium">Emissions match</th>
-              <th className="px-4 py-3 font-medium">Unique measures</th>
-              <th className="px-4 py-3 font-medium">Exact TEFs</th>
+              <th className="px-4 py-3 font-medium">Plan detail score</th>
+              <th className="px-4 py-3 font-medium">Biggest source</th>
+              <th className="px-4 py-3 font-medium">Actions in the plan</th>
+              <th className="px-4 py-3 font-medium">Matched themes</th>
             </tr>
           </thead>
           <tbody>
