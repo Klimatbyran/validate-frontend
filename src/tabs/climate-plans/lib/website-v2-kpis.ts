@@ -11,6 +11,7 @@ import {
   TEF_SECTORS,
   type TefSectorId,
 } from "./tef-framework";
+import { tefSectorFromGateDomain } from "./tef-sector-signals";
 import { computeActionConcreteness } from "./action-concreteness-score";
 import {
   computeEmissionFocusGap,
@@ -72,6 +73,9 @@ export interface MeasureBrowseRow {
   sectors: Array<TefSectorId | "other">;
   exactTefLabels: string[];
   impliedTefCount: number;
+  /** Distinct activity-shift flows shown as "from → to". */
+  activityFlows: string[];
+  activityLabels: string[];
 }
 
 export function browseMeasures(
@@ -85,6 +89,33 @@ export function browseMeasures(
     const sectors = new Set<TefSectorId | "other">();
     const exactTefLabels: string[] = [];
     let impliedTefCount = 0;
+    const activityFlows = new Set<string>();
+    const activityLabels = new Set<string>();
+
+    // Same evidence as biggest-source fit: gate domains + catalogue matches
+    // on the measure's own activity_shifts (explicit and implied).
+    for (const shift of measure.activity_shifts ?? []) {
+      if (shift.activity?.trim()) activityLabels.add(shift.activity.trim());
+      const from = shift.shift_from?.trim();
+      const to = shift.shift_to?.trim();
+      if (from && to) activityFlows.add(`${from} → ${to}`);
+      const gated = tefSectorFromGateDomain(
+        shift.transition_element_gate_domain,
+      );
+      if (gated) sectors.add(gated);
+      for (const match of shift.transition_element_matches ?? []) {
+        const fromIndex = sectorIdFromIndex(parseTefIndex(match.short_label));
+        if (fromIndex !== "other") {
+          sectors.add(fromIndex);
+          continue;
+        }
+        const fromGroup = sectorIdFromGroup(
+          match.sector_path.split(">")[0]?.trim() ?? "",
+        );
+        if (fromGroup !== "other") sectors.add(fromGroup);
+      }
+    }
+
     for (const hit of hits) {
       if ((hit.source ?? "official") === "runtime-shadow") continue;
       sectors.add(sectorIdForHit(hit));
@@ -99,6 +130,8 @@ export function browseMeasures(
       sectors: [...sectors],
       exactTefLabels,
       impliedTefCount,
+      activityFlows: [...activityFlows],
+      activityLabels: [...activityLabels],
     };
   });
 }
@@ -155,18 +188,46 @@ export function groupMeasuresBySector(rows: MeasureBrowseRow[]): Array<{
     }));
 }
 
+/** Group measures by primary activity-shift flow ("from → to"). */
+export function groupMeasuresByActivityFlow(rows: MeasureBrowseRow[]): Array<{
+  flowId: string;
+  label: string;
+  rows: MeasureBrowseRow[];
+}> {
+  const buckets = new Map<string, MeasureBrowseRow[]>();
+  for (const row of rows) {
+    const key =
+      row.activityFlows[0] ??
+      (row.activityLabels[0]
+        ? `Activity: ${row.activityLabels[0]}`
+        : "No activity flow extracted");
+    const list = buckets.get(key) ?? [];
+    list.push(row);
+    buckets.set(key, list);
+  }
+  return [...buckets.entries()]
+    .sort(([a], [b]) => a.localeCompare(b, "sv"))
+    .map(([label, grouped]) => ({
+      flowId: label,
+      label,
+      rows: grouped,
+    }));
+}
+
 export function buildWebsiteV2PlaceBundle(
   record: ExploreMunicipalityRecord,
   sectorEmissions: SectorYearEmissions[],
 ): WebsiteV2PlaceBundle {
   const exact = exactTefHits(record);
+  const uniqueThemeIds = new Set(exact.map((h) => h.stableId));
   return {
     record,
     concreteness: computeActionConcreteness(record),
     gap: computeEmissionFocusGap(record, sectorEmissions),
     uniqueMeasureCount: uniqueMeasureCount(record),
     exactTefHits: exact,
-    exactTefCount: exact.length,
+    /** Distinct catalogue theme IDs with at least one explicit match. */
+    exactTefCount: uniqueThemeIds.size,
   };
 }
 

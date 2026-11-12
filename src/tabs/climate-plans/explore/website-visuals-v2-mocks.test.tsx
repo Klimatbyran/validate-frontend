@@ -19,17 +19,42 @@ describe("Website visuals v2 detail mock", () => {
 
     expect(screen.getByText("Umeå")).toBeInTheDocument();
     expect(
-      screen.getByText(/Climate actions in the plan \(duplicates removed\)/i),
+      screen.getByText(/Volume only — not a quality ranking/i),
     ).toBeInTheDocument();
     expect(
-      screen.getAllByText(/Has actions|No actions/).length,
+      screen.getByText(/How to read these three views together/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Specification \(primary\)/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Framework directness/i).length).toBeGreaterThan(
+      0,
+    );
+    expect(
+      screen.getAllByText(/Combined \(internal comparison\)/i).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/Actions found|None found/).length,
     ).toBeGreaterThan(0);
     expect(
       screen.getByText(/How we estimate plan action detail/i),
     ).toBeInTheDocument();
 
+    expect(
+      screen.getByText(/How this yes \/ partly \/ not really is decided/i),
+    ).toBeInTheDocument();
+
     await user.click(screen.getByRole("button", { name: /Show details/i }));
-    await user.click(screen.getByRole("button", { name: "Matched themes" }));
+    expect(
+      screen.getByRole("button", { name: /Layout: by sector/i }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: /Layout: by sector/i }),
+    );
+    expect(
+      screen.getByRole("button", { name: /Layout: by activity flow/i }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Themes named directly" }),
+    );
     expect(screen.getByText(/STE-42/i)).toBeInTheDocument();
     expect(
       screen.getByText(/T-1A1b-TE-1 - Electric buses/i),

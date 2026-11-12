@@ -159,9 +159,183 @@ describe("website KPI prototypes", () => {
 
   it("uses plain yes/partly/not-really instead of focus-match jargon", () => {
     const plain = focusMatchPlainEn("miss", "Agriculture & land use");
-    expect(plain.question).toMatch(/highest/i);
+    expect(plain.question).toMatch(/biggest emissions source/i);
     expect(plain.shortLabel).toBe("Not really");
     expect(plain.answer).toMatch(/Agriculture & land use/i);
+    expect(plain.answer).toMatch(/no actions/i);
+  });
+
+  it("marks biggest-source match when top sector is tied and ≥25% of actions", () => {
+    const emissions = [
+      {
+        municipalityName: "Bjurholm",
+        byYear: {
+          "2024": {
+            Transporter: 50,
+            Industri: 50,
+            Jordbruk: 10,
+          },
+        },
+      },
+    ];
+    const row = record({
+      measures: [
+        measure({
+          measure_text: "transport a",
+          activity_shifts: [
+            {
+              activity: "mobility",
+              shift_from: "car",
+              shift_to: "bus",
+              need: "mobility",
+              type: "Type Shift",
+              type_reasoning: "",
+              score: 5,
+              reasoning: "",
+              transition_element_matches: [],
+              transition_element_candidates: [],
+              transition_element_gate_domain: "Transport",
+            },
+          ],
+        }),
+        measure({
+          measure_text: "industry a",
+          activity_shifts: [
+            {
+              activity: "industry",
+              shift_from: "oil",
+              shift_to: "electric",
+              need: "process",
+              type: "Type Shift",
+              type_reasoning: "",
+              score: 5,
+              reasoning: "",
+              transition_element_matches: [],
+              transition_element_candidates: [],
+              transition_element_gate_domain: "Industry",
+            },
+          ],
+        }),
+      ],
+    });
+    const gap = computeEmissionFocusGap(row, emissions);
+    // Industry and transport tie on emissions; stable sectorId sort picks industry
+    // first alphabetically among equal tonnes? Sort is emission then sectorId —
+    // Industri 50 vs Transporter 50 → afolu not in play; industry vs transport:
+    // industry id "industry", transport "transport" → industry first as largest.
+    expect(gap.largestSectorId).toBe("industry");
+    expect(gap.focusMatch).toBe("match");
+  });
+
+  it("marks partial when biggest source has actions but under 25% share", () => {
+    const agHeavy = [
+      {
+        municipalityName: "Bjurholm",
+        byYear: {
+          "2024": {
+            Jordbruk: 80,
+            Transporter: 20,
+          },
+        },
+      },
+    ];
+    const row = record({
+      measures: [
+        measure({
+          measure_text: "farm",
+          activity_shifts: [
+            {
+              activity: "ag",
+              shift_from: "a",
+              shift_to: "b",
+              need: "food",
+              type: "Type Shift",
+              type_reasoning: "",
+              score: 5,
+              reasoning: "",
+              transition_element_matches: [],
+              transition_element_candidates: [],
+              transition_element_gate_domain: "Agriculture",
+            },
+          ],
+        }),
+        measure({
+          measure_text: "t1",
+          activity_shifts: [
+            {
+              activity: "mobility",
+              shift_from: "car",
+              shift_to: "bus",
+              need: "mobility",
+              type: "Type Shift",
+              type_reasoning: "",
+              score: 5,
+              reasoning: "",
+              transition_element_matches: [],
+              transition_element_candidates: [],
+              transition_element_gate_domain: "Transport",
+            },
+          ],
+        }),
+        measure({
+          measure_text: "t2",
+          activity_shifts: [
+            {
+              activity: "mobility",
+              shift_from: "car",
+              shift_to: "bike",
+              need: "mobility",
+              type: "Type Shift",
+              type_reasoning: "",
+              score: 5,
+              reasoning: "",
+              transition_element_matches: [],
+              transition_element_candidates: [],
+              transition_element_gate_domain: "Transport",
+            },
+          ],
+        }),
+        measure({
+          measure_text: "t3",
+          activity_shifts: [
+            {
+              activity: "mobility",
+              shift_from: "car",
+              shift_to: "walk",
+              need: "mobility",
+              type: "Type Shift",
+              type_reasoning: "",
+              score: 5,
+              reasoning: "",
+              transition_element_matches: [],
+              transition_element_candidates: [],
+              transition_element_gate_domain: "Transport",
+            },
+          ],
+        }),
+        measure({
+          measure_text: "t4",
+          activity_shifts: [
+            {
+              activity: "mobility",
+              shift_from: "diesel",
+              shift_to: "ev",
+              need: "mobility",
+              type: "Type Shift",
+              type_reasoning: "",
+              score: 5,
+              reasoning: "",
+              transition_element_matches: [],
+              transition_element_candidates: [],
+              transition_element_gate_domain: "Transport",
+            },
+          ],
+        }),
+      ],
+    });
+    const gap = computeEmissionFocusGap(row, agHeavy);
+    expect(gap.largestSectorId).toBe("afolu");
+    expect(gap.focusMatch).toBe("partial");
   });
 
   it("builds conversation starters from gap and miss signals", () => {

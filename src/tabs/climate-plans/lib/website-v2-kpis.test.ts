@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  browseMeasures,
   exactTefHits,
   uniqueMeasureCount,
   focusMatchMapValue,
   focusMatchChipLabel,
+  groupMeasuresByActivityFlow,
 } from "./website-v2-kpis";
 import type { ExploreMunicipalityRecord, TefHit } from "./explore-types";
 import type { Measure } from "./measures-types";
@@ -115,5 +117,55 @@ describe("website v2 kpis", () => {
     expect(focusMatchChipLabel("match")).toBe("Yes");
     expect(focusMatchChipLabel("partial")).toBe("Partly");
     expect(focusMatchChipLabel("miss")).toBe("Not really");
+  });
+
+  it("groups browse rows by activity flow from → to", () => {
+    const rows = browseMeasures(
+      record({
+        measures: [
+          {
+            ...measure("Buy buses"),
+            activity_shifts: [
+              {
+                activity: "mobility",
+                shift_from: "diesel bus",
+                shift_to: "electric bus",
+                need: "mobility",
+                type: "Type Shift",
+                type_reasoning: "",
+                score: 5,
+                reasoning: "",
+                transition_element_matches: [],
+                transition_element_candidates: [],
+                transition_element_gate_domain: "Transport",
+              },
+            ],
+          },
+          {
+            ...measure("Campaign"),
+            activity_shifts: [
+              {
+                activity: "mobility",
+                shift_from: "car",
+                shift_to: "bus",
+                need: "mobility",
+                type: "Type Shift",
+                type_reasoning: "",
+                score: 4,
+                reasoning: "",
+                transition_element_matches: [],
+                transition_element_candidates: [],
+                transition_element_gate_domain: "Transport",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    const groups = groupMeasuresByActivityFlow(rows);
+    expect(groups.map((g) => g.label).sort()).toEqual([
+      "car → bus",
+      "diesel bus → electric bus",
+    ]);
   });
 });

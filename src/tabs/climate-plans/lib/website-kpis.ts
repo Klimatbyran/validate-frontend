@@ -38,24 +38,25 @@ export function focusMatchPlainEn(
 ): { question: string; answer: string; shortLabel: string } {
   const sector =
     largestSectorLabel?.trim() || "the biggest source of emissions";
-  const question = "Does the plan tackle where emissions are highest?";
+  const question =
+    "Does the plan include actions for the biggest emissions source?";
   switch (verdict) {
     case "match":
       return {
         question,
-        answer: `Yes — it puts clear focus on ${sector}, the biggest source of emissions here.`,
+        answer: `Yes — ${sector} is among the sectors with the most plan actions, and at least a quarter of the plan’s actions touch it. This counts actions found, not how much each would cut.`,
         shortLabel: "Yes",
       };
     case "partial":
       return {
         question,
-        answer: `Partly — it includes actions for ${sector}, but focuses more on other areas.`,
+        answer: `Partly — the plan has some actions for ${sector}, but fewer than a quarter of its actions touch it, or another sector has more. This counts actions found, not how much each would cut.`,
         shortLabel: "Partly",
       };
     case "miss":
       return {
         question,
-        answer: `Not really — ${sector} is the biggest source here, but the plan has no clear actions for it.`,
+        answer: `Not really — ${sector} is the biggest source here, and we found no actions for it in the plan text.`,
         shortLabel: "Not really",
       };
     case "not-assessable":
@@ -328,24 +329,15 @@ export function computeEmissionFocusGap(
 
   let focusMatch: FocusMatchVerdict = "not-assessable";
   if (largest && totalTonnes > 0 && record.measures.length > 0) {
-    if (largest.addressed) {
-      const focusShares = rows
-        .filter((r) => r.measureCount > 0)
-        .map((r) => ({
-          id: r.sectorId,
-          share:
-            rows.reduce((s, x) => s + x.measureCount, 0) === 0
-              ? 0
-              : r.measureCount / rows.reduce((s, x) => s + x.measureCount, 0),
-        }))
-        .sort((a, b) => b.share - a.share);
-      const top = focusShares[0];
-      focusMatch =
-        top && top.id === largest.sectorId && top.share >= 0.25
-          ? "match"
-          : "partial";
-    } else {
+    if (!largest.addressed) {
       focusMatch = "miss";
+    } else {
+      // Distinct-action share of the whole plan (not sum of sector tags).
+      const shareOfActions = largest.measureCount / record.measures.length;
+      const maxCount = Math.max(...rows.map((r) => r.measureCount));
+      // Tie-safe: largest sector is among the top count(s).
+      const isTopOrTied = largest.measureCount === maxCount;
+      focusMatch = isTopOrTied && shareOfActions >= 0.25 ? "match" : "partial";
     }
   }
 
@@ -354,14 +346,14 @@ export function computeEmissionFocusGap(
     gapShare == null
       ? "Not enough data yet to compare the plan with emissions."
       : missingLabels.length === 0
-        ? "The plan has measures in every major emissions sector we can map."
-        : `${Math.round(gapShare * 100)}% of emissions sit in sectors with no measures in the plan (${missingLabels.join(", ")}).`;
+        ? "The plan has measures in every major emissions sector we can map (six-sector territorial set)."
+        : `${Math.round(gapShare * 100)}% of mapped six-sector emissions sit in sectors with no measures in the plan (${missingLabels.join(", ")}).`;
   const summarySv =
     gapShare == null
       ? "För lite data ännu för att jämföra planen med utsläppen."
       : missingLabels.length === 0
         ? "Planen har åtgärder i alla större utsläppssektorer vi kan kartlägga."
-        : `${Math.round(gapShare * 100)} % av utsläppen ligger i sektorer utan åtgärder i planen (${missingLabels.join(", ")}).`;
+        : `${Math.round(gapShare * 100)} % av de sex kartlagda sektorernas utsläpp ligger i sektorer utan åtgärder i planen (${missingLabels.join(", ")}).`;
 
   return {
     gapShare,
