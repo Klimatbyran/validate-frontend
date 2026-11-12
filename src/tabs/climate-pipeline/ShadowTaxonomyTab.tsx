@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
+  History,
   Loader2,
   RefreshCw,
   Trash2,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Button } from "@/ui/button";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
 import {
@@ -962,7 +964,12 @@ function RealOverlapReviewDialog({
 export function ShadowTaxonomyTab() {
   const { t } = useI18n();
   const { elements, isLoading, error, refresh } = useShadowElements();
-  const [showLegacySnapshot, setShowLegacySnapshot] = useState(false);
+  // Current elements and the frozen legacy snapshot can each run to
+  // hundreds of rows -- side by side only once there's room for two
+  // columns (same breakpoint StepResultDialog uses for its own current-vs-
+  // legacy split); below that, a tab picks one at a time instead.
+  const isLargeScreen = useMediaQuery("(min-width: 1024px)");
+  const [shadowPane, setShadowPane] = useState<"current" | "legacy">("current");
   const {
     status: freezeStatus,
     isLoading: isFreezeStatusLoading,
@@ -1210,18 +1217,6 @@ export function ShadowTaxonomyTab() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setShowLegacySnapshot((v) => !v)}
-          >
-            {showLegacySnapshot ? (
-              <ChevronUp className="w-4 h-4 mr-1.5" />
-            ) : (
-              <ChevronDown className="w-4 h-4 mr-1.5" />
-            )}
-            Legacy snapshot
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
             onClick={() => void handleTakeSnapshot()}
             disabled={
               isFreezeStatusLoading ||
@@ -1283,12 +1278,6 @@ export function ShadowTaxonomyTab() {
         </div>
       </div>
 
-      {showLegacySnapshot ? (
-        <div className="rounded-md border border-gray-04 bg-gray-05/20 p-4">
-          <ShadowTaxonomyLegacyView refreshToken={snapshotRefreshToken} />
-        </div>
-      ) : null}
-
       <MergeReviewDialog
         open={isMergeReviewOpen}
         onOpenChange={setIsMergeReviewOpen}
@@ -1333,78 +1322,152 @@ export function ShadowTaxonomyTab() {
         isLoading={isDeletingSnapshot}
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="text-xs text-gray-02 flex items-center gap-2">
-          {t("shadowTaxonomy.filterStatus")}
-          <select
-            className="h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
-            value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value as ShadowElementStatus | "")
-            }
-          >
-            <option value="">{t("shadowTaxonomy.statusAll")}</option>
-            <option value="preliminary">
-              {t("shadowTaxonomy.statusPreliminary")}
-            </option>
-            <option value="promoted">
-              {t("shadowTaxonomy.statusPromoted")}
-            </option>
-            <option value="rejected">
-              {t("shadowTaxonomy.statusRejected")}
-            </option>
-            <option value="merged">{t("shadowTaxonomy.statusMerged")}</option>
-          </select>
-        </label>
-        <label className="text-xs text-gray-02 flex items-center gap-2">
-          {t("shadowTaxonomy.filterQuality")}
-          <select
-            className="h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
-            value={qualityFilter}
-            onChange={(e) =>
-              setQualityFilter(e.target.value as ShadowElementQuality | "")
-            }
-          >
-            <option value="">{t("shadowTaxonomy.statusAll")}</option>
-            <option value="specific">
-              {t("shadowTaxonomy.qualitySpecific")}
-            </option>
-            <option value="narrowable">
-              {t("shadowTaxonomy.qualityNarrowable")}
-            </option>
-            <option value="vague">{t("shadowTaxonomy.qualityVague")}</option>
-          </select>
-        </label>
-        <span className="text-xs text-gray-02">
-          {t("shadowTaxonomy.count", { count: rows.length })}
-        </span>
-      </div>
+      {(() => {
+        const currentPane = (
+          <>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="text-xs text-gray-02 flex items-center gap-2">
+                {t("shadowTaxonomy.filterStatus")}
+                <select
+                  className="h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
+                  value={statusFilter}
+                  onChange={(e) =>
+                    setStatusFilter(e.target.value as ShadowElementStatus | "")
+                  }
+                >
+                  <option value="">{t("shadowTaxonomy.statusAll")}</option>
+                  <option value="preliminary">
+                    {t("shadowTaxonomy.statusPreliminary")}
+                  </option>
+                  <option value="promoted">
+                    {t("shadowTaxonomy.statusPromoted")}
+                  </option>
+                  <option value="rejected">
+                    {t("shadowTaxonomy.statusRejected")}
+                  </option>
+                  <option value="merged">
+                    {t("shadowTaxonomy.statusMerged")}
+                  </option>
+                </select>
+              </label>
+              <label className="text-xs text-gray-02 flex items-center gap-2">
+                {t("shadowTaxonomy.filterQuality")}
+                <select
+                  className="h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
+                  value={qualityFilter}
+                  onChange={(e) =>
+                    setQualityFilter(
+                      e.target.value as ShadowElementQuality | "",
+                    )
+                  }
+                >
+                  <option value="">{t("shadowTaxonomy.statusAll")}</option>
+                  <option value="specific">
+                    {t("shadowTaxonomy.qualitySpecific")}
+                  </option>
+                  <option value="narrowable">
+                    {t("shadowTaxonomy.qualityNarrowable")}
+                  </option>
+                  <option value="vague">
+                    {t("shadowTaxonomy.qualityVague")}
+                  </option>
+                </select>
+              </label>
+              <span className="text-xs text-gray-02">
+                {t("shadowTaxonomy.count", { count: rows.length })}
+              </span>
+            </div>
 
-      {isLoading && (
-        <div className="flex justify-center p-8">
-          <Loader2 className="w-6 h-6 text-blue-03 animate-spin" />
-        </div>
-      )}
-      {error && (
-        <p className="text-sm text-pink-03">
-          {t("shadowTaxonomy.error", { error })}
-        </p>
-      )}
-      {!isLoading && !error && rows.length === 0 && (
-        <p className="text-sm text-gray-02">{t("shadowTaxonomy.empty")}</p>
-      )}
-      {!isLoading && rows.length > 0 && (
-        <div className="space-y-3">
-          {rows.map((el) => (
-            <ShadowElementCard
-              key={el.id}
-              element={el}
-              onChanged={handleChanged}
-              onUnlink={(id, label) => void handleUnlink(id, label)}
-            />
-          ))}
-        </div>
-      )}
+            {isLoading && (
+              <div className="flex justify-center p-8">
+                <Loader2 className="w-6 h-6 text-blue-03 animate-spin" />
+              </div>
+            )}
+            {error && (
+              <p className="text-sm text-pink-03">
+                {t("shadowTaxonomy.error", { error })}
+              </p>
+            )}
+            {!isLoading && !error && rows.length === 0 && (
+              <p className="text-sm text-gray-02">
+                {t("shadowTaxonomy.empty")}
+              </p>
+            )}
+            {!isLoading && rows.length > 0 && (
+              <div className="space-y-3">
+                {rows.map((el) => (
+                  <ShadowElementCard
+                    key={el.id}
+                    element={el}
+                    onChanged={handleChanged}
+                    onUnlink={(id, label) => void handleUnlink(id, label)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        );
+        const legacyPane = (
+          <ShadowTaxonomyLegacyView refreshToken={snapshotRefreshToken} />
+        );
+
+        // Current elements and the frozen snapshot can each run to
+        // hundreds of rows -- side by side only once there's room for two
+        // columns; below that, a tab picks one at a time instead of a
+        // long, unusable scroll of current-then-legacy.
+        if (isLargeScreen) {
+          return (
+            <div className="grid grid-cols-2 gap-4 items-start min-w-0">
+              <div className="min-w-0 space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-02">
+                  Current
+                </h3>
+                {currentPane}
+              </div>
+              <div className="min-w-0 space-y-3">
+                <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-purple-03">
+                  <History className="w-3.5 h-3.5" />
+                  Legacy snapshot
+                </h3>
+                {legacyPane}
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="space-y-3 min-w-0">
+            <div className="flex gap-2 border-b border-gray-03 pb-2">
+              <button
+                type="button"
+                onClick={() => setShadowPane("current")}
+                className={cn(
+                  "px-3 py-1.5 text-sm rounded-md",
+                  shadowPane === "current"
+                    ? "bg-blue-03/15 text-blue-03 font-medium"
+                    : "text-gray-02 hover:text-gray-01",
+                )}
+              >
+                Current
+              </button>
+              <button
+                type="button"
+                onClick={() => setShadowPane("legacy")}
+                className={cn(
+                  "px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5",
+                  shadowPane === "legacy"
+                    ? "bg-purple-03/15 text-purple-03 font-medium"
+                    : "text-gray-02 hover:text-gray-01",
+                )}
+              >
+                <History className="w-3.5 h-3.5" />
+                Legacy snapshot
+              </button>
+            </div>
+            {shadowPane === "current" ? currentPane : legacyPane}
+          </div>
+        );
+      })()}
     </div>
   );
 }
