@@ -14,6 +14,10 @@ import type {
 import { namesMatch } from "../lib/municipality-names";
 import { buildWebsiteV2PlaceBundle } from "../lib/website-v2-kpis";
 import { ACTION_CONCRETENESS_METHOD_VERSION } from "../lib/action-concreteness-score";
+import {
+  WEBSITE_V2_DEMO_EMISSIONS,
+  WEBSITE_V2_DEMO_RECORDS,
+} from "../lib/website-v2-demo-fixture";
 
 type V2Surface = "muni-detail" | "muni-overview";
 
@@ -27,25 +31,41 @@ export function WebsiteVisualsV2View({
   sectorEmissions,
   selectedName,
   onSelectName,
+  demo = false,
 }: {
   records: ExploreMunicipalityRecord[];
   sectorEmissions: SectorYearEmissions[];
   selectedName: string | null;
   onSelectName: (name: string) => void;
+  /** Local demo fixture when APIs are empty / unreachable (`?demo=1`). */
+  demo?: boolean;
 }) {
   const [surface, setSurface] = useState<V2Surface>("muni-overview");
   const [overviewKpi, setOverviewKpi] = useState<OverviewKpi>("concreteness");
   const [localName, setLocalName] = useState<string | null>(null);
 
+  // Force with ?demo=1; in local Vite also fall back when the explore load is empty.
+  const useDemo =
+    demo || (Boolean(import.meta.env.DEV) && records.length === 0);
+  const effectiveRecords = useDemo ? WEBSITE_V2_DEMO_RECORDS : records;
+  const effectiveEmissions = useDemo
+    ? WEBSITE_V2_DEMO_EMISSIONS
+    : sectorEmissions;
+
   const places = useMemo(
     () =>
-      [...records].map((r) => r.name).sort((a, b) => a.localeCompare(b, "sv")),
-    [records],
+      [...effectiveRecords]
+        .map((r) => r.name)
+        .sort((a, b) => a.localeCompare(b, "sv")),
+    [effectiveRecords],
   );
 
   const bundles = useMemo(
-    () => records.map((r) => buildWebsiteV2PlaceBundle(r, sectorEmissions)),
-    [records, sectorEmissions],
+    () =>
+      effectiveRecords.map((r) =>
+        buildWebsiteV2PlaceBundle(r, effectiveEmissions),
+      ),
+    [effectiveRecords, effectiveEmissions],
   );
 
   const effectiveMuniName =
@@ -83,6 +103,18 @@ export function WebsiteVisualsV2View({
           Leave the original Website visuals tab open while we compare.
         </p>
       </Callout>
+
+      {useDemo ? (
+        <Callout variant="warning" title="Demo fixture active">
+          <p className="text-sm text-orange-02/90 mt-1">
+            Live explore load is empty or <code className="font-mono text-xs">demo=1</code>{" "}
+            is set — showing three sample municipalities (Umeå, Skellefteå,
+            Lycksele) so the layout can be reviewed. Remove{" "}
+            <code className="font-mono text-xs">demo=1</code> once pipeline
+            extracts load.
+          </p>
+        </Callout>
+      ) : null}
 
       <div className="flex flex-wrap gap-3 items-center">
         <ViewModePills

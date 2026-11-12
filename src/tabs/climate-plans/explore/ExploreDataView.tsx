@@ -126,6 +126,7 @@ export function ExploreDataView({
           sectorEmissions={data.sectorEmissions}
           selectedName={params.selectedName}
           onSelectName={params.setSelectedName}
+          demo={params.demo}
         />
       ) : null}
     </div>
