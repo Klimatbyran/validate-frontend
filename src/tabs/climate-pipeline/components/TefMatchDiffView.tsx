@@ -71,24 +71,38 @@ export function TefMatchDiffView({
 
   const { shifts, removedShifts } = computeTefMatchDiff(measures, snapshots);
   const newShiftCount = shifts.filter((s) => s.isNewShift).length;
+  const allMatches = shifts.flatMap((s) => s.matches);
+  const newMatchCount = allMatches.filter((m) => m.status === "new").length;
+  const sameMatchCount = allMatches.filter((m) => m.status === "same").length;
+  const oldMatchCount = allMatches.filter((m) => m.status === "old").length;
+  const removedShiftMatchCount = removedShifts.reduce(
+    (n, r) => n + r.matches.length,
+    0,
+  );
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2 text-xs text-gray-02">
         <span>
-          {shifts.length} current shift{shifts.length === 1 ? "" : "s"}
+          {newMatchCount} new match{newMatchCount === 1 ? "" : "es"}
         </span>
+        <span>·</span>
+        <span>{sameMatchCount} same</span>
+        <span>·</span>
+        <span>{oldMatchCount} removed</span>
+        {(removedShifts.length > 0 || newShiftCount > 0) && <span>·</span>}
         {newShiftCount > 0 && (
-          <>
-            <span>·</span>
-            <span>{newShiftCount} new since snapshot</span>
-          </>
+          <span>
+            {newShiftCount} new shift{newShiftCount === 1 ? "" : "s"}
+          </span>
         )}
+        {newShiftCount > 0 && removedShifts.length > 0 && <span>·</span>}
         {removedShifts.length > 0 && (
-          <>
-            <span>·</span>
-            <span>{removedShifts.length} removed since snapshot</span>
-          </>
+          <span>
+            {removedShifts.length} removed shift
+            {removedShifts.length === 1 ? "" : "s"} ({removedShiftMatchCount}{" "}
+            match{removedShiftMatchCount === 1 ? "" : "es"})
+          </span>
         )}
       </div>
 
