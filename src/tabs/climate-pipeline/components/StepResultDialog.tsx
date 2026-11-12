@@ -9,8 +9,10 @@ import { PdfHighlightViewer, PdfHighlightPanel } from "./PdfHighlightViewer";
 import { ResizableSplitView } from "./ResizableSplitView";
 import { RecoveredImagesGallery } from "./RecoveredImagesGallery";
 import { TefMatchLegacyView } from "./TefMatchLegacyView";
+import { TefMatchDiffView } from "./TefMatchDiffView";
 import { Button } from "@/ui/button";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useTefFreezeStatus } from "../hooks/useShadowElementSnapshots";
 import { getClimatePlansPipelineApiUrl } from "@/config/api-env";
 import { StatusPill } from "@/components/StatusPill";
 import {
@@ -135,6 +137,11 @@ export function StepResultDialog({
   const [tefMatchPane, setTefMatchPane] = useState<"current" | "legacy">(
     "current",
   );
+  // "list" (default) is the plain current/legacy split above; "diff"
+  // classifies each match as new/same/removed against the frozen
+  // snapshot instead -- only meaningful once a snapshot exists.
+  const [tefCompareMode, setTefCompareMode] = useState<"list" | "diff">("list");
+  const { status: tefFreezeStatus } = useTefFreezeStatus();
 
   const reviewsByEntity = useMemo(() => {
     if (localReviews) return localReviews;
@@ -159,7 +166,15 @@ export function StepResultDialog({
     setQaFilter("all");
     setReviewIndex(0);
     setTefMatchPane("current");
+    setTefCompareMode("list");
   }, [plan?.id, step, open]);
+
+  // A snapshot deleted while diff mode is open would otherwise leave the
+  // view stuck showing stale diff output against a comparison that no
+  // longer exists.
+  useEffect(() => {
+    if (!tefFreezeStatus?.exists) setTefCompareMode("list");
+  }, [tefFreezeStatus?.exists]);
 
   // Changing filter or entering review mode restarts at the first item.
   useEffect(() => {
@@ -629,27 +644,23 @@ export function StepResultDialog({
           // once there's room for two columns; below that, a long scroll
           // of current-then-legacy is unusable, so a tab picks one at a
           // time instead.
-          if (isLargeScreen) {
-            return (
-              <div className="grid grid-cols-2 gap-4 items-start min-w-0">
-                <div className="min-w-0 space-y-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-02">
-                    Current
-                  </h3>
-                  {currentPane}
-                </div>
-                <div className="min-w-0 space-y-2">
-                  <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-purple-03">
-                    <History className="w-3.5 h-3.5" />
-                    Legacy matches (frozen snapshot)
-                  </h3>
-                  {legacyPane}
-                </div>
+          const listView = isLargeScreen ? (
+            <div className="grid grid-cols-2 gap-4 items-start min-w-0">
+              <div className="min-w-0 space-y-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-02">
+                  Current
+                </h3>
+                {currentPane}
               </div>
-            );
-          }
-
-          return (
+              <div className="min-w-0 space-y-2">
+                <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-purple-03">
+                  <History className="w-3.5 h-3.5" />
+                  Legacy matches (frozen snapshot)
+                </h3>
+                {legacyPane}
+              </div>
+            </div>
+          ) : (
             <div className="space-y-3 min-w-0">
               <div className="flex gap-2 border-b border-gray-03 pb-2">
                 <button
@@ -679,6 +690,51 @@ export function StepResultDialog({
                 </button>
               </div>
               {tefMatchPane === "current" ? currentPane : legacyPane}
+            </div>
+          );
+
+          return (
+            <div className="space-y-3 min-w-0">
+              <div className="flex rounded-md border border-gray-03 overflow-hidden w-fit">
+                <button
+                  type="button"
+                  onClick={() => setTefCompareMode("list")}
+                  className={cn(
+                    "px-3 py-1.5 text-sm",
+                    tefCompareMode === "list"
+                      ? "bg-blue-03/15 text-blue-03 font-medium"
+                      : "text-gray-02 hover:text-gray-01",
+                  )}
+                >
+                  List
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTefCompareMode("diff")}
+                  disabled={!tefFreezeStatus?.exists}
+                  title={
+                    tefFreezeStatus?.exists
+                      ? undefined
+                      : "No snapshot exists yet -- take one to compare against"
+                  }
+                  className={cn(
+                    "px-3 py-1.5 text-sm border-l border-gray-03 disabled:opacity-40 disabled:cursor-not-allowed",
+                    tefCompareMode === "diff"
+                      ? "bg-purple-03/15 text-purple-03 font-medium"
+                      : "text-gray-02 hover:text-gray-01",
+                  )}
+                >
+                  Diff vs snapshot
+                </button>
+              </div>
+              {tefCompareMode === "diff" ? (
+                <TefMatchDiffView
+                  planId={plan.id}
+                  measures={detail.extractedMeasures}
+                />
+              ) : (
+                listView
+              )}
             </div>
           );
         }
