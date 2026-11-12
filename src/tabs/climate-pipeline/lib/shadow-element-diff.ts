@@ -19,6 +19,7 @@ export interface RemovedShadowElement {
   description: string;
   activityShiftCategory: string;
   status: string;
+  originMunicipalityName: string | null;
 }
 
 export interface ShadowElementDiff {
@@ -86,6 +87,7 @@ export function computeShadowElementDiff(
       description: s.description,
       activityShiftCategory: s.activityShiftCategory,
       status: s.status,
+      originMunicipalityName: s.originMunicipalityName,
     }));
 
   return { entries, removed };

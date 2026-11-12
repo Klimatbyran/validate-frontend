@@ -5,6 +5,7 @@ import {
   computeShadowElementDiff,
   type ShadowElementChange,
 } from "../lib/shadow-element-diff";
+import { MunicipalityPill } from "./MunicipalityPill";
 import type { ShadowElement } from "../hooks/useShadowElements";
 
 const DIFF_BADGE: Record<"new" | "changed" | "same", string> = {
@@ -111,6 +112,9 @@ export function ShadowTaxonomyDiffView({
               <span className="text-sm font-medium text-gray-01">
                 {element.shortLabel}
               </span>
+              <MunicipalityPill
+                name={element.origin?.municipalityName ?? null}
+              />
             </div>
             <ChangeList changes={changes} />
           </div>
@@ -127,7 +131,10 @@ export function ShadowTaxonomyDiffView({
               key={r.originalId}
               className="rounded-md border border-pink-03/30 bg-pink-03/5 p-2.5 opacity-80"
             >
-              <p className="text-sm text-gray-01">{r.shortLabel}</p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <p className="text-sm text-gray-01">{r.shortLabel}</p>
+                <MunicipalityPill name={r.originMunicipalityName} />
+              </div>
               <p className="text-xs text-gray-02">{r.description}</p>
             </div>
           ))}

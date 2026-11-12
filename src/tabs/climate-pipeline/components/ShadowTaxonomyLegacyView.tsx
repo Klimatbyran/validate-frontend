@@ -1,5 +1,6 @@
 import { Loader2 } from "lucide-react";
 import { useShadowElementSnapshots } from "../hooks/useShadowElementSnapshots";
+import { MunicipalityPill } from "./MunicipalityPill";
 import type {
   ShadowElementStatus,
   ShadowElementQuality,
@@ -86,7 +87,7 @@ export function ShadowTaxonomyLegacyView({
                     </span>
                   </div>
                   <p className="text-xs text-gray-02">{row.description}</p>
-                  <div className="flex items-center gap-2 pt-1">
+                  <div className="flex items-center gap-2 pt-1 flex-wrap">
                     <span
                       className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${QUALITY_STYLE[row.qualityGrade]}`}
                     >
@@ -95,6 +96,7 @@ export function ShadowTaxonomyLegacyView({
                     <span className="text-[10px] text-gray-02">
                       {row.activityShiftCategory}
                     </span>
+                    <MunicipalityPill name={row.originMunicipalityName} />
                   </div>
                   {row.comment ? (
                     <p className="text-xs text-gray-02 italic">

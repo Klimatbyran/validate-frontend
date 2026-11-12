@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ShadowTaxonomyLegacyView } from "./components/ShadowTaxonomyLegacyView";
 import { ShadowTaxonomyDiffView } from "./components/ShadowTaxonomyDiffView";
+import { MunicipalityPill } from "./components/MunicipalityPill";
 import {
   useTefFreezeStatus,
   createTefFreeze,
@@ -231,6 +232,7 @@ function ShadowElementCard({
                 })}
               </span>
             )}
+            <MunicipalityPill name={element.origin?.municipalityName ?? null} />
           </div>
           <p className="text-sm text-gray-02 mt-1">{element.description}</p>
           {hasComment && !commentOpen && (
