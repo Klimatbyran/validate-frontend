@@ -180,6 +180,54 @@ describe("action concreteness score", () => {
     expect(result.whoRate).toBe(0.5);
   });
 
+  it("makes gated slot bars sum to the primary score", () => {
+    const full = measure({
+      measure_text: "Buy electric buses",
+      intervention_who: "municipality",
+      intervention_what: "fleet",
+      intervention_when: "2027",
+      intervention_how: "procurement",
+    });
+    const noWhat = measure({
+      measure_text: "Target only",
+      intervention_who: "municipality",
+      intervention_when: "2030",
+      intervention_what: "none",
+      intervention_how: "none",
+    });
+    const result = computeActionConcreteness(
+      record({ measures: [full, noWhat], tefHits: [] }),
+    );
+    const parts = result.slotPoints;
+    expect(parts.who).not.toBeNull();
+    const sum =
+      (parts.who ?? 0) +
+      (parts.what ?? 0) +
+      (parts.when ?? 0) +
+      (parts.how ?? 0);
+    expect(sum).toBeCloseTo(result.score ?? 0);
+    // noWhat must not leak who/when points into the municipal bars
+    expect(sum).toBeCloseTo(50);
+  });
+
+  it("marks directness provisional for thin labels or small judged samples", () => {
+    const one = measure({
+      measure_text: "a",
+      intervention_what: "x",
+      intervention_who: "y",
+      intervention_when: "z",
+      intervention_how: "w",
+    });
+    const small = computeActionConcreteness(
+      record({
+        measures: [one],
+        tefHits: [hit({ measureText: "a", explicit: true })],
+      }),
+    );
+    expect(small.judgedCoverageShare).toBe(1);
+    expect(small.provisional).toBe(true);
+  });
+
   it("marks provisional when TEF label coverage is thin", () => {
     const measures = ["a", "b", "c"].map((text) =>
       measure({

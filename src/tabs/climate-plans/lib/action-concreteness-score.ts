@@ -239,11 +239,22 @@ export function computeActionConcreteness(
     ),
   );
 
+  // Gated slot contributions: what-empty measures contribute 0 to every bar,
+  // so the bars sum to the primary municipal score.
+  const gatedPoints = breakdowns.map((b) => {
+    if (b.what === 0) return { who: 0, what: 0, when: 0, how: 0 };
+    return {
+      who: 100 * SLOT_WEIGHTS.who * b.who,
+      what: 100 * SLOT_WEIGHTS.what * b.what,
+      when: 100 * SLOT_WEIGHTS.when * b.when,
+      how: 100 * SLOT_WEIGHTS.how * b.how,
+    };
+  });
   const slotPoints = {
-    who: 100 * SLOT_WEIGHTS.who * whoRate,
-    what: 100 * SLOT_WEIGHTS.what * whatRate,
-    when: 100 * SLOT_WEIGHTS.when * whenRate,
-    how: 100 * SLOT_WEIGHTS.how * howRate,
+    who: mean(gatedPoints.map((p) => p.who)),
+    what: mean(gatedPoints.map((p) => p.what)),
+    when: mean(gatedPoints.map((p) => p.when)),
+    how: mean(gatedPoints.map((p) => p.how)),
   };
 
   const broadnessPointsLost = Math.max(0, score - combinedScore);
@@ -265,9 +276,13 @@ export function computeActionConcreteness(
   const directWordingShare =
     judgedMeasureCount === 0 ? null : explicitCount / judgedMeasureCount;
 
-  // Direct-wording / combined views are provisional when TEF labels are thin.
+  // Direct-wording / combined views: flag thin or incomplete label coverage,
+  // including small samples (n < 3 judged) that would otherwise look definitive.
   const provisional =
-    judgedCoverageShare != null && judgedCoverageShare < 0.8 && withTef >= 3;
+    withTef > 0 &&
+    (judgedCoverageShare == null ||
+      judgedCoverageShare < 0.8 ||
+      judgedMeasureCount < 3);
 
   const rounded = Math.round(score);
   const headlineEn = `Plan action detail: ${rounded}/100 (average of ${n} action${n === 1 ? "" : "s"} in the plan).`;
@@ -312,11 +327,11 @@ export function computeActionConcreteness(
 export function concretenessBandLabel(band: ConcretenessBand): string {
   switch (band) {
     case "concrete":
-      return "Clear wording";
+      return "Most details stated";
     case "partial":
-      return "Mixed wording";
+      return "Some details stated";
     case "vague":
-      return "Vague wording";
+      return "Few details stated";
     case "unscored":
       return "Not scored";
   }
@@ -433,6 +448,6 @@ export const WEBSITE_V2_KPI_READING_GUIDE = {
   ],
   biggestSourceMethod: {
     title: "How biggest-source fit is decided",
-    body: "Using Unearth territorial emissions grouped into six sectors, we identify the largest sector for the municipality. If the plan has no actions mapped to that sector → Not really. If it has some, but that sector is not the largest share of the plan’s mapped actions (or is largest but under 25% of them) → Partly. If it is the largest share and at least 25% → Yes. One thin action can still count as “found”; whether those actions are well specified is the separate action-detail score.",
+    body: "Using Unearth territorial emissions grouped into six mapped sectors (latest inventory year; machinery/product-use buckets are outside this set), we identify the largest sector. No actions mapped there → Not really. Some actions, but that sector is not among the top action counts or under 25% of the plan’s actions → Partly. Among the top count(s) and ≥25% of actions → Yes (ties allowed). One thin action can still count as “found”; whether those actions are well specified is the separate action-detail score.",
   },
 } as const;

@@ -160,13 +160,15 @@ export function buildWebsiteV2PlaceBundle(
   sectorEmissions: SectorYearEmissions[],
 ): WebsiteV2PlaceBundle {
   const exact = exactTefHits(record);
+  const uniqueThemeIds = new Set(exact.map((h) => h.stableId));
   return {
     record,
     concreteness: computeActionConcreteness(record),
     gap: computeEmissionFocusGap(record, sectorEmissions),
     uniqueMeasureCount: uniqueMeasureCount(record),
     exactTefHits: exact,
-    exactTefCount: exact.length,
+    /** Distinct catalogue theme IDs with at least one explicit match. */
+    exactTefCount: uniqueThemeIds.size,
   };
 }
 

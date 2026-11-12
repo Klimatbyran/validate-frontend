@@ -85,8 +85,8 @@ function Meter({
         />
       </div>
       <div className="flex justify-between text-[10px] uppercase tracking-wide text-gray-02">
-        <span>Vague wording</span>
-        <span>Clear wording</span>
+        <span>Few details</span>
+        <span>Most details</span>
       </div>
     </div>
   );
@@ -736,8 +736,8 @@ export function MunicipalityDetailV2({
             </p>
           </div>
           <div className="text-sm text-gray-02">
-            Share of emissions in sectors with no actions found in the plan
-            text:{" "}
+            Share of mapped six-sector emissions with no actions found in the
+            plan text:{" "}
             <span
               className={cn(
                 "tabular-nums font-medium",
