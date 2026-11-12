@@ -22,6 +22,7 @@ const VIEWS: ExploreViewId[] = [
   "tef-framework",
   "anatomy",
   "website",
+  "website-v2",
 ];
 const TEF_SOURCES: TefSourceFilter[] = [
   "all",
@@ -87,6 +88,7 @@ export function useClimatePlansExploreParams() {
     "all",
   );
   const tefSource = pick(searchParams.get("tefSource"), TEF_SOURCES, "all");
+  const demo = searchParams.get("demo") === "1";
 
   const patch = useCallback(
     (updates: Record<string, string | null>) => {
@@ -123,6 +125,7 @@ export function useClimatePlansExploreParams() {
     selectedTefId,
     tefImplied,
     tefSource,
+    demo,
     setTab: (value: ClimatePlansTabId) => patch({ tab: value }),
     setView: (value: ExploreViewId) => patch({ view: value }),
     setKpi: (value: MapKpiId) => patch({ kpi: value }),

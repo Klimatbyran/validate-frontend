@@ -7,6 +7,7 @@ import { ShiftsInterventionsView } from "./ShiftsInterventionsView";
 import { TefFrameworkView } from "./TefFrameworkView";
 import { PlanAnatomyView } from "./PlanAnatomyView";
 import { WebsiteVisualsView } from "./WebsiteVisualsView";
+import { WebsiteVisualsV2View } from "./WebsiteVisualsV2View";
 import type { useClimatePlansExploreParams } from "../hooks/useClimatePlansExploreParams";
 
 const VIEW_OPTIONS: { value: ExploreViewId; label: string }[] = [
@@ -15,6 +16,7 @@ const VIEW_OPTIONS: { value: ExploreViewId; label: string }[] = [
   { value: "tef-framework", label: "TEF framework" },
   { value: "anatomy", label: "Plan anatomy" },
   { value: "website", label: "Website visuals" },
+  { value: "website-v2", label: "Website visuals v2" },
 ];
 
 export function ExploreDataView({
@@ -116,6 +118,15 @@ export function ExploreDataView({
           sectorEmissions={data.sectorEmissions}
           selectedName={params.selectedName}
           onSelectName={params.setSelectedName}
+        />
+      ) : null}
+      {params.view === "website-v2" ? (
+        <WebsiteVisualsV2View
+          records={data.municipalities}
+          sectorEmissions={data.sectorEmissions}
+          selectedName={params.selectedName}
+          onSelectName={params.setSelectedName}
+          demo={params.demo}
         />
       ) : null}
     </div>

@@ -98,12 +98,13 @@ Invalid `source` values fall back to Live. Switching to Live **removes** the `so
   - `/climate-plans` — Explore data (default; omit `tab` or `?tab=explore`)
   - `/climate-plans?tab=measures` — By measure
   - `/climate-plans?tab=taxonomy` — By taxonomy
-  - Explore subviews: `view=map|shifts|tef-framework|anatomy|website` (default `map`)
+  - Explore subviews: `view=map|shifts|tef-framework|anatomy|website|website-v2` (default `map`)
   - Map: `kpi=uniqueCommitments` (also measure/intervention/TEF/adaptation/own/shadow/companion/`emissionFocusGap` KPIs), `geo=municipality|region`, `tefGroup=…`, `muni=Nässjö`
   - Note: `/climate-plans/` (trailing slash) must hit the SPA — geo assets live under `/geo/sweden/`, not under `/climate-plans/`
   - Shifts & interventions: `shiftsLayout=compare|flows|types` (default `compare`)
   - TEF framework: `tefScope=all|region|municipality`, `tefMetric=hits|strength|municipalities`, `tefLayout=3d|grid` (default `3d`), `tefHeight=share|tonnes` (3d pillar height; default `share`), `tefEmissions=1` (optional header emission shares on catalogue), `tefSource=all|official|proposed|runtime-shadow` (default `all`), `tefId=…`, `muni=…`
   - Website visuals: `view=website`, `muni=…` — staging surface for public klimatkollen.se KPI prototypes
+  - Website visuals v2: `view=website-v2`, `muni=…` — minimal KPI set (concreteness, emissions match, unique measures); municipality overview + detail only. Optional `demo=1` (or empty live load) uses a tiny local fixture for layout review.
 
 ### Upload (query params)
 

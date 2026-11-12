@@ -129,7 +129,8 @@ export type ExploreViewId =
   | "shifts"
   | "tef-framework"
   | "anatomy"
-  | "website";
+  | "website"
+  | "website-v2";
 export type ClimatePlansTabId = "explore" | "measures" | "taxonomy";
 export type MapGeoLevel = "municipality" | "region";
 export type TefFrameworkScope = "all" | "municipality" | "region";
