@@ -4,6 +4,7 @@ import {
 } from "@/config/api-env";
 import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
 import { fetchPipelineMeasures } from "./pipeline-measures";
+import { exploreApiPlanToRecord, fetchExplorePlans } from "./explore-plans-api";
 import type { Measure, MunicipalityMeasures } from "./measures-types";
 import type {
   ExploreDataSource,
@@ -229,7 +230,67 @@ function applyMeasures(
   addSource(record, source);
 }
 
-export async function loadExploreDataset(): Promise<ExploreDataset> {
+async function attachSectorEmissions(
+  municipalities: ExploreMunicipalityRecord[],
+): Promise<{
+  municipalities: ExploreMunicipalityRecord[];
+  sectorEmissions: SectorYearEmissions[];
+  sectorEmissionsError: string | null;
+}> {
+  const namesForEmissions = municipalities
+    .filter(
+      (m) =>
+        m.measures.length > 0 || m.commitmentCount > 0 || m.tefHits.length > 0,
+    )
+    .map((m) => m.name);
+  const { rows: sectorEmissions, error: sectorEmissionsError } =
+    await loadSectorEmissions(namesForEmissions);
+  if (sectorEmissions.length > 0) {
+    for (const record of municipalities) {
+      if (
+        sectorEmissions.some((row) =>
+          namesMatch(row.municipalityName, record.name),
+        )
+      ) {
+        addSource(record, "unearth-sector-emissions");
+      }
+    }
+  }
+  return { municipalities, sectorEmissions, sectorEmissionsError };
+}
+
+/**
+ * Preferred path: climate-plans-pipeline GET /explore/plans (one row per
+ * municipality = newest ClimatePlan with completed scoreMeasures; nested
+ * tables are current DB state / latest in-place rerun).
+ */
+async function loadExploreDatasetFromAggregate(): Promise<ExploreDataset | null> {
+  const payload = await fetchExplorePlans({
+    status: "APPROVED",
+    groupBy: "municipality",
+    requireStep: "scoreMeasures",
+  });
+  if (!payload) return null;
+
+  const municipalities = payload.plans
+    .map(exploreApiPlanToRecord)
+    .sort((a, b) => a.name.localeCompare(b.name, "sv"));
+  const measuresOnly: MunicipalityMeasures[] = municipalities.map((m) => ({
+    id: m.id,
+    name: m.name,
+    measures: m.measures,
+  }));
+  const withEmissions = await attachSectorEmissions(municipalities);
+  return {
+    municipalities: withEmissions.municipalities,
+    measuresOnly,
+    sectorEmissions: withEmissions.sectorEmissions,
+    sectorEmissionsError: withEmissions.sectorEmissionsError,
+  };
+}
+
+/** Legacy N+1 over GET /plans + /plans/:id — kept as rollout fallback. */
+async function loadExploreDatasetLegacy(): Promise<ExploreDataset> {
   const [pipelineMeasures, pipelineExtras, sources] = await Promise.all([
     fetchPipelineMeasures(),
     loadPipelineExtras(),
@@ -313,30 +374,20 @@ export async function loadExploreDataset(): Promise<ExploreDataset> {
   const municipalities = [...byKey.values()].sort((a, b) =>
     a.name.localeCompare(b.name, "sv"),
   );
-  const namesForEmissions = municipalities
-    .filter(
-      (m) =>
-        m.measures.length > 0 || m.commitmentCount > 0 || m.tefHits.length > 0,
-    )
-    .map((m) => m.name);
-  const { rows: sectorEmissions, error: sectorEmissionsError } =
-    await loadSectorEmissions(namesForEmissions);
-  if (sectorEmissions.length > 0) {
-    for (const record of municipalities) {
-      if (
-        sectorEmissions.some((row) =>
-          namesMatch(row.municipalityName, record.name),
-        )
-      ) {
-        addSource(record, "unearth-sector-emissions");
-      }
-    }
-  }
-
+  const withEmissions = await attachSectorEmissions(municipalities);
   return {
-    municipalities,
+    municipalities: withEmissions.municipalities,
     measuresOnly,
-    sectorEmissions,
-    sectorEmissionsError,
+    sectorEmissions: withEmissions.sectorEmissions,
+    sectorEmissionsError: withEmissions.sectorEmissionsError,
   };
+}
+
+export async function loadExploreDataset(): Promise<ExploreDataset> {
+  const fromAggregate = await loadExploreDatasetFromAggregate();
+  if (fromAggregate) return fromAggregate;
+  console.warn(
+    "[explore-dataset] GET /explore/plans unavailable — falling back to legacy N+1 plan fetch",
+  );
+  return loadExploreDatasetLegacy();
 }

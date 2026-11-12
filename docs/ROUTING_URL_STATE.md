@@ -99,6 +99,7 @@ Invalid `source` values fall back to Live. Switching to Live **removes** the `so
   - `/climate-plans?tab=measures` — By measure
   - `/climate-plans?tab=taxonomy` — By taxonomy
   - Explore subviews: `view=map|shifts|tef-framework|anatomy|website|website-v2` (default `map`)
+  - Explore data: prefers climate-plans-pipeline `GET /api/explore/plans` (newest non-rejected plan per municipality = current DB nested tables / latest in-place rerun); falls back to legacy N+1 `GET /plans` + `/plans/:id` if unavailable
   - Map: `kpi=uniqueCommitments` (also measure/intervention/TEF/adaptation/own/shadow/companion/`emissionFocusGap` KPIs), `geo=municipality|region`, `tefGroup=…`, `muni=Nässjö`
   - Note: `/climate-plans/` (trailing slash) must hit the SPA — geo assets live under `/geo/sweden/`, not under `/climate-plans/`
   - Shifts & interventions: `shiftsLayout=compare|flows|types` (default `compare`)
