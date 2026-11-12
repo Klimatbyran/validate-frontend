@@ -19,17 +19,17 @@ describe("Website visuals v2 detail mock", () => {
 
     expect(screen.getByText("Umeå")).toBeInTheDocument();
     expect(
-      screen.getByText(/Pipeline-deduped climate actions/i),
+      screen.getByText(/Climate actions in the plan \(duplicates removed\)/i),
     ).toBeInTheDocument();
     expect(
-      screen.getAllByText(/Has measures|No measures/).length,
+      screen.getAllByText(/Has actions|No actions/).length,
     ).toBeGreaterThan(0);
     expect(
-      screen.getByText(/How the action concreteness score works/i),
+      screen.getByText(/How we estimate plan action detail/i),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /Open catalogue/i }));
-    await user.click(screen.getByRole("button", { name: "Exact TEF matches" }));
+    await user.click(screen.getByRole("button", { name: /Show details/i }));
+    await user.click(screen.getByRole("button", { name: "Matched themes" }));
     expect(screen.getByText(/STE-42/i)).toBeInTheDocument();
     expect(
       screen.getByText(/T-1A1b-TE-1 - Electric buses/i),

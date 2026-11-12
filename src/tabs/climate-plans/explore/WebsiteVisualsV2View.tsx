@@ -92,16 +92,17 @@ export function WebsiteVisualsV2View({
   return (
     <div className="space-y-5">
       <MethodologyPanel
-        data="Website visuals v2 — municipality overview + detail only. Live explore extracts (pipeline measures, TEF hits with explicit/implied + official/proposed source, Unearth sector emissions). Old Website visuals tab kept for reference."
-        calculation={`Three KPIs: (1) action concreteness ${ACTION_CONCRETENESS_METHOD_VERSION} = weighted who/what/when/how × implied-only 0.85 modulator, municipal mean; (2) emissions match = existing sector bars / focusMatch; (3) unique measures = pipeline ExtractedMeasure count + expandable exact TEF catalogue.`}
-        extra="Skipped on purpose: climate-plans story, region detail, region overview. Exact TEF panel = explicit===true, official+proposed only (no implied, no runtime-shadow)."
+        data="Website visuals v2 — municipality overview + detail only. Live explore extracts (plan actions, clear vs broad framework matches, Unearth sector emissions). Old Website visuals tab kept for reference."
+        calculation={`Three public views (${ACTION_CONCRETENESS_METHOD_VERSION}): (1) plan action detail = weighted who/what/when/how × broad-wording 0.85 trim, municipal mean; (2) biggest-source fit = sector bars / yes-partly-not-really; (3) actions in the plan = unique extracted actions + expandable matched-theme list.`}
+        extra="Skipped on purpose: climate-plans story, region detail, region overview. Matched-theme panel = clearly stated matches only (standard + new framework items; broad matches and experimental gaps excluded)."
       />
 
-      <Callout variant="info" title="Website visuals v2 (minimal KPI set)">
+      <Callout variant="info" title="Website visuals v2 (plain-language draft)">
         <p className="text-sm text-gray-02 mt-1">
-          Staging surface for a narrower public set: concreteness meter,
-          emissions match, and unique measures with an expandable catalogue.
-          Leave the original Website visuals tab open while we compare.
+          Staging surface for three public views: how specific the plan is,
+          whether it fits local emissions, and how many actions it names — with
+          an expandable look inside the plan. Leave the original Website visuals
+          tab open while we compare.
         </p>
       </Callout>
 
@@ -144,7 +145,7 @@ export function WebsiteVisualsV2View({
         ) : null}
         <span className="text-xs text-gray-02">
           {coverage.withScore}/{coverage.total} scored · {coverage.withMatch}{" "}
-          with emissions match · {coverage.withMeasures} with measures
+          comparable on biggest source · {coverage.withMeasures} with actions
         </span>
       </div>
 

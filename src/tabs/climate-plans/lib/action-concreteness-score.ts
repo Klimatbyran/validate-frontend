@@ -188,9 +188,9 @@ export function computeActionConcreteness(
       judgedCoverageShare: null,
       provisional: false,
       measures: [],
-      headlineEn: "No measures analysed yet.",
+      headlineEn: "No plan actions to score yet.",
       summaryEn:
-        "No scored measures in this extract — the concreteness score is blank, not zero.",
+        "We have not found scored actions in this plan extract yet — the detail score is blank, not zero.",
     };
   }
 
@@ -232,14 +232,14 @@ export function computeActionConcreteness(
     judgedCoverageShare != null && judgedCoverageShare < 0.8 && withTef >= 3;
 
   const rounded = Math.round(score);
-  const headlineEn = `Action concreteness ${rounded}/100 across ${n} unique measure${n === 1 ? "" : "s"}.`;
+  const headlineEn = `Plan action detail: ${rounded}/100 (average of ${n} action${n === 1 ? "" : "s"} in the plan).`;
   const summaryEn = [
-    `Each measure earns up to 100 points: ${Math.round(SLOT_WEIGHTS.what * 100)} for what, ${Math.round(SLOT_WEIGHTS.how * 100)} for how, ${Math.round(SLOT_WEIGHTS.who * 100)} for who, ${Math.round(SLOT_WEIGHTS.when * 100)} for when.`,
-    `Implied-only TEF wording keeps ${Math.round(IMPLIED_ONLY_BROADNESS_FACTOR * 100)}% of that score (max ${Math.round((1 - IMPLIED_ONLY_BROADNESS_FACTOR) * 100)}-point deduction).`,
+    `Each action can score up to 100: ${Math.round(SLOT_WEIGHTS.what * 100)} for what will be done, ${Math.round(SLOT_WEIGHTS.how * 100)} for how, ${Math.round(SLOT_WEIGHTS.who * 100)} for who is responsible, ${Math.round(SLOT_WEIGHTS.when * 100)} for when.`,
+    `Actions written only in broad terms keep ${Math.round(IMPLIED_ONLY_BROADNESS_FACTOR * 100)}% of that score (at most ${Math.round((1 - IMPLIED_ONLY_BROADNESS_FACTOR) * 100)} points trimmed).`,
     judgedMeasureCount === 0
-      ? "No explicit/implied TEF labels yet — score is slot-only."
-      : `${impliedOnlyCount} of ${judgedMeasureCount} judged measures are implied-only.`,
-    "Describes plan wording, not climate ambition or expected impact.",
+      ? "No clear vs broad wording labels yet — this score is based only on who/what/when/how."
+      : `${impliedOnlyCount} of ${judgedMeasureCount} labelled actions are written only in broad terms.`,
+    "This describes how specific the plan text is — not how ambitious or effective it will be.",
   ].join(" ");
 
   return {
@@ -269,13 +269,26 @@ export function computeActionConcreteness(
 export function concretenessBandLabel(band: ConcretenessBand): string {
   switch (band) {
     case "concrete":
-      return "More specified";
+      return "Clear wording";
     case "partial":
-      return "Partly specified";
+      return "Mixed wording";
     case "vague":
-      return "Less specified";
+      return "Vague wording";
     case "unscored":
       return "Not scored";
+  }
+}
+
+export function evidenceVolumeLabel(volume: EvidenceVolume): string {
+  switch (volume) {
+    case "none":
+      return "No actions yet";
+    case "limited":
+      return "Based on few actions";
+    case "moderate":
+      return "Based on some actions";
+    case "broad":
+      return "Based on many actions";
   }
 }
 
@@ -286,50 +299,50 @@ export function formatConcretenessScore(score: number | null): string {
 
 /** Methodology copy for the Website visuals v2 panel. */
 export const ACTION_CONCRETENESS_METHODOLOGY = {
-  title: "How the action concreteness score works",
+  title: "How we estimate plan action detail",
   shortEn:
-    "The score summarises how much implementation detail appears in analysed climate-plan actions. Action content (what) contributes 35%, method (how) 25%, and responsibility and timing 20% each. Measures whose transition is only implied keep 85% of that score. Repeated actions are already deduped in the pipeline; municipalities are compared using the average across unique measures. The number describes plan wording — not ambition or impact.",
+    "This score summarises how much practical detail shows up in the climate-plan actions we analysed. What will be done counts for 35%, how for 25%, and who is responsible and when for 20% each. Actions that only match a climate framework in broad terms keep 85% of that score. Repeated actions are already merged, so municipalities are compared on the average across unique actions. The number describes plan wording — not ambition or impact.",
   weights: SLOT_WEIGHTS,
   impliedFactor: IMPLIED_ONLY_BROADNESS_FACTOR,
   version: ACTION_CONCRETENESS_METHOD_VERSION,
   steps: [
     {
-      title: "1. Unique measures",
-      body: "Start from pipeline-extracted measures. Climate-relevant actionable commitments are already collapsed by similarGroupId before scoring, so the count is unique interventions — not raw commitment lines.",
+      title: "1. Unique actions",
+      body: "Start from actions extracted from the plan. Similar climate commitments are already collapsed before scoring, so the count is unique interventions — not every repeated line in the document.",
     },
     {
-      title: "2. Slot coding (binary for now)",
-      body: "Each measure’s who / what / when / how fields count as filled when non-empty and not the placeholder “none”. We deliberately use binary coding until graded slot quality (named unit vs “kommunen”, year vs “under planperioden”) is reliable and auditable.",
+      title: "2. Who / what / when / how (yes or no for now)",
+      body: "Each action’s who, what, when, and how fields count as filled when they are non-empty and not the placeholder “none”. We keep this simple until finer quality (named unit vs “the municipality”, a year vs “during the plan period”) is reliable enough to audit.",
     },
     {
-      title: "3. What-gate",
-      body: "If what is empty, the measure scores 0 even if who/when/how are filled. That stops pure targets or actor+deadline lines from looking concrete without an action.",
+      title: "3. What comes first",
+      body: "If what is empty, the action scores 0 even if who, when, or how are filled. That stops pure targets or actor-and-deadline lines from looking specific without a real action.",
     },
     {
-      title: "4. Weighted slot score",
-      body: "S = 0.35·what + 0.25·how + 0.20·who + 0.20·when. What weighs most because it is the intervention; how is next because it names the instrument; who and when are equal checkability signals.",
+      title: "4. Weighted detail score",
+      body: "Score = 0.35·what + 0.25·how + 0.20·who + 0.20·when. What weighs most because it is the intervention; how is next because it names the instrument; who and when are equal signals that someone can check the plan.",
     },
     {
-      title: "5. Implied-TEF broadness modulator",
-      body: "If every judged official/proposed TEF match on the measure is implied (explicit=false), multiply by 0.85. Any explicit match, no TEF, or missing labels leaves the factor at 1.0. Runtime-shadow hits are ignored here. Broadness can trim at most 15 points and cannot create points when slots are empty.",
+      title: "5. Broad-wording trim",
+      body: "If every judged framework match on the action is only broad/implied, multiply by 0.85. Any clearly stated match, no framework match, or missing labels leaves the factor at 1.0. Experimental gap matches are ignored here. Broad wording can trim at most 15 points and cannot invent points when who/what/when/how are empty.",
     },
     {
       title: "6. Municipal average",
-      body: "Unweighted mean of measure scores (0–100). Plan length does not inflate the score. Always show the measure count and an evidence label (limited / moderate / broad).",
+      body: "Unweighted mean of action scores (0–100). A longer plan does not inflate the score. Always show how many actions were scored and whether that evidence is few, some, or many.",
     },
   ],
   caveats: [
-    "Extraction quality (OCR, lost table columns for Ansvarig/Tidplan) can make concrete actions look vague.",
-    "Slots are model paraphrases, not verbatim quotes — a filled who may be an assumed “municipality”.",
+    "Extraction quality (OCR, lost table columns for responsibility or timing) can make specific actions look vague.",
+    "Who/what/when/how are model paraphrases, not verbatim quotes — a filled who may be an assumed “municipality”.",
     "Companion action plans or budgets may hold responsibility and timing not present in the scored document.",
-    "An implied TEF can mean catalogue mismatch or sibling TEFs, not only vague writing.",
-    "Concrete ≠ effective; vague ≠ unambitious. Differences of a few points are not meaningful rankings.",
-    "Older extracts without explicit/implied labels are slot-only; maps mark the score provisional when label coverage is thin.",
+    "A broad framework match can mean catalogue mismatch or nearby sibling themes, not only vague writing.",
+    "Clear wording ≠ effective action; vague wording ≠ unambitious plan. Differences of a few points are not meaningful rankings.",
+    "Older extracts without clear-vs-broad labels are scored on slots only; maps mark the score as an early estimate when label coverage is thin.",
   ],
   rejectedAlternatives: [
-    "Mean of the model’s intervention_score (1–7) — opaque and non-reproducible at temperature 1.",
-    "Hard TEF penalty subtracted from the municipal score — double-counts what and depends on sector taxonomy density.",
-    "Hit-level implied share — one broad measure with many sibling hits would dominate; we stay measure-level.",
-    "Weighting measures by emissions — mixes relevance with concreteness; keep as a separate view later.",
+    "Mean of the model’s intervention_score (1–7) — opaque and hard to reproduce.",
+    "A hard framework penalty on the municipal score — double-counts “what” and depends on how dense the sector catalogue is.",
+    "Share of broad hits at the hit level — one broad action with many sibling matches would dominate; we stay action-level.",
+    "Weighting actions by emissions — mixes relevance with wording detail; keep as a separate view later.",
   ],
 } as const;
