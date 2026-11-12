@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Code, Copy, FileText, History, Loader2, Tags } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Modal } from "@/ui/modal";
 import { CollapsibleSection } from "@/ui/collapsible-section";
 import { MarkdownVectorPagesDisplay } from "@/ui/markdown-display";
@@ -128,6 +129,12 @@ export function StepResultDialog({
   const [viewMode, setViewMode] = useState<StepViewMode>("list");
   const [qaFilter, setQaFilter] = useState<QaStatusFilter>("all");
   const [reviewIndex, setReviewIndex] = useState(0);
+  // Only matters below isLargeScreen, where current and legacy TEF
+  // matches can't both fit -- picks which one the narrow single-column
+  // layout shows.
+  const [tefMatchPane, setTefMatchPane] = useState<"current" | "legacy">(
+    "current",
+  );
 
   const reviewsByEntity = useMemo(() => {
     if (localReviews) return localReviews;
@@ -151,6 +158,7 @@ export function StepResultDialog({
     setViewMode("list");
     setQaFilter("all");
     setReviewIndex(0);
+    setTefMatchPane("current");
   }, [plan?.id, step, open]);
 
   // Changing filter or entering review mode restarts at the first item.
@@ -600,33 +608,80 @@ export function StepResultDialog({
             reviewsByEntity,
             qaFilter,
           );
-        // The legacy section is a frozen snapshot, independent of the live
-        // QA filter -- it has to sit outside renderFilteredOrEmpty, not
-        // inside the node that filter can replace wholesale with "No items
-        // match this filter," or a filter matching zero live items would
-        // hide a frozen comparison that still exists.
-        return (
-          <>
-            {renderFilteredOrEmpty(
-              measures.length === 0,
-              <TransitionElementsView
-                measures={measures}
-                reviewCtx={reviewCtx}
-                visibleMatchIdsByShiftKey={
-                  qaFilter === "all" ? undefined : visibleMatchIdsByShiftKey
-                }
-              />,
-            )}
-            <CollapsibleSection
-              title="Legacy matches (frozen snapshot)"
-              icon={<History />}
-              accentIconBg="bg-purple-03/20"
-              accentTextColor="text-purple-03"
-            >
-              <TefMatchLegacyView planId={plan.id} />
-            </CollapsibleSection>
-          </>
-        );
+        // The legacy comparison is a frozen snapshot, independent of the
+        // live QA filter -- it must never sit inside renderFilteredOrEmpty,
+        // which can replace its whole argument with "No items match this
+        // filter," hiding a frozen comparison that still exists.
+        {
+          const currentPane = renderFilteredOrEmpty(
+            measures.length === 0,
+            <TransitionElementsView
+              measures={measures}
+              reviewCtx={reviewCtx}
+              visibleMatchIdsByShiftKey={
+                qaFilter === "all" ? undefined : visibleMatchIdsByShiftKey
+              }
+            />,
+          );
+          const legacyPane = <TefMatchLegacyView planId={plan.id} />;
+
+          // Both lists can run to hundreds of items -- side by side only
+          // once there's room for two columns; below that, a long scroll
+          // of current-then-legacy is unusable, so a tab picks one at a
+          // time instead.
+          if (isLargeScreen) {
+            return (
+              <div className="grid grid-cols-2 gap-4 items-start min-w-0">
+                <div className="min-w-0 space-y-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-02">
+                    Current
+                  </h3>
+                  {currentPane}
+                </div>
+                <div className="min-w-0 space-y-2">
+                  <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-purple-03">
+                    <History className="w-3.5 h-3.5" />
+                    Legacy matches (frozen snapshot)
+                  </h3>
+                  {legacyPane}
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-3 min-w-0">
+              <div className="flex gap-2 border-b border-gray-03 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setTefMatchPane("current")}
+                  className={cn(
+                    "px-3 py-1.5 text-sm rounded-md",
+                    tefMatchPane === "current"
+                      ? "bg-blue-03/15 text-blue-03 font-medium"
+                      : "text-gray-02 hover:text-gray-01",
+                  )}
+                >
+                  Current
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTefMatchPane("legacy")}
+                  className={cn(
+                    "px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5",
+                    tefMatchPane === "legacy"
+                      ? "bg-purple-03/15 text-purple-03 font-medium"
+                      : "text-gray-02 hover:text-gray-01",
+                  )}
+                >
+                  <History className="w-3.5 h-3.5" />
+                  Legacy snapshot
+                </button>
+              </div>
+              {tefMatchPane === "current" ? currentPane : legacyPane}
+            </div>
+          );
+        }
       }
       default:
         return (
