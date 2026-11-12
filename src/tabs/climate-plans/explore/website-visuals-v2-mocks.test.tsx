@@ -44,14 +44,19 @@ describe("Website visuals v2 detail mock", () => {
 
     await user.click(screen.getByRole("button", { name: /Show details/i }));
     expect(
-      screen.getByRole("button", { name: /Layout: by sector/i }),
+      screen.getByRole("button", { name: "By sector" }),
     ).toBeInTheDocument();
-    await user.click(
-      screen.getByRole("button", { name: /Layout: by sector/i }),
-    );
     expect(
-      screen.getByRole("button", { name: /Layout: by activity flow/i }),
+      screen.getByRole("button", { name: "By activity flow" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Flat list" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "By activity flow" }));
+    expect(
+      screen.getByText(/Grouped by extracted activity shifts/i),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/Activity shift/i).length).toBeGreaterThan(0);
     await user.click(
       screen.getByRole("button", { name: "Themes named directly" }),
     );

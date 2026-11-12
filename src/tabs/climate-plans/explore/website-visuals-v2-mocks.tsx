@@ -36,12 +36,11 @@ type OverviewKpi = "concreteness" | "emissionsMatch" | "uniqueMeasures";
 type ExpandMode = "measures" | "exact-tefs";
 type BrowseLayout = "sectors" | "flows" | "list";
 
-const BROWSE_LAYOUT_CYCLE: BrowseLayout[] = ["sectors", "flows", "list"];
-const BROWSE_LAYOUT_LABEL: Record<BrowseLayout, string> = {
-  sectors: "by sector",
-  flows: "by activity flow",
-  list: "flat list",
-};
+const BROWSE_LAYOUT_OPTIONS: { id: BrowseLayout; label: string }[] = [
+  { id: "sectors", label: "By sector" },
+  { id: "flows", label: "By activity flow" },
+  { id: "list", label: "Flat list" },
+];
 
 function Meter({
   score,
@@ -289,11 +288,6 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
     [bundle.exactTefHits],
   );
 
-  const cycleLayout = () => {
-    const i = BROWSE_LAYOUT_CYCLE.indexOf(layout);
-    setLayout(BROWSE_LAYOUT_CYCLE[(i + 1) % BROWSE_LAYOUT_CYCLE.length]!);
-  };
-
   return (
     <section className="rounded-[24px] border border-gray-03/40 bg-gray-05/30 overflow-hidden">
       <button
@@ -320,7 +314,7 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
 
       {open ? (
         <div className="border-t border-gray-03/30 px-5 py-4 space-y-4">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             {(
               [
                 ["measures", "Actions found"],
@@ -341,14 +335,33 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
                 {label}
               </button>
             ))}
-            <button
-              type="button"
-              onClick={cycleLayout}
-              className="ml-auto px-3 py-1.5 rounded-full text-xs border border-gray-03/50 text-gray-02"
-            >
-              Layout: {BROWSE_LAYOUT_LABEL[layout]}
-            </button>
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] uppercase tracking-wide text-gray-02">
+              Group actions
+            </span>
+            {BROWSE_LAYOUT_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setLayout(opt.id)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs border",
+                  layout === opt.id
+                    ? "bg-orange-03/20 text-orange-02 border-orange-03/40"
+                    : "bg-gray-03/40 text-gray-02 border-transparent",
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {mode === "measures" && layout === "flows" ? (
+            <p className="text-xs text-gray-02">
+              Grouped by extracted activity shifts (from → to). Cards also show
+              that wiring under each action.
+            </p>
+          ) : null}
 
           {mode === "measures" ? (
             layout === "list" ? (
@@ -495,13 +508,29 @@ function MeasureTile({
         })}
       </div>
       {row.activityFlows.length > 0 ? (
-        <p className="text-[11px] text-gray-02">
-          Activity flow: {row.activityFlows.slice(0, 2).join(" · ")}
-          {row.activityFlows.length > 2
-            ? ` +${row.activityFlows.length - 2}`
-            : ""}
-        </p>
-      ) : null}
+        <div className="space-y-1">
+          <div className="text-[10px] uppercase tracking-wide text-gray-02">
+            Activity shift
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {row.activityFlows.slice(0, 3).map((flow) => (
+              <span
+                key={flow}
+                className="text-[11px] px-2 py-0.5 rounded-md border border-orange-03/40 text-orange-02 bg-orange-03/10"
+              >
+                {flow}
+              </span>
+            ))}
+            {row.activityFlows.length > 3 ? (
+              <span className="text-[11px] text-gray-02">
+                +{row.activityFlows.length - 3}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        <p className="text-[11px] text-gray-02">No activity shift extracted</p>
+      )}
       {row.exactTefLabels.length > 0 ? (
         <p className="text-[11px] text-gray-02 truncate">
           Matched theme: {row.exactTefLabels.slice(0, 2).join(" · ")}
