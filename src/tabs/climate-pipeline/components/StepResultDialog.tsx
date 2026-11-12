@@ -600,16 +600,23 @@ export function StepResultDialog({
             reviewsByEntity,
             qaFilter,
           );
-        return renderFilteredOrEmpty(
-          measures.length === 0,
+        // The legacy section is a frozen snapshot, independent of the live
+        // QA filter -- it has to sit outside renderFilteredOrEmpty, not
+        // inside the node that filter can replace wholesale with "No items
+        // match this filter," or a filter matching zero live items would
+        // hide a frozen comparison that still exists.
+        return (
           <>
-            <TransitionElementsView
-              measures={measures}
-              reviewCtx={reviewCtx}
-              visibleMatchIdsByShiftKey={
-                qaFilter === "all" ? undefined : visibleMatchIdsByShiftKey
-              }
-            />
+            {renderFilteredOrEmpty(
+              measures.length === 0,
+              <TransitionElementsView
+                measures={measures}
+                reviewCtx={reviewCtx}
+                visibleMatchIdsByShiftKey={
+                  qaFilter === "all" ? undefined : visibleMatchIdsByShiftKey
+                }
+              />,
+            )}
             <CollapsibleSection
               title="Legacy matches (frozen snapshot)"
               icon={<History />}
@@ -618,7 +625,7 @@ export function StepResultDialog({
             >
               <TefMatchLegacyView planId={plan.id} />
             </CollapsibleSection>
-          </>,
+          </>
         );
       }
       default:

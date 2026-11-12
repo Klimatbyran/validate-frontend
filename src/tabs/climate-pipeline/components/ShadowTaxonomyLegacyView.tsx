@@ -24,8 +24,13 @@ const QUALITY_STYLE: Record<ShadowElementQuality, string> = {
 // POST /snapshots/tef-freeze. Never the same data as the live, editable
 // list above it; every row here is frozen, independent of anything that
 // happens to the live element afterward (promote/reject/merge/delete).
-export function ShadowTaxonomyLegacyView() {
-  const { snapshotsByRun, isLoading, error } = useShadowElementSnapshots();
+export function ShadowTaxonomyLegacyView({
+  refreshToken,
+}: {
+  refreshToken?: number;
+} = {}) {
+  const { snapshotsByRun, isLoading, error } =
+    useShadowElementSnapshots(refreshToken);
 
   if (isLoading) {
     return (

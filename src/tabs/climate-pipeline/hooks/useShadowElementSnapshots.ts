@@ -35,7 +35,11 @@ export interface ShadowElementSnapshot {
   mergedIntoId: string | null;
 }
 
-export function useShadowElementSnapshots() {
+// refreshToken is a plain counter, not data this hook needs -- bumping it
+// (e.g. after taking/deleting a snapshot elsewhere) is how a caller that
+// already has this view mounted asks it to refetch, since fetchSnapshots
+// itself has no dependency that would otherwise change.
+export function useShadowElementSnapshots(refreshToken?: number) {
   const [snapshots, setSnapshots] = useState<ShadowElementSnapshot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +66,7 @@ export function useShadowElementSnapshots() {
 
   useEffect(() => {
     void fetchSnapshots();
-  }, [fetchSnapshots]);
+  }, [fetchSnapshots, refreshToken]);
 
   const byRun = new Map<string, ShadowElementSnapshot[]>();
   for (const s of snapshots) {

@@ -971,6 +971,9 @@ export function ShadowTaxonomyTab() {
   const [isTakingSnapshot, setIsTakingSnapshot] = useState(false);
   const [isDeleteSnapshotOpen, setIsDeleteSnapshotOpen] = useState(false);
   const [isDeletingSnapshot, setIsDeletingSnapshot] = useState(false);
+  // Bumped after a take/delete so an already-open legacy panel (which
+  // fetches once on mount) refetches instead of showing stale data.
+  const [snapshotRefreshToken, setSnapshotRefreshToken] = useState(0);
   const [statusFilter, setStatusFilter] = useState<ShadowElementStatus | "">(
     "",
   );
@@ -1023,13 +1026,19 @@ export function ShadowTaxonomyTab() {
   };
 
   const handleTakeSnapshot = async () => {
+    // window.prompt returns null on Cancel, same as typing nothing and
+    // hitting OK would -- check for null specifically before taking the
+    // snapshot, or canceling the dialog would still freeze with no label.
+    const label = window.prompt(
+      "Optional label for this snapshot (e.g. \"before 2026-11 shadow TEF handoff rerun\")",
+    );
+    if (label === null) return;
+
     setIsTakingSnapshot(true);
     try {
-      const label = window.prompt(
-        "Optional label for this snapshot (e.g. \"before 2026-11 shadow TEF handoff rerun\")",
-      );
-      const result = await createTefFreeze(label?.trim() || undefined);
+      const result = await createTefFreeze(label.trim() || undefined);
       await refreshFreezeStatus();
+      setSnapshotRefreshToken((n) => n + 1);
       toast.success(
         `Snapshot taken: ${result.activityShiftCount} matches, ${result.shadowElementCount} shadow elements frozen.`,
       );
@@ -1047,6 +1056,7 @@ export function ShadowTaxonomyTab() {
     try {
       await deleteTefFreeze();
       await refreshFreezeStatus();
+      setSnapshotRefreshToken((n) => n + 1);
       toast.success("Snapshot deleted.");
       setIsDeleteSnapshotOpen(false);
     } catch (err) {
@@ -1275,7 +1285,7 @@ export function ShadowTaxonomyTab() {
 
       {showLegacySnapshot ? (
         <div className="rounded-md border border-gray-04 bg-gray-05/20 p-4">
-          <ShadowTaxonomyLegacyView />
+          <ShadowTaxonomyLegacyView refreshToken={snapshotRefreshToken} />
         </div>
       ) : null}
 
