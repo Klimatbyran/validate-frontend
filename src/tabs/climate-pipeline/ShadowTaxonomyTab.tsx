@@ -32,6 +32,8 @@ import { cn } from "@/lib/utils";
 import { ShadowTaxonomyLegacyView } from "./components/ShadowTaxonomyLegacyView";
 import { ShadowTaxonomyDiffView } from "./components/ShadowTaxonomyDiffView";
 import { MunicipalityPill } from "./components/MunicipalityPill";
+import { HandoffReviewNote } from "./components/HandoffReviewNote";
+import { getHandoffReview } from "./lib/shadowTefHandoffReview";
 import {
   useTefFreezeStatus,
   useShadowElementSnapshots,
@@ -244,6 +246,9 @@ function ShadowElementCard({
               “{element.comment}”
             </p>
           )}
+          <div className="mt-2">
+            <HandoffReviewNote review={getHandoffReview(element.id)} />
+          </div>
           <button
             type="button"
             onClick={() => setIsExpanded((v) => !v)}
