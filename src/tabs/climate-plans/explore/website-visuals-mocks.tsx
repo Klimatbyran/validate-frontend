@@ -93,6 +93,9 @@ export function MockAnswerCard({
   top,
   bottom,
   note,
+  topLabel = "Top",
+  bottomLabel = "Bottom",
+  listTone = "rank",
 }: {
   averageLabel: string;
   averageValue: string;
@@ -101,7 +104,13 @@ export function MockAnswerCard({
   top: { name: string; value: string }[];
   bottom: { name: string; value: string }[];
   note?: string;
+  /** Override Top/Bottom headings (e.g. Most / Fewest for volume KPIs). */
+  topLabel?: string;
+  bottomLabel?: string;
+  /** "rank" uses blue/pink; "neutral" avoids implying better/worse. */
+  listTone?: "rank" | "neutral";
 }) {
+  const valueClass = listTone === "neutral" ? "text-gray-01" : undefined;
   return (
     <section className="rounded-[30px] bg-gray-05/80 border border-gray-03/40 px-6 py-7 md:px-8 h-full flex flex-col">
       <div className="text-xs uppercase tracking-wide text-gray-02">
@@ -121,7 +130,7 @@ export function MockAnswerCard({
       </div>
       <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
         <div>
-          <div className="text-xs text-gray-02 mb-2">Top</div>
+          <div className="text-xs text-gray-02 mb-2">{topLabel}</div>
           <ul className="space-y-1.5">
             {top.map((row) => (
               <li
@@ -129,7 +138,12 @@ export function MockAnswerCard({
                 className="flex justify-between gap-2 text-gray-01"
               >
                 <span className="truncate">{row.name}</span>
-                <span className="tabular-nums text-blue-03 shrink-0">
+                <span
+                  className={cn(
+                    "tabular-nums shrink-0",
+                    valueClass ?? "text-blue-03",
+                  )}
+                >
                   {row.value}
                 </span>
               </li>
@@ -137,7 +151,7 @@ export function MockAnswerCard({
           </ul>
         </div>
         <div>
-          <div className="text-xs text-gray-02 mb-2">Bottom</div>
+          <div className="text-xs text-gray-02 mb-2">{bottomLabel}</div>
           <ul className="space-y-1.5">
             {bottom.map((row) => (
               <li
@@ -145,7 +159,12 @@ export function MockAnswerCard({
                 className="flex justify-between gap-2 text-gray-01"
               >
                 <span className="truncate">{row.name}</span>
-                <span className="tabular-nums text-pink-03 shrink-0">
+                <span
+                  className={cn(
+                    "tabular-nums shrink-0",
+                    valueClass ?? "text-pink-03",
+                  )}
+                >
                   {row.value}
                 </span>
               </li>

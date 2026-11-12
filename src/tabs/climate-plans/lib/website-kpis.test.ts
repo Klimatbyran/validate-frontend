@@ -159,9 +159,10 @@ describe("website KPI prototypes", () => {
 
   it("uses plain yes/partly/not-really instead of focus-match jargon", () => {
     const plain = focusMatchPlainEn("miss", "Agriculture & land use");
-    expect(plain.question).toMatch(/highest/i);
+    expect(plain.question).toMatch(/biggest emissions source/i);
     expect(plain.shortLabel).toBe("Not really");
     expect(plain.answer).toMatch(/Agriculture & land use/i);
+    expect(plain.answer).toMatch(/no actions/i);
   });
 
   it("builds conversation starters from gap and miss signals", () => {

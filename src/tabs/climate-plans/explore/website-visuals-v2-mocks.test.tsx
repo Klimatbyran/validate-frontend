@@ -29,17 +29,19 @@ describe("Website visuals v2 detail mock", () => {
       0,
     );
     expect(
-      screen.getAllByText(/Combined \(experimental\)/i).length,
+      screen.getAllByText(/Combined \(internal comparison\)/i).length,
     ).toBeGreaterThan(0);
     expect(
-      screen.getAllByText(/Has actions|No actions/).length,
+      screen.getAllByText(/Actions found|None found/).length,
     ).toBeGreaterThan(0);
     expect(
       screen.getByText(/How we estimate plan action detail/i),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Show details/i }));
-    await user.click(screen.getByRole("button", { name: "Matched themes" }));
+    await user.click(
+      screen.getByRole("button", { name: "Themes named directly" }),
+    );
     expect(screen.getByText(/STE-42/i)).toBeInTheDocument();
     expect(
       screen.getByText(/T-1A1b-TE-1 - Electric buses/i),

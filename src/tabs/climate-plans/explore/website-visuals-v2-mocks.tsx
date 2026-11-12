@@ -201,13 +201,23 @@ export function MethodologyDeepDive({
               </ul>
             </div>
           </div>
-          <div className="rounded-xl border border-orange-03/25 bg-orange-03/5 px-4 py-3">
-            <div className="text-sm text-gray-01 font-medium">
-              Reading with the other Website visuals KPIs
+          <div className="rounded-xl border border-orange-03/25 bg-orange-03/5 px-4 py-3 space-y-3">
+            <div>
+              <div className="text-sm text-gray-01 font-medium">
+                Reading with the other Website visuals KPIs
+              </div>
+              <p className="text-sm text-gray-02 mt-1 leading-relaxed">
+                {ACTION_CONCRETENESS_METHODOLOGY.readingWithOtherKpis}
+              </p>
             </div>
-            <p className="text-sm text-gray-02 mt-1 leading-relaxed">
-              {ACTION_CONCRETENESS_METHODOLOGY.readingWithOtherKpis}
-            </p>
+            <div>
+              <div className="text-sm text-gray-01 font-medium">
+                {WEBSITE_V2_KPI_READING_GUIDE.biggestSourceMethod.title}
+              </div>
+              <p className="text-sm text-gray-02 mt-1 leading-relaxed">
+                {WEBSITE_V2_KPI_READING_GUIDE.biggestSourceMethod.body}
+              </p>
+            </div>
           </div>
           {result && result.measureCount > 0 ? (
             <div className="rounded-xl border border-blue-03/25 bg-blue-03/5 px-4 py-3 space-y-3">
@@ -296,8 +306,8 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
           <div className="flex flex-wrap gap-2">
             {(
               [
-                ["measures", "Actions in the plan"],
-                ["exact-tefs", "Matched themes"],
+                ["measures", "Actions found"],
+                ["exact-tefs", "Themes named directly"],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -466,7 +476,9 @@ function MeasureTile({
             : ""}
         </p>
       ) : row.impliedTefCount > 0 ? (
-        <p className="text-[11px] text-orange-02">Only vague theme matches</p>
+        <p className="text-[11px] text-orange-02">
+          Only indirect theme matches
+        </p>
       ) : null}
     </article>
   );
@@ -554,9 +566,9 @@ function ScoreSeparationCompare({
     },
     {
       key: "combined",
-      label: "Combined (experimental)",
+      label: "Combined (internal comparison)",
       value: formatConcretenessScore(result.combinedScore),
-      hint: "Slots × 0.85 when every judged match is implied-only",
+      hint: "Slots × 0.85 when every judged match is implied-only — not a public KPI",
       primary: false,
     },
   ] as const;
@@ -565,10 +577,10 @@ function ScoreSeparationCompare({
     <section className="rounded-[24px] border border-gray-03/40 bg-gray-05/40 px-5 py-5 space-y-3">
       <div>
         <div className="text-[11px] uppercase tracking-wide text-gray-02">
-          Score separation · compare impact
+          Score separation · internal impact check
         </div>
         <h3 className="text-lg text-gray-01 mt-1">
-          Primary specification vs framework directness vs old combined trim
+          Primary specification vs theme directness vs old combined trim
         </h3>
         <p className="text-sm text-gray-02 mt-1 max-w-3xl">
           Implied TEF matches often mean the plan text is broader than a
@@ -640,7 +652,7 @@ export function MunicipalityDetailV2({
   return (
     <SiteMockShell
       eyebrow="Website visuals v2 · municipality detail"
-      title="How specific is the plan, does it fit local emissions, and how many actions does it name?"
+      title="What does the plan say, and where is it aimed?"
     >
       <MockDetailHeader
         name={bundle.record.name}
@@ -666,7 +678,7 @@ export function MunicipalityDetailV2({
             caption: focus.question,
           },
           {
-            label: "Actions in the plan",
+            label: "Actions found",
             value: String(bundle.uniqueMeasureCount),
             className: "text-orange-02",
             caption: "Volume only — not a quality ranking",
@@ -681,14 +693,19 @@ export function MunicipalityDetailV2({
         <div className="rounded-[24px] border border-blue-03/30 bg-blue-03/5 px-5 py-5 space-y-4">
           <div>
             <div className="text-[11px] uppercase tracking-wide text-blue-03">
-              How clear is the wording?
+              Action detail
             </div>
             <h3 className="text-xl text-gray-01 mt-1">
-              How specific are the plan&apos;s actions?
+              How fully are the plan&apos;s actions written up?
             </h3>
             <p className="text-sm text-gray-02 mt-1">{c.headlineEn}</p>
           </div>
           <Meter score={c.score} />
+          <p className="text-xs text-gray-02 leading-relaxed">
+            A plan with a few precise actions can score higher than one with
+            many broad ones. This score does not measure ambition or expected
+            emissions cuts.
+          </p>
           <p className="text-xs text-gray-02 leading-relaxed">{c.summaryEn}</p>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="px-2.5 py-1 rounded-full bg-gray-03/50 text-gray-01">
@@ -719,7 +736,8 @@ export function MunicipalityDetailV2({
             </p>
           </div>
           <div className="text-sm text-gray-02">
-            Share of emissions with no plan actions:{" "}
+            Share of emissions in sectors with no actions found in the plan
+            text:{" "}
             <span
               className={cn(
                 "tabular-nums font-medium",
@@ -758,17 +776,23 @@ export function MunicipalityDetailV2({
                     row.addressed ? "text-blue-03" : "text-pink-03",
                   )}
                 >
-                  {row.addressed ? "Has actions" : "No actions"}
+                  {row.addressed ? "Actions found" : "None found"}
                 </div>
               </div>
             ))}
           </div>
+          <p className="text-xs text-gray-02 leading-relaxed">
+            Having actions in a sector does not mean the sector is dealt with —
+            only that we found at least one mapped action in the plan text.
+            Emissions year and six-sector mapping come from Unearth territorial
+            data; sector-agnostic actions may not appear here.
+          </p>
         </div>
       </section>
 
       <section className="rounded-[24px] border border-orange-03/30 bg-orange-03/5 px-5 py-5 space-y-3">
         <div className="text-[11px] uppercase tracking-wide text-orange-02">
-          Actions in the plan
+          Actions found in the plan text
         </div>
         <div className="flex flex-wrap items-end gap-4">
           <div className="text-5xl font-medium tabular-nums text-orange-02 leading-none">
@@ -820,7 +844,7 @@ export function MunicipalityOverviewV2({
     },
     {
       id: "uniqueMeasures" as const,
-      label: "Actions in the plan",
+      label: "Actions found",
       proposed: true,
     },
   ];
@@ -852,9 +876,9 @@ export function MunicipalityOverviewV2({
 
   const averageLabel =
     activeKpi === "concreteness"
-      ? "Average plan-detail score (0–100)"
+      ? "Average action-detail score (0–100)"
       : activeKpi === "emissionsMatch"
-        ? "% where the plan clearly tackles the biggest source"
+        ? "% where most mapped actions aim at the biggest source"
         : "Average action count (volume only — not quality)";
 
   const averageValue = (() => {
@@ -887,18 +911,28 @@ export function MunicipalityOverviewV2({
     return b.uniqueMeasureCount - a.uniqueMeasureCount;
   });
 
+  // Don't spotlight tiny extracts in Top/Bottom for the detail score.
+  const rankedForLeaders =
+    activeKpi === "concreteness"
+      ? ranked.filter((b) => b.concreteness.measureCount >= 5)
+      : ranked;
+
   const formatRow = (b: WebsiteV2PlaceBundle) => {
-    if (activeKpi === "concreteness")
-      return formatConcretenessScore(b.concreteness.score);
+    if (activeKpi === "concreteness") {
+      const score = formatConcretenessScore(b.concreteness.score);
+      return `${score} (n=${b.concreteness.measureCount})`;
+    }
     if (activeKpi === "emissionsMatch")
       return focusMatchChipLabel(b.gap.focusMatch);
     return String(b.uniqueMeasureCount);
   };
 
+  const volumeLists = activeKpi === "uniqueMeasures";
+
   return (
     <SiteMockShell
       eyebrow="Website visuals v2 · municipality overview"
-      title="Compare municipalities on plan detail, biggest-source fit, and actions"
+      title="Compare plan wording detail, biggest-source aim, and action volume"
     >
       <MockChipRow
         chips={chips}
@@ -925,23 +959,30 @@ export function MunicipalityOverviewV2({
           }
           direction={
             activeKpi === "concreteness"
-              ? "Higher = more who/what/when/how detail (primary; framework trim not applied)"
+              ? "Higher = more who/what/when/how detail · gaps under ~10 pts are not meaningful"
               : activeKpi === "emissionsMatch"
-                ? "Yes / partly / not really vs biggest emission source"
+                ? "Yes / partly / not really — counts actions found, not cuts"
                 : "Count only — higher volume is not a better plan by itself"
           }
-          top={ranked.slice(0, 3).map((b) => ({
+          topLabel={volumeLists ? "Most actions found" : "Higher scores"}
+          bottomLabel={volumeLists ? "Fewest actions found" : "Lower scores"}
+          listTone={volumeLists ? "neutral" : "rank"}
+          top={rankedForLeaders.slice(0, 3).map((b) => ({
             name: b.record.name,
             value: formatRow(b),
           }))}
-          bottom={ranked
+          bottom={rankedForLeaders
             .slice(-3)
             .reverse()
             .map((b) => ({
               name: b.record.name,
               value: formatRow(b),
             }))}
-          note={`${assessed.length} of ${bundles.length} municipalities comparable in this load. Grey = no plan extract yet. Table also shows framework directness and experimental combined.`}
+          note={`${assessed.length} of ${bundles.length} municipalities comparable in this load. Grey = no plan extract yet.${
+            activeKpi === "concreteness"
+              ? " Leader lists require at least 5 scored actions."
+              : ""
+          } Table also shows theme directness and an internal combined comparison.`}
         />
       </div>
 
@@ -950,12 +991,12 @@ export function MunicipalityOverviewV2({
           <thead className="bg-gray-05/80 text-left text-xs uppercase tracking-wide text-gray-02">
             <tr>
               <th className="px-4 py-3 font-medium">Municipality</th>
-              <th className="px-4 py-3 font-medium">Specification</th>
-              <th className="px-4 py-3 font-medium">Framework direct</th>
+              <th className="px-4 py-3 font-medium">Action detail</th>
+              <th className="px-4 py-3 font-medium">Theme direct</th>
               <th className="px-4 py-3 font-medium">Combined*</th>
               <th className="px-4 py-3 font-medium">Biggest source</th>
-              <th className="px-4 py-3 font-medium">Actions</th>
-              <th className="px-4 py-3 font-medium">Matched themes</th>
+              <th className="px-4 py-3 font-medium">Actions found</th>
+              <th className="px-4 py-3 font-medium">Themes named</th>
             </tr>
           </thead>
           <tbody>
@@ -1014,9 +1055,9 @@ export function MunicipalityOverviewV2({
           </tbody>
         </table>
         <p className="px-4 py-2 text-[11px] text-gray-02 border-t border-gray-03/30">
-          * Combined = experimental slots × 0.85 when every judged theme match
-          is implied-only. Asterisk = thin TEF label coverage for
-          directness/combined.
+          * Combined = internal comparison only (slots × 0.85 when every judged
+          theme match is implied-only). Asterisk = thin theme-label coverage for
+          directness/combined. “Themes named” depends on catalogue coverage.
         </p>
       </div>
 

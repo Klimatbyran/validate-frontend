@@ -38,24 +38,25 @@ export function focusMatchPlainEn(
 ): { question: string; answer: string; shortLabel: string } {
   const sector =
     largestSectorLabel?.trim() || "the biggest source of emissions";
-  const question = "Does the plan tackle where emissions are highest?";
+  const question =
+    "Does the plan include actions for the biggest emissions source?";
   switch (verdict) {
     case "match":
       return {
         question,
-        answer: `Yes — it puts clear focus on ${sector}, the biggest source of emissions here.`,
+        answer: `Yes — more of the plan’s actions are aimed at ${sector} than any other mapped sector (at least a quarter of them). This counts actions found, not how much each would cut.`,
         shortLabel: "Yes",
       };
     case "partial":
       return {
         question,
-        answer: `Partly — it includes actions for ${sector}, but focuses more on other areas.`,
+        answer: `Partly — the plan has some actions for ${sector}, but they are not the main share of the plan’s mapped actions. This counts actions found, not how much each would cut.`,
         shortLabel: "Partly",
       };
     case "miss":
       return {
         question,
-        answer: `Not really — ${sector} is the biggest source here, but the plan has no clear actions for it.`,
+        answer: `Not really — ${sector} is the biggest source here, and we found no actions for it in the plan text.`,
         shortLabel: "Not really",
       };
     case "not-assessable":

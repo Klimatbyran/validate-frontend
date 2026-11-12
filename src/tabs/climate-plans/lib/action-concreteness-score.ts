@@ -416,19 +416,23 @@ export const ACTION_CONCRETENESS_METHODOLOGY = {
 export const WEBSITE_V2_KPI_READING_GUIDE = {
   title: "How to read these three views together",
   shortEn:
-    "Specification, biggest-source fit, and action count answer different questions. None of them alone says a plan is “good.” A few concrete actions aimed at the largest emission source can be more useful than many vague actions that miss it.",
+    "Action detail, biggest-source fit, and action count answer different questions. None of them alone says a plan is “good.” A few concrete actions aimed at the largest emission source can be more useful than many vague actions that miss it.",
   points: [
     {
-      label: "Plan action detail",
-      body: "Average completeness of who / what / when / how in the extract. Higher means more specified wording on average — not more climate impact.",
+      label: "Action detail",
+      body: "How fully the plan’s actions are written up (who / what / when / how). Higher means more complete wording on average — not more climate impact. A short precise plan can score above a long vague one.",
     },
     {
       label: "Biggest-source fit",
-      body: "Whether the plan has actions in the sector that dominates local emissions, and whether that sector is also where most of the plan’s actions sit. Yes / partly / not really — not a grade for the whole plan.",
+      body: "Whether we found actions for the sector that dominates local emissions, and whether that sector also has the largest share of the plan’s mapped actions. Counts actions found — not how much each would cut.",
     },
     {
-      label: "Actions in the plan",
+      label: "Actions found",
       body: "Count of unique climate-related actions after similar ones are merged. Volume only. More is not automatically better; use it with the other two views.",
     },
   ],
+  biggestSourceMethod: {
+    title: "How biggest-source fit is decided",
+    body: "Using Unearth territorial emissions grouped into six sectors, we identify the largest sector for the municipality. If the plan has no actions mapped to that sector → Not really. If it has some, but that sector is not the largest share of the plan’s mapped actions (or is largest but under 25% of them) → Partly. If it is the largest share and at least 25% → Yes. One thin action can still count as “found”; whether those actions are well specified is the separate action-detail score.",
+  },
 } as const;
