@@ -314,7 +314,11 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
 
       {open ? (
         <div className="border-t border-gray-03/30 px-5 py-4 space-y-4">
-          <div className="flex flex-wrap gap-2 items-center">
+          <div
+            className="flex flex-wrap gap-2 items-center"
+            role="group"
+            aria-label="Catalogue view"
+          >
             {(
               [
                 ["measures", "Actions found"],
@@ -324,7 +328,13 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
               <button
                 key={id}
                 type="button"
-                onClick={() => setMode(id)}
+                onClick={() => {
+                  setMode(id);
+                  if (id === "exact-tefs" && layout === "flows") {
+                    setLayout("sectors");
+                  }
+                }}
+                aria-pressed={mode === id}
                 className={cn(
                   "px-3 py-1.5 rounded-full text-sm border",
                   mode === id
@@ -336,15 +346,23 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
               </button>
             ))}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div
+            className="flex flex-wrap items-center gap-2"
+            role="group"
+            aria-label={mode === "measures" ? "Group actions" : "Group themes"}
+          >
             <span className="text-[11px] uppercase tracking-wide text-gray-02">
-              Group actions
+              {mode === "measures" ? "Group actions" : "Group themes"}
             </span>
-            {BROWSE_LAYOUT_OPTIONS.map((opt) => (
+            {(mode === "measures"
+              ? BROWSE_LAYOUT_OPTIONS
+              : BROWSE_LAYOUT_OPTIONS.filter((opt) => opt.id !== "flows")
+            ).map((opt) => (
               <button
                 key={opt.id}
                 type="button"
                 onClick={() => setLayout(opt.id)}
+                aria-pressed={layout === opt.id}
                 className={cn(
                   "px-3 py-1.5 rounded-full text-xs border",
                   layout === opt.id
@@ -358,8 +376,8 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
           </div>
           {mode === "measures" && layout === "flows" ? (
             <p className="text-xs text-gray-02">
-              Grouped by extracted activity shifts (from → to). Cards also show
-              that wiring under each action.
+              Grouped by extracted activity shifts (from → to when available).
+              Each card lists its shifts.
             </p>
           ) : null}
 
@@ -368,7 +386,7 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
               <ul className="space-y-2">
                 {measureRows.map((row) => (
                   <li key={row.measure.measure_text}>
-                    <MeasureTile row={row} />
+                    <MeasureTile row={row} showEmptyShiftHint={false} />
                   </li>
                 ))}
               </ul>
@@ -386,6 +404,7 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
                           <MeasureTile
                             key={row.measure.measure_text}
                             row={row}
+                            showEmptyShiftHint={layout === "flows"}
                           />
                         ))}
                       </div>
@@ -473,8 +492,11 @@ function SectorBlock({
 
 function MeasureTile({
   row,
+  showEmptyShiftHint = false,
 }: {
   row: ReturnType<typeof browseMeasures>[number];
+  /** Only in activity-flow browse — avoid noise in sector/list views. */
+  showEmptyShiftHint?: boolean;
 }) {
   const m = row.measure;
   const slots = [
@@ -483,6 +505,10 @@ function MeasureTile({
     ["When", m.intervention_when],
     ["How", m.intervention_how],
   ] as const;
+  const shiftChips =
+    row.activityFlows.length > 0
+      ? row.activityFlows
+      : row.activityLabels.map((label) => `Activity: ${label}`);
   return (
     <article className="rounded-2xl border border-gray-03/40 bg-gray-04/60 px-3.5 py-3 space-y-2">
       <p className="text-sm text-gray-01 leading-snug">{m.measure_text}</p>
@@ -507,13 +533,13 @@ function MeasureTile({
           );
         })}
       </div>
-      {row.activityFlows.length > 0 ? (
+      {shiftChips.length > 0 ? (
         <div className="space-y-1">
           <div className="text-[10px] uppercase tracking-wide text-gray-02">
             Activity shift
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {row.activityFlows.slice(0, 3).map((flow) => (
+            {shiftChips.slice(0, 3).map((flow) => (
               <span
                 key={flow}
                 className="text-[11px] px-2 py-0.5 rounded-md border border-orange-03/40 text-orange-02 bg-orange-03/10"
@@ -521,16 +547,16 @@ function MeasureTile({
                 {flow}
               </span>
             ))}
-            {row.activityFlows.length > 3 ? (
+            {shiftChips.length > 3 ? (
               <span className="text-[11px] text-gray-02">
-                +{row.activityFlows.length - 3}
+                +{shiftChips.length - 3}
               </span>
             ) : null}
           </div>
         </div>
-      ) : (
+      ) : showEmptyShiftHint ? (
         <p className="text-[11px] text-gray-02">No activity shift extracted</p>
-      )}
+      ) : null}
       {row.exactTefLabels.length > 0 ? (
         <p className="text-[11px] text-gray-02 truncate">
           Matched theme: {row.exactTefLabels.slice(0, 2).join(" · ")}
