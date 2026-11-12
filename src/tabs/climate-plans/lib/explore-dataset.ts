@@ -265,14 +265,17 @@ async function attachSectorEmissions(
  * tables are current DB state / latest in-place rerun).
  */
 async function loadExploreDatasetFromAggregate(): Promise<ExploreDataset | null> {
+  // Match prior Explore behaviour: any non-rejected scored plan, not only
+  // APPROVED (internal Validate still needs PENDING_APPROVAL extracts).
   const payload = await fetchExplorePlans({
-    status: "APPROVED",
+    status: "all",
     groupBy: "municipality",
     requireStep: "scoreMeasures",
   });
   if (!payload) return null;
 
   const municipalities = payload.plans
+    .filter((p) => p.status !== "REJECTED")
     .map(exploreApiPlanToRecord)
     .sort((a, b) => a.name.localeCompare(b.name, "sv"));
   const measuresOnly: MunicipalityMeasures[] = municipalities.map((m) => ({

@@ -11,7 +11,6 @@ import type { Measure } from "./measures-types";
 import type {
   ExploreDataSource,
   ExploreMunicipalityRecord,
-  PipelineCommitment,
 } from "./explore-types";
 import { collectTefHits } from "./explore-aggregates";
 
@@ -99,22 +98,14 @@ export function exploreApiPlanToRecord(
   plan: ExploreApiPlanRow,
 ): ExploreMunicipalityRecord {
   const measures = plan.measures ?? [];
-  const commitments: PipelineCommitment[] = (plan.commitments ?? []).map(
-    (c) => ({
-      text: c.text,
-      climateRelevant: c.climateRelevant,
-      actionable: c.actionable,
-      similarGroupId: c.similarGroupId,
-      adaptation: c.adaptation,
-      originatesFrom: Array.isArray(c.originatesFrom) ? c.originatesFrom : [],
-    }),
-  );
-
   const dataSources: ExploreDataSource[] = [...(plan.dataSources ?? [])];
   if (measures.length > 0 && !dataSources.includes("pipeline-measures")) {
     dataSources.push("pipeline-measures");
   }
-  if (commitments.length > 0 && !dataSources.includes("pipeline-commitments")) {
+  if (
+    plan.commitmentSource === "pipeline-commitments" &&
+    !dataSources.includes("pipeline-commitments")
+  ) {
     dataSources.push("pipeline-commitments");
   }
 
