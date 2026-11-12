@@ -22,9 +22,9 @@ describe("Website visuals v2 detail mock", () => {
       screen.getByText(/Climate actions in the plan \(duplicates removed\)/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Specification \(primary\)/i)).toBeInTheDocument();
-    expect(
-      screen.getAllByText(/Framework directness/i).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Framework directness/i).length).toBeGreaterThan(
+      0,
+    );
     expect(
       screen.getAllByText(/Combined \(experimental\)/i).length,
     ).toBeGreaterThan(0);
