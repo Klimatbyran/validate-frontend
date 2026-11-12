@@ -180,7 +180,8 @@ describe("action concreteness score", () => {
     );
     const unlabeled = (text: string): TefHit => {
       const base = hit({ measureText: text, explicit: true });
-      const { explicit: _drop, ...rest } = base;
+      const { explicit, ...rest } = base;
+      void explicit;
       return rest;
     };
     const result = computeActionConcreteness(

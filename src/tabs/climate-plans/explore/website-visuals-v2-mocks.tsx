@@ -92,21 +92,26 @@ function Meter({
 
 function SlotBars({ result }: { result: ActionConcretenessResult }) {
   const rows = [
-    { key: "what", label: "What", weight: "35%", points: result.slotPoints.what },
+    {
+      key: "what",
+      label: "What",
+      weight: "35%",
+      points: result.slotPoints.what,
+    },
     { key: "how", label: "How", weight: "25%", points: result.slotPoints.how },
     { key: "who", label: "Who", weight: "20%", points: result.slotPoints.who },
-    { key: "when", label: "When", weight: "20%", points: result.slotPoints.when },
+    {
+      key: "when",
+      label: "When",
+      weight: "20%",
+      points: result.slotPoints.when,
+    },
   ] as const;
   return (
     <div className="space-y-2">
       {rows.map((row) => {
         const pts = row.points ?? 0;
-        const max =
-          row.key === "what"
-            ? 35
-            : row.key === "how"
-              ? 25
-              : 20;
+        const max = row.key === "what" ? 35 : row.key === "how" ? 25 : 20;
         return (
           <div key={row.key} className="flex items-center gap-3 text-sm">
             <div className="w-14 text-gray-01">{row.label}</div>
@@ -125,7 +130,8 @@ function SlotBars({ result }: { result: ActionConcretenessResult }) {
           </div>
         );
       })}
-      {result.broadnessPointsLost != null && result.broadnessPointsLost > 0.05 ? (
+      {result.broadnessPointsLost != null &&
+      result.broadnessPointsLost > 0.05 ? (
         <p className="text-xs text-orange-02 pt-1">
           −{result.broadnessPointsLost.toFixed(1)} pts from implied-only TEF
           wording (avg)
@@ -238,9 +244,8 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
             Browse measures & exact TEF matches
           </h3>
           <p className="text-sm text-gray-02 mt-1">
-            {bundle.uniqueMeasureCount} unique measures ·{" "}
-            {bundle.exactTefCount} exact TEF hits (official + proposed; implied
-            excluded)
+            {bundle.uniqueMeasureCount} unique measures · {bundle.exactTefCount}{" "}
+            exact TEF hits (official + proposed; implied excluded)
           </p>
         </div>
         <span className="text-sm text-blue-03 shrink-0">
@@ -541,7 +546,12 @@ export function MunicipalityDetailV2({
           </div>
           <div className="text-sm text-gray-02">
             Gap (emissions with no measures):{" "}
-            <span className={cn("tabular-nums font-medium", gapValueClass(bundle.gap.gapShare))}>
+            <span
+              className={cn(
+                "tabular-nums font-medium",
+                gapValueClass(bundle.gap.gapShare),
+              )}
+            >
               {formatGapPercent(bundle.gap.gapShare)}
             </span>
           </div>
@@ -621,7 +631,11 @@ export function MunicipalityOverviewV2({
   onKpiChange: (id: OverviewKpi) => void;
 }) {
   const chips = [
-    { id: "concreteness" as const, label: "Action concreteness", proposed: true },
+    {
+      id: "concreteness" as const,
+      label: "Action concreteness",
+      proposed: true,
+    },
     {
       id: "emissionsMatch" as const,
       label: "Emissions match",
@@ -677,8 +691,9 @@ export function MunicipalityOverviewV2({
       return String(Math.round(mean));
     }
     if (activeKpi === "emissionsMatch") {
-      const matches = assessed.filter((b) => b.gap.focusMatch === "match")
-        .length;
+      const matches = assessed.filter(
+        (b) => b.gap.focusMatch === "match",
+      ).length;
       return `${Math.round((matches / assessed.length) * 100)}%`;
     }
     const mean =
@@ -778,7 +793,9 @@ export function MunicipalityOverviewV2({
                     )}
                     onClick={() => onSelectName(b.record.name)}
                   >
-                    <td className="px-4 py-2.5 text-gray-01">{b.record.name}</td>
+                    <td className="px-4 py-2.5 text-gray-01">
+                      {b.record.name}
+                    </td>
                     <td className="px-4 py-2.5 tabular-nums">
                       {formatConcretenessScore(b.concreteness.score)}
                       {b.concreteness.provisional ? (

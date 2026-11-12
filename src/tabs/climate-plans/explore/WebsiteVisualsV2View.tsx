@@ -75,13 +75,14 @@ export function WebsiteVisualsV2View({
     null;
 
   const selectedBundle =
-    bundles.find((b) =>
-      namesMatch(b.record.name, effectiveMuniName ?? ""),
-    ) ?? null;
+    bundles.find((b) => namesMatch(b.record.name, effectiveMuniName ?? "")) ??
+    null;
 
   const coverage = useMemo(() => {
     const withMeasures = bundles.filter((b) => b.uniqueMeasureCount > 0).length;
-    const withScore = bundles.filter((b) => b.concreteness.score != null).length;
+    const withScore = bundles.filter(
+      (b) => b.concreteness.score != null,
+    ).length;
     const withMatch = bundles.filter(
       (b) => b.gap.focusMatch !== "not-assessable",
     ).length;
@@ -107,9 +108,10 @@ export function WebsiteVisualsV2View({
       {useDemo ? (
         <Callout variant="warning" title="Demo fixture active">
           <p className="text-sm text-orange-02/90 mt-1">
-            Live explore load is empty or <code className="font-mono text-xs">demo=1</code>{" "}
-            is set — showing three sample municipalities (Umeå, Skellefteå,
-            Lycksele) so the layout can be reviewed. Remove{" "}
+            Live explore load is empty or{" "}
+            <code className="font-mono text-xs">demo=1</code> is set — showing
+            three sample municipalities (Umeå, Skellefteå, Lycksele) so the
+            layout can be reviewed. Remove{" "}
             <code className="font-mono text-xs">demo=1</code> once pipeline
             extracts load.
           </p>

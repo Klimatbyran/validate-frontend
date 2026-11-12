@@ -30,7 +30,11 @@ export const IMPLIED_ONLY_BROADNESS_FACTOR = 0.85;
 
 export type ConcretenessBand = "concrete" | "partial" | "vague" | "unscored";
 export type EvidenceVolume = "limited" | "moderate" | "broad" | "none";
-export type MeasureWording = "explicit" | "implied-only" | "unjudged" | "no-tef";
+export type MeasureWording =
+  | "explicit"
+  | "implied-only"
+  | "unjudged"
+  | "no-tef";
 
 export interface MeasureConcretenessBreakdown {
   measureText: string;
@@ -205,9 +209,7 @@ export function computeActionConcreteness(
   };
 
   // Points that would exist without the broadness factor, minus actual score.
-  const beforeBroadness = mean(
-    breakdowns.map((b) => 100 * b.slotScore),
-  );
+  const beforeBroadness = mean(breakdowns.map((b) => 100 * b.slotScore));
   const broadnessPointsLost = Math.max(0, beforeBroadness - score);
 
   const impliedOnlyCount = breakdowns.filter(
@@ -216,9 +218,7 @@ export function computeActionConcreteness(
   const explicitCount = breakdowns.filter(
     (b) => b.wording === "explicit",
   ).length;
-  const withTef = breakdowns.filter(
-    (b) => b.wording !== "no-tef",
-  ).length;
+  const withTef = breakdowns.filter((b) => b.wording !== "no-tef").length;
   const judgedMeasureCount = breakdowns.filter(
     (b) => b.wording === "explicit" || b.wording === "implied-only",
   ).length;

@@ -122,23 +122,20 @@ export function groupExactTefsBySector(
     .map((id) => ({
       sectorId: id,
       label: sectorLabel(id),
-      hits: (buckets.get(id) ?? []).slice().sort((a, b) =>
-        a.shortLabel.localeCompare(b.shortLabel, "sv"),
-      ),
+      hits: (buckets.get(id) ?? [])
+        .slice()
+        .sort((a, b) => a.shortLabel.localeCompare(b.shortLabel, "sv")),
     }));
 }
 
-export function groupMeasuresBySector(
-  rows: MeasureBrowseRow[],
-): Array<{
+export function groupMeasuresBySector(rows: MeasureBrowseRow[]): Array<{
   sectorId: TefSectorId | "other";
   label: string;
   rows: MeasureBrowseRow[];
 }> {
   const buckets = new Map<TefSectorId | "other", MeasureBrowseRow[]>();
   for (const row of rows) {
-    const ids =
-      row.sectors.length > 0 ? row.sectors : (["other"] as const);
+    const ids = row.sectors.length > 0 ? row.sectors : (["other"] as const);
     // Place each measure once — prefer first TEF sector, else Other.
     const id = ids[0]!;
     const list = buckets.get(id) ?? [];
@@ -174,9 +171,7 @@ export function buildWebsiteV2PlaceBundle(
 }
 
 /** Encode focus match for choropleth: match=1, partial=0.5, miss=0, else null. */
-export function focusMatchMapValue(
-  verdict: FocusMatchVerdict,
-): number | null {
+export function focusMatchMapValue(verdict: FocusMatchVerdict): number | null {
   switch (verdict) {
     case "match":
       return 1;

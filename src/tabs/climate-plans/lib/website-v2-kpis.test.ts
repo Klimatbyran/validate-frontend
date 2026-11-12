@@ -23,7 +23,9 @@ function measure(text: string): Measure {
   };
 }
 
-function hit(partial: Partial<TefHit> & Pick<TefHit, "stableId" | "explicit">): TefHit {
+function hit(
+  partial: Partial<TefHit> & Pick<TefHit, "stableId" | "explicit">,
+): TefHit {
   return {
     shortLabel: "T-1A1b-TE-1 - Electric buses",
     sectorPath: "Transport",
@@ -73,9 +75,7 @@ function record(
 describe("website v2 kpis", () => {
   it("counts pipeline measures as unique measures", () => {
     expect(
-      uniqueMeasureCount(
-        record({ measures: [measure("a"), measure("b")] }),
-      ),
+      uniqueMeasureCount(record({ measures: [measure("a"), measure("b")] })),
     ).toBe(2);
   });
 

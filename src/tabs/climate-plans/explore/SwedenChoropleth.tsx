@@ -182,7 +182,8 @@ export function SwedenChoropleth({
       <div className="flex items-center gap-2 mt-3 text-xs text-gray-02">
         {focusMatchScale ? (
           <>
-            <span className="inline-block w-3 h-3 rounded-sm bg-blue-03" /> match
+            <span className="inline-block w-3 h-3 rounded-sm bg-blue-03" />{" "}
+            match
             <span className="inline-block w-3 h-3 rounded-sm bg-orange-02" />{" "}
             partial
             <span className="inline-block w-3 h-3 rounded-sm bg-pink-03" /> no
