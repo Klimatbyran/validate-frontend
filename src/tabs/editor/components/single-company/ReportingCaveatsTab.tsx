@@ -65,8 +65,9 @@ function caveatToForm(c: ReportingCaveat): FormState {
     description: c.description ?? "",
     effectiveYear: c.effectiveYear ?? "",
     affectedYears: (c.affectedYears ?? []).join(", "),
-    affectedScopes: (c.affectedScopes ?? []).filter((s): s is EmissionsScopeKey =>
-      (EMISSIONS_SCOPE_KEYS as readonly string[]).includes(s),
+    affectedScopes: (c.affectedScopes ?? []).filter(
+      (s): s is EmissionsScopeKey =>
+        (EMISSIONS_SCOPE_KEYS as readonly string[]).includes(s),
     ),
     counterpartyName: c.counterpartyName ?? "",
     counterpartyCompanyId: c.counterpartyCompanyId ?? "",

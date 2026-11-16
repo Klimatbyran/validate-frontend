@@ -100,9 +100,7 @@ export async function createReportingCaveat(
   body: ReportingCaveatWriteBody,
 ): Promise<ReportingCaveat> {
   const res = await garboAuthFetch(
-    apiUrl(
-      companiesPath(`${encodeURIComponent(companyId)}/reporting-caveats`),
-    ),
+    apiUrl(companiesPath(`${encodeURIComponent(companyId)}/reporting-caveats`)),
     {
       method: "POST",
       headers: {
@@ -148,11 +146,7 @@ export async function updateReportingCaveat(
 
 export async function deleteReportingCaveat(caveatId: string): Promise<void> {
   const res = await garboAuthFetch(
-    apiUrl(
-      companiesPath(
-        `reporting-caveats/${encodeURIComponent(caveatId)}`,
-      ),
-    ),
+    apiUrl(companiesPath(`reporting-caveats/${encodeURIComponent(caveatId)}`)),
     { method: "DELETE" },
   );
   if (res.status === 401) throw new Error("Please log in to delete a caveat.");
