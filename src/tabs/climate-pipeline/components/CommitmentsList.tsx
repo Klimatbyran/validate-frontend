@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   FileCheck,
   FileWarning,
+  History,
   Image,
   SearchCheck,
   Target,
@@ -101,6 +102,34 @@ function NotFoundInPdfFlag() {
     >
       <FileWarning className="h-3 w-3" aria-hidden />
       <span>Not in PDF text</span>
+    </span>
+  );
+}
+
+/** Flags a commitment classifyCommitmentHistoric found to be reporting an
+ * already-closed, already-evaluated outcome rather than a live target --
+ * e.g. a "Mål att nå år 2020" goal cell paired with a sibling "Utfall år
+ * 2020" cell showing the result already happened. Marked, not filtered:
+ * still shown everywhere else in the list, just flagged. targetYear is
+ * only ever set alongside historic=true (see classifyCommitmentHistoric's
+ * own prompt), so it's safe to show unconditionally here. */
+function HistoricFlag({
+  targetYear,
+  historicReason,
+}: {
+  targetYear: number | null;
+  historicReason: string | null;
+}) {
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-purple-03/40 bg-purple-03/10 px-1.5 py-0.5 text-[10px] font-medium text-purple-03"
+      title={
+        historicReason ??
+        "Reports an already-closed, already-evaluated outcome rather than a live target"
+      }
+    >
+      <History className="h-3 w-3" aria-hidden />
+      <span>Historic{targetYear ? ` (${targetYear})` : ""}</span>
     </span>
   );
 }
@@ -352,6 +381,11 @@ export function CommitmentsList({
   /** Full eligible set for suggest editors — when the visible list is
    * filtered or single-item, options still cover every group/theme. */
   optionCommitments,
+  /** Suppresses the review footer (ReviewControls/suggest-editors)
+   * entirely, regardless of columns -- for a step with no backend
+   * endpoint to save a correction to (e.g. classifyCommitmentHistoric),
+   * so the UI never implies an editability it doesn't actually have. */
+  readOnly = false,
 }: {
   commitments: Commitment[];
   documentReferences?: DocumentReference[];
@@ -367,6 +401,7 @@ export function CommitmentsList({
   focusSingle?: boolean;
   focusGroup?: boolean;
   optionCommitments?: Commitment[];
+  readOnly?: boolean;
 }) {
   const optionsSource = optionCommitments ?? commitments;
   // Declared before the early return below so it's called unconditionally
@@ -427,6 +462,12 @@ export function CommitmentsList({
             <FoundInDocumentFlag unverified={c.unverified} />
             {c.fromRecoveredImage && <ImageSourceFlag />}
             {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
+            {c.historic && (
+              <HistoricFlag
+                targetYear={c.targetYear}
+                historicReason={c.historicReason}
+              />
+            )}
             <OriginFlag originatesFrom={c.originatesFrom} />
           </div>
           <p className="text-sm text-gray-01 break-words">{c.text}</p>
@@ -555,6 +596,12 @@ export function CommitmentsList({
             <FoundInDocumentFlag unverified={c.unverified} />
             {c.fromRecoveredImage && <ImageSourceFlag />}
             {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
+            {c.historic && (
+              <HistoricFlag
+                targetYear={c.targetYear}
+                historicReason={c.historicReason}
+              />
+            )}
             <OriginFlag originatesFrom={c.originatesFrom} />
           </div>
           <p className="text-sm text-gray-01 break-words">{c.text}</p>
@@ -771,6 +818,12 @@ export function CommitmentsList({
                 <FoundInDocumentFlag unverified={c.unverified} />
                 {c.fromRecoveredImage && <ImageSourceFlag />}
                 {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
+                {c.historic && (
+                  <HistoricFlag
+                    targetYear={c.targetYear}
+                    historicReason={c.historicReason}
+                  />
+                )}
                 <OriginFlag originatesFrom={c.originatesFrom} />
                 {!c.unverified && (
                   <button
@@ -836,13 +889,15 @@ export function CommitmentsList({
                   {c.actionableReason}
                 </p>
               )}
-              <QaFooter>
-                <CommitmentReviewControls
-                  commitment={c}
-                  columns={columns}
-                  reviewCtx={reviewCtx}
-                />
-              </QaFooter>
+              {!readOnly && (
+                <QaFooter>
+                  <CommitmentReviewControls
+                    commitment={c}
+                    columns={columns}
+                    reviewCtx={reviewCtx}
+                  />
+                </QaFooter>
+              )}
             </article>
           </div>
         ))
