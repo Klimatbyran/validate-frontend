@@ -170,7 +170,7 @@ function CommitmentReviewControls({
   reviewCtx,
 }: {
   commitment: Commitment;
-  columns: "extract" | "climate" | "actionable";
+  columns: "extract" | "climate" | "actionable" | "historic";
   reviewCtx: ReviewContext;
 }) {
   const entityKey = reviewKey(
@@ -389,7 +389,7 @@ export function CommitmentsList({
 }: {
   commitments: Commitment[];
   documentReferences?: DocumentReference[];
-  columns: "extract" | "climate" | "actionable" | "similar" | "themes";
+  columns: "extract" | "climate" | "actionable" | "historic" | "similar" | "themes";
   reviewCtx: ReviewContext;
   allVerifiedPhrases: string[];
   /** Only used when columns === "climate" — see the view-all-in-PDF button
@@ -859,6 +859,11 @@ export function CommitmentsList({
                     <YesNo value={c.actionable} />
                   </MetaChip>
                 )}
+                {columns === "historic" && (
+                  <MetaChip label="Historic">
+                    <YesNo value={c.historic} />
+                  </MetaChip>
+                )}
               </div>
               <p className="text-sm text-gray-01 break-words whitespace-pre-wrap">
                 {c.text}
@@ -887,6 +892,11 @@ export function CommitmentsList({
               {columns === "actionable" && c.actionableReason && (
                 <p className="text-xs text-gray-02 break-words">
                   {c.actionableReason}
+                </p>
+              )}
+              {columns === "historic" && c.historicReason && (
+                <p className="text-xs text-gray-02 break-words">
+                  {c.historicReason}
                 </p>
               )}
               {!readOnly && (

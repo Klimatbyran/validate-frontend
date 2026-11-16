@@ -372,7 +372,7 @@ export function StepResultDialog({
 
   function renderCommitmentsList(
     commitments: Commitment[],
-    columns: "extract" | "climate" | "actionable" | "similar" | "themes",
+    columns: "extract" | "climate" | "actionable" | "historic" | "similar" | "themes",
     documentReferences?: DocumentReference[],
     readOnly?: boolean,
   ) {
@@ -586,7 +586,7 @@ export function StepResultDialog({
       case "classifyCommitmentHistoric":
         return renderCommitmentsList(
           detail.commitments.filter((c) => c.climateRelevant),
-          "extract",
+          "historic",
           undefined,
           true,
         );
