@@ -264,6 +264,18 @@ function PlanRow({
   const previousRuns = runsNewestFirst.slice(1);
   const hasPreviousRuns = previousRuns.length > 0;
 
+  // Newest startedAt across every step this plan has ever run, regardless
+  // of runId grouping (older rows predate runId and would otherwise be
+  // invisible to this) -- the one date that answers "is this worth
+  // rerunning, or did it already run after our latest fix?"
+  const lastRanAt = plan.pipelineSteps.reduce<string | null>(
+    (latest, s) =>
+      !latest || new Date(s.startedAt) > new Date(latest)
+        ? s.startedAt
+        : latest,
+    null,
+  );
+
   return (
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] p-4 space-y-3">
       <div className="flex items-center justify-between gap-4">
@@ -325,7 +337,17 @@ function PlanRow({
             </Button>
           )}
         </div>
-        <span className="text-xs text-gray-02 shrink-0">{plan.status}</span>
+        <div className="flex flex-col items-end gap-0.5 shrink-0">
+          <span className="text-xs text-gray-02">{plan.status}</span>
+          <span
+            className="text-[11px] text-gray-02/70"
+            title="Most recent pipeline activity across every step"
+          >
+            {lastRanAt
+              ? `Last ran ${new Date(lastRanAt).toLocaleString()}`
+              : "Never run"}
+          </span>
+        </div>
       </div>
       {plan.garboThreadId && (
         <div className="flex flex-wrap gap-1.5 pb-2 border-b border-gray-03/50">
