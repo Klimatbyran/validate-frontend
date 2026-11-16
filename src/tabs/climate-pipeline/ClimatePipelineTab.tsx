@@ -7,12 +7,19 @@ import {
   FileText,
   Loader2,
   RefreshCw,
+  RotateCw,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { StatusPill } from "@/components/StatusPill";
 import { Button } from "@/ui/button";
 import type { QueueJob } from "@/lib/types";
 import { getQueueDisplayName } from "@/lib/workflow-config";
+import {
+  getClimatePlansPipelineWebhookUrl,
+  CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
+} from "@/config/api-env";
+import { createJobsFromUrls } from "@/tabs/upload/lib/upload-api";
 import { JobDetailsDialog } from "@/tabs/jobbstatus/components/job-details/JobDetailsDialog";
 import {
   useClimatePipelinePlans,
@@ -106,6 +113,17 @@ interface PlanRowProps {
     runId?: string,
   ) => void;
   onPdfJobClick: (job: QueueJob, planId: string) => void;
+  /** Bulk-rerun selection -- a checkbox on every row, independent of
+   * municipality grouping, so a reviewer can pick several documents
+   * across different municipalities in one pass. */
+  selected: boolean;
+  onToggleSelect: (planId: string) => void;
+  /** True from the moment "Rerun selected" was clicked for this plan
+   * until its garboThreadId actually changes -- see
+   * ClimatePipelineTab's rerunningPlanIds. The real pipeline-api/garbo
+   * job can take a few seconds to even get queued, so this is the only
+   * way to show "it's running" before any real status exists yet. */
+  isRerunning: boolean;
 }
 
 function StepStatusPill({
@@ -210,6 +228,9 @@ function PlanRow({
   county,
   onStepClick,
   onPdfJobClick,
+  selected,
+  onToggleSelect,
+  isRerunning,
 }: PlanRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { jobsByQueue: pdfJobsByQueue } = usePdfParsingJobs(plan.garboThreadId);
@@ -247,8 +268,21 @@ function PlanRow({
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] p-4 space-y-3">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1 flex items-center gap-3">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect(plan.id)}
+            className="shrink-0 h-4 w-4 accent-blue-03"
+            aria-label={`Select ${title} for bulk rerun`}
+          />
           <div className="min-w-0">
             <div className="flex items-center gap-2">
+              {isRerunning && (
+                <span className="shrink-0 inline-flex items-center gap-1 rounded-full border border-blue-03/40 bg-blue-03/10 px-2 py-0.5 text-[11px] font-medium text-blue-03">
+                  <RotateCw className="w-3 h-3 animate-spin" />
+                  Rerunning — new parse queued
+                </span>
+              )}
               <h3 className="font-bold text-gray-01 truncate">{title}</h3>
               {county && (
                 <span className="shrink-0 inline-flex items-center rounded-full border border-blue-03/30 bg-blue-03/10 px-2 py-0.5 text-[11px] font-medium text-blue-03">
@@ -413,6 +447,80 @@ export function ClimatePipelineTab() {
   );
   const appliedDeepLinkRef = useRef<string | null>(null);
 
+  // Bulk rerun — checkboxes across the whole list, independent of
+  // municipality grouping.
+  const [selectedPlanIds, setSelectedPlanIds] = useState<Set<string>>(
+    new Set(),
+  );
+  // planId -> that plan's garboThreadId at the moment rerun was clicked.
+  // A real new parse job changes garboThreadId once pipeline-api/garbo
+  // actually pick it up (a few seconds, not instant) -- until then there
+  // is no real status to show yet, so this is what drives the optimistic
+  // "Rerunning" badge. Cleared the moment the live poll shows a
+  // different garboThreadId than what's recorded here.
+  const [rerunningPlanIds, setRerunningPlanIds] = useState<
+    Map<string, string | null>
+  >(new Map());
+  const [isRerunningSelected, setIsRerunningSelected] = useState(false);
+
+  useEffect(() => {
+    if (rerunningPlanIds.size === 0) return;
+    setRerunningPlanIds((prev) => {
+      let changed = false;
+      const next = new Map(prev);
+      for (const plan of plans) {
+        if (
+          next.has(plan.id) &&
+          next.get(plan.id) !== plan.garboThreadId
+        ) {
+          next.delete(plan.id);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [plans, rerunningPlanIds.size]);
+
+  const toggleSelectPlan = (planId: string) => {
+    setSelectedPlanIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(planId)) next.delete(planId);
+      else next.add(planId);
+      return next;
+    });
+  };
+
+  const handleRerunSelected = async () => {
+    const targets = plans.filter((p) => selectedPlanIds.has(p.id));
+    if (targets.length === 0) return;
+    setIsRerunningSelected(true);
+    try {
+      await createJobsFromUrls({
+        urls: targets.map((p) => p.url),
+        callbackUrl: getClimatePlansPipelineWebhookUrl(),
+        reportTypeSlug: CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
+        readImages: true,
+        forceRedescribeImages: true,
+      });
+      setRerunningPlanIds((prev) => {
+        const next = new Map(prev);
+        for (const p of targets) next.set(p.id, p.garboThreadId);
+        return next;
+      });
+      setSelectedPlanIds(new Set());
+      toast.success(
+        `Rerun queued for ${targets.length} plan${targets.length === 1 ? "" : "s"} — new PDF parse, new indexing, everything.`,
+      );
+      refresh();
+    } catch (err) {
+      toast.error(
+        `Failed to queue rerun: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
+    } finally {
+      setIsRerunningSelected(false);
+    }
+  };
+
   // Apply ?planId=&step= once per deep-link value. Do not re-apply on every
   // plans poll (5s), or the open dialog gets yanked back to the URL step.
   useEffect(() => {
@@ -464,6 +572,19 @@ export function ClimatePipelineTab() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {selectedPlanIds.size > 0 && (
+            <Button
+              size="sm"
+              onClick={handleRerunSelected}
+              disabled={isRerunningSelected}
+              title="Rerun from scratch: new PDF parse, new indexing, everything — same as pasting these URLs into the upload tab"
+            >
+              <RotateCw
+                className={`w-4 h-4 mr-2 ${isRerunningSelected ? "animate-spin" : ""}`}
+              />
+              Rerun selected ({selectedPlanIds.size})
+            </Button>
+          )}
           <ReviewingAsField />
           <button
             onClick={refresh}
@@ -525,6 +646,9 @@ export function ClimatePipelineTab() {
                       setPdfJob(job);
                       setPdfJobPlanId(planId);
                     }}
+                    selected={selectedPlanIds.has(plan.id)}
+                    onToggleSelect={toggleSelectPlan}
+                    isRerunning={rerunningPlanIds.has(plan.id)}
                   />
                 ))}
               </div>
@@ -539,6 +663,9 @@ export function ClimatePipelineTab() {
                   setPdfJob(job);
                   setPdfJobPlanId(planId);
                 }}
+                selected={selectedPlanIds.has(group.plans[0].id)}
+                onToggleSelect={toggleSelectPlan}
+                isRerunning={rerunningPlanIds.has(group.plans[0].id)}
               />
             ),
           )}
