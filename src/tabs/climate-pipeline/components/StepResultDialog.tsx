@@ -374,6 +374,7 @@ export function StepResultDialog({
     commitments: Commitment[],
     columns: "extract" | "climate" | "actionable" | "similar" | "themes",
     documentReferences?: DocumentReference[],
+    readOnly?: boolean,
   ) {
     const filtered = filterCommitmentsByQaStatus(
       commitments,
@@ -391,6 +392,7 @@ export function StepResultDialog({
         commitments={filtered}
         documentReferences={documentReferences}
         columns={columns}
+        readOnly={readOnly}
         {...sharedCommitmentListProps}
       />
     );
@@ -572,28 +574,34 @@ export function StepResultDialog({
           detail.commitments.filter((c) => c.climateRelevant),
           "actionable",
         );
-      // Parallel branch off filterCommitmentsClimate, alongside
-      // filterCommitmentsActionable -- same climate-relevant subset basis
-      // (see classifyCommitmentHistoric.ts). Reuses the read-only
-      // "extract" list view rather than a dedicated reviewable column:
-      // there's no backend endpoint yet for a human to correct historic/
-      // targetYear, so a judgment-band/suggest-edit column would imply
-      // editability this step doesn't actually support. The inline
-      // "Historic" flag (see CommitmentsList) already surfaces the
-      // marking regardless of which step page is open.
+      // Runs between filterCommitmentsActionable and groupCommitmentsSimilar
+      // -- same climate-relevant subset basis as the worker's own query
+      // (see classifyCommitmentHistoric.ts). Reuses the "extract" list
+      // view for its layout, but with readOnly=true: there's no backend
+      // endpoint for a human to correct historic/targetYear, so mounting
+      // extract's normal ReviewControls here would let a reviewer "save"
+      // a correction (e.g. foundInDocument) that has nothing to apply to
+      // for this step. The inline "Historic" flag (see CommitmentsList)
+      // already surfaces the marking regardless of which step page is open.
       case "classifyCommitmentHistoric":
         return renderCommitmentsList(
           detail.commitments.filter((c) => c.climateRelevant),
           "extract",
+          undefined,
+          true,
         );
       case "groupCommitmentsSimilar":
         return renderCommitmentsList(
-          detail.commitments.filter((c) => c.climateRelevant && c.actionable),
+          detail.commitments.filter(
+            (c) => c.climateRelevant && c.actionable && !c.historic,
+          ),
           "similar",
         );
       case "groupCommitmentsThemes":
         return renderCommitmentsList(
-          detail.commitments.filter((c) => c.climateRelevant && c.actionable),
+          detail.commitments.filter(
+            (c) => c.climateRelevant && c.actionable && !c.historic,
+          ),
           "themes",
         );
       case "extractMeasures": {

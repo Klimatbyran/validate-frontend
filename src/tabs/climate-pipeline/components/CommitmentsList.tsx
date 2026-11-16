@@ -381,6 +381,11 @@ export function CommitmentsList({
   /** Full eligible set for suggest editors — when the visible list is
    * filtered or single-item, options still cover every group/theme. */
   optionCommitments,
+  /** Suppresses the review footer (ReviewControls/suggest-editors)
+   * entirely, regardless of columns -- for a step with no backend
+   * endpoint to save a correction to (e.g. classifyCommitmentHistoric),
+   * so the UI never implies an editability it doesn't actually have. */
+  readOnly = false,
 }: {
   commitments: Commitment[];
   documentReferences?: DocumentReference[];
@@ -396,6 +401,7 @@ export function CommitmentsList({
   focusSingle?: boolean;
   focusGroup?: boolean;
   optionCommitments?: Commitment[];
+  readOnly?: boolean;
 }) {
   const optionsSource = optionCommitments ?? commitments;
   // Declared before the early return below so it's called unconditionally
@@ -883,13 +889,15 @@ export function CommitmentsList({
                   {c.actionableReason}
                 </p>
               )}
-              <QaFooter>
-                <CommitmentReviewControls
-                  commitment={c}
-                  columns={columns}
-                  reviewCtx={reviewCtx}
-                />
-              </QaFooter>
+              {!readOnly && (
+                <QaFooter>
+                  <CommitmentReviewControls
+                    commitment={c}
+                    columns={columns}
+                    reviewCtx={reviewCtx}
+                  />
+                </QaFooter>
+              )}
             </article>
           </div>
         ))
