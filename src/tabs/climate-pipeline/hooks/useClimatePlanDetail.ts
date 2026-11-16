@@ -232,6 +232,16 @@ export interface RecoveredImage {
    * Kept on every row, not just ones with a description/ocrText, so a
    * reviewer can audit whether this gate is catching the right pictures. */
   hasText: boolean;
+  /** ISO timestamp of when the VLM description was actually generated --
+   * for a cache hit, that's the ORIGINAL call, possibly from a much
+   * earlier rerun, not now. Null for an OCR-only row (no VLM call ever
+   * happened) and for rows from before this field existed. */
+  describedAt: string | null;
+  /** Set only when a VLM call was actually attempted (hasText was true)
+   * and failed -- distinguishes a real failure from "no VLM call was
+   * needed" (hasText false), both of which otherwise look identical
+   * (description null, describedAt null). */
+  vlmError: string | null;
 }
 
 export interface ClimatePlanDetail {
