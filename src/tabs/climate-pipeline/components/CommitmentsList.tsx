@@ -680,6 +680,149 @@ export function CommitmentsList({
     return true;
   });
 
+  // idx is always this commitment's position in filteredCommitments, even
+  // when called from the "historic" split below -- the extract-mode
+  // section-divider check a few lines in depends on comparing against
+  // filteredCommitments[idx - 1], which only makes sense against the
+  // original, unpartitioned ordering.
+  const renderCard = (c: Commitment, idx: number) => (
+    <div key={c.id} id={`commitment-${c.id}`} className="space-y-3">
+      {columns === "extract" &&
+        c.section !== filteredCommitments[idx - 1]?.section &&
+        referencesBySection.get(c.section)?.map((ref) => (
+          <div
+            key={ref.id}
+            className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-gray-01"
+          >
+            <p className="flex flex-wrap items-center gap-2 font-medium">
+              <MetaChip
+                label="Relationship"
+                tone={documentReferenceTone(ref.relationship)}
+              >
+                {ref.relationship}
+              </MetaChip>
+              This section references: {ref.name}
+            </p>
+            <p className="mt-1 text-xs text-gray-02 break-words">
+              &ldquo;{ref.quote}&rdquo;
+            </p>
+            <p className="mt-1 text-xs italic text-gray-02 break-words">
+              {ref.reasoning}
+            </p>
+            {ref.url && (
+              <a
+                href={ref.url}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 inline-block break-all text-xs text-blue-500 underline"
+              >
+                {ref.url}
+              </a>
+            )}
+          </div>
+        ))}
+      <article className="rounded-lg border border-gray-03/50 bg-gray-03/20 p-3 min-w-0 space-y-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="font-mono text-xs text-gray-02">
+            {c.stableId}
+          </span>
+          <FoundInDocumentFlag unverified={c.unverified} />
+          {c.fromRecoveredImage && <ImageSourceFlag />}
+          {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
+          {c.historic && (
+            <HistoricFlag
+              targetYear={c.targetYear}
+              historicReason={c.historicReason}
+            />
+          )}
+          <OriginFlag originatesFrom={c.originatesFrom} />
+          {!c.unverified && (
+            <button
+              onClick={() =>
+                setPdfViewer({ mode: "focused", commitment: c })
+              }
+              className="inline-flex items-center gap-1 rounded-md border border-gray-03 bg-gray-03/40 px-2 py-1 text-xs text-gray-01 hover:bg-gray-03/60"
+              title={
+                c.fromRecoveredImage
+                  ? "Search for this passage in the source PDF — docling routed it through image recovery, but the PDF sometimes has real selectable text there anyway"
+                  : "Find and highlight this passage in the source PDF"
+              }
+            >
+              <SearchCheck className="w-3 h-3" />
+              Find in PDF
+            </button>
+          )}
+          {columns === "extract" && (
+            <MetaChip label="Type">{c.type}</MetaChip>
+          )}
+          {columns === "climate" && (
+            <>
+              <MetaChip label="Climate">
+                <YesNo value={c.climateRelevant} />
+              </MetaChip>
+              <MetaChip label="Adaptation">
+                <YesNo value={c.adaptation} />
+              </MetaChip>
+            </>
+          )}
+          {columns === "actionable" && (
+            <MetaChip label="Actionable">
+              <YesNo value={c.actionable} />
+            </MetaChip>
+          )}
+          {columns === "historic" && (
+            <MetaChip label="Historic">
+              <YesNo value={c.historic} />
+            </MetaChip>
+          )}
+        </div>
+        <p className="text-sm text-gray-01 break-words whitespace-pre-wrap">
+          {c.text}
+        </p>
+        {c.type === "TABLE" &&
+          c.tableMetadata &&
+          c.tableMetadata.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {c.tableMetadata.map((field, i) => (
+                <MetaChip key={i} label={field.label}>
+                  {field.value}
+                </MetaChip>
+              ))}
+            </div>
+          )}
+        {columns === "extract" && c.section && (
+          <p className="text-xs text-gray-02 break-words">
+            Section: {c.section}
+          </p>
+        )}
+        {columns === "climate" && c.climateFilterReason && (
+          <p className="text-xs text-gray-02 break-words">
+            {c.climateFilterReason}
+          </p>
+        )}
+        {columns === "actionable" && c.actionableReason && (
+          <p className="text-xs text-gray-02 break-words">
+            {c.actionableReason}
+          </p>
+        )}
+        {columns === "historic" && c.historicReason && (
+          <p className="text-xs text-gray-02 break-words">
+            {c.historicReason}
+          </p>
+        )}
+        {!readOnly && (
+          <QaFooter>
+            <CommitmentReviewControls
+              commitment={c}
+              columns={columns}
+              reviewCtx={reviewCtx}
+            />
+          </QaFooter>
+        )}
+      </article>
+    </div>
+  );
+
   return (
     <div className="space-y-3">
       {!focusSingle &&
@@ -773,144 +916,42 @@ export function CommitmentsList({
         <p className="text-sm text-gray-02">
           No commitments match this filter.
         </p>
+      ) : columns === "historic" ? (
+        (() => {
+          const indexed = filteredCommitments.map((c, idx) => ({ c, idx }));
+          const historicOnes = indexed.filter(({ c }) => c.historic);
+          const others = indexed.filter(({ c }) => !c.historic);
+          return (
+            <>
+              {historicOnes.length > 0 && (
+                <section className="space-y-3">
+                  <header className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-01">
+                      Historic
+                    </span>
+                    <span className="rounded-full bg-gray-04/60 px-2 py-0.5 text-[11px] tabular-nums text-gray-02">
+                      {historicOnes.length}
+                    </span>
+                  </header>
+                  {historicOnes.map(({ c, idx }) => renderCard(c, idx))}
+                </section>
+              )}
+              <section className="space-y-3">
+                <header className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-01">
+                    Not historic
+                  </span>
+                  <span className="rounded-full bg-gray-04/60 px-2 py-0.5 text-[11px] tabular-nums text-gray-02">
+                    {others.length}
+                  </span>
+                </header>
+                {others.map(({ c, idx }) => renderCard(c, idx))}
+              </section>
+            </>
+          );
+        })()
       ) : (
-        filteredCommitments.map((c, idx) => (
-          <div key={c.id} id={`commitment-${c.id}`} className="space-y-3">
-            {columns === "extract" &&
-              c.section !== filteredCommitments[idx - 1]?.section &&
-              referencesBySection.get(c.section)?.map((ref) => (
-                <div
-                  key={ref.id}
-                  className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-gray-01"
-                >
-                  <p className="flex flex-wrap items-center gap-2 font-medium">
-                    <MetaChip
-                      label="Relationship"
-                      tone={documentReferenceTone(ref.relationship)}
-                    >
-                      {ref.relationship}
-                    </MetaChip>
-                    This section references: {ref.name}
-                  </p>
-                  <p className="mt-1 text-xs text-gray-02 break-words">
-                    &ldquo;{ref.quote}&rdquo;
-                  </p>
-                  <p className="mt-1 text-xs italic text-gray-02 break-words">
-                    {ref.reasoning}
-                  </p>
-                  {ref.url && (
-                    <a
-                      href={ref.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-1 inline-block break-all text-xs text-blue-500 underline"
-                    >
-                      {ref.url}
-                    </a>
-                  )}
-                </div>
-              ))}
-            <article className="rounded-lg border border-gray-03/50 bg-gray-03/20 p-3 min-w-0 space-y-2">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="font-mono text-xs text-gray-02">
-                  {c.stableId}
-                </span>
-                <FoundInDocumentFlag unverified={c.unverified} />
-                {c.fromRecoveredImage && <ImageSourceFlag />}
-                {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
-                {c.historic && (
-                  <HistoricFlag
-                    targetYear={c.targetYear}
-                    historicReason={c.historicReason}
-                  />
-                )}
-                <OriginFlag originatesFrom={c.originatesFrom} />
-                {!c.unverified && (
-                  <button
-                    onClick={() =>
-                      setPdfViewer({ mode: "focused", commitment: c })
-                    }
-                    className="inline-flex items-center gap-1 rounded-md border border-gray-03 bg-gray-03/40 px-2 py-1 text-xs text-gray-01 hover:bg-gray-03/60"
-                    title={
-                      c.fromRecoveredImage
-                        ? "Search for this passage in the source PDF — docling routed it through image recovery, but the PDF sometimes has real selectable text there anyway"
-                        : "Find and highlight this passage in the source PDF"
-                    }
-                  >
-                    <SearchCheck className="w-3 h-3" />
-                    Find in PDF
-                  </button>
-                )}
-                {columns === "extract" && (
-                  <MetaChip label="Type">{c.type}</MetaChip>
-                )}
-                {columns === "climate" && (
-                  <>
-                    <MetaChip label="Climate">
-                      <YesNo value={c.climateRelevant} />
-                    </MetaChip>
-                    <MetaChip label="Adaptation">
-                      <YesNo value={c.adaptation} />
-                    </MetaChip>
-                  </>
-                )}
-                {columns === "actionable" && (
-                  <MetaChip label="Actionable">
-                    <YesNo value={c.actionable} />
-                  </MetaChip>
-                )}
-                {columns === "historic" && (
-                  <MetaChip label="Historic">
-                    <YesNo value={c.historic} />
-                  </MetaChip>
-                )}
-              </div>
-              <p className="text-sm text-gray-01 break-words whitespace-pre-wrap">
-                {c.text}
-              </p>
-              {c.type === "TABLE" &&
-                c.tableMetadata &&
-                c.tableMetadata.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {c.tableMetadata.map((field, i) => (
-                      <MetaChip key={i} label={field.label}>
-                        {field.value}
-                      </MetaChip>
-                    ))}
-                  </div>
-                )}
-              {columns === "extract" && c.section && (
-                <p className="text-xs text-gray-02 break-words">
-                  Section: {c.section}
-                </p>
-              )}
-              {columns === "climate" && c.climateFilterReason && (
-                <p className="text-xs text-gray-02 break-words">
-                  {c.climateFilterReason}
-                </p>
-              )}
-              {columns === "actionable" && c.actionableReason && (
-                <p className="text-xs text-gray-02 break-words">
-                  {c.actionableReason}
-                </p>
-              )}
-              {columns === "historic" && c.historicReason && (
-                <p className="text-xs text-gray-02 break-words">
-                  {c.historicReason}
-                </p>
-              )}
-              {!readOnly && (
-                <QaFooter>
-                  <CommitmentReviewControls
-                    commitment={c}
-                    columns={columns}
-                    reviewCtx={reviewCtx}
-                  />
-                </QaFooter>
-              )}
-            </article>
-          </div>
-        ))
+        filteredCommitments.map((c, idx) => renderCard(c, idx))
       )}
     </div>
   );
