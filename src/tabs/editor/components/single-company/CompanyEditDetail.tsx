@@ -5,6 +5,7 @@ import { CompanyDetailTab } from "./CompanyDetailTab";
 import { EconomyDataTab } from "./EconomyDataTab";
 import { EmissionsDataTab } from "./EmissionsDataTab";
 import { GoalsInitiativesTab } from "./GoalsInitiativesTab";
+import { ReportingCaveatsTab } from "./ReportingCaveatsTab";
 import { CompanyReportsTab } from "./CompanyReportsTab";
 import { ReportingPeriodsDataTab } from "./ReportingPeriodsDataTab";
 
@@ -43,6 +44,9 @@ export function CompanyEditDetail({
           <TabsTrigger value="emissions" className="rounded-md px-4 py-2">
             {t("editor.singleCompanyView.tabs.emissionsData")}
           </TabsTrigger>
+          <TabsTrigger value="caveats" className="rounded-md px-4 py-2">
+            {t("editor.singleCompanyView.tabs.caveats")}
+          </TabsTrigger>
           <TabsTrigger
             value="goals-initiatives"
             className="rounded-md px-4 py-2"
@@ -74,6 +78,10 @@ export function CompanyEditDetail({
 
         <TabsContent value="emissions" className="mt-4">
           <EmissionsDataTab company={company} onSaved={onSaved} />
+        </TabsContent>
+
+        <TabsContent value="caveats" className="mt-4">
+          <ReportingCaveatsTab company={company} onSaved={onSaved} />
         </TabsContent>
 
         <TabsContent value="goals-initiatives" className="mt-4">

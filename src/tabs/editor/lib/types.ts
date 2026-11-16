@@ -222,6 +222,30 @@ export interface GarboCompanyDetail extends GarboCompanyListItem {
     year?: number;
     scope?: string;
   }>;
+  /** Staff-only ReportingCaveats exploratory feature. */
+  reportingCaveats?: Array<{
+    id: string;
+    type: string;
+    description: string;
+    effectiveYear?: string | null;
+    affectedYears?: string[];
+    affectedScopes?: string[];
+    affectedScope3Categories?: number[];
+    impactDirection?: string | null;
+    priorYearsRestated?: boolean | null;
+    counterpartyName?: string | null;
+    counterpartyCompanyId?: string | null;
+    reportId?: string | null;
+    source?: string | null;
+    quotes?: Array<{
+      id?: string;
+      originalQuote: string;
+      sortOrder?: number;
+      sourceReference?: string | null;
+      sourcePageUrl?: string | null;
+    }>;
+    metadata?: GarboMetadata | null;
+  }>;
   reportingPeriods?: GarboReportingPeriodDetail[];
 }
 

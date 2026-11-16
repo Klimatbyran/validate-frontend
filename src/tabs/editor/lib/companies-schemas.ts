@@ -55,6 +55,7 @@ export const garboCompanyDetailSchema = garboCompanyListItemSchema
     descriptions: z.array(z.unknown()).optional(),
     goals: z.array(z.unknown()).nullable().optional(),
     initiatives: z.array(z.unknown()).nullable().optional(),
+    reportingCaveats: z.array(z.unknown()).nullable().optional(),
   })
   .passthrough();
 
