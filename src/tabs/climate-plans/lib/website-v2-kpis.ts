@@ -200,7 +200,7 @@ export function groupMeasuresByActivityFlow(rows: MeasureBrowseRow[]): Array<{
       row.activityFlows[0] ??
       (row.activityLabels[0]
         ? `Activity: ${row.activityLabels[0]}`
-        : "No activity flow extracted");
+        : "No activity shift extracted");
     const list = buckets.get(key) ?? [];
     list.push(row);
     buckets.set(key, list);

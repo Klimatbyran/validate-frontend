@@ -43,18 +43,41 @@ describe("Website visuals v2 detail mock", () => {
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Show details/i }));
-    expect(
-      screen.getByRole("button", { name: /Layout: by sector/i }),
-    ).toBeInTheDocument();
-    await user.click(
-      screen.getByRole("button", { name: /Layout: by sector/i }),
+    expect(screen.getByRole("button", { name: "By sector" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
     );
     expect(
-      screen.getByRole("button", { name: /Layout: by activity flow/i }),
+      screen.getByRole("button", { name: "By activity flow" }),
+    ).toHaveAttribute("aria-pressed", "false");
+    expect(
+      screen.getByRole("button", { name: "Flat list" }),
     ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "By activity flow" }));
+    expect(
+      screen.getByRole("button", { name: "By activity flow" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByText(/Grouped by extracted activity shifts/i),
+    ).toBeInTheDocument();
+    // Group heading + per-card chips share the same from→to label.
+    expect(screen.getAllByText("diesel → ev").length).toBeGreaterThan(1);
+    expect(
+      screen.getAllByText("Activity shift", { exact: true }).length,
+    ).toBeGreaterThan(0);
+
     await user.click(
       screen.getByRole("button", { name: "Themes named directly" }),
     );
+    expect(
+      screen.queryByRole("button", { name: "By activity flow" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "By sector" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByText(/Group themes/i)).toBeInTheDocument();
     expect(screen.getByText(/STE-42/i)).toBeInTheDocument();
     expect(
       screen.getByText(/T-1A1b-TE-1 - Electric buses/i),
