@@ -29,7 +29,7 @@ export function ExploreDataView({
   if (isLoading && !data) {
     return (
       <div className="flex items-center justify-center py-24 text-gray-02">
-        Loading pipeline extracts and emissions…
+        Loading pipeline extracts in batches…
       </div>
     );
   }

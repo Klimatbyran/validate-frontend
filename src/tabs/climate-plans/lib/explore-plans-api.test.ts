@@ -1,6 +1,22 @@
-import { describe, expect, it } from "vitest";
-import { exploreApiPlanToRecord } from "./explore-plans-api";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  EXPLORE_DETAIL_BATCH_SIZE,
+  exploreApiPlanToRecord,
+  fetchExplorePlans,
+} from "./explore-plans-api";
 import type { ExploreApiPlanRow } from "./explore-plans-api";
+
+vi.mock("@/lib/garbo-auth-fetch", () => ({
+  garboAuthFetch: vi.fn(),
+}));
+
+vi.mock("@/config/api-env", () => ({
+  getClimatePlansPipelineApiUrl: () => "https://climate-plans.test/api",
+}));
+
+import { garboAuthFetch } from "@/lib/garbo-auth-fetch";
+
+const mockFetch = vi.mocked(garboAuthFetch);
 
 function samplePlan(
   partial: Partial<ExploreApiPlanRow> = {},
@@ -105,5 +121,61 @@ describe("exploreApiPlanToRecord", () => {
     expect(record.climateCommitmentGroupCount).toBeNull();
     expect(record.adaptationCommitmentCount).toBeNull();
     expect(record.ownCommitmentCount).toBeNull();
+  });
+});
+
+describe("fetchExplorePlans", () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  it("loads index then detail batches", async () => {
+    const ids = Array.from({ length: EXPLORE_DETAIL_BATCH_SIZE + 2 }, (_, i) =>
+      `plan-${i}`,
+    );
+    mockFetch.mockImplementation(async (url: string) => {
+      const u = new URL(url);
+      if (u.searchParams.get("fields") === "index") {
+        return new Response(
+          JSON.stringify({
+            meta: {
+              status: "all",
+              groupBy: "municipality",
+              requireStep: "scoreMeasures",
+              latestRunSemantics: "in-place-nested-tables",
+              planCount: ids.length,
+              scannedPlanCount: ids.length,
+              readyPlanCount: ids.length,
+            },
+            planIds: ids,
+            plans: [],
+          }),
+          { status: 200 },
+        );
+      }
+      const batchIds = (u.searchParams.get("ids") ?? "").split(",");
+      return new Response(
+        JSON.stringify({
+          meta: {
+            status: "all",
+            groupBy: "municipality",
+            requireStep: "scoreMeasures",
+            latestRunSemantics: "in-place-nested-tables",
+            planCount: ids.length,
+            scannedPlanCount: ids.length,
+            readyPlanCount: ids.length,
+          },
+          planIds: ids,
+          plans: batchIds.map((id) => samplePlan({ id, name: id })),
+        }),
+        { status: 200 },
+      );
+    });
+
+    const result = await fetchExplorePlans({ status: "all" });
+    expect(result?.plans).toHaveLength(ids.length);
+    expect(mockFetch.mock.calls.length).toBe(1 + 2); // index + 2 detail batches
+    expect(String(mockFetch.mock.calls[0]?.[0])).toContain("fields=index");
+    expect(String(mockFetch.mock.calls[1]?.[0])).toContain("ids=");
   });
 });
