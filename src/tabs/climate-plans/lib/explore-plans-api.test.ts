@@ -130,8 +130,9 @@ describe("fetchExplorePlans", () => {
   });
 
   it("loads index then detail batches", async () => {
-    const ids = Array.from({ length: EXPLORE_DETAIL_BATCH_SIZE + 2 }, (_, i) =>
-      `plan-${i}`,
+    const ids = Array.from(
+      { length: EXPLORE_DETAIL_BATCH_SIZE + 2 },
+      (_, i) => `plan-${i}`,
     );
     mockFetch.mockImplementation(async (url: string) => {
       const u = new URL(url);
