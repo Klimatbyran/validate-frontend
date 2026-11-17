@@ -181,11 +181,30 @@ interface MunicipalityGroup {
   plans: ClimatePipelinePlan[];
 }
 
-/** Groups in the order each municipality first appears in `plans` (which
- * the API already returns newest-first) — Map preserves insertion order,
- * so this needs no separate sort. displayName prefers an approved plan's
- * municipality.name (the canonical, human-confirmed spelling) over a raw
- * extractedMunicipalityName when both exist in the group. */
+/** Newest startedAt across every step a plan has ever run, regardless of
+ * runId grouping (older rows predate runId and would otherwise be
+ * invisible to this) -- null for a plan that's never run at all. Used
+ * both to sort the list (most recently active first, so a just-triggered
+ * rerun surfaces immediately instead of waiting to be found) and, inside
+ * PlanRow, to decide when to clear the optimistic "Rerunning" badge. */
+function getLastRanAt(plan: ClimatePipelinePlan): string | null {
+  return plan.pipelineSteps.reduce<string | null>(
+    (latest, s) =>
+      !latest || new Date(s.startedAt) > new Date(latest) ? s.startedAt : latest,
+    null,
+  );
+}
+
+/** Groups by municipality, then sorts groups by their most recently active
+ * plan first -- GET /plans has no explicit orderBy on the backend, so
+ * relying on whatever order it happens to return (as this used to) breaks
+ * exactly when it matters most: a rerun UPDATEs an existing ClimatePlan
+ * row rather than inserting a new one, so it doesn't move at all in
+ * whatever default order the DB happens to return. Sorting here by actual
+ * activity is what makes a just-triggered rerun actually surface at the
+ * top. displayName prefers an approved plan's municipality.name (the
+ * canonical, human-confirmed spelling) over a raw extractedMunicipalityName
+ * when both exist in the group. */
 function groupPlansByMunicipality(
   plans: ClimatePipelinePlan[],
 ): MunicipalityGroup[] {
@@ -213,7 +232,24 @@ function groupPlansByMunicipality(
       });
     }
   }
-  return [...groups.values()];
+  return [...groups.values()].sort((a, b) => {
+    const aLatest = a.plans.reduce<string | null>((latest, p) => {
+      const ranAt = getLastRanAt(p);
+      return !latest || (ranAt && new Date(ranAt) > new Date(latest))
+        ? ranAt
+        : latest;
+    }, null);
+    const bLatest = b.plans.reduce<string | null>((latest, p) => {
+      const ranAt = getLastRanAt(p);
+      return !latest || (ranAt && new Date(ranAt) > new Date(latest))
+        ? ranAt
+        : latest;
+    }, null);
+    if (!aLatest && !bLatest) return 0;
+    if (!aLatest) return 1;
+    if (!bLatest) return -1;
+    return new Date(bLatest).getTime() - new Date(aLatest).getTime();
+  });
 }
 
 function stepsByRun(rows: PipelineStepRun[]): Map<string, PipelineStepRun[]> {
@@ -325,7 +361,17 @@ function PlanRow({
             </Button>
           )}
         </div>
-        <span className="text-xs text-gray-02 shrink-0">{plan.status}</span>
+        <div className="flex flex-col items-end gap-0.5 shrink-0">
+          <span className="text-xs text-gray-02">{plan.status}</span>
+          <span
+            className="text-[11px] text-gray-02/70"
+            title="Most recent pipeline activity across every step"
+          >
+            {getLastRanAt(plan)
+              ? `Last ran ${new Date(getLastRanAt(plan)!).toLocaleString()}`
+              : "Never run"}
+          </span>
+        </div>
       </div>
       {plan.garboThreadId && (
         <div className="flex flex-wrap gap-1.5 pb-2 border-b border-gray-03/50">

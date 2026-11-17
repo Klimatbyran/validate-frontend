@@ -185,6 +185,12 @@ export async function runMunicipalitySource(
     autoApprove: false,
     forceReindex: false,
     readImages: true,
+    // Without this, a byte-identical picture just replays its old cached
+    // VLM description -- including a bad one, e.g. a garbled OCR read
+    // from an earlier run. This button is specifically "run it again",
+    // so a stale image description is exactly the kind of thing it
+    // should fix, not silently keep.
+    forceRedescribeImages: true,
     callbackUrl: getClimatePlansPipelineWebhookUrl(),
     reportTypeSlug: CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
   });
@@ -256,6 +262,10 @@ export async function runMunicipalityRegion(
       autoApprove: false,
       forceReindex: false,
       readImages: true,
+      // See runMunicipalitySource's own comment on this -- same reasoning,
+      // "run it again" should actually fix a stale cached image
+      // description, not replay it.
+      forceRedescribeImages: true,
       callbackUrl: getClimatePlansPipelineWebhookUrl(),
       reportTypeSlug: CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
     });
