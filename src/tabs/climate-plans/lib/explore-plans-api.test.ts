@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   EXPLORE_DETAIL_BATCH_SIZE,
+  ExploreFetchError,
   exploreApiPlanToRecord,
   fetchExplorePlans,
 } from "./explore-plans-api";
@@ -40,16 +41,6 @@ function samplePlan(
     climateCommitmentGroupCount: 1,
     adaptationCommitmentCount: 0,
     ownCommitmentCount: 1,
-    commitments: [
-      {
-        text: "Buy electric buses",
-        climateRelevant: true,
-        actionable: true,
-        similarGroupId: "g1",
-        adaptation: false,
-        originatesFrom: [],
-      },
-    ],
     measures: [
       {
         measure_text: "Buy electric buses",
@@ -89,6 +80,18 @@ function samplePlan(
     ],
     dataSources: ["pipeline-measures", "pipeline-commitments"],
     ...partial,
+  };
+}
+
+function meta(planCount: number) {
+  return {
+    status: "all",
+    groupBy: "municipality",
+    requireStep: "scoreMeasures",
+    latestRunSemantics: "in-place-nested-tables",
+    planCount,
+    scannedPlanCount: planCount,
+    readyPlanCount: planCount,
   };
 }
 
@@ -139,15 +142,7 @@ describe("fetchExplorePlans", () => {
       if (u.searchParams.get("fields") === "index") {
         return new Response(
           JSON.stringify({
-            meta: {
-              status: "all",
-              groupBy: "municipality",
-              requireStep: "scoreMeasures",
-              latestRunSemantics: "in-place-nested-tables",
-              planCount: ids.length,
-              scannedPlanCount: ids.length,
-              readyPlanCount: ids.length,
-            },
+            meta: meta(ids.length),
             planIds: ids,
             plans: [],
           }),
@@ -157,15 +152,7 @@ describe("fetchExplorePlans", () => {
       const batchIds = (u.searchParams.get("ids") ?? "").split(",");
       return new Response(
         JSON.stringify({
-          meta: {
-            status: "all",
-            groupBy: "municipality",
-            requireStep: "scoreMeasures",
-            latestRunSemantics: "in-place-nested-tables",
-            planCount: ids.length,
-            scannedPlanCount: ids.length,
-            readyPlanCount: ids.length,
-          },
+          meta: meta(ids.length),
           planIds: ids,
           plans: batchIds.map((id) => samplePlan({ id, name: id })),
         }),
@@ -175,8 +162,87 @@ describe("fetchExplorePlans", () => {
 
     const result = await fetchExplorePlans({ status: "all" });
     expect(result?.plans).toHaveLength(ids.length);
-    expect(mockFetch.mock.calls.length).toBe(1 + 2); // index + 2 detail batches
-    expect(String(mockFetch.mock.calls[0]?.[0])).toContain("fields=index");
-    expect(String(mockFetch.mock.calls[1]?.[0])).toContain("ids=");
+    expect(
+      mockFetch.mock.calls.some((c) => String(c[0]).includes("fields=index")),
+    ).toBe(true);
+    expect(
+      mockFetch.mock.calls.some((c) => String(c[0]).includes("ids=")),
+    ).toBe(true);
+  });
+
+  it("uses old-API full payload when planIds is absent", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          meta: meta(1),
+          plans: [samplePlan()],
+        }),
+        { status: 200 },
+      ),
+    );
+    const result = await fetchExplorePlans({ status: "all" });
+    expect(result?.plans).toHaveLength(1);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns null on index HTTP failure without one-shot follow-up", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: "boom" }), { status: 503 }),
+    );
+    const result = await fetchExplorePlans({ status: "all" });
+    expect(result).toBeNull();
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws ExploreFetchError when a detail batch stays incomplete", async () => {
+    mockFetch.mockImplementation(async (url: string) => {
+      const u = new URL(url);
+      if (u.searchParams.get("fields") === "index") {
+        return new Response(
+          JSON.stringify({
+            meta: meta(2),
+            planIds: ["a", "b"],
+            plans: [],
+          }),
+          { status: 200 },
+        );
+      }
+      // Missing plan b every time (including retries).
+      return new Response(
+        JSON.stringify({
+          meta: meta(2),
+          planIds: ["a", "b"],
+          plans: [samplePlan({ id: "a", name: "a" })],
+        }),
+        { status: 200 },
+      );
+    });
+
+    await expect(fetchExplorePlans({ status: "all" })).rejects.toBeInstanceOf(
+      ExploreFetchError,
+    );
+  });
+
+  it("throws ExploreFetchError on 409 eligibility conflict", async () => {
+    mockFetch.mockImplementation(async (url: string) => {
+      const u = new URL(url);
+      if (u.searchParams.get("fields") === "index") {
+        return new Response(
+          JSON.stringify({
+            meta: meta(1),
+            planIds: ["a"],
+            plans: [],
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response(JSON.stringify({ error: "no longer eligible" }), {
+        status: 409,
+      });
+    });
+
+    await expect(fetchExplorePlans({ status: "all" })).rejects.toThrow(
+      /no longer eligible/,
+    );
   });
 });
