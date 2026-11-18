@@ -38,6 +38,7 @@ import { MunicipalityPill } from "./components/MunicipalityPill";
 import { HandoffReviewNote } from "./components/HandoffReviewNote";
 import { getHandoffReview } from "./lib/shadowTefHandoffReview";
 import { resolveQaReviewerForSave } from "./lib/qaReviewerIdentity";
+import { provenanceOf } from "./lib/transitionElementProvenance";
 import {
   useTefFreezeStatus,
   useShadowElementSnapshots,
@@ -150,6 +151,10 @@ function matchFromElement(el: TransitionElement, score: number): TransitionEleme
     sustainabilityClass: el.sustainabilityClass as TransitionElementMatch["sustainabilityClass"],
     coBenefits: el.coBenefits,
     score,
+    version: el.version,
+    editedBy: el.editedBy,
+    status: el.status,
+    handoffBroadened: el.handoffBroadened,
   };
 }
 
@@ -584,19 +589,32 @@ function ShadowElementCard({
       ) : manualQuery.trim().length >= 2 && manualResults?.length === 0 ? (
         <p className="text-xs text-gray-02">{t("taxonomy.noResults")}</p>
       ) : (
-        manualResults?.map((summary) => (
-          <div key={summary.stableId} className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-gray-01 truncate">
-                {summary.shortLabel}
-              </p>
-              <p className="text-[11px] text-gray-02 truncate">
-                {summary.sectorPath}
-              </p>
+        manualResults?.map((summary) => {
+          const provenance = provenanceOf(summary);
+          return (
+            <div key={summary.stableId} className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="text-xs font-medium text-gray-01 truncate">
+                    {summary.shortLabel}
+                  </p>
+                  <span
+                    className={cn(
+                      "shrink-0 inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+                      provenance.className,
+                    )}
+                  >
+                    {t(provenance.labelKey, { version: summary.version })}
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-02 truncate">
+                  {summary.sectorPath}
+                </p>
+              </div>
+              {renderActions(summary)}
             </div>
-            {renderActions(summary)}
-          </div>
-        ))
+          );
+        })
       )}
     </div>
   );
@@ -913,7 +931,9 @@ function ShadowElementCard({
                   {t("shadowTaxonomy.similarEmpty")}
                 </p>
               )}
-              {similarCandidates?.map((candidate) => (
+              {similarCandidates?.map((candidate) => {
+                const provenance = provenanceOf(candidate);
+                return (
                 <div
                   key={candidate.stableId}
                   className="rounded-lg bg-gray-03/10 p-3 flex items-start justify-between gap-3"
@@ -927,6 +947,14 @@ function ShadowElementCard({
                         {t("shadowTaxonomy.similarScore", {
                           score: candidate.score.toFixed(2),
                         })}
+                      </span>
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+                          provenance.className,
+                        )}
+                      >
+                        {t(provenance.labelKey, { version: candidate.version })}
                       </span>
                     </div>
                     <p className="text-xs text-gray-02">
@@ -956,7 +984,8 @@ function ShadowElementCard({
                     </Button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               <Button
                 type="button"
                 variant="outline"
@@ -1096,28 +1125,43 @@ function ShadowElementCard({
                         {t("shadowTaxonomy.similarEmpty")}
                       </p>
                     ) : (
-                      similarCandidates?.map((candidate) => (
-                        <div
-                          key={candidate.stableId}
-                          className="flex items-center justify-between gap-2"
-                        >
-                          <span className="text-xs text-gray-01 truncate">
-                            {candidate.shortLabel}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-6 max-w-none shrink-0 whitespace-nowrap text-[11px]"
-                            disabled={isReattaching}
-                            onClick={() =>
-                              void handleReattach(a.shiftId, candidate.stableId)
-                            }
+                      similarCandidates?.map((candidate) => {
+                        const provenance = provenanceOf(candidate);
+                        return (
+                          <div
+                            key={candidate.stableId}
+                            className="flex items-center justify-between gap-2"
                           >
-                            {t("shadowTaxonomy.useThis")}
-                          </Button>
-                        </div>
-                      ))
+                            <span className="flex items-center gap-1.5 min-w-0">
+                              <span className="text-xs text-gray-01 truncate">
+                                {candidate.shortLabel}
+                              </span>
+                              <span
+                                className={cn(
+                                  "shrink-0 inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+                                  provenance.className,
+                                )}
+                              >
+                                {t(provenance.labelKey, {
+                                  version: candidate.version,
+                                })}
+                              </span>
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-6 max-w-none shrink-0 whitespace-nowrap text-[11px]"
+                              disabled={isReattaching}
+                              onClick={() =>
+                                void handleReattach(a.shiftId, candidate.stableId)
+                              }
+                            >
+                              {t("shadowTaxonomy.useThis")}
+                            </Button>
+                          </div>
+                        );
+                      })
                     )}
                     {renderManualSearch((summary) => (
                       <Button
