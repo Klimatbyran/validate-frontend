@@ -79,6 +79,7 @@ import {
   TransitionElementEditForm,
   toFormDraft,
   formDraftToFields,
+  ACTIVITY_SHIFT_CATEGORIES,
   type TransitionElementFormDraft,
 } from "./components/TransitionElementEditForm";
 
@@ -848,11 +849,17 @@ function ShadowElementCard({
                   <span className="text-gray-02">
                     {t("taxonomy.fieldActivityShiftCategory")}
                   </span>
-                  <input
+                  <select
                     value={createCategory}
                     onChange={(e) => setCreateCategory(e.target.value)}
                     className="mt-1 w-full h-9 rounded-md border border-blue-03 bg-gray-04/40 px-2.5 text-sm text-gray-01 focus:outline-none"
-                  />
+                  >
+                    {ACTIVITY_SHIFT_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               )}
               {editDraft && (
