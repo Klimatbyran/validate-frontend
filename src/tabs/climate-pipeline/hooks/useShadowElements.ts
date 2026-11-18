@@ -270,6 +270,29 @@ export async function reattachShift(
   return (await res.json()) as RecoverSingleShiftResult;
 }
 
+export interface MarkNotACommitmentResult {
+  shiftId: string;
+  shadowElementAutoRejected: boolean;
+}
+
+/** For a shift that was never a genuine commitment -- a bad extraction, not
+ * a mismatch that needs a different real element. Detaches it from its
+ * shadow element the same way reattachShift does, but records no real
+ * match, since there isn't one. */
+export async function markShiftNotACommitment(
+  shiftId: string,
+): Promise<MarkNotACommitmentResult> {
+  const res = await authenticatedFetch(
+    `${getClimatePlansPipelineApiUrl()}/shadow-elements/shifts/${shiftId}/not-a-commitment`,
+    { method: "POST" },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `${res.status} ${res.statusText}`);
+  }
+  return (await res.json()) as MarkNotACommitmentResult;
+}
+
 /** Reverts one merged element back to standalone preliminary. */
 export async function unlinkShadowElement(id: string): Promise<void> {
   const res = await authenticatedFetch(
