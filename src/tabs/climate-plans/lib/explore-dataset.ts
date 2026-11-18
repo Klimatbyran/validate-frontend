@@ -267,6 +267,8 @@ async function attachSectorEmissions(
 async function loadExploreDatasetFromAggregate(): Promise<ExploreDataset | null> {
   // Match prior Explore behaviour: any non-rejected scored plan, not only
   // APPROVED (internal Validate still needs PENDING_APPROVAL extracts).
+  // ExploreFetchError from a mid-batch failure must propagate — do not treat
+  // it as "unavailable" (that would fall back to legacy N+1 and can OOM).
   const payload = await fetchExplorePlans({
     status: "all",
     groupBy: "municipality",
@@ -387,6 +389,8 @@ async function loadExploreDatasetLegacy(): Promise<ExploreDataset> {
 }
 
 export async function loadExploreDataset(): Promise<ExploreDataset> {
+  // ExploreFetchError from mid-batch failures propagates to the UI — do not
+  // catch it here (legacy N+1 would recreate the API memory spike).
   const fromAggregate = await loadExploreDatasetFromAggregate();
   if (fromAggregate) return fromAggregate;
   console.warn(
