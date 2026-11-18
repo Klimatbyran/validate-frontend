@@ -1,5 +1,20 @@
 import { useI18n } from "@/contexts/I18nContext";
 
+// The TEF framework's six Activity Shift categories (Table 7) -- exact
+// strings matter here, matching ENUM_TO_SHIFT_TYPE's values in
+// matchTransitionElements.ts, which downstream matching code compares
+// against directly. Only relevant when creating a brand-new element --
+// editing an existing one always carries its category over unchanged,
+// since PATCH never lets you change it.
+export const ACTIVITY_SHIFT_CATEGORIES = [
+  "Type Shift",
+  "Resource Shift",
+  "Utilisation Shift",
+  "Work Efficiency Shift",
+  "Resource Efficiency Shift",
+  "Carbon Shift",
+] as const;
+
 /** Shared editable-field set for a real TransitionElement — used by both
  * TaxonomyTab's own edit panel and the shadow-taxonomy "broaden this" /
  * "add as new real element instead" flow, so both render the identical

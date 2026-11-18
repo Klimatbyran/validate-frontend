@@ -8,6 +8,23 @@ export interface TransitionElementSummary {
   shortLabel: string;
   description: string;
   sectorPath: string;
+  // null only on an untouched seeded row -- lets the search list tell
+  // "from the official document" apart from "minted later via Create"
+  // (also version 1, but editedBy is set) and "edited at least once"
+  // (version > 1).
+  editedBy: string | null;
+  // Seed-time provenance, independent of anything done in this app --
+  // 'shadow' marks one of the 34 elements promoted wholesale from the
+  // Nov 2026 shadow-taxonomy handoff. This app's own create/edit routes
+  // always write 'active', never 'shadow', so this value only ever
+  // reflects that offline handoff, never an in-app action. Carried
+  // forward on every edit, so it survives past version 1 too.
+  status: string;
+  // The handoff's other provenance case -- 18 pre-existing elements it
+  // broadened in place. Also carried forward on every edit (unlike the
+  // "Broadened scope" text that originally flagged these, which an edit
+  // can freely overwrite).
+  handoffBroadened: boolean;
 }
 
 export interface TransitionElement {
