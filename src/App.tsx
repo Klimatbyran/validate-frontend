@@ -9,6 +9,7 @@ import { ClimatePipelineTab } from "@/tabs/climate-pipeline/ClimatePipelineTab";
 import { ClimateQaReviewsTab } from "@/tabs/climate-pipeline/ClimateQaReviewsTab";
 import { MunicipalitySourcesTab } from "@/tabs/climate-pipeline/MunicipalitySourcesTab";
 import { ShadowTaxonomyTab } from "@/tabs/climate-pipeline/ShadowTaxonomyTab";
+import { TaxonomyTab } from "@/tabs/climate-pipeline/TaxonomyTab";
 import { DebugTab } from "@/tabs/debug/DebugTab";
 import { EditorTab } from "@/tabs/editor/EditorTab";
 import { ErrorBrowserTab } from "@/tabs/errors/ErrorBrowserTab";
@@ -69,6 +70,7 @@ function App() {
             element={<MunicipalitySourcesTab />}
           />
           <Route path="/shadow-taxonomy" element={<ShadowTaxonomyTab />} />
+          <Route path="/taxonomy" element={<TaxonomyTab />} />
         </Route>
         <Route
           path="*"

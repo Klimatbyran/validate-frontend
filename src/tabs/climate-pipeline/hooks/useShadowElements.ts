@@ -241,6 +241,35 @@ export async function rejectShadowElementsWithRecovery(
   return (await res.json()) as RejectWithRecoveryResult[];
 }
 
+export interface RecoverSingleShiftResult {
+  recoveredShift: RecoveredShiftSummary;
+  shadowElementAutoRejected: boolean;
+}
+
+/** Per-commitment counterpart to rejectShadowElementsWithRecovery above --
+ * moves just this one shift onto a chosen real element, leaving its shadow
+ * element's other attachments untouched. If this was the shadow element's
+ * last remaining attachment, the backend auto-rejects it -- reflected here
+ * via shadowElementAutoRejected so the caller knows to refresh. */
+export async function reattachShift(
+  shiftId: string,
+  realStableId: string,
+): Promise<RecoverSingleShiftResult> {
+  const res = await authenticatedFetch(
+    `${getClimatePlansPipelineApiUrl()}/shadow-elements/shifts/${shiftId}/reattach`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ realStableId }),
+    },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `${res.status} ${res.statusText}`);
+  }
+  return (await res.json()) as RecoverSingleShiftResult;
+}
+
 /** Reverts one merged element back to standalone preliminary. */
 export async function unlinkShadowElement(id: string): Promise<void> {
   const res = await authenticatedFetch(
