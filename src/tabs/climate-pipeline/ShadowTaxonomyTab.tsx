@@ -55,6 +55,7 @@ import {
   fetchRealTaxonomyOverlaps,
   rejectShadowElementsWithRecovery,
   reattachShift,
+  markShiftNotACommitment,
   type ShadowElement,
   type ShadowElementStatus,
   type ShadowElementQuality,
@@ -218,6 +219,13 @@ function ShadowElementCard({
   const [justReattached, setJustReattached] = useState<Map<string, string>>(
     new Map(),
   );
+  // Shifts just marked "not a commitment" -- same stay-in-place confirmation
+  // idea as justReattached above, kept separate since the two outcomes
+  // render different text on the row (no stableId to show for this one).
+  const [markedNotCommitment, setMarkedNotCommitment] = useState<Set<string>>(
+    new Set(),
+  );
+  const [isMarkingNotCommitment, setIsMarkingNotCommitment] = useState(false);
   // Manual fallback search, shown below every candidate list on this card
   // (the card-level panel and every per-attachment reattach picker) -- for
   // when none of the semantic candidates above actually fit. Plain
@@ -389,6 +397,33 @@ function ShadowElementCard({
       );
     } finally {
       setIsReattaching(false);
+    }
+  };
+
+  const handleNotACommitment = async (shiftId: string) => {
+    setIsMarkingNotCommitment(true);
+    try {
+      const result = await markShiftNotACommitment(shiftId);
+      setMarkedNotCommitment((prev) => new Set(prev).add(shiftId));
+      // Same reasoning as handleReattach -- only refetch when the shadow
+      // element's own status actually changed.
+      if (result.shadowElementAutoRejected) onResolved();
+      toast.success(
+        t(
+          result.shadowElementAutoRejected
+            ? "shadowTaxonomy.notACommitmentSuccessAutoRejected"
+            : "shadowTaxonomy.notACommitmentSuccess",
+          { label: element.shortLabel },
+        ),
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : t("shadowTaxonomy.notACommitmentError"),
+      );
+    } finally {
+      setIsMarkingNotCommitment(false);
     }
   };
 
@@ -980,6 +1015,8 @@ function ShadowElementCard({
           ))}
           {element.attachments.map((a) => {
             const reattachedTo = justReattached.get(a.shiftId);
+            const notACommitment = markedNotCommitment.has(a.shiftId);
+            const settled = Boolean(reattachedTo) || notACommitment;
             return (
               <div
                 key={a.shiftId}
@@ -1011,20 +1048,37 @@ function ShadowElementCard({
                         })}
                       </p>
                     )}
+                    {notACommitment && (
+                      <p className="text-xs font-medium text-gray-02">
+                        {t("shadowTaxonomy.notACommitmentLabel")}
+                      </p>
+                    )}
                   </div>
-                  {!isMerged && !reattachedTo && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 max-w-none shrink-0 whitespace-nowrap text-[11px]"
-                      onClick={() => toggleReattach(a.shiftId)}
-                    >
-                      {t("shadowTaxonomy.reattach")}
-                    </Button>
+                  {!isMerged && !settled && (
+                    <div className="flex shrink-0 gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 max-w-none whitespace-nowrap text-[11px]"
+                        onClick={() => toggleReattach(a.shiftId)}
+                      >
+                        {t("shadowTaxonomy.reattach")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 max-w-none whitespace-nowrap text-[11px] text-gray-02/70 hover:text-gray-01"
+                        disabled={isMarkingNotCommitment}
+                        onClick={() => void handleNotACommitment(a.shiftId)}
+                      >
+                        {t("shadowTaxonomy.notACommitment")}
+                      </Button>
+                    </div>
                   )}
                 </div>
-                {!reattachedTo && reattachOpenShiftId === a.shiftId && (
+                {!settled && reattachOpenShiftId === a.shiftId && (
                   <div className="rounded-md border border-blue-03/30 bg-blue-03/5 p-2 space-y-1.5">
                     {isLoadingSimilar ? (
                       <div className="flex items-center justify-center p-2">
