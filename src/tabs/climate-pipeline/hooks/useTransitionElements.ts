@@ -44,6 +44,7 @@ export interface TransitionElement {
   actsOnLabels: string[];
   shiftsToLabels: string[];
   status: string;
+  handoffBroadened: boolean;
   versionIntroduced: string | null;
   versionDeprecated: string | null;
   embeddingModel: string;
@@ -66,7 +67,11 @@ export type TransitionElementEdit = Partial<
 > & { editedBy?: string | null };
 
 /** A single similarity-search hit against the real taxonomy — same shape
- * backend's TEMatch (teLookup.ts), not the full TransitionElement row. */
+ * backend's TEMatch (teLookup.ts), not the full TransitionElement row.
+ * Carries the same provenance fields as TransitionElementSummary above, so
+ * a candidate shown during shadow-taxonomy review can get the same
+ * Original/Extended-TEF/Broadened-TEF/Edited badge the taxonomy search
+ * list shows. */
 export interface TransitionElementMatch {
   stableId: string;
   shortLabel: string;
@@ -79,6 +84,10 @@ export interface TransitionElementMatch {
   sustainabilityClass: "green" | "amber" | "red" | null;
   coBenefits: string[];
   score: number;
+  version: number;
+  editedBy: string | null;
+  status: string;
+  handoffBroadened: boolean;
 }
 
 export interface TransitionElementCreate {
