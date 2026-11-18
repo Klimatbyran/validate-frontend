@@ -24,6 +24,7 @@ export const PIPELINE_TAB_SEGMENTS = {
     "climate-qa-reviews",
     "municipality-sources",
     "shadow-taxonomy",
+    "taxonomy",
   ],
 } as const satisfies Record<PipelineMode, readonly TopLevelTabSegment[]>;
 

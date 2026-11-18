@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -14,9 +14,12 @@ import {
   Link2Off,
   MessageSquare,
   Camera,
+  Search,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Button } from "@/ui/button";
 import { ConfirmDialog } from "@/ui/confirm-dialog";
@@ -34,6 +37,7 @@ import { ShadowTaxonomyDiffView } from "./components/ShadowTaxonomyDiffView";
 import { MunicipalityPill } from "./components/MunicipalityPill";
 import { HandoffReviewNote } from "./components/HandoffReviewNote";
 import { getHandoffReview } from "./lib/shadowTefHandoffReview";
+import { resolveQaReviewerForSave } from "./lib/qaReviewerIdentity";
 import {
   useTefFreezeStatus,
   useShadowElementSnapshots,
@@ -50,6 +54,7 @@ import {
   unlinkShadowElement,
   fetchRealTaxonomyOverlaps,
   rejectShadowElementsWithRecovery,
+  reattachShift,
   type ShadowElement,
   type ShadowElementStatus,
   type ShadowElementQuality,
@@ -59,6 +64,22 @@ import {
   type RecoveredShiftSummary,
   type ExistingRealMatch,
 } from "./hooks/useShadowElements";
+import {
+  findSimilarRealElements,
+  getCurrentTransitionElement,
+  updateTransitionElement,
+  createTransitionElement,
+  searchTransitionElements,
+  type TransitionElement,
+  type TransitionElementMatch,
+  type TransitionElementSummary,
+} from "./hooks/useTransitionElements";
+import {
+  TransitionElementEditForm,
+  toFormDraft,
+  formDraftToFields,
+  type TransitionElementFormDraft,
+} from "./components/TransitionElementEditForm";
 
 const STATUS_STYLE: Record<ShadowElementStatus, string> = {
   preliminary: "border-purple-03/40 bg-purple-03/10 text-purple-03",
@@ -100,16 +121,54 @@ function keepLoadedDetail(
   };
 }
 
+/** Which real element a "broaden"/"create" edit is currently targeting --
+ * 'broaden' edits an existing candidate in place, 'create' mints a new one
+ * from the shadow element's own fields. Both end the same way: resolve this
+ * shadow element against whichever real stableId results. */
+type SimilarEditTarget =
+  | { mode: "broaden"; stableId: string }
+  | { mode: "create" };
+
+/** Converts a freshly edited/created TransitionElement into the
+ * TransitionElementMatch shape the candidate list renders, so Edit/Create
+ * can update that list in place instead of needing a re-search. `score`
+ * isn't a real similarity score here (there's nothing to compare against
+ * post-edit) -- callers pass whatever's appropriate: the prior score for an
+ * edit, or a neutral 1 for a freshly created element. */
+function matchFromElement(el: TransitionElement, score: number): TransitionElementMatch {
+  return {
+    stableId: el.stableId,
+    shortLabel: el.shortLabel,
+    description: el.description,
+    sectorPath: el.sectorPath,
+    actsOnLabels: el.actsOnLabels,
+    shiftsToLabels: el.shiftsToLabels,
+    activityShiftCategory: el.activityShiftCategory,
+    legacyExportType: el.legacyExportType as TransitionElementMatch["legacyExportType"],
+    sustainabilityClass: el.sustainabilityClass as TransitionElementMatch["sustainabilityClass"],
+    coBenefits: el.coBenefits,
+    score,
+  };
+}
+
 function ShadowElementCard({
   element,
   onChanged,
   onUnlink,
+  onResolved,
 }: {
   element: ShadowElement;
   onChanged: (next: ShadowElement) => void;
   onUnlink: (id: string, label: string) => void;
+  /** Called after this element is resolved against a real TE (broadened or
+   * newly created) -- a full list refresh, since rejectShadowElementsWithRecovery
+   * returns a result summary, not the updated ShadowElement row itself (same
+   * reason handleRejectOverlaps above does a full refresh rather than an
+   * onChanged patch). */
+  onResolved: () => void;
 }) {
   const { t } = useI18n();
+  const { user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   // Tracks WHICH action is in flight, not just whether one is -- promote,
   // reject, and restore share one save path, so a boolean can only ever
@@ -119,9 +178,84 @@ function ShadowElementCard({
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState(element.comment ?? "");
   const [isSavingComment, setIsSavingComment] = useState(false);
+  // Per-element "find similar real TEF elements" panel -- separate from the
+  // batch AI "Check against TEF" audit elsewhere in this file: this is a
+  // plain similarity search the reviewer judges themselves, one element at
+  // a time.
+  const [similarOpen, setSimilarOpen] = useState(false);
+  const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
+  const [similarCandidates, setSimilarCandidates] = useState<
+    TransitionElementMatch[] | null
+  >(null);
+  const [editTarget, setEditTarget] = useState<SimilarEditTarget | null>(
+    null,
+  );
+  const [editDraft, setEditDraft] = useState<TransitionElementFormDraft | null>(
+    null,
+  );
+  // Only meaningful in 'create' mode -- PATCH (broaden) carries the
+  // candidate's existing category over unchanged, but a brand-new element
+  // has no prior row to take it from, so it's editable here, prefilled from
+  // this shadow element's own category as the obvious starting guess.
+  const [createCategory, setCreateCategory] = useState("");
+  const [isLoadingEditTarget, setIsLoadingEditTarget] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
+  // Per-commitment reattach -- separate from editTarget above: this moves
+  // just ONE attached shift, reusing the same similarCandidates list
+  // (fetched once per card, shared by both this and the card-level panel)
+  // rather than running its own search.
+  const [reattachOpenShiftId, setReattachOpenShiftId] = useState<
+    string | null
+  >(null);
+  const [isReattaching, setIsReattaching] = useState(false);
+  // shiftId -> stableId it was just reattached to -- shown in place of the
+  // Reattach button/picker for that row, instead of the row either closing
+  // the picker or vanishing the moment onResolved() refetches. A plain
+  // (non-auto-rejecting) reattach deliberately skips that refetch below, so
+  // this card and its open panels stay exactly as they were; this map is
+  // what makes the one row that changed still show something instead of
+  // just sitting there unchanged with no confirmation.
+  const [justReattached, setJustReattached] = useState<Map<string, string>>(
+    new Map(),
+  );
+  // Manual fallback search, shown below every candidate list on this card
+  // (the card-level panel and every per-attachment reattach picker) -- for
+  // when none of the semantic candidates above actually fit. Plain
+  // substring search against the whole live taxonomy, same endpoint
+  // TaxonomyTab's own search box uses, not scoped to this shadow element at
+  // all. One shared box per card rather than per-picker, since only one of
+  // these is realistically open at a time.
+  const [manualQuery, setManualQuery] = useState("");
+  const [manualResults, setManualResults] = useState<
+    TransitionElementSummary[] | null
+  >(null);
+  const [isSearchingManual, setIsSearchingManual] = useState(false);
   const isSaving = pendingStatus !== null || isSavingComment;
   const isMerged = element.status === "merged";
   const hasComment = Boolean(element.comment?.trim());
+
+  // Debounced manual search -- only fires past 2 characters, since an
+  // unscoped single-letter query against the whole taxonomy is noise, not
+  // a useful fallback.
+  useEffect(() => {
+    const query = manualQuery.trim();
+    if (query.length < 2) {
+      setManualResults(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setIsSearchingManual(true);
+      searchTransitionElements(query)
+        .then(setManualResults)
+        .catch((err) =>
+          toast.error(
+            err instanceof Error ? err.message : t("shadowTaxonomy.similarError"),
+          ),
+        )
+        .finally(() => setIsSearchingManual(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [manualQuery, t]);
 
   const setStatus = async (status: ShadowElementStatus) => {
     setPendingStatus(status);
@@ -194,6 +328,242 @@ function ShadowElementCard({
       setIsSavingComment(false);
     }
   };
+
+  // Shared by the card-level panel and every per-attachment reattach picker
+  // -- fetched once per card, reused everywhere a candidate list is shown,
+  // since they're all searching the same shadow element.
+  const ensureSimilarCandidates = () => {
+    if (similarCandidates !== null) return;
+    setIsLoadingSimilar(true);
+    findSimilarRealElements(element.id)
+      .then(setSimilarCandidates)
+      .catch((err) =>
+        toast.error(
+          err instanceof Error ? err.message : t("shadowTaxonomy.similarError"),
+        ),
+      )
+      .finally(() => setIsLoadingSimilar(false));
+  };
+
+  const toggleSimilar = () => {
+    const next = !similarOpen;
+    setSimilarOpen(next);
+    setEditTarget(null);
+    if (next) ensureSimilarCandidates();
+  };
+
+  const toggleReattach = (shiftId: string) => {
+    const next = reattachOpenShiftId === shiftId ? null : shiftId;
+    setReattachOpenShiftId(next);
+    if (next) ensureSimilarCandidates();
+  };
+
+  const handleReattach = async (shiftId: string, realStableId: string) => {
+    setIsReattaching(true);
+    try {
+      const result = await reattachShift(shiftId, realStableId);
+      setJustReattached((prev) => new Map(prev).set(shiftId, realStableId));
+      // Only refetch when the shadow element's own status actually changed
+      // (auto-rejected because this was its last attachment) -- a plain
+      // reattach doesn't need the whole list to refresh, so skipping it here
+      // is what keeps this card's open panels (similarOpen, reattachOpenShiftId,
+      // isExpanded) from resetting over one shift quietly moving elsewhere.
+      if (result.shadowElementAutoRejected) onResolved();
+
+      const alreadyMatched = result.recoveredShift.existingRealMatches?.some(
+        (m) => m.stableId === realStableId,
+      );
+      toast.success(
+        t(
+          result.shadowElementAutoRejected
+            ? "shadowTaxonomy.reattachSuccessAutoRejected"
+            : alreadyMatched
+              ? "shadowTaxonomy.reattachAlreadyMatched"
+              : "shadowTaxonomy.reattachSuccess",
+          { label: element.shortLabel, stableId: realStableId },
+        ),
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : t("shadowTaxonomy.reattachError"),
+      );
+    } finally {
+      setIsReattaching(false);
+    }
+  };
+
+  const startBroaden = async (stableId: string) => {
+    setIsLoadingEditTarget(true);
+    try {
+      const current = await getCurrentTransitionElement(stableId);
+      setEditDraft(toFormDraft(current));
+      setEditTarget({ mode: "broaden", stableId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load element");
+    } finally {
+      setIsLoadingEditTarget(false);
+    }
+  };
+
+  const startCreate = () => {
+    setEditDraft(
+      toFormDraft({
+        shortLabel: element.shortLabel,
+        description: element.description,
+        sectorId: null,
+        sectorPath: element.sectorPath ?? "",
+        actsOnLabels: [],
+        shiftsToLabels: [],
+        coBenefits: [],
+        sustainabilityClass: null,
+      }),
+    );
+    setCreateCategory(element.activityShiftCategory);
+    setEditTarget({ mode: "create" });
+  };
+
+  // Bulk move -- independent of editing: a candidate might already cover
+  // things as-is, so this is its own always-available action per candidate
+  // row, not something Save does as a side effect. Same reject-with-recovery
+  // call the batch "Check against TEF" audit already uses to confirm one of
+  // its own flags.
+  const handleUseForAll = async (realStableId: string) => {
+    setIsResolving(true);
+    try {
+      const [result] = await rejectShadowElementsWithRecovery([
+        { shadowElementId: element.id, realStableId },
+      ]);
+      setEditTarget(null);
+      setSimilarOpen(false);
+      setSimilarCandidates(null);
+      onResolved();
+      // Several shifts move at once here, each with its own existing
+      // matches -- unlike a single reattach, there's no one "already
+      // matched" toast variant that fits; just count how many of them
+      // already had this real element so the reviewer isn't left wondering
+      // why some rows didn't visibly gain a new match.
+      const alreadyMatchedCount =
+        result?.recoveredShifts.filter((shift) =>
+          shift.existingRealMatches?.some((m) => m.stableId === realStableId),
+        ).length ?? 0;
+      toast.success(
+        t(
+          alreadyMatchedCount > 0
+            ? "shadowTaxonomy.useForAllSuccessWithAlreadyMatched"
+            : "shadowTaxonomy.useForAllSuccess",
+          {
+            label: element.shortLabel,
+            stableId: realStableId,
+            count: alreadyMatchedCount,
+          },
+        ),
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : t("shadowTaxonomy.resolveError"),
+      );
+    } finally {
+      setIsResolving(false);
+    }
+  };
+
+  // Edit/Create only -- no shift movement. Updates similarCandidates in
+  // place so the saved/created element immediately has the same Edit /
+  // Use-for-all / per-attachment Reattach options as any other candidate,
+  // without needing a fresh search.
+  const handleSaveEdit = async () => {
+    if (!editTarget || !editDraft) return;
+    const editedBy = resolveQaReviewerForSave(user);
+    if (!editedBy) return;
+    setIsResolving(true);
+    try {
+      if (editTarget.mode === "broaden") {
+        const priorScore =
+          similarCandidates?.find((c) => c.stableId === editTarget.stableId)
+            ?.score ?? 0;
+        const updated = await updateTransitionElement(editTarget.stableId, {
+          ...formDraftToFields(editDraft),
+          editedBy,
+        });
+        setSimilarCandidates(
+          (prev) =>
+            prev?.map((c) =>
+              c.stableId === updated.stableId
+                ? matchFromElement(updated, priorScore)
+                : c,
+            ) ?? prev,
+        );
+        setEditTarget(null);
+        toast.success(
+          t("shadowTaxonomy.editSuccess", {
+            stableId: updated.stableId,
+            version: updated.version,
+          }),
+        );
+      } else {
+        if (!createCategory.trim()) {
+          toast.error(t("shadowTaxonomy.resolveCreateCategoryRequired"));
+          return;
+        }
+        const created = await createTransitionElement({
+          ...formDraftToFields(editDraft),
+          activityShiftCategory: createCategory.trim(),
+          editedBy,
+        });
+        setSimilarCandidates((prev) => [
+          matchFromElement(created, 1),
+          ...(prev ?? []),
+        ]);
+        setEditTarget(null);
+        toast.success(
+          t("shadowTaxonomy.createSuccess", { stableId: created.stableId }),
+        );
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : t("shadowTaxonomy.resolveError"),
+      );
+    } finally {
+      setIsResolving(false);
+    }
+  };
+
+  // Shared between the card-level panel and every per-attachment reattach
+  // picker -- same manual-search state, different action per result (Edit +
+  // Use-for-all vs. just Use-this), so the action buttons are the only
+  // thing each call site supplies.
+  const renderManualSearch = (renderActions: (summary: TransitionElementSummary) => ReactNode) => (
+    <div className="space-y-1.5 pt-1.5 border-t border-gray-03/30">
+      <input
+        type="text"
+        value={manualQuery}
+        onChange={(e) => setManualQuery(e.target.value)}
+        placeholder={t("shadowTaxonomy.manualSearchPlaceholder")}
+        className="h-8 w-full rounded-md border border-gray-03 bg-gray-04/40 px-2.5 text-xs text-gray-01 focus:outline-none focus:border-blue-03"
+      />
+      {isSearchingManual ? (
+        <div className="flex items-center justify-center p-2">
+          <Loader2 className="w-4 h-4 text-blue-03 animate-spin" />
+        </div>
+      ) : manualQuery.trim().length >= 2 && manualResults?.length === 0 ? (
+        <p className="text-xs text-gray-02">{t("taxonomy.noResults")}</p>
+      ) : (
+        manualResults?.map((summary) => (
+          <div key={summary.stableId} className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-gray-01 truncate">
+                {summary.shortLabel}
+              </p>
+              <p className="text-[11px] text-gray-02 truncate">
+                {summary.sectorPath}
+              </p>
+            </div>
+            {renderActions(summary)}
+          </div>
+        ))
+      )}
+    </div>
+  );
 
   return (
     <div className="bg-gray-04/80 backdrop-blur-sm rounded-[20px] p-4 space-y-2">
@@ -315,6 +685,21 @@ function ShadowElementCard({
                 variant="outline"
                 size="icon"
                 disabled={isSaving}
+                onClick={toggleSimilar}
+                title={t("shadowTaxonomy.findSimilar")}
+                className={cn(
+                  similarOpen
+                    ? "border-blue-03/50 bg-blue-03/10 text-blue-03 hover:bg-blue-03/15"
+                    : "border-gray-03 text-gray-02 hover:bg-gray-03/40",
+                )}
+              >
+                <Search className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={isSaving}
                 onClick={openComment}
                 title={t("shadowTaxonomy.comment")}
                 className={cn(
@@ -401,6 +786,173 @@ function ShadowElementCard({
         </div>
       )}
 
+      {similarOpen && !isMerged && (
+        <div className="rounded-lg border border-blue-03/30 bg-blue-03/5 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-medium text-gray-01">
+              {t("shadowTaxonomy.findSimilar")}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-gray-02 shrink-0"
+              onClick={() => {
+                setSimilarOpen(false);
+                setEditTarget(null);
+              }}
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+
+          {editTarget ? (
+            <div className="space-y-3">
+              {editTarget.mode === "create" && (
+                <label className="block text-sm">
+                  <span className="text-gray-02">
+                    {t("taxonomy.fieldActivityShiftCategory")}
+                  </span>
+                  <input
+                    value={createCategory}
+                    onChange={(e) => setCreateCategory(e.target.value)}
+                    className="mt-1 w-full h-9 rounded-md border border-blue-03 bg-gray-04/40 px-2.5 text-sm text-gray-01 focus:outline-none"
+                  />
+                </label>
+              )}
+              {editDraft && (
+                <TransitionElementEditForm
+                  draft={editDraft}
+                  onChange={setEditDraft}
+                />
+              )}
+              <p className="text-xs text-gray-02">
+                {t(
+                  editTarget.mode === "broaden"
+                    ? "shadowTaxonomy.editBroadenNote"
+                    : "shadowTaxonomy.editCreateNote",
+                )}
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 max-w-none whitespace-nowrap text-xs"
+                  disabled={isResolving}
+                  onClick={() => setEditTarget(null)}
+                >
+                  {t("taxonomy.cancel")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-7 max-w-none whitespace-nowrap text-xs"
+                  disabled={isResolving}
+                  onClick={() => void handleSaveEdit()}
+                >
+                  {isResolving ? (
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <Save className="w-3.5 h-3.5 mr-1.5" />
+                  )}
+                  {t("taxonomy.save")}
+                </Button>
+              </div>
+            </div>
+          ) : isLoadingSimilar || isLoadingEditTarget ? (
+            <div className="flex items-center justify-center p-4">
+              <Loader2 className="w-5 h-5 text-blue-03 animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {similarCandidates?.length === 0 && (
+                <p className="text-xs text-gray-02">
+                  {t("shadowTaxonomy.similarEmpty")}
+                </p>
+              )}
+              {similarCandidates?.map((candidate) => (
+                <div
+                  key={candidate.stableId}
+                  className="rounded-lg bg-gray-03/10 p-3 flex items-start justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-gray-01">
+                        {candidate.shortLabel}
+                      </p>
+                      <span className="inline-flex items-center rounded-full border border-blue-03/30 bg-blue-03/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-03">
+                        {t("shadowTaxonomy.similarScore", {
+                          score: candidate.score.toFixed(2),
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-02">
+                      {candidate.description}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1.5 shrink-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 max-w-none whitespace-nowrap text-xs"
+                      disabled={isResolving}
+                      onClick={() => void startBroaden(candidate.stableId)}
+                    >
+                      {t("shadowTaxonomy.editThis")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 max-w-none whitespace-nowrap border-blue-03/40 text-xs text-blue-03 hover:bg-blue-03/10 hover:border-blue-03"
+                      disabled={isResolving}
+                      onClick={() => void handleUseForAll(candidate.stableId)}
+                    >
+                      {t("shadowTaxonomy.useForAll")}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 max-w-none whitespace-nowrap border-green-03/40 text-xs text-green-03 hover:bg-green-03/10 hover:border-green-03"
+                onClick={startCreate}
+              >
+                {t("shadowTaxonomy.createNew")}
+              </Button>
+              {renderManualSearch((summary) => (
+                <div className="flex gap-1.5 shrink-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 max-w-none whitespace-nowrap text-[11px]"
+                    disabled={isResolving}
+                    onClick={() => void startBroaden(summary.stableId)}
+                  >
+                    {t("shadowTaxonomy.editThis")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 max-w-none whitespace-nowrap border-blue-03/40 text-[11px] text-blue-03 hover:bg-blue-03/10 hover:border-blue-03"
+                    disabled={isResolving}
+                    onClick={() => void handleUseForAll(summary.stableId)}
+                  >
+                    {t("shadowTaxonomy.useForAll")}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {isExpanded && (
         <div className="border-t border-gray-03/50 pt-3 space-y-2">
           {element.mergedElements.map((m) => (
@@ -426,28 +978,105 @@ function ShadowElementCard({
               </Button>
             </div>
           ))}
-          {element.attachments.map((a) => (
-            <div
-              key={a.shiftId}
-              className="rounded-lg bg-gray-05/50 p-3 space-y-1"
-            >
-              <div className="flex items-center gap-2 text-xs flex-wrap">
-                {a.isOrigin && <OriginPill />}
-                <span className="font-medium text-gray-01">
-                  {a.municipalityName ?? "Unknown municipality"}
-                </span>
-                <span className="text-gray-02 font-mono">
-                  {a.shiftFrom} → {a.shiftTo}
-                </span>
+          {element.attachments.map((a) => {
+            const reattachedTo = justReattached.get(a.shiftId);
+            return (
+              <div
+                key={a.shiftId}
+                className="rounded-lg bg-gray-05/50 p-3 space-y-1"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center gap-2 text-xs flex-wrap">
+                      {a.isOrigin && <OriginPill />}
+                      <span className="font-medium text-gray-01">
+                        {a.municipalityName ?? "Unknown municipality"}
+                      </span>
+                      <span className="text-gray-02 font-mono">
+                        {a.shiftFrom} → {a.shiftTo}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-02 italic">
+                      {a.measureText}
+                    </p>
+                    {a.aiReviewExplanation && (
+                      <p className="text-xs text-purple-03">
+                        {a.aiReviewExplanation}
+                      </p>
+                    )}
+                    {reattachedTo && (
+                      <p className="text-xs font-medium text-green-03">
+                        {t("shadowTaxonomy.reattachedToLabel", {
+                          stableId: reattachedTo,
+                        })}
+                      </p>
+                    )}
+                  </div>
+                  {!isMerged && !reattachedTo && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 max-w-none shrink-0 whitespace-nowrap text-[11px]"
+                      onClick={() => toggleReattach(a.shiftId)}
+                    >
+                      {t("shadowTaxonomy.reattach")}
+                    </Button>
+                  )}
+                </div>
+                {!reattachedTo && reattachOpenShiftId === a.shiftId && (
+                  <div className="rounded-md border border-blue-03/30 bg-blue-03/5 p-2 space-y-1.5">
+                    {isLoadingSimilar ? (
+                      <div className="flex items-center justify-center p-2">
+                        <Loader2 className="w-4 h-4 text-blue-03 animate-spin" />
+                      </div>
+                    ) : similarCandidates?.length === 0 ? (
+                      <p className="text-xs text-gray-02">
+                        {t("shadowTaxonomy.similarEmpty")}
+                      </p>
+                    ) : (
+                      similarCandidates?.map((candidate) => (
+                        <div
+                          key={candidate.stableId}
+                          className="flex items-center justify-between gap-2"
+                        >
+                          <span className="text-xs text-gray-01 truncate">
+                            {candidate.shortLabel}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-6 max-w-none shrink-0 whitespace-nowrap text-[11px]"
+                            disabled={isReattaching}
+                            onClick={() =>
+                              void handleReattach(a.shiftId, candidate.stableId)
+                            }
+                          >
+                            {t("shadowTaxonomy.useThis")}
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                    {renderManualSearch((summary) => (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-6 max-w-none shrink-0 whitespace-nowrap text-[11px]"
+                        disabled={isReattaching}
+                        onClick={() =>
+                          void handleReattach(a.shiftId, summary.stableId)
+                        }
+                      >
+                        {t("shadowTaxonomy.useThis")}
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-gray-02 italic">{a.measureText}</p>
-              {a.aiReviewExplanation && (
-                <p className="text-xs text-purple-03">
-                  {a.aiReviewExplanation}
-                </p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -495,7 +1124,14 @@ function visibleShadowElements(
   statusFilter: ShadowElementStatus | "",
   qualityFilter: ShadowElementQuality | "",
   municipalityFilter: string,
+  // Plain substring theme search (e.g. "solar") -- lets a reviewer see
+  // every shadow element touching one theme together instead of reviewing
+  // them one at a time in sort order. Purely client-side, same as the other
+  // three filters: `elements` is already fully loaded, so this never costs
+  // a request.
+  searchQuery: string,
 ): ShadowElement[] {
+  const query = searchQuery.trim().toLowerCase();
   return (
     elements
       .map((element) => overrides.get(element.id) ?? element)
@@ -515,6 +1151,13 @@ function visibleShadowElements(
         (element) =>
           !municipalityFilter ||
           element.origin?.municipalityName === municipalityFilter,
+      )
+      .filter(
+        (element) =>
+          !query ||
+          element.shortLabel.toLowerCase().includes(query) ||
+          element.description.toLowerCase().includes(query) ||
+          (element.comment?.toLowerCase().includes(query) ?? false),
       )
       .sort(byMostAttached)
   );
@@ -1027,6 +1670,9 @@ export function ShadowTaxonomyTab() {
   // across Current, the legacy snapshot, and the diff view so all three
   // stay in sync with the same selection.
   const [municipalityFilter, setMunicipalityFilter] = useState("");
+  // Plain theme search (e.g. "solar") -- see visibleShadowElements' own
+  // comment for why this is client-side only.
+  const [searchQuery, setSearchQuery] = useState("");
   const [overrides, setOverrides] = useState<Map<string, ShadowElement>>(
     new Map(),
   );
@@ -1055,6 +1701,7 @@ export function ShadowTaxonomyTab() {
     statusFilter,
     qualityFilter,
     municipalityFilter,
+    searchQuery,
   );
 
   // Built from every live element AND every snapshot row, regardless of
@@ -1498,6 +2145,13 @@ export function ShadowTaxonomyTab() {
                     ))}
                   </select>
                 </label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t("shadowTaxonomy.themeSearchPlaceholder")}
+                  className="h-9 w-48 rounded-md border border-gray-03 bg-gray-04/40 px-2.5 text-sm text-gray-01 focus:outline-none focus:border-blue-03"
+                />
                 <span className="text-xs text-gray-02">
                   {t("shadowTaxonomy.count", { count: rows.length })}
                 </span>
@@ -1526,6 +2180,7 @@ export function ShadowTaxonomyTab() {
                       element={el}
                       onChanged={handleChanged}
                       onUnlink={(id, label) => void handleUnlink(id, label)}
+                      onResolved={handleRefresh}
                     />
                   ))}
                 </div>

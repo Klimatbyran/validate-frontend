@@ -55,6 +55,8 @@ function tabLabelKey(tab: TopLevelTabSegment): string {
       return "nav.municipalitySources";
     case "shadow-taxonomy":
       return "nav.shadowTaxonomy";
+    case "taxonomy":
+      return "nav.taxonomy";
   }
 }
 

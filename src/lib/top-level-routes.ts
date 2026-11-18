@@ -11,6 +11,7 @@ export const TOP_LEVEL_TAB_SEGMENTS = [
   "climate-qa-reviews",
   "municipality-sources",
   "shadow-taxonomy",
+  "taxonomy",
 ] as const;
 
 export type TopLevelTabSegment = (typeof TOP_LEVEL_TAB_SEGMENTS)[number];
