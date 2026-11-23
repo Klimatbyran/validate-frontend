@@ -13,8 +13,30 @@ server {
     gzip_min_length 1024;
     gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
 
+    # Staff JWT gate: validate Bearer token against Unearth before proxying privileged APIs.
+    location = /_staff_api_auth {
+        internal;
+        proxy_pass ${UNEARTH_API_URL}/tag-options;
+        proxy_method GET;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Host ${UNEARTH_HOST};
+        proxy_set_header Authorization $http_authorization;
+        proxy_set_header X-API-Key "";
+        proxy_ssl_server_name on;
+        proxy_connect_timeout 10s;
+        proxy_read_timeout 10s;
+    }
+
+    location @staff_login_required {
+        add_header X-Validate-Proxy login-required always;
+        return 401;
+    }
+
     # Pipeline API proxy - /api -> pipeline backend
     location /api {
+        auth_request /_staff_api_auth;
+        error_page 401 = @staff_login_required;
         proxy_pass ${BACKEND_API_URL};
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -36,6 +58,8 @@ server {
 
     # Garbo API: queue-archive (staff JWT)
     location /garbo-api/queue-archive/ {
+        auth_request /_staff_api_auth;
+        error_page 401 = @staff_login_required;
         proxy_pass ${GARBO_API_URL}/queue-archive/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -56,8 +80,27 @@ server {
         return 308 /unearth-api/;
     }
 
-    # Unearth HTTP API: auth, companies, registry, tag-options, etc.
+    # OAuth bootstrap (GitHub): must stay reachable before staff JWT exists.
+    location /unearth-api/auth/ {
+        proxy_pass ${UNEARTH_API_URL}/auth/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host ${UNEARTH_HOST};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+    }
+
+    # Unearth HTTP API: companies, registry, tag-options, etc. (not /auth)
     location /unearth-api/ {
+        auth_request /_staff_api_auth;
+        error_page 401 = @staff_login_required;
         proxy_pass ${UNEARTH_API_URL}/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -80,6 +123,8 @@ server {
         return 308 /pipeline-stage-api/;
     }
     location /pipeline-stage-api/ {
+        auth_request /_staff_api_auth;
+        error_page 401 = @staff_login_required;
         proxy_pass https://stage-pipeline-api.klimatkollen.se/api/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -99,6 +144,8 @@ server {
         return 308 /garbo-stage-api/;
     }
     location /garbo-stage-api/queue-archive/ {
+        auth_request /_staff_api_auth;
+        error_page 401 = @staff_login_required;
         proxy_pass https://stage-api.klimatkollen.se/api/queue-archive/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -120,6 +167,8 @@ server {
         return 308 /unearth-stage-api/;
     }
     location /unearth-stage-api/ {
+        auth_request /_staff_api_auth;
+        error_page 401 = @staff_login_required;
         proxy_pass https://stage-api.unearthdata.ai/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -140,6 +189,8 @@ server {
         return 308 /unearth-prod-api/;
     }
     location /unearth-prod-api/ {
+        auth_request /_staff_api_auth;
+        error_page 401 = @staff_login_required;
         proxy_pass https://api.unearthdata.ai/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -158,6 +209,8 @@ server {
 
     # Proxy /api/screenshots to screenshots service (if different)
     location /api/screenshots {
+        auth_request /_staff_api_auth;
+        error_page 401 = @staff_login_required;
         proxy_pass ${BACKEND_API_URL};
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
