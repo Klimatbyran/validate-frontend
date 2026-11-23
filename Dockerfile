@@ -1,5 +1,5 @@
 # Build Stage
-FROM node:lts-alpine3.20 AS build
+FROM node:22.23.4-alpine3.23 AS build
 
 # Set working directory for the build process
 WORKDIR /app
