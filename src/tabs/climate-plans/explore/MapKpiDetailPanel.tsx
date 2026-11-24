@@ -216,6 +216,10 @@ export function MapKpiDetailPanel({
           <div className="text-xs font-semibold text-gray-02 uppercase">
             TEF groups
           </div>
+          <p className="text-[11px] text-gray-02">
+            Counts are unique measures · strength uses best confidence per
+            measure
+          </p>
           {tefGroups.map((group) => (
             <div key={group.group} className="flex items-center gap-2 text-sm">
               <div className="w-28 truncate text-gray-01" title={group.group}>
@@ -229,8 +233,12 @@ export function MapKpiDetailPanel({
                   }}
                 />
               </div>
-              <span className="tabular-nums text-xs text-gray-02 w-16 text-right">
-                {group.hitCount} · {(group.weightedStrength * 100).toFixed(0)}%
+              <span
+                className="tabular-nums text-xs text-gray-02 w-16 text-right"
+                title={`${group.uniqueMeasureCount} measures · ${(group.weightedStrength * 100).toFixed(0)}% strength`}
+              >
+                {group.uniqueMeasureCount} ·{" "}
+                {(group.weightedStrength * 100).toFixed(0)}%
               </span>
             </div>
           ))}
@@ -360,6 +368,7 @@ function TopTefsSection({
         <div className="text-xs font-semibold text-gray-02 uppercase">
           Top TEFs
         </div>
+        <p className="text-[11px] text-gray-02">Unique measures per TEF</p>
         <ul className="space-y-1">
           {rows.map((tef) => (
             <li
@@ -369,7 +378,10 @@ function TopTefsSection({
               <span className="text-gray-01 truncate" title={tef.shortLabel}>
                 {tefTitleFromShortLabel(tef.shortLabel)}
               </span>
-              <span className="tabular-nums text-xs text-gray-02 shrink-0">
+              <span
+                className="tabular-nums text-xs text-gray-02 shrink-0"
+                title="Unique measures"
+              >
                 {tef.primaryHits ?? 0}
               </span>
             </li>
@@ -384,6 +396,7 @@ function TopTefsSection({
       <div className="text-xs font-semibold text-gray-02 uppercase">
         Top TEFs
       </div>
+      <p className="text-[11px] text-gray-02">Unique measures per TEF</p>
       <div className="overflow-hidden rounded-md border border-gray-03/30">
         <table className="w-full text-sm">
           <thead>

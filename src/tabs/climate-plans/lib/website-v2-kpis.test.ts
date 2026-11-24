@@ -5,7 +5,7 @@ import {
   uniqueMeasureCount,
   focusMatchMapValue,
   focusMatchChipLabel,
-  groupMeasuresByActivityFlow,
+  groupMeasuresByActivityShiftFrom,
 } from "./website-v2-kpis";
 import type { ExploreMunicipalityRecord, TefHit } from "./explore-types";
 import type { Measure } from "./measures-types";
@@ -119,7 +119,7 @@ describe("website v2 kpis", () => {
     expect(focusMatchChipLabel("miss")).toBe("Not really");
   });
 
-  it("groups browse rows by activity flow from → to", () => {
+  it("groups browse rows by activity-shift from only", () => {
     const rows = browseMeasures(
       record({
         measures: [
@@ -159,13 +159,35 @@ describe("website v2 kpis", () => {
               },
             ],
           },
+          {
+            ...measure("More bus work"),
+            activity_shifts: [
+              {
+                activity: "mobility",
+                shift_from: "diesel bus",
+                shift_to: "biogas bus",
+                need: "mobility",
+                type: "Type Shift",
+                type_reasoning: "",
+                score: 4,
+                reasoning: "",
+                transition_element_matches: [],
+                transition_element_candidates: [],
+                transition_element_gate_domain: "Transport",
+              },
+            ],
+          },
         ],
       }),
     );
-    const groups = groupMeasuresByActivityFlow(rows);
-    expect(groups.map((g) => g.label).sort()).toEqual([
-      "car → bus",
-      "diesel bus → electric bus",
-    ]);
+    expect(rows[0]?.activityShifts).toEqual(["diesel bus → electric bus"]);
+    expect(rows[0]?.shiftFromLabels).toEqual(["diesel bus"]);
+    const groups = groupMeasuresByActivityShiftFrom(rows);
+    expect(groups.map((g) => g.label).sort()).toEqual(["car", "diesel bus"]);
+    expect(
+      groups
+        .find((g) => g.label === "diesel bus")
+        ?.rows.map((r) => r.measure.measure_text),
+    ).toEqual(["Buy buses", "More bus work"]);
   });
 });

@@ -73,9 +73,13 @@ export interface MeasureBrowseRow {
   sectors: Array<TefSectorId | "other">;
   exactTefLabels: string[];
   impliedTefCount: number;
-  /** Distinct activity-shift flows shown as "from → to". */
-  activityFlows: string[];
-  activityLabels: string[];
+  /**
+   * Activity shifts on the measure, labeled as "from → to" when both sides
+   * exist. These are the shifts themselves — not a separate "flow" concept.
+   */
+  activityShifts: string[];
+  /** Distinct shift_from values (grouping axis when browsing by shift). */
+  shiftFromLabels: string[];
 }
 
 export function browseMeasures(
@@ -89,16 +93,17 @@ export function browseMeasures(
     const sectors = new Set<TefSectorId | "other">();
     const exactTefLabels: string[] = [];
     let impliedTefCount = 0;
-    const activityFlows = new Set<string>();
-    const activityLabels = new Set<string>();
+    const activityShifts = new Set<string>();
+    const shiftFromLabels = new Set<string>();
 
     // Same evidence as biggest-source fit: gate domains + catalogue matches
     // on the measure's own activity_shifts (explicit and implied).
     for (const shift of measure.activity_shifts ?? []) {
-      if (shift.activity?.trim()) activityLabels.add(shift.activity.trim());
       const from = shift.shift_from?.trim();
       const to = shift.shift_to?.trim();
-      if (from && to) activityFlows.add(`${from} → ${to}`);
+      if (from) shiftFromLabels.add(from);
+      if (from && to) activityShifts.add(`${from} → ${to}`);
+      else if (from) activityShifts.add(from);
       const gated = tefSectorFromGateDomain(
         shift.transition_element_gate_domain,
       );
@@ -130,8 +135,8 @@ export function browseMeasures(
       sectors: [...sectors],
       exactTefLabels,
       impliedTefCount,
-      activityFlows: [...activityFlows],
-      activityLabels: [...activityLabels],
+      activityShifts: [...activityShifts],
+      shiftFromLabels: [...shiftFromLabels],
     };
   });
 }
@@ -188,19 +193,20 @@ export function groupMeasuresBySector(rows: MeasureBrowseRow[]): Array<{
     }));
 }
 
-/** Group measures by primary activity-shift flow ("from → to"). */
-export function groupMeasuresByActivityFlow(rows: MeasureBrowseRow[]): Array<{
-  flowId: string;
+/**
+ * Group measures by primary activity-shift `shift_from` only.
+ * Do not group by destination (`shift_to`) or invent a separate flow label.
+ */
+export function groupMeasuresByActivityShiftFrom(
+  rows: MeasureBrowseRow[],
+): Array<{
+  shiftFromId: string;
   label: string;
   rows: MeasureBrowseRow[];
 }> {
   const buckets = new Map<string, MeasureBrowseRow[]>();
   for (const row of rows) {
-    const key =
-      row.activityFlows[0] ??
-      (row.activityLabels[0]
-        ? `Activity: ${row.activityLabels[0]}`
-        : "No activity shift extracted");
+    const key = row.shiftFromLabels[0] ?? "No activity shift extracted";
     const list = buckets.get(key) ?? [];
     list.push(row);
     buckets.set(key, list);
@@ -208,7 +214,7 @@ export function groupMeasuresByActivityFlow(rows: MeasureBrowseRow[]): Array<{
   return [...buckets.entries()]
     .sort(([a], [b]) => a.localeCompare(b, "sv"))
     .map(([label, grouped]) => ({
-      flowId: label,
+      shiftFromId: label,
       label,
       rows: grouped,
     }));

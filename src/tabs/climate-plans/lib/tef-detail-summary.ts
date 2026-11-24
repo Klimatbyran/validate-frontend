@@ -1,7 +1,9 @@
 import type { MatchConfidence } from "./measures-types";
 import type { TefHit } from "./explore-types";
+import { groupTefHitsByMeasure, type TefHitLike } from "./tef-measure-groups";
 
 export interface TefDetailSummary {
+  /** Unique measures (statements) matched to this TEF — not activity-shift rows. */
   hitCount: number;
   municipalityCount: number;
   whoFilled: number;
@@ -12,11 +14,11 @@ export interface TefDetailSummary {
   /** 0 = all shift, 1 = all intervention; null when both averages missing. */
   interventionLean: number | null;
   confidence: Record<MatchConfidence, number>;
-  /** Hits where measure text directly names the TEF. */
+  /** Measures where any hit is judged explicit. */
   explicitCount: number;
-  /** Hits judged as reasonable inference only. */
+  /** Measures judged only as implied (no explicit hit). */
   impliedCount: number;
-  /** Hits with no explicit/implied judgment (older extracts). */
+  /** Measures with no explicit/implied judgment (older extracts). */
   unknownExplicitCount: number;
 }
 
@@ -29,20 +31,27 @@ function average(values: number[]): number | null {
   return values.reduce((s, n) => s + n, 0) / values.length;
 }
 
-/** Aggregate signals for a TEF cell — gist before reading every hit. */
+/**
+ * Aggregate signals for a TEF cell — gist before reading every measure.
+ * Counts and fill rates are per unique measure; activity shifts stay nested.
+ */
 export function summarizeTefHits(
-  hits: Pick<
-    TefHit,
-    | "interventionWho"
-    | "interventionWhat"
-    | "interventionHow"
-    | "shiftScore"
-    | "interventionScore"
-    | "confidence"
-    | "explicit"
-  >[],
+  hits: Array<
+    Pick<
+      TefHit,
+      | "measureText"
+      | "interventionWho"
+      | "interventionWhat"
+      | "interventionHow"
+      | "shiftScore"
+      | "interventionScore"
+      | "confidence"
+      | "explicit"
+    > & { municipalityId?: string }
+  >,
   municipalityCount: number,
 ): TefDetailSummary {
+  const groups = groupTefHitsByMeasure(hits as TefHitLike[]);
   const confidence: Record<MatchConfidence, number> = {
     high: 0,
     mid: 0,
@@ -57,15 +66,15 @@ export function summarizeTefHits(
   const shifts: number[] = [];
   const interventions: number[] = [];
 
-  for (const hit of hits) {
-    if (isFilled(hit.interventionWho)) whoFilled += 1;
-    if (isFilled(hit.interventionWhat)) whatFilled += 1;
-    if (isFilled(hit.interventionHow)) howFilled += 1;
-    shifts.push(hit.shiftScore);
-    interventions.push(hit.interventionScore);
-    confidence[hit.confidence] += 1;
-    if (hit.explicit === true) explicitCount += 1;
-    else if (hit.explicit === false) impliedCount += 1;
+  for (const group of groups) {
+    if (isFilled(group.interventionWho)) whoFilled += 1;
+    if (isFilled(group.interventionWhat)) whatFilled += 1;
+    if (isFilled(group.interventionHow)) howFilled += 1;
+    shifts.push(group.avgShiftScore);
+    interventions.push(group.interventionScore);
+    confidence[group.confidence] += 1;
+    if (group.explicit === true) explicitCount += 1;
+    else if (group.explicit === false) impliedCount += 1;
     else unknownExplicitCount += 1;
   }
 
@@ -78,7 +87,7 @@ export function summarizeTefHits(
   }
 
   return {
-    hitCount: hits.length,
+    hitCount: groups.length,
     municipalityCount,
     whoFilled,
     whatFilled,
@@ -144,7 +153,7 @@ export function filterTefHits<T extends Pick<TefHit, "explicit">>(
   return hits.filter((hit) => hitMatchesImpliedFilter(hit, filter));
 }
 
-/** Counts used by the shared All / Implied / Exclude control. */
+/** Counts used by the shared All / Implied / Exclude control (raw match rows). */
 export function countImpliedFilterBuckets(
   hits: Pick<TefHit, "explicit">[],
 ): Record<TefImpliedFilter, number> {
@@ -156,6 +165,22 @@ export function countImpliedFilterBuckets(
     all: hits.length,
     implied,
     "exclude-implied": hits.length - implied,
+  };
+}
+
+/** Same buckets as {@link countImpliedFilterBuckets}, but per unique measure. */
+export function countImpliedFilterBucketsByMeasure(
+  hits: Array<TefHitLike & Pick<TefHit, "explicit">>,
+): Record<TefImpliedFilter, number> {
+  const groups = groupTefHitsByMeasure(hits);
+  let implied = 0;
+  for (const group of groups) {
+    if (group.explicit === false) implied += 1;
+  }
+  return {
+    all: groups.length,
+    implied,
+    "exclude-implied": groups.length - implied,
   };
 }
 

@@ -98,8 +98,8 @@ export function buildTopTefCompareRows(
   }
 
   const compareTop = topTefsByHitCount(compareHits, limit);
-  const primaryAll = countHitsByStableId(primaryHits);
-  const compareAll = countHitsByStableId(compareHits);
+  const primaryAll = countMeasuresByStableId(primaryHits);
+  const compareAll = countMeasuresByStableId(compareHits);
 
   const ids = new Set([
     ...primaryTop.map((t) => t.stableId),
@@ -134,12 +134,33 @@ export function buildTopTefCompareRows(
     );
 }
 
-function countHitsByStableId(hits: TefHit[]): Map<string, number> {
-  const byId = new Map<string, number>();
+/** Unique measures per TEF stable_id (aligned with TEF framework counting). */
+function countMeasuresByStableId(hits: TefHit[]): Map<string, number> {
+  const byId = new Map<string, Set<string>>();
   for (const hit of hits) {
-    byId.set(hit.stableId, (byId.get(hit.stableId) ?? 0) + 1);
+    const set = byId.get(hit.stableId) ?? new Set<string>();
+    set.add((hit.measureText ?? "").trim());
+    byId.set(hit.stableId, set);
   }
-  return byId;
+  return new Map(
+    [...byId.entries()].map(([stableId, measures]) => [
+      stableId,
+      measures.size,
+    ]),
+  );
+}
+
+/** Unique measures among hits matching a source predicate. */
+function countMeasuresMatching(
+  hits: TefHit[],
+  predicate: (hit: TefHit) => boolean,
+): number {
+  const texts = new Set<string>();
+  for (const hit of hits) {
+    if (!predicate(hit)) continue;
+    texts.add((hit.measureText ?? "").trim());
+  }
+  return texts.size;
 }
 
 export interface MapKpiCompareRow {
@@ -531,21 +552,25 @@ function tefRows(
   const compareMatchRate = compare ? tefMatchRate(compare.measures) : null;
   const primaryShadows = shadowHitCount(primary.measures);
   const compareShadows = compare ? shadowHitCount(compare.measures) : null;
-  const primaryOfficial = primaryHits.filter(
+  const primaryOfficial = countMeasuresMatching(
+    primaryHits,
     (h) => (h.source ?? "official") === "official",
-  ).length;
+  );
   const compareOfficial =
     compareHits == null
       ? null
-      : compareHits.filter((h) => (h.source ?? "official") === "official")
-          .length;
-  const primaryProposed = primaryHits.filter(
+      : countMeasuresMatching(
+          compareHits,
+          (h) => (h.source ?? "official") === "official",
+        );
+  const primaryProposed = countMeasuresMatching(
+    primaryHits,
     (h) => h.source === "proposed",
-  ).length;
+  );
   const compareProposed =
     compareHits == null
       ? null
-      : compareHits.filter((h) => h.source === "proposed").length;
+      : countMeasuresMatching(compareHits, (h) => h.source === "proposed");
 
   return [
     row({
@@ -596,7 +621,7 @@ function tefRows(
     }),
     row({
       id: "officialHits",
-      label: "Official TEF hits",
+      label: "Official TEF measures",
       primary: formatCount(primaryOfficial),
       compareValue:
         compareOfficial == null ? null : formatCount(compareOfficial),
@@ -606,7 +631,7 @@ function tefRows(
     }),
     row({
       id: "proposedHits",
-      label: "Proposed STE hits",
+      label: "Proposed STE measures",
       primary: formatCount(primaryProposed),
       compareValue:
         compareProposed == null ? null : formatCount(compareProposed),
@@ -616,7 +641,7 @@ function tefRows(
     }),
     row({
       id: "shadowHits",
-      label: "Shadow gap hits",
+      label: "Shadow gap measures",
       primary: formatCount(primaryShadows),
       compareValue: compare ? formatCount(compareShadows) : null,
       delta: deltaOf(primaryShadows, compareShadows),

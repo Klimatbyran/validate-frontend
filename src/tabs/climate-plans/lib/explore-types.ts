@@ -82,10 +82,12 @@ export interface ExploreDataset {
 
 export interface TefGroupStrength {
   group: string;
+  /** Unique measures in this group (same as uniqueMeasureCount). */
   hitCount: number;
   uniqueTefCount: number;
   uniqueMeasureCount: number;
   weightedStrength: number;
+  /** Share of unique measures whose best match confidence is high. */
   highShare: number;
 }
 
@@ -139,4 +141,4 @@ export type TefFrameworkMetric = "hits" | "strength" | "municipalities";
 export type TefFrameworkLayout = "3d" | "grid";
 /** How 3d pillar height is scaled. */
 export type TefFrameworkHeightMode = "share" | "tonnes";
-export type ShiftsLayoutId = "compare" | "flows" | "types";
+export type ShiftsLayoutId = "compare" | "shifts" | "types";

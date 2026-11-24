@@ -4,17 +4,22 @@ import { cn } from "@/lib/utils";
 import { CONFIDENCE_CLASSES } from "../lib/tef-groups";
 import type { TefFrameworkCell } from "../lib/tef-framework";
 import {
-  countImpliedFilterBuckets,
+  countImpliedFilterBucketsByMeasure,
   hitMatchesEvidenceFilter,
   hitMatchesImpliedFilter,
   summarizeTefHits,
   type TefEvidenceFilter,
   type TefImpliedFilter,
 } from "../lib/tef-detail-summary";
+import {
+  groupTefHitsByMeasure,
+  type TefMeasureGroup,
+} from "../lib/tef-measure-groups";
 import { TefImpliedFilterControl } from "./TefImpliedFilterControl";
 import { TEF_SOURCE_LABEL } from "../lib/tef-hit-source";
 
 type Hit = TefFrameworkCell["hits"][number];
+type MeasureGroup = TefMeasureGroup<Hit>;
 
 export function TefDetailPanel({
   cell,
@@ -30,7 +35,7 @@ export function TefDetailPanel({
   const [localImpliedFilter, setLocalImpliedFilter] =
     useState<TefImpliedFilter>("all");
   const [openMuni, setOpenMuni] = useState<string | null>(null);
-  const [openHit, setOpenHit] = useState<string | null>(null);
+  const [openMeasure, setOpenMeasure] = useState<string | null>(null);
 
   const impliedFilter = controlledImpliedFilter ?? localImpliedFilter;
   /** Parent toolbar already shaped cell.hits; don't double-filter or duplicate the control. */
@@ -43,12 +48,12 @@ export function TefDetailPanel({
 
   const hasJudgment = summary.explicitCount + summary.impliedCount > 0;
   const impliedCounts = useMemo(
-    () => countImpliedFilterBuckets(cell.hits),
+    () => countImpliedFilterBucketsByMeasure(cell.hits),
     [cell.hits],
   );
 
   const byMuni = useMemo(() => {
-    const map = new Map<string, { name: string; hits: Hit[] }>();
+    const filtered: Hit[] = [];
     for (const hit of cell.hits) {
       if (
         !impliedOwnedByParent &&
@@ -57,15 +62,26 @@ export function TefDetailPanel({
         continue;
       }
       if (!hitMatchesEvidenceFilter(hit, filter)) continue;
-      const existing = map.get(hit.municipalityId);
-      if (existing) existing.hits.push(hit);
+      filtered.push(hit);
+    }
+
+    const map = new Map<
+      string,
+      { name: string; municipalityId: string; measures: MeasureGroup[] }
+    >();
+    for (const group of groupTefHitsByMeasure(filtered)) {
+      const existing = map.get(group.municipalityId);
+      if (existing) existing.measures.push(group);
       else
-        map.set(hit.municipalityId, {
-          name: hit.municipalityName,
-          hits: [hit],
+        map.set(group.municipalityId, {
+          name: group.municipalityName,
+          municipalityId: group.municipalityId,
+          measures: [group],
         });
     }
-    return [...map.values()].sort((a, b) => b.hits.length - a.hits.length);
+    return [...map.values()].sort(
+      (a, b) => b.measures.length - a.measures.length,
+    );
   }, [cell.hits, filter, impliedFilter, impliedOwnedByParent]);
 
   const description =
@@ -74,14 +90,14 @@ export function TefDetailPanel({
   const toggleFilter = (next: TefEvidenceFilter) => {
     setFilter((prev) => (prev === next ? null : next));
     setOpenMuni(null);
-    setOpenHit(null);
+    setOpenMeasure(null);
   };
 
   const changeImpliedFilter = (next: TefImpliedFilter) => {
     if (onImpliedFilterChange) onImpliedFilterChange(next);
     else setLocalImpliedFilter(next);
     setOpenMuni(null);
-    setOpenHit(null);
+    setOpenMeasure(null);
   };
 
   return (
@@ -105,7 +121,7 @@ export function TefDetailPanel({
             {TEF_SOURCE_LABEL[cell.source]}
           </span>
           <span className="text-xs tabular-nums text-gray-02 ml-auto">
-            {cell.hitCount} hits · {cell.municipalityCount} places ·{" "}
+            {cell.hitCount} measures · {cell.municipalityCount} places ·{" "}
             {Math.round(cell.weightedStrength * 100)}% strength
           </span>
         </div>
@@ -164,11 +180,11 @@ export function TefDetailPanel({
                       : null,
                     impliedOwnedByParent
                       ? "toolbar filters TEF matches"
-                      : "expand a place for quotes",
+                      : "one row per measure · activity shifts nested",
                   ]
                     .filter(Boolean)
                     .join(" · ")
-                : "Click a chip above to filter · expand a place for quotes"}
+                : "Click a chip above to filter · one row per measure"}
             </span>
           )}
         </div>
@@ -178,19 +194,18 @@ export function TefDetailPanel({
             No matches for this filter.
           </p>
         ) : (
-          byMuni.map(({ name, hits }) => {
-            const id = hits[0]?.municipalityId ?? name;
-            const expanded = openMuni === id;
+          byMuni.map(({ name, municipalityId, measures }) => {
+            const expanded = openMuni === municipalityId;
             return (
               <div
-                key={id}
+                key={municipalityId || name}
                 className="rounded-md border border-gray-03/25 bg-gray-05/40"
               >
                 <button
                   type="button"
                   onClick={() => {
-                    setOpenMuni(expanded ? null : id);
-                    setOpenHit(null);
+                    setOpenMuni(expanded ? null : municipalityId);
+                    setOpenMeasure(null);
                   }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-03/15 transition-colors"
                 >
@@ -202,23 +217,23 @@ export function TefDetailPanel({
                   <span className="text-sm font-medium text-gray-01 flex-1 truncate">
                     {name}
                   </span>
-                  <MuniMiniBars hits={hits} />
+                  <MuniMiniBars measures={measures} />
                   <span className="text-xs tabular-nums text-gray-02 shrink-0">
-                    {hits.length}
+                    {measures.length}
                   </span>
                 </button>
                 {expanded ? (
                   <ul className="border-t border-gray-03/20 divide-y divide-gray-03/15">
-                    {hits.map((hit, i) => {
-                      const hitKey = `${id}-${i}`;
+                    {measures.map((measure) => {
+                      const measureKey = `${municipalityId}-${measure.key}`;
                       return (
-                        <HitRow
-                          key={hitKey}
-                          hit={hit}
-                          expanded={openHit === hitKey}
+                        <MeasureRow
+                          key={measureKey}
+                          measure={measure}
+                          expanded={openMeasure === measureKey}
                           onToggle={() =>
-                            setOpenHit((prev) =>
-                              prev === hitKey ? null : hitKey,
+                            setOpenMeasure((prev) =>
+                              prev === measureKey ? null : measureKey,
                             )
                           }
                         />
@@ -456,12 +471,13 @@ function ConfidenceStrip({
   );
 }
 
-function MuniMiniBars({ hits }: { hits: Hit[] }) {
+function MuniMiniBars({ measures }: { measures: MeasureGroup[] }) {
   const avgShift =
-    hits.reduce((s, h) => s + h.shiftScore, 0) / Math.max(hits.length, 1);
+    measures.reduce((s, m) => s + m.avgShiftScore, 0) /
+    Math.max(measures.length, 1);
   const avgInt =
-    hits.reduce((s, h) => s + h.interventionScore, 0) /
-    Math.max(hits.length, 1);
+    measures.reduce((s, m) => s + m.interventionScore, 0) /
+    Math.max(measures.length, 1);
   return (
     <div
       className="hidden sm:flex items-center gap-1 shrink-0"
@@ -504,20 +520,30 @@ function ExplicitBadge({ explicit }: { explicit: boolean | undefined }) {
   );
 }
 
-function HitRow({
-  hit,
+function shiftLabel(hit: Hit): string {
+  const fromTo = [hit.shiftFrom, hit.shiftTo].filter(Boolean).join(" → ");
+  if (!fromTo && !hit.need) return "—";
+  return hit.need ? `${fromTo || "—"} · ${hit.need}` : fromTo;
+}
+
+function MeasureRow({
+  measure,
   expanded,
   onToggle,
 }: {
-  hit: Hit;
+  measure: MeasureGroup;
   expanded: boolean;
   onToggle: () => void;
 }) {
   const whoWhatHow = [
-    { label: "Who", value: hit.interventionWho },
-    { label: "What", value: hit.interventionWhat },
-    { label: "How", value: hit.interventionHow },
+    { label: "Who", value: measure.interventionWho },
+    { label: "What", value: measure.interventionWhat },
+    { label: "How", value: measure.interventionHow },
   ].filter(({ value }) => value && value !== "none");
+  const collapsedShiftPreview =
+    measure.hits.length === 1
+      ? shiftLabel(measure.hits[0]!)
+      : `${measure.hits.length} activity shifts`;
 
   return (
     <li>
@@ -531,12 +557,12 @@ function HitRow({
             <span
               className={cn(
                 "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border capitalize",
-                CONFIDENCE_CLASSES[hit.confidence],
+                CONFIDENCE_CLASSES[measure.confidence],
               )}
             >
-              {hit.confidence}
+              {measure.confidence}
             </span>
-            <ExplicitBadge explicit={hit.explicit} />
+            <ExplicitBadge explicit={measure.explicit} />
           </div>
           <div className="flex-1 min-w-0 space-y-1">
             <p
@@ -545,20 +571,22 @@ function HitRow({
                 !expanded && "line-clamp-1",
               )}
             >
-              <span className="italic">“{hit.measureText}”</span>
+              <span className="italic">“{measure.measureText}”</span>
             </p>
             {!expanded ? (
               <div className="text-xs text-gray-02 truncate">
-                {[hit.shiftFrom, hit.shiftTo].filter(Boolean).join(" → ") ||
-                  "—"}
-                {hit.need ? ` · ${hit.need}` : ""}
+                {collapsedShiftPreview}
               </div>
             ) : null}
           </div>
           <span className="text-[11px] tabular-nums text-gray-02 shrink-0 mt-0.5">
-            <span className="text-blue-03">{hit.shiftScore}</span>
+            <span className="text-blue-03">
+              {measure.avgShiftScore.toFixed(
+                Number.isInteger(measure.avgShiftScore) ? 0 : 1,
+              )}
+            </span>
             <span className="text-gray-03/70">/</span>
-            <span className="text-green-03">{hit.interventionScore}</span>
+            <span className="text-green-03">{measure.interventionScore}</span>
           </span>
         </div>
       </button>
@@ -566,24 +594,43 @@ function HitRow({
         <div className="px-3 pb-3 flex items-start gap-2">
           <div className="w-[7.5rem] shrink-0" aria-hidden />
           <div className="flex-1 min-w-0 space-y-2">
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              {[
-                { label: "From", value: hit.shiftFrom },
-                { label: "To", value: hit.shiftTo },
-                { label: "Need", value: hit.need },
-              ].map(({ label, value }) => (
-                <div
-                  key={label}
-                  className="rounded-md bg-gray-04/60 border border-gray-03/20 px-2 py-1.5"
-                >
-                  <div className="text-[10px] uppercase tracking-wide text-gray-02 mb-0.5">
-                    {label}
-                  </div>
-                  <div className="text-gray-01 leading-snug">
-                    {value || "—"}
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-1.5">
+              <div className="text-[10px] uppercase tracking-wide text-gray-02">
+                Activity shifts
+              </div>
+              <ul className="space-y-1.5">
+                {measure.hits.map((hit, i) => (
+                  <li
+                    key={`${hit.shiftFrom}-${hit.shiftTo}-${i}`}
+                    className="rounded-md bg-gray-04/60 border border-gray-03/20 px-2 py-1.5 text-xs space-y-1"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-gray-01 leading-snug">
+                        {shiftLabel(hit)}
+                      </span>
+                      <span className="tabular-nums text-blue-03 shrink-0">
+                        {hit.shiftScore}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { label: "From", value: hit.shiftFrom },
+                        { label: "To", value: hit.shiftTo },
+                        { label: "Need", value: hit.need },
+                      ].map(({ label, value }) => (
+                        <div key={label}>
+                          <div className="text-[10px] uppercase tracking-wide text-gray-02">
+                            {label}
+                          </div>
+                          <div className="text-gray-01 leading-snug">
+                            {value || "—"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
             {whoWhatHow.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">

@@ -8,7 +8,7 @@ import type {
 } from "../lib/explore-types";
 import { namesMatch } from "../lib/municipality-names";
 import {
-  buildShiftFlows,
+  buildActivityShiftFromGroups,
   collectMeasurePoints,
   dimensionPresent,
   interventionTypeBuckets,
@@ -24,9 +24,9 @@ const LAYOUTS: { id: ShiftsLayoutId; label: string; hint: string }[] = [
     hint: "TEF matching rides on activity shifts; interventions are who/what/when/how",
   },
   {
-    id: "flows",
-    label: "Activity flows",
-    hint: "Most common shift_from → shift_to pairs across extracts (top 12)",
+    id: "shifts",
+    label: "Activity shifts",
+    hint: "Most common activity shifts grouped by shift_from (top 12); destinations listed, not grouped",
   },
   {
     id: "types",
@@ -50,7 +50,10 @@ export function ShiftsInterventionsView({
 }) {
   const summaries = useMemo(() => summarizeMunicipalities(records), [records]);
   const points = useMemo(() => collectMeasurePoints(records), [records]);
-  const flows = useMemo(() => buildShiftFlows(records), [records]);
+  const shiftFromGroups = useMemo(
+    () => buildActivityShiftFromGroups(records),
+    [records],
+  );
   const types = useMemo(() => interventionTypeBuckets(records), [records]);
   const allHits = useMemo(() => records.flatMap((r) => r.tefHits), [records]);
   const tefCoverage = useMemo(
@@ -78,7 +81,7 @@ export function ShiftsInterventionsView({
     <div className="space-y-4">
       <MethodologyPanel
         data="Per measure: activity_shift_score + activity_shifts[] (from/to/need + TEF matches) versus intervention_who/when/what/how + intervention_score + intervention_type. TEF framework hits are produced from activity shifts — interventions are a separate specificity axis."
-        calculation="Present = score > 1. Municipality averages are mean scores across measures. Flow edges count identical shift_from→shift_to pairs (empty none→none pairs omitted). Type buckets group intervention_type (none/direct/indirect/enabling)."
+        calculation="Present = score > 1. Municipality averages are mean scores across measures. Activity-shift groups count identical shift_from values (empty/unspecified from omitted; destinations listed per group). Type buckets group intervention_type (none/direct/indirect/enabling)."
         extra={layoutMeta.hint}
       />
 
@@ -121,7 +124,9 @@ export function ShiftsInterventionsView({
           onSelectName={onSelectName}
         />
       ) : null}
-      {layout === "flows" ? <FlowsLayout flows={flows} /> : null}
+      {layout === "shifts" ? (
+        <ActivityShiftsLayout groups={shiftFromGroups} />
+      ) : null}
       {layout === "types" ? (
         <TypesLayout types={types} points={points} />
       ) : null}
@@ -292,40 +297,62 @@ function DualScoreBar({
   );
 }
 
-function FlowsLayout({ flows }: { flows: ReturnType<typeof buildShiftFlows> }) {
-  if (flows.length === 0) {
+function ActivityShiftsLayout({
+  groups,
+}: {
+  groups: ReturnType<typeof buildActivityShiftFromGroups>;
+}) {
+  if (groups.length === 0) {
     return (
       <p className="text-sm text-gray-02 rounded-lg border border-gray-03/30 p-4">
-        No activity shifts with from/to pairs in the loaded extracts yet.
+        No activity shifts with a shift_from in the loaded extracts yet.
       </p>
     );
   }
-  const maxCount = Math.max(...flows.map((f) => f.count), 1);
+  const maxCount = Math.max(...groups.map((g) => g.count), 1);
   return (
     <div className="space-y-2">
-      <p className="text-xs text-gray-02">Top {flows.length} activity flows</p>
-      {flows.map((flow) => (
+      <p className="text-xs text-gray-02">
+        Top {groups.length} activity shifts by what they move from
+      </p>
+      {groups.map((group) => (
         <div
-          key={`${flow.from}→${flow.to}`}
+          key={group.from}
           className="rounded-lg border border-gray-03/30 bg-gray-04/40 px-4 py-3 space-y-2"
         >
           <div className="flex items-center gap-2 flex-wrap text-sm">
-            <span className="text-gray-01 font-medium">{flow.from}</span>
-            <span className="text-gray-02">→</span>
-            <span className="text-gray-01 font-medium">{flow.to}</span>
+            <span className="text-[10px] uppercase tracking-wide text-gray-02">
+              From
+            </span>
+            <span className="text-gray-01 font-medium">{group.from}</span>
             <span className="ml-auto text-xs tabular-nums text-gray-02">
-              ×{flow.count} · avg score {flow.avgShiftScore.toFixed(1)} · TEF on{" "}
-              {flow.withTefMatch}/{flow.count}
+              ×{group.count} · avg score {group.avgShiftScore.toFixed(1)} · TEF
+              on {group.withTefMatch}/{group.count}
             </span>
           </div>
+          {group.destinations.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5 items-center">
+              <span className="text-[10px] uppercase tracking-wide text-gray-02">
+                To
+              </span>
+              {group.destinations.map((to) => (
+                <span
+                  key={to}
+                  className="text-[11px] px-2 py-0.5 rounded-md border border-gray-03/40 text-gray-01"
+                >
+                  {to}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <div className="h-1.5 rounded-full bg-gray-03/30 overflow-hidden">
             <div
               className="h-full rounded-full bg-blue-03/70"
-              style={{ width: `${(flow.count / maxCount) * 100}%` }}
+              style={{ width: `${(group.count / maxCount) * 100}%` }}
             />
           </div>
           <div className="text-[11px] text-gray-02">
-            {flow.municipalities.join(", ")}
+            {group.municipalities.join(", ")}
           </div>
         </div>
       ))}

@@ -39,7 +39,7 @@ const TEF_METRICS: TefFrameworkMetric[] = [
 ];
 const TEF_LAYOUTS: TefFrameworkLayout[] = ["3d", "grid"];
 const TEF_HEIGHT_MODES: TefFrameworkHeightMode[] = ["share", "tonnes"];
-const SHIFTS_LAYOUTS: ShiftsLayoutId[] = ["compare", "flows", "types"];
+const SHIFTS_LAYOUTS: ShiftsLayoutId[] = ["compare", "shifts", "types"];
 const TEF_IMPLIED_FILTERS: TefImpliedFilter[] = [
   "all",
   "implied",
@@ -76,8 +76,10 @@ export function useClimatePlansExploreParams() {
     TEF_HEIGHT_MODES,
     "share",
   );
+  // Older URLs used shiftsLayout=flows; treat that as the activity-shifts layout.
+  const shiftsLayoutRaw = searchParams.get("shiftsLayout");
   const shiftsLayout = pick(
-    searchParams.get("shiftsLayout"),
+    shiftsLayoutRaw === "flows" ? "shifts" : shiftsLayoutRaw,
     SHIFTS_LAYOUTS,
     "compare",
   );
