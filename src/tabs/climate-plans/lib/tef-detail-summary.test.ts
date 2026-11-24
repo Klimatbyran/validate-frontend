@@ -9,7 +9,9 @@ import {
 } from "./tef-detail-summary";
 import type { TefHit } from "./explore-types";
 
-function hit(partial: Partial<TefHit>): TefHit {
+function hit(
+  partial: Partial<TefHit> & { municipalityId?: string } = {},
+): TefHit & { municipalityId?: string } {
   return {
     stableId: "tef-1",
     shortLabel: "T-1 - Rail",
@@ -26,17 +28,32 @@ function hit(partial: Partial<TefHit>): TefHit {
     interventionWho: "municipality",
     interventionWhat: "bus",
     interventionHow: "none",
-    interventionScore: 6,
+    interventionScore: 5,
     ...partial,
   };
 }
 
 describe("summarizeTefHits", () => {
-  it("counts who/what/how fill and leans toward intervention when scores differ", () => {
+  it("counts unique measures, not activity-shift rows", () => {
     const summary = summarizeTefHits(
       [
-        hit({ confidence: "high", explicit: true }),
         hit({
+          measureText: "A",
+          municipalityId: "1",
+          confidence: "high",
+          explicit: true,
+        }),
+        hit({
+          measureText: "A",
+          municipalityId: "1",
+          confidence: "mid",
+          shiftTo: "cycling",
+          shiftScore: 6,
+          explicit: true,
+        }),
+        hit({
+          measureText: "B",
+          municipalityId: "1",
           confidence: "mid",
           interventionWho: "none",
           interventionWhat: "none",
@@ -45,17 +62,23 @@ describe("summarizeTefHits", () => {
           interventionScore: 2,
           explicit: false,
         }),
-        hit({ confidence: "low" }),
+        hit({
+          measureText: "C",
+          municipalityId: "2",
+          confidence: "low",
+        }),
       ],
       2,
     );
+    expect(summary.hitCount).toBe(3);
     expect(summary.whoFilled).toBe(2);
     expect(summary.whatFilled).toBe(2);
     expect(summary.howFilled).toBe(0);
     expect(summary.confidence.high).toBe(1);
     expect(summary.confidence.mid).toBe(1);
-    expect(summary.avgShiftScore).toBeCloseTo(10 / 3);
-    expect(summary.avgInterventionScore).toBeCloseTo(14 / 3);
+    expect(summary.confidence.low).toBe(1);
+    expect(summary.avgShiftScore).toBeCloseTo((5 + 2 + 4) / 3);
+    expect(summary.avgInterventionScore).toBeCloseTo((5 + 2 + 5) / 3);
     expect(summary.explicitCount).toBe(1);
     expect(summary.impliedCount).toBe(1);
     expect(summary.unknownExplicitCount).toBe(1);

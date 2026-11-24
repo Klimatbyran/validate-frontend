@@ -76,7 +76,7 @@ describe("TEF framework aggregation", () => {
     expect(filterHitsByScope(hits, "municipality", null)).toHaveLength(0);
   });
 
-  it("builds sector columns with hit and strength metrics", () => {
+  it("builds sector columns with measure and strength metrics", () => {
     const hits = [
       hit({
         stableId: "rail",
@@ -116,6 +116,31 @@ describe("TEF framework aggregation", () => {
     expect(columns.find((c) => c.sectorId === "industry")?.cells).toHaveLength(
       0,
     );
+  });
+
+  it("counts one measure when several activity shifts match the same TEF", () => {
+    const hits = [
+      hit({
+        stableId: "walk",
+        shortLabel: "T-1A2a-TE-1 - Active travel",
+        municipalityName: "Umeå",
+        measureText: "Favor walking and cycling",
+        shiftTo: "walking",
+        confidence: "high",
+      }),
+      hit({
+        stableId: "walk",
+        shortLabel: "T-1A2a-TE-1 - Active travel",
+        municipalityName: "Umeå",
+        measureText: "Favor walking and cycling",
+        shiftTo: "cycling",
+        confidence: "mid",
+      }),
+    ];
+    const cell = buildTefFrameworkCells(hits)[0];
+    expect(cell?.hitCount).toBe(1);
+    expect(cell?.hits).toHaveLength(2);
+    expect(cell?.weightedStrength).toBe(1);
   });
 });
 

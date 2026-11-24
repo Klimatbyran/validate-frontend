@@ -4,9 +4,12 @@ import type {
   TefFrameworkScope,
   TefHit,
 } from "./explore-types";
-import { CONFIDENCE_WEIGHT } from "./tef-groups";
 import { foldRegionName, namesMatch } from "./municipality-names";
 import { dominantHitSource, type TefHitSource } from "./tef-hit-source";
+import {
+  measureWeightedStrength,
+  uniqueTefMeasureCount,
+} from "./tef-measure-groups";
 
 export type { TefFrameworkMetric, TefFrameworkScope };
 
@@ -74,9 +77,11 @@ export interface TefFrameworkCell {
   sectorPath: string;
   sectorId: TefSectorId | "other";
   sectorLabel: string;
+  /** Unique measures matched to this TEF (not activity-shift rows). */
   hitCount: number;
   municipalityCount: number;
   weightedStrength: number;
+  /** Raw match rows (one per activity shift × TEF match); detail UI groups by measure. */
   hits: TefHitWithPlace[];
   /** Dominant hit source for badge / filter affordances. */
   source: TefHitSource;
@@ -197,11 +202,6 @@ export function buildTefFrameworkCells(
           label: "Other",
           rgb: [107, 114, 128] as const,
         } as const);
-      const weightSum = groupHits.reduce(
-        (sum, hit) => sum + CONFIDENCE_WEIGHT[hit.confidence],
-        0,
-      );
-      const maxWeight = groupHits.length * CONFIDENCE_WEIGHT.high;
       return {
         stableId,
         index,
@@ -210,9 +210,9 @@ export function buildTefFrameworkCells(
         sectorPath: sample.sectorPath,
         sectorId: sector.id as TefSectorId | "other",
         sectorLabel: sector.label,
-        hitCount: groupHits.length,
+        hitCount: uniqueTefMeasureCount(groupHits),
         municipalityCount: new Set(groupHits.map((h) => h.municipalityId)).size,
-        weightedStrength: maxWeight === 0 ? 0 : weightSum / maxWeight,
+        weightedStrength: measureWeightedStrength(groupHits),
         hits: groupHits,
         source: dominantHitSource(groupHits),
       };

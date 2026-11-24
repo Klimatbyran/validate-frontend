@@ -158,9 +158,9 @@ export function TefFrameworkView({
   return (
     <div className="space-y-4">
       <MethodologyPanel
-        data="transition_element_matches on scored measures (stable_id, short_label, sector_path, match_confidence, optional explicit) including catalogue proposed STE-* shadows. Runtime ShadowTransitionElement rows attached after weak-match review (shadow_element_id + label/path). Gate domain from activity_shifts.transition_element_gate_domain. Sector emissions from Unearth / SMHI territorial series. Sector columns follow T-1 Transport … T-6 Waste; unclassified proposed/shadow cells land in Other."
-        calculation="Each cell is one TEF (stable_id) or runtime-shadow:<id>. Hits = match/shadow rows in the selected scope + source filter. Strength = Σ confidence weights (high=3, mid=2, low=1) / (3 × hits); runtime shadows default to mid. Municipalities = distinct municipalities with at least one hit. Colour intensity is that metric scaled to the max cell in the current scope. Match rate on a header = gated shifts with ≥1 confirmed match in the same top domain / shifts gated to that domain. Optional emission bars = sector tonnes / sum of mapped buckets using each place’s latest year; machinery/product/other are excluded. 3D layout: SVG isometric pillars (height = emission share or relative tonnes); TEF cubes under each sector."
-        extra="Source filter: Official (active catalogue) · Proposed STE (catalogue shadows already integrable by the matcher) · Shadow gaps (runtime DB taxonomy before promotion). Scope mirrors the KPI map. Prefer measure-level evidence over raw commitments. When tePicker recorded explicit vs implied judgments, use All / Implied / Exclude implied; older runs may lack that field."
+        data="Pipeline path: measure (plan statement) → activity_shifts[] (from/to/need) → transition_element_matches[] (TEF stable_id, confidence, optional explicit) including catalogue proposed STE-* shadows; runtime ShadowTransitionElement gaps attach after weak-match review. Gate domain from activity_shifts.transition_element_gate_domain. Sector emissions from Unearth / SMHI territorial series. Sector columns follow T-1 Transport … T-6 Waste; unclassified proposed/shadow cells land in Other."
+        calculation="Each cell is one TEF (stable_id) or runtime-shadow:<id>. Count = unique measures in scope that match this TEF (municipality + measure text) — not one row per activity shift. A measure with walking + cycling shifts that both match still counts once; the detail panel lists those activity shifts under the measure. Strength = Σ best confidence weight per measure (high=3, mid=2, low=1) / (3 × measures); runtime shadows default to mid. Places = distinct municipalities with ≥1 matching measure. Colour intensity scales the selected metric to the max cell in scope. Match rate on a header = gated shifts with ≥1 confirmed match in the same top domain / shifts gated to that domain. Optional emission bars = sector tonnes / sum of mapped buckets using each place’s latest year; machinery/product/other are excluded. 3D layout: SVG isometric pillars (height = emission share or relative tonnes); TEF cubes under each sector."
+        extra="Source filter: Official (active catalogue) · Proposed STE (catalogue shadows already integrable by the matcher) · Shadow gaps (runtime DB taxonomy before promotion). Scope mirrors the KPI map. When tePicker recorded explicit vs implied judgments, use All / Implied / Exclude implied; older runs may lack that field."
       />
 
       <div className="flex flex-wrap gap-2 items-center">
@@ -222,7 +222,7 @@ export function TefFrameworkView({
           onChange={(e) => onMetricChange(e.target.value as TefFrameworkMetric)}
           className="text-sm bg-gray-04 border border-gray-03/50 text-gray-01 rounded px-3 py-2"
         >
-          <option value="hits">Colour by hit count</option>
+          <option value="hits">Colour by measure count</option>
           <option value="strength">Colour by match strength</option>
           <option value="municipalities">Colour by municipality count</option>
         </select>
@@ -279,7 +279,8 @@ export function TefFrameworkView({
         ) : null}
 
         <span className="text-sm text-gray-02">
-          {cells.length} TEFs · {cells.reduce((s, c) => s + c.hitCount, 0)} hits
+          {cells.length} TEFs · {cells.reduce((s, c) => s + c.hitCount, 0)}{" "}
+          measures
           {scope !== "all" && effectivePlace ? ` · ${effectivePlace}` : ""}
         </span>
       </div>

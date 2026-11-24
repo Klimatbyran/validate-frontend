@@ -438,7 +438,7 @@ function SectorMeta({
         {emissionsLabel}
       </div>
       <div className={cn("text-gray-02", large ? "text-xs" : "text-[10px]")}>
-        {code} · {cellCount} TEFs · {hitSum} hits
+        {code} · {cellCount} TEFs · {hitSum} measures
       </div>
       {gate ? (
         <div
