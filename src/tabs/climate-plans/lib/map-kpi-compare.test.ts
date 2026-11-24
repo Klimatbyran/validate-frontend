@@ -215,25 +215,27 @@ describe("map KPI compare helpers", () => {
     expect(formatCompareDelta(0, "count")).toBe("±0");
   });
 
-  it("unions each place's top TEFs with per-side hit counts", () => {
+  it("unions each place's top TEFs with per-side unique measure counts", () => {
     const primaryHits = [
-      tefHit("a", "T-1 - Rail"),
-      tefHit("a", "T-1 - Rail"),
-      tefHit("a", "T-1 - Rail"),
-      tefHit("b", "T-2 - Steel"),
-      tefHit("c", "T-3 - Heat"),
+      tefHit("a", "T-1 - Rail", { measureText: "a1" }),
+      tefHit("a", "T-1 - Rail", { measureText: "a2" }),
+      tefHit("a", "T-1 - Rail", { measureText: "a3" }),
+      // Same measure twice must not inflate TEF a.
+      tefHit("a", "T-1 - Rail", { measureText: "a1", shiftTo: "cycling" }),
+      tefHit("b", "T-2 - Steel", { measureText: "b1" }),
+      tefHit("c", "T-3 - Heat", { measureText: "c1" }),
     ];
     const compareHits = [
-      tefHit("b", "T-2 - Steel"),
-      tefHit("b", "T-2 - Steel"),
-      tefHit("b", "T-2 - Steel"),
-      tefHit("b", "T-2 - Steel"),
-      tefHit("d", "T-4 - Waste"),
-      tefHit("d", "T-4 - Waste"),
-      tefHit("e", "T-5 - Other"),
+      tefHit("b", "T-2 - Steel", { measureText: "b1" }),
+      tefHit("b", "T-2 - Steel", { measureText: "b2" }),
+      tefHit("b", "T-2 - Steel", { measureText: "b3" }),
+      tefHit("b", "T-2 - Steel", { measureText: "b4" }),
+      tefHit("d", "T-4 - Waste", { measureText: "d1" }),
+      tefHit("d", "T-4 - Waste", { measureText: "d2" }),
+      tefHit("e", "T-5 - Other", { measureText: "e1" }),
     ];
 
-    // primary top-3: a,b,c · compare top-3: b,d,e · union sorted by max hits
+    // primary top-3: a(3),b(1),c(1) · compare top-3: b(4),d(2),e(1)
     const rows = buildTopTefCompareRows(primaryHits, compareHits, 3);
     expect(rows.map((r) => r.stableId)).toEqual(["b", "a", "d", "c", "e"]);
     expect(rows[0]).toMatchObject({

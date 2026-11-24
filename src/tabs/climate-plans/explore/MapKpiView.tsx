@@ -15,7 +15,7 @@ import type {
   SectorYearEmissions,
 } from "../lib/explore-types";
 import {
-  countImpliedFilterBuckets,
+  countImpliedFilterBucketsByMeasure,
   filterTefHits,
   hasExplicitJudgment,
   type TefImpliedFilter,
@@ -70,12 +70,19 @@ export function MapKpiView({
   const [pickingCompare, setPickingCompare] = useState(false);
 
   const allTefHits = useMemo(
-    () => records.flatMap((record) => record.tefHits),
+    () =>
+      records.flatMap((record) =>
+        record.tefHits.map((hit) => ({
+          ...hit,
+          municipalityId: record.id,
+          municipalityName: record.name,
+        })),
+      ),
     [records],
   );
   const showImpliedFilter = hasExplicitJudgment(allTefHits);
   const impliedCounts = useMemo(
-    () => countImpliedFilterBuckets(allTefHits),
+    () => countImpliedFilterBucketsByMeasure(allTefHits),
     [allTefHits],
   );
 

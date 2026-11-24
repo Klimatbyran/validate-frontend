@@ -7,11 +7,7 @@ import type {
   TefGroupStrength,
   TefHit,
 } from "./explore-types";
-import {
-  CONFIDENCE_WEIGHT,
-  inferMatchConfidence,
-  tefGroupFromSectorPath,
-} from "./tef-groups";
+import { inferMatchConfidence, tefGroupFromSectorPath } from "./tef-groups";
 import { foldPlaceName } from "./municipality-names";
 import {
   classifyCatalogueTefHit,
@@ -22,6 +18,12 @@ import {
   broadWordingShare,
   interventionCompletenessShare,
 } from "./plan-concreteness";
+import {
+  bestConfidence,
+  groupTefHitsByMeasure,
+  measureWeightedStrength,
+  uniqueTefMeasureCount,
+} from "./tef-measure-groups";
 
 export function collectTefHits(measures: Measure[]): TefHit[] {
   const hits: TefHit[] = [];
@@ -124,11 +126,15 @@ export function highScoreShare(
   );
 }
 
-/** Share of TEF hits judged explicit (ignores hits without the field). */
+/**
+ * Share of unique measures judged explicit (ignores measures without the field).
+ * A measure counts as explicit if any of its TEF match rows is explicit.
+ */
 export function explicitTefShare(hits: TefHit[]): number | null {
-  const judged = hits.filter((h) => typeof h.explicit === "boolean");
+  const groups = groupTefHitsByMeasure(hits);
+  const judged = groups.filter((g) => typeof g.explicit === "boolean");
   if (judged.length === 0) return null;
-  return judged.filter((h) => h.explicit === true).length / judged.length;
+  return judged.filter((g) => g.explicit === true).length / judged.length;
 }
 
 /** Share of measures that produced at least one TEF match. */
@@ -143,18 +149,18 @@ export function tefMatchRate(measures: Measure[]): number | null {
 }
 
 /**
- * Count of activity shifts attached to an active shadow TEF element.
+ * Count of measures with at least one active shadow TEF attachment.
  * Rejected/merged shadows keep their id on the API but are excluded here.
  */
 export function shadowHitCount(measures: Measure[]): number {
   let count = 0;
   for (const measure of measures) {
-    for (const shift of measure.activity_shifts ?? []) {
-      if (!shift.shadow_element_id) continue;
+    const hasActiveShadow = (measure.activity_shifts ?? []).some((shift) => {
+      if (!shift.shadow_element_id) return false;
       const status = shift.shadow_element_status;
-      if (status === "rejected" || status === "merged") continue;
-      count += 1;
-    }
+      return status !== "rejected" && status !== "merged";
+    });
+    if (hasActiveShadow) count += 1;
   }
   return count;
 }
@@ -181,23 +187,24 @@ export function countOwnCommitments(commitments: PipelineCommitment[]): number {
 export interface TopTefSummary {
   stableId: string;
   shortLabel: string;
+  /** Unique measures matched to this TEF (not activity-shift rows). */
   hitCount: number;
 }
 
-/** Top TEFs by hit count (stable_id), for map detail bridging to framework view. */
+/** Top TEFs by unique measure count (stable_id), for map detail → framework. */
 export function topTefsByHitCount(hits: TefHit[], limit = 3): TopTefSummary[] {
-  const byId = new Map<string, TopTefSummary>();
+  const byId = new Map<string, TefHit[]>();
   for (const hit of hits) {
-    const existing = byId.get(hit.stableId);
-    if (existing) existing.hitCount += 1;
-    else
-      byId.set(hit.stableId, {
-        stableId: hit.stableId,
-        shortLabel: hit.shortLabel,
-        hitCount: 1,
-      });
+    const list = byId.get(hit.stableId) ?? [];
+    list.push(hit);
+    byId.set(hit.stableId, list);
   }
-  return [...byId.values()]
+  return [...byId.entries()]
+    .map(([stableId, groupHits]) => ({
+      stableId,
+      shortLabel: groupHits[0]!.shortLabel,
+      hitCount: uniqueTefMeasureCount(groupHits),
+    }))
     .sort(
       (a, b) =>
         b.hitCount - a.hitCount || a.shortLabel.localeCompare(b.shortLabel),
@@ -215,19 +222,18 @@ export function tefGroupStrengths(hits: TefHit[]): TefGroupStrength[] {
 
   return [...byGroup.entries()]
     .map(([group, groupHits]) => {
-      const weightSum = groupHits.reduce(
-        (sum, hit) => sum + CONFIDENCE_WEIGHT[hit.confidence],
-        0,
-      );
-      const maxWeight = groupHits.length * CONFIDENCE_WEIGHT.high;
-      const highCount = groupHits.filter((h) => h.confidence === "high").length;
+      const measureGroups = groupTefHitsByMeasure(groupHits);
+      const measureCount = measureGroups.length;
+      const highCount = measureGroups.filter(
+        (g) => bestConfidence(g.hits) === "high",
+      ).length;
       return {
         group,
-        hitCount: groupHits.length,
+        hitCount: measureCount,
         uniqueTefCount: new Set(groupHits.map((h) => h.stableId)).size,
-        uniqueMeasureCount: new Set(groupHits.map((h) => h.measureText)).size,
-        weightedStrength: maxWeight === 0 ? 0 : weightSum / maxWeight,
-        highShare: groupHits.length === 0 ? 0 : highCount / groupHits.length,
+        uniqueMeasureCount: measureCount,
+        weightedStrength: measureWeightedStrength(groupHits),
+        highShare: measureCount === 0 ? 0 : highCount / measureCount,
       };
     })
     .sort((a, b) => b.hitCount - a.hitCount);
@@ -613,9 +619,9 @@ export const MAP_KPI_META: Record<
   },
   tefGroupStrength: {
     label: "TEF strength",
-    data: "Match confidence (high=3, mid=2, low=1) on TEF hits, optionally filtered to one group.",
+    data: "Match confidence (high=3, mid=2, low=1) on unique measures matched to TEFs, optionally filtered to one group.",
     calculation:
-      "Sum(weights) / (3 × hit count). 1.0 means every hit is high-confidence.",
+      "Per measure use best confidence among its match rows; Sum(weights) / (3 × unique measures). 1.0 means every matched measure is high-confidence.",
   },
   avgInterventionScore: {
     label: "Avg intervention score",
@@ -682,9 +688,9 @@ export const MAP_KPI_META: Record<
   },
   explicitTefShare: {
     label: "Explicit TEF share",
-    data: "transition_element_matches[].explicit from tePicker judge().",
+    data: "transition_element_matches[].explicit from tePicker judge(), rolled up per unique measure.",
     calculation:
-      "Among hits that carry the field: share where explicit === true. Null when no judged hits.",
+      "Among measures with a judgment: share where any match row is explicit === true. Null when no judged measures.",
   },
   broadWordingShare: {
     label: "Broad wording share",
@@ -698,10 +704,10 @@ export const MAP_KPI_META: Record<
     calculation: "Share of measures with at least one TEF match.",
   },
   shadowHitCount: {
-    label: "Shadow TEF hits",
+    label: "Shadow TEF measures",
     data: "activity_shifts[].shadowElement after matchTransitionElements.",
     calculation:
-      "Count of activity shifts attached to a shadow TEF that is not rejected or merged.",
+      "Count of measures with at least one activity shift attached to a shadow TEF that is not rejected or merged.",
   },
   companionReferenceCount: {
     label: "Companion document refs",

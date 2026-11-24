@@ -31,7 +31,7 @@ import {
   type SectorGateMatchRate,
 } from "../lib/tef-sector-signals";
 import {
-  countImpliedFilterBuckets,
+  countImpliedFilterBucketsByMeasure,
   filterTefHits,
   hasExplicitJudgment,
   type TefImpliedFilter,
@@ -111,14 +111,23 @@ export function TefFrameworkView({
   const allHits = useMemo(() => collectHitsWithPlace(records), [records]);
   const showImpliedFilter = hasExplicitJudgment(allHits);
   const impliedCounts = useMemo(
-    () => countImpliedFilterBuckets(allHits),
+    () => countImpliedFilterBucketsByMeasure(allHits),
     [allHits],
   );
 
   const sourceCounts = useMemo(() => {
     const counts = { official: 0, proposed: 0, "runtime-shadow": 0 };
+    const seen = {
+      official: new Set<string>(),
+      proposed: new Set<string>(),
+      "runtime-shadow": new Set<string>(),
+    };
     for (const hit of allHits) {
-      counts[hit.source ?? "official"] += 1;
+      const source = hit.source ?? "official";
+      const key = `${hit.municipalityId}::${(hit.measureText ?? "").trim()}`;
+      if (seen[source].has(key)) continue;
+      seen[source].add(key);
+      counts[source] += 1;
     }
     return counts;
   }, [allHits]);

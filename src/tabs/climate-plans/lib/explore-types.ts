@@ -82,10 +82,12 @@ export interface ExploreDataset {
 
 export interface TefGroupStrength {
   group: string;
+  /** Unique measures in this group (same as uniqueMeasureCount). */
   hitCount: number;
   uniqueTefCount: number;
   uniqueMeasureCount: number;
   weightedStrength: number;
+  /** Share of unique measures whose best match confidence is high. */
   highShare: number;
 }
 

@@ -162,15 +162,37 @@ describe("map detail quality helpers", () => {
     expect(interventionSpecificityShare([])).toBeNull();
   });
 
-  it("ranks top TEFs by hit count", () => {
+  it("ranks top TEFs by unique measure count", () => {
     const [sample] = collectTefHits([
       measureWithTef("Transport > Road", "high"),
     ]);
     const ranked = topTefsByHitCount(
       [
-        { ...sample!, stableId: "a", shortLabel: "T-1 - Rail" },
-        { ...sample!, stableId: "a", shortLabel: "T-1 - Rail" },
-        { ...sample!, stableId: "b", shortLabel: "T-2 - Steel" },
+        {
+          ...sample!,
+          stableId: "a",
+          shortLabel: "T-1 - Rail",
+          measureText: "one",
+        },
+        {
+          ...sample!,
+          stableId: "a",
+          shortLabel: "T-1 - Rail",
+          measureText: "one",
+          shiftTo: "cycling",
+        },
+        {
+          ...sample!,
+          stableId: "a",
+          shortLabel: "T-1 - Rail",
+          measureText: "two",
+        },
+        {
+          ...sample!,
+          stableId: "b",
+          shortLabel: "T-2 - Steel",
+          measureText: "three",
+        },
       ],
       2,
     );
@@ -178,6 +200,30 @@ describe("map detail quality helpers", () => {
       { stableId: "a", shortLabel: "T-1 - Rail", hitCount: 2 },
       { stableId: "b", shortLabel: "T-2 - Steel", hitCount: 1 },
     ]);
+  });
+
+  it("does not inflate TEF group strength when one measure has many shifts", () => {
+    const [sample] = collectTefHits([
+      measureWithTef("Transport > Road", "high"),
+    ]);
+    const strengths = tefGroupStrengths([
+      {
+        ...sample!,
+        measureText: "same",
+        shiftTo: "walking",
+        confidence: "high",
+      },
+      {
+        ...sample!,
+        measureText: "same",
+        shiftTo: "cycling",
+        confidence: "mid",
+      },
+    ]);
+    expect(strengths[0]?.hitCount).toBe(1);
+    expect(strengths[0]?.uniqueMeasureCount).toBe(1);
+    expect(strengths[0]?.weightedStrength).toBe(1);
+    expect(strengths[0]?.highShare).toBe(1);
   });
 });
 
