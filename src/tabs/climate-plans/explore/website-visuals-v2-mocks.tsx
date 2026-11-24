@@ -31,6 +31,7 @@ import {
   gapValueClass,
   plainFocusMatch,
 } from "../lib/website-visuals-rollup";
+import { WebsiteV2StrengthTriangle } from "./WebsiteV2StrengthTriangle";
 
 type OverviewKpi = "concreteness" | "emissionsMatch" | "uniqueMeasures";
 type ExpandMode = "measures" | "exact-tefs";
@@ -774,6 +775,12 @@ export function MunicipalityDetailV2({
         ]}
       />
 
+      <WebsiteV2StrengthTriangle
+        concretenessScore={c.score}
+        focusVerdict={focus.verdict}
+        focusShortLabel={focus.shortLabel}
+        uniqueMeasureCount={bundle.uniqueMeasureCount}
+      />
       <KpiReadingGuide />
       <ScoreSeparationCompare result={c} />
 

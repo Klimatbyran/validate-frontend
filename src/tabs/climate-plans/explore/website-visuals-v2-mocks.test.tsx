@@ -22,6 +22,14 @@ describe("Website visuals v2 detail mock", () => {
       screen.getByText(/Volume only — not a quality ranking/i),
     ).toBeInTheDocument();
     expect(
+      screen.getByText(/Three views of the same plan/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", {
+        name: /Three-axis strength diagram/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
       screen.getByText(/How to read these three views together/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Specification \(primary\)/i)).toBeInTheDocument();
