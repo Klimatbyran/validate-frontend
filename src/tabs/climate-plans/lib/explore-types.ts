@@ -139,4 +139,4 @@ export type TefFrameworkMetric = "hits" | "strength" | "municipalities";
 export type TefFrameworkLayout = "3d" | "grid";
 /** How 3d pillar height is scaled. */
 export type TefFrameworkHeightMode = "share" | "tonnes";
-export type ShiftsLayoutId = "compare" | "flows" | "types";
+export type ShiftsLayoutId = "compare" | "shifts" | "types";

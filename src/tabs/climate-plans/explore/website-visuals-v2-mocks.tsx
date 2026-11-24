@@ -21,7 +21,7 @@ import {
   focusMatchChipLabel,
   focusMatchMapValue,
   groupExactTefsBySector,
-  groupMeasuresByActivityFlow,
+  groupMeasuresByActivityShiftFrom,
   groupMeasuresBySector,
   type WebsiteV2PlaceBundle,
 } from "../lib/website-v2-kpis";
@@ -34,11 +34,11 @@ import {
 
 type OverviewKpi = "concreteness" | "emissionsMatch" | "uniqueMeasures";
 type ExpandMode = "measures" | "exact-tefs";
-type BrowseLayout = "sectors" | "flows" | "list";
+type BrowseLayout = "sectors" | "shifts" | "list";
 
 const BROWSE_LAYOUT_OPTIONS: { id: BrowseLayout; label: string }[] = [
   { id: "sectors", label: "By sector" },
-  { id: "flows", label: "By activity flow" },
+  { id: "shifts", label: "By activity shift" },
   { id: "list", label: "Flat list" },
 ];
 
@@ -279,8 +279,8 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
     () => groupMeasuresBySector(measureRows),
     [measureRows],
   );
-  const flowGroups = useMemo(
-    () => groupMeasuresByActivityFlow(measureRows),
+  const shiftFromGroups = useMemo(
+    () => groupMeasuresByActivityShiftFrom(measureRows),
     [measureRows],
   );
   const tefGroups = useMemo(
@@ -330,7 +330,7 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
                 type="button"
                 onClick={() => {
                   setMode(id);
-                  if (id === "exact-tefs" && layout === "flows") {
+                  if (id === "exact-tefs" && layout === "shifts") {
                     setLayout("sectors");
                   }
                 }}
@@ -356,7 +356,7 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
             </span>
             {(mode === "measures"
               ? BROWSE_LAYOUT_OPTIONS
-              : BROWSE_LAYOUT_OPTIONS.filter((opt) => opt.id !== "flows")
+              : BROWSE_LAYOUT_OPTIONS.filter((opt) => opt.id !== "shifts")
             ).map((opt) => (
               <button
                 key={opt.id}
@@ -374,10 +374,10 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
               </button>
             ))}
           </div>
-          {mode === "measures" && layout === "flows" ? (
+          {mode === "measures" && layout === "shifts" ? (
             <p className="text-xs text-gray-02">
-              Grouped by extracted activity shifts (from → to when available).
-              Each card lists its shifts.
+              Grouped by activity-shift from (what the plan is moving away
+              from). Destinations stay on each card — they are not a group axis.
             </p>
           ) : null}
 
@@ -392,10 +392,12 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
               </ul>
             ) : (
               <div className="space-y-5">
-                {(layout === "flows" ? flowGroups : measureGroups).map(
+                {(layout === "shifts" ? shiftFromGroups : measureGroups).map(
                   (group) => (
                     <SectorBlock
-                      key={"sectorId" in group ? group.sectorId : group.flowId}
+                      key={
+                        "sectorId" in group ? group.sectorId : group.shiftFromId
+                      }
                       title={group.label}
                       count={group.rows.length}
                     >
@@ -404,7 +406,7 @@ function ExpandableCatalogue({ bundle }: { bundle: WebsiteV2PlaceBundle }) {
                           <MeasureTile
                             key={row.measure.measure_text}
                             row={row}
-                            showEmptyShiftHint={layout === "flows"}
+                            showEmptyShiftHint={layout === "shifts"}
                           />
                         ))}
                       </div>
@@ -495,7 +497,7 @@ function MeasureTile({
   showEmptyShiftHint = false,
 }: {
   row: ReturnType<typeof browseMeasures>[number];
-  /** Only in activity-flow browse — avoid noise in sector/list views. */
+  /** Only in activity-shift browse — avoid noise in sector/list views. */
   showEmptyShiftHint?: boolean;
 }) {
   const m = row.measure;
@@ -505,10 +507,7 @@ function MeasureTile({
     ["When", m.intervention_when],
     ["How", m.intervention_how],
   ] as const;
-  const shiftChips =
-    row.activityFlows.length > 0
-      ? row.activityFlows
-      : row.activityLabels.map((label) => `Activity: ${label}`);
+  const shiftChips = row.activityShifts;
   return (
     <article className="rounded-2xl border border-gray-03/40 bg-gray-04/60 px-3.5 py-3 space-y-2">
       <p className="text-sm text-gray-01 leading-snug">{m.measure_text}</p>
@@ -539,12 +538,12 @@ function MeasureTile({
             Activity shift
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {shiftChips.slice(0, 3).map((flow) => (
+            {shiftChips.slice(0, 3).map((shift) => (
               <span
-                key={flow}
+                key={shift}
                 className="text-[11px] px-2 py-0.5 rounded-md border border-orange-03/40 text-orange-02 bg-orange-03/10"
               >
-                {flow}
+                {shift}
               </span>
             ))}
             {shiftChips.length > 3 ? (

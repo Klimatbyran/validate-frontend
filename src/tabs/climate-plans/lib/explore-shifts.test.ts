@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildShiftFlows,
+  buildActivityShiftFromGroups,
   collectMeasurePoints,
   dimensionPresent,
   interventionTypeBuckets,
@@ -123,16 +123,56 @@ describe("shift and intervention aggregates", () => {
     expect(rows[0]?.interventionPresentCount).toBe(1);
   });
 
-  it("builds shift flows across municipalities", () => {
-    const flows = buildShiftFlows(records);
-    expect(flows[0]?.from).toBe("car");
-    expect(flows[0]?.to).toBe("train");
-    expect(flows[0]?.count).toBe(2);
-    expect(flows[0]?.municipalities).toEqual(["Nässjö", "Värnamo"]);
-    expect(flows[0]?.withTefMatch).toBe(1);
+  it("groups activity shifts by shift_from across municipalities", () => {
+    const groups = buildActivityShiftFromGroups(records);
+    expect(groups[0]?.from).toBe("car");
+    expect(groups[0]?.destinations).toEqual(["train"]);
+    expect(groups[0]?.count).toBe(2);
+    expect(groups[0]?.municipalities).toEqual(["Nässjö", "Värnamo"]);
+    expect(groups[0]?.withTefMatch).toBe(1);
   });
 
-  it("skips none→none flow noise", () => {
+  it("merges destinations under the same shift_from without grouping by to", () => {
+    const mixed = [
+      record("A", [
+        measure({
+          activity_shifts: [
+            {
+              activity: "travel",
+              shift_from: "car",
+              shift_to: "train",
+              need: "mobility",
+              type: "Type Shift",
+              type_reasoning: "",
+              score: 4,
+              reasoning: "",
+              transition_element_matches: [],
+              transition_element_candidates: [],
+            },
+            {
+              activity: "travel",
+              shift_from: "car",
+              shift_to: "bus",
+              need: "mobility",
+              type: "Type Shift",
+              type_reasoning: "",
+              score: 3,
+              reasoning: "",
+              transition_element_matches: [],
+              transition_element_candidates: [],
+            },
+          ],
+        }),
+      ]),
+    ];
+    const groups = buildActivityShiftFromGroups(mixed);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.from).toBe("car");
+    expect(groups[0]?.count).toBe(2);
+    expect(groups[0]?.destinations).toEqual(["bus", "train"]);
+  });
+
+  it("skips unspecified shift_from noise", () => {
     const noisy = [
       record("X", [
         measure({
@@ -153,7 +193,7 @@ describe("shift and intervention aggregates", () => {
         }),
       ]),
     ];
-    expect(buildShiftFlows(noisy)).toEqual([]);
+    expect(buildActivityShiftFromGroups(noisy)).toEqual([]);
   });
 
   it("buckets intervention types", () => {

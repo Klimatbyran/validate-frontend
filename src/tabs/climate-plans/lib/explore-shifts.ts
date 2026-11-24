@@ -1,10 +1,12 @@
 import type { ExploreMunicipalityRecord, TefHit } from "./explore-types";
 import type { Measure } from "./measures-types";
 
-export interface ShiftFlowEdge {
+/** Aggregated activity shifts sharing the same shift_from (not grouped by to). */
+export interface ActivityShiftFromGroup {
   from: string;
-  to: string;
   count: number;
+  /** Distinct shift_to values seen under this from — listed, not used as groups. */
+  destinations: string[];
   municipalities: string[];
   avgShiftScore: number;
   withTefMatch: number;
@@ -124,16 +126,20 @@ export function summarizeMunicipalities(
     .sort((a, b) => b.measureCount - a.measureCount);
 }
 
-export function buildShiftFlows(
+/**
+ * Group activity shifts by what they move from (`shift_from` only).
+ * Destinations stay on the shift; they are listed, never used as a group key.
+ */
+export function buildActivityShiftFromGroups(
   records: ExploreMunicipalityRecord[],
   limit = 12,
-): ShiftFlowEdge[] {
-  const byKey = new Map<
+): ActivityShiftFromGroup[] {
+  const byFrom = new Map<
     string,
     {
       from: string;
-      to: string;
       count: number;
+      destinations: Set<string>;
       municipalities: Set<string>;
       scoreSum: number;
       withTefMatch: number;
@@ -145,35 +151,39 @@ export function buildShiftFlows(
       for (const shift of measure.activity_shifts ?? []) {
         const from = normalizeLabel(shift.shift_from);
         const to = normalizeLabel(shift.shift_to);
-        // Skip empty noise pairs like none→none.
+        // Skip empty noise when neither side is specified.
         if (isUnspecifiedLabel(from) && isUnspecifiedLabel(to)) continue;
-        const key = `${from.toLowerCase()}→${to.toLowerCase()}`;
-        const existing = byKey.get(key) ?? {
+        if (isUnspecifiedLabel(from)) continue;
+        const key = from.toLowerCase();
+        const existing = byFrom.get(key) ?? {
           from,
-          to,
           count: 0,
+          destinations: new Set<string>(),
           municipalities: new Set<string>(),
           scoreSum: 0,
           withTefMatch: 0,
         };
         existing.count += 1;
+        if (!isUnspecifiedLabel(to)) existing.destinations.add(to);
         existing.municipalities.add(record.name);
         existing.scoreSum += shift.score ?? 0;
         if ((shift.transition_element_matches?.length ?? 0) > 0) {
           existing.withTefMatch += 1;
         }
-        byKey.set(key, existing);
+        byFrom.set(key, existing);
       }
     }
   }
 
-  return [...byKey.values()]
+  return [...byFrom.values()]
     .map((row) => ({
       from: row.from,
-      to: row.to,
       count: row.count,
+      destinations: [...row.destinations].sort((a, b) =>
+        a.localeCompare(b, "sv"),
+      ),
       municipalities: [...row.municipalities].sort((a, b) =>
-        a.localeCompare(b),
+        a.localeCompare(b, "sv"),
       ),
       avgShiftScore: row.count === 0 ? 0 : row.scoreSum / row.count,
       withTefMatch: row.withTefMatch,
