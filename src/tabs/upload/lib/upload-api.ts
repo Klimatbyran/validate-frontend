@@ -112,6 +112,14 @@ export interface CreateJobsFromUrlsOptions {
   runOnly?: RunOnlyWorkerId[];
   tags?: string[];
   cachePdf?: boolean;
+  /** Prefer already-cached GCS PDFs for matching source URLs (municipality Runs). */
+  pdfCacheHints?: Array<{
+    sourceUrl: string;
+    publicUrl: string;
+    sha256: string;
+    bucket?: string;
+    key?: string;
+  }>;
   parsePdfEndpoint?: string;
   pipelineCompany?: PipelineCompanyContext;
   urlContexts?: PipelineUrlContext[];
@@ -186,6 +194,7 @@ export async function createJobsFromUrls({
   tags,
   // Local pipeline-api usually has no S3_BUCKET; workers fetch PDF URLs directly.
   cachePdf = getPipelineTarget() !== "local",
+  pdfCacheHints,
   parsePdfEndpoint = PARSE_PDF_API_ENDPOINT,
   pipelineCompany,
   urlContexts,
@@ -203,6 +212,7 @@ export async function createJobsFromUrls({
     ...(runOnly && runOnly.length > 0 ? { runOnly } : {}),
     ...(tags && tags.length > 0 ? { tags } : {}),
     ...(cachePdf ? { cachePdf: true } : {}),
+    ...(pdfCacheHints && pdfCacheHints.length > 0 ? { pdfCacheHints } : {}),
     ...(pipelineCompany ? { pipelineCompany } : {}),
     ...(urlContexts && urlContexts.length > 0 ? { urlContexts } : {}),
     ...(callbackUrl ? { callbackUrl } : {}),

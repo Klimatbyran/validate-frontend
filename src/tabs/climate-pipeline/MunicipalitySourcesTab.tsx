@@ -5,6 +5,7 @@ import {
   Plus,
   RefreshCw,
   ExternalLink,
+  FileText,
   Pencil,
   Check,
   X,
@@ -225,7 +226,10 @@ function MunicipalityRow({
     if (!source.url) return;
     setIsRunning(true);
     try {
-      await runMunicipalitySource(source.id, source.url);
+      await runMunicipalitySource(source.id, source.url, {
+        pdfCacheUrl: source.pdfCacheUrl,
+        sha256: source.sha256,
+      });
       toast.success(
         `Started pipeline for ${source.municipality}${source.documentTitle ? ` (${source.documentTitle})` : ""}`,
       );
@@ -330,6 +334,17 @@ function MunicipalityRow({
               title="Open source"
             >
               <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
+          {source.pdfCacheUrl && (
+            <a
+              href={source.pdfCacheUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1.5 shrink-0 text-gray-02 hover:text-blue-03"
+              title="Open cached PDF"
+            >
+              <FileText className="h-3.5 w-3.5" />
             </a>
           )}
         </div>
@@ -695,7 +710,12 @@ export function MunicipalitySourcesTab() {
     try {
       const result = await runMunicipalityRegion(
         county,
-        toRun.map((r) => ({ id: r.id, url: r.url! })),
+        toRun.map((r) => ({
+          id: r.id,
+          url: r.url!,
+          pdfCacheUrl: r.pdfCacheUrl,
+          sha256: r.sha256,
+        })),
       );
       const summary =
         `Started ${result.started.length} run(s) in ${county}` +
