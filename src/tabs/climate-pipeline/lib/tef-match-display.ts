@@ -46,9 +46,6 @@ const AI_REVIEW_HEADLINES: Record<string, string> = {
   BROADEN: "Broaden — an existing element fits with a wider scope",
   DO_NOT_ADOPT:
     "No new element (do not adopt) — no specific TEF element fits this claim",
-  // An overarching outcome with no specific activity named -- a goal, not
-  // an Activity Shift, so no TEF element fits it by design.
-  GOAL: "Goal — an overarching outcome, no specific activity shift",
 };
 
 const AI_REVIEW_PILLS: Record<string, string> = {
@@ -60,7 +57,6 @@ const AI_REVIEW_PILLS: Record<string, string> = {
   USE_EXISTING: "Use existing",
   BROADEN: "Broaden existing",
   DO_NOT_ADOPT: "No new element",
-  GOAL: "Goal",
 };
 
 const BOILERPLATE_GROUP_LABELS = new Set(["no domain named"]);
