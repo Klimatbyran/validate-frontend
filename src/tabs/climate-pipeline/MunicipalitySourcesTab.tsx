@@ -8,6 +8,7 @@ import {
   Pencil,
   Check,
   X,
+  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/ui/button";
@@ -333,6 +334,18 @@ function MunicipalityRow({
           )}
         </div>
       </td>
+      <td className="px-3 py-2 align-top text-center">
+        <input
+          type="checkbox"
+          className="accent-blue-03 mt-1.5"
+          checked={Boolean(source.websitePrimary)}
+          title={t("municipalitySources.websitePrimaryTitle")}
+          aria-label={t("municipalitySources.websitePrimaryTitle")}
+          onChange={(e) => {
+            void save({ websitePrimary: e.target.checked });
+          }}
+        />
+      </td>
       <td className="px-3 py-2 align-top">
         <EditableCell
           value={source.adoptedYear?.toString() ?? ""}
@@ -477,7 +490,9 @@ function AddDocumentModal({
             autoFocus
             value={municipality}
             onChange={(e) => setMunicipality(e.target.value)}
-            placeholder={t("municipalitySources.addFieldMunicipalityPlaceholder")}
+            placeholder={t(
+              "municipalitySources.addFieldMunicipalityPlaceholder",
+            )}
             className="mt-1 w-full h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2.5 text-sm text-gray-01 focus:outline-none focus:border-blue-03"
           />
         </label>
@@ -488,7 +503,9 @@ function AddDocumentModal({
           <input
             value={documentTitle}
             onChange={(e) => setDocumentTitle(e.target.value)}
-            placeholder={t("municipalitySources.addFieldDocumentTitlePlaceholder")}
+            placeholder={t(
+              "municipalitySources.addFieldDocumentTitlePlaceholder",
+            )}
             className="mt-1 w-full h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2.5 text-sm text-gray-01 focus:outline-none focus:border-blue-03"
           />
         </label>
@@ -504,7 +521,11 @@ function AddDocumentModal({
           />
         </label>
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+          >
             {t("municipalitySources.addCancel")}
           </Button>
           <Button
@@ -512,9 +533,65 @@ function AddDocumentModal({
             disabled={!municipality.trim() || !documentTitle.trim() || isSaving}
             onClick={() => void handleSubmit()}
           >
-            {isSaving && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+            {isSaving && (
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            )}
             {t("municipalitySources.addSubmit")}
           </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function WebsiteInstructionsModal({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      size="lg"
+      title={t("municipalitySources.instructionsTitle")}
+      footer={
+        <Button type="button" onClick={() => onOpenChange(false)}>
+          {t("municipalitySources.instructionsClose")}
+        </Button>
+      }
+    >
+      <div className="space-y-4 text-sm text-gray-01">
+        <p className="text-gray-02">
+          {t("municipalitySources.instructionsIntro")}
+        </p>
+        <p className="text-gray-02">
+          {t("municipalitySources.instructionsWebsiteVsPipeline")}
+        </p>
+        <div>
+          <h3 className="font-medium text-gray-01 mb-1.5">
+            {t("municipalitySources.instructionsOrderTitle")}
+          </h3>
+          <ol className="list-none space-y-1 text-gray-02">
+            <li>{t("municipalitySources.instructionsOrder1")}</li>
+            <li>{t("municipalitySources.instructionsOrder2")}</li>
+            <li>{t("municipalitySources.instructionsOrder3")}</li>
+            <li>{t("municipalitySources.instructionsOrder4")}</li>
+          </ol>
+        </div>
+        <div>
+          <h3 className="font-medium text-gray-01 mb-1.5">
+            {t("municipalitySources.instructionsTipsTitle")}
+          </h3>
+          <ul className="list-disc pl-5 space-y-1 text-gray-02">
+            <li>{t("municipalitySources.instructionsTip1")}</li>
+            <li>{t("municipalitySources.instructionsTip2")}</li>
+            <li>{t("municipalitySources.instructionsTip3")}</li>
+            <li>{t("municipalitySources.instructionsTip4")}</li>
+          </ul>
         </div>
       </div>
     </Modal>
@@ -536,11 +613,12 @@ export function MunicipalitySourcesTab() {
   // failed. Recomputed when the filter is turned on, or when `sources`
   // itself changes (a real refetch — county switch, explicit refresh),
   // but not on every inline edit (those only touch `overrides`).
-  const [needsUrlSnapshot, setNeedsUrlSnapshot] = useState<Set<
-    string
-  > | null>(null);
+  const [needsUrlSnapshot, setNeedsUrlSnapshot] = useState<Set<string> | null>(
+    null,
+  );
   const [isRunningRegion, setIsRunningRegion] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
 
   const needsUrl = (r: MunicipalitySource) => r.source !== "seed" && !r.url;
 
@@ -579,7 +657,23 @@ export function MunicipalitySourcesTab() {
     : merged.filter(needsUrl).length;
 
   const handleChanged = (next: MunicipalitySource) => {
-    setOverrides((prev) => new Map(prev).set(next.id, next));
+    setOverrides((prev) => {
+      const map = new Map(prev);
+      map.set(next.id, next);
+      // Mirror API: only one websitePrimary per municipality in the UI.
+      if (next.websitePrimary) {
+        for (const row of merged) {
+          if (
+            row.municipality === next.municipality &&
+            row.id !== next.id &&
+            row.websitePrimary
+          ) {
+            map.set(row.id, { ...row, websitePrimary: false });
+          }
+        }
+      }
+      return map;
+    });
   };
 
   // Real cost: one real fetch + extraction per municipality with a url,
@@ -675,6 +769,16 @@ export function MunicipalitySourcesTab() {
             type="button"
             variant="outline"
             size="icon"
+            onClick={() => setIsInstructionsOpen(true)}
+            aria-label={t("municipalitySources.instructionsButton")}
+            title={t("municipalitySources.instructionsButton")}
+          >
+            <HelpCircle className="w-4 h-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
             onClick={() => setIsAddOpen(true)}
             aria-label={t("municipalitySources.addDocument")}
             title={t("municipalitySources.addDocument")}
@@ -765,7 +869,9 @@ export function MunicipalitySourcesTab() {
             ) : (
               <Play className="h-3.5 w-3.5 mr-1.5" />
             )}
-            {t("municipalitySources.runRegionWithCompanions", { count: foundCount })}
+            {t("municipalitySources.runRegionWithCompanions", {
+              count: foundCount,
+            })}
           </Button>
         )}
       </div>
@@ -785,7 +891,7 @@ export function MunicipalitySourcesTab() {
       )}
       {!isLoading && rows.length > 0 && (
         <DataTableShell>
-          <DataTable className="table-fixed w-full min-w-[76rem]">
+          <DataTable className="table-fixed w-full min-w-[82rem]">
             <DataTableHead>
               <tr>
                 <th className="px-3 py-2 w-[10%]">
@@ -800,7 +906,10 @@ export function MunicipalitySourcesTab() {
                 <th className="px-3 py-2 w-[22%]">
                   {t("municipalitySources.colUrl")}
                 </th>
-                <th className="px-3 py-2 w-[7%]">
+                <th className="px-3 py-2 w-[6%] text-center">
+                  {t("municipalitySources.colWebsite")}
+                </th>
+                <th className="px-3 py-2 w-[6%]">
                   {t("municipalitySources.colYear")}
                 </th>
                 <th className="px-3 py-2 w-[18%]">
@@ -837,6 +946,10 @@ export function MunicipalitySourcesTab() {
         open={isAddOpen}
         onOpenChange={setIsAddOpen}
         onCreated={(row) => setCreated((prev) => [...prev, row])}
+      />
+      <WebsiteInstructionsModal
+        open={isInstructionsOpen}
+        onOpenChange={setIsInstructionsOpen}
       />
     </div>
   );

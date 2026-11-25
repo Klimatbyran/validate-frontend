@@ -31,6 +31,8 @@ export interface MunicipalitySource {
    * municipality can be told apart. */
   documentTitle: string | null;
   source: MunicipalitySourceOrigin;
+  /** When true, Klimatkollen uses this row (at most one per municipality). */
+  websitePrimary: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -45,6 +47,7 @@ export type MunicipalitySourceEdit = Partial<
     | "planName"
     | "notes"
     | "documentTitle"
+    | "websitePrimary"
   >
 >;
 
@@ -199,9 +202,12 @@ export async function runMunicipalitySource(
       ? "failed"
       : "started";
 
-  await postWithRetry(`${getClimatePlansPipelineApiUrl()}/municipality-sources/${id}/run`, {
-    status,
-  });
+  await postWithRetry(
+    `${getClimatePlansPipelineApiUrl()}/municipality-sources/${id}/run`,
+    {
+      status,
+    },
+  );
 }
 
 export interface RunRegionResult {
@@ -217,10 +223,7 @@ export interface RunRegionResult {
  * guarantee: if it still fails, the caller's catch block is responsible
  * for telling the user exactly which rows need the manual
  * markMunicipalitySourceRun fallback above. */
-async function postWithRetry(
-  url: string,
-  body: unknown,
-): Promise<Response> {
+async function postWithRetry(url: string, body: unknown): Promise<Response> {
   for (let attempt = 1; attempt <= 2; attempt++) {
     const res = await authenticatedFetch(url, {
       method: "POST",
