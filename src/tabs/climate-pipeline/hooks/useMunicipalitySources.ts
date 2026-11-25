@@ -31,6 +31,8 @@ export interface MunicipalitySource {
    * municipality can be told apart. */
   documentTitle: string | null;
   source: MunicipalitySourceOrigin;
+  /** When true, Klimatkollen uses this row (at most one per municipality). */
+  websitePrimary: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -45,6 +47,7 @@ export type MunicipalitySourceEdit = Partial<
     | "planName"
     | "notes"
     | "documentTitle"
+    | "websitePrimary"
   >
 >;
 
