@@ -8,7 +8,7 @@ import {
   Pencil,
   Check,
   X,
-  CircleHelp,
+  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/ui/button";
@@ -490,7 +490,9 @@ function AddDocumentModal({
             autoFocus
             value={municipality}
             onChange={(e) => setMunicipality(e.target.value)}
-            placeholder={t("municipalitySources.addFieldMunicipalityPlaceholder")}
+            placeholder={t(
+              "municipalitySources.addFieldMunicipalityPlaceholder",
+            )}
             className="mt-1 w-full h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2.5 text-sm text-gray-01 focus:outline-none focus:border-blue-03"
           />
         </label>
@@ -501,7 +503,9 @@ function AddDocumentModal({
           <input
             value={documentTitle}
             onChange={(e) => setDocumentTitle(e.target.value)}
-            placeholder={t("municipalitySources.addFieldDocumentTitlePlaceholder")}
+            placeholder={t(
+              "municipalitySources.addFieldDocumentTitlePlaceholder",
+            )}
             className="mt-1 w-full h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2.5 text-sm text-gray-01 focus:outline-none focus:border-blue-03"
           />
         </label>
@@ -517,7 +521,11 @@ function AddDocumentModal({
           />
         </label>
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+          >
             {t("municipalitySources.addCancel")}
           </Button>
           <Button
@@ -525,7 +533,9 @@ function AddDocumentModal({
             disabled={!municipality.trim() || !documentTitle.trim() || isSaving}
             onClick={() => void handleSubmit()}
           >
-            {isSaving && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+            {isSaving && (
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            )}
             {t("municipalitySources.addSubmit")}
           </Button>
         </div>
@@ -555,7 +565,9 @@ function WebsiteInstructionsModal({
       }
     >
       <div className="space-y-4 text-sm text-gray-01">
-        <p className="text-gray-02">{t("municipalitySources.instructionsIntro")}</p>
+        <p className="text-gray-02">
+          {t("municipalitySources.instructionsIntro")}
+        </p>
         <p className="text-gray-02">
           {t("municipalitySources.instructionsWebsiteVsPipeline")}
         </p>
@@ -601,9 +613,9 @@ export function MunicipalitySourcesTab() {
   // failed. Recomputed when the filter is turned on, or when `sources`
   // itself changes (a real refetch — county switch, explicit refresh),
   // but not on every inline edit (those only touch `overrides`).
-  const [needsUrlSnapshot, setNeedsUrlSnapshot] = useState<Set<
-    string
-  > | null>(null);
+  const [needsUrlSnapshot, setNeedsUrlSnapshot] = useState<Set<string> | null>(
+    null,
+  );
   const [isRunningRegion, setIsRunningRegion] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
@@ -761,7 +773,7 @@ export function MunicipalitySourcesTab() {
             aria-label={t("municipalitySources.instructionsButton")}
             title={t("municipalitySources.instructionsButton")}
           >
-            <CircleHelp className="w-4 h-4" />
+            <HelpCircle className="w-4 h-4" />
           </Button>
           <Button
             type="button"
@@ -857,7 +869,9 @@ export function MunicipalitySourcesTab() {
             ) : (
               <Play className="h-3.5 w-3.5 mr-1.5" />
             )}
-            {t("municipalitySources.runRegionWithCompanions", { count: foundCount })}
+            {t("municipalitySources.runRegionWithCompanions", {
+              count: foundCount,
+            })}
           </Button>
         )}
       </div>
