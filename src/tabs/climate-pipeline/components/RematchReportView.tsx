@@ -1,11 +1,21 @@
 import { useState, type ReactNode } from "react";
-import { ArrowRight, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  ChevronRight,
+  ClipboardCopy,
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { MunicipalityPill } from "./MunicipalityPill";
 import { formatSnapshotName } from "../hooks/useShadowElementSnapshots";
 import {
   useRematchReport,
   type RematchOutcome,
+  type RematchReport,
+  type RematchReportNewElement,
+  type RematchReportOldElement,
   type RematchReportShift,
 } from "../hooks/useShadowRebuild";
 
@@ -149,13 +159,142 @@ function afterText(shift: RematchReportShift): string {
     case "shadow":
       return a.shadowLabel ?? "Shadow element";
     case "no_match":
-      return a.aiReviewCategory
-        ? `No match (${a.aiReviewCategory.replace(/_/g, " ").toLowerCase()})`
-        : "No match";
+      // The badge already says "No match"; the decision line says why.
+      return "";
     case "pending":
       return "Not rematched yet";
     case "gone":
       return "Commitment no longer exists";
+  }
+}
+
+function shiftMarkdown(s: RematchReportShift, showBefore = false): string {
+  const outcome = OUTCOME_BY_KEY[s.after.outcome].label;
+  const after = afterText(s);
+  const d = decisionOf(s);
+  const lines = [
+    `- **${s.municipalityName ?? "Unknown municipality"}**: "${s.measureText.replace(/\s+/g, " ").trim()}"`,
+    `  - Shift: ${s.shiftFrom} → ${s.shiftTo}`,
+  ];
+  if (showBefore) {
+    lines.push(
+      `  - Before: ${
+        s.before.kind === "reattached"
+          ? `reattached by a reviewer to ${s.before.reattachedToLabel ?? "a real TEF"}`
+          : `shadow element "${s.before.shadowLabel}"`
+      }`,
+    );
+  }
+  lines.push(`  - Now: ${outcome}${after ? `: ${after}` : ""}`);
+  if (d && d !== "NONE") {
+    lines.push(
+      `  - Decision: ${decisionInfo(d).label}. ${s.after.aiReviewExplanation ?? ""}`.trimEnd(),
+    );
+  }
+  return lines.join("\n");
+}
+
+/** The report as currently filtered, as Markdown -- for pasting into a
+ * chat with an AI or a colleague. */
+function reportMarkdown(args: {
+  report: RematchReport;
+  filters: string[];
+  total: number;
+  leftShadow: number;
+  summaryCounts: Record<RematchOutcome, number>;
+  decisionCounts: Map<string, number>;
+  oldElements: RematchReportOldElement[];
+  reattached: RematchReportShift[];
+  broadenByElement: Map<string, RematchReportShift[]>;
+  newElements: RematchReportNewElement[];
+  shadowByNewId: Map<string, number>;
+}): string {
+  const { report } = args;
+  const out: string[] = [
+    `# Rematch report vs "${formatSnapshotName(report)}"`,
+    "",
+  ];
+  if (report.run) {
+    out.push(
+      `Rebuild ${report.run.status}${report.run.finishedAt ? `, finished ${new Date(report.run.finishedAt).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" })}` : ""}.`,
+    );
+  }
+  out.push(
+    `Filters: ${args.filters.length ? args.filters.join(", ") : "none"}.`,
+    "",
+    "## Summary",
+    `- Commitments: ${args.total}`,
+    `- Left the shadow taxonomy: ${args.leftShadow}${args.total ? ` (${Math.round((args.leftShadow / args.total) * 100)}%)` : ""}`,
+    `- Now on a real TEF: ${args.summaryCounts.real_tef + args.summaryCounts.recovered} (${args.summaryCounts.recovered} AI-recovered)`,
+    `- Shadow elements (active, all plans): ${report.summary.shadowElementsBefore} → ${report.summary.shadowElementsAfter}`,
+    `- Outcomes: ${OUTCOMES.filter((o) => args.summaryCounts[o.key] > 0)
+      .map((o) => `${o.label} ${args.summaryCounts[o.key]}`)
+      .join(", ")}`,
+    `- Decisions: ${[...args.decisionCounts.entries()]
+      .map(([k, n]) => `${decisionInfo(k).label} ${n}`)
+      .join(", ")}`,
+    "",
+    `## Old shadow elements (${args.oldElements.length}), and where their commitments went`,
+  );
+  for (const el of args.oldElements) {
+    out.push(
+      "",
+      `### ${el.shortLabel} (${el.status}, ${el.shifts.length} commitment${el.shifts.length === 1 ? "" : "s"})`,
+      el.description,
+    );
+    if (el.comment) out.push(`Reviewer comment: ${el.comment}`);
+    out.push("", ...el.shifts.map((s) => shiftMarkdown(s)));
+  }
+  if (args.reattached.length) {
+    out.push(
+      "",
+      `## Previously reattached by a reviewer (${args.reattached.length})`,
+      "",
+      ...args.reattached.map((s) => shiftMarkdown(s, true)),
+    );
+  }
+  if (args.broadenByElement.size) {
+    out.push("", "## Broaden proposals");
+    for (const [label, shifts] of args.broadenByElement) {
+      out.push("", `### ${label} (${shifts.length})`);
+      const exts = [
+        ...new Set(
+          shifts
+            .map((s) => broadenExtensionOf(s.after.aiReviewExplanation))
+            .filter(Boolean),
+        ),
+      ];
+      for (const ext of exts) out.push(`- Proposed extension: ${ext}`);
+      out.push("", ...shifts.map((s) => shiftMarkdown(s, true)));
+    }
+  }
+  out.push(
+    "",
+    `## Shadow elements after the rematch (${args.newElements.length})`,
+  );
+  for (const el of args.newElements) {
+    out.push(
+      `- **${el.shortLabel}** (${el.qualityGrade}, ${args.shadowByNewId.get(el.id)} commitment${args.shadowByNewId.get(el.id) === 1 ? "" : "s"}): ${el.description}. From: ${el.fromOldElements.map((f) => `${f.shortLabel} (${f.count})`).join(", ")}`,
+    );
+  }
+  return out.join("\n") + "\n";
+}
+
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success("Report copied as Markdown");
+  } catch {
+    // Clipboard blocked (e.g. no permission): fall back to a download.
+    const url = URL.createObjectURL(
+      new Blob([text], { type: "text/markdown" }),
+    );
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "rematch-report.md";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Clipboard unavailable, so the report was downloaded");
   }
 }
 
@@ -200,7 +339,9 @@ function ShiftRow({
         >
           {o.label}
         </span>
-        <span className="text-gray-01">{afterText(shift)}</span>
+        {afterText(shift) && (
+          <span className="text-gray-01">{afterText(shift)}</span>
+        )}
       </div>
       {(() => {
         const d = decisionOf(shift);
@@ -344,6 +485,38 @@ export function RematchReportView({
           <h3 className="text-sm font-semibold text-gray-01">
             Rematch vs “{formatSnapshotName(report)}”
           </h3>
+          <button
+            type="button"
+            onClick={() =>
+              void copyText(
+                reportMarkdown({
+                  report,
+                  filters: [
+                    municipalityFilter &&
+                      `municipality = ${municipalityFilter}`,
+                    outcomeFilter &&
+                      `outcome = ${OUTCOME_BY_KEY[outcomeFilter].label}`,
+                    decisionFilter &&
+                      `decision = ${decisionInfo(decisionFilter).label}`,
+                  ].filter((f): f is string => Boolean(f)),
+                  total,
+                  leftShadow,
+                  summaryCounts,
+                  decisionCounts,
+                  oldElements,
+                  reattached,
+                  broadenByElement,
+                  newElements,
+                  shadowByNewId,
+                }),
+              )
+            }
+            title="Copy the report, with the current filters, as Markdown"
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 px-2.5 py-1 text-xs text-gray-02 hover:text-gray-01 hover:bg-gray-04/50"
+          >
+            <ClipboardCopy className="w-3.5 h-3.5" />
+            Copy as Markdown
+          </button>
           {report.run && (
             <span className="text-xs text-gray-02">
               Rebuild {report.run.status}
