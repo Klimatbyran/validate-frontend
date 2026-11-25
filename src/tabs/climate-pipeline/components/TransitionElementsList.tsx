@@ -242,7 +242,11 @@ function ReviewVerdictPill({ category }: { category: string }) {
 function reviewVerdictClass(category: string): string {
   if (category === "JUDGE_ERROR")
     return "border-orange-03/50 bg-orange-03/15 text-orange-03";
-  if (category === "RETRIEVAL_MISS")
+  if (
+    category === "RETRIEVAL_MISS" ||
+    category === "USE_EXISTING" ||
+    category === "BROADEN"
+  )
     return "border-blue-03/50 bg-blue-03/15 text-blue-03";
   if (category === "TAXONOMY_GAP")
     return "border-purple-03/40 bg-purple-03/10 text-purple-03";
@@ -417,7 +421,12 @@ function ProposedElementCard({
 
 function opinionFrameClass(category: string | null | undefined): string {
   if (category === "JUDGE_ERROR") return "border-orange-03/25";
-  if (category === "RETRIEVAL_MISS") return "border-blue-03/25";
+  if (
+    category === "RETRIEVAL_MISS" ||
+    category === "USE_EXISTING" ||
+    category === "BROADEN"
+  )
+    return "border-blue-03/25";
   if (category === "TAXONOMY_GAP") return "border-purple-03/25";
   if (category === "ENABLING_NOT_SHIFT") return "border-teal-03/25";
   return "border-gray-03/50";

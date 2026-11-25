@@ -119,15 +119,18 @@ function ChangeList({ changes }: { changes: ShadowElementChange[] }) {
 export function ShadowTaxonomyDiffView({
   elements,
   refreshToken,
+  snapshotRunId,
   municipalityFilter,
 }: {
   elements: ShadowElement[];
   refreshToken?: number;
+  /** Which snapshot to compare against; omitted means the latest. */
+  snapshotRunId?: string | null;
   /** Empty string means "all municipalities". */
   municipalityFilter?: string;
 }) {
   const { snapshots, isLoading, error } =
-    useShadowElementSnapshots(refreshToken);
+    useShadowElementSnapshots(refreshToken, snapshotRunId);
 
   if (isLoading) {
     return (

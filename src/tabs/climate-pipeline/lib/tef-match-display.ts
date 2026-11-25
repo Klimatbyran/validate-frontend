@@ -41,6 +41,10 @@ const AI_REVIEW_HEADLINES: Record<string, string> = {
   // a change in an activity (e.g. charging infrastructure, grid batteries)
   // -- not an Activity Shift, so no shadow element gets created for it.
   ENABLING_NOT_SHIFT: "Enabling technology, not an Activity Shift",
+  // The TEF reviewers' four taxonomy decisions (2026-11-23 instructions).
+  USE_EXISTING: "Use existing — an existing element covers this",
+  BROADEN: "Broaden — an existing element fits with a wider scope",
+  DO_NOT_ADOPT: "Do not adopt — no specific element for this claim",
 };
 
 const AI_REVIEW_PILLS: Record<string, string> = {
@@ -49,6 +53,9 @@ const AI_REVIEW_PILLS: Record<string, string> = {
   RETRIEVAL_MISS: "Taxonomy miss",
   JUDGE_ERROR: "Judge error",
   ENABLING_NOT_SHIFT: "Enabling, not a shift",
+  USE_EXISTING: "Use existing",
+  BROADEN: "Broaden existing",
+  DO_NOT_ADOPT: "Do not adopt",
 };
 
 const BOILERPLATE_GROUP_LABELS = new Set(["no domain named"]);
