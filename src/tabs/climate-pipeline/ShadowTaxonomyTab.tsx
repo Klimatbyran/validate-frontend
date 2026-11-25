@@ -17,6 +17,7 @@ import {
   Search,
   Save,
   Hammer,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
@@ -45,6 +46,7 @@ import {
   useShadowElementSnapshots,
   createTefFreeze,
   deleteTefSnapshot,
+  restoreTefSnapshot,
   formatSnapshotName,
 } from "./hooks/useShadowElementSnapshots";
 import { useLatestRebuildRun } from "./hooks/useShadowRebuild";
@@ -1786,6 +1788,8 @@ export function ShadowTaxonomyTab() {
   const hasSnapshot = selectedSnapshot !== null;
   const [isTakingSnapshot, setIsTakingSnapshot] = useState(false);
   const [isDeleteSnapshotOpen, setIsDeleteSnapshotOpen] = useState(false);
+  const [isRestoreSnapshotOpen, setIsRestoreSnapshotOpen] = useState(false);
+  const [isRestoringSnapshot, setIsRestoringSnapshot] = useState(false);
   const [isDeletingSnapshot, setIsDeletingSnapshot] = useState(false);
   const [isRebuildOpen, setIsRebuildOpen] = useState(false);
 
@@ -1943,6 +1947,31 @@ export function ShadowTaxonomyTab() {
       );
     } finally {
       setIsDeletingSnapshot(false);
+    }
+  };
+
+  const handleRestoreSnapshot = async () => {
+    if (!selectedSnapshotRunId) return;
+    setIsRestoringSnapshot(true);
+    try {
+      const result = await restoreTefSnapshot(selectedSnapshotRunId);
+      handleRefresh();
+      setHasCheckedOverlaps(false);
+      setSnapshotRefreshToken((n) => n + 1);
+      void refreshLatestRebuild();
+      toast.success(
+        `Snapshot restored: ${result.shadowElementsRestored} shadow elements and ${result.shiftsRestored} commitments put back` +
+          (result.shiftsMissing
+            ? ` (${result.shiftsMissing} commitments no longer exist).`
+            : "."),
+      );
+      setIsRestoreSnapshotOpen(false);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to restore snapshot",
+      );
+    } finally {
+      setIsRestoringSnapshot(false);
     }
   };
 
@@ -2195,6 +2224,22 @@ export function ShadowTaxonomyTab() {
               Delete snapshot
             </Button>
           ) : null}
+          {hasSnapshot ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsRestoreSnapshotOpen(true)}
+              disabled={isRebuildActive}
+              title={
+                isRebuildActive
+                  ? "Wait for the running rebuild to finish"
+                  : "Put the shadow taxonomy and TEF matches back as they were in the selected snapshot"
+              }
+            >
+              <RotateCcw className="w-4 h-4 mr-1.5" />
+              Restore snapshot
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outline"
@@ -2298,6 +2343,18 @@ export function ShadowTaxonomyTab() {
         confirmVariant="danger"
         onConfirm={handleDeleteSnapshot}
         isLoading={isDeletingSnapshot}
+      />
+
+      <ConfirmDialog
+        open={isRestoreSnapshotOpen}
+        onOpenChange={setIsRestoreSnapshotOpen}
+        title="Restore snapshot?"
+        description={`Puts the shadow taxonomy and TEF matches back exactly as they were in “${selectedSnapshot ? formatSnapshotName(selectedSnapshot) : ""}”. Every current shadow element is replaced, including any promote/reject/comment work done since. Take a snapshot first if you want to keep the current state. The snapshot itself is kept, so you can restore it again.`}
+        cancelLabel="Cancel"
+        confirmLabel="Restore snapshot"
+        confirmVariant="danger"
+        onConfirm={handleRestoreSnapshot}
+        isLoading={isRestoringSnapshot}
       />
 
       {viewMode === "report" ? (

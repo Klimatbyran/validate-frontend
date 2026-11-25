@@ -249,6 +249,26 @@ export function ShadowRebuildBanner({
     );
   }
 
+  if (run.status === "reverted") {
+    return (
+      <div className="rounded-md border border-gray-03 bg-gray-04/30 p-3 text-sm flex flex-wrap items-center gap-2">
+        <RotateCcw className="w-4 h-4 text-gray-02" />
+        <span className="text-gray-02">
+          The last rebuild was undone: its starting snapshot was restored.
+        </span>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="ml-auto"
+          onClick={() => setDismissedId(run.id)}
+        >
+          Dismiss
+        </Button>
+      </div>
+    );
+  }
+
   if (run.status === "failed") {
     return (
       <div className="rounded-md border border-pink-03/40 bg-pink-03/5 p-3 text-sm flex flex-wrap items-center gap-2">

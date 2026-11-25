@@ -31,7 +31,13 @@ export interface RebuildPreview {
   planCount: number;
 }
 
-export type RebuildStatus = "queued" | "running" | "completed" | "failed";
+export type RebuildStatus =
+  | "queued"
+  | "running"
+  | "completed"
+  | "failed"
+  // The snapshot the run started from was restored afterwards.
+  | "reverted";
 
 export interface RebuildRun {
   id: string;

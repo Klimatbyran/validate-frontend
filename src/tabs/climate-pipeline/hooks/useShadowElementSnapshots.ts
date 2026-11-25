@@ -200,6 +200,31 @@ export async function createTefFreeze(label?: string): Promise<{
   return res.json();
 }
 
+export interface TefRestoreResult {
+  snapshotRunId: string;
+  shadowElementsDeleted: number;
+  shadowElementsRestored: number;
+  shiftsRestored: number;
+  shiftsMissing: number;
+  reEmbedded: number;
+}
+
+/** Puts the shadow taxonomy and TEF matches back as they were in this
+ * snapshot. The snapshot itself is kept. */
+export async function restoreTefSnapshot(
+  snapshotRunId: string,
+): Promise<TefRestoreResult> {
+  const res = await authenticatedFetch(
+    `${getClimatePlansPipelineApiUrl()}/snapshots/${encodeURIComponent(snapshotRunId)}/restore`,
+    { method: "POST" },
+  );
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error ?? `${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+
 export async function deleteTefSnapshot(snapshotRunId: string): Promise<void> {
   const res = await authenticatedFetch(
     `${getClimatePlansPipelineApiUrl()}/snapshots/${encodeURIComponent(snapshotRunId)}`,
