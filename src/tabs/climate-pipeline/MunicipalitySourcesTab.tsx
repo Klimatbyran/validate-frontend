@@ -125,7 +125,8 @@ function EditableCell({
             "min-w-0 flex-1 text-sm",
             value ? "text-gray-01" : "text-gray-02 italic",
             breakAll ? "break-all" : "break-words",
-            !multiline && "truncate",
+            // Numbers (year) must stay fully visible; truncate turns "2024" into "20…".
+            !multiline && type !== "number" && "truncate",
           )}
         >
           {value || placeholder}
@@ -336,27 +337,46 @@ function MunicipalityRow({
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
           )}
-          {source.pdfCacheUrl &&
-            (() => {
-              try {
-                return (
-                  new URL(source.pdfCacheUrl).hostname ===
-                  "storage.googleapis.com"
-                );
-              } catch {
-                return false;
-              }
-            })() && (
-              <a
-                href={source.pdfCacheUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1.5 shrink-0 text-gray-02 hover:text-blue-03"
-                title="Open cached PDF"
-              >
-                <FileText className="h-3.5 w-3.5" />
-              </a>
-            )}
+          {(() => {
+            const cached =
+              source.pdfCacheUrl &&
+              (() => {
+                try {
+                  return (
+                    new URL(source.pdfCacheUrl).hostname ===
+                    "storage.googleapis.com"
+                  );
+                } catch {
+                  return false;
+                }
+              })()
+                ? source.pdfCacheUrl
+                : null;
+            if (cached) {
+              return (
+                <a
+                  href={cached}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1.5 shrink-0 text-blue-03 hover:text-blue-02"
+                  title="Open cached PDF"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                </a>
+              );
+            }
+            if (source.url) {
+              return (
+                <span
+                  className="mt-1.5 shrink-0 text-gray-02/40"
+                  title="No cached PDF yet — set after a successful cache-on-save or Run"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                </span>
+              );
+            }
+            return null;
+          })()}
         </div>
       </td>
       <td className="px-3 py-2 align-top text-center">
@@ -371,12 +391,12 @@ function MunicipalityRow({
           }}
         />
       </td>
-      <td className="px-3 py-2 align-top">
+      <td className="px-3 py-2 align-top whitespace-nowrap">
         <EditableCell
           value={source.adoptedYear?.toString() ?? ""}
           placeholder="Year"
           type="number"
-          className="max-w-[5rem]"
+          className="min-w-[4.5rem]"
           onSave={(next) => save({ adoptedYear: next ? Number(next) : null })}
         />
       </td>
@@ -466,22 +486,28 @@ function AddDocumentModal({
   const [municipality, setMunicipality] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
   const [url, setUrl] = useState("");
+  const [adoptedYear, setAdoptedYear] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   const reset = () => {
     setMunicipality("");
     setDocumentTitle("");
     setUrl("");
+    setAdoptedYear("");
   };
 
   const handleSubmit = async () => {
     if (!municipality.trim() || !documentTitle.trim()) return;
     setIsSaving(true);
     try {
+      const yearTrimmed = adoptedYear.trim();
+      const yearNum = yearTrimmed ? Number(yearTrimmed) : null;
       const createdRow = await createMunicipalitySource({
         municipality: municipality.trim(),
         documentTitle: documentTitle.trim(),
         url: url.trim() || null,
+        adoptedYear:
+          yearNum != null && Number.isFinite(yearNum) ? yearNum : null,
       });
       toast.success(
         t("municipalitySources.addSuccess", { documentTitle, municipality }),
@@ -542,6 +568,21 @@ function AddDocumentModal({
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://…"
+            className="mt-1 w-full h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2.5 text-sm text-gray-01 focus:outline-none focus:border-blue-03"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="text-gray-02">
+            {t("municipalitySources.addFieldAdoptedYear")}
+          </span>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={adoptedYear}
+            onChange={(e) => setAdoptedYear(e.target.value)}
+            placeholder={t(
+              "municipalitySources.addFieldAdoptedYearPlaceholder",
+            )}
             className="mt-1 w-full h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2.5 text-sm text-gray-01 focus:outline-none focus:border-blue-03"
           />
         </label>
@@ -921,7 +962,7 @@ export function MunicipalitySourcesTab() {
       )}
       {!isLoading && rows.length > 0 && (
         <DataTableShell>
-          <DataTable className="table-fixed w-full min-w-[82rem]">
+          <DataTable className="table-fixed w-full min-w-[88rem]">
             <DataTableHead>
               <tr>
                 <th className="px-3 py-2 w-[10%]">
@@ -930,25 +971,25 @@ export function MunicipalitySourcesTab() {
                 <th className="px-3 py-2 w-[9%]">
                   {t("municipalitySources.colCounty")}
                 </th>
-                <th className="px-3 py-2 w-[15%]">
+                <th className="px-3 py-2 w-[14%]">
                   {t("municipalitySources.colPlanName")}
                 </th>
-                <th className="px-3 py-2 w-[22%]">
+                <th className="px-3 py-2 w-[20%]">
                   {t("municipalitySources.colUrl")}
                 </th>
                 <th className="px-3 py-2 w-[6%] text-center">
                   {t("municipalitySources.colWebsite")}
                 </th>
-                <th className="px-3 py-2 w-[6%]">
+                <th className="px-3 py-2 w-[7%]">
                   {t("municipalitySources.colYear")}
                 </th>
-                <th className="px-3 py-2 w-[18%]">
+                <th className="px-3 py-2 w-[17%]">
                   {t("municipalitySources.colNotes")}
                 </th>
-                <th className="px-3 py-2 w-[11%]">
+                <th className="px-3 py-2 w-[10%]">
                   {t("municipalitySources.colLastRun")}
                 </th>
-                <th className="px-3 py-2 w-[8%] text-center">
+                <th className="px-3 py-2 w-[7%] text-center">
                   {t("municipalitySources.colRun")}
                 </th>
               </tr>

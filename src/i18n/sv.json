@@ -111,6 +111,8 @@
     "addFieldDocumentTitle": "Dokumenttitel",
     "addFieldDocumentTitlePlaceholder": "t.ex. Åtgärdsplan",
     "addFieldUrl": "Url (valfritt)",
+    "addFieldAdoptedYear": "Antaget år (valfritt)",
+    "addFieldAdoptedYearPlaceholder": "t.ex. 2024",
     "addCancel": "Avbryt",
     "addSubmit": "Lägg till",
     "addSuccess": "Lade till \"{{documentTitle}}\" för {{municipality}}",

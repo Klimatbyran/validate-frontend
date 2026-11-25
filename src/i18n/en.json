@@ -111,6 +111,8 @@
     "addFieldDocumentTitle": "Document title",
     "addFieldDocumentTitlePlaceholder": "e.g. Åtgärdsplan",
     "addFieldUrl": "Url (optional)",
+    "addFieldAdoptedYear": "Adopted year (optional)",
+    "addFieldAdoptedYearPlaceholder": "e.g. 2024",
     "addCancel": "Cancel",
     "addSubmit": "Add",
     "addSuccess": "Added \"{{documentTitle}}\" for {{municipality}}",
