@@ -85,7 +85,7 @@
   },
   "municipalitySources": {
     "title": "Swedish municipalities — climate plan registry",
-    "subtitle": "All 290 municipalities, seeded from Klimatkollen's own tracking spreadsheet — edit any field, then run the pipeline for a row's url.",
+    "subtitle": "All 290 municipalities — edit plan URL, year, name, or notes here. Changes feed Klimatkollen via Unearth API (municipality-sources). Companion documents stay Validate-only.",
     "refresh": "Refresh",
     "filterCounty": "County",
     "countyAll": "All counties",
