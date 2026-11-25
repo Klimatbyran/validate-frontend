@@ -33,6 +33,9 @@ export interface MunicipalitySource {
   source: MunicipalitySourceOrigin;
   /** When true, Klimatkollen uses this row (at most one per municipality). */
   websitePrimary: boolean;
+  /** Our GCS-cached PDF (same meaning as ClimatePlan.pdfCacheUrl). */
+  pdfCacheUrl?: string | null;
+  sha256?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -179,10 +182,36 @@ export async function markMunicipalitySourceRun(
  * (records lastRunAt/lastRunStatus), retried once since it's a separate
  * request from the real trigger above and losing it silently once already
  * left a started run unrecorded. */
+/** Prefer stable GCS copy when we have pdfCacheUrl + sha256 (pipeline-api
+ * pdfCacheHints skips re-fetching a possibly-dead municipal url). */
+function pdfCacheHintForRow(row: {
+  url: string;
+  pdfCacheUrl?: string | null;
+  sha256?: string | null;
+}): { sourceUrl: string; publicUrl: string; sha256: string } | undefined {
+  const publicUrl = row.pdfCacheUrl?.trim();
+  const sha256 = row.sha256?.trim();
+  if (!publicUrl || !sha256) return undefined;
+  try {
+    if (new URL(publicUrl).hostname !== "storage.googleapis.com") {
+      return undefined;
+    }
+  } catch {
+    return undefined;
+  }
+  return { sourceUrl: row.url, publicUrl, sha256 };
+}
+
 export async function runMunicipalitySource(
   id: string,
   url: string,
+  opts?: { pdfCacheUrl?: string | null; sha256?: string | null },
 ): Promise<void> {
+  const hint = pdfCacheHintForRow({
+    url,
+    pdfCacheUrl: opts?.pdfCacheUrl,
+    sha256: opts?.sha256,
+  });
   const result = await createJobsFromUrls({
     urls: [url],
     autoApprove: false,
@@ -196,6 +225,7 @@ export async function runMunicipalitySource(
     forceRedescribeImages: true,
     callbackUrl: getClimatePlansPipelineWebhookUrl(),
     reportTypeSlug: CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
+    ...(hint ? { pdfCacheHints: [hint] } : {}),
   });
   const status: MunicipalitySourceRunStatus =
     !Array.isArray(result) && result.errors?.some((e) => e.url === url)
@@ -256,10 +286,18 @@ async function postWithRetry(url: string, body: unknown): Promise<Response> {
  * municipality), so the UI confirms before calling this. */
 export async function runMunicipalityRegion(
   county: string,
-  rows: { id: string; url: string }[],
+  rows: {
+    id: string;
+    url: string;
+    pdfCacheUrl?: string | null;
+    sha256?: string | null;
+  }[],
 ): Promise<RunRegionResult> {
   const failedUrls = new Set<string>();
   if (rows.length > 0) {
+    const hints = rows
+      .map((r) => pdfCacheHintForRow(r))
+      .filter((h): h is NonNullable<typeof h> => h != null);
     const result = await createJobsFromUrls({
       urls: rows.map((r) => r.url),
       autoApprove: false,
@@ -271,6 +309,7 @@ export async function runMunicipalityRegion(
       forceRedescribeImages: true,
       callbackUrl: getClimatePlansPipelineWebhookUrl(),
       reportTypeSlug: CLIMATE_PLANS_PIPELINE_REPORT_TYPE_SLUG,
+      ...(hints.length > 0 ? { pdfCacheHints: hints } : {}),
     });
     if (!Array.isArray(result) && result.errors) {
       for (const e of result.errors) failedUrls.add(e.url);
