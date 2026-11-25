@@ -336,17 +336,27 @@ function MunicipalityRow({
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
           )}
-          {source.pdfCacheUrl && (
-            <a
-              href={source.pdfCacheUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-1.5 shrink-0 text-gray-02 hover:text-blue-03"
-              title="Open cached PDF"
-            >
-              <FileText className="h-3.5 w-3.5" />
-            </a>
-          )}
+          {source.pdfCacheUrl &&
+            (() => {
+              try {
+                return (
+                  new URL(source.pdfCacheUrl).hostname ===
+                  "storage.googleapis.com"
+                );
+              } catch {
+                return false;
+              }
+            })() && (
+              <a
+                href={source.pdfCacheUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1.5 shrink-0 text-gray-02 hover:text-blue-03"
+                title="Open cached PDF"
+              >
+                <FileText className="h-3.5 w-3.5" />
+              </a>
+            )}
         </div>
       </td>
       <td className="px-3 py-2 align-top text-center">

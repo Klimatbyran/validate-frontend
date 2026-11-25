@@ -194,6 +194,13 @@ function pdfCacheHintForRow(row: {
   const publicUrl = row.pdfCacheUrl?.trim();
   const sha256 = row.sha256?.trim();
   if (!publicUrl || !sha256) return undefined;
+  try {
+    if (new URL(publicUrl).hostname !== "storage.googleapis.com") {
+      return undefined;
+    }
+  } catch {
+    return undefined;
+  }
   return { sourceUrl: row.url, publicUrl, sha256 };
 }
 
