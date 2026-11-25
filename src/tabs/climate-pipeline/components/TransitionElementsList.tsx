@@ -257,6 +257,8 @@ function reviewVerdictClass(category: string): string {
     return "border-purple-03/40 bg-purple-03/10 text-purple-03";
   if (category === "ENABLING_NOT_SHIFT")
     return "border-teal-03/50 bg-teal-03/15 text-teal-03";
+  if (category === "GOAL")
+    return "border-amber-03/50 bg-amber-03/15 text-amber-03";
   return "border-gray-03 bg-gray-03/50 text-gray-01";
 }
 
@@ -434,6 +436,7 @@ function opinionFrameClass(category: string | null | undefined): string {
     return "border-blue-03/25";
   if (category === "TAXONOMY_GAP") return "border-purple-03/25";
   if (category === "ENABLING_NOT_SHIFT") return "border-teal-03/25";
+  if (category === "GOAL") return "border-amber-03/25";
   return "border-gray-03/50";
 }
 

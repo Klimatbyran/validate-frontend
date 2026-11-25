@@ -122,6 +122,7 @@ const DECISIONS: Record<string, { label: string; text: string }> = {
     label: "No new element (do not adopt)",
     text: "text-pink-03",
   },
+  GOAL: { label: "Goal", text: "text-amber-03" },
   ENABLING_NOT_SHIFT: { label: "Enabling, not a shift", text: "text-gray-02" },
   RETRIEVAL_MISS: { label: "Missed element", text: "text-teal-03" },
   JUDGE_ERROR: { label: "Judge error", text: "text-gray-02" },
