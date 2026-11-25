@@ -110,7 +110,8 @@ function outcomeExtraLabel(
   groupKind: string,
   groupLabel: string | null | undefined,
 ): string | null {
-  if (groupKind !== "no_match_found" && groupKind !== "match_is_too_narrow") return null;
+  if (groupKind !== "no_match_found" && groupKind !== "match_is_too_narrow")
+    return null;
   if (!groupLabel || BOILERPLATE_GROUP_LABELS.has(groupLabel)) return null;
   return groupLabel;
 }

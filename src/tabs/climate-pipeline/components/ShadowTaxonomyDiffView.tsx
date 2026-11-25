@@ -129,8 +129,10 @@ export function ShadowTaxonomyDiffView({
   /** Empty string means "all municipalities". */
   municipalityFilter?: string;
 }) {
-  const { snapshots, isLoading, error } =
-    useShadowElementSnapshots(refreshToken, snapshotRunId);
+  const { snapshots, isLoading, error } = useShadowElementSnapshots(
+    refreshToken,
+    snapshotRunId,
+  );
 
   if (isLoading) {
     return (

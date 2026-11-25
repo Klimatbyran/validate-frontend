@@ -53,7 +53,8 @@ export function ShadowRebuildDialog({
   }, [open]);
 
   const total = preview
-    ? preview.attachedShifts + (includeReattached ? preview.reattachedShifts : 0)
+    ? preview.attachedShifts +
+      (includeReattached ? preview.reattachedShifts : 0)
     : 0;
 
   const handleStart = async () => {
@@ -67,7 +68,9 @@ export function ShadowRebuildDialog({
       onStarted(run);
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to start rebuild");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to start rebuild",
+      );
     } finally {
       setIsStarting(false);
     }
@@ -123,8 +126,8 @@ export function ShadowRebuildDialog({
                 onChange={(e) => setIncludeReattached(e.target.checked)}
               />
               <span>
-                Also rematch the {preview.reattachedShifts} commitments a reviewer
-                reattached to a real TEF
+                Also rematch the {preview.reattachedShifts} commitments a
+                reviewer reattached to a real TEF
                 <span className="block text-xs text-gray-02">
                   Their manual choice is replaced by the new matching result. It
                   stays in the snapshot.
@@ -172,12 +175,13 @@ export function ShadowRebuildDialog({
   );
 }
 
-const BANNER_OUTCOMES: { key: RematchOutcome; label: string; text: string }[] = [
-  { key: "real_tef", label: "real TEF", text: "text-green-03" },
-  { key: "recovered", label: "AI-recovered", text: "text-teal-03" },
-  { key: "shadow", label: "shadow", text: "text-purple-03" },
-  { key: "no_match", label: "no match", text: "text-gray-02" },
-];
+const BANNER_OUTCOMES: { key: RematchOutcome; label: string; text: string }[] =
+  [
+    { key: "real_tef", label: "real TEF", text: "text-green-03" },
+    { key: "recovered", label: "AI-recovered", text: "text-teal-03" },
+    { key: "shadow", label: "shadow", text: "text-purple-03" },
+    { key: "no_match", label: "no match", text: "text-gray-02" },
+  ];
 
 /** Progress / result strip for the latest rebuild run. Hidden once a
  * completed run has been dismissed. */
@@ -283,8 +287,8 @@ export function ShadowRebuildBanner({
   return (
     <div className="rounded-md border border-green-03/40 bg-green-03/5 p-3 text-sm flex flex-wrap items-center gap-2">
       <span className="font-medium text-gray-01">
-        Rebuild done: {run.totalShifts} commitments rematched, {run.deletedShadowCount}{" "}
-        old shadow elements cleared
+        Rebuild done: {run.totalShifts} commitments rematched,{" "}
+        {run.deletedShadowCount} old shadow elements cleared
       </span>
       {counts}
       <div className="ml-auto flex gap-2">

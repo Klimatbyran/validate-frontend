@@ -19,17 +19,46 @@ const OUTCOMES: {
   bar: string;
   text: string;
 }[] = [
-  { key: "real_tef", label: "Real TEF", bar: "bg-green-03", text: "text-green-03" },
-  { key: "recovered", label: "AI-recovered TEF", bar: "bg-teal-03", text: "text-teal-03" },
-  { key: "shadow", label: "Shadow", bar: "bg-purple-03", text: "text-purple-03" },
-  { key: "no_match", label: "No match", bar: "bg-gray-02", text: "text-gray-02" },
-  { key: "pending", label: "Not rematched yet", bar: "bg-amber-03", text: "text-amber-03" },
-  { key: "gone", label: "Commitment deleted", bar: "bg-pink-03", text: "text-pink-03" },
+  {
+    key: "real_tef",
+    label: "Real TEF",
+    bar: "bg-green-03",
+    text: "text-green-03",
+  },
+  {
+    key: "recovered",
+    label: "AI-recovered TEF",
+    bar: "bg-teal-03",
+    text: "text-teal-03",
+  },
+  {
+    key: "shadow",
+    label: "Shadow",
+    bar: "bg-purple-03",
+    text: "text-purple-03",
+  },
+  {
+    key: "no_match",
+    label: "No match",
+    bar: "bg-gray-02",
+    text: "text-gray-02",
+  },
+  {
+    key: "pending",
+    label: "Not rematched yet",
+    bar: "bg-amber-03",
+    text: "text-amber-03",
+  },
+  {
+    key: "gone",
+    label: "Commitment deleted",
+    bar: "bg-pink-03",
+    text: "text-pink-03",
+  },
 ];
-const OUTCOME_BY_KEY = Object.fromEntries(OUTCOMES.map((o) => [o.key, o])) as Record<
-  RematchOutcome,
-  (typeof OUTCOMES)[number]
->;
+const OUTCOME_BY_KEY = Object.fromEntries(
+  OUTCOMES.map((o) => [o.key, o]),
+) as Record<RematchOutcome, (typeof OUTCOMES)[number]>;
 
 function OutcomeBar({
   counts,
@@ -87,12 +116,18 @@ const DECISIONS: Record<string, { label: string; text: string }> = {
 };
 
 function decisionOf(shift: RematchReportShift): string | null {
-  if (shift.after.outcome === "pending" || shift.after.outcome === "gone") return null;
+  if (shift.after.outcome === "pending" || shift.after.outcome === "gone")
+    return null;
   return shift.after.aiReviewCategory ?? "NONE";
 }
 
 function decisionInfo(key: string) {
-  return DECISIONS[key] ?? { label: key.replace(/_/g, " ").toLowerCase(), text: "text-gray-02" };
+  return (
+    DECISIONS[key] ?? {
+      label: key.replace(/_/g, " ").toLowerCase(),
+      text: "text-gray-02",
+    }
+  );
 }
 
 /** "Broaden <labels>: <extension>. <reason>" -> the extension part. */
@@ -137,7 +172,10 @@ function ShiftRow({
           {shift.shiftFrom} → {shift.shiftTo}
         </span>
       </div>
-      <p className="text-xs text-gray-01 line-clamp-2" title={shift.measureText}>
+      <p
+        className="text-xs text-gray-01 line-clamp-2"
+        title={shift.measureText}
+      >
         {shift.measureText}
       </p>
       <div className="flex flex-wrap items-center gap-1.5 text-xs">
@@ -262,13 +300,17 @@ export function RematchReportView({
   const allShifts = [
     ...report.oldElements.flatMap((e) => e.shifts),
     ...report.reattachedBefore,
-  ].filter((s) => !municipalityFilter || s.municipalityName === municipalityFilter);
+  ].filter(
+    (s) => !municipalityFilter || s.municipalityName === municipalityFilter,
+  );
   const summaryCounts = countsOf(allShifts);
   const total = allShifts.length;
   const leftShadow = total - summaryCounts.shadow;
   const isFiltered = Boolean(municipalityFilter);
   const shadowByNewId = new Map<string, number>();
-  for (const s of allShifts.filter((s) => !outcomeFilter || s.after.outcome === outcomeFilter)) {
+  for (const s of allShifts.filter(
+    (s) => !outcomeFilter || s.after.outcome === outcomeFilter,
+  )) {
     if (s.after.shadowElementId) {
       shadowByNewId.set(
         s.after.shadowElementId,
@@ -309,16 +351,27 @@ export function RematchReportView({
           )}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Stat label={isFiltered ? "Commitments (filtered)" : "Commitments rematched"} value={total} />
+          <Stat
+            label={
+              isFiltered ? "Commitments (filtered)" : "Commitments rematched"
+            }
+            value={total}
+          />
           <Stat
             label="Left the shadow taxonomy"
             value={leftShadow}
-            hint={total ? `${Math.round((leftShadow / total) * 100)}%` : undefined}
+            hint={
+              total ? `${Math.round((leftShadow / total) * 100)}%` : undefined
+            }
           />
           <Stat
             label="Now on a real TEF"
             value={summaryCounts.real_tef + summaryCounts.recovered}
-            hint={summaryCounts.recovered ? `${summaryCounts.recovered} AI-recovered` : undefined}
+            hint={
+              summaryCounts.recovered
+                ? `${summaryCounts.recovered} AI-recovered`
+                : undefined
+            }
           />
           <Stat
             label="Shadow elements"
@@ -328,16 +381,26 @@ export function RematchReportView({
         </div>
         <OutcomeBar counts={summaryCounts} className="h-3" />
         <div className="flex flex-wrap gap-1.5">
-          <FilterChip active={outcomeFilter === ""} onClick={() => setOutcomeFilter("")}>
+          <FilterChip
+            active={outcomeFilter === ""}
+            onClick={() => setOutcomeFilter("")}
+          >
             All
           </FilterChip>
           {OUTCOMES.filter((o) => summaryCounts[o.key] > 0).map((o) => (
             <FilterChip
               key={o.key}
               active={outcomeFilter === o.key}
-              onClick={() => setOutcomeFilter(outcomeFilter === o.key ? "" : o.key)}
+              onClick={() =>
+                setOutcomeFilter(outcomeFilter === o.key ? "" : o.key)
+              }
             >
-              <span className={cn("inline-block w-2 h-2 rounded-full mr-1.5", o.bar)} />
+              <span
+                className={cn(
+                  "inline-block w-2 h-2 rounded-full mr-1.5",
+                  o.bar,
+                )}
+              />
               {o.label} {summaryCounts[o.key]}
             </FilterChip>
           ))}
@@ -345,7 +408,10 @@ export function RematchReportView({
         {decisionCounts.size > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-gray-02 mr-1">Decision:</span>
-            <FilterChip active={decisionFilter === ""} onClick={() => setDecisionFilter("")}>
+            <FilterChip
+              active={decisionFilter === ""}
+              onClick={() => setDecisionFilter("")}
+            >
               All
             </FilterChip>
             {[...decisionCounts.entries()]
@@ -354,7 +420,9 @@ export function RematchReportView({
                 <FilterChip
                   key={key}
                   active={decisionFilter === key}
-                  onClick={() => setDecisionFilter(decisionFilter === key ? "" : key)}
+                  onClick={() =>
+                    setDecisionFilter(decisionFilter === key ? "" : key)
+                  }
                 >
                   <span className={cn("mr-1", decisionInfo(key).text)}>●</span>
                   {decisionInfo(key).label} {count}
@@ -370,8 +438,9 @@ export function RematchReportView({
             Broaden proposals ({broadenByElement.size} TEF elements)
           </h4>
           <p className="text-xs text-gray-02">
-            Existing elements the review would extend to cover these commitments.
-            Nothing is changed in the TEF; this is a list to review and pass on.
+            Existing elements the review would extend to cover these
+            commitments. Nothing is changed in the TEF; this is a list to review
+            and pass on.
           </p>
           {[...broadenByElement.entries()]
             .sort((a, b) => b[1].length - a[1].length)
@@ -381,17 +450,26 @@ export function RematchReportView({
                 header={
                   <>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-sm font-medium text-gray-01">{label}</span>
+                      <span className="text-sm font-medium text-gray-01">
+                        {label}
+                      </span>
                       <span className="text-xs text-gray-02">
-                        {shifts.length} commitment{shifts.length === 1 ? "" : "s"}
+                        {shifts.length} commitment
+                        {shifts.length === 1 ? "" : "s"}
                       </span>
                     </div>
                     <ul className="text-xs text-gray-02 list-disc pl-4">
-                      {[...new Set(shifts.map((s) => broadenExtensionOf(s.after.aiReviewExplanation)).filter(Boolean))].map(
-                        (ext) => (
-                          <li key={ext}>{ext}</li>
+                      {[
+                        ...new Set(
+                          shifts
+                            .map((s) =>
+                              broadenExtensionOf(s.after.aiReviewExplanation),
+                            )
+                            .filter(Boolean),
                         ),
-                      )}
+                      ].map((ext) => (
+                        <li key={ext}>{ext}</li>
+                      ))}
                     </ul>
                   </>
                 }
@@ -408,7 +486,8 @@ export function RematchReportView({
 
       <section className="space-y-2">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-02">
-          Old shadow elements ({oldElements.length}) — where their commitments went
+          Old shadow elements ({oldElements.length}) — where their commitments
+          went
         </h4>
         {oldElements.length === 0 && (
           <p className="text-sm text-gray-02">Nothing matches these filters.</p>
@@ -428,7 +507,8 @@ export function RematchReportView({
                       {el.status}
                     </span>
                     <span className="text-xs text-gray-02">
-                      {el.shifts.length} commitment{el.shifts.length === 1 ? "" : "s"}
+                      {el.shifts.length} commitment
+                      {el.shifts.length === 1 ? "" : "s"}
                     </span>
                   </div>
                   <OutcomeBar counts={counts} />
@@ -487,7 +567,9 @@ export function RematchReportView({
             className="rounded-md border border-purple-03/30 bg-purple-03/5 p-2.5 space-y-1"
           >
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-sm font-medium text-gray-01">{el.shortLabel}</span>
+              <span className="text-sm font-medium text-gray-01">
+                {el.shortLabel}
+              </span>
               <span className="text-[11px] rounded-full border border-gray-03 px-1.5 text-gray-02">
                 {el.qualityGrade}
               </span>
@@ -521,7 +603,9 @@ function Stat({
 }) {
   return (
     <div className="rounded-md border border-gray-03/40 bg-gray-04/30 p-2.5">
-      <div className="text-lg font-semibold text-gray-01 tabular-nums">{value}</div>
+      <div className="text-lg font-semibold text-gray-01 tabular-nums">
+        {value}
+      </div>
       <div className="text-xs text-gray-02">{label}</div>
       {hint && <div className="text-[11px] text-gray-02/80">{hint}</div>}
     </div>

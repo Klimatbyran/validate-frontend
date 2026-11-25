@@ -146,7 +146,10 @@ type SimilarEditTarget =
  * isn't a real similarity score here (there's nothing to compare against
  * post-edit) -- callers pass whatever's appropriate: the prior score for an
  * edit, or a neutral 1 for a freshly created element. */
-function matchFromElement(el: TransitionElement, score: number): TransitionElementMatch {
+function matchFromElement(
+  el: TransitionElement,
+  score: number,
+): TransitionElementMatch {
   return {
     stableId: el.stableId,
     shortLabel: el.shortLabel,
@@ -155,8 +158,10 @@ function matchFromElement(el: TransitionElement, score: number): TransitionEleme
     actsOnLabels: el.actsOnLabels,
     shiftsToLabels: el.shiftsToLabels,
     activityShiftCategory: el.activityShiftCategory,
-    legacyExportType: el.legacyExportType as TransitionElementMatch["legacyExportType"],
-    sustainabilityClass: el.sustainabilityClass as TransitionElementMatch["sustainabilityClass"],
+    legacyExportType:
+      el.legacyExportType as TransitionElementMatch["legacyExportType"],
+    sustainabilityClass:
+      el.sustainabilityClass as TransitionElementMatch["sustainabilityClass"],
     coBenefits: el.coBenefits,
     score,
     version: el.version,
@@ -202,9 +207,7 @@ function ShadowElementCard({
   const [similarCandidates, setSimilarCandidates] = useState<
     TransitionElementMatch[] | null
   >(null);
-  const [editTarget, setEditTarget] = useState<SimilarEditTarget | null>(
-    null,
-  );
+  const [editTarget, setEditTarget] = useState<SimilarEditTarget | null>(null);
   const [editDraft, setEditDraft] = useState<TransitionElementFormDraft | null>(
     null,
   );
@@ -219,9 +222,9 @@ function ShadowElementCard({
   // just ONE attached shift, reusing the same similarCandidates list
   // (fetched once per card, shared by both this and the card-level panel)
   // rather than running its own search.
-  const [reattachOpenShiftId, setReattachOpenShiftId] = useState<
-    string | null
-  >(null);
+  const [reattachOpenShiftId, setReattachOpenShiftId] = useState<string | null>(
+    null,
+  );
   const [isReattaching, setIsReattaching] = useState(false);
   // shiftId -> stableId it was just reattached to -- shown in place of the
   // Reattach button/picker for that row, instead of the row either closing
@@ -271,7 +274,9 @@ function ShadowElementCard({
         .then(setManualResults)
         .catch((err) =>
           toast.error(
-            err instanceof Error ? err.message : t("shadowTaxonomy.similarError"),
+            err instanceof Error
+              ? err.message
+              : t("shadowTaxonomy.similarError"),
           ),
         )
         .finally(() => setIsSearchingManual(false));
@@ -448,7 +453,9 @@ function ShadowElementCard({
       setEditDraft(toFormDraft(current));
       setEditTarget({ mode: "broaden", stableId });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load element");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to load element",
+      );
     } finally {
       setIsLoadingEditTarget(false);
     }
@@ -581,7 +588,9 @@ function ShadowElementCard({
   // picker -- same manual-search state, different action per result (Edit +
   // Use-for-all vs. just Use-this), so the action buttons are the only
   // thing each call site supplies.
-  const renderManualSearch = (renderActions: (summary: TransitionElementSummary) => ReactNode) => (
+  const renderManualSearch = (
+    renderActions: (summary: TransitionElementSummary) => ReactNode,
+  ) => (
     <div className="space-y-1.5 pt-1.5 border-t border-gray-03/30">
       <input
         type="text"
@@ -600,7 +609,10 @@ function ShadowElementCard({
         manualResults?.map((summary) => {
           const provenance = provenanceOf(summary);
           return (
-            <div key={summary.stableId} className="flex items-center justify-between gap-2">
+            <div
+              key={summary.stableId}
+              className="flex items-center justify-between gap-2"
+            >
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <p className="text-xs font-medium text-gray-01 truncate">
@@ -942,56 +954,58 @@ function ShadowElementCard({
               {similarCandidates?.map((candidate) => {
                 const provenance = provenanceOf(candidate);
                 return (
-                <div
-                  key={candidate.stableId}
-                  className="rounded-lg bg-gray-03/10 p-3 flex items-start justify-between gap-3"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium text-gray-01">
-                        {candidate.shortLabel}
+                  <div
+                    key={candidate.stableId}
+                    className="rounded-lg bg-gray-03/10 p-3 flex items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium text-gray-01">
+                          {candidate.shortLabel}
+                        </p>
+                        <span className="inline-flex items-center rounded-full border border-blue-03/30 bg-blue-03/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-03">
+                          {t("shadowTaxonomy.similarScore", {
+                            score: candidate.score.toFixed(2),
+                          })}
+                        </span>
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+                            provenance.className,
+                          )}
+                        >
+                          {t(provenance.labelKey, {
+                            version: candidate.version,
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-02">
+                        {candidate.description}
                       </p>
-                      <span className="inline-flex items-center rounded-full border border-blue-03/30 bg-blue-03/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-03">
-                        {t("shadowTaxonomy.similarScore", {
-                          score: candidate.score.toFixed(2),
-                        })}
-                      </span>
-                      <span
-                        className={cn(
-                          "inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
-                          provenance.className,
-                        )}
-                      >
-                        {t(provenance.labelKey, { version: candidate.version })}
-                      </span>
                     </div>
-                    <p className="text-xs text-gray-02">
-                      {candidate.description}
-                    </p>
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 max-w-none whitespace-nowrap text-xs"
+                        disabled={isResolving}
+                        onClick={() => void startBroaden(candidate.stableId)}
+                      >
+                        {t("shadowTaxonomy.editThis")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 max-w-none whitespace-nowrap border-blue-03/40 text-xs text-blue-03 hover:bg-blue-03/10 hover:border-blue-03"
+                        disabled={isResolving}
+                        onClick={() => void handleUseForAll(candidate.stableId)}
+                      >
+                        {t("shadowTaxonomy.useForAll")}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1.5 shrink-0">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-7 max-w-none whitespace-nowrap text-xs"
-                      disabled={isResolving}
-                      onClick={() => void startBroaden(candidate.stableId)}
-                    >
-                      {t("shadowTaxonomy.editThis")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-7 max-w-none whitespace-nowrap border-blue-03/40 text-xs text-blue-03 hover:bg-blue-03/10 hover:border-blue-03"
-                      disabled={isResolving}
-                      onClick={() => void handleUseForAll(candidate.stableId)}
-                    >
-                      {t("shadowTaxonomy.useForAll")}
-                    </Button>
-                  </div>
-                </div>
                 );
               })}
               <Button
@@ -1162,7 +1176,10 @@ function ShadowElementCard({
                               className="h-6 max-w-none shrink-0 whitespace-nowrap text-[11px]"
                               disabled={isReattaching}
                               onClick={() =>
-                                void handleReattach(a.shiftId, candidate.stableId)
+                                void handleReattach(
+                                  a.shiftId,
+                                  candidate.stableId,
+                                )
                               }
                             >
                               {t("shadowTaxonomy.useThis")}
@@ -1758,9 +1775,9 @@ export function ShadowTaxonomyTab() {
     useTefSnapshots(snapshotRefreshToken);
   // Which snapshot the list/diff/report views compare against. null means
   // "follow the latest" until the reviewer picks one explicitly.
-  const [pickedSnapshotRunId, setPickedSnapshotRunId] = useState<
-    string | null
-  >(null);
+  const [pickedSnapshotRunId, setPickedSnapshotRunId] = useState<string | null>(
+    null,
+  );
   const selectedSnapshot =
     tefSnapshots.find((s) => s.snapshotRunId === pickedSnapshotRunId) ??
     tefSnapshots[0] ??

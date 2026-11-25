@@ -38,8 +38,10 @@ export function ShadowTaxonomyLegacyView({
   /** Empty string means "all municipalities". */
   municipalityFilter?: string;
 } = {}) {
-  const { snapshotsByRun, isLoading, error } =
-    useShadowElementSnapshots(refreshToken, snapshotRunId);
+  const { snapshotsByRun, isLoading, error } = useShadowElementSnapshots(
+    refreshToken,
+    snapshotRunId,
+  );
 
   if (isLoading) {
     return (

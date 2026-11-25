@@ -104,9 +104,14 @@ function ExplicitBadge({ explicit }: { explicit: boolean | undefined }) {
 
 function outcomeTone(kind: string | null | undefined): MetaChipTone {
   const normalized = kind ? normalizeGroupKind(kind) : kind;
-  if (normalized === "match_is_specific" || normalized === "multiple_specific_matches") return "relevance";
+  if (
+    normalized === "match_is_specific" ||
+    normalized === "multiple_specific_matches"
+  )
+    return "relevance";
   if (normalized === "match_is_ambiguous") return "score";
-  if (normalized === "match_is_too_narrow" || normalized === "no_match_found") return "type";
+  if (normalized === "match_is_too_narrow" || normalized === "no_match_found")
+    return "type";
   return "neutral";
 }
 

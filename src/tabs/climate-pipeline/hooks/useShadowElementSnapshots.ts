@@ -81,9 +81,7 @@ export function useTefSnapshots(refreshToken?: number) {
       setSnapshots((await res.json()) as TefSnapshotSummary[]);
       setError(null);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load snapshots",
-      );
+      setError(err instanceof Error ? err.message : "Failed to load snapshots");
     } finally {
       setIsLoading(false);
     }
