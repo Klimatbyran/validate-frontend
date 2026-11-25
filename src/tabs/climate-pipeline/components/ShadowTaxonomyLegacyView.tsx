@@ -29,14 +29,19 @@ const QUALITY_STYLE: Record<ShadowElementQuality, string> = {
 // happens to the live element afterward (promote/reject/merge/delete).
 export function ShadowTaxonomyLegacyView({
   refreshToken,
+  snapshotRunId,
   municipalityFilter,
 }: {
   refreshToken?: number;
+  /** Which snapshot to show; omitted means the latest. */
+  snapshotRunId?: string | null;
   /** Empty string means "all municipalities". */
   municipalityFilter?: string;
 } = {}) {
-  const { snapshotsByRun, isLoading, error } =
-    useShadowElementSnapshots(refreshToken);
+  const { snapshotsByRun, isLoading, error } = useShadowElementSnapshots(
+    refreshToken,
+    snapshotRunId,
+  );
 
   if (isLoading) {
     return (

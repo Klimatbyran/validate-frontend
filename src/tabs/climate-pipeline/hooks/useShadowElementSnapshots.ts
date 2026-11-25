@@ -43,12 +43,31 @@ export interface ShadowElementSnapshot {
   mergedIntoId: string | null;
 }
 
-// refreshToken is a plain counter, not data this hook needs -- bumping it
-// (e.g. after taking/deleting a snapshot elsewhere) is how a caller that
-// already has this view mounted asks it to refetch, since fetchSnapshots
-// itself has no dependency that would otherwise change.
-export function useShadowElementSnapshots(refreshToken?: number) {
-  const [snapshots, setSnapshots] = useState<ShadowElementSnapshot[]>([]);
+// One snapshot generation (a single freeze), as listed by GET /snapshots.
+export interface TefSnapshotSummary {
+  snapshotRunId: string;
+  snapshotLabel: string | null;
+  snapshotTakenAt: string;
+  activityShiftCount: number;
+  shadowElementCount: number;
+}
+
+export function formatSnapshotName(s: {
+  snapshotLabel: string | null;
+  snapshotTakenAt: string | null;
+}): string {
+  const date = s.snapshotTakenAt
+    ? new Date(s.snapshotTakenAt).toLocaleString("sv-SE", {
+        dateStyle: "short",
+        timeStyle: "short",
+      })
+    : "";
+  return s.snapshotLabel ? `${date} · ${s.snapshotLabel}` : date;
+}
+
+/** Every snapshot generation, newest first. */
+export function useTefSnapshots(refreshToken?: number) {
+  const [snapshots, setSnapshots] = useState<TefSnapshotSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,7 +75,46 @@ export function useShadowElementSnapshots(refreshToken?: number) {
     setIsLoading(true);
     try {
       const res = await garboAuthFetch(
-        `${getClimatePlansPipelineApiUrl()}/shadow-element-snapshots`,
+        `${getClimatePlansPipelineApiUrl()}/snapshots`,
+      );
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      setSnapshots((await res.json()) as TefSnapshotSummary[]);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load snapshots");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchSnapshots();
+  }, [fetchSnapshots, refreshToken]);
+
+  return { snapshots, isLoading, error, refresh: fetchSnapshots };
+}
+
+// refreshToken is a plain counter, not data this hook needs -- bumping it
+// (e.g. after taking/deleting a snapshot elsewhere) is how a caller that
+// already has this view mounted asks it to refetch, since fetchSnapshots
+// itself has no dependency that would otherwise change. snapshotRunId picks
+// the generation; omitted, the backend returns the latest one.
+export function useShadowElementSnapshots(
+  refreshToken?: number,
+  snapshotRunId?: string | null,
+) {
+  const [snapshots, setSnapshots] = useState<ShadowElementSnapshot[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSnapshots = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const query = snapshotRunId
+        ? `?snapshotRunId=${encodeURIComponent(snapshotRunId)}`
+        : "";
+      const res = await garboAuthFetch(
+        `${getClimatePlansPipelineApiUrl()}/shadow-element-snapshots${query}`,
       );
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       setSnapshots((await res.json()) as ShadowElementSnapshot[]);
@@ -70,7 +128,7 @@ export function useShadowElementSnapshots(refreshToken?: number) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [snapshotRunId]);
 
   useEffect(() => {
     void fetchSnapshots();
@@ -142,9 +200,34 @@ export async function createTefFreeze(label?: string): Promise<{
   return res.json();
 }
 
-export async function deleteTefFreeze(): Promise<void> {
+export interface TefRestoreResult {
+  snapshotRunId: string;
+  shadowElementsDeleted: number;
+  shadowElementsRestored: number;
+  shiftsRestored: number;
+  shiftsMissing: number;
+  reEmbedded: number;
+}
+
+/** Puts the shadow taxonomy and TEF matches back as they were in this
+ * snapshot. The snapshot itself is kept. */
+export async function restoreTefSnapshot(
+  snapshotRunId: string,
+): Promise<TefRestoreResult> {
   const res = await authenticatedFetch(
-    `${getClimatePlansPipelineApiUrl()}/snapshots/tef-freeze`,
+    `${getClimatePlansPipelineApiUrl()}/snapshots/${encodeURIComponent(snapshotRunId)}/restore`,
+    { method: "POST" },
+  );
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error ?? `${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function deleteTefSnapshot(snapshotRunId: string): Promise<void> {
+  const res = await authenticatedFetch(
+    `${getClimatePlansPipelineApiUrl()}/snapshots/${encodeURIComponent(snapshotRunId)}`,
     { method: "DELETE" },
   );
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);

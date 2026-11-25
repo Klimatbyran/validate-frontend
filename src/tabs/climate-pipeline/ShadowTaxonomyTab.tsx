@@ -16,6 +16,8 @@ import {
   Camera,
   Search,
   Save,
+  Hammer,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
@@ -40,11 +42,19 @@ import { getHandoffReview } from "./lib/shadowTefHandoffReview";
 import { resolveQaReviewerForSave } from "./lib/qaReviewerIdentity";
 import { provenanceOf } from "./lib/transitionElementProvenance";
 import {
-  useTefFreezeStatus,
+  useTefSnapshots,
   useShadowElementSnapshots,
   createTefFreeze,
-  deleteTefFreeze,
+  deleteTefSnapshot,
+  restoreTefSnapshot,
+  formatSnapshotName,
 } from "./hooks/useShadowElementSnapshots";
+import { useLatestRebuildRun } from "./hooks/useShadowRebuild";
+import { RematchReportView } from "./components/RematchReportView";
+import {
+  ShadowRebuildDialog,
+  ShadowRebuildBanner,
+} from "./components/ShadowRebuildControls";
 import {
   useShadowElements,
   updateShadowElementStatus,
@@ -138,7 +148,10 @@ type SimilarEditTarget =
  * isn't a real similarity score here (there's nothing to compare against
  * post-edit) -- callers pass whatever's appropriate: the prior score for an
  * edit, or a neutral 1 for a freshly created element. */
-function matchFromElement(el: TransitionElement, score: number): TransitionElementMatch {
+function matchFromElement(
+  el: TransitionElement,
+  score: number,
+): TransitionElementMatch {
   return {
     stableId: el.stableId,
     shortLabel: el.shortLabel,
@@ -147,8 +160,10 @@ function matchFromElement(el: TransitionElement, score: number): TransitionEleme
     actsOnLabels: el.actsOnLabels,
     shiftsToLabels: el.shiftsToLabels,
     activityShiftCategory: el.activityShiftCategory,
-    legacyExportType: el.legacyExportType as TransitionElementMatch["legacyExportType"],
-    sustainabilityClass: el.sustainabilityClass as TransitionElementMatch["sustainabilityClass"],
+    legacyExportType:
+      el.legacyExportType as TransitionElementMatch["legacyExportType"],
+    sustainabilityClass:
+      el.sustainabilityClass as TransitionElementMatch["sustainabilityClass"],
     coBenefits: el.coBenefits,
     score,
     version: el.version,
@@ -194,9 +209,7 @@ function ShadowElementCard({
   const [similarCandidates, setSimilarCandidates] = useState<
     TransitionElementMatch[] | null
   >(null);
-  const [editTarget, setEditTarget] = useState<SimilarEditTarget | null>(
-    null,
-  );
+  const [editTarget, setEditTarget] = useState<SimilarEditTarget | null>(null);
   const [editDraft, setEditDraft] = useState<TransitionElementFormDraft | null>(
     null,
   );
@@ -211,9 +224,9 @@ function ShadowElementCard({
   // just ONE attached shift, reusing the same similarCandidates list
   // (fetched once per card, shared by both this and the card-level panel)
   // rather than running its own search.
-  const [reattachOpenShiftId, setReattachOpenShiftId] = useState<
-    string | null
-  >(null);
+  const [reattachOpenShiftId, setReattachOpenShiftId] = useState<string | null>(
+    null,
+  );
   const [isReattaching, setIsReattaching] = useState(false);
   // shiftId -> stableId it was just reattached to -- shown in place of the
   // Reattach button/picker for that row, instead of the row either closing
@@ -263,7 +276,9 @@ function ShadowElementCard({
         .then(setManualResults)
         .catch((err) =>
           toast.error(
-            err instanceof Error ? err.message : t("shadowTaxonomy.similarError"),
+            err instanceof Error
+              ? err.message
+              : t("shadowTaxonomy.similarError"),
           ),
         )
         .finally(() => setIsSearchingManual(false));
@@ -440,7 +455,9 @@ function ShadowElementCard({
       setEditDraft(toFormDraft(current));
       setEditTarget({ mode: "broaden", stableId });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load element");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to load element",
+      );
     } finally {
       setIsLoadingEditTarget(false);
     }
@@ -573,7 +590,9 @@ function ShadowElementCard({
   // picker -- same manual-search state, different action per result (Edit +
   // Use-for-all vs. just Use-this), so the action buttons are the only
   // thing each call site supplies.
-  const renderManualSearch = (renderActions: (summary: TransitionElementSummary) => ReactNode) => (
+  const renderManualSearch = (
+    renderActions: (summary: TransitionElementSummary) => ReactNode,
+  ) => (
     <div className="space-y-1.5 pt-1.5 border-t border-gray-03/30">
       <input
         type="text"
@@ -592,7 +611,10 @@ function ShadowElementCard({
         manualResults?.map((summary) => {
           const provenance = provenanceOf(summary);
           return (
-            <div key={summary.stableId} className="flex items-center justify-between gap-2">
+            <div
+              key={summary.stableId}
+              className="flex items-center justify-between gap-2"
+            >
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <p className="text-xs font-medium text-gray-01 truncate">
@@ -934,56 +956,58 @@ function ShadowElementCard({
               {similarCandidates?.map((candidate) => {
                 const provenance = provenanceOf(candidate);
                 return (
-                <div
-                  key={candidate.stableId}
-                  className="rounded-lg bg-gray-03/10 p-3 flex items-start justify-between gap-3"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium text-gray-01">
-                        {candidate.shortLabel}
+                  <div
+                    key={candidate.stableId}
+                    className="rounded-lg bg-gray-03/10 p-3 flex items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium text-gray-01">
+                          {candidate.shortLabel}
+                        </p>
+                        <span className="inline-flex items-center rounded-full border border-blue-03/30 bg-blue-03/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-03">
+                          {t("shadowTaxonomy.similarScore", {
+                            score: candidate.score.toFixed(2),
+                          })}
+                        </span>
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+                            provenance.className,
+                          )}
+                        >
+                          {t(provenance.labelKey, {
+                            version: candidate.version,
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-02">
+                        {candidate.description}
                       </p>
-                      <span className="inline-flex items-center rounded-full border border-blue-03/30 bg-blue-03/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-03">
-                        {t("shadowTaxonomy.similarScore", {
-                          score: candidate.score.toFixed(2),
-                        })}
-                      </span>
-                      <span
-                        className={cn(
-                          "inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
-                          provenance.className,
-                        )}
-                      >
-                        {t(provenance.labelKey, { version: candidate.version })}
-                      </span>
                     </div>
-                    <p className="text-xs text-gray-02">
-                      {candidate.description}
-                    </p>
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 max-w-none whitespace-nowrap text-xs"
+                        disabled={isResolving}
+                        onClick={() => void startBroaden(candidate.stableId)}
+                      >
+                        {t("shadowTaxonomy.editThis")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 max-w-none whitespace-nowrap border-blue-03/40 text-xs text-blue-03 hover:bg-blue-03/10 hover:border-blue-03"
+                        disabled={isResolving}
+                        onClick={() => void handleUseForAll(candidate.stableId)}
+                      >
+                        {t("shadowTaxonomy.useForAll")}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1.5 shrink-0">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-7 max-w-none whitespace-nowrap text-xs"
-                      disabled={isResolving}
-                      onClick={() => void startBroaden(candidate.stableId)}
-                    >
-                      {t("shadowTaxonomy.editThis")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-7 max-w-none whitespace-nowrap border-blue-03/40 text-xs text-blue-03 hover:bg-blue-03/10 hover:border-blue-03"
-                      disabled={isResolving}
-                      onClick={() => void handleUseForAll(candidate.stableId)}
-                    >
-                      {t("shadowTaxonomy.useForAll")}
-                    </Button>
-                  </div>
-                </div>
                 );
               })}
               <Button
@@ -1154,7 +1178,10 @@ function ShadowElementCard({
                               className="h-6 max-w-none shrink-0 whitespace-nowrap text-[11px]"
                               disabled={isReattaching}
                               onClick={() =>
-                                void handleReattach(a.shiftId, candidate.stableId)
+                                void handleReattach(
+                                  a.shiftId,
+                                  candidate.stableId,
+                                )
                               }
                             >
                               {t("shadowTaxonomy.useThis")}
@@ -1736,34 +1763,55 @@ export function ShadowTaxonomyTab() {
   // "off" (default) shows just the current elements, full width, with no
   // snapshot comparison mounted at all -- "list" is the current/legacy
   // split above; "diff" classifies each live element as new/changed/same
-  // against the frozen snapshot instead (only meaningful once one
-  // exists).
-  const [viewMode, setViewMode] = useState<"off" | "list" | "diff">("off");
-  const {
-    status: freezeStatus,
-    isLoading: isFreezeStatusLoading,
-    refresh: refreshFreezeStatus,
-  } = useTefFreezeStatus();
+  // against the selected snapshot instead; "report" shows where the
+  // commitments that were on shadow elements in that snapshot ended up
+  // (the rematch report). The last two only make sense once a snapshot
+  // exists.
+  const [viewMode, setViewMode] = useState<"off" | "list" | "diff" | "report">(
+    "off",
+  );
+  // Bumped after a take/delete/rebuild so already-open snapshot views (which
+  // fetch once on mount) refetch instead of showing stale data.
+  const [snapshotRefreshToken, setSnapshotRefreshToken] = useState(0);
+  const { snapshots: tefSnapshots, isLoading: isSnapshotListLoading } =
+    useTefSnapshots(snapshotRefreshToken);
+  // Which snapshot the list/diff/report views compare against. null means
+  // "follow the latest" until the reviewer picks one explicitly.
+  const [pickedSnapshotRunId, setPickedSnapshotRunId] = useState<string | null>(
+    null,
+  );
+  const selectedSnapshot =
+    tefSnapshots.find((s) => s.snapshotRunId === pickedSnapshotRunId) ??
+    tefSnapshots[0] ??
+    null;
+  const selectedSnapshotRunId = selectedSnapshot?.snapshotRunId ?? null;
+  const hasSnapshot = selectedSnapshot !== null;
   const [isTakingSnapshot, setIsTakingSnapshot] = useState(false);
   const [isDeleteSnapshotOpen, setIsDeleteSnapshotOpen] = useState(false);
+  const [isRestoreSnapshotOpen, setIsRestoreSnapshotOpen] = useState(false);
+  const [isRestoringSnapshot, setIsRestoringSnapshot] = useState(false);
   const [isDeletingSnapshot, setIsDeletingSnapshot] = useState(false);
+  const [isRebuildOpen, setIsRebuildOpen] = useState(false);
 
-  // A snapshot deleted while diff mode is open would otherwise leave the
-  // view stuck showing stale diff output against a comparison that no
-  // longer exists. Only steps out of "diff" specifically -- never
-  // overrides an explicit "off".
+  // Deleting the last snapshot while diff/report is open would otherwise
+  // leave the view stuck on a comparison that no longer exists. Only steps
+  // out of those two modes -- never overrides an explicit "off".
   useEffect(() => {
-    if (viewMode === "diff" && !freezeStatus?.exists) setViewMode("list");
-  }, [freezeStatus?.exists, viewMode]);
-
-  // Bumped after a take/delete so an already-open legacy panel (which
-  // fetches once on mount) refetches instead of showing stale data.
-  const [snapshotRefreshToken, setSnapshotRefreshToken] = useState(0);
+    if (
+      (viewMode === "diff" || viewMode === "report") &&
+      !isSnapshotListLoading &&
+      !hasSnapshot
+    )
+      setViewMode("list");
+  }, [hasSnapshot, isSnapshotListLoading, viewMode]);
   // Fetched here too (on top of the legacy/diff views' own fetches) purely
   // to build the municipality option list below -- otherwise a reviewer
   // with an empty or fully-filtered-out current list has no snapshot-only
   // municipalities to pick from at all.
-  const { snapshots } = useShadowElementSnapshots(snapshotRefreshToken);
+  const { snapshots } = useShadowElementSnapshots(
+    snapshotRefreshToken,
+    selectedSnapshotRunId,
+  );
   const [statusFilter, setStatusFilter] = useState<ShadowElementStatus | "">(
     "",
   );
@@ -1840,6 +1888,24 @@ export function ShadowTaxonomyTab() {
     void refresh();
   };
 
+  // A rebuild replaces the whole shadow taxonomy, so when one finishes
+  // everything on this tab is stale -- the live list, the cached real-TEF
+  // overlap check and every snapshot view.
+  const {
+    run: latestRebuild,
+    isActive: isRebuildActive,
+    refresh: refreshLatestRebuild,
+  } = useLatestRebuildRun(() => {
+    handleRefresh();
+    setHasCheckedOverlaps(false);
+    setSnapshotRefreshToken((n) => n + 1);
+  });
+
+  const openRematchReport = (snapshotRunId: string) => {
+    setPickedSnapshotRunId(snapshotRunId);
+    setViewMode("report");
+  };
+
   const handleTakeSnapshot = async () => {
     // window.prompt returns null on Cancel, same as typing nothing and
     // hitting OK would -- check for null specifically before taking the
@@ -1852,7 +1918,7 @@ export function ShadowTaxonomyTab() {
     setIsTakingSnapshot(true);
     try {
       const result = await createTefFreeze(label.trim() || undefined);
-      await refreshFreezeStatus();
+      setPickedSnapshotRunId(result.snapshotRunId);
       setSnapshotRefreshToken((n) => n + 1);
       toast.success(
         `Snapshot taken: ${result.activityShiftCount} matches, ${result.shadowElementCount} shadow elements frozen.`,
@@ -1867,10 +1933,11 @@ export function ShadowTaxonomyTab() {
   };
 
   const handleDeleteSnapshot = async () => {
+    if (!selectedSnapshotRunId) return;
     setIsDeletingSnapshot(true);
     try {
-      await deleteTefFreeze();
-      await refreshFreezeStatus();
+      await deleteTefSnapshot(selectedSnapshotRunId);
+      setPickedSnapshotRunId(null);
       setSnapshotRefreshToken((n) => n + 1);
       toast.success("Snapshot deleted.");
       setIsDeleteSnapshotOpen(false);
@@ -1880,6 +1947,31 @@ export function ShadowTaxonomyTab() {
       );
     } finally {
       setIsDeletingSnapshot(false);
+    }
+  };
+
+  const handleRestoreSnapshot = async () => {
+    if (!selectedSnapshotRunId) return;
+    setIsRestoringSnapshot(true);
+    try {
+      const result = await restoreTefSnapshot(selectedSnapshotRunId);
+      handleRefresh();
+      setHasCheckedOverlaps(false);
+      setSnapshotRefreshToken((n) => n + 1);
+      void refreshLatestRebuild();
+      toast.success(
+        `Snapshot restored: ${result.shadowElementsRestored} shadow elements and ${result.shiftsRestored} commitments put back` +
+          (result.shiftsMissing
+            ? ` (${result.shiftsMissing} commitments no longer exist).`
+            : "."),
+      );
+      setIsRestoreSnapshotOpen(false);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to restore snapshot",
+      );
+    } finally {
+      setIsRestoringSnapshot(false);
     }
   };
 
@@ -2051,9 +2143,9 @@ export function ShadowTaxonomyTab() {
             <button
               type="button"
               onClick={() => setViewMode("diff")}
-              disabled={!freezeStatus?.exists}
+              disabled={!hasSnapshot}
               title={
-                freezeStatus?.exists
+                hasSnapshot
                   ? undefined
                   : "No snapshot exists yet -- take one to compare against"
               }
@@ -2066,21 +2158,48 @@ export function ShadowTaxonomyTab() {
             >
               Diff vs snapshot
             </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("report")}
+              disabled={!hasSnapshot}
+              title={
+                hasSnapshot
+                  ? "Where the commitments that were on shadow elements in this snapshot ended up"
+                  : "No snapshot exists yet"
+              }
+              className={cn(
+                "px-3 py-1.5 text-sm border-l border-gray-03 disabled:opacity-40 disabled:cursor-not-allowed",
+                viewMode === "report"
+                  ? "bg-green-03/15 text-green-03 font-medium"
+                  : "text-gray-02 hover:text-gray-01",
+              )}
+            >
+              Rematch report
+            </button>
           </div>
+          {tefSnapshots.length > 0 && (
+            <label className="text-xs text-gray-02 flex items-center gap-2">
+              Snapshot
+              <select
+                className="h-9 max-w-[18rem] rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
+                value={selectedSnapshotRunId ?? ""}
+                onChange={(e) => setPickedSnapshotRunId(e.target.value)}
+              >
+                {tefSnapshots.map((snap) => (
+                  <option key={snap.snapshotRunId} value={snap.snapshotRunId}>
+                    {formatSnapshotName(snap)} ({snap.shadowElementCount}{" "}
+                    shadow, {snap.activityShiftCount} matches)
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <Button
             type="button"
             variant="outline"
             onClick={() => void handleTakeSnapshot()}
-            disabled={
-              isFreezeStatusLoading ||
-              Boolean(freezeStatus?.exists) ||
-              isTakingSnapshot
-            }
-            title={
-              freezeStatus?.exists
-                ? `A snapshot already exists (${freezeStatus.activityShiftCount} matches, ${freezeStatus.shadowElementCount} shadow elements, taken ${freezeStatus.snapshotTakenAt ? new Date(freezeStatus.snapshotTakenAt).toLocaleString() : ""}). Delete it first to take a new one.`
-                : undefined
-            }
+            disabled={isTakingSnapshot}
+            title="Freeze the current TEF matches and shadow taxonomy. Earlier snapshots are kept."
           >
             {isTakingSnapshot ? (
               <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
@@ -2089,17 +2208,52 @@ export function ShadowTaxonomyTab() {
             )}
             Take snapshot
           </Button>
-          {freezeStatus?.exists ? (
+          {hasSnapshot ? (
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsDeleteSnapshotOpen(true)}
               className="border-pink-03/40 text-pink-03 hover:bg-pink-03/10 hover:border-pink-03"
+              title={
+                selectedSnapshot
+                  ? `Delete “${formatSnapshotName(selectedSnapshot)}”`
+                  : undefined
+              }
             >
               <Trash2 className="w-4 h-4 mr-1.5" />
               Delete snapshot
             </Button>
           ) : null}
+          {hasSnapshot ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsRestoreSnapshotOpen(true)}
+              disabled={isRebuildActive}
+              title={
+                isRebuildActive
+                  ? "Wait for the running rebuild to finish"
+                  : "Put the shadow taxonomy and TEF matches back as they were in the selected snapshot"
+              }
+            >
+              <RotateCcw className="w-4 h-4 mr-1.5" />
+              Restore snapshot
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsRebuildOpen(true)}
+            disabled={isRebuildActive}
+            title={
+              isRebuildActive
+                ? "A rebuild is already running"
+                : "Snapshot, delete all shadow elements and rematch their commitments against the current TEF"
+            }
+          >
+            <Hammer className="w-4 h-4 mr-1.5" />
+            Rebuild shadow taxonomy
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -2130,6 +2284,22 @@ export function ShadowTaxonomyTab() {
           </Button>
         </div>
       </div>
+
+      <ShadowRebuildBanner
+        run={latestRebuild}
+        onOpenReport={openRematchReport}
+        onResumed={() => void refreshLatestRebuild()}
+      />
+
+      <ShadowRebuildDialog
+        open={isRebuildOpen}
+        onOpenChange={setIsRebuildOpen}
+        onStarted={(run) => {
+          setPickedSnapshotRunId(run.snapshotRunId);
+          setSnapshotRefreshToken((n) => n + 1);
+          void refreshLatestRebuild();
+        }}
+      />
 
       <MergeReviewDialog
         open={isMergeReviewOpen}
@@ -2167,7 +2337,7 @@ export function ShadowTaxonomyTab() {
         open={isDeleteSnapshotOpen}
         onOpenChange={setIsDeleteSnapshotOpen}
         title="Delete snapshot?"
-        description="Removes the frozen TEF match + shadow taxonomy snapshot entirely. You can take a new one right after, but the one you're deleting now is gone for good."
+        description={`Removes the snapshot “${selectedSnapshot ? formatSnapshotName(selectedSnapshot) : ""}” (frozen TEF matches + shadow taxonomy) for good. Other snapshots are kept.`}
         cancelLabel="Cancel"
         confirmLabel="Delete snapshot"
         confirmVariant="danger"
@@ -2175,10 +2345,32 @@ export function ShadowTaxonomyTab() {
         isLoading={isDeletingSnapshot}
       />
 
-      {viewMode === "diff" ? (
+      <ConfirmDialog
+        open={isRestoreSnapshotOpen}
+        onOpenChange={setIsRestoreSnapshotOpen}
+        title="Restore snapshot?"
+        description={`Puts the shadow taxonomy and TEF matches back exactly as they were in “${selectedSnapshot ? formatSnapshotName(selectedSnapshot) : ""}”. Every current shadow element is replaced, including any promote/reject/comment work done since. Take a snapshot first if you want to keep the current state. The snapshot itself is kept, so you can restore it again.`}
+        cancelLabel="Cancel"
+        confirmLabel="Restore snapshot"
+        confirmVariant="danger"
+        onConfirm={handleRestoreSnapshot}
+        isLoading={isRestoringSnapshot}
+      />
+
+      {viewMode === "report" ? (
+        <RematchReportView
+          snapshotRunId={selectedSnapshotRunId}
+          refreshToken={
+            // Refetch as the rebuild progresses, not just at the end.
+            snapshotRefreshToken + (latestRebuild?.doneShifts ?? 0)
+          }
+          municipalityFilter={municipalityFilter}
+        />
+      ) : viewMode === "diff" ? (
         <ShadowTaxonomyDiffView
           elements={elements}
           refreshToken={snapshotRefreshToken}
+          snapshotRunId={selectedSnapshotRunId}
           municipalityFilter={municipalityFilter}
         />
       ) : (
@@ -2298,6 +2490,7 @@ export function ShadowTaxonomyTab() {
           const legacyPane = (
             <ShadowTaxonomyLegacyView
               refreshToken={snapshotRefreshToken}
+              snapshotRunId={selectedSnapshotRunId}
               municipalityFilter={municipalityFilter}
             />
           );
