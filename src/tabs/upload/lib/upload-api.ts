@@ -166,8 +166,7 @@ export async function uploadPdfsToParsePdf({
   if (callbackUrl) formData.append("callbackUrl", callbackUrl);
   if (reportTypeSlug) formData.append("reportTypeSlug", reportTypeSlug);
   if (readImages) formData.append("readImages", "true");
-  if (forceRedescribeImages)
-    formData.append("forceRedescribeImages", "true");
+  if (forceRedescribeImages) formData.append("forceRedescribeImages", "true");
 
   const response = await authenticatedFetch(PARSE_PDF_UPLOAD_ENDPOINT, {
     method: "POST",

@@ -188,9 +188,7 @@ function pdfCacheHintForRow(row: {
   url: string;
   pdfCacheUrl?: string | null;
   sha256?: string | null;
-}):
-  | { sourceUrl: string; publicUrl: string; sha256: string }
-  | undefined {
+}): { sourceUrl: string; publicUrl: string; sha256: string } | undefined {
   const publicUrl = row.pdfCacheUrl?.trim();
   const sha256 = row.sha256?.trim();
   if (!publicUrl || !sha256) return undefined;
