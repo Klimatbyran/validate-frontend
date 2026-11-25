@@ -134,6 +134,24 @@ function HistoricFlag({
   );
 }
 
+/** Informational "might be a goal" marker (an overarching outcome rather
+ * than a concrete action). Purely a label: nothing filters or matches on
+ * it, and a possible goal can still be an activity shift. */
+function PossibleGoalFlag({ reason }: { reason: string | null | undefined }) {
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-03/40 bg-amber-03/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-03"
+      title={
+        reason ??
+        "Might be a goal: an overarching outcome rather than a concrete action"
+      }
+    >
+      <Target className="h-3 w-3" aria-hidden />
+      <span>Possible goal</span>
+    </span>
+  );
+}
+
 const ORIGIN_LABELS: Record<string, string> = {
   region: "region",
   national: "national",
@@ -389,7 +407,13 @@ export function CommitmentsList({
 }: {
   commitments: Commitment[];
   documentReferences?: DocumentReference[];
-  columns: "extract" | "climate" | "actionable" | "historic" | "similar" | "themes";
+  columns:
+    | "extract"
+    | "climate"
+    | "actionable"
+    | "historic"
+    | "similar"
+    | "themes";
   reviewCtx: ReviewContext;
   allVerifiedPhrases: string[];
   /** Only used when columns === "climate" — see the view-all-in-PDF button
@@ -409,7 +433,7 @@ export function CommitmentsList({
   // (extract/climate/actionable) list further down, not the grouped
   // similar/themes views.
   const [flagFilter, setFlagFilter] = useState<
-    "all" | "not-in-markdown" | "not-in-pdf"
+    "all" | "not-in-markdown" | "not-in-pdf" | "possible-goal"
   >("all");
 
   if (commitments.length === 0) {
@@ -467,6 +491,9 @@ export function CommitmentsList({
                 targetYear={c.targetYear}
                 historicReason={c.historicReason}
               />
+            )}
+            {c.possibleGoal && (
+              <PossibleGoalFlag reason={c.possibleGoalReason} />
             )}
             <OriginFlag originatesFrom={c.originatesFrom} />
           </div>
@@ -602,6 +629,9 @@ export function CommitmentsList({
                 historicReason={c.historicReason}
               />
             )}
+            {c.possibleGoal && (
+              <PossibleGoalFlag reason={c.possibleGoalReason} />
+            )}
             <OriginFlag originatesFrom={c.originatesFrom} />
           </div>
           <p className="text-sm text-gray-01 break-words">{c.text}</p>
@@ -677,6 +707,7 @@ export function CommitmentsList({
   const filteredCommitments = commitments.filter((c) => {
     if (flagFilter === "not-in-markdown") return c.unverified;
     if (flagFilter === "not-in-pdf") return pdfMissingPhrases.has(c.text);
+    if (flagFilter === "possible-goal") return Boolean(c.possibleGoal);
     return true;
   });
 
@@ -723,9 +754,7 @@ export function CommitmentsList({
         ))}
       <article className="rounded-lg border border-gray-03/50 bg-gray-03/20 p-3 min-w-0 space-y-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="font-mono text-xs text-gray-02">
-            {c.stableId}
-          </span>
+          <span className="font-mono text-xs text-gray-02">{c.stableId}</span>
           <FoundInDocumentFlag unverified={c.unverified} />
           {c.fromRecoveredImage && <ImageSourceFlag />}
           {pdfMissingPhrases.has(c.text) && <NotFoundInPdfFlag />}
@@ -735,12 +764,11 @@ export function CommitmentsList({
               historicReason={c.historicReason}
             />
           )}
+          {c.possibleGoal && <PossibleGoalFlag reason={c.possibleGoalReason} />}
           <OriginFlag originatesFrom={c.originatesFrom} />
           {!c.unverified && (
             <button
-              onClick={() =>
-                setPdfViewer({ mode: "focused", commitment: c })
-              }
+              onClick={() => setPdfViewer({ mode: "focused", commitment: c })}
               className="inline-flex items-center gap-1 rounded-md border border-gray-03 bg-gray-03/40 px-2 py-1 text-xs text-gray-01 hover:bg-gray-03/60"
               title={
                 c.fromRecoveredImage
@@ -752,9 +780,7 @@ export function CommitmentsList({
               Find in PDF
             </button>
           )}
-          {columns === "extract" && (
-            <MetaChip label="Type">{c.type}</MetaChip>
-          )}
+          {columns === "extract" && <MetaChip label="Type">{c.type}</MetaChip>}
           {columns === "climate" && (
             <>
               <MetaChip label="Climate">
@@ -806,9 +832,7 @@ export function CommitmentsList({
           </p>
         )}
         {columns === "historic" && c.historicReason && (
-          <p className="text-xs text-gray-02 break-words">
-            {c.historicReason}
-          </p>
+          <p className="text-xs text-gray-02 break-words">{c.historicReason}</p>
         )}
         {!readOnly && (
           <QaFooter>
@@ -869,7 +893,8 @@ export function CommitmentsList({
       )}
       {!focusSingle &&
         (commitments.some((c) => c.unverified) ||
-          pdfMissingPhrases.size > 0) && (
+          pdfMissingPhrases.size > 0 ||
+          commitments.some((c) => c.possibleGoal)) && (
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               onClick={() => setFlagFilter("all")}
@@ -910,6 +935,21 @@ export function CommitmentsList({
             >
               Not in PDF text ({missingInView})
             </button>
+            {commitments.some((c) => c.possibleGoal) && (
+              <button
+                onClick={() => setFlagFilter("possible-goal")}
+                title="Commitments that might be goals (an overarching outcome rather than a concrete action). Informational only."
+                className={cn(
+                  "rounded-md border px-2.5 py-1 text-xs font-medium",
+                  flagFilter === "possible-goal"
+                    ? "border-amber-03/50 bg-amber-03/15 text-amber-03"
+                    : "border-gray-03 bg-gray-03/20 text-gray-02 hover:bg-gray-03/40",
+                )}
+              >
+                Possible goals (
+                {commitments.filter((c) => c.possibleGoal).length})
+              </button>
+            )}
           </div>
         )}
       {filteredCommitments.length === 0 ? (

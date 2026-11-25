@@ -71,6 +71,12 @@ export interface Commitment {
   // no year is actually stated.
   targetYear: number | null;
   targetYearSource: string | null;
+  // Informational marker from classifyCommitmentHistoric's separate
+  // possible-goal call: an overarching outcome rather than a concrete
+  // action. Never used to filter or match anything; a possible goal can
+  // still be an activity shift. Absent/null on plans not re-run since.
+  possibleGoal?: boolean | null;
+  possibleGoalReason?: string | null;
 }
 
 export interface TransitionElementMatch {
