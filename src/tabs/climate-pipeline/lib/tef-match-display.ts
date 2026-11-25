@@ -44,7 +44,8 @@ const AI_REVIEW_HEADLINES: Record<string, string> = {
   // The TEF reviewers' four taxonomy decisions (2026-11-23 instructions).
   USE_EXISTING: "Use existing — an existing element covers this",
   BROADEN: "Broaden — an existing element fits with a wider scope",
-  DO_NOT_ADOPT: "No new element (do not adopt) — no specific TEF element fits this claim",
+  DO_NOT_ADOPT:
+    "No new element (do not adopt) — no specific TEF element fits this claim",
 };
 
 const AI_REVIEW_PILLS: Record<string, string> = {

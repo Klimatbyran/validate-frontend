@@ -108,7 +108,10 @@ const DECISIONS: Record<string, { label: string; text: string }> = {
   USE_EXISTING: { label: "Use existing", text: "text-teal-03" },
   BROADEN: { label: "Broaden", text: "text-blue-03" },
   TAXONOMY_GAP: { label: "Add (new element)", text: "text-purple-03" },
-  DO_NOT_ADOPT: { label: "No new element (do not adopt)", text: "text-pink-03" },
+  DO_NOT_ADOPT: {
+    label: "No new element (do not adopt)",
+    text: "text-pink-03",
+  },
   ENABLING_NOT_SHIFT: { label: "Enabling, not a shift", text: "text-gray-02" },
   RETRIEVAL_MISS: { label: "Missed element", text: "text-teal-03" },
   JUDGE_ERROR: { label: "Judge error", text: "text-gray-02" },
