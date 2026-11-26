@@ -1250,6 +1250,31 @@ function byMostAttached(left: ShadowElement, right: ShadowElement): number {
   return left.shortLabel.localeCompare(right.shortLabel);
 }
 
+export type ShadowSortMode = "attached" | "newest" | "oldest";
+
+const createdTime = (element: ShadowElement) =>
+  new Date(element.createdAt).getTime();
+
+function comparatorFor(
+  sortMode: ShadowSortMode,
+): (left: ShadowElement, right: ShadowElement) => number {
+  if (sortMode === "newest")
+    return (left, right) =>
+      createdTime(right) - createdTime(left) || byMostAttached(left, right);
+  if (sortMode === "oldest")
+    return (left, right) =>
+      createdTime(left) - createdTime(right) || byMostAttached(left, right);
+  return byMostAttached;
+}
+
+/** Local calendar day (YYYY-MM-DD) an element was created -- the key the
+ * date dividers group on when sorting by date. */
+function createdDayKey(element: ShadowElement): string {
+  const d = new Date(element.createdAt);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function visibleShadowElements(
   elements: ShadowElement[],
   overrides: Map<string, ShadowElement>,
@@ -1262,6 +1287,7 @@ function visibleShadowElements(
   // three filters: `elements` is already fully loaded, so this never costs
   // a request.
   searchQuery: string,
+  sortMode: ShadowSortMode,
 ): ShadowElement[] {
   const query = searchQuery.trim().toLowerCase();
   return (
@@ -1291,7 +1317,7 @@ function visibleShadowElements(
           element.description.toLowerCase().includes(query) ||
           (element.comment?.toLowerCase().includes(query) ?? false),
       )
-      .sort(byMostAttached)
+      .sort(comparatorFor(sortMode))
   );
 }
 
@@ -1752,7 +1778,7 @@ function RealOverlapReviewDialog({
 }
 
 export function ShadowTaxonomyTab() {
-  const { t } = useI18n();
+  const { t, localeIntl } = useI18n();
   const { elements, isLoading, error, refresh } = useShadowElements();
   // Current elements and the frozen legacy snapshot can each run to
   // hundreds of rows -- side by side only once there's room for two
@@ -1826,6 +1852,8 @@ export function ShadowTaxonomyTab() {
   // Plain theme search (e.g. "solar") -- see visibleShadowElements' own
   // comment for why this is client-side only.
   const [searchQuery, setSearchQuery] = useState("");
+  // Date sorts also show "Added <day>" dividers between days.
+  const [sortMode, setSortMode] = useState<ShadowSortMode>("attached");
   const [overrides, setOverrides] = useState<Map<string, ShadowElement>>(
     new Map(),
   );
@@ -1855,6 +1883,7 @@ export function ShadowTaxonomyTab() {
     qualityFilter,
     municipalityFilter,
     searchQuery,
+    sortMode,
   );
 
   // Built from every live element AND every snapshot row, regardless of
@@ -2442,6 +2471,26 @@ export function ShadowTaxonomyTab() {
                     ))}
                   </select>
                 </label>
+                <label className="text-xs text-gray-02 flex items-center gap-2">
+                  {t("shadowTaxonomy.sortBy")}
+                  <select
+                    className="h-9 rounded-md border border-gray-03 bg-gray-04/40 px-2 text-sm text-gray-01"
+                    value={sortMode}
+                    onChange={(e) =>
+                      setSortMode(e.target.value as ShadowSortMode)
+                    }
+                  >
+                    <option value="attached">
+                      {t("shadowTaxonomy.sortMostAttached")}
+                    </option>
+                    <option value="newest">
+                      {t("shadowTaxonomy.sortNewest")}
+                    </option>
+                    <option value="oldest">
+                      {t("shadowTaxonomy.sortOldest")}
+                    </option>
+                  </select>
+                </label>
                 <input
                   type="text"
                   value={searchQuery}
@@ -2471,15 +2520,40 @@ export function ShadowTaxonomyTab() {
               )}
               {!isLoading && rows.length > 0 && (
                 <div className="space-y-3">
-                  {rows.map((el) => (
-                    <ShadowElementCard
-                      key={el.id}
-                      element={el}
-                      onChanged={handleChanged}
-                      onUnlink={(id, label) => void handleUnlink(id, label)}
-                      onResolved={handleRefresh}
-                    />
-                  ))}
+                  {rows.map((el, index) => {
+                    const showDivider =
+                      sortMode !== "attached" &&
+                      (index === 0 ||
+                        createdDayKey(rows[index - 1]) !== createdDayKey(el));
+                    return (
+                      <div key={el.id} className="space-y-3">
+                        {showDivider && (
+                          <div className="flex items-center gap-3 pt-2 text-xs text-gray-02">
+                            <div className="h-px flex-1 bg-gray-03" />
+                            <span>
+                              {t("shadowTaxonomy.addedOn", {
+                                date: new Date(el.createdAt).toLocaleDateString(
+                                  localeIntl,
+                                  {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  },
+                                ),
+                              })}
+                            </span>
+                            <div className="h-px flex-1 bg-gray-03" />
+                          </div>
+                        )}
+                        <ShadowElementCard
+                          element={el}
+                          onChanged={handleChanged}
+                          onUnlink={(id, label) => void handleUnlink(id, label)}
+                          onResolved={handleRefresh}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </>
