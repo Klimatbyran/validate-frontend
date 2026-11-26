@@ -787,7 +787,7 @@
     "links": "Länkar",
     "noPdfUploaded": "Inga PDF-filer uppladdade",
     "onlyPdfAllowed": "Endast PDF-filer är tillåtna",
-    "fileTooLarge": "Filen är för stor. Maximal storlek är 400 MB per fil.",
+    "fileTooLarge": "Filen är för stor. Maximal storlek är 800 MB per fil.",
     "filesUploaded": "{{count}} fil(er) uppladdade",
     "filesSubmitted": "{{count}} fil(er) skickade",
     "invalidUrlsSkipped": "{{count}} ogiltig(a) URL(er) hoppades över",

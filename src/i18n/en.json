@@ -787,7 +787,7 @@
     "links": "Links",
     "noPdfUploaded": "No PDF files uploaded",
     "onlyPdfAllowed": "Only PDF files are allowed",
-    "fileTooLarge": "File too large. Maximum size is 400 MB per file.",
+    "fileTooLarge": "File too large. Maximum size is 800 MB per file.",
     "filesUploaded": "{{count}} file(s) uploaded",
     "filesSubmitted": "{{count}} file(s) submitted",
     "invalidUrlsSkipped": "{{count}} invalid URL(s) skipped",
