@@ -6,7 +6,7 @@ import {
   ClipboardCopy,
   Loader2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { copyMarkdown } from "../lib/copyMarkdown";
 import { cn } from "@/lib/utils";
 import { MunicipalityPill } from "./MunicipalityPill";
 import { formatSnapshotName } from "../hooks/useShadowElementSnapshots";
@@ -280,23 +280,7 @@ function reportMarkdown(args: {
   return out.join("\n") + "\n";
 }
 
-async function copyText(text: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    toast.success("Report copied as Markdown");
-  } catch {
-    // Clipboard blocked (e.g. no permission): fall back to a download.
-    const url = URL.createObjectURL(
-      new Blob([text], { type: "text/markdown" }),
-    );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "rematch-report.md";
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Clipboard unavailable, so the report was downloaded");
-  }
-}
+const copyText = (text: string) => copyMarkdown(text, "rematch-report.md");
 
 function ShiftRow({
   shift,
