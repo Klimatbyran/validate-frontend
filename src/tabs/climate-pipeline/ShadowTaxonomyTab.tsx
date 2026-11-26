@@ -18,8 +18,11 @@ import {
   Save,
   Hammer,
   RotateCcw,
+  ClipboardCopy,
 } from "lucide-react";
 import { toast } from "sonner";
+import { copyMarkdown } from "./lib/copyMarkdown";
+import { shadowTaxonomyMarkdown } from "./lib/shadowTaxonomyMarkdown";
 import { useI18n } from "@/contexts/I18nContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -2501,6 +2504,47 @@ export function ShadowTaxonomyTab() {
                 <span className="text-xs text-gray-02">
                   {t("shadowTaxonomy.count", { count: rows.length })}
                 </span>
+                <button
+                  type="button"
+                  disabled={rows.length === 0}
+                  onClick={() =>
+                    void copyMarkdown(
+                      shadowTaxonomyMarkdown({
+                        elements: rows,
+                        filters: [
+                          statusFilter
+                            ? `status = ${statusFilter}`
+                            : "status = all except merged/rejected",
+                          qualityFilter && `quality = ${qualityFilter}`,
+                          municipalityFilter &&
+                            `origin municipality = ${municipalityFilter}`,
+                          searchQuery.trim() &&
+                            `search = "${searchQuery.trim()}"`,
+                        ].filter((f): f is string => Boolean(f)),
+                        groupByDay: sortMode !== "attached",
+                        dayKey: createdDayKey,
+                        formatDay: (iso) =>
+                          new Date(iso).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          }),
+                        formatDate: (iso) =>
+                          new Date(iso).toLocaleString("sv-SE", {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          }),
+                      }),
+                      "shadow-taxonomy.md",
+                      "Shadow taxonomy",
+                    )
+                  }
+                  title="Copy the shadow elements shown below, with their attached commitments, as Markdown"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-gray-03 px-2.5 py-1 text-xs text-gray-02 hover:text-gray-01 hover:bg-gray-04/50 disabled:opacity-50"
+                >
+                  <ClipboardCopy className="w-3.5 h-3.5" />
+                  Copy as Markdown
+                </button>
               </div>
 
               {isLoading && (
