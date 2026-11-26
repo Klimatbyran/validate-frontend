@@ -13,4 +13,4 @@ spec:
             - name: UNEARTH_API_URL
               value: "https://api.unearthdata.ai/api"
             - name: GARBO_API_URL
-              value: "https://api.klimatkollen.se/api"
+              value: "https://clark.unearthdata.ai/api"

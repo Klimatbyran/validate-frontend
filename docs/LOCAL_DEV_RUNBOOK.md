@@ -197,7 +197,7 @@ Open http://localhost:5173. On startup, the terminal should log:
 
 ```
 [vite] unearth target: local -> http://localhost:3000
-[vite] garbo (queue-archive) target: stage -> https://stage-api.klimatkollen.se
+[vite] garbo (queue-archive) target: stage -> https://stage-clark.unearthdata.ai
 ```
 
 Log in via GitHub OAuth (redirect goes through Unearth API).
