@@ -11,8 +11,9 @@ export const GARBO_PROD_ORIGIN = "https://klimatkollen.se";
 export const UNEARTH_STAGE_API = "https://stage-api.unearthdata.ai";
 export const UNEARTH_PROD_API = "https://api.unearthdata.ai";
 
-export const GARBO_STAGE_API = "https://stage-api.klimatkollen.se";
-export const GARBO_PROD_API = "https://api.klimatkollen.se";
+/** Stage/prod emissions pipeline API hosts (Clark; queue-archive / Jobbstatus). */
+export const GARBO_STAGE_API = "https://stage-clark.unearthdata.ai";
+export const GARBO_PROD_API = "https://clark.unearthdata.ai";
 
 function jointMode(): ApiTarget {
   const v = import.meta.env.VITE_API_MODE as string | undefined;
@@ -171,8 +172,7 @@ export function getProdUnearthUrl(path: string): string {
  */
 export function getClimatePlansPipelineWebhookUrl(): string {
   const override = import.meta.env.VITE_CLIMATE_PLANS_PIPELINE_WEBHOOK_URL as
-    | string
-    | undefined;
+    string | undefined;
   if (override) return override;
   const target = jointMode();
   if (target === "stage")
@@ -221,8 +221,7 @@ export function getProdPipelineCompaniesListUrl(): string {
  */
 export function getClimatePlansPipelineApiUrl(): string {
   const override = import.meta.env.VITE_CLIMATE_PLANS_PIPELINE_API_URL as
-    | string
-    | undefined;
+    string | undefined;
   if (override) return override;
   const target = jointMode();
   if (target === "stage")

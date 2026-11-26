@@ -76,7 +76,7 @@ On startup, the terminal logs which backends the Vite proxy targets, for example
 ```
 [vite] pipeline target: stage -> https://stage-pipeline-api.klimatkollen.se
 [vite] unearth target: stage -> https://stage-api.unearthdata.ai ...
-[vite] garbo (queue-archive) target: stage -> https://stage-api.klimatkollen.se ...
+[vite] garbo (queue-archive) target: stage -> https://stage-clark.unearthdata.ai ...
 ```
 
 4. Open your browser and navigate to the URL shown in the terminal (typically `http://localhost:5173`)
@@ -85,11 +85,11 @@ On startup, the terminal logs which backends the Vite proxy targets, for example
 
 The app talks to three backends:
 
-| Backend         | Used for                                          | Default host (stage)                 |
-| --------------- | ------------------------------------------------- | ------------------------------------ |
-| **Unearth API** | Auth, company editor, errors tab                  | `stage-api.unearthdata.ai`           |
-| **Garbo API**   | Queue archive (Jobbstatus Archive, batch pickers) | `stage-api.klimatkollen.se`          |
-| **Pipeline**    | Live job status, upload, reruns                   | `stage-pipeline-api.klimatkollen.se` |
+| Backend             | Used for                                          | Default host (stage)                                                 |
+| ------------------- | ------------------------------------------------- | -------------------------------------------------------------------- |
+| **Unearth API**     | Auth, company editor, errors tab                  | `stage-api.unearthdata.ai`                                           |
+| **Garbo/Clark API** | Queue archive (Jobbstatus Archive, batch pickers) | `stage-clark.unearthdata.ai` (stage) / `clark.unearthdata.ai` (prod) |
+| **Pipeline**        | Live job status, upload, reruns                   | `stage-pipeline-api.klimatkollen.se`                                 |
 
 In **local dev** with `VITE_API_MODE=local`: Unearth → `localhost:3000`, Garbo archive → `localhost:3002`, Pipeline → `localhost:3001`. See [Local development runbook](./docs/LOCAL_DEV_RUNBOOK.md).
 

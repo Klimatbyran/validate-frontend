@@ -6,11 +6,11 @@ How Validate talks to **Pipeline API**, **Unearth API**, and **Garbo API** in de
 
 ## Overview
 
-| Backend          | Host (stage)                         | Browser path (deployed)           |
-| ---------------- | ------------------------------------ | --------------------------------- |
-| **Pipeline API** | `stage-pipeline-api.klimatkollen.se` | `/api/…`                          |
-| **Unearth API**  | `stage-api.unearthdata.ai`           | `/unearth-api/…`                  |
-| **Garbo API**    | `stage-api.klimatkollen.se`          | `/garbo-api/queue-archive/…` only |
+| Backend             | Host (stage)                                                         | Browser path (deployed)           |
+| ------------------- | -------------------------------------------------------------------- | --------------------------------- |
+| **Pipeline API**    | `stage-pipeline-api.klimatkollen.se`                                 | `/api/…`                          |
+| **Unearth API**     | `stage-api.unearthdata.ai`                                           | `/unearth-api/…`                  |
+| **Garbo/Clark API** | `stage-clark.unearthdata.ai` (stage) / `clark.unearthdata.ai` (prod) | `/garbo-api/queue-archive/…` only |
 
 - **Errors tab** – always compares stage and prod **Unearth API** via `/unearth-stage-api/` and `/unearth-prod-api/` (ignores deployment target).
 
