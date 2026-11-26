@@ -172,7 +172,8 @@ export function getProdUnearthUrl(path: string): string {
  */
 export function getClimatePlansPipelineWebhookUrl(): string {
   const override = import.meta.env.VITE_CLIMATE_PLANS_PIPELINE_WEBHOOK_URL as
-    string | undefined;
+    | string
+    | undefined;
   if (override) return override;
   const target = jointMode();
   if (target === "stage")
@@ -221,7 +222,8 @@ export function getProdPipelineCompaniesListUrl(): string {
  */
 export function getClimatePlansPipelineApiUrl(): string {
   const override = import.meta.env.VITE_CLIMATE_PLANS_PIPELINE_API_URL as
-    string | undefined;
+    | string
+    | undefined;
   if (override) return override;
   const target = jointMode();
   if (target === "stage")
